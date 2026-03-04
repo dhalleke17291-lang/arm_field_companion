@@ -4,6 +4,10 @@ import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
 import 'package:drift/drift.dart' as drift;
 import 'usecases/save_rating_usecase.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import '../photos/usecases/save_photo_usecase.dart';
 
 class RatingScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -95,6 +99,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         children: [
           // Plot info bar
           _buildPlotInfoBar(context),
+          _buildPhotoStrip(context),
+
 
           // Assessment selector
           _buildAssessmentSelector(context),
@@ -116,6 +122,118 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+
+  // ===== Photos (Capture + Save) =====
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _capturePhoto(BuildContext context) async {
+    try {
+      final shot = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+      if (shot == null) return;
+
+      final docsDir = await getApplicationDocumentsDirectory();
+      final photosDir = Directory('${docsDir.path}/afc_photos');
+      if (!await photosDir.exists()) {
+        await photosDir.create(recursive: true);
+      }
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final finalPath =
+          '${photosDir.path}/trial_${widget.trial.id}_session_${widget.session.id}_plot_${widget.plot.id}_$now.jpg';
+
+      final usecase = ref.read(savePhotoUseCaseProvider);
+
+      final res = await usecase.execute(
+        SavePhotoInput(
+          trialId: widget.trial.id,
+          plotPk: widget.plot.id,
+          sessionId: widget.session.id,
+          tempPath: shot.path,
+          finalPath: finalPath,
+          caption: null,
+          raterName: widget.session.raterName,
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (!res.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.errorMessage ?? 'Failed to save photo')),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo saved')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Photo error: $e')),
+      );
+    }
+  }
+
+  Widget _buildPhotoStrip(BuildContext context) {
+    final photosAsync = ref.watch(
+      photosForPlotProvider(
+        PhotosForPlotParams(
+          trialId: widget.trial.id,
+          plotPk: widget.plot.id,
+          sessionId: widget.session.id,
+        ),
+      ),
+    );
+
+    return photosAsync.when(
+      loading: () => const SizedBox(height: 0),
+      error: (e, st) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Text('Photo load error: $e',
+            style: const TextStyle(color: Colors.red, fontSize: 12)),
+      ),
+      data: (photos) {
+        if (photos.isEmpty) return const SizedBox(height: 0);
+
+        return SizedBox(
+          height: 84,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            itemCount: photos.length,
+            itemBuilder: (context, i) {
+              final p = photos[i];
+              final file = File(p.filePath);
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 84,
+                    height: 84,
+                    color: Colors.black12,
+                    child: file.existsSync()
+                        ? Image.file(file, fit: BoxFit.cover)
+                        : const Center(
+                            child: Icon(Icons.broken_image,
+                                color: Colors.grey),
+                          ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+
   Widget _buildPlotInfoBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -134,6 +252,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             Text('Rep ${widget.plot.rep}',
                 style: const TextStyle(color: Colors.grey)),
           ],
+          IconButton(
+            tooltip: 'Take photo',
+            icon: const Icon(Icons.photo_camera, size: 20),
+            onPressed: () => _capturePhoto(context),
+          ),
+          const SizedBox(width: 4),
           const Spacer(),
           if (widget.session.raterName != null)
             Text(widget.session.raterName!,
