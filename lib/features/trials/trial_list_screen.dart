@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../core/database/app_database.dart';
 import 'usecases/create_trial_usecase.dart';
+import 'trial_detail_screen.dart';
 
 class TrialListScreen extends ConsumerWidget {
   const TrialListScreen({super.key});
@@ -192,7 +193,7 @@ class _TrialCard extends StatelessWidget {
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          // Navigate to trial detail — coming next
+          Navigator.push(context, MaterialPageRoute(builder: (_) => TrialDetailScreen(trial: trial)));
         },
       ),
     );

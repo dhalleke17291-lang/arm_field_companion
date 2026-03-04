@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
 import '../features/trials/trial_repository.dart';
 import '../features/plots/plot_repository.dart';
@@ -54,4 +55,28 @@ final closeSessionUseCaseProvider = Provider<CloseSessionUseCase>((ref) {
 
 final trialsStreamProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials();
+});
+
+
+
+final plotsForTrialProvider =
+    StreamProvider.family<List<Plot>, int>((ref, trialId) {
+  return ref.watch(plotRepositoryProvider).watchPlotsForTrial(trialId);
+});
+
+final assessmentsForTrialProvider =
+    StreamProvider.family<List<Assessment>, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.assessments)
+        ..where((a) => a.trialId.equals(trialId)))
+      .watch();
+});
+
+final sessionsForTrialProvider =
+    StreamProvider.family<List<Session>, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.sessions)
+        ..where((s) => s.trialId.equals(trialId))
+        ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
+      .watch();
 });
