@@ -12,6 +12,7 @@ import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
 import '../features/export/data/export_repository.dart';
 import '../features/export/domain/export_session_csv_usecase.dart';
+import '../features/photos/usecases/save_photo_usecase.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -151,5 +152,43 @@ final exportRepositoryProvider = Provider<ExportRepository>((ref) {
 
 final exportSessionCsvUsecaseProvider = Provider<ExportSessionCsvUsecase>((ref) {
   return ExportSessionCsvUsecase(ref.watch(exportRepositoryProvider));
+});
+
+
+// ===== Photos =====
+
+final savePhotoUseCaseProvider = Provider<SavePhotoUseCase>((ref) {
+  return SavePhotoUseCase(ref.watch(photoRepositoryProvider));
+});
+
+class PhotosForPlotParams {
+  final int trialId;
+  final int plotPk;
+  final int sessionId;
+
+  const PhotosForPlotParams({
+    required this.trialId,
+    required this.plotPk,
+    required this.sessionId,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is PhotosForPlotParams &&
+      other.trialId == trialId &&
+      other.plotPk == plotPk &&
+      other.sessionId == sessionId;
+
+  @override
+  int get hashCode => Object.hash(trialId, plotPk, sessionId);
+}
+
+final photosForPlotProvider =
+    StreamProvider.family<List<Photo>, PhotosForPlotParams>((ref, params) {
+  return ref.watch(photoRepositoryProvider).watchPhotosForPlot(
+        trialId: params.trialId,
+        plotPk: params.plotPk,
+        sessionId: params.sessionId,
+      );
 });
 
