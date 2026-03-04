@@ -80,3 +80,58 @@ final sessionsForTrialProvider =
         ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
       .watch();
 });
+
+final openSessionProvider =
+    StreamProvider.family<Session?, int>((ref, trialId) {
+  return ref.watch(sessionRepositoryProvider).watchOpenSession(trialId);
+});
+
+final sessionAssessmentsProvider =
+    FutureProvider.family<List<Assessment>, int>((ref, sessionId) {
+  return ref.watch(sessionRepositoryProvider).getSessionAssessments(sessionId);
+});
+
+final ratedPlotPksProvider =
+    FutureProvider.family<Set<int>, int>((ref, sessionId) {
+  return ref.watch(ratingRepositoryProvider).getRatedPlotPks(
+        sessionId: sessionId,
+        assessmentId: 0,
+      );
+});
+
+class CurrentRatingParams {
+  final int trialId;
+  final int plotPk;
+  final int assessmentId;
+  final int sessionId;
+
+  const CurrentRatingParams({
+    required this.trialId,
+    required this.plotPk,
+    required this.assessmentId,
+    required this.sessionId,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is CurrentRatingParams &&
+      other.trialId == trialId &&
+      other.plotPk == plotPk &&
+      other.assessmentId == assessmentId &&
+      other.sessionId == sessionId;
+
+  @override
+  int get hashCode =>
+      Object.hash(trialId, plotPk, assessmentId, sessionId);
+}
+
+final currentRatingProvider =
+    StreamProvider.family<RatingRecord?, CurrentRatingParams>(
+        (ref, params) {
+  return ref.watch(ratingRepositoryProvider).watchCurrentRating(
+        trialId: params.trialId,
+        plotPk: params.plotPk,
+        assessmentId: params.assessmentId,
+        sessionId: params.sessionId,
+      );
+});

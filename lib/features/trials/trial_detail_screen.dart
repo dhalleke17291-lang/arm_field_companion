@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import 'package:drift/drift.dart' as drift;
+import '../sessions/create_session_screen.dart';
+import '../plots/plot_queue_screen.dart';
 import '../../core/providers.dart';
 
 class TrialDetailScreen extends ConsumerStatefulWidget {
@@ -81,17 +83,16 @@ class _PlotsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
-
     return plotsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(child: Text('Error: $e')),
       data: (plots) => plots.isEmpty
-          ? _buildEmptyPlots(context)
+          ? _buildEmptyPlots(context, ref)
           : _buildPlotsList(context, plots),
     );
   }
 
-  Widget _buildEmptyPlots(BuildContext context) {
+  Widget _buildEmptyPlots(BuildContext context, WidgetRef ref) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -104,9 +105,35 @@ class _PlotsTab extends ConsumerWidget {
           const SizedBox(height: 8),
           const Text('Import plots via CSV to get started',
               style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: () => _seedTestPlots(context, ref),
+            icon: const Icon(Icons.science),
+            label: const Text('Add 10 Test Plots'),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _seedTestPlots(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(databaseProvider);
+    for (int i = 1; i <= 10; i++) {
+      await db.into(db.plots).insert(
+        PlotsCompanion.insert(
+          trialId: trial.id,
+          plotId: i.toString().padLeft(3, '0'),
+          plotSortIndex: drift.Value(i),
+          rep: drift.Value((i / 3).ceil()),
+        ),
+      );
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('10 test plots added'),
+            backgroundColor: Colors.green));
+    }
   }
 
   Widget _buildPlotsList(BuildContext context, List<Plot> plots) {
@@ -159,10 +186,6 @@ class _PlotsTab extends ConsumerWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// ASSESSMENTS TAB
-// ─────────────────────────────────────────────
 
 class _AssessmentsTab extends ConsumerWidget {
   final Trial trial;
@@ -372,7 +395,7 @@ class _SessionsTab extends ConsumerWidget {
       error: (e, st) => Center(child: Text('Error: $e')),
       data: (sessions) => sessions.isEmpty
           ? _buildEmptySessions(context)
-          : _buildSessionsList(context, sessions),
+          : _buildSessionsList(context, ref, sessions),
     );
   }
 
@@ -389,13 +412,22 @@ class _SessionsTab extends ConsumerWidget {
           const SizedBox(height: 8),
           const Text('Start a session to begin field data collection',
               style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => CreateSessionScreen(trial: trial))),
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Start Session'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSessionsList(BuildContext context, List<Session> sessions) {
-    return ListView.builder(
+  Widget _buildSessionsList(BuildContext context, WidgetRef ref, List<Session> sessions) {
+    return Stack(
+      children: [
+        ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: sessions.length,
       itemBuilder: (context, index) {
@@ -403,6 +435,10 @@ class _SessionsTab extends ConsumerWidget {
         final isOpen = session.endedAt == null;
         return Card(
           child: ListTile(
+            onTap: isOpen ? () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => PlotQueueScreen(trial: trial, session: session)));
+            } : null,
+            onLongPress: isOpen ? () => _confirmCloseSession(context, ref, session) : null,
             leading: CircleAvatar(
               backgroundColor: isOpen
                   ? Colors.green.shade100
@@ -434,6 +470,49 @@ class _SessionsTab extends ConsumerWidget {
           ),
         );
       },
+    ),
+    Positioned(
+      bottom: 16,
+      right: 16,
+      child: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => CreateSessionScreen(trial: trial))),
+        icon: const Icon(Icons.add),
+        label: const Text('New Session'),
+      ),
+    ),
+  ],
+);
+  }
+
+  Future<void> _confirmCloseSession(BuildContext context, WidgetRef ref, Session session) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Close Session"),
+        content: Text("Close session \"${session.name}\"? You can still view ratings but cannot add new ones."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel")),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Close Session")),
+        ],
+      ),
     );
+    if (confirm != true) return;
+    final useCase = ref.read(closeSessionUseCaseProvider);
+    final result = await useCase.execute(
+      sessionId: session.id,
+      trialId: trial.id,
+      raterName: session.raterName,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(result.success ? "Session closed" : result.errorMessage ?? "Error"),
+        backgroundColor: result.success ? Colors.green : Colors.red,
+      ));
+    }
   }
 }
