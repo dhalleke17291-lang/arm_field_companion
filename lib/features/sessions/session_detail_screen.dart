@@ -1,0 +1,185 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/database/app_database.dart';
+import '../../core/providers.dart';
+
+class SessionDetailScreen extends ConsumerWidget {
+  final Trial trial;
+  final Session session;
+
+  const SessionDetailScreen({
+    super.key,
+    required this.trial,
+    required this.session,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
+    final assessmentsAsync =
+        ref.watch(sessionAssessmentsProvider(session.id));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(session.name,
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.bold)),
+            Text(session.sessionDateLocal,
+                style:
+                    const TextStyle(fontSize: 12, color: Colors.white70)),
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: plotsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(child: Text('Error: $e')),
+        data: (plots) => ratingsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, st) => Center(child: Text('Error: $e')),
+          data: (ratings) => assessmentsAsync.when(
+            loading: () =>
+                const Center(child: CircularProgressIndicator()),
+            error: (e, st) => Center(child: Text('Error: $e')),
+            data: (assessments) => _buildContent(
+                context, plots, ratings, assessments),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    List<Plot> plots,
+    List<RatingRecord> ratings,
+    List<Assessment> assessments,
+  ) {
+    final ratedPks = ratings.map((r) => r.plotPk).toSet();
+    final ratedCount = ratedPks.length;
+
+    return Column(
+      children: [
+        // Summary banner
+        Container(
+          padding: const EdgeInsets.all(12),
+          color: Theme.of(context).colorScheme.primaryContainer,
+          child: Row(
+            children: [
+              Icon(Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                '$ratedCount / ${plots.length} plots rated',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary),
+              ),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('CLOSED',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+
+        // Assessment chips
+        if (assessments.isNotEmpty)
+          SizedBox(
+            height: 44,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8, vertical: 6),
+              itemCount: assessments.length,
+              itemBuilder: (context, index) => Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Chip(
+                  label: Text(assessments[index].name,
+                      style: const TextStyle(fontSize: 12)),
+                ),
+              ),
+            ),
+          ),
+
+        // Plot ratings list
+        Expanded(
+          child: ListView.builder(
+            itemCount: plots.length,
+            itemBuilder: (context, index) {
+              final plot = plots[index];
+              final plotRatings =
+                  ratings.where((r) => r.plotPk == plot.id).toList();
+              final isRated = plotRatings.isNotEmpty;
+
+              return Card(
+                margin: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                child: ExpansionTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isRated
+                        ? Colors.green.shade100
+                        : Colors.grey.shade100,
+                    child: isRated
+                        ? const Icon(Icons.check, color: Colors.green)
+                        : const Icon(Icons.radio_button_unchecked,
+                            color: Colors.grey),
+                  ),
+                  title: Text('Plot ${plot.plotId}',
+                      style:
+                          const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: plot.rep != null
+                      ? Text('Rep ${plot.rep}')
+                      : null,
+                  children: plotRatings.isEmpty
+                      ? [
+                          const ListTile(
+                            title: Text('Not rated',
+                                style: TextStyle(color: Colors.grey)),
+                          )
+                        ]
+                      : plotRatings.map((rating) {
+                          final assessment = assessments
+                              .where((a) => a.id == rating.assessmentId)
+                              .firstOrNull;
+                          return ListTile(
+                            dense: true,
+                            title: Text(
+                                assessment?.name ?? 'Assessment'),
+                            trailing: Text(
+                              rating.resultStatus == 'RECORDED'
+                                  ? '${rating.numericValue ?? "-"} ${assessment?.unit ?? ""}'
+                                  : rating.resultStatus,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: rating.resultStatus == 'RECORDED'
+                                    ? Colors.green
+                                    : Colors.orange,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}

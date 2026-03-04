@@ -135,3 +135,8 @@ final currentRatingProvider =
         sessionId: params.sessionId,
       );
 });
+
+final sessionRatingsProvider =
+    FutureProvider.family<List<RatingRecord>, int>((ref, sessionId) {
+  return ref.watch(ratingRepositoryProvider).getCurrentRatingsForSession(sessionId);
+});

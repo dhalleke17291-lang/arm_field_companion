@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import 'package:drift/drift.dart' as drift;
 import '../sessions/create_session_screen.dart';
+import '../sessions/session_detail_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import '../../core/providers.dart';
 
@@ -161,7 +162,7 @@ class _PlotsTab extends ConsumerWidget {
               final plot = plots[index];
               return ListTile(
                 dense: true,
-                leading: CircleAvatar(
+            leading: CircleAvatar(
                   radius: 18,
                   backgroundColor:
                       Theme.of(context).colorScheme.primaryContainer,
@@ -261,7 +262,7 @@ class _AssessmentsTab extends ConsumerWidget {
             itemBuilder: (context, index) {
               final assessment = assessments[index];
               return ListTile(
-                leading: CircleAvatar(
+            leading: CircleAvatar(
                   backgroundColor:
                       Theme.of(context).colorScheme.primaryContainer,
                   child: Icon(Icons.analytics,
@@ -435,10 +436,18 @@ class _SessionsTab extends ConsumerWidget {
         final isOpen = session.endedAt == null;
         return Card(
           child: ListTile(
-            onTap: isOpen ? () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => PlotQueueScreen(trial: trial, session: session)));
-            } : null,
+            onTap: () {
+              if (isOpen) {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => PlotQueueScreen(trial: trial, session: session)));
+              } else {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => SessionDetailScreen(trial: trial, session: session)));
+              }
+            },
             onLongPress: isOpen ? () => _confirmCloseSession(context, ref, session) : null,
+
+
+
+
             leading: CircleAvatar(
               backgroundColor: isOpen
                   ? Colors.green.shade100
