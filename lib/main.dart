@@ -17,6 +17,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'ARM Field Companion',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
