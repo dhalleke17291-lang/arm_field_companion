@@ -80,6 +80,45 @@ class SessionDetailScreen extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.primary),
               ),
+        // Export CSV (closed session)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+          child: Consumer(builder: (context, ref, _) {
+            return ElevatedButton.icon(
+              onPressed: () async {
+                try {
+                  final usecase = ref.read(exportSessionCsvUsecaseProvider);
+                  final result = await usecase.exportSessionToCsv(
+                    sessionId: session.id,
+                    trialName: trial.name,
+                    sessionName: session.name,
+                    sessionDateLocal: session.sessionDateLocal,
+                    sessionRaterName: session.raterName,
+                  );
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Exported ${result.rowCount} rows to: ${result.filePath}',
+                        ),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Export failed: $e')),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.download),
+              label: const Text('Export CSV'),
+            );
+          }),
+        ),
+
               const Spacer(),
               Container(
                 padding:

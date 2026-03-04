@@ -10,6 +10,8 @@ import '../features/trials/usecases/create_trial_usecase.dart';
 import '../features/ratings/usecases/save_rating_usecase.dart';
 import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
+import '../features/export/data/export_repository.dart';
+import '../features/export/domain/export_session_csv_usecase.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -139,4 +141,15 @@ final currentRatingProvider =
 final sessionRatingsProvider =
     FutureProvider.family<List<RatingRecord>, int>((ref, sessionId) {
   return ref.watch(ratingRepositoryProvider).getCurrentRatingsForSession(sessionId);
+
 });
+
+// ===== Export (CSV) =====
+final exportRepositoryProvider = Provider<ExportRepository>((ref) {
+  return ExportRepository(ref.watch(databaseProvider));
+});
+
+final exportSessionCsvUsecaseProvider = Provider<ExportSessionCsvUsecase>((ref) {
+  return ExportSessionCsvUsecase(ref.watch(exportRepositoryProvider));
+});
+
