@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/trials/trial_list_screen.dart';
+import 'splash_screen.dart';
 
 void main() {
   runApp(
@@ -22,7 +23,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const TrialListScreen(),
+      home: const SplashScreen(),
     );
   }
 }

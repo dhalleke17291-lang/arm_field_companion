@@ -50,53 +50,64 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: const Color(0xFF1B5E20),
       body: FadeTransition(
         opacity: _fadeIn,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Icon(
-                  Icons.energy_savings_leaf,
-                  size: 64,
-                  color: Colors.white,
-                ),
+        child: Stack(
+          children: [
+            // Center content
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Icon(
+                      Icons.energy_savings_leaf,
+                      size: 64,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  const Text(
+                    'ARM Field Companion',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'by GDM Solutions',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.65),
+                      fontSize: 20,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 28),
-              const Text(
-                'ARM Field Companion',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'by GDM Solutions',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.65),
-                  fontSize: 13,
-                  letterSpacing: 0.8,
-                ),
-              ),
-              const SizedBox(height: 100),
-              Text(
+            ),
+            // Name pinned to bottom
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: Text(
                 'Developed by Parminder Singh',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.3),
-                  fontSize: 11,
-                  letterSpacing: 0.4,
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 13,
+                  letterSpacing: 0.5,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
