@@ -71,7 +71,7 @@ class ExportSessionCsvUsecase {
     final safeSession = _safeFilePart(sessionName);
 
     final file = File(
-      '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_${sessionId}.csv',
+      '${dir.path}/AFC_export_$safeTrial_$safeSession_session_$sessionId.csv',
     );
 
     await file.writeAsString(csv, flush: true);
