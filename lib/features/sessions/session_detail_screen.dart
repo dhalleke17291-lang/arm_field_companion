@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import 'package:share_plus/share_plus.dart';
 
 class SessionDetailScreen extends ConsumerWidget {
   final Trial trial;
@@ -104,6 +105,12 @@ class SessionDetailScreen extends ConsumerWidget {
                         ),
                       ),
                     );
+                  // Share the exported CSV (AirDrop/Email/Files/Drive)
+                  await Share.shareXFiles(
+                    [XFile(result.filePath)],
+                    text: 'ARM Field Companion export: ${trial.name} / ${session.name}',
+                  );
+
                   }
                 } catch (e) {
                   if (context.mounted) {
