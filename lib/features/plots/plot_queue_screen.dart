@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
 import '../ratings/rating_screen.dart';
+import 'package:share_plus/share_plus.dart';
 
 class PlotQueueScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -168,9 +169,73 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                               fontSize: 20,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
+                      Text(
+                        'You can export and share this session now.',
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Export + Share
+                      SizedBox(
+                        width: 220,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.share),
+                          label: const Text('Export & Share CSV'),
+                          onPressed: () async {
+                            try {
+                              final usecase = ref.read(exportSessionCsvUsecaseProvider);
+                              final result = await usecase.exportSessionToCsv(
+                                sessionId: widget.session.id,
+                                trialName: widget.trial.name,
+                                sessionName: widget.session.name,
+                                sessionDateLocal: widget.session.sessionDateLocal,
+                                sessionRaterName: widget.session.raterName,
+                              );
+
+                              if (!mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Exported ${result.rowCount} rows',
+                                  ),
+                                ),
+                              );
+
+                              // Share the file (AirDrop/Email/Files/Drive)
+                              await Share.shareXFiles(
+                                [XFile(result.filePath)],
+                                text: 'ARM Field Companion export: ${widget.trial.name} / ${widget.session.name}',
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Export failed: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Back to Sessions
+                      SizedBox(
+                        width: 220,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text('Back to Sessions'),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
                       TextButton(
-                        onPressed: () =>
-                            setState(() => _showUnratedOnly = false),
+                        onPressed: () => setState(() => _showUnratedOnly = false),
                         child: const Text('Show all plots'),
                       ),
                     ],
