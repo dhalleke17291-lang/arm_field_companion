@@ -71,7 +71,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.grass,
+                Icon(Icons.energy_savings_leaf,
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(widget.trial.name,

@@ -38,7 +38,7 @@ class TrialListScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.grass, size: 80,
+          Icon(Icons.energy_savings_leaf, size: 80,
               color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
           const Text('No trials yet',
@@ -176,7 +176,7 @@ class _TrialCard extends StatelessWidget {
             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          child: Icon(Icons.grass,
+          child: Icon(Icons.energy_savings_leaf,
               color: Theme.of(context).colorScheme.primary),
         ),
         title: Text(
