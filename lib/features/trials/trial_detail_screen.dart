@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' as drift;
 import '../sessions/create_session_screen.dart';
 import '../sessions/session_detail_screen.dart';
 import '../plots/plot_queue_screen.dart';
+import '../plots/import_plots_screen.dart';
 import '../../core/providers.dart';
 
 class TrialDetailScreen extends ConsumerStatefulWidget {
@@ -108,6 +109,13 @@ class _PlotsTab extends ConsumerWidget {
               style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           FilledButton.icon(
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => ImportPlotsScreen(trial: trial))),
+            icon: const Icon(Icons.upload_file),
+            label: const Text('Import Plots from CSV'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
             onPressed: () => _seedTestPlots(context, ref),
             icon: const Icon(Icons.science),
             label: const Text('Add 10 Test Plots'),

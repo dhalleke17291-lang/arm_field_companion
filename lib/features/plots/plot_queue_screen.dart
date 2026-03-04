@@ -39,8 +39,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                 style: const TextStyle(
                     fontSize: 15, fontWeight: FontWeight.bold)),
             Text(widget.session.name,
-                style:
-                    const TextStyle(fontSize: 12, color: Colors.white70)),
+                style: const TextStyle(fontSize: 12, color: Colors.white70)),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -61,8 +60,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           data: (assessments) => ratedPlotsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, st) => Center(child: Text('Error: $e')),
-            data: (ratedPks) => _buildQueue(
-                context, plots, assessments, ratedPks),
+            data: (ratedPks) =>
+                _buildQueue(context, plots, assessments, ratedPks),
           ),
         ),
       ),
@@ -75,7 +74,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     List<Assessment> assessments,
     Set<int> ratedPks,
   ) {
-    // Apply filters
     var filtered = plots;
     if (_repFilter != null) {
       filtered = filtered.where((p) => p.rep == _repFilter).toList();
@@ -115,8 +113,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text('Unrated only',
-                          style: TextStyle(
-                              color: Colors.white, fontSize: 11)),
+                          style:
+                              TextStyle(color: Colors.white, fontSize: 11)),
                     ),
                 ],
               ),
@@ -138,7 +136,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             height: 44,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               itemCount: assessments.length,
               itemBuilder: (context, index) {
                 return Padding(
@@ -154,7 +153,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             ),
           ),
 
-        // Plot list
+        // Plot list grouped by rep
         Expanded(
           child: filtered.isEmpty
               ? Center(
@@ -166,7 +165,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                       const SizedBox(height: 16),
                       const Text('All plots rated!',
                           style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold)),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () =>
@@ -176,23 +176,48 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ],
                   ),
                 )
-              : ListView.builder(
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final plot = filtered[index];
-                    final isRated = ratedPks.contains(plot.id);
-                    return _PlotQueueTile(
-                      plot: plot,
-                      isRated: isRated,
-                      assessments: assessments,
-                      trial: widget.trial,
-                      session: widget.session,
-                    );
-                  },
-                ),
+              : _buildGroupedList(context, filtered, assessments, ratedPks),
         ),
       ],
     );
+  }
+
+  Widget _buildGroupedList(
+    BuildContext context,
+    List<Plot> plots,
+    List<Assessment> assessments,
+    Set<int> ratedPks,
+  ) {
+    final groups = <int?, List<Plot>>{};
+    for (final plot in plots) {
+      groups.putIfAbsent(plot.rep, () => []).add(plot);
+    }
+    final sortedReps = groups.keys.toList()
+      ..sort((a, b) => (a ?? 999).compareTo(b ?? 999));
+
+    final items = <Widget>[];
+    for (final rep in sortedReps) {
+      items.add(Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        color: Colors.grey.shade200,
+        child: Text(
+          rep != null ? 'Rep $rep' : 'No Rep',
+          style: const TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 13),
+        ),
+      ));
+      for (final plot in groups[rep]!) {
+        items.add(_PlotQueueTile(
+          plot: plot,
+          isRated: ratedPks.contains(plot.id),
+          assessments: assessments,
+          trial: widget.trial,
+          session: widget.session,
+        ));
+      }
+    }
+    return ListView(children: items);
   }
 
   void _showFilterSheet(BuildContext context) {
@@ -214,8 +239,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Filter Plots',
-                style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Show unrated only'),
@@ -287,7 +312,7 @@ class _PlotQueueTile extends ConsumerWidget {
           child: isRated
               ? const Icon(Icons.check, color: Colors.green)
               : Text(
-                  plot.rep?.toString() ?? '-',
+                  plot.plotId.length >= 2 ? plot.plotId.substring(plot.plotId.length - 2) : plot.plotId,
                   style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold),
@@ -300,7 +325,8 @@ class _PlotQueueTile extends ConsumerWidget {
             ? const Icon(Icons.check_circle, color: Colors.green)
             : const Icon(Icons.chevron_right),
         onTap: () {
-          final plots = ref.read(plotsForTrialProvider(trial.id)).value ?? [];
+          final plots =
+              ref.read(plotsForTrialProvider(trial.id)).value ?? [];
           final index = plots.indexWhere((p) => p.id == plot.id);
           Navigator.push(
             context,
