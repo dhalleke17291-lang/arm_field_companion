@@ -437,32 +437,48 @@ class _SessionsTab extends ConsumerWidget {
   }
 
   Widget _buildSessionsList(BuildContext context, WidgetRef ref, List<Session> sessions) {
-    return Stack(
-      children: [
-        ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: sessions.length,
-      itemBuilder: (context, index) {
-        final session = sessions[index];
+    final groups = <String, List<Session>>{};
+    for (final session in sessions) {
+      groups.putIfAbsent(session.sessionDateLocal, () => []).add(session);
+    }
+    final sortedDates = groups.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    final items = <Widget>[];
+    for (final date in sortedDates) {
+      items.add(Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        color: Colors.grey.shade100,
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+            const SizedBox(width: 6),
+            Text(
+              _formatDateHeader(date),
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.grey.shade700),
+            ),
+          ],
+        ),
+      ));
+      for (final session in groups[date]!) {
         final isOpen = session.endedAt == null;
-        return Card(
+        items.add(Card(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           child: ListTile(
             onTap: () {
               if (isOpen) {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => PlotQueueScreen(trial: trial, session: session)));
+                Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => PlotQueueScreen(trial: trial, session: session)));
               } else {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => SessionDetailScreen(trial: trial, session: session)));
+                Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => SessionDetailScreen(trial: trial, session: session)));
               }
             },
             onLongPress: isOpen ? () => _confirmCloseSession(context, ref, session) : null,
-
-
-
-
             leading: CircleAvatar(
-              backgroundColor: isOpen
-                  ? Colors.green.shade100
-                  : Colors.grey.shade100,
+              backgroundColor: isOpen ? Colors.green.shade100 : Colors.grey.shade100,
               child: Icon(
                 isOpen ? Icons.play_circle : Icons.check_circle,
                 color: isOpen ? Colors.green : Colors.grey,
@@ -470,11 +486,10 @@ class _SessionsTab extends ConsumerWidget {
             ),
             title: Text(session.name,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(session.sessionDateLocal),
+            subtitle: Text(_formatSessionTimes(session)),
             trailing: isOpen
                 ? Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(12),
@@ -488,21 +503,58 @@ class _SessionsTab extends ConsumerWidget {
                 : const Text('Closed',
                     style: TextStyle(color: Colors.grey, fontSize: 12)),
           ),
-        );
-      },
-    ),
-    Positioned(
-      bottom: 16,
-      right: 16,
-      child: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => CreateSessionScreen(trial: trial))),
-        icon: const Icon(Icons.add),
-        label: const Text('New Session'),
-      ),
-    ),
-  ],
-);
+        ));
+      }
+    }
+
+    return Stack(
+      children: [
+        ListView(
+          padding: const EdgeInsets.only(bottom: 80),
+          children: items,
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton.extended(
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => CreateSessionScreen(trial: trial))),
+            icon: const Icon(Icons.add),
+            label: const Text('New Session'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatSessionTimes(Session session) {
+    String _fmtTime(DateTime dt) {
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+    final start = _fmtTime(session.startedAt);
+    final rater = session.raterName != null ? ' · ${session.raterName}' : '';
+    if (session.endedAt != null) {
+      final end = _fmtTime(session.endedAt!);
+      return '$start – $end$rater';
+    }
+    return 'Started $start$rater';
+  }
+
+  String _formatDateHeader(String dateStr) {
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length != 3) return dateStr;
+      final months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final day = int.parse(parts[2]);
+      final month = months[int.parse(parts[1])];
+      final year = parts[0];
+      return '$day $month $year';
+    } catch (_) {
+      return dateStr;
+    }
   }
 
   Future<void> _confirmCloseSession(BuildContext context, WidgetRef ref, Session session) async {

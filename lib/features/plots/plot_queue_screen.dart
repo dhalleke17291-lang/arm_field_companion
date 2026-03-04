@@ -161,17 +161,24 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle,
-                          size: 64, color: Colors.green),
+                      Icon(
+                        plots.isEmpty ? Icons.grid_off : Icons.check_circle,
+                        size: 64,
+                        color: plots.isEmpty ? Colors.grey : Colors.green,
+                      ),
                       const SizedBox(height: 16),
-                      const Text('All plots rated!',
-                          style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold)),
+                      Text(
+                        plots.isEmpty ? 'No plots in this trial' : 'All plots rated!',
+                        style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Text(
-                        'You can export and share this session now.',
+                        plots.isEmpty
+                            ? 'Go to the Plots tab to import plots first.'
+                            : 'You can export and share this session now.',
                         style: TextStyle(color: Colors.grey[700]),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
 

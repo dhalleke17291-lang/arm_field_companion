@@ -42,9 +42,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
 
     final count = todaySessions.length + 1;
     if (mounted) {
-      _nameController.text = count == 1
-          ? '$dateStr Session'
-          : '$dateStr Session $count';
+      _nameController.text = '$dateStr Session $count';
     }
   }
 
@@ -236,6 +234,33 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       );
       return;
     }
+    // Warn if no plots
+    final db = ref.read(databaseProvider);
+    final plotCount = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(widget.trial.id)))
+        .get();
+    if (plotCount.isEmpty && mounted) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('No Plots Found'),
+          content: const Text(
+              'This trial has no plots yet. You can still create a session but you won\'t be able to rate anything until plots are imported.\n\nContinue anyway?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
+
 
     if (_selectedAssessmentIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
