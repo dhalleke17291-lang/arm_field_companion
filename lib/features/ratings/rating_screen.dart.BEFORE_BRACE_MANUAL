@@ -452,9 +452,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   setState(() {
                     _selectedStatus = status;
                     if (status != 'RECORDED') _valueController.clear();
-                    if (status != 'MISSING_CONDITION') {
+                    if (status != 'MISSING_CONDITION')
                       _selectedMissingReason = null;
-                    }
                   });
                 },
               );

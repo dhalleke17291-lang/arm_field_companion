@@ -79,7 +79,7 @@ void main() {
 
   group('CreateSessionUseCase — Invariants', () {
     test('SUCCESS: creates session with valid input', () async {
-      final result = await useCase.execute(CreateSessionInput(
+      final result = await useCase.execute(const CreateSessionInput(
         trialId: 1,
         name: 'Morning Rating',
         sessionDateLocal: '2026-03-04',
@@ -92,14 +92,14 @@ void main() {
     });
 
     test('INVARIANT: only one open session per trial', () async {
-      await useCase.execute(CreateSessionInput(
+      await useCase.execute(const CreateSessionInput(
         trialId: 1,
         name: 'Morning Rating',
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
 
-      final result = await useCase.execute(CreateSessionInput(
+      final result = await useCase.execute(const CreateSessionInput(
         trialId: 1,
         name: 'Afternoon Rating',
         sessionDateLocal: '2026-03-04',
@@ -111,7 +111,7 @@ void main() {
     });
 
     test('INVARIANT: empty assessment list rejected', () async {
-      final result = await useCase.execute(CreateSessionInput(
+      final result = await useCase.execute(const CreateSessionInput(
         trialId: 1,
         name: 'Morning Rating',
         sessionDateLocal: '2026-03-04',
@@ -123,7 +123,7 @@ void main() {
     });
 
     test('INVARIANT: empty session name rejected', () async {
-      final result = await useCase.execute(CreateSessionInput(
+      final result = await useCase.execute(const CreateSessionInput(
         trialId: 1,
         name: '',
         sessionDateLocal: '2026-03-04',
@@ -135,14 +135,14 @@ void main() {
     });
 
     test('SUCCESS: two trials can have separate open sessions', () async {
-      final result1 = await useCase.execute(CreateSessionInput(
+      final result1 = await useCase.execute(const CreateSessionInput(
         trialId: 1,
         name: 'Trial 1 Session',
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
 
-      final result2 = await useCase.execute(CreateSessionInput(
+      final result2 = await useCase.execute(const CreateSessionInput(
         trialId: 2,
         name: 'Trial 2 Session',
         sessionDateLocal: '2026-03-04',

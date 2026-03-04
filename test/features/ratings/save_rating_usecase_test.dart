@@ -123,7 +123,7 @@ void main() {
 
   group('SaveRatingUseCase — Core Invariants', () {
     test('INVARIANT: numericValue must be null when status is NOT_OBSERVED', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -137,7 +137,7 @@ void main() {
     });
 
     test('INVARIANT: numericValue must be null when status is NOT_APPLICABLE', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -151,7 +151,7 @@ void main() {
     });
 
     test('INVARIANT: numericValue must be null when status is MISSING_CONDITION', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -164,7 +164,7 @@ void main() {
     });
 
     test('SUCCESS: RECORDED status with numeric value succeeds', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -179,7 +179,7 @@ void main() {
     });
 
     test('SUCCESS: NOT_OBSERVED with null numeric value succeeds', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -193,7 +193,7 @@ void main() {
     });
 
     test('INVARIANT: range check rejects value below minimum', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -209,7 +209,7 @@ void main() {
     });
 
     test('INVARIANT: range check rejects value above maximum', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -225,7 +225,7 @@ void main() {
     });
 
     test('INVARIANT: invalid session ID rejected', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -239,7 +239,7 @@ void main() {
     });
 
     test('DEBOUNCE: second call while processing returns debounced', () async {
-      final future1 = useCase.execute(SaveRatingInput(
+      final future1 = useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -248,7 +248,7 @@ void main() {
         numericValue: 5.0,
       ));
 
-      final future2 = useCase.execute(SaveRatingInput(
+      final future2 = useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,

@@ -6,6 +6,7 @@ import '../sessions/create_session_screen.dart';
 import '../sessions/session_detail_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import '../plots/import_plots_screen.dart';
+import '../plots/plot_detail_screen.dart';
 import '../../core/providers.dart';
 
 class TrialDetailScreen extends ConsumerStatefulWidget {
@@ -187,6 +188,8 @@ class _PlotsTab extends ConsumerWidget {
                     ? Text('Rep ${plot.rep}')
                     : null,
                 trailing: const Icon(Icons.chevron_right, size: 18),
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => PlotDetailScreen(trial: trial, plot: plot))),
               );
             },
           ),

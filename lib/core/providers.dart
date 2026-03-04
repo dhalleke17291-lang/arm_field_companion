@@ -95,11 +95,12 @@ final sessionAssessmentsProvider =
 });
 
 final ratedPlotPksProvider =
-    FutureProvider.family<Set<int>, int>((ref, sessionId) {
-  return ref.watch(ratingRepositoryProvider).getRatedPlotPks(
-        sessionId: sessionId,
-        assessmentId: 0,
-      );
+    StreamProvider.family<Set<int>, int>((ref, sessionId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.ratingRecords)
+        ..where((r) => r.sessionId.equals(sessionId) & r.isCurrent.equals(true)))
+      .watch()
+      .map((ratings) => ratings.map((r) => r.plotPk).toSet());
 });
 
 class CurrentRatingParams {
@@ -192,3 +193,32 @@ final photosForPlotProvider =
       );
 });
 
+
+class PlotRatingParams {
+  final int trialId;
+  final int plotPk;
+
+  const PlotRatingParams({required this.trialId, required this.plotPk});
+
+  @override
+  bool operator ==(Object other) =>
+      other is PlotRatingParams &&
+      other.trialId == trialId &&
+      other.plotPk == plotPk;
+
+  @override
+  int get hashCode => Object.hash(trialId, plotPk);
+}
+
+final plotRatingHistoryProvider =
+    StreamProvider.family<List<RatingRecord>, PlotRatingParams>(
+        (ref, params) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.ratingRecords)
+        ..where((r) =>
+            r.trialId.equals(params.trialId) &
+            r.plotPk.equals(params.plotPk) &
+            r.isCurrent.equals(true))
+        ..orderBy([(r) => drift.OrderingTerm.desc(r.createdAt)]))
+      .watch();
+});

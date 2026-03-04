@@ -139,9 +139,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         source: ImageSource.camera,
         imageQuality: 85,
       );
-      if (shot == null) {
-        return;
-      }
+      if (shot == null) return;
 
       final docsDir = await getApplicationDocumentsDirectory();
       final photosDir = Directory('${docsDir.path}/afc_photos');
@@ -166,9 +164,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         ),
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       if (!res.success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -181,9 +177,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         const SnackBar(content: Text('Photo saved')),
       );
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Photo error: $e')),
       );
@@ -452,9 +446,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   setState(() {
                     _selectedStatus = status;
                     if (status != 'RECORDED') _valueController.clear();
-                    if (status != 'MISSING_CONDITION') {
+                    if (status != 'MISSING_CONDITION')
                       _selectedMissingReason = null;
-                    }
                   });
                 },
               );
@@ -623,9 +616,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       ),
     );
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     setState(() => _isSaving = false);
 
     if (result.isSuccess) {
@@ -654,9 +645,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   void _navigatePlot(BuildContext context, int direction) {
     final nextIndex = widget.currentPlotIndex + direction;
-    if (nextIndex < 0 || nextIndex >= widget.allPlots.length) {
-      return;
-    }
+    if (nextIndex < 0 || nextIndex >= widget.allPlots.length) return;
 
     Navigator.pushReplacement(
       context,
@@ -691,9 +680,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       ),
     );
 
-    if (confirm != true) {
-      return;
-    }
+    if (confirm != true) return;
 
     final repo = ref.read(ratingRepositoryProvider);
     await repo.undoRating(

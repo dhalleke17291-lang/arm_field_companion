@@ -65,7 +65,7 @@ void main() {
 
   group('CreateTrialUseCase — Invariants', () {
     test('SUCCESS: creates trial with valid name', () async {
-      final result = await useCase.execute(CreateTrialInput(
+      final result = await useCase.execute(const CreateTrialInput(
         name: 'Wheat Trial 2026',
         crop: 'Wheat',
         location: 'Field A',
@@ -77,9 +77,9 @@ void main() {
     });
 
     test('INVARIANT: duplicate trial name rejected', () async {
-      await useCase.execute(CreateTrialInput(name: 'Wheat Trial 2026'));
+      await useCase.execute(const CreateTrialInput(name: 'Wheat Trial 2026'));
 
-      final result = await useCase.execute(CreateTrialInput(
+      final result = await useCase.execute(const CreateTrialInput(
         name: 'Wheat Trial 2026',
       ));
 
@@ -88,21 +88,21 @@ void main() {
     });
 
     test('INVARIANT: empty trial name rejected', () async {
-      final result = await useCase.execute(CreateTrialInput(name: ''));
+      final result = await useCase.execute(const CreateTrialInput(name: ''));
 
       expect(result.success, false);
       expect(result.errorMessage, contains('must not be empty'));
     });
 
     test('INVARIANT: whitespace-only name rejected', () async {
-      final result = await useCase.execute(CreateTrialInput(name: '   '));
+      final result = await useCase.execute(const CreateTrialInput(name: '   '));
 
       expect(result.success, false);
       expect(result.errorMessage, contains('must not be empty'));
     });
 
     test('SUCCESS: name is trimmed before saving', () async {
-      final result = await useCase.execute(CreateTrialInput(
+      final result = await useCase.execute(const CreateTrialInput(
         name: '  Canola Trial  ',
       ));
 

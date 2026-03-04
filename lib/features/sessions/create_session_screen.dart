@@ -23,10 +23,29 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   @override
   void initState() {
     super.initState();
-    // Default session name to today's date
+    _setDefaultSessionName();
+  }
+
+  Future<void> _setDefaultSessionName() async {
     final now = DateTime.now();
-    _nameController.text =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} Session';
+    final dateStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    // Count existing sessions today for this trial
+    final db = ref.read(databaseProvider);
+    final allSessions = await (db.select(db.sessions)
+          ..where((s) => s.trialId.equals(widget.trial.id)))
+        .get();
+    final todaySessions = allSessions
+        .where((s) => s.sessionDateLocal == dateStr)
+        .toList();
+
+    final count = todaySessions.length + 1;
+    if (mounted) {
+      _nameController.text = count == 1
+          ? '$dateStr Session'
+          : '$dateStr Session $count';
+    }
   }
 
   @override
