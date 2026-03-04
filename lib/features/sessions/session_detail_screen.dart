@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import '../export/data/export_repository.dart';
+import '../export/domain/export_session_csv_usecase.dart';
 import 'package:share_plus/share_plus.dart';
 
 class SessionDetailScreen extends ConsumerWidget {
@@ -36,6 +38,13 @@ class SessionDetailScreen extends ConsumerWidget {
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'Export to CSV',
+            onPressed: () => _exportCsv(context, ref),
+          ),
+        ],
       ),
       body: plotsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -53,6 +62,75 @@ class SessionDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _exportCsv(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(databaseProvider);
+    final repo = ExportRepository(db);
+    final usecase = ExportSessionCsvUsecase(repo);
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exporting...')),
+      );
+
+      final result = await usecase.exportSessionToCsv(
+        sessionId: session.id,
+        trialName: trial.name,
+        sessionName: session.name,
+        sessionDateLocal: session.sessionDateLocal,
+        sessionRaterName: session.raterName,
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Export Complete'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${result.rowCount} ratings exported'),
+                const SizedBox(height: 8),
+                const Text('Saved to:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                SelectableText(result.filePath,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              FilledButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await Share.shareXFiles(
+                    [XFile(result.filePath)],
+                    subject: '${trial.name} - ${session.name} Export',
+                  );
+                },
+                icon: const Icon(Icons.share),
+                label: const Text('Share'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Export failed: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _buildContent(
