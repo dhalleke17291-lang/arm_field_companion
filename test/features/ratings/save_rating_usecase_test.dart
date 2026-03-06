@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
 
@@ -15,12 +16,14 @@ class MockRatingRepository implements RatingRepository {
     required int sessionId,
     int? subUnitId,
   }) async {
-    return _records.where((r) =>
-        r.trialId == trialId &&
-        r.plotPk == plotPk &&
-        r.assessmentId == assessmentId &&
-        r.sessionId == sessionId &&
-        r.isCurrent).firstOrNull;
+    return _records
+        .where((r) =>
+            r.trialId == trialId &&
+            r.plotPk == plotPk &&
+            r.assessmentId == assessmentId &&
+            r.sessionId == sessionId &&
+            r.isCurrent)
+        .firstOrNull;
   }
 
   @override
@@ -29,7 +32,8 @@ class MockRatingRepository implements RatingRepository {
     required int plotPk,
     required int assessmentId,
     required int sessionId,
-  }) => Stream.value(null);
+  }) =>
+      Stream.value(null);
 
   @override
   Future<RatingRecord> saveRating({
@@ -93,8 +97,11 @@ class MockRatingRepository implements RatingRepository {
   }) async {}
 
   @override
-  Future<List<RatingRecord>> getCurrentRatingsForSession(int sessionId) async {
-    return _records.where((r) => r.sessionId == sessionId && r.isCurrent).toList();
+  Future<List<RatingRecord>> getCurrentRatingsForSession(
+      int sessionId) async {
+    return _records
+        .where((r) => r.sessionId == sessionId && r.isCurrent)
+        .toList();
   }
 
   @override
@@ -103,7 +110,8 @@ class MockRatingRepository implements RatingRepository {
     required int assessmentId,
   }) async {
     return _records
-        .where((r) => r.sessionId == sessionId &&
+        .where((r) =>
+            r.sessionId == sessionId &&
             r.assessmentId == assessmentId &&
             r.isCurrent)
         .map((r) => r.plotPk)
@@ -121,7 +129,8 @@ void main() {
   });
 
   group('SaveRatingUseCase — Core Invariants', () {
-    test('INVARIANT: numericValue must be null when status is NOT_OBSERVED', () async {
+    test('INVARIANT: numericValue must be null when status is NOT_OBSERVED',
+        () async {
       final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
@@ -130,12 +139,12 @@ void main() {
         resultStatus: 'NOT_OBSERVED',
         numericValue: 5.0,
       ));
-
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('numericValue must be null'));
     });
 
-    test('INVARIANT: numericValue must be null when status is NOT_APPLICABLE', () async {
+    test('INVARIANT: numericValue must be null when status is NOT_APPLICABLE',
+        () async {
       final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
@@ -144,12 +153,13 @@ void main() {
         resultStatus: 'NOT_APPLICABLE',
         numericValue: 3.0,
       ));
-
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('numericValue must be null'));
     });
 
-    test('INVARIANT: numericValue must be null when status is MISSING_CONDITION', () async {
+    test(
+        'INVARIANT: numericValue must be null when status is MISSING_CONDITION',
+        () async {
       final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
@@ -158,7 +168,6 @@ void main() {
         resultStatus: 'MISSING_CONDITION',
         numericValue: 1.0,
       ));
-
       expect(result.isFailure, true);
     });
 
@@ -171,7 +180,6 @@ void main() {
         resultStatus: 'RECORDED',
         numericValue: 7.5,
       ));
-
       expect(result.isSuccess, true);
       expect(result.rating?.numericValue, 7.5);
       expect(result.rating?.resultStatus, 'RECORDED');
@@ -186,7 +194,6 @@ void main() {
         resultStatus: 'NOT_OBSERVED',
         numericValue: null,
       ));
-
       expect(result.isSuccess, true);
       expect(result.rating?.numericValue, null);
     });
@@ -202,7 +209,6 @@ void main() {
         minValue: 0.0,
         maxValue: 100.0,
       ));
-
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('below minimum'));
     });
@@ -218,7 +224,6 @@ void main() {
         minValue: 0.0,
         maxValue: 100.0,
       ));
-
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('exceeds maximum'));
     });
@@ -232,7 +237,6 @@ void main() {
         resultStatus: 'RECORDED',
         numericValue: 5.0,
       ));
-
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('Invalid session ID'));
     });
@@ -246,7 +250,6 @@ void main() {
         resultStatus: 'RECORDED',
         numericValue: 5.0,
       ));
-
       final future2 = useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
@@ -255,10 +258,8 @@ void main() {
         resultStatus: 'RECORDED',
         numericValue: 6.0,
       ));
-
       final results = await Future.wait([future1, future2]);
       final statuses = results.map((r) => r.status).toList();
-
       expect(statuses.contains(SaveRatingStatus.success), true);
       expect(statuses.contains(SaveRatingStatus.debounced), true);
     });

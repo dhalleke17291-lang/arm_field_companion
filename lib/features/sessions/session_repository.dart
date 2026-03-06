@@ -6,21 +6,18 @@ class SessionRepository {
 
   SessionRepository(this._db);
 
-  // Only one open session per trial — spec invariant
   Future<Session?> getOpenSession(int trialId) {
     return (_db.select(_db.sessions)
           ..where((s) => s.trialId.equals(trialId) & s.endedAt.isNull()))
         .getSingleOrNull();
   }
 
-  // Watch open session for reactive UI
   Stream<Session?> watchOpenSession(int trialId) {
     return (_db.select(_db.sessions)
           ..where((s) => s.trialId.equals(trialId) & s.endedAt.isNull()))
         .watchSingleOrNull();
   }
 
-  // Get all sessions for a trial
   Future<List<Session>> getSessionsForTrial(int trialId) {
     return (_db.select(_db.sessions)
           ..where((s) => s.trialId.equals(trialId))
@@ -28,7 +25,6 @@ class SessionRepository {
         .get();
   }
 
-  // Create new session — enforces one open session per trial
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -51,7 +47,6 @@ class SessionRepository {
             ),
           );
 
-      // Lock in assessment set — immutable once session begins
       for (final assessmentId in assessmentIds) {
         await _db.into(_db.sessionAssessments).insert(
               SessionAssessmentsCompanion.insert(
@@ -61,7 +56,6 @@ class SessionRepository {
             );
       }
 
-      // Write audit event
       await _db.into(_db.auditEvents).insert(
             AuditEventsCompanion.insert(
               trialId: Value(trialId),
@@ -78,10 +72,12 @@ class SessionRepository {
     });
   }
 
-  // Close a session
   Future<void> closeSession(int sessionId, String? raterName) async {
     await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
-        .write(SessionsCompanion(endedAt: Value(DateTime.now())));
+        .write(SessionsCompanion(
+      endedAt: Value(DateTime.now()),
+      status: const Value('closed'),
+    ));
 
     await _db.into(_db.auditEvents).insert(
           AuditEventsCompanion.insert(
@@ -93,7 +89,6 @@ class SessionRepository {
         );
   }
 
-  // Get assessments locked to a session
   Future<List<Assessment>> getSessionAssessments(int sessionId) async {
     final sessionAssessmentRows = await (_db.select(_db.sessionAssessments)
           ..where((sa) => sa.sessionId.equals(sessionId)))
@@ -107,7 +102,6 @@ class SessionRepository {
         .get();
   }
 
-  // Get session by id
   Future<Session?> getSessionById(int sessionId) {
     return (_db.select(_db.sessions)..where((s) => s.id.equals(sessionId)))
         .getSingleOrNull();

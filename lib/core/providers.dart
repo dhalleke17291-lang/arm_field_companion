@@ -60,8 +60,6 @@ final trialsStreamProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials();
 });
 
-
-
 final plotsForTrialProvider =
     StreamProvider.family<List<Plot>, int>((ref, trialId) {
   return ref.watch(plotRepositoryProvider).watchPlotsForTrial(trialId);
@@ -142,19 +140,21 @@ final currentRatingProvider =
 
 final sessionRatingsProvider =
     FutureProvider.family<List<RatingRecord>, int>((ref, sessionId) {
-  return ref.watch(ratingRepositoryProvider).getCurrentRatingsForSession(sessionId);
-
+  return ref
+      .watch(ratingRepositoryProvider)
+      .getCurrentRatingsForSession(sessionId);
 });
 
 // ===== Export (CSV) =====
+
 final exportRepositoryProvider = Provider<ExportRepository>((ref) {
   return ExportRepository(ref.watch(databaseProvider));
 });
 
-final exportSessionCsvUsecaseProvider = Provider<ExportSessionCsvUsecase>((ref) {
+final exportSessionCsvUsecaseProvider =
+    Provider<ExportSessionCsvUsecase>((ref) {
   return ExportSessionCsvUsecase(ref.watch(exportRepositoryProvider));
 });
-
 
 // ===== Photos =====
 
@@ -193,7 +193,6 @@ final photosForPlotProvider =
       );
 });
 
-
 class PlotRatingParams {
   final int trialId;
   final int plotPk;
@@ -210,6 +209,7 @@ class PlotRatingParams {
   int get hashCode => Object.hash(trialId, plotPk);
 }
 
+// Returns full rating history for a plot — all records ordered newest first.
 final plotRatingHistoryProvider =
     StreamProvider.family<List<RatingRecord>, PlotRatingParams>(
         (ref, params) {
@@ -217,8 +217,7 @@ final plotRatingHistoryProvider =
   return (db.select(db.ratingRecords)
         ..where((r) =>
             r.trialId.equals(params.trialId) &
-            r.plotPk.equals(params.plotPk) &
-            r.isCurrent.equals(true))
+            r.plotPk.equals(params.plotPk))
         ..orderBy([(r) => drift.OrderingTerm.desc(r.createdAt)]))
       .watch();
 });

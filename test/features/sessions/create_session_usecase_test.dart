@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
 
 class MockSessionRepository implements SessionRepository {
@@ -49,7 +49,16 @@ class MockSessionRepository implements SessionRepository {
   Future<void> closeSession(int sessionId, String? raterName) async {
     final idx = _sessions.indexWhere((s) => s.id == sessionId);
     if (idx != -1) {
-      _sessions[idx] = _sessions[idx].copyWith(endedAt: Value(DateTime.now()));
+      _sessions[idx] = Session(
+        id: _sessions[idx].id,
+        trialId: _sessions[idx].trialId,
+        name: _sessions[idx].name,
+        startedAt: _sessions[idx].startedAt,
+        endedAt: DateTime.now(),
+        sessionDateLocal: _sessions[idx].sessionDateLocal,
+        raterName: _sessions[idx].raterName,
+        status: 'closed',
+      );
     }
   }
 
@@ -85,7 +94,6 @@ void main() {
         assessmentIds: [1, 2, 3],
         raterName: 'Parminder',
       ));
-
       expect(result.success, true);
       expect(result.session?.name, 'Morning Rating');
     });
@@ -104,7 +112,6 @@ void main() {
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
-
       expect(result.success, false);
       expect(result.errorMessage, contains('already has an open session'));
     });
@@ -116,7 +123,6 @@ void main() {
         sessionDateLocal: '2026-03-04',
         assessmentIds: [],
       ));
-
       expect(result.success, false);
       expect(result.errorMessage, contains('At least one assessment'));
     });
@@ -128,7 +134,6 @@ void main() {
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
-
       expect(result.success, false);
       expect(result.errorMessage, contains('must not be empty'));
     });
@@ -140,14 +145,12 @@ void main() {
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
-
       final result2 = await useCase.execute(const CreateSessionInput(
         trialId: 2,
         name: 'Trial 2 Session',
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
-
       expect(result1.success, true);
       expect(result2.success, true);
     });

@@ -5,21 +5,11 @@ import '../../../core/database/app_database.dart';
 class SavePhotoUseCase {
   final PhotoRepository _photoRepository;
 
-  // Storage threshold — block photo capture below 200MB per spec
-  static const int minStorageBytesForPhoto = 200 * 1024 * 1024;
-
   SavePhotoUseCase(this._photoRepository);
 
   Future<SavePhotoResult> execute(SavePhotoInput input) async {
     try {
-      // Check available storage per spec section 19
-      final available = await _getAvailableStorage();
-      if (available != null && available < minStorageBytesForPhoto) {
-        return SavePhotoResult.failure(
-            'Insufficient storage. Need at least 200MB free to capture photos.');
-      }
-
-      // Verify temp file exists
+      // Verify temp file exists before attempting pipeline
       final tempFile = File(input.tempPath);
       if (!await tempFile.exists()) {
         return SavePhotoResult.failure('Temp file not found: ${input.tempPath}');
@@ -38,15 +28,6 @@ class SavePhotoUseCase {
       return SavePhotoResult.success(photo);
     } catch (e) {
       return SavePhotoResult.failure('Failed to save photo: $e');
-    }
-  }
-
-  Future<int?> _getAvailableStorage() async {
-    try {
-      await FileStat.stat('/');
-      return null; // Platform-specific implementation needed
-    } catch (_) {
-      return null;
     }
   }
 }

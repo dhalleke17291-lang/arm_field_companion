@@ -166,9 +166,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         ),
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted || !context.mounted) return;
 
       if (!res.success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -181,9 +179,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         const SnackBar(content: Text('Photo saved')),
       );
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted || !context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Photo error: $e')),
       );
@@ -253,7 +249,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 3),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.55),
+                                color: Colors.black.withValues(alpha: 0.55),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
@@ -272,7 +268,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 6, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.55),
+                                  color: Colors.black.withValues(alpha: 0.55),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -638,11 +634,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           _selectedMissingReason = null;
         });
       } else {
+        if (!context.mounted) return;
         _navigatePlot(context, 1);
       }
     } else if (result.isDebounced) {
       // silent
     } else {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.errorMessage ?? 'Save failed'),

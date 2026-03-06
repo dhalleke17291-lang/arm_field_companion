@@ -199,8 +199,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                                 sessionRaterName: widget.session.raterName,
                               );
 
-                              if (!mounted) return;
-
+                              if (!mounted || !context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -216,7 +215,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                                     'Ag-Quest Field Companion export: ${widget.trial.name} / ${widget.session.name}',
                               );
                             } catch (e) {
-                              if (!mounted) return;
+                              if (!mounted || !context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Export failed: $e'),

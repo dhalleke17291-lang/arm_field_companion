@@ -5,18 +5,18 @@ import 'splash_screen.dart';
 void main() {
   runApp(
     const ProviderScope(
-      child: AgQuestApp(),
+      child: ArmFieldCompanionApp(),
     ),
   );
 }
 
-class AgQuestApp extends StatelessWidget {
-  const AgQuestApp({super.key});
+class ArmFieldCompanionApp extends StatelessWidget {
+  const ArmFieldCompanionApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Ag-Quest Field Companion',
+      title: 'ARM Field Companion',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       home: const SplashScreen(),
@@ -24,51 +24,46 @@ class AgQuestApp extends StatelessWidget {
   }
 
   ThemeData _buildTheme() {
-    // Sophisticated sage green palette
     const primaryGreen = Color(0xFF2D5A40);
     const surfaceWarm = Color(0xFFF8F6F2);
     const surfaceCard = Color(0xFFFFFFFF);
     const onSurfaceWarm = Color(0xFF1C1C1E);
     const subtleGrey = Color(0xFF8A8A8E);
 
-    final colorScheme = ColorScheme(
+    const colorScheme = ColorScheme(
       brightness: Brightness.light,
       primary: primaryGreen,
       onPrimary: Colors.white,
-      primaryContainer: const Color(0xFFD4E8DC),
+      primaryContainer: Color(0xFFD4E8DC),
       onPrimaryContainer: primaryGreen,
-      secondary: const Color(0xFF5C8A6A),
+      secondary: Color(0xFF5C8A6A),
       onSecondary: Colors.white,
-      secondaryContainer: const Color(0xFFE0EDE5),
+      secondaryContainer: Color(0xFFE0EDE5),
       onSecondaryContainer: primaryGreen,
-      tertiary: const Color(0xFF8A7A5C),
+      tertiary: Color(0xFF8A7A5C),
       onTertiary: Colors.white,
-      tertiaryContainer: const Color(0xFFEDE8DC),
-      onTertiaryContainer: const Color(0xFF3C3020),
-      error: const Color(0xFFB3261E),
+      tertiaryContainer: Color(0xFFEDE8DC),
+      onTertiaryContainer: Color(0xFF3C3020),
+      error: Color(0xFFB3261E),
       onError: Colors.white,
-      errorContainer: const Color(0xFFF9DEDC),
-      onErrorContainer: const Color(0xFF410E0B),
+      errorContainer: Color(0xFFF9DEDC),
+      onErrorContainer: Color(0xFF410E0B),
       surface: surfaceWarm,
       onSurface: onSurfaceWarm,
-      surfaceContainerHighest: const Color(0xFFEEEBE6),
-      outline: const Color(0xFFCCC8C0),
-      outlineVariant: const Color(0xFFE5E2DC),
+      surfaceContainerHighest: Color(0xFFEEEBE6),
+      outline: Color(0xFFCCC8C0),
+      outlineVariant: Color(0xFFE5E2DC),
       shadow: Colors.black,
       scrim: Colors.black,
-      inverseSurface: const Color(0xFF313131),
-      onInverseSurface: const Color(0xFFF4F0EB),
-      inversePrimary: const Color(0xFF90C9A5),
+      inverseSurface: Color(0xFF313131),
+      onInverseSurface: Color(0xFFF4F0EB),
+      inversePrimary: Color(0xFF90C9A5),
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-
-      // Scaffold background — warm off-white
       scaffoldBackgroundColor: surfaceWarm,
-
-      // AppBar
       appBarTheme: const AppBarTheme(
         backgroundColor: primaryGreen,
         foregroundColor: Colors.white,
@@ -81,8 +76,6 @@ class AgQuestApp extends StatelessWidget {
           letterSpacing: 0.2,
         ),
       ),
-
-      // Cards
       cardTheme: CardThemeData(
         color: surfaceCard,
         elevation: 0,
@@ -92,8 +85,6 @@ class AgQuestApp extends StatelessWidget {
         ),
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
-
-      // Chips
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFFEEEBE6),
         selectedColor: const Color(0xFFD4E8DC),
@@ -107,8 +98,6 @@ class AgQuestApp extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
-
-      // Input fields
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceCard,
@@ -125,12 +114,10 @@ class AgQuestApp extends StatelessWidget {
           borderSide: const BorderSide(color: primaryGreen, width: 2),
         ),
         labelStyle: const TextStyle(color: subtleGrey),
-        hintStyle: TextStyle(color: subtleGrey.withOpacity(0.7)),
+        hintStyle: TextStyle(color: subtleGrey.withValues(alpha: 0.7)),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
-
-      // Elevated buttons
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryGreen,
@@ -147,8 +134,6 @@ class AgQuestApp extends StatelessWidget {
           ),
         ),
       ),
-
-      // Filled buttons
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: primaryGreen,
@@ -165,16 +150,12 @@ class AgQuestApp extends StatelessWidget {
           ),
         ),
       ),
-
-      // FAB
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: primaryGreen,
         foregroundColor: Colors.white,
         elevation: 2,
         shape: StadiumBorder(),
       ),
-
-      // List tiles
       listTileTheme: const ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         titleTextStyle: TextStyle(
@@ -188,8 +169,6 @@ class AgQuestApp extends StatelessWidget {
           color: subtleGrey,
         ),
       ),
-
-      // Tab bar
       tabBarTheme: const TabBarThemeData(
         labelColor: Colors.white,
         unselectedLabelColor: Colors.white70,
@@ -204,15 +183,11 @@ class AgQuestApp extends StatelessWidget {
           fontSize: 15,
         ),
       ),
-
-      // Divider
       dividerTheme: const DividerThemeData(
         color: Color(0xFFE8E4DE),
         thickness: 1,
         space: 1,
       ),
-
-      // Text theme
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
           fontSize: 40,

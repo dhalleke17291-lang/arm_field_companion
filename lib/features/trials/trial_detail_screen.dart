@@ -546,16 +546,16 @@ class _SessionsTab extends ConsumerWidget {
   }
 
   String _formatSessionTimes(Session session) {
-    String _fmtTime(DateTime dt) {
+    String fmtTime(DateTime dt) {
       final h = dt.hour.toString().padLeft(2, '0');
       final m = dt.minute.toString().padLeft(2, '0');
       return '$h:$m';
     }
 
-    final start = _fmtTime(session.startedAt);
+    final start = fmtTime(session.startedAt);
     final rater = session.raterName != null ? ' · ${session.raterName}' : '';
     if (session.endedAt != null) {
-      final end = _fmtTime(session.endedAt!);
+      final end = fmtTime(session.endedAt!);
       return '$start – $end$rater';
     }
     return 'Started $start$rater';

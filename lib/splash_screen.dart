@@ -161,7 +161,7 @@ class _SplashScreenState extends State<SplashScreen>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        const Color(0xFF3D7A55).withOpacity(0.35),
+                        const Color(0xFF3D7A55).withValues(alpha: 0.35),
                         Colors.transparent,
                       ],
                     ),
@@ -180,7 +180,7 @@ class _SplashScreenState extends State<SplashScreen>
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFCDA82A).withOpacity(0.15),
+                      const Color(0xFFCDA82A).withValues(alpha: 0.15),
                       Colors.transparent,
                     ],
                   ),
@@ -211,15 +211,15 @@ class _SplashScreenState extends State<SplashScreen>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: const Color(0xFFCDA82A).withOpacity(0.6),
+                              color: const Color(0xFFCDA82A).withValues(alpha: 0.6),
                               width: 1.5,
                             ),
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Colors.white.withOpacity(0.12),
-                                Colors.white.withOpacity(0.04),
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.white.withValues(alpha: 0.04),
                               ],
                             ),
                           ),
@@ -266,7 +266,7 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Text(
                         'F I E L D   C O M P A N I O N',
                         style: TextStyle(
-                          color: const Color(0xFFCDA82A).withOpacity(0.9),
+                          color: const Color(0xFFCDA82A).withValues(alpha: 0.9),
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                           letterSpacing: 4.0,
@@ -310,7 +310,7 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Text(
                         'By Parminder Singh',
                         style: GoogleFonts.playfairDisplay(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 15,
                           fontStyle: FontStyle.italic,
                           letterSpacing: 0.5,
@@ -355,7 +355,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.025)
+      ..color = Colors.white.withValues(alpha: 0.025)
       ..strokeWidth = 0.5;
 
     const spacing = 36.0;

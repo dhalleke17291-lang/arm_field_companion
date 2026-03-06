@@ -7,7 +7,6 @@ class PhotoRepository {
 
   PhotoRepository(this._db);
 
-  // Safe photo insert — DB record first, then file rename
   Future<Photo> savePhoto({
     required int trialId,
     required int plotPk,
@@ -61,7 +60,6 @@ class PhotoRepository {
     });
   }
 
-  // Get photos for a plot
   Future<List<Photo>> getPhotosForPlot({
     required int trialId,
     required int plotPk,
@@ -71,11 +69,11 @@ class PhotoRepository {
           ..where((p) =>
               p.trialId.equals(trialId) &
               p.plotPk.equals(plotPk) &
-              p.sessionId.equals(sessionId)))
+              p.sessionId.equals(sessionId))
+          ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
         .get();
   }
 
-  // Startup cleanup — remove orphan temp files
   Future<void> cleanupOrphanTempFiles() async {
     final pendingPhotos = await (_db.select(_db.photos)
           ..where((p) => p.status.equals('pending')))
@@ -93,7 +91,6 @@ class PhotoRepository {
     }
   }
 
-  // Watch photos for a plot reactively
   Stream<List<Photo>> watchPhotosForPlot({
     required int trialId,
     required int plotPk,
@@ -103,7 +100,8 @@ class PhotoRepository {
           ..where((p) =>
               p.trialId.equals(trialId) &
               p.plotPk.equals(plotPk) &
-              p.sessionId.equals(sessionId)))
+              p.sessionId.equals(sessionId))
+          ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
         .watch();
   }
 }

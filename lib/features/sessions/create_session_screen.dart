@@ -235,29 +235,35 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     final plotCount = await (db.select(db.plots)
           ..where((p) => p.trialId.equals(widget.trial.id)))
         .get();
-    if (plotCount.isEmpty && mounted) {
+    if (!mounted || !context.mounted) return;
+
+    if (plotCount.isEmpty) {
       final proceed = await showDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           title: const Text('No Plots Found'),
           content: const Text(
-              'This trial has no plots yet. You can still create a session but you won\'t be able to rate anything until plots are imported.\n\nContinue anyway?'),
+            'This trial has no plots yet. You can still create a session but you won\'t be able to rate anything until plots are imported.\n\nContinue anyway?',
+          ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.pop(dialogContext, true),
               child: const Text('Continue'),
             ),
           ],
         ),
       );
+
+      if (!mounted || !context.mounted) return;
       if (proceed != true) return;
     }
 
     if (_selectedAssessmentIds.isEmpty) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Please select at least one assessment'),
@@ -282,12 +288,13 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
           _raterController.text.isEmpty ? null : _raterController.text.trim(),
     ));
 
-    if (!mounted) return;
+    if (!mounted || !context.mounted) return;
     setState(() => _isCreating = false);
 
     if (result.success) {
       Navigator.pop(context, result.session);
     } else {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(result.errorMessage ?? 'Failed to start session'),
