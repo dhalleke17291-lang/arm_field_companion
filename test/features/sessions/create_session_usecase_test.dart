@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
-import 'package:arm_field_companion/core/database/app_database.dart';
 
 class MockSessionRepository implements SessionRepository {
   final List<Session> _sessions = [];

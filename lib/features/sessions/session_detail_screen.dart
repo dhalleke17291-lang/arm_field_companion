@@ -20,8 +20,7 @@ class SessionDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
-    final assessmentsAsync =
-        ref.watch(sessionAssessmentsProvider(session.id));
+    final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
 
     return Scaffold(
       appBar: AppBar(
@@ -29,11 +28,10 @@ class SessionDetailScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(session.name,
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold)),
-            Text(session.sessionDateLocal,
                 style:
-                    const TextStyle(fontSize: 12, color: Colors.white70)),
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            Text(session.sessionDateLocal,
+                style: const TextStyle(fontSize: 12, color: Colors.white70)),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -53,11 +51,10 @@ class SessionDetailScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, st) => Center(child: Text('Error: $e')),
           data: (ratings) => assessmentsAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, st) => Center(child: Text('Error: $e')),
-            data: (assessments) => _buildContent(
-                context, plots, ratings, assessments),
+            data: (assessments) =>
+                _buildContent(context, plots, ratings, assessments),
           ),
         ),
       ),
@@ -126,8 +123,7 @@ class SessionDetailScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Export failed: $e'),
-              backgroundColor: Colors.red),
+              content: Text('Export failed: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -159,55 +155,55 @@ class SessionDetailScreen extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.primary),
               ),
-        // Export CSV (closed session)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-          child: Consumer(builder: (context, ref, _) {
-            return ElevatedButton.icon(
-              onPressed: () async {
-                try {
-                  final usecase = ref.read(exportSessionCsvUsecaseProvider);
-                  final result = await usecase.exportSessionToCsv(
-                    sessionId: session.id,
-                    trialName: trial.name,
-                    sessionName: session.name,
-                    sessionDateLocal: session.sessionDateLocal,
-                    sessionRaterName: session.raterName,
-                  );
+              // Export CSV (closed session)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+                child: Consumer(builder: (context, ref, _) {
+                  return ElevatedButton.icon(
+                    onPressed: () async {
+                      try {
+                        final usecase =
+                            ref.read(exportSessionCsvUsecaseProvider);
+                        final result = await usecase.exportSessionToCsv(
+                          sessionId: session.id,
+                          trialName: trial.name,
+                          sessionName: session.name,
+                          sessionDateLocal: session.sessionDateLocal,
+                          sessionRaterName: session.raterName,
+                        );
 
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Exported ${result.rowCount} rows to: ${result.filePath}',
-                        ),
-                      ),
-                    );
-                  // Share the exported CSV (AirDrop/Email/Files/Drive)
-                  await Share.shareXFiles(
-                    [XFile(result.filePath)],
-                    text: 'ARM Field Companion export: ${trial.name} / ${session.name}',
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Exported ${result.rowCount} rows to: ${result.filePath}',
+                              ),
+                            ),
+                          );
+                          // Share the exported CSV (AirDrop/Email/Files/Drive)
+                          await Share.shareXFiles(
+                            [XFile(result.filePath)],
+                            text:
+                                'Ag-Quest Field Companion export: ${trial.name} / ${session.name}',
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Export failed: $e')),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.download),
+                    label: const Text('Export CSV'),
                   );
-
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Export failed: $e')),
-                    );
-                  }
-                }
-              },
-              icon: const Icon(Icons.download),
-              label: const Text('Export CSV'),
-            );
-          }),
-        ),
+                }),
+              ),
 
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.grey,
                   borderRadius: BorderRadius.circular(12),
@@ -228,8 +224,7 @@ class SessionDetailScreen extends ConsumerWidget {
             height: 44,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               itemCount: assessments.length,
               itemBuilder: (context, index) => Padding(
                 padding: const EdgeInsets.only(right: 6),
@@ -252,24 +247,19 @@ class SessionDetailScreen extends ConsumerWidget {
               final isRated = plotRatings.isNotEmpty;
 
               return Card(
-                margin: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 child: ExpansionTile(
                   leading: CircleAvatar(
-                    backgroundColor: isRated
-                        ? Colors.green.shade100
-                        : Colors.grey.shade100,
+                    backgroundColor:
+                        isRated ? Colors.green.shade100 : Colors.grey.shade100,
                     child: isRated
                         ? const Icon(Icons.check, color: Colors.green)
                         : const Icon(Icons.radio_button_unchecked,
                             color: Colors.grey),
                   ),
                   title: Text('Plot ${plot.plotId}',
-                      style:
-                          const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: plot.rep != null
-                      ? Text('Rep ${plot.rep}')
-                      : null,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: plot.rep != null ? Text('Rep ${plot.rep}') : null,
                   children: plotRatings.isEmpty
                       ? [
                           const ListTile(
@@ -283,8 +273,7 @@ class SessionDetailScreen extends ConsumerWidget {
                               .firstOrNull;
                           return ListTile(
                             dense: true,
-                            title: Text(
-                                assessment?.name ?? 'Assessment'),
+                            title: Text(assessment?.name ?? 'Assessment'),
                             trailing: Text(
                               rating.resultStatus == 'RECORDED'
                                   ? '${rating.numericValue ?? "-"} ${assessment?.unit ?? ""}'

@@ -42,7 +42,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.trial.name,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             if (widget.trial.crop != null)
               Text(widget.trial.crop!,
                   style: const TextStyle(fontSize: 12, color: Colors.white70)),
@@ -100,8 +101,8 @@ class _PlotsTab extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.grid_on, size: 64,
-              color: Theme.of(context).colorScheme.primary),
+          Icon(Icons.grid_on,
+              size: 64, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
           const Text('No plots yet',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -110,8 +111,10 @@ class _PlotsTab extends ConsumerWidget {
               style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => ImportPlotsScreen(trial: trial))),
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => ImportPlotsScreen(trial: trial))),
             icon: const Icon(Icons.upload_file),
             label: const Text('Import Plots from CSV'),
           ),
@@ -130,19 +133,17 @@ class _PlotsTab extends ConsumerWidget {
     final db = ref.read(databaseProvider);
     for (int i = 1; i <= 10; i++) {
       await db.into(db.plots).insert(
-        PlotsCompanion.insert(
-          trialId: trial.id,
-          plotId: i.toString().padLeft(3, '0'),
-          plotSortIndex: drift.Value(i),
-          rep: drift.Value((i / 3).ceil()),
-        ),
-      );
+            PlotsCompanion.insert(
+              trialId: trial.id,
+              plotId: i.toString().padLeft(3, '0'),
+              plotSortIndex: drift.Value(i),
+              rep: drift.Value((i / 3).ceil()),
+            ),
+          );
     }
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('10 test plots added'),
-            backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('10 test plots added'), backgroundColor: Colors.green));
     }
   }
 
@@ -154,8 +155,7 @@ class _PlotsTab extends ConsumerWidget {
           color: Theme.of(context).colorScheme.primaryContainer,
           child: Row(
             children: [
-              Icon(Icons.grid_on,
-                  color: Theme.of(context).colorScheme.primary),
+              Icon(Icons.grid_on, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               Text('${plots.length} plots',
                   style: TextStyle(
@@ -171,7 +171,7 @@ class _PlotsTab extends ConsumerWidget {
               final plot = plots[index];
               return ListTile(
                 dense: true,
-            leading: CircleAvatar(
+                leading: CircleAvatar(
                   radius: 18,
                   backgroundColor:
                       Theme.of(context).colorScheme.primaryContainer,
@@ -184,12 +184,13 @@ class _PlotsTab extends ConsumerWidget {
                 ),
                 title: Text('Plot ${plot.plotId}',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: plot.rep != null
-                    ? Text('Rep ${plot.rep}')
-                    : null,
+                subtitle: plot.rep != null ? Text('Rep ${plot.rep}') : null,
                 trailing: const Icon(Icons.chevron_right, size: 18),
-                onTap: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => PlotDetailScreen(trial: trial, plot: plot))),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            PlotDetailScreen(trial: trial, plot: plot))),
               );
             },
           ),
@@ -206,8 +207,7 @@ class _AssessmentsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assessmentsAsync =
-        ref.watch(assessmentsForTrialProvider(trial.id));
+    final assessmentsAsync = ref.watch(assessmentsForTrialProvider(trial.id));
 
     return assessmentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -223,8 +223,8 @@ class _AssessmentsTab extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.assessment, size: 64,
-              color: Theme.of(context).colorScheme.primary),
+          Icon(Icons.assessment,
+              size: 64, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
           const Text('No assessments yet',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -273,12 +273,11 @@ class _AssessmentsTab extends ConsumerWidget {
             itemBuilder: (context, index) {
               final assessment = assessments[index];
               return ListTile(
-            leading: CircleAvatar(
+                leading: CircleAvatar(
                   backgroundColor:
                       Theme.of(context).colorScheme.primaryContainer,
                   child: Icon(Icons.analytics,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20),
+                      color: Theme.of(context).colorScheme.primary, size: 20),
                 ),
                 title: Text(assessment.name,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -374,8 +373,10 @@ class _AssessmentsTab extends ConsumerWidget {
                       unit: drift.Value(unitController.text.isEmpty
                           ? null
                           : unitController.text),
-                      minValue: drift.Value(double.tryParse(minController.text)),
-                      maxValue: drift.Value(double.tryParse(maxController.text)),
+                      minValue:
+                          drift.Value(double.tryParse(minController.text)),
+                      maxValue:
+                          drift.Value(double.tryParse(maxController.text)),
                     ),
                   );
 
@@ -416,8 +417,8 @@ class _SessionsTab extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.folder_open, size: 64,
-              color: Theme.of(context).colorScheme.primary),
+          Icon(Icons.folder_open,
+              size: 64, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
           const Text('No sessions yet',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -426,8 +427,10 @@ class _SessionsTab extends ConsumerWidget {
               style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => CreateSessionScreen(trial: trial))),
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => CreateSessionScreen(trial: trial))),
             icon: const Icon(Icons.play_arrow),
             label: const Text('Start Session'),
           ),
@@ -436,7 +439,8 @@ class _SessionsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildSessionsList(BuildContext context, WidgetRef ref, List<Session> sessions) {
+  Widget _buildSessionsList(
+      BuildContext context, WidgetRef ref, List<Session> sessions) {
     final groups = <String, List<Session>>{};
     for (final session in sessions) {
       groups.putIfAbsent(session.sessionDateLocal, () => []).add(session);
@@ -469,27 +473,39 @@ class _SessionsTab extends ConsumerWidget {
           child: ListTile(
             onTap: () {
               if (isOpen) {
-                Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => PlotQueueScreen(trial: trial, session: session)));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            PlotQueueScreen(trial: trial, session: session)));
               } else {
-                Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => SessionDetailScreen(trial: trial, session: session)));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => SessionDetailScreen(
+                            trial: trial, session: session)));
               }
             },
-            onLongPress: isOpen ? () => _confirmCloseSession(context, ref, session) : null,
+            onLongPress: isOpen
+                ? () => _confirmCloseSession(context, ref, session)
+                : null,
             leading: CircleAvatar(
-              backgroundColor: isOpen ? Colors.green.shade100 : Colors.grey.shade100,
+              backgroundColor:
+                  isOpen ? Colors.green.shade100 : Colors.grey.shade100,
               child: Icon(
                 isOpen ? Icons.play_circle : Icons.check_circle,
                 color: isOpen ? Colors.green : Colors.grey,
               ),
             ),
-            title: Text(session.name,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            title: Text(
+                _shortSessionName(session.name, session.sessionDateLocal),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
             subtitle: Text(_formatSessionTimes(session)),
             trailing: isOpen
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(12),
@@ -517,8 +533,10 @@ class _SessionsTab extends ConsumerWidget {
           bottom: 16,
           right: 16,
           child: FloatingActionButton.extended(
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => CreateSessionScreen(trial: trial))),
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => CreateSessionScreen(trial: trial))),
             icon: const Icon(Icons.add),
             label: const Text('New Session'),
           ),
@@ -533,6 +551,7 @@ class _SessionsTab extends ConsumerWidget {
       final m = dt.minute.toString().padLeft(2, '0');
       return '$h:$m';
     }
+
     final start = _fmtTime(session.startedAt);
     final rater = session.raterName != null ? ' · ${session.raterName}' : '';
     if (session.endedAt != null) {
@@ -542,12 +561,33 @@ class _SessionsTab extends ConsumerWidget {
     return 'Started $start$rater';
   }
 
+  String _shortSessionName(String name, String dateLocal) {
+    // Remove leading date prefix e.g. "2026-03-04 " from session name
+    if (name.startsWith(dateLocal)) {
+      return name.substring(dateLocal.length).trim();
+    }
+    return name;
+  }
+
   String _formatDateHeader(String dateStr) {
     try {
       final parts = dateStr.split('-');
       if (parts.length != 3) return dateStr;
-      final months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
       final day = int.parse(parts[2]);
       final month = months[int.parse(parts[1])];
       final year = parts[0];
@@ -557,19 +597,21 @@ class _SessionsTab extends ConsumerWidget {
     }
   }
 
-  Future<void> _confirmCloseSession(BuildContext context, WidgetRef ref, Session session) async {
+  Future<void> _confirmCloseSession(
+      BuildContext context, WidgetRef ref, Session session) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Close Session"),
-        content: Text("Close session \"${session.name}\"? You can still view ratings but cannot add new ones."),
+        content: Text(
+            "Close session \"${session.name}\"? You can still view ratings but cannot add new ones."),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel")),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel")),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Close Session")),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Close Session")),
         ],
       ),
     );
@@ -582,7 +624,8 @@ class _SessionsTab extends ConsumerWidget {
     );
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result.success ? "Session closed" : result.errorMessage ?? "Error"),
+        content: Text(
+            result.success ? "Session closed" : result.errorMessage ?? "Error"),
         backgroundColor: result.success ? Colors.green : Colors.red,
       ));
     }

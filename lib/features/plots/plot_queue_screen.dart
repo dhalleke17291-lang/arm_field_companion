@@ -28,8 +28,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final plotsAsync = ref.watch(plotsForTrialProvider(widget.trial.id));
     final sessionAssessmentsAsync =
         ref.watch(sessionAssessmentsProvider(widget.session.id));
-    final ratedPlotsAsync =
-        ref.watch(ratedPlotPksProvider(widget.session.id));
+    final ratedPlotsAsync = ref.watch(ratedPlotPksProvider(widget.session.id));
 
     return Scaffold(
       appBar: AppBar(
@@ -37,8 +36,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.trial.name,
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             Text(widget.session.name,
                 style: const TextStyle(fontSize: 12, color: Colors.white70)),
           ],
@@ -114,8 +113,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text('Unrated only',
-                          style:
-                              TextStyle(color: Colors.white, fontSize: 11)),
+                          style: TextStyle(color: Colors.white, fontSize: 11)),
                     ),
                 ],
               ),
@@ -137,8 +135,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             height: 44,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               itemCount: assessments.length,
               itemBuilder: (context, index) {
                 return Padding(
@@ -168,10 +165,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        plots.isEmpty ? 'No plots in this trial' : 'All plots rated!',
-                        style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold)),
+                          plots.isEmpty
+                              ? 'No plots in this trial'
+                              : 'All plots rated!',
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Text(
                         plots.isEmpty
@@ -190,12 +188,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                           label: const Text('Export & Share CSV'),
                           onPressed: () async {
                             try {
-                              final usecase = ref.read(exportSessionCsvUsecaseProvider);
+                              final usecase =
+                                  ref.read(exportSessionCsvUsecaseProvider);
                               final result = await usecase.exportSessionToCsv(
                                 sessionId: widget.session.id,
                                 trialName: widget.trial.name,
                                 sessionName: widget.session.name,
-                                sessionDateLocal: widget.session.sessionDateLocal,
+                                sessionDateLocal:
+                                    widget.session.sessionDateLocal,
                                 sessionRaterName: widget.session.raterName,
                               );
 
@@ -212,7 +212,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                               // Share the file (AirDrop/Email/Files/Drive)
                               await Share.shareXFiles(
                                 [XFile(result.filePath)],
-                                text: 'ARM Field Companion export: ${widget.trial.name} / ${widget.session.name}',
+                                text:
+                                    'Ag-Quest Field Companion export: ${widget.trial.name} / ${widget.session.name}',
                               );
                             } catch (e) {
                               if (!mounted) return;
@@ -242,7 +243,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                       const SizedBox(height: 8),
 
                       TextButton(
-                        onPressed: () => setState(() => _showUnratedOnly = false),
+                        onPressed: () =>
+                            setState(() => _showUnratedOnly = false),
                         child: const Text('Show all plots'),
                       ),
                     ],
@@ -270,13 +272,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final items = <Widget>[];
     for (final rep in sortedReps) {
       items.add(Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         color: Colors.grey.shade200,
         child: Text(
           rep != null ? 'Rep $rep' : 'No Rep',
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 13),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         ),
       ));
       for (final plot in groups[rep]!) {
@@ -295,11 +295,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   void _showFilterSheet(BuildContext context) {
     final plotsAsync = ref.read(plotsForTrialProvider(widget.trial.id));
     final plots = plotsAsync.value ?? [];
-    final reps = plots
-        .map((p) => p.rep)
-        .whereType<int>()
-        .toSet()
-        .toList()
+    final reps = plots.map((p) => p.rep).whereType<int>().toSet().toList()
       ..sort();
 
     showModalBottomSheet(
@@ -311,8 +307,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Filter Plots',
-                style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Show unrated only'),
@@ -375,8 +370,7 @@ class _PlotQueueTile extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           backgroundColor: isRated
               ? Colors.green.shade100
@@ -384,7 +378,9 @@ class _PlotQueueTile extends ConsumerWidget {
           child: isRated
               ? const Icon(Icons.check, color: Colors.green)
               : Text(
-                  plot.plotId.length >= 2 ? plot.plotId.substring(plot.plotId.length - 2) : plot.plotId,
+                  plot.plotId.length >= 2
+                      ? plot.plotId.substring(plot.plotId.length - 2)
+                      : plot.plotId,
                   style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold),
@@ -397,8 +393,7 @@ class _PlotQueueTile extends ConsumerWidget {
             ? const Icon(Icons.check_circle, color: Colors.green)
             : const Icon(Icons.chevron_right),
         onTap: () {
-          final plots =
-              ref.read(plotsForTrialProvider(trial.id)).value ?? [];
+          final plots = ref.read(plotsForTrialProvider(trial.id)).value ?? [];
           final index = plots.indexWhere((p) => p.id == plot.id);
           Navigator.push(
             context,

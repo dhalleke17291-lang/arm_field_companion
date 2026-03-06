@@ -42,7 +42,8 @@ class Plots extends Table {
   TextColumn get plotId => text().withLength(min: 1, max: 50)();
   IntColumn get plotSortIndex => integer().nullable()();
   IntColumn get rep => integer().nullable()();
-  IntColumn get treatmentId => integer().references(Treatments, #id).nullable()();
+  IntColumn get treatmentId =>
+      integer().references(Treatments, #id).nullable()();
   TextColumn get row => text().nullable()();
   TextColumn get column => text().nullable()();
   TextColumn get notes => text().nullable()();
@@ -72,7 +73,8 @@ class RatingRecords extends Table {
   IntColumn get assessmentId => integer().references(Assessments, #id)();
   IntColumn get sessionId => integer().references(Sessions, #id)();
   IntColumn get subUnitId => integer().nullable()();
-  TextColumn get resultStatus => text().withDefault(const Constant('RECORDED'))();
+  TextColumn get resultStatus =>
+      text().withDefault(const Constant('RECORDED'))();
   RealColumn get numericValue => real().nullable()();
   TextColumn get textValue => text().nullable()();
   BoolColumn get isCurrent => boolean().withDefault(const Constant(true))();
@@ -119,7 +121,8 @@ class DeviationFlags extends Table {
   IntColumn get trialId => integer().references(Trials, #id)();
   IntColumn get plotPk => integer().references(Plots, #id).nullable()();
   IntColumn get sessionId => integer().references(Sessions, #id)();
-  IntColumn get ratingRecordId => integer().references(RatingRecords, #id).nullable()();
+  IntColumn get ratingRecordId =>
+      integer().references(RatingRecords, #id).nullable()();
   TextColumn get deviationType => text()();
   TextColumn get description => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -172,11 +175,11 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (Migrator m) async {
-      await m.createAll();
-      await _createIndexes();
-    },
-  );
+        onCreate: (Migrator m) async {
+          await m.createAll();
+          await _createIndexes();
+        },
+      );
 
   Future<void> _createIndexes() async {
     await customStatement('''

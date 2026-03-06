@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../core/database/app_database.dart';
+import '../../core/crop_icons.dart';
 import 'usecases/create_trial_usecase.dart';
 import 'trial_detail_screen.dart';
 
@@ -14,7 +15,7 @@ class TrialListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ARM Field Companion'),
+        title: const Text('Ag-Quest Field Companion'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
@@ -38,8 +39,8 @@ class TrialListScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.energy_savings_leaf, size: 80,
-              color: Theme.of(context).colorScheme.primary),
+          Icon(Icons.energy_savings_leaf,
+              size: 80, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
           const Text('No trials yet',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
@@ -123,9 +124,7 @@ class TrialListScreen extends ConsumerWidget {
               final useCase = ref.read(createTrialUseCaseProvider);
               final result = await useCase.execute(CreateTrialInput(
                 name: nameController.text,
-                crop: cropController.text.isEmpty
-                    ? null
-                    : cropController.text,
+                crop: cropController.text.isEmpty ? null : cropController.text,
                 location: locationController.text.isEmpty
                     ? null
                     : locationController.text,
@@ -139,8 +138,7 @@ class TrialListScreen extends ConsumerWidget {
                 if (result.success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                          'Trial "${result.trial?.name}" created'),
+                      content: Text('Trial "${result.trial?.name}" created'),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -172,13 +170,14 @@ class _TrialCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          child: Icon(Icons.energy_savings_leaf,
-              color: Theme.of(context).colorScheme.primary),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Builder(builder: (context) {
+          final style = cropStyleFor(trial.crop);
+          return CircleAvatar(
+            backgroundColor: style.lightColor,
+            child: Icon(style.icon, color: style.color),
+          );
+        }),
         title: Text(
           trial.name,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -193,7 +192,10 @@ class _TrialCard extends StatelessWidget {
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => TrialDetailScreen(trial: trial)));
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => TrialDetailScreen(trial: trial)));
         },
       ),
     );

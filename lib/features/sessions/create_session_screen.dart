@@ -36,9 +36,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     final allSessions = await (db.select(db.sessions)
           ..where((s) => s.trialId.equals(widget.trial.id)))
         .get();
-    final todaySessions = allSessions
-        .where((s) => s.sessionDateLocal == dateStr)
-        .toList();
+    final todaySessions =
+        allSessions.where((s) => s.sessionDateLocal == dateStr).toList();
 
     final count = todaySessions.length + 1;
     if (mounted) {
@@ -130,8 +129,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
           Row(
             children: [
               const Text('Assessments to Rate',
-                  style:
-                      TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               const Spacer(),
               if (_selectedAssessmentIds.isNotEmpty)
                 Text('${_selectedAssessmentIds.length} selected',
@@ -188,9 +186,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                             ? Theme.of(context).colorScheme.primary
                             : Colors.grey.shade200,
                         child: Icon(Icons.analytics,
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.grey,
+                            color: isSelected ? Colors.white : Colors.grey,
                             size: 20),
                       ),
                       shape: RoundedRectangleBorder(
@@ -261,7 +257,6 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       if (proceed != true) return;
     }
 
-
     if (_selectedAssessmentIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -283,9 +278,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       name: _nameController.text.trim(),
       sessionDateLocal: sessionDateLocal,
       assessmentIds: _selectedAssessmentIds.toList(),
-      raterName: _raterController.text.isEmpty
-          ? null
-          : _raterController.text.trim(),
+      raterName:
+          _raterController.text.isEmpty ? null : _raterController.text.trim(),
     ));
 
     if (!mounted) return;
