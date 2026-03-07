@@ -22,7 +22,7 @@ class TrialDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
-  int _selectedTabIndex = 2;
+  int _selectedTabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -56,11 +56,62 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               children: [
                 _PlotsTab(trial: widget.trial),
                 _SeedingTab(trial: widget.trial),
-                _SessionsTab(trial: widget.trial),
                 _ApplicationsTab(trial: widget.trial),
                 _AssessmentsTab(trial: widget.trial),
                 _TreatmentsTab(trial: widget.trial),
               ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF2D5A40),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: Offset(0, -2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: ListTile(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SessionsView(trial: widget.trial),
+                  ),
+                ),
+                leading: const Icon(
+                  Icons.assignment_outlined,
+                  color: Colors.white,
+                  size: 28,
+                ),
+                title: const Text(
+                  'Sessions',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Start or continue a session',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ],
@@ -83,10 +134,9 @@ class _TrialModuleHub extends StatelessWidget {
     const items = [
       (0, Icons.grid_on, 'Plots'),
       (1, Icons.agriculture, 'Seeding'),
-      (2, Icons.folder_open, 'Sessions'),
-      (3, Icons.science, 'Applications'),
-      (4, Icons.assessment, 'Assessments'),
-      (5, Icons.science_outlined, 'Treatments'),
+      (2, Icons.science, 'Applications'),
+      (3, Icons.assessment, 'Assessments'),
+      (4, Icons.science_outlined, 'Treatments'),
     ];
 
     return Container(
@@ -270,9 +320,13 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: SegmentedButton<_LayoutLayer>(
+        style: const ButtonStyle(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
         segments: const [
-          ButtonSegment(value: _LayoutLayer.treatments, label: Text('Treatments'), icon: Icon(Icons.science, size: 14)),
-          ButtonSegment(value: _LayoutLayer.applications, label: Text('Applications'), icon: Icon(Icons.water_drop, size: 14)),
+          ButtonSegment(value: _LayoutLayer.treatments, label: Text('Treats'), icon: Icon(Icons.science, size: 14)),
+          ButtonSegment(value: _LayoutLayer.applications, label: Text('Apps'), icon: Icon(Icons.water_drop, size: 14)),
           ButtonSegment(value: _LayoutLayer.ratings, label: Text('Ratings'), icon: Icon(Icons.bar_chart, size: 14)),
         ],
         selected: {_layoutLayer},
@@ -794,7 +848,7 @@ class _PlotLayoutGrid extends StatelessWidget {
     for (final p in plots) {
       grid[(p.fieldRow! - 1) * maxC + (p.fieldColumn! - 1)] = p;
     }
-    const cellSize = 68.0;
+    const cellSize = 80.0;
     const spacing = 8.0;
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -919,7 +973,7 @@ class _PlotGridTile extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          constraints: const BoxConstraints(minWidth: 68, minHeight: 68),
+          constraints: const BoxConstraints(minWidth: 80, minHeight: 80),
           padding: const EdgeInsets.all(4),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -930,7 +984,7 @@ class _PlotGridTile extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 11,
+                  fontSize: 13,
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
@@ -942,7 +996,7 @@ class _PlotGridTile extends StatelessWidget {
                   treatment.code,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 9,
+                    fontSize: 11,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -955,7 +1009,7 @@ class _PlotGridTile extends StatelessWidget {
                   'R${plot.rep}',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 9,
+                    fontSize: 10,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -1157,248 +1211,6 @@ class _AssessmentsTab extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-// ─────────────────────────────────────────────
-// SESSIONS TAB
-// ─────────────────────────────────────────────
-
-class _SessionsTab extends ConsumerWidget {
-  final Trial trial;
-
-  const _SessionsTab({required this.trial});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
-
-    return sessionsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(child: Text('Error: $e')),
-      data: (sessions) => sessions.isEmpty
-          ? _buildEmptySessions(context)
-          : _buildSessionsList(context, ref, sessions),
-    );
-  }
-
-  Widget _buildEmptySessions(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.folder_open,
-              size: 64, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          const Text('No sessions yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Start a session to begin field data collection',
-              style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => CreateSessionScreen(trial: trial))),
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Start Session'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSessionsList(
-      BuildContext context, WidgetRef ref, List<Session> sessions) {
-    final groups = <String, List<Session>>{};
-    for (final session in sessions) {
-      groups.putIfAbsent(session.sessionDateLocal, () => []).add(session);
-    }
-    final sortedDates = groups.keys.toList()..sort((a, b) => b.compareTo(a));
-
-    final items = <Widget>[];
-    for (final date in sortedDates) {
-      items.add(Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        color: Colors.grey.shade100,
-        child: Row(
-          children: [
-            Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
-            const SizedBox(width: 6),
-            Text(
-              _formatDateHeader(date),
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Colors.grey.shade700),
-            ),
-          ],
-        ),
-      ));
-      for (final session in groups[date]!) {
-        final isOpen = session.endedAt == null;
-        items.add(Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          child: ListTile(
-            onTap: () {
-              if (isOpen) {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            PlotQueueScreen(trial: trial, session: session)));
-              } else {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => SessionDetailScreen(
-                            trial: trial, session: session)));
-              }
-            },
-            onLongPress: isOpen
-                ? () => _confirmCloseSession(context, ref, session)
-                : null,
-            leading: CircleAvatar(
-              backgroundColor:
-                  isOpen ? Colors.green.shade100 : Colors.grey.shade100,
-              child: Icon(
-                isOpen ? Icons.play_circle : Icons.check_circle,
-                color: isOpen ? Colors.green : Colors.grey,
-              ),
-            ),
-            title: Text(
-                _shortSessionName(session.name, session.sessionDateLocal),
-                style:
-                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-            subtitle: Text(_formatSessionTimes(session)),
-            trailing: isOpen
-                ? Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text('OPEN',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold)),
-                  )
-                : const Text('Closed',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
-          ),
-        ));
-      }
-    }
-
-    return Stack(
-      children: [
-        ListView(
-          padding: const EdgeInsets.only(bottom: 80),
-          children: items,
-        ),
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton.extended(
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => CreateSessionScreen(trial: trial))),
-            icon: const Icon(Icons.add),
-            label: const Text('New Session'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatSessionTimes(Session session) {
-    String fmtTime(DateTime dt) {
-      final h = dt.hour.toString().padLeft(2, '0');
-      final m = dt.minute.toString().padLeft(2, '0');
-      return '$h:$m';
-    }
-
-    final start = fmtTime(session.startedAt);
-    final rater = session.raterName != null ? ' · ${session.raterName}' : '';
-    if (session.endedAt != null) {
-      final end = fmtTime(session.endedAt!);
-      return '$start – $end$rater';
-    }
-    return 'Started $start$rater';
-  }
-
-  String _shortSessionName(String name, String dateLocal) {
-    // Remove leading date prefix e.g. "2026-03-04 " from session name
-    if (name.startsWith(dateLocal)) {
-      return name.substring(dateLocal.length).trim();
-    }
-    return name;
-  }
-
-  String _formatDateHeader(String dateStr) {
-    try {
-      final parts = dateStr.split('-');
-      if (parts.length != 3) return dateStr;
-      final months = [
-        '',
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
-      ];
-      final day = int.parse(parts[2]);
-      final month = months[int.parse(parts[1])];
-      final year = parts[0];
-      return '$day $month $year';
-    } catch (_) {
-      return dateStr;
-    }
-  }
-
-  Future<void> _confirmCloseSession(
-      BuildContext context, WidgetRef ref, Session session) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Close Session"),
-        content: Text(
-            "Close session \"${session.name}\"? You can still view ratings but cannot add new ones."),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel")),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Close Session")),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    final useCase = ref.read(closeSessionUseCaseProvider);
-    final result = await useCase.execute(
-      sessionId: session.id,
-      trialId: trial.id,
-      raterName: session.raterName,
-    );
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            result.success ? "Session closed" : result.errorMessage ?? "Error"),
-        backgroundColor: result.success ? Colors.green : Colors.red,
-      ));
-    }
   }
 }
 
@@ -2287,6 +2099,247 @@ class _TreatmentsTab extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+// ─────────────────────────────────────────────
+// SESSIONS VIEW (navigated from bottom bar)
+// ─────────────────────────────────────────────
+
+class SessionsView extends ConsumerWidget {
+  final Trial trial;
+
+  const SessionsView({super.key, required this.trial});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
+
+    return sessionsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, st) => Center(child: Text('Error: $e')),
+      data: (sessions) => sessions.isEmpty
+          ? _buildEmptySessions(context)
+          : _buildSessionsList(context, ref, sessions),
+    );
+  }
+
+  Widget _buildEmptySessions(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.folder_open,
+              size: 64, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 16),
+          const Text('No sessions yet',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('Start a session to begin field data collection',
+              style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => CreateSessionScreen(trial: trial))),
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Start Session'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionsList(
+      BuildContext context, WidgetRef ref, List<Session> sessions) {
+    final groups = <String, List<Session>>{};
+    for (final session in sessions) {
+      groups.putIfAbsent(session.sessionDateLocal, () => []).add(session);
+    }
+    final sortedDates = groups.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    final items = <Widget>[];
+    for (final date in sortedDates) {
+      items.add(Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        color: Colors.grey.shade100,
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+            const SizedBox(width: 6),
+            Text(
+              _formatDateHeader(date),
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.grey.shade700),
+            ),
+          ],
+        ),
+      ));
+      for (final session in groups[date]!) {
+        final isOpen = session.endedAt == null;
+        items.add(Card(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          child: ListTile(
+            onTap: () {
+              if (isOpen) {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            PlotQueueScreen(trial: trial, session: session)));
+              } else {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => SessionDetailScreen(
+                            trial: trial, session: session)));
+              }
+            },
+            onLongPress: isOpen
+                ? () => _confirmCloseSession(context, ref, session)
+                : null,
+            leading: CircleAvatar(
+              backgroundColor:
+                  isOpen ? Colors.green.shade100 : Colors.grey.shade100,
+              child: Icon(
+                isOpen ? Icons.play_circle : Icons.check_circle,
+                color: isOpen ? Colors.green : Colors.grey,
+              ),
+            ),
+            title: Text(
+                _shortSessionName(session.name, session.sessionDateLocal),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            subtitle: Text(_formatSessionTimes(session)),
+            trailing: isOpen
+                ? Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text('OPEN',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold)),
+                  )
+                : const Text('Closed',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ),
+        ));
+      }
+    }
+
+    return Stack(
+      children: [
+        ListView(
+          padding: const EdgeInsets.only(bottom: 80),
+          children: items,
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton.extended(
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => CreateSessionScreen(trial: trial))),
+            icon: const Icon(Icons.add),
+            label: const Text('New Session'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatSessionTimes(Session session) {
+    String fmtTime(DateTime dt) {
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+
+    final start = fmtTime(session.startedAt);
+    final rater = session.raterName != null ? ' · ${session.raterName}' : '';
+    if (session.endedAt != null) {
+      final end = fmtTime(session.endedAt!);
+      return '$start – $end$rater';
+    }
+    return 'Started $start$rater';
+  }
+
+  String _shortSessionName(String name, String dateLocal) {
+    if (name.startsWith(dateLocal)) {
+      return name.substring(dateLocal.length).trim();
+    }
+    return name;
+  }
+
+  String _formatDateHeader(String dateStr) {
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length != 3) return dateStr;
+      final months = [
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
+      final day = int.parse(parts[2]);
+      final month = months[int.parse(parts[1])];
+      final year = parts[0];
+      return '$day $month $year';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  Future<void> _confirmCloseSession(
+      BuildContext context, WidgetRef ref, Session session) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Close Session'),
+        content: Text(
+            'Close session "${session.name}"? You can still view ratings but cannot add new ones.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Close Session')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    final useCase = ref.read(closeSessionUseCaseProvider);
+    final result = await useCase.execute(
+      sessionId: session.id,
+      trialId: trial.id,
+      raterName: session.raterName,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            result.success ? 'Session closed' : result.errorMessage ?? 'Error'),
+        backgroundColor: result.success ? Colors.green : Colors.red,
+      ));
+    }
   }
 }
 
