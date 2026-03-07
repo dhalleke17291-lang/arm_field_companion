@@ -25,6 +25,19 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   int _selectedTabIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SessionsView(trial: widget.trial),
+        ),
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -50,6 +63,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               setState(() => _selectedTabIndex = index);
             },
           ),
+          _buildSessionsBar(context),
           Expanded(
             child: IndexedStack(
               index: _selectedTabIndex,
@@ -64,57 +78,55 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF2D5A40),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 8,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: ListTile(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SessionsView(trial: widget.trial),
-                  ),
-                ),
-                leading: const Icon(
-                  Icons.assignment_outlined,
-                  color: Colors.white,
-                  size: 28,
-                ),
-                title: const Text(
-                  'Sessions',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: const Text(
-                  'Start or continue a session',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+    );
+  }
+
+  Widget _buildSessionsBar(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF2D5A40),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            offset: Offset(0, -2),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: ListTile(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SessionsView(trial: widget.trial),
+            ),
+          ),
+          leading: const Icon(
+            Icons.assignment_outlined,
+            color: Colors.white,
+            size: 28,
+          ),
+          title: const Text(
+            'Sessions',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          subtitle: const Text(
+            'Start or continue a session',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+          trailing: const Icon(
+            Icons.chevron_right,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
@@ -2115,12 +2127,15 @@ class SessionsView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
 
-    return sessionsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(child: Text('Error: $e')),
-      data: (sessions) => sessions.isEmpty
-          ? _buildEmptySessions(context)
-          : _buildSessionsList(context, ref, sessions),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F6F2),
+      body: sessionsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(child: Text('Error: $e')),
+        data: (sessions) => sessions.isEmpty
+            ? _buildEmptySessions(context)
+            : _buildSessionsList(context, ref, sessions),
+      ),
     );
   }
 
