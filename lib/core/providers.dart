@@ -1,3 +1,7 @@
+import "../data/repositories/treatment_repository.dart";
+import "../data/repositories/application_repository.dart";
+import "../domain/models/plot_context.dart";
+import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
@@ -220,4 +224,37 @@ final plotRatingHistoryProvider =
             r.plotPk.equals(params.plotPk))
         ..orderBy([(r) => drift.OrderingTerm.desc(r.createdAt)]))
       .watch();
+});
+// ===== Treatment =====
+
+final treatmentRepositoryProvider = Provider<TreatmentRepository>((ref) {
+  return TreatmentRepository(ref.watch(databaseProvider));
+});
+
+final treatmentsForTrialProvider =
+    StreamProvider.family<List<Treatment>, int>((ref, trialId) {
+  return ref.watch(treatmentRepositoryProvider).watchTreatmentsForTrial(trialId);
+});
+
+final resolvePlotTreatmentProvider = Provider<ResolvePlotTreatment>((ref) {
+  return ResolvePlotTreatment(
+    plotRepository: ref.watch(plotRepositoryProvider),
+    treatmentRepository: ref.watch(treatmentRepositoryProvider),
+  );
+});
+
+final plotContextProvider =
+    FutureProvider.autoDispose.family<PlotContext, int>((ref, plotPk) {
+  return ref.watch(resolvePlotTreatmentProvider).execute(plotPk);
+});
+
+// ===== Applications =====
+
+final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) {
+  return ApplicationRepository(ref.watch(databaseProvider));
+});
+
+final applicationsForTrialProvider =
+    StreamProvider.family<List<ApplicationEvent>, int>((ref, trialId) {
+  return ref.watch(applicationRepositoryProvider).watchEventsForTrial(trialId);
 });

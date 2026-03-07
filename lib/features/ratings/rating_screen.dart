@@ -312,6 +312,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   // ===== UI =====
 
   Widget _buildPlotInfoBar(BuildContext context) {
+    final plotCtx = ref.watch(plotContextProvider(widget.plot.id));
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: Theme.of(context).colorScheme.primaryContainer,
@@ -328,16 +329,43 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             ),
           ),
           if (widget.plot.rep != null) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Text('Rep ${widget.plot.rep}',
                 style: const TextStyle(color: Colors.grey)),
           ],
+          plotCtx.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (ctx) => ctx.hasTreatment
+                ? Row(children: [
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        ctx.treatmentCode,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(ctx.treatmentName,
+                        style: const TextStyle(
+                            color: Colors.grey, fontSize: 12)),
+                  ])
+                : const SizedBox.shrink(),
+          ),
           IconButton(
             tooltip: 'Take photo',
             icon: const Icon(Icons.photo_camera, size: 20),
             onPressed: () => _capturePhoto(context),
           ),
-          const SizedBox(width: 4),
           const Spacer(),
           if (widget.session.raterName != null)
             Text(

@@ -21,6 +21,7 @@ class PlotDetailScreen extends ConsumerWidget {
     final sessions = ref.watch(sessionsForTrialProvider(trial.id)).value ?? [];
     final assessments =
         ref.watch(assessmentsForTrialProvider(trial.id)).value ?? [];
+    final plotContextAsync = ref.watch(plotContextProvider(plot.id));
 
     return Scaffold(
       appBar: AppBar(
@@ -62,6 +63,54 @@ class PlotDetailScreen extends ConsumerWidget {
                   if (plot.plotSortIndex != null)
                     _detailRow('Sort Index', plot.plotSortIndex.toString()),
                   _detailRow('Trial', trial.name),
+                  const Divider(),
+                  plotContextAsync.when(
+                    loading: () => const SizedBox(
+                      height: 20,
+                      child: Center(child: LinearProgressIndicator(minHeight: 2)),
+                    ),
+                    error: (e, st) => _detailRow('Treatment', e.toString()),
+                    data: (ctx) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _detailRow('Treatment', ctx.hasTreatment
+                            ? '${ctx.treatmentCode}  —  ${ctx.treatmentName}'
+                            : 'Unassigned'),
+                        if (ctx.hasComponents) ...[
+                          const SizedBox(height: 8),
+                          Text('Components',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Theme.of(context).colorScheme.primary)),
+                          const SizedBox(height: 4),
+                          ...ctx.components.map((c) => Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(width: 8),
+                                    const Icon(Icons.circle, size: 6, color: Colors.grey),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        [
+                                          c.productName,
+                                          if (c.rate != null && c.rateUnit != null)
+                                            '${c.rate} ${c.rateUnit}',
+                                          if (c.applicationTiming != null)
+                                            c.applicationTiming!,
+                                        ].join('  ·  '),
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -91,8 +140,7 @@ class PlotDetailScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.history,
-                              size: 48, color: Colors.grey.shade300),
+                          Icon(Icons.history, size: 48, color: Colors.grey.shade300),
                           const SizedBox(height: 12),
                           const Text('No ratings yet',
                               style: TextStyle(color: Colors.grey)),
@@ -128,8 +176,7 @@ class PlotDetailScreen extends ConsumerWidget {
                             ),
                             title: Text(
                               assessment?.name ?? 'Assessment',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             subtitle: Text(session?.name ?? 'Unknown session'),
                             trailing: Column(
@@ -149,8 +196,7 @@ class PlotDetailScreen extends ConsumerWidget {
                                 ),
                                 Text(
                                   _formatDate(rating.createdAt),
-                                  style: const TextStyle(
-                                      fontSize: 11, color: Colors.grey),
+                                  style: const TextStyle(fontSize: 11, color: Colors.grey),
                                 ),
                               ],
                             ),

@@ -21,6 +21,7 @@ class SessionDetailScreen extends ConsumerWidget {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
+    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -54,7 +55,7 @@ class SessionDetailScreen extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, st) => Center(child: Text('Error: $e')),
             data: (assessments) =>
-                _buildContent(context, plots, ratings, assessments),
+                _buildContent(context, plots, ratings, assessments, treatments),
           ),
         ),
       ),
@@ -134,6 +135,7 @@ class SessionDetailScreen extends ConsumerWidget {
     List<Plot> plots,
     List<RatingRecord> ratings,
     List<Assessment> assessments,
+    List<Treatment> treatments,
   ) {
     final ratedPks = ratings.map((r) => r.plotPk).toSet();
     final ratedCount = ratedPks.length;

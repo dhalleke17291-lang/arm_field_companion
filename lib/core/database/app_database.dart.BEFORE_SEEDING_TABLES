@@ -25,18 +25,6 @@ class Treatments extends Table {
   TextColumn get description => text().nullable()();
 }
 
-class TreatmentComponents extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get treatmentId => integer().references(Treatments, #id)();
-  IntColumn get trialId => integer().references(Trials, #id)();
-  TextColumn get productName => text().withLength(min: 1, max: 255)();
-  TextColumn get rate => text().nullable()();
-  TextColumn get rateUnit => text().nullable()();
-  TextColumn get applicationTiming => text().nullable()();
-  TextColumn get notes => text().nullable()();
-  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
-}
-
 class Assessments extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
@@ -141,87 +129,6 @@ class DeviationFlags extends Table {
   TextColumn get raterName => text().nullable()();
 }
 
-class SeedingRecords extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get trialId => integer().references(Trials, #id)();
-  IntColumn get plotPk => integer().references(Plots, #id).nullable()();
-  IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
-  DateTimeColumn get seedingDate => dateTime()();
-  TextColumn get operatorName => text().nullable()();
-  TextColumn get comments => text().nullable()();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-}
-
-class ProtocolSeedingFields extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get trialId => integer().references(Trials, #id)();
-  TextColumn get fieldKey => text()();
-  TextColumn get fieldLabel => text()();
-  TextColumn get fieldType => text()();
-  TextColumn get unit => text().nullable()();
-  BoolColumn get isRequired => boolean().withDefault(const Constant(false))();
-  BoolColumn get isVisible => boolean().withDefault(const Constant(true))();
-  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
-  TextColumn get source => text().withDefault(const Constant('manual'))();
-}
-
-class SeedingFieldValues extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get seedingRecordId => integer().references(SeedingRecords, #id)();
-  TextColumn get fieldKey => text()();
-  TextColumn get fieldLabel => text()();
-  TextColumn get valueText => text().nullable()();
-  RealColumn get valueNumber => real().nullable()();
-  TextColumn get valueDate => text().nullable()();
-  BoolColumn get valueBool => boolean().nullable()();
-  TextColumn get unit => text().nullable()();
-  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
-}
-
-
-class ApplicationSlots extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get trialId => integer().references(Trials, #id)();
-  TextColumn get slotCode => text().withLength(min: 1, max: 20)();
-  TextColumn get timingLabel => text().nullable()();
-  TextColumn get methodDefault => text().withDefault(const Constant('spray'))();
-  TextColumn get plannedGrowthStage => text().nullable()();
-  TextColumn get protocolNotes => text().nullable()();
-  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-}
-
-class ApplicationEvents extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get trialId => integer().references(Trials, #id)();
-  IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
-  IntColumn get applicationSlotId => integer().references(ApplicationSlots, #id).nullable()();
-  IntColumn get applicationNumber => integer().withDefault(const Constant(1))();
-  TextColumn get timingLabel => text().nullable()();
-  TextColumn get method => text().withDefault(const Constant('spray'))();
-  TextColumn get status => text().withDefault(const Constant('planned'))();
-  DateTimeColumn get applicationDate => dateTime()();
-  TextColumn get growthStage => text().nullable()();
-  TextColumn get operatorName => text().nullable()();
-  TextColumn get equipment => text().nullable()();
-  TextColumn get weather => text().nullable()();
-  TextColumn get notes => text().nullable()();
-  BoolColumn get partialFlag => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get completedAt => dateTime().nullable()();
-  TextColumn get completedBy => text().nullable()();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-}
-
-class ApplicationPlotRecords extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get eventId => integer().references(ApplicationEvents, #id)();
-  IntColumn get plotPk => integer().references(Plots, #id)();
-  IntColumn get trialId => integer().references(Trials, #id)();
-  TextColumn get status => text().withDefault(const Constant('applied'))();
-  TextColumn get notes => text().nullable()();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-}
-
 class AuditEvents extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id).nullable()();
@@ -248,7 +155,6 @@ class ImportEvents extends Table {
 @DriftDatabase(tables: [
   Trials,
   Treatments,
-  TreatmentComponents,
   Assessments,
   Plots,
   Sessions,
@@ -258,12 +164,6 @@ class ImportEvents extends Table {
   Photos,
   PlotFlags,
   DeviationFlags,
-  SeedingRecords,
-  ProtocolSeedingFields,
-  SeedingFieldValues,
-  ApplicationSlots,
-  ApplicationEvents,
-  ApplicationPlotRecords,
   AuditEvents,
   ImportEvents,
 ])
@@ -271,20 +171,12 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) async {
           await m.createAll();
-          await _createIndexes();
-        },
-        onUpgrade: (Migrator m, int from, int to) async {
-          if (from < 2) {
-            await m.createTable(seedingRecords);
-            await m.createTable(protocolSeedingFields);
-            await m.createTable(seedingFieldValues);
-          }
           await _createIndexes();
         },
       );
