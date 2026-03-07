@@ -10,10 +10,11 @@ void main() {
         child: ArmFieldCompanionApp(),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 3000));
-    for (int i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
+    // Splash uses Future.delayed(3800ms) then navigates; must let timer complete
+    // so no pending timer when test ends.
+    await tester.pump(const Duration(milliseconds: 3850));
+    await tester.pump(); // process navigation
+    await tester.pump(const Duration(milliseconds: 100)); // transition
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

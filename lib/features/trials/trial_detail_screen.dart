@@ -10,6 +10,8 @@ import '../plots/plot_detail_screen.dart';
 import '../../core/providers.dart';
 import '../../data/repositories/treatment_repository.dart';
 
+enum _LayoutLayer { treatments, applications, ratings }
+
 class TrialDetailScreen extends ConsumerStatefulWidget {
   final Trial trial;
 
@@ -88,9 +90,9 @@ class _TrialModuleHub extends StatelessWidget {
     ];
 
     return Container(
-      height: 104,
+      height: 110,
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 10, bottom: 8),
+      padding: const EdgeInsets.only(top: 8, bottom: 6),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -138,25 +140,37 @@ class _DockTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: selected ? activeColor : inactiveColor,
-                size: selected ? 26 : 22,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? scheme.primaryContainer
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: selected ? activeColor : inactiveColor,
+                  size: selected ? 24 : 20,
+                ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: selected ? activeColor : inactiveColor,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: selected ? 13.5 : 12.5,
+                  fontSize: selected ? 13 : 12,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 height: 2,
@@ -178,20 +192,163 @@ class _DockTile extends StatelessWidget {
 // PLOTS TAB
 // ─────────────────────────────────────────────
 
-class _PlotsTab extends ConsumerWidget {
+class _PlotsTab extends ConsumerStatefulWidget {
   final Trial trial;
 
   const _PlotsTab({required this.trial});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PlotsTab> createState() => _PlotsTabState();
+}
+
+class _PlotsTabState extends ConsumerState<_PlotsTab> {
+  bool _showLayoutView = false;
+  _LayoutLayer _layoutLayer = _LayoutLayer.treatments;
+  ApplicationEvent? _selectedAppEvent;
+  List<ApplicationPlotRecord> _appPlotRecords = [];
+  bool _loadingAppRecords = false;
+
+  Future<void> _loadAppRecords(ApplicationEvent event) async {
+    setState(() {
+      _selectedAppEvent = event;
+      _loadingAppRecords = true;
+    });
+    final repo = ref.read(applicationRepositoryProvider);
+    final records = await repo.getPlotRecordsForEvent(event.id);
+    if (mounted) {
+      setState(() {
+        _appPlotRecords = records;
+        _loadingAppRecords = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final trial = widget.trial;
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     return plotsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(child: Text('Error: $e')),
       data: (plots) => plots.isEmpty
           ? _buildEmptyPlots(context, ref)
-          : _buildPlotsList(context, ref, plots),
+          : _buildPlotsContent(context, ref, plots),
+    );
+  }
+
+  Widget _buildPlotsContent(
+      BuildContext context, WidgetRef ref, List<Plot> plots) {
+    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    return Column(
+      children: [
+        _buildPlotsHeader(context, ref, plots),
+        _buildListLayoutToggle(context),
+        if (_showLayoutView) ...[
+          _buildLayerSwitcher(context),
+          if (_layoutLayer == _LayoutLayer.applications)
+            _buildAppEventSelector(context, ref),
+          Expanded(
+            child: _layoutLayer == _LayoutLayer.ratings
+                ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: Colors.grey)))
+                : SingleChildScrollView(
+                    child: _PlotLayoutGrid(
+                      plots: plots,
+                      treatments: treatments,
+                      trial: widget.trial,
+                      layer: _layoutLayer,
+                      appPlotRecords: _appPlotRecords,
+                    ),
+                  ),
+          ),
+        ] else
+          Expanded(child: _buildPlotsListBody(context, ref, plots)),
+      ],
+    );
+  }
+
+  Widget _buildLayerSwitcher(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: SegmentedButton<_LayoutLayer>(
+        segments: const [
+          ButtonSegment(value: _LayoutLayer.treatments, label: Text('Treatments'), icon: Icon(Icons.science, size: 14)),
+          ButtonSegment(value: _LayoutLayer.applications, label: Text('Applications'), icon: Icon(Icons.water_drop, size: 14)),
+          ButtonSegment(value: _LayoutLayer.ratings, label: Text('Ratings'), icon: Icon(Icons.bar_chart, size: 14)),
+        ],
+        selected: {_layoutLayer},
+        onSelectionChanged: (val) => setState(() => _layoutLayer = val.first),
+      ),
+    );
+  }
+
+  Widget _buildAppEventSelector(BuildContext context, WidgetRef ref) {
+    final eventsAsync = ref.watch(applicationsForTrialProvider(widget.trial.id));
+    return eventsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (e, _) => const SizedBox.shrink(),
+      data: (events) {
+        if (events.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Text('No application events recorded yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+          );
+        }
+        final completed = events.where((e) => e.status == 'completed').toList();
+        if (completed.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Text('No completed application events yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<ApplicationEvent>(
+            key: ValueKey<ApplicationEvent?>(_selectedAppEvent),
+            decoration: const InputDecoration(
+              labelText: 'Select Application Event',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            initialValue: _selectedAppEvent,
+            items: completed.map((e) => DropdownMenuItem<ApplicationEvent>(
+              value: e,
+              child: Text('A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
+            )).toList(),
+            onChanged: (e) { if (e != null) _loadAppRecords(e); },
+                ),
+              ),
+              if (_loadingAppRecords)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildListLayoutToggle(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: SegmentedButton<bool>(
+        segments: const [
+          ButtonSegment(value: false, label: Text('List'), icon: Icon(Icons.list)),
+          ButtonSegment(value: true, label: Text('Layout'), icon: Icon(Icons.grid_on)),
+        ],
+        selected: {_showLayoutView},
+        onSelectionChanged: (Set<bool> selected) {
+          setState(() => _showLayoutView = selected.first);
+        },
+      ),
     );
   }
 
@@ -213,7 +370,7 @@ class _PlotsTab extends ConsumerWidget {
             onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => ImportPlotsScreen(trial: trial))),
+                    builder: (_) => ImportPlotsScreen(trial: widget.trial))),
             icon: const Icon(Icons.upload_file),
             label: const Text('Import Plots from CSV'),
           ),
@@ -233,7 +390,7 @@ class _PlotsTab extends ConsumerWidget {
     for (int i = 1; i <= 10; i++) {
       await db.into(db.plots).insert(
             PlotsCompanion.insert(
-              trialId: trial.id,
+              trialId: widget.trial.id,
               plotId: i.toString().padLeft(3, '0'),
               plotSortIndex: drift.Value(i),
               rep: drift.Value((i / 3).ceil()),
@@ -251,7 +408,7 @@ class _PlotsTab extends ConsumerWidget {
   Future<void> _showBulkAssignDialog(
       BuildContext context, WidgetRef ref, List<Plot> plots) async {
     final treatments =
-        ref.read(treatmentsForTrialProvider(trial.id)).value ?? [];
+        ref.read(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
 
     if (treatments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -355,7 +512,7 @@ class _PlotsTab extends ConsumerWidget {
   Future<void> _showAssignTreatmentDialog(
       BuildContext context, WidgetRef ref, Plot plot) async {
     final treatments =
-        ref.read(treatmentsForTrialProvider(trial.id)).value ?? [];
+        ref.read(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
 
     if (treatments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -411,106 +568,404 @@ class _PlotsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildPlotsList(BuildContext context, WidgetRef ref, List<Plot> plots) {
-    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
+  Widget _buildPlotsHeader(
+      BuildContext context, WidgetRef ref, List<Plot> plots) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Row(
+        children: [
+          Icon(Icons.grid_on, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Text('${plots.length} plots',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary)),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () => _showBulkAssignDialog(context, ref, plots),
+            icon: Icon(Icons.assignment,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary),
+            label: Text('Bulk Assign',
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlotsListBody(
+      BuildContext context, WidgetRef ref, List<Plot> plots) {
+    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
-    return Column(
+    return ListView.builder(
+      itemCount: plots.length,
+      itemBuilder: (context, index) {
+        final plot = plots[index];
+        return ListTile(
+          dense: true,
+          leading: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              plot.plotId,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.white),
+            ),
+          ),
+          title: Text('Plot ${plot.plotId}',
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: Builder(builder: (context) {
+            final treatment = plot.treatmentId != null
+                ? treatmentMap[plot.treatmentId]
+                : null;
+            final repPart = plot.rep != null ? 'Rep ${plot.rep}' : null;
+            if (treatment == null) {
+              return repPart != null ? Text(repPart) : const SizedBox.shrink();
+            }
+            return Row(
+              children: [
+                if (repPart != null) ...[
+                  Text(repPart, style: const TextStyle(color: Colors.grey)),
+                  const SizedBox(width: 8),
+                ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(treatment.code,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(treatment.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12)),
+                ),
+              ],
+            );
+          }),
+          trailing: const Icon(Icons.chevron_right, size: 18),
+          onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) =>
+                      PlotDetailScreen(trial: widget.trial, plot: plot))),
+          onLongPress: () => _showAssignTreatmentDialog(context, ref, plot),
+        );
+      },
+    );
+  }
+}
+
+/// Bird's-eye grid of plots by fieldRow/fieldColumn or sequential by plotSortIndex.
+class _PlotLayoutGrid extends StatelessWidget {
+  final List<Plot> plots;
+  final List<Treatment> treatments;
+  final Trial trial;
+  final _LayoutLayer layer;
+  final List<ApplicationPlotRecord> appPlotRecords;
+
+  const _PlotLayoutGrid({
+    required this.plots,
+    required this.treatments,
+    required this.trial,
+    required this.layer,
+    required this.appPlotRecords,
+  });
+
+  Widget _legendChip(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: Theme.of(context).colorScheme.primaryContainer,
-          child: Row(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Color _tileColorFor(Plot plot) {
+    if (layer == _LayoutLayer.applications) {
+      final record = appPlotRecords.where((r) => r.plotPk == plot.id).firstOrNull;
+      if (record == null) {
+        return Colors.grey.shade300;
+      }
+      if (record.status == 'applied') {
+        return Colors.green.shade600;
+      }
+      if (record.status == 'skipped') {
+        return Colors.orange.shade600;
+      }
+      if (record.status == 'missed') {
+        return Colors.red.shade600;
+      }
+      return Colors.grey.shade300;
+    }
+    if (plot.treatmentId == null) {
+      return Colors.grey.shade400;
+    }
+    final treatmentIndex = treatments.indexWhere((t) => t.id == plot.treatmentId);
+    final colors = [
+      const Color(0xFF2D5A40),
+      Colors.blue.shade700,
+      Colors.orange.shade700,
+      Colors.purple.shade700,
+      Colors.red.shade700,
+      Colors.teal.shade700,
+    ];
+    return treatmentIndex >= 0
+        ? colors[treatmentIndex % colors.length]
+        : Colors.grey.shade400;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final treatmentMap = {for (final t in treatments) t.id: t};
+    final hasCoords = plots.every((p) => p.fieldRow != null && p.fieldColumn != null);
+    final gridWidget = hasCoords && plots.isNotEmpty
+        ? _buildCoordGrid(context, treatmentMap)
+        : _buildSequentialGrid(context, treatmentMap);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        gridWidget,
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: layer == _LayoutLayer.applications
+              ? Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  children: [
+                    _legendChip(Colors.green.shade600, 'Applied'),
+                    _legendChip(Colors.orange.shade600, 'Skipped'),
+                    _legendChip(Colors.red.shade600, 'Missed'),
+                    _legendChip(Colors.grey.shade300, 'No record'),
+                  ],
+                )
+              : Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  children: [
+                    ...treatments.asMap().entries.map((entry) {
+                      final colors = [
+                        const Color(0xFF2D5A40),
+                        Colors.blue.shade700,
+                        Colors.orange.shade700,
+                        Colors.purple.shade700,
+                        Colors.red.shade700,
+                        Colors.teal.shade700,
+                      ];
+                      final color = colors[entry.key % colors.length];
+                      return _legendChip(color, '${entry.value.code} ${entry.value.name}');
+                    }),
+                    _legendChip(Colors.grey.shade400, 'Unassigned'),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCoordGrid(BuildContext context, Map<int, Treatment> treatmentMap) {
+    final maxR = plots.map((p) => p.fieldRow!).reduce((a, b) => a > b ? a : b);
+    final maxC = plots.map((p) => p.fieldColumn!).reduce((a, b) => a > b ? a : b);
+    final grid = <int, Plot>{};
+    for (final p in plots) {
+      grid[(p.fieldRow! - 1) * maxC + (p.fieldColumn! - 1)] = p;
+    }
+    const cellSize = 68.0;
+    const spacing = 8.0;
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Field Layout — Range × Column',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+            ),
+          ),
+          for (var r = 1; r <= maxR; r++) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 28,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'R$r',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Row(
+                  children: [
+                    for (var c = 1; c <= maxC; c++) ...[
+                      if (c > 1) const SizedBox(width: spacing),
+                      SizedBox(
+                        width: cellSize,
+                        height: cellSize,
+                        child: _plotCell(grid[(r - 1) * maxC + (c - 1)], treatmentMap),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+            if (r < maxR) const SizedBox(height: spacing),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _plotCell(Plot? plot, Map<int, Treatment> treatmentMap) {
+    if (plot == null) return const SizedBox.shrink();
+    return _PlotGridTile(
+      plot: plot,
+      treatmentMap: treatmentMap,
+      treatments: treatments,
+      trial: trial,
+      tileColor: _tileColorFor(plot),
+    );
+  }
+
+  Widget _buildSequentialGrid(BuildContext context, Map<int, Treatment> treatmentMap) {
+    final sorted = List<Plot>.from(plots)
+      ..sort((a, b) {
+        final c = (a.plotSortIndex ?? 999).compareTo(b.plotSortIndex ?? 999);
+        return c != 0 ? c : a.id.compareTo(b.id);
+      });
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1,
+        ),
+        itemCount: sorted.length,
+        itemBuilder: (context, index) {
+          final plot = sorted[index];
+          return _PlotGridTile(
+            plot: plot,
+            treatmentMap: treatmentMap,
+            treatments: treatments,
+            trial: trial,
+            tileColor: _tileColorFor(plot),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PlotGridTile extends StatelessWidget {
+  final Plot plot;
+  final Map<int, Treatment> treatmentMap;
+  final List<Treatment> treatments;
+  final Trial trial;
+  final Color tileColor;
+
+  const _PlotGridTile({
+    required this.plot,
+    required this.treatmentMap,
+    required this.treatments,
+    required this.trial,
+    required this.tileColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final treatment = plot.treatmentId != null ? treatmentMap[plot.treatmentId] : null;
+    return Material(
+      color: tileColor,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PlotDetailScreen(trial: trial, plot: plot),
+          ),
+        ),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 68, minHeight: 68),
+          padding: const EdgeInsets.all(4),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(Icons.grid_on, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Text('${plots.length} plots',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary)),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () => _showBulkAssignDialog(context, ref, plots),
-                icon: Icon(Icons.assignment,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.primary),
-                label: Text('Bulk Assign',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontSize: 13)),
+              Text(
+                plot.plotId,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                textAlign: TextAlign.center,
               ),
+              if (treatment != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  treatment.code,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 9,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (plot.rep != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'R${plot.rep}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 9,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ],
           ),
         ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: plots.length,
-            itemBuilder: (context, index) {
-              final plot = plots[index];
-              return ListTile(
-                dense: true,
-                leading: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    plot.plotId,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Colors.white),
-                  ),
-                ),
-                title: Text('Plot ${plot.plotId}',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Builder(builder: (context) {
-                  final treatment = plot.treatmentId != null
-                      ? treatmentMap[plot.treatmentId]
-                      : null;
-                  final repPart = plot.rep != null ? 'Rep ${plot.rep}' : null;
-                  if (treatment == null) {
-                    return repPart != null ? Text(repPart) : const SizedBox.shrink();
-                  }
-                  return Row(
-                    children: [
-                      if (repPart != null) ...[
-                        Text(repPart, style: const TextStyle(color: Colors.grey)),
-                        const SizedBox(width: 8),
-                      ],
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(treatment.code,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(treatment.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12)),
-                      ),
-                    ],
-                  );
-                }),
-                trailing: const Icon(Icons.chevron_right, size: 18),
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            PlotDetailScreen(trial: trial, plot: plot))),
-                onLongPress: () => _showAssignTreatmentDialog(context, ref, plot),
-              );
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

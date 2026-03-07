@@ -15,7 +15,7 @@ class TrialListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ag-Quest Field Companion'),
+        title: const Text('ARM Field Companion'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),

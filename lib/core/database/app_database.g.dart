@@ -1673,6 +1673,18 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   late final GeneratedColumn<String> column = GeneratedColumn<String>(
       'column', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _fieldRowMeta =
+      const VerificationMeta('fieldRow');
+  @override
+  late final GeneratedColumn<int> fieldRow = GeneratedColumn<int>(
+      'field_row', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _fieldColumnMeta =
+      const VerificationMeta('fieldColumn');
+  @override
+  late final GeneratedColumn<int> fieldColumn = GeneratedColumn<int>(
+      'field_column', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -1688,6 +1700,8 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
         treatmentId,
         row,
         column,
+        fieldRow,
+        fieldColumn,
         notes
       ];
   @override
@@ -1739,6 +1753,16 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
       context.handle(_columnMeta,
           column.isAcceptableOrUnknown(data['column']!, _columnMeta));
     }
+    if (data.containsKey('field_row')) {
+      context.handle(_fieldRowMeta,
+          fieldRow.isAcceptableOrUnknown(data['field_row']!, _fieldRowMeta));
+    }
+    if (data.containsKey('field_column')) {
+      context.handle(
+          _fieldColumnMeta,
+          fieldColumn.isAcceptableOrUnknown(
+              data['field_column']!, _fieldColumnMeta));
+    }
     if (data.containsKey('notes')) {
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
@@ -1768,6 +1792,10 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           .read(DriftSqlType.string, data['${effectivePrefix}row']),
       column: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}column']),
+      fieldRow: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}field_row']),
+      fieldColumn: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}field_column']),
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
     );
@@ -1788,6 +1816,8 @@ class Plot extends DataClass implements Insertable<Plot> {
   final int? treatmentId;
   final String? row;
   final String? column;
+  final int? fieldRow;
+  final int? fieldColumn;
   final String? notes;
   const Plot(
       {required this.id,
@@ -1798,6 +1828,8 @@ class Plot extends DataClass implements Insertable<Plot> {
       this.treatmentId,
       this.row,
       this.column,
+      this.fieldRow,
+      this.fieldColumn,
       this.notes});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1820,6 +1852,12 @@ class Plot extends DataClass implements Insertable<Plot> {
     if (!nullToAbsent || column != null) {
       map['column'] = Variable<String>(column);
     }
+    if (!nullToAbsent || fieldRow != null) {
+      map['field_row'] = Variable<int>(fieldRow);
+    }
+    if (!nullToAbsent || fieldColumn != null) {
+      map['field_column'] = Variable<int>(fieldColumn);
+    }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -1841,6 +1879,12 @@ class Plot extends DataClass implements Insertable<Plot> {
       row: row == null && nullToAbsent ? const Value.absent() : Value(row),
       column:
           column == null && nullToAbsent ? const Value.absent() : Value(column),
+      fieldRow: fieldRow == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldRow),
+      fieldColumn: fieldColumn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldColumn),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
     );
@@ -1858,6 +1902,8 @@ class Plot extends DataClass implements Insertable<Plot> {
       treatmentId: serializer.fromJson<int?>(json['treatmentId']),
       row: serializer.fromJson<String?>(json['row']),
       column: serializer.fromJson<String?>(json['column']),
+      fieldRow: serializer.fromJson<int?>(json['fieldRow']),
+      fieldColumn: serializer.fromJson<int?>(json['fieldColumn']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
   }
@@ -1873,6 +1919,8 @@ class Plot extends DataClass implements Insertable<Plot> {
       'treatmentId': serializer.toJson<int?>(treatmentId),
       'row': serializer.toJson<String?>(row),
       'column': serializer.toJson<String?>(column),
+      'fieldRow': serializer.toJson<int?>(fieldRow),
+      'fieldColumn': serializer.toJson<int?>(fieldColumn),
       'notes': serializer.toJson<String?>(notes),
     };
   }
@@ -1886,6 +1934,8 @@ class Plot extends DataClass implements Insertable<Plot> {
           Value<int?> treatmentId = const Value.absent(),
           Value<String?> row = const Value.absent(),
           Value<String?> column = const Value.absent(),
+          Value<int?> fieldRow = const Value.absent(),
+          Value<int?> fieldColumn = const Value.absent(),
           Value<String?> notes = const Value.absent()}) =>
       Plot(
         id: id ?? this.id,
@@ -1897,6 +1947,8 @@ class Plot extends DataClass implements Insertable<Plot> {
         treatmentId: treatmentId.present ? treatmentId.value : this.treatmentId,
         row: row.present ? row.value : this.row,
         column: column.present ? column.value : this.column,
+        fieldRow: fieldRow.present ? fieldRow.value : this.fieldRow,
+        fieldColumn: fieldColumn.present ? fieldColumn.value : this.fieldColumn,
         notes: notes.present ? notes.value : this.notes,
       );
   Plot copyWithCompanion(PlotsCompanion data) {
@@ -1912,6 +1964,9 @@ class Plot extends DataClass implements Insertable<Plot> {
           data.treatmentId.present ? data.treatmentId.value : this.treatmentId,
       row: data.row.present ? data.row.value : this.row,
       column: data.column.present ? data.column.value : this.column,
+      fieldRow: data.fieldRow.present ? data.fieldRow.value : this.fieldRow,
+      fieldColumn:
+          data.fieldColumn.present ? data.fieldColumn.value : this.fieldColumn,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
@@ -1927,14 +1982,16 @@ class Plot extends DataClass implements Insertable<Plot> {
           ..write('treatmentId: $treatmentId, ')
           ..write('row: $row, ')
           ..write('column: $column, ')
+          ..write('fieldRow: $fieldRow, ')
+          ..write('fieldColumn: $fieldColumn, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, trialId, plotId, plotSortIndex, rep, treatmentId, row, column, notes);
+  int get hashCode => Object.hash(id, trialId, plotId, plotSortIndex, rep,
+      treatmentId, row, column, fieldRow, fieldColumn, notes);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1947,6 +2004,8 @@ class Plot extends DataClass implements Insertable<Plot> {
           other.treatmentId == this.treatmentId &&
           other.row == this.row &&
           other.column == this.column &&
+          other.fieldRow == this.fieldRow &&
+          other.fieldColumn == this.fieldColumn &&
           other.notes == this.notes);
 }
 
@@ -1959,6 +2018,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   final Value<int?> treatmentId;
   final Value<String?> row;
   final Value<String?> column;
+  final Value<int?> fieldRow;
+  final Value<int?> fieldColumn;
   final Value<String?> notes;
   const PlotsCompanion({
     this.id = const Value.absent(),
@@ -1969,6 +2030,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.treatmentId = const Value.absent(),
     this.row = const Value.absent(),
     this.column = const Value.absent(),
+    this.fieldRow = const Value.absent(),
+    this.fieldColumn = const Value.absent(),
     this.notes = const Value.absent(),
   });
   PlotsCompanion.insert({
@@ -1980,6 +2043,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.treatmentId = const Value.absent(),
     this.row = const Value.absent(),
     this.column = const Value.absent(),
+    this.fieldRow = const Value.absent(),
+    this.fieldColumn = const Value.absent(),
     this.notes = const Value.absent(),
   })  : trialId = Value(trialId),
         plotId = Value(plotId);
@@ -1992,6 +2057,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     Expression<int>? treatmentId,
     Expression<String>? row,
     Expression<String>? column,
+    Expression<int>? fieldRow,
+    Expression<int>? fieldColumn,
     Expression<String>? notes,
   }) {
     return RawValuesInsertable({
@@ -2003,6 +2070,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       if (treatmentId != null) 'treatment_id': treatmentId,
       if (row != null) 'row': row,
       if (column != null) 'column': column,
+      if (fieldRow != null) 'field_row': fieldRow,
+      if (fieldColumn != null) 'field_column': fieldColumn,
       if (notes != null) 'notes': notes,
     });
   }
@@ -2016,6 +2085,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       Value<int?>? treatmentId,
       Value<String?>? row,
       Value<String?>? column,
+      Value<int?>? fieldRow,
+      Value<int?>? fieldColumn,
       Value<String?>? notes}) {
     return PlotsCompanion(
       id: id ?? this.id,
@@ -2026,6 +2097,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       treatmentId: treatmentId ?? this.treatmentId,
       row: row ?? this.row,
       column: column ?? this.column,
+      fieldRow: fieldRow ?? this.fieldRow,
+      fieldColumn: fieldColumn ?? this.fieldColumn,
       notes: notes ?? this.notes,
     );
   }
@@ -2057,6 +2130,12 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     if (column.present) {
       map['column'] = Variable<String>(column.value);
     }
+    if (fieldRow.present) {
+      map['field_row'] = Variable<int>(fieldRow.value);
+    }
+    if (fieldColumn.present) {
+      map['field_column'] = Variable<int>(fieldColumn.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -2074,6 +2153,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
           ..write('treatmentId: $treatmentId, ')
           ..write('row: $row, ')
           ..write('column: $column, ')
+          ..write('fieldRow: $fieldRow, ')
+          ..write('fieldColumn: $fieldColumn, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -10295,6 +10376,8 @@ typedef $$PlotsTableCreateCompanionBuilder = PlotsCompanion Function({
   Value<int?> treatmentId,
   Value<String?> row,
   Value<String?> column,
+  Value<int?> fieldRow,
+  Value<int?> fieldColumn,
   Value<String?> notes,
 });
 typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
@@ -10306,6 +10389,8 @@ typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<int?> treatmentId,
   Value<String?> row,
   Value<String?> column,
+  Value<int?> fieldRow,
+  Value<int?> fieldColumn,
   Value<String?> notes,
 });
 
@@ -10334,6 +10419,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<int?> treatmentId = const Value.absent(),
             Value<String?> row = const Value.absent(),
             Value<String?> column = const Value.absent(),
+            Value<int?> fieldRow = const Value.absent(),
+            Value<int?> fieldColumn = const Value.absent(),
             Value<String?> notes = const Value.absent(),
           }) =>
               PlotsCompanion(
@@ -10345,6 +10432,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             treatmentId: treatmentId,
             row: row,
             column: column,
+            fieldRow: fieldRow,
+            fieldColumn: fieldColumn,
             notes: notes,
           ),
           createCompanionCallback: ({
@@ -10356,6 +10445,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<int?> treatmentId = const Value.absent(),
             Value<String?> row = const Value.absent(),
             Value<String?> column = const Value.absent(),
+            Value<int?> fieldRow = const Value.absent(),
+            Value<int?> fieldColumn = const Value.absent(),
             Value<String?> notes = const Value.absent(),
           }) =>
               PlotsCompanion.insert(
@@ -10367,6 +10458,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             treatmentId: treatmentId,
             row: row,
             column: column,
+            fieldRow: fieldRow,
+            fieldColumn: fieldColumn,
             notes: notes,
           ),
         ));
@@ -10402,6 +10495,16 @@ class $$PlotsTableFilterComposer
 
   ColumnFilters<String> get column => $state.composableBuilder(
       column: $state.table.column,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get fieldRow => $state.composableBuilder(
+      column: $state.table.fieldRow,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get fieldColumn => $state.composableBuilder(
+      column: $state.table.fieldColumn,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -10574,6 +10677,16 @@ class $$PlotsTableOrderingComposer
 
   ColumnOrderings<String> get column => $state.composableBuilder(
       column: $state.table.column,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get fieldRow => $state.composableBuilder(
+      column: $state.table.fieldRow,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get fieldColumn => $state.composableBuilder(
+      column: $state.table.fieldColumn,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

@@ -1,0 +1,70 @@
+---
+description: ARM Field Companion — quality-first development; comply with constitution and development criteria; report deviations
+alwaysApply: true
+---
+
+# ARM Field Companion — Development Standard
+
+The project is governed by **docs/CONSTITUTION.md** (architecture) and **docs/DEVELOPMENT_CRITERIA.md** (quality-first framework).
+
+## Primary Goal
+
+Develop the app **correctly, cleanly, safely, and to a high standard** on all major development criteria — not by chasing milestone labels.
+
+Judge every change by: **“Does this make the app stronger across the important engineering dimensions?”**
+
+**User focus:** Development is guided by **researcher and technician convenience**. Choices should enhance acceptability for them (field and lab users); favour workflow fit, reduced friction, and trust.
+
+## Standard to Follow
+
+- **Do not** optimize for speed or scope completion.
+- **Do** optimize for: architectural correctness, data integrity, maintainability, extensibility, UI consistency, diagnostics quality, and safe incremental change.
+- **Preserve** the current working app.
+- **Do not** perform broad refactors or rewrite unrelated files.
+- **Make** the smallest safe change that improves the app structurally.
+
+## The 10 Development Criteria (pre-acceptance checklist)
+
+Before accepting or proposing a change, ensure it holds up on:
+
+1. **Architecture** — Fits the frozen system cleanly.
+2. **Data integrity** — Preserves protocol vs execution truth.
+3. **Cohesion** — Belongs naturally with current modules.
+4. **Logic placement** — Business logic in use cases, not widgets.
+5. **Safety** — No unnecessary rewrites.
+6. **Extensibility** — Future features can attach cleanly.
+7. **Diagnostics** — Failures will be easier to understand.
+8. **Exportability** — Data will be usable in export.
+9. **UI consistency** — Matches the current app shell and flow.
+10. **Performance** — No wasteful repeated logic.
+
+**If a change fails two or three of these, reject it.**
+
+## Quality-driven order (not milestone labels)
+
+1. **First:** Strengthen protocol backbone (TrialState, Treatments, TreatmentComponents, PlotAssignments, resolution queries, PlotContext DTO, treatment screens).
+2. **Second:** Execution symmetrical and disciplined (Applications engine, shared execution pattern, notes/photos/flags/deviations, session detail/status).
+3. **Third:** Operationally trustworthy (login/attribution, AppError, diagnostics UI, export foundation).
+4. **Fourth:** Broader research support (importer, lab, calculator, matrix view, dashboards).
+
+## Constitution quick reference
+
+- **Dependency spine (frozen):** User → Trial → Treatments → TreatmentComponents → Plots → Assignments → Assessments → Sessions → Execution Records → Lab → Derived Logic → Diagnostics → Export.
+- **Business logic** in UseCases, not in screens.
+- **Context resolution:** Screen → Provider → UseCase → DTO → UI.
+- **Protocol** read-only during execution; **Plots.id** is relational identity.
+- **Execution records** belong to a Session; all records exportable and attributable.
+- **Deviations:** If a change would violate the constitution, inform the user with reason and impact; proceed only after acceptance.
+
+- **Field speed:** For rating/plot-queue flows, minimise taps and support field workflow. See **docs/FIELD_SPEED_IMPROVEMENTS.md**; first batch is implemented; keep the rest in mind for upcoming work.
+
+## Pre-change impact check (mandatory)
+
+Before implementing any change:
+1. Run **flutter analyze** and **flutter test** (before and after).
+2. Assess impact on: **dependencies** (pubspec), **logic** (UseCases, protocol vs execution), **internal communication** (providers, who reads/writes what), **data integrity** (session-scoped, export, Plots.id), **other screens/flows** (navigation, session/plot queue/trial/export).
+3. **High impact** (schema, multiple modules, core UseCases, risk of breakage): give **prior warning**; do not proceed until the user explicitly agrees.
+4. **Manageable impact** (local, additive, small refactor): **inform** and get consent, then proceed.
+5. **Trivial** (doc-only, single UI tweak): proceed; mention briefly.
+
+See **docs/IMPACT_CHECK.md** for the full checklist and the verification of the field speed improvements.

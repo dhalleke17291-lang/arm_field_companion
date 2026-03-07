@@ -166,6 +166,15 @@ final savePhotoUseCaseProvider = Provider<SavePhotoUseCase>((ref) {
   return SavePhotoUseCase(ref.watch(photoRepositoryProvider));
 });
 
+/// Flags for a given plot in a session (for one-tap flag toggle on rating screen).
+final plotFlagsForPlotSessionProvider =
+    StreamProvider.family<List<PlotFlag>, (int, int)>((ref, params) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.plotFlags)
+        ..where((f) => f.plotPk.equals(params.$1) & f.sessionId.equals(params.$2)))
+      .watch();
+});
+
 class PhotosForPlotParams {
   final int trialId;
   final int plotPk;

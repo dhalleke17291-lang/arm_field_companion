@@ -58,6 +58,8 @@ class Plots extends Table {
       integer().references(Treatments, #id).nullable()();
   TextColumn get row => text().nullable()();
   TextColumn get column => text().nullable()();
+  IntColumn get fieldRow => integer().nullable()();
+  IntColumn get fieldColumn => integer().nullable()();
   TextColumn get notes => text().nullable()();
 }
 
@@ -271,7 +273,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -284,6 +286,10 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(seedingRecords);
             await m.createTable(protocolSeedingFields);
             await m.createTable(seedingFieldValues);
+          }
+          if (from < 6) {
+            await m.addColumn(plots, plots.fieldRow);
+            await m.addColumn(plots, plots.fieldColumn);
           }
           await _createIndexes();
         },

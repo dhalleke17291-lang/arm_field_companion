@@ -235,7 +235,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                   const SizedBox(height: 36),
 
-                  // Ag-Quest title
+                  // App title
                   AnimatedBuilder(
                     animation: _mainController,
                     builder: (_, __) => Opacity(
@@ -243,7 +243,7 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Transform.translate(
                         offset: Offset(0, _titleSlide.value),
                         child: Text(
-                          'Ag-Quest',
+                          'ARM',
                           style: GoogleFonts.playfairDisplay(
                             color: Colors.white,
                             fontSize: 52,

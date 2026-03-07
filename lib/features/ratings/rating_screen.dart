@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
 import '../photos/usecases/save_photo_usecase.dart';
+import 'last_value_memory.dart';
 import 'usecases/save_rating_usecase.dart';
 
 class RatingScreen extends ConsumerStatefulWidget {
@@ -101,11 +102,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.flag_outlined),
-            onPressed: () => _showFlagDialog(context),
-            tooltip: 'Flag plot',
-          ),
+          _buildOfflineIndicator(),
+          _buildFlagButton(context),
         ],
       ),
       body: Column(
@@ -311,6 +309,90 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   // ===== UI =====
 
+  Widget _buildOfflineIndicator() {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text(
+            'Saved locally',
+            style: TextStyle(fontSize: 11, color: Colors.white70),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFlagButton(BuildContext context) {
+    final flagsAsync =
+        ref.watch(plotFlagsForPlotSessionProvider((widget.plot.id, widget.session.id)));
+    return flagsAsync.when(
+      data: (flags) {
+        final isFlagged = flags.isNotEmpty;
+        return IconButton(
+          icon: Icon(
+            isFlagged ? Icons.flag : Icons.flag_outlined,
+            color: isFlagged ? Colors.amber : null,
+          ),
+          onPressed: () => _toggleFlag(context),
+          onLongPress: () => _showFlagDialog(context),
+          tooltip: isFlagged
+              ? 'Remove flag (tap). Add note (long-press)'
+              : 'Flag plot (tap). Add note (long-press)',
+        );
+      },
+      loading: () => const IconButton(
+        icon: Icon(Icons.flag_outlined),
+        onPressed: null,
+        tooltip: 'Flag plot',
+      ),
+      error: (_, __) => IconButton(
+        icon: const Icon(Icons.flag_outlined),
+        onPressed: () => _showFlagDialog(context),
+        tooltip: 'Flag plot',
+      ),
+    );
+  }
+
+  Future<void> _toggleFlag(BuildContext context) async {
+    final flags = ref.read(
+        plotFlagsForPlotSessionProvider((widget.plot.id, widget.session.id))).value ?? [];
+    final db = ref.read(databaseProvider);
+    if (flags.isNotEmpty) {
+      await (db.delete(db.plotFlags)
+            ..where((f) =>
+                f.plotPk.equals(widget.plot.id) &
+                f.sessionId.equals(widget.session.id)))
+          .go();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Flag removed')),
+        );
+      }
+    } else {
+      await db.into(db.plotFlags).insert(
+            PlotFlagsCompanion.insert(
+              trialId: widget.trial.id,
+              plotPk: widget.plot.id,
+              sessionId: widget.session.id,
+              flagType: 'FIELD_OBSERVATION',
+              description: const drift.Value('Flagged'),
+              raterName: drift.Value(widget.session.raterName),
+            ),
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Plot flagged')),
+        );
+      }
+    }
+  }
+
   Widget _buildPlotInfoBar(BuildContext context) {
     final plotCtx = ref.watch(plotContextProvider(widget.plot.id));
     return Container(
@@ -410,6 +492,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   _selectedStatus = 'RECORDED';
                   _selectedMissingReason = null;
                 });
+                _prefillFromLastValue();
               },
             ),
           );
@@ -418,7 +501,26 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  void _prefillFromLastValue() {
+    final last = ref.read(lastValueMemoryProvider.notifier).get(
+          widget.session.id,
+          _currentAssessment.id,
+        );
+    if (last != null && _valueController.text.isEmpty && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _valueController.text.isEmpty) {
+          setState(() => _valueController.text = last.toString());
+        }
+      });
+    }
+  }
+
   Widget _buildRatingArea(BuildContext context, RatingRecord? existing) {
+    if (existing == null &&
+        _selectedStatus == 'RECORDED' &&
+        _valueController.text.isEmpty) {
+      _prefillFromLastValue();
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -505,12 +607,19 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             const SizedBox(height: 20),
             const Text('Value',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 8),
-            if (_currentAssessment.minValue != null)
+            if (_currentAssessment.minValue != null ||
+                _currentAssessment.maxValue != null ||
+                _currentAssessment.unit != null) ...[
+              const SizedBox(height: 4),
               Text(
-                'Range: ${_currentAssessment.minValue} – ${_currentAssessment.maxValue}${_currentAssessment.unit != null ? " ${_currentAssessment.unit}" : ""}',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                'Scale: ${_currentAssessment.minValue ?? "?"}–${_currentAssessment.maxValue ?? "?"}${_currentAssessment.unit != null ? " ${_currentAssessment.unit}" : ""}',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+            ],
             const SizedBox(height: 8),
             TextField(
               controller: _valueController,
@@ -586,18 +695,21 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 tooltip: 'Previous plot',
               ),
             const Spacer(),
-            FilledButton.icon(
-              onPressed: _isSaving ? null : () => _saveRating(context),
-              icon: _isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.save),
-              label: Text(_isSaving ? 'Saving...' : 'Save & Next'),
-              style: FilledButton.styleFrom(minimumSize: const Size(160, 48)),
+            GestureDetector(
+              onLongPress: _isSaving ? null : () => _saveRating(context),
+              child: FilledButton.icon(
+                onPressed: _isSaving ? null : () => _saveRating(context),
+                icon: _isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.save),
+                label: Text(_isSaving ? 'Saving...' : 'Save & Next'),
+                style: FilledButton.styleFrom(minimumSize: const Size(160, 48)),
+              ),
             ),
             const Spacer(),
             if (widget.currentPlotIndex < widget.allPlots.length - 1)
@@ -653,6 +765,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     setState(() => _isSaving = false);
 
     if (result.isSuccess) {
+      if (numericValue != null) {
+        ref.read(lastValueMemoryProvider.notifier).set(
+              widget.session.id,
+              _currentAssessment.id,
+              numericValue,
+            );
+      }
       if (_assessmentIndex < widget.assessments.length - 1) {
         setState(() {
           _assessmentIndex++;
@@ -661,6 +780,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           _selectedStatus = 'RECORDED';
           _selectedMissingReason = null;
         });
+        _prefillFromLastValue();
       } else {
         if (!context.mounted) return;
         _navigatePlot(context, 1);
