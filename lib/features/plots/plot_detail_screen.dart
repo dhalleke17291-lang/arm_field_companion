@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
+import 'plot_notes_dialog.dart';
 
 class PlotDetailScreen extends ConsumerWidget {
   final Trial trial;
@@ -24,9 +25,10 @@ class PlotDetailScreen extends ConsumerWidget {
         ref.watch(assessmentsForTrialProvider(trial.id)).value ?? [];
     final plotContextAsync = ref.watch(plotContextProvider(plot.id));
     final plots = ref.watch(plotsForTrialProvider(trial.id)).value ?? [];
-    final displayNum = getDisplayPlotLabel(plot, plots);
+    final plotToShow = plots.where((p) => p.id == plot.id).firstOrNull ?? plot;
+    final displayNum = getDisplayPlotLabel(plotToShow, plots);
     final assignmentSourceLabel = getAssignmentSourceLabel(
-        treatmentId: plot.treatmentId, assignmentSource: plot.assignmentSource);
+        treatmentId: plotToShow.treatmentId, assignmentSource: plotToShow.assignmentSource);
 
     return Scaffold(
       appBar: AppBar(
@@ -36,13 +38,20 @@ class PlotDetailScreen extends ConsumerWidget {
             Text('Plot $displayNum',
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            if (plot.rep != null)
-              Text('Rep ${plot.rep}',
+            if (plotToShow.rep != null)
+              Text('Rep ${plotToShow.rep}',
                   style: const TextStyle(fontSize: 12, color: Colors.white70)),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_note),
+            tooltip: 'Notes',
+            onPressed: () => showPlotNotesDialog(context, ref, plotToShow, trial),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -60,16 +69,45 @@ class PlotDetailScreen extends ConsumerWidget {
                           color: Theme.of(context).colorScheme.primary)),
                   const Divider(),
                   _detailRow('Plot (display)', displayNum),
-                  if (plot.rep != null)
-                    _detailRow('Rep / Block', plot.rep.toString()),
+                  if (plotToShow.rep != null)
+                    _detailRow('Rep / Block', plotToShow.rep.toString()),
                   if (assignmentSourceLabel != 'Unknown' && assignmentSourceLabel != 'Unassigned')
                     _detailRow('Assignment source', assignmentSourceLabel),
-                  if (plot.row != null) _detailRow('Row', plot.row.toString()),
-                  if (plot.column != null)
-                    _detailRow('Column', plot.column.toString()),
-                  if (plot.plotSortIndex != null)
-                    _detailRow('Sort Index', plot.plotSortIndex.toString()),
+                  if (plotToShow.row != null) _detailRow('Row', plotToShow.row.toString()),
+                  if (plotToShow.column != null)
+                    _detailRow('Column', plotToShow.column.toString()),
+                  if (plotToShow.plotSortIndex != null)
+                    _detailRow('Sort Index', plotToShow.plotSortIndex.toString()),
                   _detailRow('Trial', trial.name),
+                  const Divider(),
+                  if (plotToShow.notes != null && plotToShow.notes!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Notes',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Theme.of(context).colorScheme.primary)),
+                          const SizedBox(height: 4),
+                          Text(
+                            plotToShow.notes!.trim(),
+                            style: const TextStyle(fontSize: 13),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    _detailRow('Notes', 'No notes'),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.edit_note, size: 18),
+                    label: Text(plotToShow.notes?.trim().isNotEmpty == true ? 'Edit Notes' : 'Add Notes'),
+                    onPressed: () => showPlotNotesDialog(context, ref, plotToShow, trial),
+                  ),
                   const Divider(),
                   plotContextAsync.when(
                     loading: () => const SizedBox(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/loading_error_widgets.dart';
 import '../sessions/usecases/create_session_usecase.dart';
 
 class CreateSessionScreen extends ConsumerStatefulWidget {
@@ -64,7 +65,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
         foregroundColor: Colors.white,
       ),
       body: assessmentsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoadingView(),
         error: (e, st) => Center(child: Text('Error: $e')),
         data: (assessments) => _buildForm(context, assessments),
       ),

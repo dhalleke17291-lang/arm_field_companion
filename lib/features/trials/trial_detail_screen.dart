@@ -14,6 +14,7 @@ import '../sessions/session_detail_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import '../plots/import_plots_screen.dart';
 import '../plots/plot_detail_screen.dart';
+import '../seeding/record_seeding_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
 import 'plot_layout_model.dart';
 import '../../core/providers.dart';
@@ -1697,117 +1698,12 @@ class _SeedingTab extends ConsumerWidget {
   }
 
   Future<void> _addSeeding(BuildContext context, WidgetRef ref) async {
-    final db = ref.read(databaseProvider);
-    final operatorController = TextEditingController();
-    final commentsController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            final dateLabel =
-                '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
-
-            return AlertDialog(
-              title: const Text('Add Seeding Event'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Core fields',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: dialogContext,
-                          initialDate: selectedDate,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          setDialogState(() => selectedDate = picked);
-                        }
-                      },
-                      icon: const Icon(Icons.calendar_today),
-                      label: Text('Seeding Date: $dateLabel'),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: operatorController,
-                      decoration: const InputDecoration(
-                        labelText: 'Operator Name',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: commentsController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Comments',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Protocol-driven fields will appear here next.',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () async {
-                    await db.into(db.seedingRecords).insert(
-                          SeedingRecordsCompanion.insert(
-                            trialId: trial.id,
-                            seedingDate: selectedDate,
-                            operatorName: drift.Value(
-                              operatorController.text.trim().isEmpty
-                                  ? null
-                                  : operatorController.text.trim(),
-                            ),
-                            comments: drift.Value(
-                              commentsController.text.trim().isEmpty
-                                  ? null
-                                  : commentsController.text.trim(),
-                            ),
-                          ),
-                        );
-
-                    if (dialogContext.mounted) {
-                      Navigator.pop(dialogContext, true);
-                    }
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecordSeedingScreen(trial: trial),
+      ),
     );
-
-    if (saved == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Seeding record added')),
-      );
-    }
   }
 }
 

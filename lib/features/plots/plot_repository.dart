@@ -106,6 +106,12 @@ class PlotRepository {
       ..sort();
   }
 
+  /// Updates notes for a single plot.
+  Future<void> updatePlotNotes(int plotPk, String? notes) async {
+    await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
+        .write(PlotsCompanion(notes: Value(notes)));
+  }
+
   /// Updates treatment assignment for a single plot.
   /// [assignmentSource]: 'imported' | 'manual' | null (unknown).
   Future<void> updatePlotTreatment(
