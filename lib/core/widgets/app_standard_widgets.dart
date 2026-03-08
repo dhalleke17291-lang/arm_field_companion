@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../trial_state.dart';
+
 /// App-wide UI standards for consistent look and behavior.
 /// Use these so similar elements (section headers, empty states, etc.) look the same across screens.
 class AppUiConstants {
@@ -31,12 +33,15 @@ class StandardSectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
   final Widget? action;
+  /// Optional chip or badge (e.g. ProtocolLockChip) shown between title and action.
+  final Widget? trailingIndicator;
 
   const StandardSectionHeader({
     super.key,
     required this.icon,
     required this.title,
     this.action,
+    this.trailingIndicator,
   });
 
   @override
@@ -63,11 +68,20 @@ class StandardSectionHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (trailingIndicator != null) ...[
+            trailingIndicator!,
+            const SizedBox(width: 8),
+          ],
           if (action != null) action!,
         ],
       ),
     );
   }
+}
+
+Widget _wrapTooltipWhenDisabled({required String? tooltip, required Widget child}) {
+  if (tooltip == null || tooltip.isEmpty) return child;
+  return Tooltip(message: tooltip, child: child);
 }
 
 /// Standard empty state: icon, title, one-line subtitle, primary action.
@@ -82,6 +96,8 @@ class StandardEmptyState extends StatelessWidget {
   final IconData? actionIcon;
   /// Optional widgets below the primary button (e.g. secondary actions for Plots).
   final List<Widget>? trailingActions;
+  /// When [onAction] is null, show this tooltip on the disabled button so users understand why before tapping.
+  final String? disabledTooltipMessage;
 
   const StandardEmptyState({
     super.key,
@@ -92,6 +108,7 @@ class StandardEmptyState extends StatelessWidget {
     this.onAction,
     this.actionIcon,
     this.trailingActions,
+    this.disabledTooltipMessage,
   });
 
   @override
@@ -127,14 +144,17 @@ class StandardEmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppUiConstants.emptyStateSpacingBeforeAction),
-            FilledButton.icon(
-              onPressed: onAction,
-              icon: Icon(actionIcon ?? Icons.add, size: 20),
-              label: Text(actionLabel),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: AppUiConstants.primaryButtonPaddingV,
+            _wrapTooltipWhenDisabled(
+              tooltip: onAction == null ? disabledTooltipMessage : null,
+              child: FilledButton.icon(
+                onPressed: onAction,
+                icon: Icon(actionIcon ?? Icons.add, size: 20),
+                label: Text(actionLabel),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: AppUiConstants.primaryButtonPaddingV,
+                  ),
                 ),
               ),
             ),
@@ -199,3 +219,56 @@ class StandardDetailRow extends StatelessWidget {
     );
   }
 }
+
+/// Compact chip showing protocol lock state: "Editable" or "Locked".
+/// Optional [status] enables tooltip with [getProtocolLockMessage] when locked.
+class ProtocolLockChip extends StatelessWidget {
+  final bool isLocked;
+  final String? status;
+
+  const ProtocolLockChip({
+    super.key,
+    required this.isLocked,
+    this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final label = getProtocolLockLabel(status);
+    final tooltip = isLocked && status != null && getProtocolLockMessage(status).isNotEmpty
+        ? getProtocolLockMessage(status)
+        : null;
+    Widget chip = Material(
+      color: isLocked ? scheme.surfaceContainerHighest : scheme.primaryContainer,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isLocked ? Icons.lock : Icons.lock_open,
+              size: 14,
+              color: isLocked ? scheme.onSurfaceVariant : scheme.primary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isLocked ? scheme.onSurfaceVariant : scheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (tooltip != null) {
+      chip = Tooltip(message: tooltip, child: chip);
+    }
+    return chip;
+  }
+}
+

@@ -48,6 +48,36 @@ String labelForTrialStatus(String? status) {
   }
 }
 
+/// Short, user-facing description of what the status means (for hints in the UI).
+String statusDescriptionForTrialStatus(String? status) {
+  switch (status) {
+    case kTrialStatusDraft:
+      return 'Trial is in setup. Add plots and treatments, then mark ready.';
+    case kTrialStatusReady:
+      return 'Setup complete. You can start sessions to collect data.';
+    case kTrialStatusActive:
+      return 'Data collection in progress.';
+    case kTrialStatusClosed:
+      return 'Data collection finished.';
+    case kTrialStatusArchived:
+      return 'Trial archived.';
+    default:
+      return '';
+  }
+}
+
+/// Label for protocol lock state: "Editable" or "Locked".
+String getProtocolLockLabel(String? status) {
+  return isProtocolLocked(status) ? 'Locked' : 'Editable';
+}
+
+/// Standard message when an action is blocked because protocol is locked.
+String getProtocolLockMessage(String? status) {
+  if (status == null || !isProtocolLocked(status)) return '';
+  final label = labelForTrialStatus(status);
+  return 'Protocol is locked because this trial is $label.';
+}
+
 /// Next status(es) allowed from current (for UI transitions).
 List<String> allowedNextTrialStatuses(String? status) {
   switch (status) {

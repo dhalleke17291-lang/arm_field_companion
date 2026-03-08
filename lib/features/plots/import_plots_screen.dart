@@ -409,9 +409,8 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
     final normalizedRows = _reviewResult!.normalizedRows!;
     if (isProtocolLocked(widget.trial.status)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Protocol is locked. Change trial status to import plots.')),
+        SnackBar(
+            content: Text(getProtocolLockMessage(widget.trial.status))),
       );
       return;
     }

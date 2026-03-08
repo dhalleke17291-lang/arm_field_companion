@@ -322,6 +322,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
       review: _review!,
       existingTrialId: widget.trial?.id,
       isProtocolLocked: locked,
+      protocolLockMessage: locked && widget.trial != null ? getProtocolLockMessage(widget.trial!.status) : null,
     );
     if (!mounted) return;
     setState(() {

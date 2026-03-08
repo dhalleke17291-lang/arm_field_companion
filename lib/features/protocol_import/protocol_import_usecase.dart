@@ -225,10 +225,11 @@ class ProtocolImportUseCase {
     required ProtocolImportReviewResult review,
     required int? existingTrialId,
     bool isProtocolLocked = false,
+    String? protocolLockMessage,
   }) async {
     if (isProtocolLocked) {
       return ProtocolImportExecuteResult.failure(
-          'Protocol is locked. Change trial status to import.');
+          protocolLockMessage ?? 'Protocol is locked. Change trial status to import.');
     }
     if (!review.canProceed) {
       return ProtocolImportExecuteResult.failure(

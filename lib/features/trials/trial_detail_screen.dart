@@ -191,23 +191,33 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   Widget _buildTrialStatusBar(BuildContext context, WidgetRef ref, Trial trial) {
     final nextStatuses = allowedNextTrialStatuses(trial.status);
     final label = labelForTrialStatus(trial.status);
+    final locked = isProtocolLocked(trial.status);
+    final statusHint = locked
+        ? 'Protocol locked ($label)'
+        : 'Protocol editable';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Status:',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(width: 8),
-          Chip(
-            label: Text(label, style: const TextStyle(fontSize: 12)),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          const SizedBox(width: 12),
-          ...nextStatuses.map((next) {
+          Row(
+            children: [
+              Text('Status:',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              const SizedBox(width: 8),
+              Chip(
+                label: Text(label, style: const TextStyle(fontSize: 12)),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              const SizedBox(width: 8),
+              ProtocolLockChip(isLocked: locked, status: trial.status),
+              const SizedBox(width: 12),
+              ...nextStatuses.map((next) {
             final nextLabel = labelForTrialStatus(next);
             return Padding(
               padding: const EdgeInsets.only(right: 6),
@@ -232,6 +242,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               ),
             );
           }),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            statusHint,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -239,6 +258,30 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
   Future<void> _transitionTrialStatus(
       BuildContext context, WidgetRef ref, String newStatus) async {
+    if (newStatus == kTrialStatusActive) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Activate Trial?'),
+          content: const Text(
+            'Activating this trial will lock the protocol structure. '
+            'Plots, treatments, assessments, and assignments will no longer be editable. '
+            'Data collection sessions can continue.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Activate Trial'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
     final repo = ref.read(trialRepositoryProvider);
     final ok = await repo.updateTrialStatus(widget.trial.id, newStatus);
     if (!context.mounted) return;
@@ -284,7 +327,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   color: Theme.of(context).colorScheme.primary,
                   size: 22,
                 ),
-                const SizedBox(width: 12),
+              const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -658,7 +701,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       icon: Icons.grid_on,
       title: 'No Plots Yet',
       subtitle: locked
-          ? 'Protocol is locked. Change trial status to edit structure.'
+          ? getProtocolLockMessage(widget.trial.status)
           : 'Import plots via CSV to get started',
       actionLabel: 'Import Plots from CSV',
       actionIcon: Icons.upload_file,
@@ -669,6 +712,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
               MaterialPageRoute(
                   builder: (_) =>
                       ImportPlotsScreen(trial: widget.trial))),
+      disabledTooltipMessage: locked ? getProtocolLockMessage(widget.trial.status) : null,
       trailingActions: locked
           ? null
           : [
@@ -931,9 +975,10 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
   Widget _buildPlotsHeader(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
     final locked = isProtocolLocked(widget.trial.status);
-    return StandardSectionHeader(
+    final header = StandardSectionHeader(
       icon: Icons.grid_on,
       title: '${plots.length} plots',
+      trailingIndicator: ProtocolLockChip(isLocked: locked, status: widget.trial.status),
       action: !locked
           ? TextButton.icon(
               onPressed: () => _showBulkAssignDialog(context, ref, plots),
@@ -946,7 +991,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                       fontSize: 13)),
             )
           : Tooltip(
-              message: 'Protocol is locked. Assignments cannot be changed.',
+              message: getProtocolLockMessage(widget.trial.status),
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Text('Locked',
@@ -955,6 +1000,23 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                         color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ),
             ),
+    );
+    if (!locked) return header;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        header,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+          child: Text(
+            getProtocolLockMessage(widget.trial.status),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1022,9 +1084,9 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
           onLongPress: () {
             if (isProtocolLocked(widget.trial.status)) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
                     content: Text(
-                        'Protocol is locked. Assignments cannot be changed.')),
+                        getProtocolLockMessage(widget.trial.status))),
               );
               return;
             }
@@ -1355,10 +1417,11 @@ class _AssessmentsTab extends ConsumerWidget {
       icon: Icons.assessment,
       title: 'No Assessments Yet',
       subtitle: locked
-          ? 'Protocol is locked. Change trial status to edit structure.'
+          ? getProtocolLockMessage(trial.status)
           : 'Add assessments to define what to measure.',
       actionLabel: 'Add Assessment',
       onAction: locked ? null : () => _showAddAssessmentDialog(context, ref),
+      disabledTooltipMessage: locked ? getProtocolLockMessage(trial.status) : null,
     );
   }
 
@@ -1370,12 +1433,32 @@ class _AssessmentsTab extends ConsumerWidget {
         StandardSectionHeader(
           icon: Icons.assessment,
           title: '${assessments.length} assessments',
-          action: TextButton.icon(
-            onPressed: locked ? null : () => _showAddAssessmentDialog(context, ref),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add'),
-          ),
+          trailingIndicator: ProtocolLockChip(isLocked: locked, status: trial.status),
+          action: locked
+              ? Tooltip(
+                  message: getProtocolLockMessage(trial.status),
+                  child: TextButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add'),
+                  ),
+                )
+              : TextButton.icon(
+                  onPressed: () => _showAddAssessmentDialog(context, ref),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add'),
+                ),
         ),
+        if (locked)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+            child: Text(
+              getProtocolLockMessage(trial.status),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
         Expanded(
           child: ListView.builder(
             itemCount: assessments.length,
@@ -2094,24 +2177,47 @@ class _TreatmentsTab extends ConsumerWidget {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
+    final locked = isProtocolLocked(trial.status);
     return StandardEmptyState(
       icon: Icons.science_outlined,
       title: 'No Treatments Yet',
-      subtitle: 'Add the treatment groups for this trial.',
+      subtitle: locked ? getProtocolLockMessage(trial.status) : 'Add the treatment groups for this trial.',
       actionLabel: 'Add Treatment',
-      onAction: () => _showAddTreatmentDialog(context, ref),
+      onAction: locked ? null : () => _showAddTreatmentDialog(context, ref),
+      disabledTooltipMessage: locked ? getProtocolLockMessage(trial.status) : null,
     );
   }
 
   Widget _buildList(
       BuildContext context, WidgetRef ref, List<Treatment> treatments) {
+    final locked = isProtocolLocked(trial.status);
     return Stack(
       children: [
         ListView.builder(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
-          itemCount: treatments.length,
+          itemCount: treatments.length + (locked ? 1 : 0),
           itemBuilder: (context, index) {
-            final t = treatments[index];
+            if (locked && index == 0) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ProtocolLockChip(isLocked: true, status: trial.status),
+                    const SizedBox(height: 4),
+                    Text(
+                      getProtocolLockMessage(trial.status),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            final i = locked ? index - 1 : index;
+            final t = treatments[i];
             return Card(
               child: ListTile(
                 leading: Container(
@@ -2138,12 +2244,30 @@ class _TreatmentsTab extends ConsumerWidget {
         Positioned(
           bottom: 16,
           right: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'add_treatment',
-            onPressed: () => _showAddTreatmentDialog(context, ref),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Treatment'),
-          ),
+          child: locked
+              ? GestureDetector(
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(getProtocolLockMessage(trial.status))),
+                  ),
+                  child: Tooltip(
+                    message: getProtocolLockMessage(trial.status),
+                    child: const FloatingActionButton.extended(
+                      heroTag: 'add_treatment',
+                      onPressed: null,
+                      icon: Icon(Icons.add),
+                      label: Text('Add Treatment'),
+                    ),
+                  ),
+                )
+              : Tooltip(
+                  message: 'Add treatment',
+                  child: FloatingActionButton.extended(
+                    heroTag: 'add_treatment',
+                    onPressed: () => _showAddTreatmentDialog(context, ref),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Treatment'),
+                  ),
+                ),
         ),
       ],
     );
@@ -2987,7 +3111,7 @@ class _ApplicationsTab extends ConsumerWidget {
                     label: const Text('Edit'),
                   ),
                 ),
-                const SizedBox(width: 12),
+              const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(

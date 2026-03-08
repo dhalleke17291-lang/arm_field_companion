@@ -17,8 +17,7 @@ class UpdatePlotAssignmentUseCase {
     required int? treatmentId,
   }) async {
     if (isProtocolLocked(trial.status)) {
-      return UpdateAssignmentResult.failure(
-          'Protocol is locked. Change trial status to edit assignments.');
+      return UpdateAssignmentResult.failure(getProtocolLockMessage(trial.status));
     }
     try {
       await _plotRepository.updatePlotTreatment(
@@ -40,8 +39,7 @@ class UpdatePlotAssignmentUseCase {
     required Map<int, int?> plotPkToTreatmentId,
   }) async {
     if (isProtocolLocked(trial.status)) {
-      return UpdateAssignmentResult.failure(
-          'Protocol is locked. Change trial status to edit assignments.');
+      return UpdateAssignmentResult.failure(getProtocolLockMessage(trial.status));
     }
     if (plotPkToTreatmentId.isEmpty) {
       return UpdateAssignmentResult.success();
