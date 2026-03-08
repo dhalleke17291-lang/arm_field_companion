@@ -57,6 +57,8 @@ class ExportRepository {
         'treatment_id': plot.treatmentId,
         'treatment_code': treatment?.code,
         'treatment_name': treatment?.name,
+        'assignment_source': plot.assignmentSource,
+        'assignment_updated_at_utc': plot.assignmentUpdatedAt?.toUtc().toIso8601String(),
         'row': plot.row,
         'column': plot.column,
         'plot_sort_index': plot.plotSortIndex,
