@@ -4,6 +4,7 @@ import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import 'plot_notes_dialog.dart';
+import '../../core/widgets/app_standard_widgets.dart';
 
 class PlotDetailScreen extends ConsumerWidget {
   final Trial trial;
@@ -68,17 +69,17 @@ class PlotDetailScreen extends ConsumerWidget {
                           fontSize: 15,
                           color: Theme.of(context).colorScheme.primary)),
                   const Divider(),
-                  _detailRow('Plot (display)', displayNum),
+                  StandardDetailRow(label: 'Plot (display)', value: displayNum),
                   if (plotToShow.rep != null)
-                    _detailRow('Rep / Block', plotToShow.rep.toString()),
+                    StandardDetailRow(label: 'Rep / Block', value: plotToShow.rep.toString()),
                   if (assignmentSourceLabel != 'Unknown' && assignmentSourceLabel != 'Unassigned')
-                    _detailRow('Assignment source', assignmentSourceLabel),
-                  if (plotToShow.row != null) _detailRow('Row', plotToShow.row.toString()),
+                    StandardDetailRow(label: 'Assignment source', value: assignmentSourceLabel),
+                  if (plotToShow.row != null) StandardDetailRow(label: 'Row', value: plotToShow.row.toString()),
                   if (plotToShow.column != null)
-                    _detailRow('Column', plotToShow.column.toString()),
+                    StandardDetailRow(label: 'Column', value: plotToShow.column.toString()),
                   if (plotToShow.plotSortIndex != null)
-                    _detailRow('Sort Index', plotToShow.plotSortIndex.toString()),
-                  _detailRow('Trial', trial.name),
+                    StandardDetailRow(label: 'Sort Index', value: plotToShow.plotSortIndex.toString()),
+                  StandardDetailRow(label: 'Trial', value: trial.name),
                   const Divider(),
                   if (plotToShow.notes != null && plotToShow.notes!.trim().isNotEmpty)
                     Padding(
@@ -102,7 +103,7 @@ class PlotDetailScreen extends ConsumerWidget {
                       ),
                     )
                   else
-                    _detailRow('Notes', 'No notes'),
+                    const StandardDetailRow(label: 'Notes', value: 'No notes'),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.edit_note, size: 18),
                     label: Text(plotToShow.notes?.trim().isNotEmpty == true ? 'Edit Notes' : 'Add Notes'),
@@ -114,11 +115,11 @@ class PlotDetailScreen extends ConsumerWidget {
                       height: 20,
                       child: Center(child: LinearProgressIndicator(minHeight: 2)),
                     ),
-                    error: (e, st) => _detailRow('Treatment', e.toString()),
+                    error: (e, st) => StandardDetailRow(label: 'Treatment', value: e.toString()),
                     data: (ctx) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _detailRow('Treatment', ctx.hasTreatment
+                        StandardDetailRow(label: 'Treatment', value: ctx.hasTreatment
                             ? '${ctx.treatmentCode}  —  ${ctx.treatmentName}'
                             : 'Unassigned'),
                         if (ctx.hasComponents) ...[
@@ -250,25 +251,6 @@ class PlotDetailScreen extends ConsumerWidget {
                       },
                     ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(label,
-                style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          ),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),

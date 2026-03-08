@@ -19,6 +19,8 @@ import '../protocol_import/protocol_import_screen.dart';
 import 'plot_layout_model.dart';
 import '../../core/providers.dart';
 import '../../data/repositories/treatment_repository.dart';
+import '../../core/widgets/loading_error_widgets.dart';
+import '../../core/widgets/app_standard_widgets.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -652,55 +654,40 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
 
   Widget _buildEmptyPlots(BuildContext context, WidgetRef ref) {
     final locked = isProtocolLocked(widget.trial.status);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.grid_on,
-              size: 64, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          const Text('No Plots Yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            locked
-                ? 'Protocol is locked. Change trial status to edit structure.'
-                : 'Import plots via CSV to get started',
-            style: const TextStyle(color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: locked
-                ? null
-                : () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            ImportPlotsScreen(trial: widget.trial))),
-            icon: const Icon(Icons.upload_file),
-            label: const Text('Import Plots from CSV'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: locked
-                ? null
-                : () => Navigator.push(
+    return StandardEmptyState(
+      icon: Icons.grid_on,
+      title: 'No Plots Yet',
+      subtitle: locked
+          ? 'Protocol is locked. Change trial status to edit structure.'
+          : 'Import plots via CSV to get started',
+      actionLabel: 'Import Plots from CSV',
+      actionIcon: Icons.upload_file,
+      onAction: locked
+          ? null
+          : () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) =>
+                      ImportPlotsScreen(trial: widget.trial))),
+      trailingActions: locked
+          ? null
+          : [
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) =>
                             ProtocolImportScreen(trial: widget.trial))),
-            icon: const Icon(Icons.folder_special),
-            label: const Text('Import Protocol (Treatments + Plots)'),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: locked ? null : () => _seedTestPlots(context, ref),
-            icon: const Icon(Icons.science),
-            label: const Text('Add 10 Test Plots'),
-          ),
-        ],
-      ),
+                icon: const Icon(Icons.folder_special),
+                label: const Text('Import Protocol (Treatments + Plots)'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => _seedTestPlots(context, ref),
+                icon: const Icon(Icons.science),
+                label: const Text('Add 10 Test Plots'),
+              ),
+            ],
     );
   }
 
@@ -944,20 +931,11 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
   Widget _buildPlotsHeader(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
     final locked = isProtocolLocked(widget.trial.status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: Row(
-        children: [
-          Icon(Icons.grid_on, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text('${plots.length} plots',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary)),
-          const Spacer(),
-          if (!locked)
-            TextButton.icon(
+    return StandardSectionHeader(
+      icon: Icons.grid_on,
+      title: '${plots.length} plots',
+      action: !locked
+          ? TextButton.icon(
               onPressed: () => _showBulkAssignDialog(context, ref, plots),
               icon: Icon(Icons.assignment,
                   size: 16,
@@ -967,16 +945,16 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                       color: Theme.of(context).colorScheme.primary,
                       fontSize: 13)),
             )
-          else
-            Tooltip(
+          : Tooltip(
               message: 'Protocol is locked. Assignments cannot be changed.',
-              child: Text('Locked',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text('Locked',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ),
             ),
-        ],
-      ),
     );
   }
 
@@ -1363,8 +1341,8 @@ class _AssessmentsTab extends ConsumerWidget {
     final assessmentsAsync = ref.watch(assessmentsForTrialProvider(trial.id));
 
     return assessmentsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(child: Text('Error: $e')),
+      loading: () => const AppLoadingView(),
+      error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(assessmentsForTrialProvider(trial.id))),
       data: (assessments) => assessments.isEmpty
           ? _buildEmptyAssessments(context, ref)
           : _buildAssessmentsList(context, ref, assessments),
@@ -1373,31 +1351,14 @@ class _AssessmentsTab extends ConsumerWidget {
 
   Widget _buildEmptyAssessments(BuildContext context, WidgetRef ref) {
     final locked = isProtocolLocked(trial.status);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.assessment,
-              size: 64, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          const Text('No Assessments Yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            locked
-                ? 'Protocol is locked. Change trial status to edit structure.'
-                : 'Add assessments to define what to measure.',
-            style: const TextStyle(color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: locked ? null : () => _showAddAssessmentDialog(context, ref),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Assessment'),
-          ),
-        ],
-      ),
+    return StandardEmptyState(
+      icon: Icons.assessment,
+      title: 'No Assessments Yet',
+      subtitle: locked
+          ? 'Protocol is locked. Change trial status to edit structure.'
+          : 'Add assessments to define what to measure.',
+      actionLabel: 'Add Assessment',
+      onAction: locked ? null : () => _showAddAssessmentDialog(context, ref),
     );
   }
 
@@ -1406,25 +1367,13 @@ class _AssessmentsTab extends ConsumerWidget {
     final locked = isProtocolLocked(trial.status);
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          color: Theme.of(context).colorScheme.primaryContainer,
-          child: Row(
-            children: [
-              Icon(Icons.assessment,
-                  color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Text('${assessments.length} assessments',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary)),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: locked ? null : () => _showAddAssessmentDialog(context, ref),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add'),
-              ),
-            ],
+        StandardSectionHeader(
+          icon: Icons.assessment,
+          title: '${assessments.length} assessments',
+          action: TextButton.icon(
+            onPressed: locked ? null : () => _showAddAssessmentDialog(context, ref),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add'),
           ),
         ),
         Expanded(
@@ -1570,61 +1519,29 @@ class _SeedingTab extends ConsumerWidget {
           .get(),
       builder: (context, AsyncSnapshot<List> snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const AppLoadingView();
         }
 
         final records = snapshot.data!;
 
         if (records.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.agriculture,
-                    size: 64, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Seeding Records Yet',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Record the seeding operation for this trial',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Seeding Event'),
-                  onPressed: () => _addSeeding(context, ref),
-                )
-              ],
-            ),
+          return StandardEmptyState(
+            icon: Icons.agriculture,
+            title: 'No Seeding Records Yet',
+            subtitle: 'Record the seeding operation for this trial',
+            actionLabel: 'Add Seeding Event',
+            onAction: () => _addSeeding(context, ref),
           );
         }
 
         return Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Row(
-                children: [
-                  Icon(Icons.agriculture,
-                      color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${records.length} seeding events',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _addSeeding(context, ref),
-                  )
-                ],
+            StandardSectionHeader(
+              icon: Icons.agriculture,
+              title: '${records.length} seeding events',
+              action: IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () => _addSeeding(context, ref),
               ),
             ),
             Expanded(
@@ -2168,8 +2085,8 @@ class _TreatmentsTab extends ConsumerWidget {
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
 
     return treatmentsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const AppLoadingView(),
+      error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(treatmentsForTrialProvider(trial.id))),
       data: (treatments) => treatments.isEmpty
           ? _buildEmpty(context, ref)
           : _buildList(context, ref, treatments),
@@ -2177,26 +2094,12 @@ class _TreatmentsTab extends ConsumerWidget {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.science_outlined,
-              size: 64, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          const Text('No Treatments Yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Add the treatment groups for this trial.',
-              style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () => _showAddTreatmentDialog(context, ref),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Treatment'),
-          ),
-        ],
-      ),
+    return StandardEmptyState(
+      icon: Icons.science_outlined,
+      title: 'No Treatments Yet',
+      subtitle: 'Add the treatment groups for this trial.',
+      actionLabel: 'Add Treatment',
+      onAction: () => _showAddTreatmentDialog(context, ref),
     );
   }
 
@@ -2431,29 +2334,16 @@ class SessionsView extends ConsumerWidget {
   }
 
   Widget _buildEmptySessions(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.folder_open,
-              size: 64, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          const Text('No Sessions Yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Start a session to begin collecting field data.',
-              style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => CreateSessionScreen(trial: trial))),
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Start Session'),
-          ),
-        ],
-      ),
+    return StandardEmptyState(
+      icon: Icons.folder_open,
+      title: 'No Sessions Yet',
+      subtitle: 'Start a session to begin collecting field data.',
+      actionLabel: 'Start Session',
+      actionIcon: Icons.play_arrow,
+      onAction: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => CreateSessionScreen(trial: trial))),
     );
   }
 
@@ -2674,8 +2564,8 @@ class _ApplicationsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(applicationsForTrialProvider(trial.id));
     return eventsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const AppLoadingView(),
+      error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(applicationsForTrialProvider(trial.id))),
       data: (events) => events.isEmpty
           ? _buildEmpty(context, ref)
           : _buildList(context, ref, events),
@@ -2683,25 +2573,12 @@ class _ApplicationsTab extends ConsumerWidget {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.science, size: 64, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          const Text('No Application Events Yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Record spray, granular and other application events',
-              style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () => _showAddEventDialog(context, ref),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Application Event'),
-          ),
-        ],
-      ),
+    return StandardEmptyState(
+      icon: Icons.science,
+      title: 'No Application Events Yet',
+      subtitle: 'Record spray, granular and other application events',
+      actionLabel: 'Add Application Event',
+      onAction: () => _showAddEventDialog(context, ref),
     );
   }
 

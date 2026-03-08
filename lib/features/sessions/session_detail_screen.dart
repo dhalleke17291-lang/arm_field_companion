@@ -5,6 +5,7 @@ import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import 'package:share_plus/share_plus.dart';
 import '../plots/plot_queue_screen.dart';
+import '../../core/widgets/loading_error_widgets.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -55,14 +56,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         ],
       ),
       body: plotsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Error: $e')),
+        loading: () => const AppLoadingView(),
+        error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () { ref.invalidate(plotsForTrialProvider(widget.trial.id)); ref.invalidate(sessionRatingsProvider(widget.session.id)); ref.invalidate(sessionAssessmentsProvider(widget.session.id)); }),
         data: (plots) => ratingsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, st) => Center(child: Text('Error: $e')),
+          loading: () => const AppLoadingView(),
+          error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () { ref.invalidate(plotsForTrialProvider(widget.trial.id)); ref.invalidate(sessionRatingsProvider(widget.session.id)); ref.invalidate(sessionAssessmentsProvider(widget.session.id)); }),
           data: (ratings) => assessmentsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, st) => Center(child: Text('Error: $e')),
+            loading: () => const AppLoadingView(),
+            error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () { ref.invalidate(plotsForTrialProvider(widget.trial.id)); ref.invalidate(sessionRatingsProvider(widget.session.id)); ref.invalidate(sessionAssessmentsProvider(widget.session.id)); }),
             data: (assessments) => Column(
               children: [
                 _SessionDockBar(
