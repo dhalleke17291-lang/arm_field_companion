@@ -15,6 +15,7 @@ class PhotoRepository {
     required String finalPath,
     String? caption,
     String? raterName,
+    int? performedByUserId,
   }) async {
     return _db.transaction(() async {
       // Step 1 — insert DB record with temp path
@@ -51,6 +52,7 @@ class PhotoRepository {
               eventType: 'PHOTO_CAPTURED',
               description: 'Photo saved for plot $plotPk',
               performedBy: Value(raterName),
+              performedByUserId: Value(performedByUserId),
             ),
           );
 

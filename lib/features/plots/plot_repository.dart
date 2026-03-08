@@ -105,6 +105,43 @@ class PlotRepository {
         .toList()
       ..sort();
   }
+
+  /// Updates treatment assignment for a single plot.
+  /// [assignmentSource]: 'imported' | 'manual' | null (unknown).
+  Future<void> updatePlotTreatment(
+    int plotPk,
+    int? treatmentId, {
+    String? assignmentSource,
+    DateTime? assignmentUpdatedAt,
+  }) async {
+    await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
+      PlotsCompanion(
+        treatmentId: Value(treatmentId),
+        assignmentSource: assignmentSource != null ? Value(assignmentSource) : const Value.absent(),
+        assignmentUpdatedAt: assignmentUpdatedAt != null ? Value(assignmentUpdatedAt) : const Value.absent(),
+      ),
+    );
+  }
+
+  /// Updates treatment assignments for multiple plots in one transaction.
+  /// [assignmentSource]: e.g. 'manual' when user bulk-assigns.
+  Future<void> updatePlotsTreatmentsBulk(
+    Map<int, int?> plotPkToTreatmentId, {
+    String? assignmentSource,
+    DateTime? assignmentUpdatedAt,
+  }) async {
+    final at = assignmentUpdatedAt ?? DateTime.now().toUtc();
+    await _db.transaction(() async {
+      for (final entry in plotPkToTreatmentId.entries) {
+        await (_db.update(_db.plots)..where((p) => p.id.equals(entry.key)))
+            .write(PlotsCompanion(
+          treatmentId: Value(entry.value),
+          assignmentSource: assignmentSource != null ? Value(assignmentSource) : const Value.absent(),
+          assignmentUpdatedAt: assignmentSource != null ? Value(at) : const Value.absent(),
+        ));
+      }
+    });
+  }
 }
 
 class PlotNotFoundException implements Exception {

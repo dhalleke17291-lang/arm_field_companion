@@ -5,6 +5,7 @@ import 'package:csv/csv.dart';
 import 'dart:io';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import '../../core/trial_state.dart';
 import 'usecases/import_plots_usecase.dart';
 
 class ImportPlotsScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
   ImportPlotsResult? _lastResult;
   String? _fileName;
   List<Map<String, dynamic>>? _previewRows;
+  ImportReviewResult? _reviewResult;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +110,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
               ),
             ),
 
-            // Preview
+            // Preview + Import Review (Charter PART 16)
             if (_previewRows != null) ...[
               const SizedBox(height: 20),
               Text(
@@ -118,26 +120,34 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
               ),
               const SizedBox(height: 8),
               _buildPreviewTable(),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _isLoading ? null : _importPlots,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.download_done),
-                  label: Text(_isLoading
-                      ? 'Importing...'
-                      : 'Import ${_previewRows!.length} Plots'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52),
+              if (_reviewResult != null) ...[
+                const SizedBox(height: 20),
+                _buildImportReviewCard(),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _isLoading || !(_reviewResult!.canProceed)
+                        ? null
+                        : _importPlots,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.download_done),
+                    label: Text(_isLoading
+                        ? 'Importing...'
+                        : _reviewResult!.canProceed
+                            ? 'Approve and Import ${_reviewResult!.matchedSuccessfullyCount} Plots'
+                            : 'Fix errors to enable import'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 52),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
 
             // Result
@@ -178,6 +188,95 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
                       .toList(),
                 ))
             .toList(),
+      ),
+    );
+  }
+
+  Widget _buildImportReviewCard() {
+    final r = _reviewResult!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.fact_check_outlined,
+                  color: Colors.blue.shade700, size: 20),
+              const SizedBox(width: 8),
+              Text('Import Review',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.blue.shade700)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _reviewChip('Matched successfully', r.matchedSuccessfullyCount, Colors.green),
+          if (r.autoHandledMessages.isNotEmpty)
+            _reviewChip('Auto-handled', r.autoHandledMessages.length, Colors.orange),
+          if (r.needsUserReviewItems.isNotEmpty)
+            _reviewChip('Needs user review', r.needsUserReviewItems.length, Colors.amber),
+          if (r.mustFixErrors.isNotEmpty)
+            _reviewChip('Must fix before import', r.mustFixErrors.length, Colors.red),
+          if (r.mustFixErrors.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...r.mustFixErrors.map((e) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 2),
+                  child: Text('• $e',
+                      style: const TextStyle(
+                          fontSize: 12, color: Colors.red)),
+                )),
+          ],
+          if (r.autoHandledMessages.isNotEmpty && r.mustFixErrors.isEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Auto-handled:',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange.shade800)),
+            ...r.autoHandledMessages.take(5).map((e) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 1),
+                  child: Text('• $e', style: const TextStyle(fontSize: 11)),
+                )),
+          ],
+          if (r.needsUserReviewItems.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            ...r.needsUserReviewItems.map((e) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 1),
+                  child: Text('• $e',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.amber.shade900)),
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _reviewChip(String label, int count, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('$label: $count',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }
@@ -252,17 +351,21 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
     final file = result.files.first;
     if (file.path == null) return;
 
-    setState(() {
-      _fileName = file.name;
-      _lastResult = null;
-    });
+      setState(() {
+        _fileName = file.name;
+        _lastResult = null;
+        _reviewResult = null;
+      });
 
     try {
       final content = await File(file.path!).readAsString();
       final rows = const CsvToListConverter(eol: '\n').convert(content);
 
       if (rows.isEmpty) {
-        setState(() => _previewRows = []);
+        setState(() {
+          _previewRows = [];
+          _reviewResult = null;
+        });
         return;
       }
 
@@ -276,7 +379,20 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
         return map;
       }).toList();
 
-      setState(() => _previewRows = dataRows);
+      final useCase = ImportPlotsUseCase(
+        ref.read(plotRepositoryProvider),
+        ref.read(trialRepositoryProvider),
+      );
+      final reviewResult = useCase.analyzeForImport(ImportPlotsInput(
+        trialId: widget.trial.id,
+        rows: dataRows,
+        fileName: file.name,
+      ));
+
+      setState(() {
+        _previewRows = dataRows;
+        _reviewResult = reviewResult;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -289,7 +405,16 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
   }
 
   Future<void> _importPlots() async {
-    if (_previewRows == null || _previewRows!.isEmpty) return;
+    if (_reviewResult == null || !_reviewResult!.canProceed) return;
+    final normalizedRows = _reviewResult!.normalizedRows!;
+    if (isProtocolLocked(widget.trial.status)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Protocol is locked. Change trial status to import plots.')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -299,7 +424,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
 
     final result = await useCase.execute(ImportPlotsInput(
       trialId: widget.trial.id,
-      rows: _previewRows!,
+      rows: normalizedRows,
       fileName: _fileName ?? 'unknown.csv',
     ));
 
@@ -310,6 +435,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
       if (result.success) {
         _previewRows = null;
         _fileName = null;
+        _reviewResult = null;
       }
     });
   }

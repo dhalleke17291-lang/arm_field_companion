@@ -1,11 +1,37 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/diagnostics/diagnostics_store.dart';
+import 'core/providers.dart';
 import 'splash_screen.dart';
 
 void main() {
+  final diagnosticsStore = DiagnosticsStore(maxErrors: 50);
+
+  FlutterError.onError = (FlutterErrorDetails details) {
+    diagnosticsStore.recordError(
+      details.exceptionAsString(),
+      stackTrace: details.stack?.toString(),
+      code: 'flutter_error',
+    );
+    FlutterError.presentError(details);
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stackTrace) {
+    diagnosticsStore.recordError(
+      error.toString(),
+      stackTrace: stackTrace.toString(),
+      code: 'zone_error',
+    );
+    return true;
+  };
+
   runApp(
-    const ProviderScope(
-      child: ArmFieldCompanionApp(),
+    ProviderScope(
+      overrides: [
+        diagnosticsStoreProvider.overrideWithValue(diagnosticsStore),
+      ],
+      child: const ArmFieldCompanionApp(),
     ),
   );
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
+import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../ratings/rating_screen.dart';
 import 'package:share_plus/share_plus.dart';
@@ -120,7 +121,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     color: Colors.orange,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text('Unrated only',
+                  child: const Text('Unrated Only',
                       style: TextStyle(color: Colors.white, fontSize: 11)),
                 ),
             ],
@@ -187,27 +188,47 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                             try {
                               final usecase =
                                   ref.read(exportSessionCsvUsecaseProvider);
+                              final currentUser =
+                                  await ref.read(currentUserProvider.future);
                               final result = await usecase.exportSessionToCsv(
                                 sessionId: widget.session.id,
+                                trialId: widget.trial.id,
                                 trialName: widget.trial.name,
                                 sessionName: widget.session.name,
                                 sessionDateLocal:
                                     widget.session.sessionDateLocal,
                                 sessionRaterName: widget.session.raterName,
+                                exportedByDisplayName: currentUser?.displayName,
+                                isSessionClosed: widget.session.endedAt != null,
                               );
 
                               if (!mounted || !context.mounted) return;
+                              if (!result.success) {
+                                ref.read(diagnosticsStoreProvider).recordError(
+                                      result.errorMessage ?? 'Export failed',
+                                      code: 'export_failed',
+                                    );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      result.errorMessage ?? 'Export failed',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'Exported ${result.rowCount} rows',
+                                    result.warningMessage != null
+                                        ? result.warningMessage!
+                                        : 'Exported ${result.rowCount} rows',
                                   ),
                                 ),
                               );
-
-                              // Share the file (AirDrop/Email/Files/Drive)
                               await Share.shareXFiles(
-                                [XFile(result.filePath)],
+                                [XFile(result.filePath!)],
                                 text:
                                     'ARM Field Companion export: ${widget.trial.name} / ${widget.session.name}',
                               );
@@ -246,7 +267,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ],
                   ),
                 )
-              : _buildGroupedList(context, filtered, assessments, ratedPks, ratings),
+              : _buildGroupedList(context, filtered, assessments, ratedPks, ratings, allPlotsForTrial: plots),
         ),
       ],
     );
@@ -257,8 +278,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     List<Plot> plots,
     List<Assessment> assessments,
     Set<int> ratedPks,
-    List<RatingRecord> ratings,
-  ) {
+    List<RatingRecord> ratings, {
+    required List<Plot> allPlotsForTrial,
+  }) {
     final groups = <int?, List<Plot>>{};
     for (final plot in plots) {
       groups.putIfAbsent(plot.rep, () => []).add(plot);
@@ -281,6 +303,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             ratings.where((r) => r.plotPk == plot.id).toList();
         items.add(_PlotQueueTile(
           plot: plot,
+          allPlotsForTrial: allPlotsForTrial,
           isRated: ratedPks.contains(plot.id),
           plotRatings: plotRatings,
           assessments: assessments,
@@ -312,7 +335,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final plotId = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Jump to plot'),
+        title: const Text('Jump to Plot'),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
@@ -380,7 +403,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             SwitchListTile(
-              title: const Text('Show unrated only'),
+              title: const Text('Show Unrated Only'),
               value: _showUnratedOnly,
               onChanged: (val) {
                 setState(() => _showUnratedOnly = val);
@@ -422,6 +445,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
 
 class _PlotQueueTile extends ConsumerWidget {
   final Plot plot;
+  final List<Plot> allPlotsForTrial;
   final bool isRated;
   final List<RatingRecord> plotRatings;
   final List<Assessment> assessments;
@@ -430,6 +454,7 @@ class _PlotQueueTile extends ConsumerWidget {
 
   const _PlotQueueTile({
     required this.plot,
+    required this.allPlotsForTrial,
     required this.isRated,
     required this.plotRatings,
     required this.assessments,
@@ -439,6 +464,8 @@ class _PlotQueueTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final displayNum = getDisplayPlotLabel(plot, allPlotsForTrial);
+    final titleText = 'Plot $displayNum';
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
@@ -450,7 +477,7 @@ class _PlotQueueTile extends ConsumerWidget {
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
-            plot.plotId,
+            displayNum,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -461,7 +488,7 @@ class _PlotQueueTile extends ConsumerWidget {
         title: Row(
           children: [
             Expanded(
-              child: Text('Plot ${plot.plotId}',
+              child: Text(titleText,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
             if (isRated)
@@ -497,6 +524,7 @@ class _PlotQueueTile extends ConsumerWidget {
               assessments,
               trial,
               session,
+              displayNum,
             );
           } else {
             final plots = ref.read(plotsForTrialProvider(trial.id)).value ?? [];
@@ -528,6 +556,7 @@ class _PlotQueueTile extends ConsumerWidget {
     List<Assessment> assessments,
     Trial trial,
     Session session,
+    String displayNum,
   ) {
     showModalBottomSheet(
       context: context,
@@ -550,7 +579,7 @@ class _PlotQueueTile extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Plot ${plot.plotId}',
+                    'Plot $displayNum',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -648,7 +677,7 @@ class _PlotQueueTile extends ConsumerWidget {
                   );
                 },
                 icon: const Icon(Icons.edit, size: 18),
-                label: const Text('Rate again / Edit'),
+                label: const Text('Rate Again / Edit'),
               ),
             ),
             SizedBox(height: MediaQuery.of(context).padding.bottom + 8),

@@ -1,4 +1,5 @@
 import '../rating_repository.dart';
+import '../../../core/session_lock.dart';
 
 class UndoRatingUseCase {
   final RatingRepository _ratingRepository;
@@ -8,9 +9,15 @@ class UndoRatingUseCase {
   Future<UndoRatingResult> execute({
     required int currentRatingId,
     required int sessionId,
+    bool isSessionClosed = false,
     String? raterName,
+    int? performedByUserId,
   }) async {
     try {
+      if (isSessionClosed) {
+        return UndoRatingResult.failure(kClosedSessionBlockedMessage);
+      }
+
       // Get current rating to verify it belongs to this session
       final ratings = await _ratingRepository
           .getCurrentRatingsForSession(sessionId);
@@ -23,10 +30,14 @@ class UndoRatingUseCase {
 
       await _ratingRepository.undoRating(
         currentRatingId: currentRatingId,
+        sessionId: sessionId,
         raterName: raterName,
+        performedByUserId: performedByUserId,
       );
 
       return UndoRatingResult.success();
+    } on SessionClosedException {
+      return UndoRatingResult.failure(kClosedSessionBlockedMessage);
     } catch (e) {
       return UndoRatingResult.failure('Undo failed: $e');
     }

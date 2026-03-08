@@ -1,5 +1,7 @@
 # ARM Field Companion — Master Architecture & Development Constitution
 
+**Authoritative blueprint:** The full **Master Architecture, Development, and Expansion Charter** (including Protocol Input Gateway and Protocol Import Transparency & Intervention System) is in **docs/MASTER_CHARTER.md**. That document is the governing blueprint; this constitution is an in-repo summary aligned with it.
+
 **Governing principle:** Freeze the architecture spine, preserve lineage and traceability, and extend capability without redesign.
 
 **Primary development goal:** Develop the app **correctly, cleanly, safely, and to a high standard** on all major development criteria. Judge every build step by whether it improves the app on architectural correctness, data integrity, extensibility, maintainability, clarity of logic, UI consistency, performance, debuggability, exportability, and future safety. See **docs/DEVELOPMENT_CRITERIA.md** for the full quality-first framework and the standard to hold development to.
@@ -74,6 +76,8 @@ User → Trial → Treatments → TreatmentComponents → Plots → Randomizatio
 - Assignments define which treatment is applied to which plot.
 - Assignments are **protocol truth** and **read-only during execution.**
 
+**Current implementation (MVP):** Assignments are implemented as **`Plots.treatmentId`** (a denormalized FK on the plot row). There is no separate Assignments table. This is an acceptable MVP stand-in: protocol lock applies to this field, and context resolution/export read assignment truth from it. When randomization metadata, assignment history, or versioned amendments are required, the target is a **first-class Assignments table** with a documented migration path from `Plots.treatmentId`. See architecture audit and docs/BLUEPRINT_DEVIATION_REPORT.md.
+
 ---
 
 ## 9. Trial Lifecycle State
@@ -81,6 +85,12 @@ User → Trial → Treatments → TreatmentComponents → Plots → Randomizatio
 Draft → Ready → Active → Closed → Archived  
 
 Once **Active**, structural protocol edits are restricted to protect research integrity.
+
+**Definitions vs execution.** Locking applies to **protocol definitions** (assessment definitions, plots, assignments). **Recording execution values** (e.g. ratings, notes, application records) in sessions must remain allowed in active trials. Do not confuse “Add Assessment” (definition) with “record a rating” (execution).
+
+**Strict transitions.** Status changes must follow the defined path only. Do not introduce casual “reopen” or status jumping unless explicitly designed.
+
+**Future amendments.** If protocol changes are ever required after activation, they should go through an **amendment / versioned** path (auditable, traceable), not ad-hoc unlock. Design for this when the need arises.
 
 ---
 

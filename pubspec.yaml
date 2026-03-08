@@ -28,6 +28,7 @@ dependencies:
   google_fonts: ^8.0.2
   flutter_native_splash: ^2.4.4
   flutter_launcher_icons: ^0.14.4
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
@@ -39,11 +40,24 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/
+    - assets/Branding/
 
+# Native splash: single screen, refined deep green, centered logo (no text).
+flutter_native_splash:
+  color: "#0E3D2F"
+  image: assets/Branding/splash_logo.png
+  android: true
+  ios: true
+
+# Launcher icon: assets/Branding/app_icon.png (1024×1024).
+# Inset 3 for strong fill in circle; premium balance and optical centering.
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon/app_icon.png"
+  image_path: "assets/Branding/app_icon.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#1A3C2E"
-  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#0E3D2F"
+  adaptive_icon_foreground: "assets/Branding/app_icon.png"
+  adaptive_icon_foreground_inset: 3

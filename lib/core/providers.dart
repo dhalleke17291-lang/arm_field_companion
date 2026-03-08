@@ -7,16 +7,25 @@ import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
 import '../features/trials/trial_repository.dart';
 import '../features/plots/plot_repository.dart';
+import '../features/plots/usecases/update_plot_assignment_usecase.dart';
+import '../features/protocol_import/protocol_import_usecase.dart';
 import '../features/sessions/session_repository.dart';
 import '../features/ratings/rating_repository.dart';
 import '../features/photos/photo_repository.dart';
 import '../features/trials/usecases/create_trial_usecase.dart';
 import '../features/ratings/usecases/save_rating_usecase.dart';
+import '../features/ratings/usecases/undo_rating_usecase.dart';
+import '../features/ratings/usecases/apply_correction_usecase.dart';
 import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
 import '../features/export/data/export_repository.dart';
 import '../features/export/domain/export_session_csv_usecase.dart';
+import '../features/export/domain/export_trial_closed_sessions_usecase.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
+import '../features/users/user_repository.dart';
+import '../features/diagnostics/integrity_check_repository.dart';
+import 'current_user.dart';
+import 'diagnostics/diagnostics_store.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -32,6 +41,19 @@ final plotRepositoryProvider = Provider<PlotRepository>((ref) {
   return PlotRepository(ref.watch(databaseProvider));
 });
 
+final updatePlotAssignmentUseCaseProvider =
+    Provider<UpdatePlotAssignmentUseCase>((ref) {
+  return UpdatePlotAssignmentUseCase(ref.watch(plotRepositoryProvider));
+});
+
+final protocolImportUseCaseProvider = Provider<ProtocolImportUseCase>((ref) {
+  return ProtocolImportUseCase(
+    ref.watch(trialRepositoryProvider),
+    ref.watch(treatmentRepositoryProvider),
+    ref.watch(plotRepositoryProvider),
+  );
+});
+
 final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
   return SessionRepository(ref.watch(databaseProvider));
 });
@@ -44,12 +66,53 @@ final photoRepositoryProvider = Provider<PhotoRepository>((ref) {
   return PhotoRepository(ref.watch(databaseProvider));
 });
 
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  return UserRepository(ref.watch(databaseProvider));
+});
+
+final diagnosticsStoreProvider = Provider<DiagnosticsStore>((ref) {
+  return DiagnosticsStore(maxErrors: 50);
+});
+
+final integrityCheckRepositoryProvider = Provider<IntegrityCheckRepository>((ref) {
+  return IntegrityCheckRepository(ref.watch(databaseProvider));
+});
+
+final activeUsersProvider = StreamProvider<List<User>>((ref) {
+  return ref.watch(userRepositoryProvider).watchActiveUsers();
+});
+
+/// Current user id from SharedPreferences. Invalidate after set.
+final currentUserIdProvider =
+    FutureProvider.autoDispose<int?>((ref) => getCurrentUserId());
+
+/// Full current user. Depends on currentUserIdProvider.
+final currentUserProvider = FutureProvider.autoDispose<User?>((ref) async {
+  final id = await ref.watch(currentUserIdProvider.future);
+  if (id == null) return null;
+  return ref.read(userRepositoryProvider).getUserById(id);
+});
+
 final createTrialUseCaseProvider = Provider<CreateTrialUseCase>((ref) {
   return CreateTrialUseCase(ref.watch(trialRepositoryProvider));
 });
 
 final saveRatingUseCaseProvider = Provider<SaveRatingUseCase>((ref) {
   return SaveRatingUseCase(ref.watch(ratingRepositoryProvider));
+});
+
+final undoRatingUseCaseProvider = Provider<UndoRatingUseCase>((ref) {
+  return UndoRatingUseCase(ref.watch(ratingRepositoryProvider));
+});
+
+final applyCorrectionUseCaseProvider = Provider<ApplyCorrectionUseCase>((ref) {
+  return ApplyCorrectionUseCase(ref.watch(ratingRepositoryProvider));
+});
+
+/// Latest correction for a rating (for effective value display).
+final latestCorrectionForRatingProvider =
+    FutureProvider.autoDispose.family<RatingCorrection?, int>((ref, ratingId) {
+  return ref.read(ratingRepositoryProvider).getLatestCorrectionForRating(ratingId);
 });
 
 final createSessionUseCaseProvider = Provider<CreateSessionUseCase>((ref) {
@@ -62,6 +125,12 @@ final closeSessionUseCaseProvider = Provider<CloseSessionUseCase>((ref) {
 
 final trialsStreamProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials();
+});
+
+/// Current trial by id (e.g. for trial detail). Invalidate after status change.
+final trialProvider =
+    FutureProvider.autoDispose.family<Trial?, int>((ref, id) {
+  return ref.watch(trialRepositoryProvider).getTrialById(id);
 });
 
 final plotsForTrialProvider =
@@ -158,6 +227,14 @@ final exportRepositoryProvider = Provider<ExportRepository>((ref) {
 final exportSessionCsvUsecaseProvider =
     Provider<ExportSessionCsvUsecase>((ref) {
   return ExportSessionCsvUsecase(ref.watch(exportRepositoryProvider));
+});
+
+final exportTrialClosedSessionsUsecaseProvider =
+    Provider<ExportTrialClosedSessionsUsecase>((ref) {
+  return ExportTrialClosedSessionsUsecase(
+    ref.watch(exportSessionCsvUsecaseProvider),
+    ref.watch(sessionRepositoryProvider),
+  );
 });
 
 // ===== Photos =====

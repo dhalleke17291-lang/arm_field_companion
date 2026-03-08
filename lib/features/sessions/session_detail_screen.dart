@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
+import '../../core/plot_display.dart';
 import '../../core/providers.dart';
-import '../export/data/export_repository.dart';
-import '../export/domain/export_session_csv_usecase.dart';
 import 'package:share_plus/share_plus.dart';
 import '../plots/plot_queue_screen.dart';
 
@@ -93,62 +92,95 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   }
 
   Future<void> _exportCsv(BuildContext context, WidgetRef ref) async {
-    final db = ref.read(databaseProvider);
-    final repo = ExportRepository(db);
-    final usecase = ExportSessionCsvUsecase(repo);
+    final usecase = ref.read(exportSessionCsvUsecaseProvider);
 
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Exporting...')),
       );
 
+      final currentUser = await ref.read(currentUserProvider.future);
       final result = await usecase.exportSessionToCsv(
         sessionId: widget.session.id,
+        trialId: widget.trial.id,
         trialName: widget.trial.name,
         sessionName: widget.session.name,
         sessionDateLocal: widget.session.sessionDateLocal,
         sessionRaterName: widget.session.raterName,
+        exportedByDisplayName: currentUser?.displayName,
+        isSessionClosed: widget.session.endedAt != null,
       );
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      if (!result.success) {
+        ref.read(diagnosticsStoreProvider).recordError(
+              result.errorMessage ?? 'Unknown error',
+              code: 'export_failed',
+            );
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('Export Complete'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${result.rowCount} ratings exported'),
-                const SizedBox(height: 8),
-                const Text('Saved to:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                SelectableText(result.filePath,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
+            title: const Text('Export Failed'),
+            content: SelectableText(result.errorMessage ?? 'Unknown error'),
             actions: [
-              TextButton(
+              FilledButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-              FilledButton.icon(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  await Share.shareXFiles(
-                    [XFile(result.filePath)],
-                    subject: '${widget.trial.name} - ${widget.session.name} Export',
-                  );
-                },
-                icon: const Icon(Icons.share),
-                label: const Text('Share'),
+                child: const Text('OK'),
               ),
             ],
           ),
         );
+        return;
       }
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Export Complete'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${result.rowCount} ratings exported'),
+              if (result.warningMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  result.warningMessage!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              const Text('Saved to:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              SelectableText(result.filePath!,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                await Share.shareXFiles(
+                  [XFile(result.filePath!)],
+                  subject: '${widget.trial.name} - ${widget.session.name} Export',
+                );
+              },
+              icon: const Icon(Icons.share),
+              label: const Text('Share'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -170,7 +202,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   ) {
     if (assessments.isEmpty) {
       return const Center(
-        child: Text('No assessments in this session'),
+        child: Text('No assessments in this session.'),
       );
     }
     return Center(
@@ -213,7 +245,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 );
               },
               icon: const Icon(Icons.play_arrow),
-              label: const Text('Start rating'),
+              label: const Text('Start Rating'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               ),
@@ -282,6 +314,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               final plot = plots[index];
               final plotRatings =
                   ratings.where((r) => r.plotPk == plot.id).toList();
+              final displayNum = getDisplayPlotLabel(plot, plots);
+              final treatmentLabel = getTreatmentDisplayLabel(
+                  plot, {for (final t in treatments) t.id: t});
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -293,7 +328,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      plot.plotId,
+                      displayNum,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -301,8 +336,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       ),
                     ),
                   ),
-                  title: Text('Plot ${plot.plotId}',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(
+                    'Plot $displayNum · $treatmentLabel',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: plot.rep != null ? Text('Rep ${plot.rep}') : null,
                   children: plotRatings.isEmpty
                       ? [

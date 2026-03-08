@@ -46,6 +46,12 @@ class MockRatingRepository implements RatingRepository {
     String? textValue,
     int? subUnitId,
     String? raterName,
+    int? performedByUserId,
+    required bool isSessionClosed,
+    String? createdAppVersion,
+    String? createdDeviceInfo,
+    double? capturedLatitude,
+    double? capturedLongitude,
   }) async {
     if (shouldThrow) {
       throw RatingIntegrityException(throwMessage ?? 'Mock error');
@@ -74,6 +80,10 @@ class MockRatingRepository implements RatingRepository {
       previousId: null,
       createdAt: DateTime.now(),
       raterName: raterName,
+      createdAppVersion: createdAppVersion,
+      createdDeviceInfo: createdDeviceInfo,
+      capturedLatitude: capturedLatitude,
+      capturedLongitude: capturedLongitude,
     );
 
     _records.add(record);
@@ -83,7 +93,9 @@ class MockRatingRepository implements RatingRepository {
   @override
   Future<void> undoRating({
     required int currentRatingId,
+    required int sessionId,
     String? raterName,
+    int? performedByUserId,
   }) async {}
 
   @override
@@ -93,8 +105,34 @@ class MockRatingRepository implements RatingRepository {
     required int assessmentId,
     required int sessionId,
     required String reason,
+    required bool isSessionClosed,
     String? raterName,
   }) async {}
+
+  @override
+  Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) async =>
+      null;
+
+  @override
+  Future<List<RatingCorrection>> getCorrectionsForRating(int ratingId) async =>
+      [];
+
+  @override
+  Future<RatingCorrection> applyCorrection({
+    required int ratingId,
+    required String oldResultStatus,
+    required String newResultStatus,
+    double? oldNumericValue,
+    double? newNumericValue,
+    String? oldTextValue,
+    String? newTextValue,
+    required String reason,
+    int? correctedByUserId,
+    int? sessionId,
+    int? plotPk,
+  }) async {
+    throw UnimplementedError('applyCorrection mock');
+  }
 
   @override
   Future<List<RatingRecord>> getCurrentRatingsForSession(

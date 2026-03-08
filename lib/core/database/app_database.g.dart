@@ -3,6 +3,384 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+class $UsersTable extends Users with TableInfo<$UsersTable, User> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UsersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _displayNameMeta =
+      const VerificationMeta('displayName');
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+      'display_name', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 255),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _initialsMeta =
+      const VerificationMeta('initials');
+  @override
+  late final GeneratedColumn<String> initials = GeneratedColumn<String>(
+      'initials', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _roleKeyMeta =
+      const VerificationMeta('roleKey');
+  @override
+  late final GeneratedColumn<String> roleKey = GeneratedColumn<String>(
+      'role_key', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('technician'));
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, displayName, initials, roleKey, isActive, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'users';
+  @override
+  VerificationContext validateIntegrity(Insertable<User> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+          _displayNameMeta,
+          displayName.isAcceptableOrUnknown(
+              data['display_name']!, _displayNameMeta));
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('initials')) {
+      context.handle(_initialsMeta,
+          initials.isAcceptableOrUnknown(data['initials']!, _initialsMeta));
+    }
+    if (data.containsKey('role_key')) {
+      context.handle(_roleKeyMeta,
+          roleKey.isAcceptableOrUnknown(data['role_key']!, _roleKeyMeta));
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  User map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return User(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      displayName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}display_name'])!,
+      initials: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}initials']),
+      roleKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}role_key'])!,
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $UsersTable createAlias(String alias) {
+    return $UsersTable(attachedDatabase, alias);
+  }
+}
+
+class User extends DataClass implements Insertable<User> {
+  final int id;
+  final String displayName;
+  final String? initials;
+  final String roleKey;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const User(
+      {required this.id,
+      required this.displayName,
+      this.initials,
+      required this.roleKey,
+      required this.isActive,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['display_name'] = Variable<String>(displayName);
+    if (!nullToAbsent || initials != null) {
+      map['initials'] = Variable<String>(initials);
+    }
+    map['role_key'] = Variable<String>(roleKey);
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  UsersCompanion toCompanion(bool nullToAbsent) {
+    return UsersCompanion(
+      id: Value(id),
+      displayName: Value(displayName),
+      initials: initials == null && nullToAbsent
+          ? const Value.absent()
+          : Value(initials),
+      roleKey: Value(roleKey),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory User.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return User(
+      id: serializer.fromJson<int>(json['id']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      initials: serializer.fromJson<String?>(json['initials']),
+      roleKey: serializer.fromJson<String>(json['roleKey']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'displayName': serializer.toJson<String>(displayName),
+      'initials': serializer.toJson<String?>(initials),
+      'roleKey': serializer.toJson<String>(roleKey),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  User copyWith(
+          {int? id,
+          String? displayName,
+          Value<String?> initials = const Value.absent(),
+          String? roleKey,
+          bool? isActive,
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      User(
+        id: id ?? this.id,
+        displayName: displayName ?? this.displayName,
+        initials: initials.present ? initials.value : this.initials,
+        roleKey: roleKey ?? this.roleKey,
+        isActive: isActive ?? this.isActive,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  User copyWithCompanion(UsersCompanion data) {
+    return User(
+      id: data.id.present ? data.id.value : this.id,
+      displayName:
+          data.displayName.present ? data.displayName.value : this.displayName,
+      initials: data.initials.present ? data.initials.value : this.initials,
+      roleKey: data.roleKey.present ? data.roleKey.value : this.roleKey,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('User(')
+          ..write('id: $id, ')
+          ..write('displayName: $displayName, ')
+          ..write('initials: $initials, ')
+          ..write('roleKey: $roleKey, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, displayName, initials, roleKey, isActive, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is User &&
+          other.id == this.id &&
+          other.displayName == this.displayName &&
+          other.initials == this.initials &&
+          other.roleKey == this.roleKey &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class UsersCompanion extends UpdateCompanion<User> {
+  final Value<int> id;
+  final Value<String> displayName;
+  final Value<String?> initials;
+  final Value<String> roleKey;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const UsersCompanion({
+    this.id = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.initials = const Value.absent(),
+    this.roleKey = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  UsersCompanion.insert({
+    this.id = const Value.absent(),
+    required String displayName,
+    this.initials = const Value.absent(),
+    this.roleKey = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : displayName = Value(displayName);
+  static Insertable<User> custom({
+    Expression<int>? id,
+    Expression<String>? displayName,
+    Expression<String>? initials,
+    Expression<String>? roleKey,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (displayName != null) 'display_name': displayName,
+      if (initials != null) 'initials': initials,
+      if (roleKey != null) 'role_key': roleKey,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  UsersCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? displayName,
+      Value<String?>? initials,
+      Value<String>? roleKey,
+      Value<bool>? isActive,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return UsersCompanion(
+      id: id ?? this.id,
+      displayName: displayName ?? this.displayName,
+      initials: initials ?? this.initials,
+      roleKey: roleKey ?? this.roleKey,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (initials.present) {
+      map['initials'] = Variable<String>(initials.value);
+    }
+    if (roleKey.present) {
+      map['role_key'] = Variable<String>(roleKey.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsersCompanion(')
+          ..write('id: $id, ')
+          ..write('displayName: $displayName, ')
+          ..write('initials: $initials, ')
+          ..write('roleKey: $roleKey, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -1690,6 +2068,18 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
       'notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _assignmentSourceMeta =
+      const VerificationMeta('assignmentSource');
+  @override
+  late final GeneratedColumn<String> assignmentSource = GeneratedColumn<String>(
+      'assignment_source', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _assignmentUpdatedAtMeta =
+      const VerificationMeta('assignmentUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> assignmentUpdatedAt =
+      GeneratedColumn<DateTime>('assignment_updated_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1702,7 +2092,9 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
         column,
         fieldRow,
         fieldColumn,
-        notes
+        notes,
+        assignmentSource,
+        assignmentUpdatedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1767,6 +2159,18 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
+    if (data.containsKey('assignment_source')) {
+      context.handle(
+          _assignmentSourceMeta,
+          assignmentSource.isAcceptableOrUnknown(
+              data['assignment_source']!, _assignmentSourceMeta));
+    }
+    if (data.containsKey('assignment_updated_at')) {
+      context.handle(
+          _assignmentUpdatedAtMeta,
+          assignmentUpdatedAt.isAcceptableOrUnknown(
+              data['assignment_updated_at']!, _assignmentUpdatedAtMeta));
+    }
     return context;
   }
 
@@ -1798,6 +2202,11 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           .read(DriftSqlType.int, data['${effectivePrefix}field_column']),
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      assignmentSource: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}assignment_source']),
+      assignmentUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}assignment_updated_at']),
     );
   }
 
@@ -1819,6 +2228,10 @@ class Plot extends DataClass implements Insertable<Plot> {
   final int? fieldRow;
   final int? fieldColumn;
   final String? notes;
+
+  /// Assignment provenance: 'imported' | 'manual' | null (unknown).
+  final String? assignmentSource;
+  final DateTime? assignmentUpdatedAt;
   const Plot(
       {required this.id,
       required this.trialId,
@@ -1830,7 +2243,9 @@ class Plot extends DataClass implements Insertable<Plot> {
       this.column,
       this.fieldRow,
       this.fieldColumn,
-      this.notes});
+      this.notes,
+      this.assignmentSource,
+      this.assignmentUpdatedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1861,6 +2276,12 @@ class Plot extends DataClass implements Insertable<Plot> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    if (!nullToAbsent || assignmentSource != null) {
+      map['assignment_source'] = Variable<String>(assignmentSource);
+    }
+    if (!nullToAbsent || assignmentUpdatedAt != null) {
+      map['assignment_updated_at'] = Variable<DateTime>(assignmentUpdatedAt);
+    }
     return map;
   }
 
@@ -1887,6 +2308,12 @@ class Plot extends DataClass implements Insertable<Plot> {
           : Value(fieldColumn),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      assignmentSource: assignmentSource == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assignmentSource),
+      assignmentUpdatedAt: assignmentUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assignmentUpdatedAt),
     );
   }
 
@@ -1905,6 +2332,9 @@ class Plot extends DataClass implements Insertable<Plot> {
       fieldRow: serializer.fromJson<int?>(json['fieldRow']),
       fieldColumn: serializer.fromJson<int?>(json['fieldColumn']),
       notes: serializer.fromJson<String?>(json['notes']),
+      assignmentSource: serializer.fromJson<String?>(json['assignmentSource']),
+      assignmentUpdatedAt:
+          serializer.fromJson<DateTime?>(json['assignmentUpdatedAt']),
     );
   }
   @override
@@ -1922,6 +2352,8 @@ class Plot extends DataClass implements Insertable<Plot> {
       'fieldRow': serializer.toJson<int?>(fieldRow),
       'fieldColumn': serializer.toJson<int?>(fieldColumn),
       'notes': serializer.toJson<String?>(notes),
+      'assignmentSource': serializer.toJson<String?>(assignmentSource),
+      'assignmentUpdatedAt': serializer.toJson<DateTime?>(assignmentUpdatedAt),
     };
   }
 
@@ -1936,7 +2368,9 @@ class Plot extends DataClass implements Insertable<Plot> {
           Value<String?> column = const Value.absent(),
           Value<int?> fieldRow = const Value.absent(),
           Value<int?> fieldColumn = const Value.absent(),
-          Value<String?> notes = const Value.absent()}) =>
+          Value<String?> notes = const Value.absent(),
+          Value<String?> assignmentSource = const Value.absent(),
+          Value<DateTime?> assignmentUpdatedAt = const Value.absent()}) =>
       Plot(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -1950,6 +2384,12 @@ class Plot extends DataClass implements Insertable<Plot> {
         fieldRow: fieldRow.present ? fieldRow.value : this.fieldRow,
         fieldColumn: fieldColumn.present ? fieldColumn.value : this.fieldColumn,
         notes: notes.present ? notes.value : this.notes,
+        assignmentSource: assignmentSource.present
+            ? assignmentSource.value
+            : this.assignmentSource,
+        assignmentUpdatedAt: assignmentUpdatedAt.present
+            ? assignmentUpdatedAt.value
+            : this.assignmentUpdatedAt,
       );
   Plot copyWithCompanion(PlotsCompanion data) {
     return Plot(
@@ -1968,6 +2408,12 @@ class Plot extends DataClass implements Insertable<Plot> {
       fieldColumn:
           data.fieldColumn.present ? data.fieldColumn.value : this.fieldColumn,
       notes: data.notes.present ? data.notes.value : this.notes,
+      assignmentSource: data.assignmentSource.present
+          ? data.assignmentSource.value
+          : this.assignmentSource,
+      assignmentUpdatedAt: data.assignmentUpdatedAt.present
+          ? data.assignmentUpdatedAt.value
+          : this.assignmentUpdatedAt,
     );
   }
 
@@ -1984,14 +2430,28 @@ class Plot extends DataClass implements Insertable<Plot> {
           ..write('column: $column, ')
           ..write('fieldRow: $fieldRow, ')
           ..write('fieldColumn: $fieldColumn, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('assignmentSource: $assignmentSource, ')
+          ..write('assignmentUpdatedAt: $assignmentUpdatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, trialId, plotId, plotSortIndex, rep,
-      treatmentId, row, column, fieldRow, fieldColumn, notes);
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      plotId,
+      plotSortIndex,
+      rep,
+      treatmentId,
+      row,
+      column,
+      fieldRow,
+      fieldColumn,
+      notes,
+      assignmentSource,
+      assignmentUpdatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2006,7 +2466,9 @@ class Plot extends DataClass implements Insertable<Plot> {
           other.column == this.column &&
           other.fieldRow == this.fieldRow &&
           other.fieldColumn == this.fieldColumn &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.assignmentSource == this.assignmentSource &&
+          other.assignmentUpdatedAt == this.assignmentUpdatedAt);
 }
 
 class PlotsCompanion extends UpdateCompanion<Plot> {
@@ -2021,6 +2483,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   final Value<int?> fieldRow;
   final Value<int?> fieldColumn;
   final Value<String?> notes;
+  final Value<String?> assignmentSource;
+  final Value<DateTime?> assignmentUpdatedAt;
   const PlotsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -2033,6 +2497,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.fieldRow = const Value.absent(),
     this.fieldColumn = const Value.absent(),
     this.notes = const Value.absent(),
+    this.assignmentSource = const Value.absent(),
+    this.assignmentUpdatedAt = const Value.absent(),
   });
   PlotsCompanion.insert({
     this.id = const Value.absent(),
@@ -2046,6 +2512,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.fieldRow = const Value.absent(),
     this.fieldColumn = const Value.absent(),
     this.notes = const Value.absent(),
+    this.assignmentSource = const Value.absent(),
+    this.assignmentUpdatedAt = const Value.absent(),
   })  : trialId = Value(trialId),
         plotId = Value(plotId);
   static Insertable<Plot> custom({
@@ -2060,6 +2528,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     Expression<int>? fieldRow,
     Expression<int>? fieldColumn,
     Expression<String>? notes,
+    Expression<String>? assignmentSource,
+    Expression<DateTime>? assignmentUpdatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2073,6 +2543,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       if (fieldRow != null) 'field_row': fieldRow,
       if (fieldColumn != null) 'field_column': fieldColumn,
       if (notes != null) 'notes': notes,
+      if (assignmentSource != null) 'assignment_source': assignmentSource,
+      if (assignmentUpdatedAt != null)
+        'assignment_updated_at': assignmentUpdatedAt,
     });
   }
 
@@ -2087,7 +2560,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       Value<String?>? column,
       Value<int?>? fieldRow,
       Value<int?>? fieldColumn,
-      Value<String?>? notes}) {
+      Value<String?>? notes,
+      Value<String?>? assignmentSource,
+      Value<DateTime?>? assignmentUpdatedAt}) {
     return PlotsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -2100,6 +2575,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       fieldRow: fieldRow ?? this.fieldRow,
       fieldColumn: fieldColumn ?? this.fieldColumn,
       notes: notes ?? this.notes,
+      assignmentSource: assignmentSource ?? this.assignmentSource,
+      assignmentUpdatedAt: assignmentUpdatedAt ?? this.assignmentUpdatedAt,
     );
   }
 
@@ -2139,6 +2616,13 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (assignmentSource.present) {
+      map['assignment_source'] = Variable<String>(assignmentSource.value);
+    }
+    if (assignmentUpdatedAt.present) {
+      map['assignment_updated_at'] =
+          Variable<DateTime>(assignmentUpdatedAt.value);
+    }
     return map;
   }
 
@@ -2155,7 +2639,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
           ..write('column: $column, ')
           ..write('fieldRow: $fieldRow, ')
           ..write('fieldColumn: $fieldColumn, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('assignmentSource: $assignmentSource, ')
+          ..write('assignmentUpdatedAt: $assignmentUpdatedAt')
           ..write(')'))
         .toString();
   }
@@ -2218,6 +2704,15 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   late final GeneratedColumn<String> raterName = GeneratedColumn<String>(
       'rater_name', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdByUserIdMeta =
+      const VerificationMeta('createdByUserId');
+  @override
+  late final GeneratedColumn<int> createdByUserId = GeneratedColumn<int>(
+      'created_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -2234,6 +2729,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         endedAt,
         sessionDateLocal,
         raterName,
+        createdByUserId,
         status
       ];
   @override
@@ -2281,6 +2777,12 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       context.handle(_raterNameMeta,
           raterName.isAcceptableOrUnknown(data['rater_name']!, _raterNameMeta));
     }
+    if (data.containsKey('created_by_user_id')) {
+      context.handle(
+          _createdByUserIdMeta,
+          createdByUserId.isAcceptableOrUnknown(
+              data['created_by_user_id']!, _createdByUserIdMeta));
+    }
     if (data.containsKey('status')) {
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
@@ -2308,6 +2810,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
           DriftSqlType.string, data['${effectivePrefix}session_date_local'])!,
       raterName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}rater_name']),
+      createdByUserId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_by_user_id']),
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
     );
@@ -2327,6 +2831,7 @@ class Session extends DataClass implements Insertable<Session> {
   final DateTime? endedAt;
   final String sessionDateLocal;
   final String? raterName;
+  final int? createdByUserId;
   final String status;
   const Session(
       {required this.id,
@@ -2336,6 +2841,7 @@ class Session extends DataClass implements Insertable<Session> {
       this.endedAt,
       required this.sessionDateLocal,
       this.raterName,
+      this.createdByUserId,
       required this.status});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2350,6 +2856,9 @@ class Session extends DataClass implements Insertable<Session> {
     map['session_date_local'] = Variable<String>(sessionDateLocal);
     if (!nullToAbsent || raterName != null) {
       map['rater_name'] = Variable<String>(raterName);
+    }
+    if (!nullToAbsent || createdByUserId != null) {
+      map['created_by_user_id'] = Variable<int>(createdByUserId);
     }
     map['status'] = Variable<String>(status);
     return map;
@@ -2368,6 +2877,9 @@ class Session extends DataClass implements Insertable<Session> {
       raterName: raterName == null && nullToAbsent
           ? const Value.absent()
           : Value(raterName),
+      createdByUserId: createdByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdByUserId),
       status: Value(status),
     );
   }
@@ -2383,6 +2895,7 @@ class Session extends DataClass implements Insertable<Session> {
       endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
       sessionDateLocal: serializer.fromJson<String>(json['sessionDateLocal']),
       raterName: serializer.fromJson<String?>(json['raterName']),
+      createdByUserId: serializer.fromJson<int?>(json['createdByUserId']),
       status: serializer.fromJson<String>(json['status']),
     );
   }
@@ -2397,6 +2910,7 @@ class Session extends DataClass implements Insertable<Session> {
       'endedAt': serializer.toJson<DateTime?>(endedAt),
       'sessionDateLocal': serializer.toJson<String>(sessionDateLocal),
       'raterName': serializer.toJson<String?>(raterName),
+      'createdByUserId': serializer.toJson<int?>(createdByUserId),
       'status': serializer.toJson<String>(status),
     };
   }
@@ -2409,6 +2923,7 @@ class Session extends DataClass implements Insertable<Session> {
           Value<DateTime?> endedAt = const Value.absent(),
           String? sessionDateLocal,
           Value<String?> raterName = const Value.absent(),
+          Value<int?> createdByUserId = const Value.absent(),
           String? status}) =>
       Session(
         id: id ?? this.id,
@@ -2418,6 +2933,9 @@ class Session extends DataClass implements Insertable<Session> {
         endedAt: endedAt.present ? endedAt.value : this.endedAt,
         sessionDateLocal: sessionDateLocal ?? this.sessionDateLocal,
         raterName: raterName.present ? raterName.value : this.raterName,
+        createdByUserId: createdByUserId.present
+            ? createdByUserId.value
+            : this.createdByUserId,
         status: status ?? this.status,
       );
   Session copyWithCompanion(SessionsCompanion data) {
@@ -2431,6 +2949,9 @@ class Session extends DataClass implements Insertable<Session> {
           ? data.sessionDateLocal.value
           : this.sessionDateLocal,
       raterName: data.raterName.present ? data.raterName.value : this.raterName,
+      createdByUserId: data.createdByUserId.present
+          ? data.createdByUserId.value
+          : this.createdByUserId,
       status: data.status.present ? data.status.value : this.status,
     );
   }
@@ -2445,6 +2966,7 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('endedAt: $endedAt, ')
           ..write('sessionDateLocal: $sessionDateLocal, ')
           ..write('raterName: $raterName, ')
+          ..write('createdByUserId: $createdByUserId, ')
           ..write('status: $status')
           ..write(')'))
         .toString();
@@ -2452,7 +2974,7 @@ class Session extends DataClass implements Insertable<Session> {
 
   @override
   int get hashCode => Object.hash(id, trialId, name, startedAt, endedAt,
-      sessionDateLocal, raterName, status);
+      sessionDateLocal, raterName, createdByUserId, status);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2464,6 +2986,7 @@ class Session extends DataClass implements Insertable<Session> {
           other.endedAt == this.endedAt &&
           other.sessionDateLocal == this.sessionDateLocal &&
           other.raterName == this.raterName &&
+          other.createdByUserId == this.createdByUserId &&
           other.status == this.status);
 }
 
@@ -2475,6 +2998,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<DateTime?> endedAt;
   final Value<String> sessionDateLocal;
   final Value<String?> raterName;
+  final Value<int?> createdByUserId;
   final Value<String> status;
   const SessionsCompanion({
     this.id = const Value.absent(),
@@ -2484,6 +3008,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.endedAt = const Value.absent(),
     this.sessionDateLocal = const Value.absent(),
     this.raterName = const Value.absent(),
+    this.createdByUserId = const Value.absent(),
     this.status = const Value.absent(),
   });
   SessionsCompanion.insert({
@@ -2494,6 +3019,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.endedAt = const Value.absent(),
     required String sessionDateLocal,
     this.raterName = const Value.absent(),
+    this.createdByUserId = const Value.absent(),
     this.status = const Value.absent(),
   })  : trialId = Value(trialId),
         name = Value(name),
@@ -2506,6 +3032,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<DateTime>? endedAt,
     Expression<String>? sessionDateLocal,
     Expression<String>? raterName,
+    Expression<int>? createdByUserId,
     Expression<String>? status,
   }) {
     return RawValuesInsertable({
@@ -2516,6 +3043,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (endedAt != null) 'ended_at': endedAt,
       if (sessionDateLocal != null) 'session_date_local': sessionDateLocal,
       if (raterName != null) 'rater_name': raterName,
+      if (createdByUserId != null) 'created_by_user_id': createdByUserId,
       if (status != null) 'status': status,
     });
   }
@@ -2528,6 +3056,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       Value<DateTime?>? endedAt,
       Value<String>? sessionDateLocal,
       Value<String?>? raterName,
+      Value<int?>? createdByUserId,
       Value<String>? status}) {
     return SessionsCompanion(
       id: id ?? this.id,
@@ -2537,6 +3066,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       endedAt: endedAt ?? this.endedAt,
       sessionDateLocal: sessionDateLocal ?? this.sessionDateLocal,
       raterName: raterName ?? this.raterName,
+      createdByUserId: createdByUserId ?? this.createdByUserId,
       status: status ?? this.status,
     );
   }
@@ -2565,6 +3095,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (raterName.present) {
       map['rater_name'] = Variable<String>(raterName.value);
     }
+    if (createdByUserId.present) {
+      map['created_by_user_id'] = Variable<int>(createdByUserId.value);
+    }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
@@ -2581,6 +3114,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('endedAt: $endedAt, ')
           ..write('sessionDateLocal: $sessionDateLocal, ')
           ..write('raterName: $raterName, ')
+          ..write('createdByUserId: $createdByUserId, ')
           ..write('status: $status')
           ..write(')'))
         .toString();
@@ -2921,6 +3455,30 @@ class $RatingRecordsTable extends RatingRecords
   late final GeneratedColumn<String> raterName = GeneratedColumn<String>(
       'rater_name', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAppVersionMeta =
+      const VerificationMeta('createdAppVersion');
+  @override
+  late final GeneratedColumn<String> createdAppVersion =
+      GeneratedColumn<String>('created_app_version', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdDeviceInfoMeta =
+      const VerificationMeta('createdDeviceInfo');
+  @override
+  late final GeneratedColumn<String> createdDeviceInfo =
+      GeneratedColumn<String>('created_device_info', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _capturedLatitudeMeta =
+      const VerificationMeta('capturedLatitude');
+  @override
+  late final GeneratedColumn<double> capturedLatitude = GeneratedColumn<double>(
+      'captured_latitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _capturedLongitudeMeta =
+      const VerificationMeta('capturedLongitude');
+  @override
+  late final GeneratedColumn<double> capturedLongitude =
+      GeneratedColumn<double>('captured_longitude', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2935,7 +3493,11 @@ class $RatingRecordsTable extends RatingRecords
         isCurrent,
         previousId,
         createdAt,
-        raterName
+        raterName,
+        createdAppVersion,
+        createdDeviceInfo,
+        capturedLatitude,
+        capturedLongitude
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3016,6 +3578,30 @@ class $RatingRecordsTable extends RatingRecords
       context.handle(_raterNameMeta,
           raterName.isAcceptableOrUnknown(data['rater_name']!, _raterNameMeta));
     }
+    if (data.containsKey('created_app_version')) {
+      context.handle(
+          _createdAppVersionMeta,
+          createdAppVersion.isAcceptableOrUnknown(
+              data['created_app_version']!, _createdAppVersionMeta));
+    }
+    if (data.containsKey('created_device_info')) {
+      context.handle(
+          _createdDeviceInfoMeta,
+          createdDeviceInfo.isAcceptableOrUnknown(
+              data['created_device_info']!, _createdDeviceInfoMeta));
+    }
+    if (data.containsKey('captured_latitude')) {
+      context.handle(
+          _capturedLatitudeMeta,
+          capturedLatitude.isAcceptableOrUnknown(
+              data['captured_latitude']!, _capturedLatitudeMeta));
+    }
+    if (data.containsKey('captured_longitude')) {
+      context.handle(
+          _capturedLongitudeMeta,
+          capturedLongitude.isAcceptableOrUnknown(
+              data['captured_longitude']!, _capturedLongitudeMeta));
+    }
     return context;
   }
 
@@ -3051,6 +3637,14 @@ class $RatingRecordsTable extends RatingRecords
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       raterName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}rater_name']),
+      createdAppVersion: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}created_app_version']),
+      createdDeviceInfo: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}created_device_info']),
+      capturedLatitude: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}captured_latitude']),
+      capturedLongitude: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}captured_longitude']),
     );
   }
 
@@ -3074,6 +3668,10 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
   final int? previousId;
   final DateTime createdAt;
   final String? raterName;
+  final String? createdAppVersion;
+  final String? createdDeviceInfo;
+  final double? capturedLatitude;
+  final double? capturedLongitude;
   const RatingRecord(
       {required this.id,
       required this.trialId,
@@ -3087,7 +3685,11 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       required this.isCurrent,
       this.previousId,
       required this.createdAt,
-      this.raterName});
+      this.raterName,
+      this.createdAppVersion,
+      this.createdDeviceInfo,
+      this.capturedLatitude,
+      this.capturedLongitude});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3113,6 +3715,18 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || raterName != null) {
       map['rater_name'] = Variable<String>(raterName);
+    }
+    if (!nullToAbsent || createdAppVersion != null) {
+      map['created_app_version'] = Variable<String>(createdAppVersion);
+    }
+    if (!nullToAbsent || createdDeviceInfo != null) {
+      map['created_device_info'] = Variable<String>(createdDeviceInfo);
+    }
+    if (!nullToAbsent || capturedLatitude != null) {
+      map['captured_latitude'] = Variable<double>(capturedLatitude);
+    }
+    if (!nullToAbsent || capturedLongitude != null) {
+      map['captured_longitude'] = Variable<double>(capturedLongitude);
     }
     return map;
   }
@@ -3142,6 +3756,18 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       raterName: raterName == null && nullToAbsent
           ? const Value.absent()
           : Value(raterName),
+      createdAppVersion: createdAppVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAppVersion),
+      createdDeviceInfo: createdDeviceInfo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdDeviceInfo),
+      capturedLatitude: capturedLatitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capturedLatitude),
+      capturedLongitude: capturedLongitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capturedLongitude),
     );
   }
 
@@ -3162,6 +3788,13 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       previousId: serializer.fromJson<int?>(json['previousId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       raterName: serializer.fromJson<String?>(json['raterName']),
+      createdAppVersion:
+          serializer.fromJson<String?>(json['createdAppVersion']),
+      createdDeviceInfo:
+          serializer.fromJson<String?>(json['createdDeviceInfo']),
+      capturedLatitude: serializer.fromJson<double?>(json['capturedLatitude']),
+      capturedLongitude:
+          serializer.fromJson<double?>(json['capturedLongitude']),
     );
   }
   @override
@@ -3181,6 +3814,10 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       'previousId': serializer.toJson<int?>(previousId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'raterName': serializer.toJson<String?>(raterName),
+      'createdAppVersion': serializer.toJson<String?>(createdAppVersion),
+      'createdDeviceInfo': serializer.toJson<String?>(createdDeviceInfo),
+      'capturedLatitude': serializer.toJson<double?>(capturedLatitude),
+      'capturedLongitude': serializer.toJson<double?>(capturedLongitude),
     };
   }
 
@@ -3197,7 +3834,11 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           bool? isCurrent,
           Value<int?> previousId = const Value.absent(),
           DateTime? createdAt,
-          Value<String?> raterName = const Value.absent()}) =>
+          Value<String?> raterName = const Value.absent(),
+          Value<String?> createdAppVersion = const Value.absent(),
+          Value<String?> createdDeviceInfo = const Value.absent(),
+          Value<double?> capturedLatitude = const Value.absent(),
+          Value<double?> capturedLongitude = const Value.absent()}) =>
       RatingRecord(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -3213,6 +3854,18 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
         previousId: previousId.present ? previousId.value : this.previousId,
         createdAt: createdAt ?? this.createdAt,
         raterName: raterName.present ? raterName.value : this.raterName,
+        createdAppVersion: createdAppVersion.present
+            ? createdAppVersion.value
+            : this.createdAppVersion,
+        createdDeviceInfo: createdDeviceInfo.present
+            ? createdDeviceInfo.value
+            : this.createdDeviceInfo,
+        capturedLatitude: capturedLatitude.present
+            ? capturedLatitude.value
+            : this.capturedLatitude,
+        capturedLongitude: capturedLongitude.present
+            ? capturedLongitude.value
+            : this.capturedLongitude,
       );
   RatingRecord copyWithCompanion(RatingRecordsCompanion data) {
     return RatingRecord(
@@ -3236,6 +3889,18 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           data.previousId.present ? data.previousId.value : this.previousId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       raterName: data.raterName.present ? data.raterName.value : this.raterName,
+      createdAppVersion: data.createdAppVersion.present
+          ? data.createdAppVersion.value
+          : this.createdAppVersion,
+      createdDeviceInfo: data.createdDeviceInfo.present
+          ? data.createdDeviceInfo.value
+          : this.createdDeviceInfo,
+      capturedLatitude: data.capturedLatitude.present
+          ? data.capturedLatitude.value
+          : this.capturedLatitude,
+      capturedLongitude: data.capturedLongitude.present
+          ? data.capturedLongitude.value
+          : this.capturedLongitude,
     );
   }
 
@@ -3254,7 +3919,11 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           ..write('isCurrent: $isCurrent, ')
           ..write('previousId: $previousId, ')
           ..write('createdAt: $createdAt, ')
-          ..write('raterName: $raterName')
+          ..write('raterName: $raterName, ')
+          ..write('createdAppVersion: $createdAppVersion, ')
+          ..write('createdDeviceInfo: $createdDeviceInfo, ')
+          ..write('capturedLatitude: $capturedLatitude, ')
+          ..write('capturedLongitude: $capturedLongitude')
           ..write(')'))
         .toString();
   }
@@ -3273,7 +3942,11 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       isCurrent,
       previousId,
       createdAt,
-      raterName);
+      raterName,
+      createdAppVersion,
+      createdDeviceInfo,
+      capturedLatitude,
+      capturedLongitude);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3290,7 +3963,11 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           other.isCurrent == this.isCurrent &&
           other.previousId == this.previousId &&
           other.createdAt == this.createdAt &&
-          other.raterName == this.raterName);
+          other.raterName == this.raterName &&
+          other.createdAppVersion == this.createdAppVersion &&
+          other.createdDeviceInfo == this.createdDeviceInfo &&
+          other.capturedLatitude == this.capturedLatitude &&
+          other.capturedLongitude == this.capturedLongitude);
 }
 
 class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
@@ -3307,6 +3984,10 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
   final Value<int?> previousId;
   final Value<DateTime> createdAt;
   final Value<String?> raterName;
+  final Value<String?> createdAppVersion;
+  final Value<String?> createdDeviceInfo;
+  final Value<double?> capturedLatitude;
+  final Value<double?> capturedLongitude;
   const RatingRecordsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -3321,6 +4002,10 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.previousId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.raterName = const Value.absent(),
+    this.createdAppVersion = const Value.absent(),
+    this.createdDeviceInfo = const Value.absent(),
+    this.capturedLatitude = const Value.absent(),
+    this.capturedLongitude = const Value.absent(),
   });
   RatingRecordsCompanion.insert({
     this.id = const Value.absent(),
@@ -3336,6 +4021,10 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.previousId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.raterName = const Value.absent(),
+    this.createdAppVersion = const Value.absent(),
+    this.createdDeviceInfo = const Value.absent(),
+    this.capturedLatitude = const Value.absent(),
+    this.capturedLongitude = const Value.absent(),
   })  : trialId = Value(trialId),
         plotPk = Value(plotPk),
         assessmentId = Value(assessmentId),
@@ -3354,6 +4043,10 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     Expression<int>? previousId,
     Expression<DateTime>? createdAt,
     Expression<String>? raterName,
+    Expression<String>? createdAppVersion,
+    Expression<String>? createdDeviceInfo,
+    Expression<double>? capturedLatitude,
+    Expression<double>? capturedLongitude,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3369,6 +4062,10 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       if (previousId != null) 'previous_id': previousId,
       if (createdAt != null) 'created_at': createdAt,
       if (raterName != null) 'rater_name': raterName,
+      if (createdAppVersion != null) 'created_app_version': createdAppVersion,
+      if (createdDeviceInfo != null) 'created_device_info': createdDeviceInfo,
+      if (capturedLatitude != null) 'captured_latitude': capturedLatitude,
+      if (capturedLongitude != null) 'captured_longitude': capturedLongitude,
     });
   }
 
@@ -3385,7 +4082,11 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       Value<bool>? isCurrent,
       Value<int?>? previousId,
       Value<DateTime>? createdAt,
-      Value<String?>? raterName}) {
+      Value<String?>? raterName,
+      Value<String?>? createdAppVersion,
+      Value<String?>? createdDeviceInfo,
+      Value<double?>? capturedLatitude,
+      Value<double?>? capturedLongitude}) {
     return RatingRecordsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -3400,6 +4101,10 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       previousId: previousId ?? this.previousId,
       createdAt: createdAt ?? this.createdAt,
       raterName: raterName ?? this.raterName,
+      createdAppVersion: createdAppVersion ?? this.createdAppVersion,
+      createdDeviceInfo: createdDeviceInfo ?? this.createdDeviceInfo,
+      capturedLatitude: capturedLatitude ?? this.capturedLatitude,
+      capturedLongitude: capturedLongitude ?? this.capturedLongitude,
     );
   }
 
@@ -3445,6 +4150,18 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     if (raterName.present) {
       map['rater_name'] = Variable<String>(raterName.value);
     }
+    if (createdAppVersion.present) {
+      map['created_app_version'] = Variable<String>(createdAppVersion.value);
+    }
+    if (createdDeviceInfo.present) {
+      map['created_device_info'] = Variable<String>(createdDeviceInfo.value);
+    }
+    if (capturedLatitude.present) {
+      map['captured_latitude'] = Variable<double>(capturedLatitude.value);
+    }
+    if (capturedLongitude.present) {
+      map['captured_longitude'] = Variable<double>(capturedLongitude.value);
+    }
     return map;
   }
 
@@ -3463,7 +4180,687 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
           ..write('isCurrent: $isCurrent, ')
           ..write('previousId: $previousId, ')
           ..write('createdAt: $createdAt, ')
-          ..write('raterName: $raterName')
+          ..write('raterName: $raterName, ')
+          ..write('createdAppVersion: $createdAppVersion, ')
+          ..write('createdDeviceInfo: $createdDeviceInfo, ')
+          ..write('capturedLatitude: $capturedLatitude, ')
+          ..write('capturedLongitude: $capturedLongitude')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RatingCorrectionsTable extends RatingCorrections
+    with TableInfo<$RatingCorrectionsTable, RatingCorrection> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RatingCorrectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _ratingIdMeta =
+      const VerificationMeta('ratingId');
+  @override
+  late final GeneratedColumn<int> ratingId = GeneratedColumn<int>(
+      'rating_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES rating_records (id)'));
+  static const VerificationMeta _oldNumericValueMeta =
+      const VerificationMeta('oldNumericValue');
+  @override
+  late final GeneratedColumn<double> oldNumericValue = GeneratedColumn<double>(
+      'old_numeric_value', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _newNumericValueMeta =
+      const VerificationMeta('newNumericValue');
+  @override
+  late final GeneratedColumn<double> newNumericValue = GeneratedColumn<double>(
+      'new_numeric_value', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _oldTextValueMeta =
+      const VerificationMeta('oldTextValue');
+  @override
+  late final GeneratedColumn<String> oldTextValue = GeneratedColumn<String>(
+      'old_text_value', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _newTextValueMeta =
+      const VerificationMeta('newTextValue');
+  @override
+  late final GeneratedColumn<String> newTextValue = GeneratedColumn<String>(
+      'new_text_value', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _oldResultStatusMeta =
+      const VerificationMeta('oldResultStatus');
+  @override
+  late final GeneratedColumn<String> oldResultStatus = GeneratedColumn<String>(
+      'old_result_status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _newResultStatusMeta =
+      const VerificationMeta('newResultStatus');
+  @override
+  late final GeneratedColumn<String> newResultStatus = GeneratedColumn<String>(
+      'new_result_status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+      'reason', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _correctedByUserIdMeta =
+      const VerificationMeta('correctedByUserId');
+  @override
+  late final GeneratedColumn<int> correctedByUserId = GeneratedColumn<int>(
+      'corrected_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _correctedAtMeta =
+      const VerificationMeta('correctedAt');
+  @override
+  late final GeneratedColumn<DateTime> correctedAt = GeneratedColumn<DateTime>(
+      'corrected_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _sessionIdMeta =
+      const VerificationMeta('sessionId');
+  @override
+  late final GeneratedColumn<int> sessionId = GeneratedColumn<int>(
+      'session_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES sessions (id)'));
+  static const VerificationMeta _plotPkMeta = const VerificationMeta('plotPk');
+  @override
+  late final GeneratedColumn<int> plotPk = GeneratedColumn<int>(
+      'plot_pk', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES plots (id)'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        ratingId,
+        oldNumericValue,
+        newNumericValue,
+        oldTextValue,
+        newTextValue,
+        oldResultStatus,
+        newResultStatus,
+        reason,
+        correctedByUserId,
+        correctedAt,
+        sessionId,
+        plotPk
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rating_corrections';
+  @override
+  VerificationContext validateIntegrity(Insertable<RatingCorrection> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('rating_id')) {
+      context.handle(_ratingIdMeta,
+          ratingId.isAcceptableOrUnknown(data['rating_id']!, _ratingIdMeta));
+    } else if (isInserting) {
+      context.missing(_ratingIdMeta);
+    }
+    if (data.containsKey('old_numeric_value')) {
+      context.handle(
+          _oldNumericValueMeta,
+          oldNumericValue.isAcceptableOrUnknown(
+              data['old_numeric_value']!, _oldNumericValueMeta));
+    }
+    if (data.containsKey('new_numeric_value')) {
+      context.handle(
+          _newNumericValueMeta,
+          newNumericValue.isAcceptableOrUnknown(
+              data['new_numeric_value']!, _newNumericValueMeta));
+    }
+    if (data.containsKey('old_text_value')) {
+      context.handle(
+          _oldTextValueMeta,
+          oldTextValue.isAcceptableOrUnknown(
+              data['old_text_value']!, _oldTextValueMeta));
+    }
+    if (data.containsKey('new_text_value')) {
+      context.handle(
+          _newTextValueMeta,
+          newTextValue.isAcceptableOrUnknown(
+              data['new_text_value']!, _newTextValueMeta));
+    }
+    if (data.containsKey('old_result_status')) {
+      context.handle(
+          _oldResultStatusMeta,
+          oldResultStatus.isAcceptableOrUnknown(
+              data['old_result_status']!, _oldResultStatusMeta));
+    } else if (isInserting) {
+      context.missing(_oldResultStatusMeta);
+    }
+    if (data.containsKey('new_result_status')) {
+      context.handle(
+          _newResultStatusMeta,
+          newResultStatus.isAcceptableOrUnknown(
+              data['new_result_status']!, _newResultStatusMeta));
+    } else if (isInserting) {
+      context.missing(_newResultStatusMeta);
+    }
+    if (data.containsKey('reason')) {
+      context.handle(_reasonMeta,
+          reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta));
+    } else if (isInserting) {
+      context.missing(_reasonMeta);
+    }
+    if (data.containsKey('corrected_by_user_id')) {
+      context.handle(
+          _correctedByUserIdMeta,
+          correctedByUserId.isAcceptableOrUnknown(
+              data['corrected_by_user_id']!, _correctedByUserIdMeta));
+    }
+    if (data.containsKey('corrected_at')) {
+      context.handle(
+          _correctedAtMeta,
+          correctedAt.isAcceptableOrUnknown(
+              data['corrected_at']!, _correctedAtMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(_sessionIdMeta,
+          sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta));
+    }
+    if (data.containsKey('plot_pk')) {
+      context.handle(_plotPkMeta,
+          plotPk.isAcceptableOrUnknown(data['plot_pk']!, _plotPkMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RatingCorrection map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RatingCorrection(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      ratingId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}rating_id'])!,
+      oldNumericValue: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}old_numeric_value']),
+      newNumericValue: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}new_numeric_value']),
+      oldTextValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}old_text_value']),
+      newTextValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}new_text_value']),
+      oldResultStatus: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}old_result_status'])!,
+      newResultStatus: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}new_result_status'])!,
+      reason: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reason'])!,
+      correctedByUserId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}corrected_by_user_id']),
+      correctedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}corrected_at'])!,
+      sessionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}session_id']),
+      plotPk: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}plot_pk']),
+    );
+  }
+
+  @override
+  $RatingCorrectionsTable createAlias(String alias) {
+    return $RatingCorrectionsTable(attachedDatabase, alias);
+  }
+}
+
+class RatingCorrection extends DataClass
+    implements Insertable<RatingCorrection> {
+  final int id;
+  final int ratingId;
+  final double? oldNumericValue;
+  final double? newNumericValue;
+  final String? oldTextValue;
+  final String? newTextValue;
+  final String oldResultStatus;
+  final String newResultStatus;
+  final String reason;
+  final int? correctedByUserId;
+  final DateTime correctedAt;
+  final int? sessionId;
+  final int? plotPk;
+  const RatingCorrection(
+      {required this.id,
+      required this.ratingId,
+      this.oldNumericValue,
+      this.newNumericValue,
+      this.oldTextValue,
+      this.newTextValue,
+      required this.oldResultStatus,
+      required this.newResultStatus,
+      required this.reason,
+      this.correctedByUserId,
+      required this.correctedAt,
+      this.sessionId,
+      this.plotPk});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['rating_id'] = Variable<int>(ratingId);
+    if (!nullToAbsent || oldNumericValue != null) {
+      map['old_numeric_value'] = Variable<double>(oldNumericValue);
+    }
+    if (!nullToAbsent || newNumericValue != null) {
+      map['new_numeric_value'] = Variable<double>(newNumericValue);
+    }
+    if (!nullToAbsent || oldTextValue != null) {
+      map['old_text_value'] = Variable<String>(oldTextValue);
+    }
+    if (!nullToAbsent || newTextValue != null) {
+      map['new_text_value'] = Variable<String>(newTextValue);
+    }
+    map['old_result_status'] = Variable<String>(oldResultStatus);
+    map['new_result_status'] = Variable<String>(newResultStatus);
+    map['reason'] = Variable<String>(reason);
+    if (!nullToAbsent || correctedByUserId != null) {
+      map['corrected_by_user_id'] = Variable<int>(correctedByUserId);
+    }
+    map['corrected_at'] = Variable<DateTime>(correctedAt);
+    if (!nullToAbsent || sessionId != null) {
+      map['session_id'] = Variable<int>(sessionId);
+    }
+    if (!nullToAbsent || plotPk != null) {
+      map['plot_pk'] = Variable<int>(plotPk);
+    }
+    return map;
+  }
+
+  RatingCorrectionsCompanion toCompanion(bool nullToAbsent) {
+    return RatingCorrectionsCompanion(
+      id: Value(id),
+      ratingId: Value(ratingId),
+      oldNumericValue: oldNumericValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oldNumericValue),
+      newNumericValue: newNumericValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(newNumericValue),
+      oldTextValue: oldTextValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oldTextValue),
+      newTextValue: newTextValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(newTextValue),
+      oldResultStatus: Value(oldResultStatus),
+      newResultStatus: Value(newResultStatus),
+      reason: Value(reason),
+      correctedByUserId: correctedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(correctedByUserId),
+      correctedAt: Value(correctedAt),
+      sessionId: sessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionId),
+      plotPk:
+          plotPk == null && nullToAbsent ? const Value.absent() : Value(plotPk),
+    );
+  }
+
+  factory RatingCorrection.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RatingCorrection(
+      id: serializer.fromJson<int>(json['id']),
+      ratingId: serializer.fromJson<int>(json['ratingId']),
+      oldNumericValue: serializer.fromJson<double?>(json['oldNumericValue']),
+      newNumericValue: serializer.fromJson<double?>(json['newNumericValue']),
+      oldTextValue: serializer.fromJson<String?>(json['oldTextValue']),
+      newTextValue: serializer.fromJson<String?>(json['newTextValue']),
+      oldResultStatus: serializer.fromJson<String>(json['oldResultStatus']),
+      newResultStatus: serializer.fromJson<String>(json['newResultStatus']),
+      reason: serializer.fromJson<String>(json['reason']),
+      correctedByUserId: serializer.fromJson<int?>(json['correctedByUserId']),
+      correctedAt: serializer.fromJson<DateTime>(json['correctedAt']),
+      sessionId: serializer.fromJson<int?>(json['sessionId']),
+      plotPk: serializer.fromJson<int?>(json['plotPk']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ratingId': serializer.toJson<int>(ratingId),
+      'oldNumericValue': serializer.toJson<double?>(oldNumericValue),
+      'newNumericValue': serializer.toJson<double?>(newNumericValue),
+      'oldTextValue': serializer.toJson<String?>(oldTextValue),
+      'newTextValue': serializer.toJson<String?>(newTextValue),
+      'oldResultStatus': serializer.toJson<String>(oldResultStatus),
+      'newResultStatus': serializer.toJson<String>(newResultStatus),
+      'reason': serializer.toJson<String>(reason),
+      'correctedByUserId': serializer.toJson<int?>(correctedByUserId),
+      'correctedAt': serializer.toJson<DateTime>(correctedAt),
+      'sessionId': serializer.toJson<int?>(sessionId),
+      'plotPk': serializer.toJson<int?>(plotPk),
+    };
+  }
+
+  RatingCorrection copyWith(
+          {int? id,
+          int? ratingId,
+          Value<double?> oldNumericValue = const Value.absent(),
+          Value<double?> newNumericValue = const Value.absent(),
+          Value<String?> oldTextValue = const Value.absent(),
+          Value<String?> newTextValue = const Value.absent(),
+          String? oldResultStatus,
+          String? newResultStatus,
+          String? reason,
+          Value<int?> correctedByUserId = const Value.absent(),
+          DateTime? correctedAt,
+          Value<int?> sessionId = const Value.absent(),
+          Value<int?> plotPk = const Value.absent()}) =>
+      RatingCorrection(
+        id: id ?? this.id,
+        ratingId: ratingId ?? this.ratingId,
+        oldNumericValue: oldNumericValue.present
+            ? oldNumericValue.value
+            : this.oldNumericValue,
+        newNumericValue: newNumericValue.present
+            ? newNumericValue.value
+            : this.newNumericValue,
+        oldTextValue:
+            oldTextValue.present ? oldTextValue.value : this.oldTextValue,
+        newTextValue:
+            newTextValue.present ? newTextValue.value : this.newTextValue,
+        oldResultStatus: oldResultStatus ?? this.oldResultStatus,
+        newResultStatus: newResultStatus ?? this.newResultStatus,
+        reason: reason ?? this.reason,
+        correctedByUserId: correctedByUserId.present
+            ? correctedByUserId.value
+            : this.correctedByUserId,
+        correctedAt: correctedAt ?? this.correctedAt,
+        sessionId: sessionId.present ? sessionId.value : this.sessionId,
+        plotPk: plotPk.present ? plotPk.value : this.plotPk,
+      );
+  RatingCorrection copyWithCompanion(RatingCorrectionsCompanion data) {
+    return RatingCorrection(
+      id: data.id.present ? data.id.value : this.id,
+      ratingId: data.ratingId.present ? data.ratingId.value : this.ratingId,
+      oldNumericValue: data.oldNumericValue.present
+          ? data.oldNumericValue.value
+          : this.oldNumericValue,
+      newNumericValue: data.newNumericValue.present
+          ? data.newNumericValue.value
+          : this.newNumericValue,
+      oldTextValue: data.oldTextValue.present
+          ? data.oldTextValue.value
+          : this.oldTextValue,
+      newTextValue: data.newTextValue.present
+          ? data.newTextValue.value
+          : this.newTextValue,
+      oldResultStatus: data.oldResultStatus.present
+          ? data.oldResultStatus.value
+          : this.oldResultStatus,
+      newResultStatus: data.newResultStatus.present
+          ? data.newResultStatus.value
+          : this.newResultStatus,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      correctedByUserId: data.correctedByUserId.present
+          ? data.correctedByUserId.value
+          : this.correctedByUserId,
+      correctedAt:
+          data.correctedAt.present ? data.correctedAt.value : this.correctedAt,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      plotPk: data.plotPk.present ? data.plotPk.value : this.plotPk,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RatingCorrection(')
+          ..write('id: $id, ')
+          ..write('ratingId: $ratingId, ')
+          ..write('oldNumericValue: $oldNumericValue, ')
+          ..write('newNumericValue: $newNumericValue, ')
+          ..write('oldTextValue: $oldTextValue, ')
+          ..write('newTextValue: $newTextValue, ')
+          ..write('oldResultStatus: $oldResultStatus, ')
+          ..write('newResultStatus: $newResultStatus, ')
+          ..write('reason: $reason, ')
+          ..write('correctedByUserId: $correctedByUserId, ')
+          ..write('correctedAt: $correctedAt, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('plotPk: $plotPk')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      ratingId,
+      oldNumericValue,
+      newNumericValue,
+      oldTextValue,
+      newTextValue,
+      oldResultStatus,
+      newResultStatus,
+      reason,
+      correctedByUserId,
+      correctedAt,
+      sessionId,
+      plotPk);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RatingCorrection &&
+          other.id == this.id &&
+          other.ratingId == this.ratingId &&
+          other.oldNumericValue == this.oldNumericValue &&
+          other.newNumericValue == this.newNumericValue &&
+          other.oldTextValue == this.oldTextValue &&
+          other.newTextValue == this.newTextValue &&
+          other.oldResultStatus == this.oldResultStatus &&
+          other.newResultStatus == this.newResultStatus &&
+          other.reason == this.reason &&
+          other.correctedByUserId == this.correctedByUserId &&
+          other.correctedAt == this.correctedAt &&
+          other.sessionId == this.sessionId &&
+          other.plotPk == this.plotPk);
+}
+
+class RatingCorrectionsCompanion extends UpdateCompanion<RatingCorrection> {
+  final Value<int> id;
+  final Value<int> ratingId;
+  final Value<double?> oldNumericValue;
+  final Value<double?> newNumericValue;
+  final Value<String?> oldTextValue;
+  final Value<String?> newTextValue;
+  final Value<String> oldResultStatus;
+  final Value<String> newResultStatus;
+  final Value<String> reason;
+  final Value<int?> correctedByUserId;
+  final Value<DateTime> correctedAt;
+  final Value<int?> sessionId;
+  final Value<int?> plotPk;
+  const RatingCorrectionsCompanion({
+    this.id = const Value.absent(),
+    this.ratingId = const Value.absent(),
+    this.oldNumericValue = const Value.absent(),
+    this.newNumericValue = const Value.absent(),
+    this.oldTextValue = const Value.absent(),
+    this.newTextValue = const Value.absent(),
+    this.oldResultStatus = const Value.absent(),
+    this.newResultStatus = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.correctedByUserId = const Value.absent(),
+    this.correctedAt = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.plotPk = const Value.absent(),
+  });
+  RatingCorrectionsCompanion.insert({
+    this.id = const Value.absent(),
+    required int ratingId,
+    this.oldNumericValue = const Value.absent(),
+    this.newNumericValue = const Value.absent(),
+    this.oldTextValue = const Value.absent(),
+    this.newTextValue = const Value.absent(),
+    required String oldResultStatus,
+    required String newResultStatus,
+    required String reason,
+    this.correctedByUserId = const Value.absent(),
+    this.correctedAt = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.plotPk = const Value.absent(),
+  })  : ratingId = Value(ratingId),
+        oldResultStatus = Value(oldResultStatus),
+        newResultStatus = Value(newResultStatus),
+        reason = Value(reason);
+  static Insertable<RatingCorrection> custom({
+    Expression<int>? id,
+    Expression<int>? ratingId,
+    Expression<double>? oldNumericValue,
+    Expression<double>? newNumericValue,
+    Expression<String>? oldTextValue,
+    Expression<String>? newTextValue,
+    Expression<String>? oldResultStatus,
+    Expression<String>? newResultStatus,
+    Expression<String>? reason,
+    Expression<int>? correctedByUserId,
+    Expression<DateTime>? correctedAt,
+    Expression<int>? sessionId,
+    Expression<int>? plotPk,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ratingId != null) 'rating_id': ratingId,
+      if (oldNumericValue != null) 'old_numeric_value': oldNumericValue,
+      if (newNumericValue != null) 'new_numeric_value': newNumericValue,
+      if (oldTextValue != null) 'old_text_value': oldTextValue,
+      if (newTextValue != null) 'new_text_value': newTextValue,
+      if (oldResultStatus != null) 'old_result_status': oldResultStatus,
+      if (newResultStatus != null) 'new_result_status': newResultStatus,
+      if (reason != null) 'reason': reason,
+      if (correctedByUserId != null) 'corrected_by_user_id': correctedByUserId,
+      if (correctedAt != null) 'corrected_at': correctedAt,
+      if (sessionId != null) 'session_id': sessionId,
+      if (plotPk != null) 'plot_pk': plotPk,
+    });
+  }
+
+  RatingCorrectionsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? ratingId,
+      Value<double?>? oldNumericValue,
+      Value<double?>? newNumericValue,
+      Value<String?>? oldTextValue,
+      Value<String?>? newTextValue,
+      Value<String>? oldResultStatus,
+      Value<String>? newResultStatus,
+      Value<String>? reason,
+      Value<int?>? correctedByUserId,
+      Value<DateTime>? correctedAt,
+      Value<int?>? sessionId,
+      Value<int?>? plotPk}) {
+    return RatingCorrectionsCompanion(
+      id: id ?? this.id,
+      ratingId: ratingId ?? this.ratingId,
+      oldNumericValue: oldNumericValue ?? this.oldNumericValue,
+      newNumericValue: newNumericValue ?? this.newNumericValue,
+      oldTextValue: oldTextValue ?? this.oldTextValue,
+      newTextValue: newTextValue ?? this.newTextValue,
+      oldResultStatus: oldResultStatus ?? this.oldResultStatus,
+      newResultStatus: newResultStatus ?? this.newResultStatus,
+      reason: reason ?? this.reason,
+      correctedByUserId: correctedByUserId ?? this.correctedByUserId,
+      correctedAt: correctedAt ?? this.correctedAt,
+      sessionId: sessionId ?? this.sessionId,
+      plotPk: plotPk ?? this.plotPk,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ratingId.present) {
+      map['rating_id'] = Variable<int>(ratingId.value);
+    }
+    if (oldNumericValue.present) {
+      map['old_numeric_value'] = Variable<double>(oldNumericValue.value);
+    }
+    if (newNumericValue.present) {
+      map['new_numeric_value'] = Variable<double>(newNumericValue.value);
+    }
+    if (oldTextValue.present) {
+      map['old_text_value'] = Variable<String>(oldTextValue.value);
+    }
+    if (newTextValue.present) {
+      map['new_text_value'] = Variable<String>(newTextValue.value);
+    }
+    if (oldResultStatus.present) {
+      map['old_result_status'] = Variable<String>(oldResultStatus.value);
+    }
+    if (newResultStatus.present) {
+      map['new_result_status'] = Variable<String>(newResultStatus.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (correctedByUserId.present) {
+      map['corrected_by_user_id'] = Variable<int>(correctedByUserId.value);
+    }
+    if (correctedAt.present) {
+      map['corrected_at'] = Variable<DateTime>(correctedAt.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<int>(sessionId.value);
+    }
+    if (plotPk.present) {
+      map['plot_pk'] = Variable<int>(plotPk.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RatingCorrectionsCompanion(')
+          ..write('id: $id, ')
+          ..write('ratingId: $ratingId, ')
+          ..write('oldNumericValue: $oldNumericValue, ')
+          ..write('newNumericValue: $newNumericValue, ')
+          ..write('oldTextValue: $oldTextValue, ')
+          ..write('newTextValue: $newTextValue, ')
+          ..write('oldResultStatus: $oldResultStatus, ')
+          ..write('newResultStatus: $newResultStatus, ')
+          ..write('reason: $reason, ')
+          ..write('correctedByUserId: $correctedByUserId, ')
+          ..write('correctedAt: $correctedAt, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('plotPk: $plotPk')
           ..write(')'))
         .toString();
   }
@@ -8467,6 +9864,15 @@ class $AuditEventsTable extends AuditEvents
   late final GeneratedColumn<String> performedBy = GeneratedColumn<String>(
       'performed_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _performedByUserIdMeta =
+      const VerificationMeta('performedByUserId');
+  @override
+  late final GeneratedColumn<int> performedByUserId = GeneratedColumn<int>(
+      'performed_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -8490,6 +9896,7 @@ class $AuditEventsTable extends AuditEvents
         eventType,
         description,
         performedBy,
+        performedByUserId,
         createdAt,
         metadata
       ];
@@ -8538,6 +9945,12 @@ class $AuditEventsTable extends AuditEvents
           performedBy.isAcceptableOrUnknown(
               data['performed_by']!, _performedByMeta));
     }
+    if (data.containsKey('performed_by_user_id')) {
+      context.handle(
+          _performedByUserIdMeta,
+          performedByUserId.isAcceptableOrUnknown(
+              data['performed_by_user_id']!, _performedByUserIdMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -8569,6 +9982,8 @@ class $AuditEventsTable extends AuditEvents
           .read(DriftSqlType.string, data['${effectivePrefix}description'])!,
       performedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}performed_by']),
+      performedByUserId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}performed_by_user_id']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       metadata: attachedDatabase.typeMapping
@@ -8590,6 +10005,7 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
   final String eventType;
   final String description;
   final String? performedBy;
+  final int? performedByUserId;
   final DateTime createdAt;
   final String? metadata;
   const AuditEvent(
@@ -8600,6 +10016,7 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
       required this.eventType,
       required this.description,
       this.performedBy,
+      this.performedByUserId,
       required this.createdAt,
       this.metadata});
   @override
@@ -8619,6 +10036,9 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
     map['description'] = Variable<String>(description);
     if (!nullToAbsent || performedBy != null) {
       map['performed_by'] = Variable<String>(performedBy);
+    }
+    if (!nullToAbsent || performedByUserId != null) {
+      map['performed_by_user_id'] = Variable<int>(performedByUserId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || metadata != null) {
@@ -8643,6 +10063,9 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
       performedBy: performedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(performedBy),
+      performedByUserId: performedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(performedByUserId),
       createdAt: Value(createdAt),
       metadata: metadata == null && nullToAbsent
           ? const Value.absent()
@@ -8661,6 +10084,7 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
       eventType: serializer.fromJson<String>(json['eventType']),
       description: serializer.fromJson<String>(json['description']),
       performedBy: serializer.fromJson<String?>(json['performedBy']),
+      performedByUserId: serializer.fromJson<int?>(json['performedByUserId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       metadata: serializer.fromJson<String?>(json['metadata']),
     );
@@ -8676,6 +10100,7 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
       'eventType': serializer.toJson<String>(eventType),
       'description': serializer.toJson<String>(description),
       'performedBy': serializer.toJson<String?>(performedBy),
+      'performedByUserId': serializer.toJson<int?>(performedByUserId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'metadata': serializer.toJson<String?>(metadata),
     };
@@ -8689,6 +10114,7 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
           String? eventType,
           String? description,
           Value<String?> performedBy = const Value.absent(),
+          Value<int?> performedByUserId = const Value.absent(),
           DateTime? createdAt,
           Value<String?> metadata = const Value.absent()}) =>
       AuditEvent(
@@ -8699,6 +10125,9 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
         eventType: eventType ?? this.eventType,
         description: description ?? this.description,
         performedBy: performedBy.present ? performedBy.value : this.performedBy,
+        performedByUserId: performedByUserId.present
+            ? performedByUserId.value
+            : this.performedByUserId,
         createdAt: createdAt ?? this.createdAt,
         metadata: metadata.present ? metadata.value : this.metadata,
       );
@@ -8713,6 +10142,9 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
           data.description.present ? data.description.value : this.description,
       performedBy:
           data.performedBy.present ? data.performedBy.value : this.performedBy,
+      performedByUserId: data.performedByUserId.present
+          ? data.performedByUserId.value
+          : this.performedByUserId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       metadata: data.metadata.present ? data.metadata.value : this.metadata,
     );
@@ -8728,6 +10160,7 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
           ..write('eventType: $eventType, ')
           ..write('description: $description, ')
           ..write('performedBy: $performedBy, ')
+          ..write('performedByUserId: $performedByUserId, ')
           ..write('createdAt: $createdAt, ')
           ..write('metadata: $metadata')
           ..write(')'))
@@ -8736,7 +10169,7 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
 
   @override
   int get hashCode => Object.hash(id, trialId, sessionId, plotPk, eventType,
-      description, performedBy, createdAt, metadata);
+      description, performedBy, performedByUserId, createdAt, metadata);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -8748,6 +10181,7 @@ class AuditEvent extends DataClass implements Insertable<AuditEvent> {
           other.eventType == this.eventType &&
           other.description == this.description &&
           other.performedBy == this.performedBy &&
+          other.performedByUserId == this.performedByUserId &&
           other.createdAt == this.createdAt &&
           other.metadata == this.metadata);
 }
@@ -8760,6 +10194,7 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
   final Value<String> eventType;
   final Value<String> description;
   final Value<String?> performedBy;
+  final Value<int?> performedByUserId;
   final Value<DateTime> createdAt;
   final Value<String?> metadata;
   const AuditEventsCompanion({
@@ -8770,6 +10205,7 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
     this.eventType = const Value.absent(),
     this.description = const Value.absent(),
     this.performedBy = const Value.absent(),
+    this.performedByUserId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.metadata = const Value.absent(),
   });
@@ -8781,6 +10217,7 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
     required String eventType,
     required String description,
     this.performedBy = const Value.absent(),
+    this.performedByUserId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.metadata = const Value.absent(),
   })  : eventType = Value(eventType),
@@ -8793,6 +10230,7 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
     Expression<String>? eventType,
     Expression<String>? description,
     Expression<String>? performedBy,
+    Expression<int>? performedByUserId,
     Expression<DateTime>? createdAt,
     Expression<String>? metadata,
   }) {
@@ -8804,6 +10242,7 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
       if (eventType != null) 'event_type': eventType,
       if (description != null) 'description': description,
       if (performedBy != null) 'performed_by': performedBy,
+      if (performedByUserId != null) 'performed_by_user_id': performedByUserId,
       if (createdAt != null) 'created_at': createdAt,
       if (metadata != null) 'metadata': metadata,
     });
@@ -8817,6 +10256,7 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
       Value<String>? eventType,
       Value<String>? description,
       Value<String?>? performedBy,
+      Value<int?>? performedByUserId,
       Value<DateTime>? createdAt,
       Value<String?>? metadata}) {
     return AuditEventsCompanion(
@@ -8827,6 +10267,7 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
       eventType: eventType ?? this.eventType,
       description: description ?? this.description,
       performedBy: performedBy ?? this.performedBy,
+      performedByUserId: performedByUserId ?? this.performedByUserId,
       createdAt: createdAt ?? this.createdAt,
       metadata: metadata ?? this.metadata,
     );
@@ -8856,6 +10297,9 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
     if (performedBy.present) {
       map['performed_by'] = Variable<String>(performedBy.value);
     }
+    if (performedByUserId.present) {
+      map['performed_by_user_id'] = Variable<int>(performedByUserId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -8875,6 +10319,7 @@ class AuditEventsCompanion extends UpdateCompanion<AuditEvent> {
           ..write('eventType: $eventType, ')
           ..write('description: $description, ')
           ..write('performedBy: $performedBy, ')
+          ..write('performedByUserId: $performedByUserId, ')
           ..write('createdAt: $createdAt, ')
           ..write('metadata: $metadata')
           ..write(')'))
@@ -9311,6 +10756,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $UsersTable users = $UsersTable(this);
   late final $TrialsTable trials = $TrialsTable(this);
   late final $TreatmentsTable treatments = $TreatmentsTable(this);
   late final $TreatmentComponentsTable treatmentComponents =
@@ -9321,6 +10767,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SessionAssessmentsTable sessionAssessments =
       $SessionAssessmentsTable(this);
   late final $RatingRecordsTable ratingRecords = $RatingRecordsTable(this);
+  late final $RatingCorrectionsTable ratingCorrections =
+      $RatingCorrectionsTable(this);
   late final $NotesTable notes = $NotesTable(this);
   late final $PhotosTable photos = $PhotosTable(this);
   late final $PlotFlagsTable plotFlags = $PlotFlagsTable(this);
@@ -9343,6 +10791,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+        users,
         trials,
         treatments,
         treatmentComponents,
@@ -9351,6 +10800,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         sessions,
         sessionAssessments,
         ratingRecords,
+        ratingCorrections,
         notes,
         photos,
         plotFlags,
@@ -9364,6 +10814,201 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         auditEvents,
         importEvents
       ];
+}
+
+typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
+  Value<int> id,
+  required String displayName,
+  Value<String?> initials,
+  Value<String> roleKey,
+  Value<bool> isActive,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
+  Value<int> id,
+  Value<String> displayName,
+  Value<String?> initials,
+  Value<String> roleKey,
+  Value<bool> isActive,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$UsersTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $UsersTable,
+    User,
+    $$UsersTableFilterComposer,
+    $$UsersTableOrderingComposer,
+    $$UsersTableCreateCompanionBuilder,
+    $$UsersTableUpdateCompanionBuilder> {
+  $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$UsersTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$UsersTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> displayName = const Value.absent(),
+            Value<String?> initials = const Value.absent(),
+            Value<String> roleKey = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              UsersCompanion(
+            id: id,
+            displayName: displayName,
+            initials: initials,
+            roleKey: roleKey,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String displayName,
+            Value<String?> initials = const Value.absent(),
+            Value<String> roleKey = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              UsersCompanion.insert(
+            id: id,
+            displayName: displayName,
+            initials: initials,
+            roleKey: roleKey,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+        ));
+}
+
+class $$UsersTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $UsersTable> {
+  $$UsersTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get displayName => $state.composableBuilder(
+      column: $state.table.displayName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get initials => $state.composableBuilder(
+      column: $state.table.initials,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get roleKey => $state.composableBuilder(
+      column: $state.table.roleKey,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isActive => $state.composableBuilder(
+      column: $state.table.isActive,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ComposableFilter sessionsRefs(
+      ComposableFilter Function($$SessionsTableFilterComposer f) f) {
+    final $$SessionsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.createdByUserId,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableFilterComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ratingCorrectionsRefs(
+      ComposableFilter Function($$RatingCorrectionsTableFilterComposer f) f) {
+    final $$RatingCorrectionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ratingCorrections,
+            getReferencedColumn: (t) => t.correctedByUserId,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingCorrectionsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ratingCorrections,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter auditEventsRefs(
+      ComposableFilter Function($$AuditEventsTableFilterComposer f) f) {
+    final $$AuditEventsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.auditEvents,
+        getReferencedColumn: (t) => t.performedByUserId,
+        builder: (joinBuilder, parentComposers) =>
+            $$AuditEventsTableFilterComposer(ComposerState($state.db,
+                $state.db.auditEvents, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$UsersTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $UsersTable> {
+  $$UsersTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get displayName => $state.composableBuilder(
+      column: $state.table.displayName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get initials => $state.composableBuilder(
+      column: $state.table.initials,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get roleKey => $state.composableBuilder(
+      column: $state.table.roleKey,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isActive => $state.composableBuilder(
+      column: $state.table.isActive,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
 typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
@@ -10379,6 +12024,8 @@ typedef $$PlotsTableCreateCompanionBuilder = PlotsCompanion Function({
   Value<int?> fieldRow,
   Value<int?> fieldColumn,
   Value<String?> notes,
+  Value<String?> assignmentSource,
+  Value<DateTime?> assignmentUpdatedAt,
 });
 typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<int> id,
@@ -10392,6 +12039,8 @@ typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<int?> fieldRow,
   Value<int?> fieldColumn,
   Value<String?> notes,
+  Value<String?> assignmentSource,
+  Value<DateTime?> assignmentUpdatedAt,
 });
 
 class $$PlotsTableTableManager extends RootTableManager<
@@ -10422,6 +12071,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<int?> fieldRow = const Value.absent(),
             Value<int?> fieldColumn = const Value.absent(),
             Value<String?> notes = const Value.absent(),
+            Value<String?> assignmentSource = const Value.absent(),
+            Value<DateTime?> assignmentUpdatedAt = const Value.absent(),
           }) =>
               PlotsCompanion(
             id: id,
@@ -10435,6 +12086,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             fieldRow: fieldRow,
             fieldColumn: fieldColumn,
             notes: notes,
+            assignmentSource: assignmentSource,
+            assignmentUpdatedAt: assignmentUpdatedAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -10448,6 +12101,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<int?> fieldRow = const Value.absent(),
             Value<int?> fieldColumn = const Value.absent(),
             Value<String?> notes = const Value.absent(),
+            Value<String?> assignmentSource = const Value.absent(),
+            Value<DateTime?> assignmentUpdatedAt = const Value.absent(),
           }) =>
               PlotsCompanion.insert(
             id: id,
@@ -10461,6 +12116,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             fieldRow: fieldRow,
             fieldColumn: fieldColumn,
             notes: notes,
+            assignmentSource: assignmentSource,
+            assignmentUpdatedAt: assignmentUpdatedAt,
           ),
         ));
 }
@@ -10513,6 +12170,16 @@ class $$PlotsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ColumnFilters<String> get assignmentSource => $state.composableBuilder(
+      column: $state.table.assignmentSource,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get assignmentUpdatedAt => $state.composableBuilder(
+      column: $state.table.assignmentUpdatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
   $$TrialsTableFilterComposer get trialId {
     final $$TrialsTableFilterComposer composer = $state.composerBuilder(
         composer: this,
@@ -10547,6 +12214,23 @@ class $$PlotsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$RatingRecordsTableFilterComposer(ComposerState($state.db,
                 $state.db.ratingRecords, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ratingCorrectionsRefs(
+      ComposableFilter Function($$RatingCorrectionsTableFilterComposer f) f) {
+    final $$RatingCorrectionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ratingCorrections,
+            getReferencedColumn: (t) => t.plotPk,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingCorrectionsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ratingCorrections,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 
@@ -10695,6 +12379,16 @@ class $$PlotsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<String> get assignmentSource => $state.composableBuilder(
+      column: $state.table.assignmentSource,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get assignmentUpdatedAt => $state.composableBuilder(
+      column: $state.table.assignmentUpdatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -10728,6 +12422,7 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   Value<DateTime?> endedAt,
   required String sessionDateLocal,
   Value<String?> raterName,
+  Value<int?> createdByUserId,
   Value<String> status,
 });
 typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
@@ -10738,6 +12433,7 @@ typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<DateTime?> endedAt,
   Value<String> sessionDateLocal,
   Value<String?> raterName,
+  Value<int?> createdByUserId,
   Value<String> status,
 });
 
@@ -10765,6 +12461,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<DateTime?> endedAt = const Value.absent(),
             Value<String> sessionDateLocal = const Value.absent(),
             Value<String?> raterName = const Value.absent(),
+            Value<int?> createdByUserId = const Value.absent(),
             Value<String> status = const Value.absent(),
           }) =>
               SessionsCompanion(
@@ -10775,6 +12472,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             endedAt: endedAt,
             sessionDateLocal: sessionDateLocal,
             raterName: raterName,
+            createdByUserId: createdByUserId,
             status: status,
           ),
           createCompanionCallback: ({
@@ -10785,6 +12483,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<DateTime?> endedAt = const Value.absent(),
             required String sessionDateLocal,
             Value<String?> raterName = const Value.absent(),
+            Value<int?> createdByUserId = const Value.absent(),
             Value<String> status = const Value.absent(),
           }) =>
               SessionsCompanion.insert(
@@ -10795,6 +12494,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             endedAt: endedAt,
             sessionDateLocal: sessionDateLocal,
             raterName: raterName,
+            createdByUserId: createdByUserId,
             status: status,
           ),
         ));
@@ -10850,6 +12550,18 @@ class $$SessionsTableFilterComposer
     return composer;
   }
 
+  $$UsersTableFilterComposer get createdByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.createdByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+
   ComposableFilter sessionAssessmentsRefs(
       ComposableFilter Function($$SessionAssessmentsTableFilterComposer f) f) {
     final $$SessionAssessmentsTableFilterComposer composer = $state
@@ -10877,6 +12589,23 @@ class $$SessionsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$RatingRecordsTableFilterComposer(ComposerState($state.db,
                 $state.db.ratingRecords, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ratingCorrectionsRefs(
+      ComposableFilter Function($$RatingCorrectionsTableFilterComposer f) f) {
+    final $$RatingCorrectionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ratingCorrections,
+            getReferencedColumn: (t) => t.sessionId,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingCorrectionsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ratingCorrections,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 
@@ -11025,6 +12754,18 @@ class $$SessionsTableOrderingComposer
                 $state.db, $state.db.trials, joinBuilder, parentComposers)));
     return composer;
   }
+
+  $$UsersTableOrderingComposer get createdByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.createdByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
 }
 
 typedef $$SessionAssessmentsTableCreateCompanionBuilder
@@ -11161,6 +12902,10 @@ typedef $$RatingRecordsTableCreateCompanionBuilder = RatingRecordsCompanion
   Value<int?> previousId,
   Value<DateTime> createdAt,
   Value<String?> raterName,
+  Value<String?> createdAppVersion,
+  Value<String?> createdDeviceInfo,
+  Value<double?> capturedLatitude,
+  Value<double?> capturedLongitude,
 });
 typedef $$RatingRecordsTableUpdateCompanionBuilder = RatingRecordsCompanion
     Function({
@@ -11177,6 +12922,10 @@ typedef $$RatingRecordsTableUpdateCompanionBuilder = RatingRecordsCompanion
   Value<int?> previousId,
   Value<DateTime> createdAt,
   Value<String?> raterName,
+  Value<String?> createdAppVersion,
+  Value<String?> createdDeviceInfo,
+  Value<double?> capturedLatitude,
+  Value<double?> capturedLongitude,
 });
 
 class $$RatingRecordsTableTableManager extends RootTableManager<
@@ -11209,6 +12958,10 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<int?> previousId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<String?> raterName = const Value.absent(),
+            Value<String?> createdAppVersion = const Value.absent(),
+            Value<String?> createdDeviceInfo = const Value.absent(),
+            Value<double?> capturedLatitude = const Value.absent(),
+            Value<double?> capturedLongitude = const Value.absent(),
           }) =>
               RatingRecordsCompanion(
             id: id,
@@ -11224,6 +12977,10 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             previousId: previousId,
             createdAt: createdAt,
             raterName: raterName,
+            createdAppVersion: createdAppVersion,
+            createdDeviceInfo: createdDeviceInfo,
+            capturedLatitude: capturedLatitude,
+            capturedLongitude: capturedLongitude,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -11239,6 +12996,10 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<int?> previousId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<String?> raterName = const Value.absent(),
+            Value<String?> createdAppVersion = const Value.absent(),
+            Value<String?> createdDeviceInfo = const Value.absent(),
+            Value<double?> capturedLatitude = const Value.absent(),
+            Value<double?> capturedLongitude = const Value.absent(),
           }) =>
               RatingRecordsCompanion.insert(
             id: id,
@@ -11254,6 +13015,10 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             previousId: previousId,
             createdAt: createdAt,
             raterName: raterName,
+            createdAppVersion: createdAppVersion,
+            createdDeviceInfo: createdDeviceInfo,
+            capturedLatitude: capturedLatitude,
+            capturedLongitude: capturedLongitude,
           ),
         ));
 }
@@ -11306,6 +13071,26 @@ class $$RatingRecordsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ColumnFilters<String> get createdAppVersion => $state.composableBuilder(
+      column: $state.table.createdAppVersion,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get createdDeviceInfo => $state.composableBuilder(
+      column: $state.table.createdDeviceInfo,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get capturedLatitude => $state.composableBuilder(
+      column: $state.table.capturedLatitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get capturedLongitude => $state.composableBuilder(
+      column: $state.table.capturedLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
   $$TrialsTableFilterComposer get trialId {
     final $$TrialsTableFilterComposer composer = $state.composerBuilder(
         composer: this,
@@ -11352,6 +13137,23 @@ class $$RatingRecordsTableFilterComposer
             $$SessionsTableFilterComposer(ComposerState(
                 $state.db, $state.db.sessions, joinBuilder, parentComposers)));
     return composer;
+  }
+
+  ComposableFilter ratingCorrectionsRefs(
+      ComposableFilter Function($$RatingCorrectionsTableFilterComposer f) f) {
+    final $$RatingCorrectionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ratingCorrections,
+            getReferencedColumn: (t) => t.ratingId,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingCorrectionsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ratingCorrections,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
   }
 
   ComposableFilter deviationFlagsRefs(
@@ -11416,6 +13218,26 @@ class $$RatingRecordsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<String> get createdAppVersion => $state.composableBuilder(
+      column: $state.table.createdAppVersion,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get createdDeviceInfo => $state.composableBuilder(
+      column: $state.table.createdDeviceInfo,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get capturedLatitude => $state.composableBuilder(
+      column: $state.table.capturedLatitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get capturedLongitude => $state.composableBuilder(
+      column: $state.table.capturedLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -11461,6 +13283,314 @@ class $$RatingRecordsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$SessionsTableOrderingComposer(ComposerState(
                 $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$RatingCorrectionsTableCreateCompanionBuilder
+    = RatingCorrectionsCompanion Function({
+  Value<int> id,
+  required int ratingId,
+  Value<double?> oldNumericValue,
+  Value<double?> newNumericValue,
+  Value<String?> oldTextValue,
+  Value<String?> newTextValue,
+  required String oldResultStatus,
+  required String newResultStatus,
+  required String reason,
+  Value<int?> correctedByUserId,
+  Value<DateTime> correctedAt,
+  Value<int?> sessionId,
+  Value<int?> plotPk,
+});
+typedef $$RatingCorrectionsTableUpdateCompanionBuilder
+    = RatingCorrectionsCompanion Function({
+  Value<int> id,
+  Value<int> ratingId,
+  Value<double?> oldNumericValue,
+  Value<double?> newNumericValue,
+  Value<String?> oldTextValue,
+  Value<String?> newTextValue,
+  Value<String> oldResultStatus,
+  Value<String> newResultStatus,
+  Value<String> reason,
+  Value<int?> correctedByUserId,
+  Value<DateTime> correctedAt,
+  Value<int?> sessionId,
+  Value<int?> plotPk,
+});
+
+class $$RatingCorrectionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RatingCorrectionsTable,
+    RatingCorrection,
+    $$RatingCorrectionsTableFilterComposer,
+    $$RatingCorrectionsTableOrderingComposer,
+    $$RatingCorrectionsTableCreateCompanionBuilder,
+    $$RatingCorrectionsTableUpdateCompanionBuilder> {
+  $$RatingCorrectionsTableTableManager(
+      _$AppDatabase db, $RatingCorrectionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$RatingCorrectionsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer: $$RatingCorrectionsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> ratingId = const Value.absent(),
+            Value<double?> oldNumericValue = const Value.absent(),
+            Value<double?> newNumericValue = const Value.absent(),
+            Value<String?> oldTextValue = const Value.absent(),
+            Value<String?> newTextValue = const Value.absent(),
+            Value<String> oldResultStatus = const Value.absent(),
+            Value<String> newResultStatus = const Value.absent(),
+            Value<String> reason = const Value.absent(),
+            Value<int?> correctedByUserId = const Value.absent(),
+            Value<DateTime> correctedAt = const Value.absent(),
+            Value<int?> sessionId = const Value.absent(),
+            Value<int?> plotPk = const Value.absent(),
+          }) =>
+              RatingCorrectionsCompanion(
+            id: id,
+            ratingId: ratingId,
+            oldNumericValue: oldNumericValue,
+            newNumericValue: newNumericValue,
+            oldTextValue: oldTextValue,
+            newTextValue: newTextValue,
+            oldResultStatus: oldResultStatus,
+            newResultStatus: newResultStatus,
+            reason: reason,
+            correctedByUserId: correctedByUserId,
+            correctedAt: correctedAt,
+            sessionId: sessionId,
+            plotPk: plotPk,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int ratingId,
+            Value<double?> oldNumericValue = const Value.absent(),
+            Value<double?> newNumericValue = const Value.absent(),
+            Value<String?> oldTextValue = const Value.absent(),
+            Value<String?> newTextValue = const Value.absent(),
+            required String oldResultStatus,
+            required String newResultStatus,
+            required String reason,
+            Value<int?> correctedByUserId = const Value.absent(),
+            Value<DateTime> correctedAt = const Value.absent(),
+            Value<int?> sessionId = const Value.absent(),
+            Value<int?> plotPk = const Value.absent(),
+          }) =>
+              RatingCorrectionsCompanion.insert(
+            id: id,
+            ratingId: ratingId,
+            oldNumericValue: oldNumericValue,
+            newNumericValue: newNumericValue,
+            oldTextValue: oldTextValue,
+            newTextValue: newTextValue,
+            oldResultStatus: oldResultStatus,
+            newResultStatus: newResultStatus,
+            reason: reason,
+            correctedByUserId: correctedByUserId,
+            correctedAt: correctedAt,
+            sessionId: sessionId,
+            plotPk: plotPk,
+          ),
+        ));
+}
+
+class $$RatingCorrectionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $RatingCorrectionsTable> {
+  $$RatingCorrectionsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get oldNumericValue => $state.composableBuilder(
+      column: $state.table.oldNumericValue,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get newNumericValue => $state.composableBuilder(
+      column: $state.table.newNumericValue,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get oldTextValue => $state.composableBuilder(
+      column: $state.table.oldTextValue,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get newTextValue => $state.composableBuilder(
+      column: $state.table.newTextValue,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get oldResultStatus => $state.composableBuilder(
+      column: $state.table.oldResultStatus,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get newResultStatus => $state.composableBuilder(
+      column: $state.table.newResultStatus,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get reason => $state.composableBuilder(
+      column: $state.table.reason,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get correctedAt => $state.composableBuilder(
+      column: $state.table.correctedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$RatingRecordsTableFilterComposer get ratingId {
+    final $$RatingRecordsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.ratingId,
+        referencedTable: $state.db.ratingRecords,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$RatingRecordsTableFilterComposer(ComposerState($state.db,
+                $state.db.ratingRecords, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get correctedByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.correctedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableFilterComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableFilterComposer get plotPk {
+    final $$PlotsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotPk,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$RatingCorrectionsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $RatingCorrectionsTable> {
+  $$RatingCorrectionsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get oldNumericValue => $state.composableBuilder(
+      column: $state.table.oldNumericValue,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get newNumericValue => $state.composableBuilder(
+      column: $state.table.newNumericValue,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get oldTextValue => $state.composableBuilder(
+      column: $state.table.oldTextValue,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get newTextValue => $state.composableBuilder(
+      column: $state.table.newTextValue,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get oldResultStatus => $state.composableBuilder(
+      column: $state.table.oldResultStatus,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get newResultStatus => $state.composableBuilder(
+      column: $state.table.newResultStatus,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get reason => $state.composableBuilder(
+      column: $state.table.reason,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get correctedAt => $state.composableBuilder(
+      column: $state.table.correctedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$RatingRecordsTableOrderingComposer get ratingId {
+    final $$RatingRecordsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.ratingId,
+            referencedTable: $state.db.ratingRecords,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingRecordsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.ratingRecords, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get correctedByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.correctedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableOrderingComposer get plotPk {
+    final $$PlotsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotPk,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -13829,6 +15959,7 @@ typedef $$AuditEventsTableCreateCompanionBuilder = AuditEventsCompanion
   required String eventType,
   required String description,
   Value<String?> performedBy,
+  Value<int?> performedByUserId,
   Value<DateTime> createdAt,
   Value<String?> metadata,
 });
@@ -13841,6 +15972,7 @@ typedef $$AuditEventsTableUpdateCompanionBuilder = AuditEventsCompanion
   Value<String> eventType,
   Value<String> description,
   Value<String?> performedBy,
+  Value<int?> performedByUserId,
   Value<DateTime> createdAt,
   Value<String?> metadata,
 });
@@ -13869,6 +16001,7 @@ class $$AuditEventsTableTableManager extends RootTableManager<
             Value<String> eventType = const Value.absent(),
             Value<String> description = const Value.absent(),
             Value<String?> performedBy = const Value.absent(),
+            Value<int?> performedByUserId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<String?> metadata = const Value.absent(),
           }) =>
@@ -13880,6 +16013,7 @@ class $$AuditEventsTableTableManager extends RootTableManager<
             eventType: eventType,
             description: description,
             performedBy: performedBy,
+            performedByUserId: performedByUserId,
             createdAt: createdAt,
             metadata: metadata,
           ),
@@ -13891,6 +16025,7 @@ class $$AuditEventsTableTableManager extends RootTableManager<
             required String eventType,
             required String description,
             Value<String?> performedBy = const Value.absent(),
+            Value<int?> performedByUserId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<String?> metadata = const Value.absent(),
           }) =>
@@ -13902,6 +16037,7 @@ class $$AuditEventsTableTableManager extends RootTableManager<
             eventType: eventType,
             description: description,
             performedBy: performedBy,
+            performedByUserId: performedByUserId,
             createdAt: createdAt,
             metadata: metadata,
           ),
@@ -13976,6 +16112,18 @@ class $$AuditEventsTableFilterComposer
                 $state.db, $state.db.plots, joinBuilder, parentComposers)));
     return composer;
   }
+
+  $$UsersTableFilterComposer get performedByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.performedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
 }
 
 class $$AuditEventsTableOrderingComposer
@@ -14044,6 +16192,18 @@ class $$AuditEventsTableOrderingComposer
         builder: (joinBuilder, parentComposers) => $$PlotsTableOrderingComposer(
             ComposerState(
                 $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get performedByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.performedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -14235,6 +16395,8 @@ class $$ImportEventsTableOrderingComposer
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$UsersTableTableManager get users =>
+      $$UsersTableTableManager(_db, _db.users);
   $$TrialsTableTableManager get trials =>
       $$TrialsTableTableManager(_db, _db.trials);
   $$TreatmentsTableTableManager get treatments =>
@@ -14251,6 +16413,8 @@ class $AppDatabaseManager {
       $$SessionAssessmentsTableTableManager(_db, _db.sessionAssessments);
   $$RatingRecordsTableTableManager get ratingRecords =>
       $$RatingRecordsTableTableManager(_db, _db.ratingRecords);
+  $$RatingCorrectionsTableTableManager get ratingCorrections =>
+      $$RatingCorrectionsTableTableManager(_db, _db.ratingCorrections);
   $$NotesTableTableManager get notes =>
       $$NotesTableTableManager(_db, _db.notes);
   $$PhotosTableTableManager get photos =>

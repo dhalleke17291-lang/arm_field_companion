@@ -278,14 +278,20 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     final sessionDateLocal =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
+    final userId = await ref.read(currentUserIdProvider.future);
+    final currentUser = await ref.read(currentUserProvider.future);
+    final raterName = _raterController.text.trim().isEmpty
+        ? (currentUser?.displayName)
+        : _raterController.text.trim();
+
     final useCase = ref.read(createSessionUseCaseProvider);
     final result = await useCase.execute(CreateSessionInput(
       trialId: widget.trial.id,
       name: _nameController.text.trim(),
       sessionDateLocal: sessionDateLocal,
       assessmentIds: _selectedAssessmentIds.toList(),
-      raterName:
-          _raterController.text.isEmpty ? null : _raterController.text.trim(),
+      raterName: raterName,
+      createdByUserId: userId,
     ));
 
     if (!mounted || !context.mounted) return;

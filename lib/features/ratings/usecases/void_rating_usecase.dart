@@ -11,9 +11,14 @@ class VoidRatingUseCase {
     required int assessmentId,
     required int sessionId,
     required String reason,
+    bool isSessionClosed = false,
     String? raterName,
   }) async {
     try {
+      if (isSessionClosed) {
+        return VoidRatingResult.failure(
+            'This session is closed. Data is read-only. Use correction workflow if changes are required.');
+      }
       // Reason must not be empty — explicit confirmation required per spec
       if (reason.trim().isEmpty) {
         return VoidRatingResult.failure('Void reason must not be empty');
@@ -25,6 +30,7 @@ class VoidRatingUseCase {
         assessmentId: assessmentId,
         sessionId: sessionId,
         reason: reason,
+        isSessionClosed: isSessionClosed,
         raterName: raterName,
       );
 

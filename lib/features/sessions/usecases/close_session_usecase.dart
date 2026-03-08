@@ -9,6 +9,7 @@ class CloseSessionUseCase {
     required int sessionId,
     required int trialId,
     String? raterName,
+    int? closedByUserId,
   }) async {
     try {
       // Verify session exists and is open
@@ -26,7 +27,11 @@ class CloseSessionUseCase {
             'Session does not belong to this trial');
       }
 
-      await _sessionRepository.closeSession(sessionId, raterName);
+      await _sessionRepository.closeSession(
+        sessionId,
+        raterName: raterName,
+        closedByUserId: closedByUserId,
+      );
 
       return CloseSessionResult.success();
     } catch (e) {

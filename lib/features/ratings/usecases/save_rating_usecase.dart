@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import '../rating_repository.dart';
+import '../../../core/app_info.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/session_lock.dart';
 
 /// SaveRatingUseCase — centerpiece of ARM Field Companion
 /// 
@@ -27,11 +30,19 @@ class SaveRatingUseCase {
     _isProcessing = true;
 
     try {
+      // Session lock: no normal edits when session is closed
+      if (input.isSessionClosed) {
+        return SaveRatingResult.failure(kClosedSessionBlockedMessage);
+      }
+
       // Validate input before touching database
       final validationError = _validate(input);
       if (validationError != null) {
         return SaveRatingResult.failure(validationError);
       }
+
+      const createdAppVersion = kAppVersion;
+      final createdDeviceInfo = Platform.operatingSystem;
 
       final rating = await _ratingRepository.saveRating(
         trialId: input.trialId,
@@ -43,9 +54,15 @@ class SaveRatingUseCase {
         textValue: input.textValue,
         subUnitId: input.subUnitId,
         raterName: input.raterName,
+        performedByUserId: input.performedByUserId,
+        isSessionClosed: input.isSessionClosed,
+        createdAppVersion: createdAppVersion,
+        createdDeviceInfo: createdDeviceInfo,
       );
 
       return SaveRatingResult.success(rating);
+    } on SessionClosedException {
+      return SaveRatingResult.failure(kClosedSessionBlockedMessage);
     } on RatingIntegrityException catch (e) {
       return SaveRatingResult.failure(e.toString());
     } catch (e) {
@@ -108,6 +125,8 @@ class SaveRatingInput {
   final String? textValue;
   final int? subUnitId;
   final String? raterName;
+  final int? performedByUserId;
+  final bool isSessionClosed;
   final double? minValue;
   final double? maxValue;
 
@@ -121,6 +140,8 @@ class SaveRatingInput {
     this.textValue,
     this.subUnitId,
     this.raterName,
+    this.performedByUserId,
+    this.isSessionClosed = false,
     this.minValue,
     this.maxValue,
   });

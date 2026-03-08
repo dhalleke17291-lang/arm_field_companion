@@ -31,6 +31,7 @@ class SessionRepository {
     required String sessionDateLocal,
     required List<int> assessmentIds,
     String? raterName,
+    int? createdByUserId,
   }) async {
     final existing = await getOpenSession(trialId);
     if (existing != null) {
@@ -44,6 +45,7 @@ class SessionRepository {
               name: name,
               sessionDateLocal: sessionDateLocal,
               raterName: Value(raterName),
+              createdByUserId: Value(createdByUserId),
             ),
           );
 
@@ -63,6 +65,7 @@ class SessionRepository {
               eventType: 'SESSION_STARTED',
               description: 'Session "$name" started',
               performedBy: Value(raterName),
+              performedByUserId: Value(createdByUserId),
             ),
           );
 
@@ -72,7 +75,11 @@ class SessionRepository {
     });
   }
 
-  Future<void> closeSession(int sessionId, String? raterName) async {
+  Future<void> closeSession(
+    int sessionId, {
+    String? raterName,
+    int? closedByUserId,
+  }) async {
     await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
         .write(SessionsCompanion(
       endedAt: Value(DateTime.now()),
@@ -85,6 +92,7 @@ class SessionRepository {
             eventType: 'SESSION_CLOSED',
             description: 'Session closed',
             performedBy: Value(raterName),
+            performedByUserId: Value(closedByUserId),
           ),
         );
   }

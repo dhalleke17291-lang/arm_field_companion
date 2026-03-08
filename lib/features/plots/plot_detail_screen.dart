@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
+import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 
 class PlotDetailScreen extends ConsumerWidget {
@@ -22,13 +23,17 @@ class PlotDetailScreen extends ConsumerWidget {
     final assessments =
         ref.watch(assessmentsForTrialProvider(trial.id)).value ?? [];
     final plotContextAsync = ref.watch(plotContextProvider(plot.id));
+    final plots = ref.watch(plotsForTrialProvider(trial.id)).value ?? [];
+    final displayNum = getDisplayPlotLabel(plot, plots);
+    final assignmentSourceLabel = getAssignmentSourceLabel(
+        treatmentId: plot.treatmentId, assignmentSource: plot.assignmentSource);
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Plot ${plot.plotId}',
+            Text('Plot $displayNum',
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             if (plot.rep != null)
@@ -54,9 +59,11 @@ class PlotDetailScreen extends ConsumerWidget {
                           fontSize: 15,
                           color: Theme.of(context).colorScheme.primary)),
                   const Divider(),
-                  _detailRow('Plot ID', plot.plotId),
+                  _detailRow('Plot (display)', displayNum),
                   if (plot.rep != null)
                     _detailRow('Rep / Block', plot.rep.toString()),
+                  if (assignmentSourceLabel != 'Unknown' && assignmentSourceLabel != 'Unassigned')
+                    _detailRow('Assignment source', assignmentSourceLabel),
                   if (plot.row != null) _detailRow('Row', plot.row.toString()),
                   if (plot.column != null)
                     _detailRow('Column', plot.column.toString()),
@@ -142,7 +149,7 @@ class PlotDetailScreen extends ConsumerWidget {
                         children: [
                           Icon(Icons.history, size: 48, color: Colors.grey.shade300),
                           const SizedBox(height: 12),
-                          const Text('No ratings yet',
+                          const Text('No Ratings Yet',
                               style: TextStyle(color: Colors.grey)),
                         ],
                       ),

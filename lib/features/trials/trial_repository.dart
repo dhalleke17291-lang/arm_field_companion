@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import '../../core/trial_state.dart';
 
 class TrialRepository {
   final AppDatabase _db;
@@ -41,6 +42,7 @@ class TrialRepository {
             crop: Value(crop),
             location: Value(location),
             season: Value(season),
+            status: const Value(kTrialStatusDraft),
           ),
         );
   }
@@ -48,6 +50,13 @@ class TrialRepository {
   // Update trial
   Future<bool> updateTrial(Trial trial) {
     return _db.update(_db.trials).replace(trial);
+  }
+
+  /// Update trial lifecycle status (draft → ready → active → closed → archived).
+  Future<bool> updateTrialStatus(int trialId, String status) async {
+    final t = await getTrialById(trialId);
+    if (t == null) return false;
+    return updateTrial(t.copyWith(status: status));
   }
 
   // Get trial with treatment and plot counts

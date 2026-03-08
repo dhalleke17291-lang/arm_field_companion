@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 
 /// ExportRepository
@@ -8,6 +8,7 @@ class ExportRepository {
   ExportRepository(this.db);
 
   /// Exports ONLY current ratings (isCurrent == true).
+  /// Includes provenance and effective value when a correction exists.
   /// Sort order: rep -> plot_sort_index -> assessment name.
   Future<List<Map<String, Object?>>> buildSessionExportRows({
     required int sessionId,
@@ -15,29 +16,47 @@ class ExportRepository {
     final rr = db.ratingRecords;
     final p = db.plots;
     final a = db.assessments;
+    final t = db.treatments;
 
     final query = db.select(rr).join([
-      innerJoin(p, p.id.equalsExp(rr.plotPk)),
-      innerJoin(a, a.id.equalsExp(rr.assessmentId)),
+      drift.innerJoin(p, p.id.equalsExp(rr.plotPk)),
+      drift.innerJoin(a, a.id.equalsExp(rr.assessmentId)),
+      drift.leftOuterJoin(t, t.id.equalsExp(p.treatmentId)),
     ])
       ..where(rr.sessionId.equals(sessionId) & rr.isCurrent.equals(true))
       ..orderBy([
-        OrderingTerm.asc(p.rep),
-        OrderingTerm.asc(p.plotSortIndex),
-        OrderingTerm.asc(a.name),
+        drift.OrderingTerm.asc(p.rep),
+        drift.OrderingTerm.asc(p.plotSortIndex),
+        drift.OrderingTerm.asc(a.name),
       ]);
 
     final result = await query.get();
+    final ratingIds = result.map((row) => row.readTable(rr).id).toList();
+
+    // Latest correction per rating (for effective value and correction metadata)
+    final corrections = ratingIds.isEmpty
+        ? <int, RatingCorrection>{}
+        : await _getLatestCorrectionsByRatingId(ratingIds);
 
     return result.map((row) {
       final rating = row.readTable(rr);
       final plot = row.readTable(p);
       final assessment = row.readTable(a);
+      final treatment = row.readTableOrNull(t);
+      final correction = corrections[rating.id];
 
-      return <String, Object?>{
+      final effectiveStatus = correction?.newResultStatus ?? rating.resultStatus;
+      final effectiveNumeric = correction?.newNumericValue ?? rating.numericValue;
+      final effectiveText = correction?.newTextValue ?? rating.textValue;
+
+      final map = <String, Object?>{
         // Plot
         'plot_id': plot.plotId,
         'rep': plot.rep,
+        // Treatment (full lineage per Charter PART 10)
+        'treatment_id': plot.treatmentId,
+        'treatment_code': treatment?.code,
+        'treatment_name': treatment?.name,
         'row': plot.row,
         'column': plot.column,
         'plot_sort_index': plot.plotSortIndex,
@@ -48,12 +67,19 @@ class ExportRepository {
         'min': assessment.minValue,
         'max': assessment.maxValue,
 
-        // Rating (your exact fields)
+        // Rating (original fields)
         'result_status': rating.resultStatus,
         'numeric_value': rating.numericValue,
         'text_value': rating.textValue,
         'created_at': rating.createdAt.toIso8601String(),
         'rater_name': rating.raterName,
+
+        // Provenance (nullable for legacy rows)
+        'record_created_at_utc': rating.createdAt.toUtc().toIso8601String(),
+        'record_app_version': rating.createdAppVersion,
+        'record_device_info': rating.createdDeviceInfo,
+        'record_latitude': rating.capturedLatitude,
+        'record_longitude': rating.capturedLongitude,
 
         // Traceability IDs
         'trial_id': rating.trialId,
@@ -63,7 +89,37 @@ class ExportRepository {
         'plot_pk': rating.plotPk,
         'assessment_id': rating.assessmentId,
         'sub_unit_id': rating.subUnitId,
+
+        // Effective value (after correction if any)
+        'effective_result_status': effectiveStatus,
+        'effective_numeric_value': effectiveNumeric,
+        'effective_text_value': effectiveText,
       };
+
+      if (correction != null) {
+        map['original_numeric_value'] = rating.numericValue;
+        map['original_text_value'] = rating.textValue;
+        map['original_result_status'] = rating.resultStatus;
+        map['correction_reason'] = correction.reason;
+        map['corrected_by_user_id'] = correction.correctedByUserId;
+        map['corrected_at_utc'] = correction.correctedAt.toUtc().toIso8601String();
+      }
+
+      return map;
     }).toList();
+  }
+
+  Future<Map<int, RatingCorrection>> _getLatestCorrectionsByRatingId(
+      List<int> ratingIds) async {
+    if (ratingIds.isEmpty) return {};
+    final list = await (db.select(db.ratingCorrections)
+          ..where((c) => c.ratingId.isIn(ratingIds))
+          ..orderBy([(c) => drift.OrderingTerm.desc(c.correctedAt)]))
+        .get();
+    final byRating = <int, RatingCorrection>{};
+    for (final c in list) {
+      byRating.putIfAbsent(c.ratingId, () => c);
+    }
+    return byRating;
   }
 }

@@ -27,6 +27,7 @@ class MockSessionRepository implements SessionRepository {
     required String sessionDateLocal,
     required List<int> assessmentIds,
     String? raterName,
+    int? createdByUserId,
   }) async {
     final existing = await getOpenSession(trialId);
     if (existing != null) throw OpenSessionExistsException(trialId);
@@ -39,6 +40,7 @@ class MockSessionRepository implements SessionRepository {
       endedAt: null,
       sessionDateLocal: sessionDateLocal,
       raterName: raterName,
+      createdByUserId: createdByUserId,
       status: 'open',
     );
     _sessions.add(session);
@@ -46,7 +48,11 @@ class MockSessionRepository implements SessionRepository {
   }
 
   @override
-  Future<void> closeSession(int sessionId, String? raterName) async {
+  Future<void> closeSession(
+    int sessionId, {
+    String? raterName,
+    int? closedByUserId,
+  }) async {
     final idx = _sessions.indexWhere((s) => s.id == sessionId);
     if (idx != -1) {
       _sessions[idx] = Session(
@@ -57,6 +63,7 @@ class MockSessionRepository implements SessionRepository {
         endedAt: DateTime.now(),
         sessionDateLocal: _sessions[idx].sessionDateLocal,
         raterName: _sessions[idx].raterName,
+        createdByUserId: _sessions[idx].createdByUserId,
         status: 'closed',
       );
     }

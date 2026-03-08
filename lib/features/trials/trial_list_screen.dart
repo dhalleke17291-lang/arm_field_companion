@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../core/database/app_database.dart';
 import '../../core/crop_icons.dart';
+import '../about/about_screen.dart';
+import '../protocol_import/protocol_import_screen.dart';
 import 'usecases/create_trial_usecase.dart';
 import 'trial_detail_screen.dart';
 
@@ -18,6 +20,28 @@ class TrialListScreen extends ConsumerWidget {
         title: const Text('ARM Field Companion'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: 'Import protocol',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const ProtocolImportScreen(),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'About',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const AboutScreen(),
+              ),
+            ),
+          ),
+        ],
       ),
       body: trialsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -42,7 +66,7 @@ class TrialListScreen extends ConsumerWidget {
           Icon(Icons.energy_savings_leaf,
               size: 80, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
-          const Text('No trials yet',
+          const Text('No Trials Yet',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           const Text('Tap + New Trial to get started',

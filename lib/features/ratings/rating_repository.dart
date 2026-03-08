@@ -52,7 +52,15 @@ class RatingRepository {
     String? textValue,
     int? subUnitId,
     String? raterName,
+    int? performedByUserId,
+    required bool isSessionClosed,
+    String? createdAppVersion,
+    String? createdDeviceInfo,
+    double? capturedLatitude,
+    double? capturedLongitude,
   }) async {
+    if (isSessionClosed) throw SessionClosedException();
+
     // Enforce spec rule: numeric_value must be NULL if status != RECORDED
     if (resultStatus != 'RECORDED' && numericValue != null) {
       throw RatingIntegrityException(
@@ -77,7 +85,7 @@ class RatingRepository {
                 isCurrent: Value(false)));
       }
 
-      // Insert new current record
+      // Insert new current record (with optional provenance)
       final newId = await _db.into(_db.ratingRecords).insert(
             RatingRecordsCompanion.insert(
               trialId: trialId,
@@ -91,6 +99,10 @@ class RatingRepository {
               isCurrent: const Value(true),
               previousId: Value(existing?.id),
               raterName: Value(raterName),
+              createdAppVersion: Value(createdAppVersion),
+              createdDeviceInfo: Value(createdDeviceInfo),
+              capturedLatitude: Value(capturedLatitude),
+              capturedLongitude: Value(capturedLongitude),
             ),
           );
 
@@ -104,6 +116,7 @@ class RatingRepository {
               description:
                   'Rating saved: $resultStatus ${numericValue ?? ""}',
               performedBy: Value(raterName),
+              performedByUserId: Value(performedByUserId),
             ),
           );
 
@@ -116,8 +129,17 @@ class RatingRepository {
   // Undo — reverts to previous rating in chain
   Future<void> undoRating({
     required int currentRatingId,
+    required int sessionId,
     String? raterName,
+    int? performedByUserId,
   }) async {
+    final session = await (_db.select(_db.sessions)
+          ..where((s) => s.id.equals(sessionId)))
+        .getSingleOrNull();
+    if (session != null && session.endedAt != null) {
+      throw SessionClosedException();
+    }
+
     return _db.transaction(() async {
       final current = await (_db.select(_db.ratingRecords)
             ..where((r) => r.id.equals(currentRatingId)))
@@ -145,6 +167,7 @@ class RatingRepository {
               eventType: 'RATING_UNDONE',
               description: 'Rating undone',
               performedBy: Value(raterName),
+              performedByUserId: Value(performedByUserId),
             ),
           );
     });
@@ -157,6 +180,7 @@ class RatingRepository {
     required int assessmentId,
     required int sessionId,
     required String reason,
+    required bool isSessionClosed,
     String? raterName,
   }) async {
     await saveRating(
@@ -166,6 +190,7 @@ class RatingRepository {
       sessionId: sessionId,
       resultStatus: 'VOID',
       raterName: raterName,
+      isSessionClosed: isSessionClosed,
     );
 
     await _db.into(_db.deviationFlags).insert(
@@ -201,6 +226,74 @@ class RatingRepository {
         .get();
     return ratings.map((r) => r.plotPk).toSet();
   }
+
+  // --- Correction (immutable; original rating unchanged) ---
+
+  Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) {
+    return (_db.select(_db.ratingCorrections)
+          ..where((c) => c.ratingId.equals(ratingId))
+          ..orderBy([(c) => OrderingTerm.desc(c.correctedAt)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  Future<List<RatingCorrection>> getCorrectionsForRating(int ratingId) {
+    return (_db.select(_db.ratingCorrections)
+          ..where((c) => c.ratingId.equals(ratingId))
+          ..orderBy([(c) => OrderingTerm.desc(c.correctedAt)]))
+        .get();
+  }
+
+  /// Applies a correction (closed sessions only). Original rating is never updated.
+  Future<RatingCorrection> applyCorrection({
+    required int ratingId,
+    required String oldResultStatus,
+    required String newResultStatus,
+    double? oldNumericValue,
+    double? newNumericValue,
+    String? oldTextValue,
+    String? newTextValue,
+    required String reason,
+    int? correctedByUserId,
+    int? sessionId,
+    int? plotPk,
+  }) async {
+    final id = await _db.into(_db.ratingCorrections).insert(
+          RatingCorrectionsCompanion.insert(
+            ratingId: ratingId,
+            oldResultStatus: oldResultStatus,
+            newResultStatus: newResultStatus,
+            oldNumericValue: Value(oldNumericValue),
+            newNumericValue: Value(newNumericValue),
+            oldTextValue: Value(oldTextValue),
+            newTextValue: Value(newTextValue),
+            reason: reason,
+            correctedByUserId: Value(correctedByUserId),
+            sessionId: Value(sessionId),
+            plotPk: Value(plotPk),
+          ),
+        );
+    final correction = await (_db.select(_db.ratingCorrections)
+          ..where((c) => c.id.equals(id)))
+        .getSingle();
+
+    final rating = await (_db.select(_db.ratingRecords)
+          ..where((r) => r.id.equals(ratingId)))
+        .getSingleOrNull();
+    if (rating != null) {
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(rating.trialId),
+              sessionId: Value(rating.sessionId),
+              plotPk: Value(rating.plotPk),
+              eventType: 'RATING_CORRECTED',
+              description: 'Correction: $reason',
+              performedByUserId: Value(correctedByUserId),
+            ),
+          );
+    }
+    return correction;
+  }
 }
 
 class RatingIntegrityException implements Exception {
@@ -209,4 +302,11 @@ class RatingIntegrityException implements Exception {
 
   @override
   String toString() => 'Rating integrity violation: $message';
+}
+
+/// Thrown when a write is attempted on a closed session.
+class SessionClosedException implements Exception {
+  @override
+  String toString() =>
+      'Session is closed. Data is read-only. Use correction workflow if changes are required.';
 }

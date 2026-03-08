@@ -39,6 +39,9 @@ class MockTrialRepository implements TrialRepository {
   Future<bool> updateTrial(Trial trial) async => true;
 
   @override
+  Future<bool> updateTrialStatus(int trialId, String status) async => true;
+
+  @override
   Future<TrialSummary> getTrialSummary(int trialId) async {
     final trial = await getTrialById(trialId);
     if (trial == null) throw TrialNotFoundException(trialId);

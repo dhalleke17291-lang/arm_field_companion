@@ -1,0 +1,216 @@
+---
+description: Single master instruction — constitution, safety, workflow, current-state audit before new work; never auto-commit
+alwaysApply: true
+---
+
+# Project Governance and Development Rules — ARM Field Companion
+
+You are working on ARM Field Companion under a frozen architecture constitution. Your role is to implement changes while protecting the architecture, data integrity, and workflow design.
+
+Before writing or modifying code, follow these rules.
+
+---
+
+## Step 1 — Check Current Project Status First
+
+Before making any new changes:
+
+1. Run project checks:
+
+   ```bash
+   flutter analyze
+   git status
+   ```
+
+2. Review the current code structure of the feature you are touching.
+
+3. Verify that:
+
+   - the code compiles
+   - no analyzer errors exist
+   - existing architecture rules are not violated
+   - UI behavior matches the intended workflow
+
+4. If issues are detected (errors, broken UI behavior, architecture violations, inconsistent naming, or obvious structural problems), **fix them FIRST** before implementing new tasks.
+
+5. Clearly report:
+
+   - current project status
+   - issues found
+   - what fixes were applied
+
+**Do not continue with new feature work until the current state is clean.**
+
+---
+
+## Architecture Protection Rules
+
+The application architecture is governed by a frozen constitution.
+
+Always preserve these principles:
+
+- Protocol data and execution data must remain separate
+- Do not duplicate truth across tables
+- Do not store protocol values inside execution records unless explicitly defined
+- Relationships must use internal IDs, not display IDs
+- Do not bypass the defined dependency spine
+
+If a requested change would violate these rules, **stop** and explain the issue before coding.
+
+---
+
+## Build Order Rule
+
+When implementing features, follow this order unless explicitly told otherwise:
+
+1. schema truth
+2. protocol read model
+3. use cases / context resolution
+4. shared execution pattern
+5. one complete vertical workflow
+6. diagnostics and export
+7. sibling module expansion
+8. derived logic / enhancements
+
+Do not jump ahead for UI polish if core workflow logic is incomplete.
+
+---
+
+## UI Workflow Rules
+
+This is a field research application. Interfaces must prioritize speed and clarity.
+
+- Sessions are lightweight workspaces
+- Ratings must remain fast-entry workflows
+- Applications are event-first, not plot-by-plot entry
+- Avoid heavy forms or unnecessary input fields
+- Minimize taps and steps for field technicians
+
+Do not add extra fields unless absolutely required.
+
+---
+
+## UI Text Style Rules
+
+Maintain consistent UI writing style:
+
+- **Titles, buttons, tabs, and labels** → Title Case
+- **Descriptions and helper text** → sentence case
+- **Avoid ALL CAPS** unless absolutely necessary
+
+Use consistent terminology across the app:
+
+- Plots
+- Treatments
+- Sessions
+- Applications
+- Assessments
+
+Do not introduce alternate terms.
+
+---
+
+## Scoping Rule
+
+Only change what the task requires.
+
+Do **NOT**:
+
+- refactor unrelated code
+- rename unrelated classes or providers
+- change schema unless explicitly instructed
+- modify other files outside the allowed scope
+
+Keep edits minimal and focused.
+
+---
+
+## Design Decision Rule
+
+If a requested change requires introducing a new architectural pattern, workflow, or model not already defined by the constitution:
+
+**STOP.**
+
+Explain the design decision and propose the solution before coding.
+
+Never silently invent new patterns.
+
+---
+
+## Validation Rule
+
+After making changes:
+
+1. Run:
+
+   ```bash
+   flutter analyze
+   ```
+
+2. Ensure there are no errors.
+
+3. Confirm the code compiles.
+
+4. Provide a summary of:
+
+   - files changed
+   - behavior changes
+   - validation result
+
+---
+
+## Git Workflow Rule
+
+**Never automatically commit changes.**
+
+After edits:
+
+1. Run:
+
+   ```bash
+   git diff
+   git status
+   ```
+
+2. Show the full diff to the user.
+
+3. Ask the user if they want to commit.
+
+**Only commit if the user explicitly approves.**
+
+If approved:
+
+```bash
+git add .
+git commit -m "<clear descriptive commit message>"
+```
+
+Do **NOT** run `git push` unless explicitly requested.
+
+---
+
+## General Development Principles
+
+- Keep logic out of UI widgets whenever possible
+- Maintain clear separation between data, domain logic, and interface
+- Prefer simple solutions over complex abstractions
+- Preserve existing working behavior unless explicitly asked to change it
+
+---
+
+## Task Execution Format
+
+Before implementing any task, briefly state:
+
+1. What you believe the task is
+2. Which files you will edit
+3. What parts of the system will remain unchanged
+4. Any potential risks
+
+Then proceed with the implementation.
+
+---
+
+## Final Goal
+
+The objective is to build a **stable, maintainable, field-ready agricultural research application** while strictly preserving the architectural constitution and workflow design.

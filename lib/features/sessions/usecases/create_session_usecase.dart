@@ -25,6 +25,7 @@ class CreateSessionUseCase {
         sessionDateLocal: input.sessionDateLocal,
         assessmentIds: input.assessmentIds,
         raterName: input.raterName,
+        createdByUserId: input.createdByUserId,
       );
 
       return CreateSessionResult.success(session);
@@ -42,6 +43,7 @@ class CreateSessionInput {
   final String sessionDateLocal;
   final List<int> assessmentIds;
   final String? raterName;
+  final int? createdByUserId;
 
   const CreateSessionInput({
     required this.trialId,
@@ -49,6 +51,7 @@ class CreateSessionInput {
     required this.sessionDateLocal,
     required this.assessmentIds,
     this.raterName,
+    this.createdByUserId,
   });
 }
 

@@ -6,6 +6,19 @@ import 'dart:io';
 
 part 'app_database.g.dart';
 
+/// Local user identity (identity only; authorization layered later).
+/// role_key: stable code (technician, researcher, manager, admin).
+class Users extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get displayName => text().withLength(min: 1, max: 255)();
+  TextColumn get initials => text().nullable()();
+  TextColumn get roleKey =>
+      text().withDefault(const Constant('technician'))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 class Trials extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 255)();
@@ -61,6 +74,9 @@ class Plots extends Table {
   IntColumn get fieldRow => integer().nullable()();
   IntColumn get fieldColumn => integer().nullable()();
   TextColumn get notes => text().nullable()();
+  /// Assignment provenance: 'imported' | 'manual' | null (unknown).
+  TextColumn get assignmentSource => text().nullable()();
+  DateTimeColumn get assignmentUpdatedAt => dateTime().nullable()();
 }
 
 class Sessions extends Table {
@@ -71,6 +87,8 @@ class Sessions extends Table {
   DateTimeColumn get endedAt => dateTime().nullable()();
   TextColumn get sessionDateLocal => text()();
   TextColumn get raterName => text().nullable()();
+  IntColumn get createdByUserId =>
+      integer().references(Users, #id).nullable()();
   TextColumn get status => text().withDefault(const Constant('open'))();
 }
 
@@ -95,6 +113,28 @@ class RatingRecords extends Table {
   IntColumn get previousId => integer().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get raterName => text().nullable()();
+  // Provenance (nullable for legacy rows)
+  TextColumn get createdAppVersion => text().nullable()();
+  TextColumn get createdDeviceInfo => text().nullable()();
+  RealColumn get capturedLatitude => real().nullable()();
+  RealColumn get capturedLongitude => real().nullable()();
+}
+
+/// Immutable correction records; original rating record is never overwritten.
+class RatingCorrections extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ratingId => integer().references(RatingRecords, #id)();
+  RealColumn get oldNumericValue => real().nullable()();
+  RealColumn get newNumericValue => real().nullable()();
+  TextColumn get oldTextValue => text().nullable()();
+  TextColumn get newTextValue => text().nullable()();
+  TextColumn get oldResultStatus => text()();
+  TextColumn get newResultStatus => text()();
+  TextColumn get reason => text()();
+  IntColumn get correctedByUserId => integer().references(Users, #id).nullable()();
+  DateTimeColumn get correctedAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
+  IntColumn get plotPk => integer().references(Plots, #id).nullable()();
 }
 
 class Notes extends Table {
@@ -232,6 +272,8 @@ class AuditEvents extends Table {
   TextColumn get eventType => text()();
   TextColumn get description => text()();
   TextColumn get performedBy => text().nullable()();
+  IntColumn get performedByUserId =>
+      integer().references(Users, #id).nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get metadata => text().nullable()();
 }
@@ -248,6 +290,7 @@ class ImportEvents extends Table {
 }
 
 @DriftDatabase(tables: [
+  Users,
   Trials,
   Treatments,
   TreatmentComponents,
@@ -256,6 +299,7 @@ class ImportEvents extends Table {
   Sessions,
   SessionAssessments,
   RatingRecords,
+  RatingCorrections,
   Notes,
   Photos,
   PlotFlags,
@@ -273,7 +317,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -290,6 +334,22 @@ class AppDatabase extends _$AppDatabase {
           if (from < 6) {
             await m.addColumn(plots, plots.fieldRow);
             await m.addColumn(plots, plots.fieldColumn);
+          }
+          if (from < 7) {
+            await m.createTable(users);
+            await m.addColumn(sessions, sessions.createdByUserId);
+            await m.addColumn(auditEvents, auditEvents.performedByUserId);
+          }
+          if (from < 8) {
+            await m.createTable(ratingCorrections);
+            await m.addColumn(ratingRecords, ratingRecords.createdAppVersion);
+            await m.addColumn(ratingRecords, ratingRecords.createdDeviceInfo);
+            await m.addColumn(ratingRecords, ratingRecords.capturedLatitude);
+            await m.addColumn(ratingRecords, ratingRecords.capturedLongitude);
+          }
+          if (from < 9) {
+            await m.addColumn(plots, plots.assignmentSource);
+            await m.addColumn(plots, plots.assignmentUpdatedAt);
           }
           await _createIndexes();
         },

@@ -7,7 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/plot_display.dart';
 import '../../core/providers.dart';
+import '../../core/session_lock.dart';
 import '../photos/usecases/save_photo_usecase.dart';
 import 'last_value_memory.dart';
 import 'usecases/save_rating_usecase.dart';
@@ -90,7 +92,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Plot ${widget.plot.plotId}',
+              'Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
@@ -110,6 +112,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         children: [
           _buildPlotInfoBar(context),
 
+          if (!isSessionEditable(widget.session)) _buildClosedSessionBanner(context),
+
           // Photos strip (shows only if photos exist)
           _buildPhotoStrip(context),
 
@@ -125,6 +129,30 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
           _buildBottomBar(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildClosedSessionBanner(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(Icons.lock, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                kClosedSessionBlockedMessage,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -151,6 +179,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       final finalPath =
           '${photosDir.path}/trial_${widget.trial.id}_session_${widget.session.id}_plot_${widget.plot.id}_$now.jpg';
 
+      final userId = await ref.read(currentUserIdProvider.future);
       final usecase = ref.read(savePhotoUseCaseProvider);
       final res = await usecase.execute(
         SavePhotoInput(
@@ -161,6 +190,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           finalPath: finalPath,
           caption: null,
           raterName: widget.session.raterName,
+          performedByUserId: userId,
         ),
       );
 
@@ -404,7 +434,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               size: 16, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 6),
           Text(
-            'Plot ${widget.plot.plotId}',
+            'Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.primary,
@@ -515,6 +545,189 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
+  Widget _buildCurrentOrCorrectedRow(
+      BuildContext context, RatingRecord existing) {
+    final correctionAsync =
+        ref.watch(latestCorrectionForRatingProvider(existing.id));
+    final hasCorrection = correctionAsync.valueOrNull != null;
+    final effectiveStatus =
+        hasCorrection ? correctionAsync.value!.newResultStatus : existing.resultStatus;
+    final effectiveNumeric =
+        hasCorrection ? correctionAsync.value!.newNumericValue : existing.numericValue;
+    final effectiveText =
+        hasCorrection ? correctionAsync.value!.newTextValue : existing.textValue;
+    final displayValue = effectiveStatus == 'RECORDED'
+        ? (effectiveNumeric?.toString() ?? '-')
+        : (effectiveText?.isNotEmpty == true ? effectiveText! : effectiveStatus);
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: hasCorrection ? Colors.amber.shade50 : Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: hasCorrection ? Colors.amber.shade200 : Colors.green.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                hasCorrection ? Icons.edit_note : Icons.check_circle,
+                color: hasCorrection ? Colors.amber.shade800 : Colors.green,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${hasCorrection ? 'Effective' : 'Current'}: $displayValue${hasCorrection ? ' (corrected)' : ''}',
+                style: TextStyle(
+                    color: hasCorrection ? Colors.amber.shade800 : Colors.green,
+                    fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              if (isSessionEditable(widget.session))
+                TextButton(
+                  onPressed: () => _undoRating(context, existing),
+                  child: const Text('Undo',
+                      style: TextStyle(color: Colors.red)),
+                )
+              else
+                TextButton(
+                  onPressed: () => _showCorrectDialog(context, existing),
+                  child: const Text('Correct value'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showCorrectDialog(
+      BuildContext context, RatingRecord existing) async {
+    final newValueController = TextEditingController(
+      text: existing.resultStatus == 'RECORDED'
+          ? (existing.numericValue?.toString() ?? '')
+          : '',
+    );
+    final reasonController = TextEditingController();
+    String newStatus = existing.resultStatus;
+
+    final applied = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Correct value'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Original: ${existing.resultStatus == "RECORDED" ? existing.numericValue?.toString() ?? "-" : existing.resultStatus}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('New status',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 12)),
+                  Wrap(
+                    spacing: 6,
+                    children: ['RECORDED', 'NOT_OBSERVED', 'NOT_APPLICABLE', 'MISSING_CONDITION', 'TECHNICAL_ISSUE']
+                        .map((s) => ChoiceChip(
+                              label: Text(s, style: const TextStyle(fontSize: 11)),
+                              selected: newStatus == s,
+                              onSelected: (_) => setState(() => newStatus = s),
+                            ))
+                        .toList(),
+                  ),
+                  if (newStatus == 'RECORDED') ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: newValueController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'New value',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Reason *',
+                      border: OutlineInputBorder(),
+                      hintText: 'e.g. Data entry error',
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel')),
+              FilledButton(
+                onPressed: () async {
+                  final reason = reasonController.text.trim();
+                  if (reason.isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                          content: Text('Reason is required')),
+                    );
+                    return;
+                  }
+                  double? newNumeric;
+                  if (newStatus == 'RECORDED') {
+                    newNumeric = double.tryParse(newValueController.text);
+                  }
+                  final userId = await ref.read(currentUserIdProvider.future);
+                  final useCase = ref.read(applyCorrectionUseCaseProvider);
+                  final result = await useCase.execute(
+                    rating: existing,
+                    session: widget.session,
+                    newResultStatus: newStatus,
+                    newNumericValue: newNumeric,
+                    newTextValue: newStatus == 'MISSING_CONDITION'
+                        ? newValueController.text.trim().isEmpty
+                            ? null
+                            : newValueController.text.trim()
+                        : null,
+                    reason: reason,
+                    correctedByUserId: userId,
+                  );
+                  if (!ctx.mounted) return;
+                  if (result.success) {
+                    ref.invalidate(
+                        latestCorrectionForRatingProvider(existing.id));
+                    Navigator.pop(ctx, true);
+                  } else {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                          content: Text(result.errorMessage ?? 'Failed'),
+                          backgroundColor: Colors.red),
+                    );
+                  }
+                },
+                child: const Text('Apply correction'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    newValueController.dispose();
+    reasonController.dispose();
+    if (applied == true && mounted) setState(() {});
+  }
+
   Widget _buildRatingArea(BuildContext context, RatingRecord? existing) {
     if (existing == null &&
         _selectedStatus == 'RECORDED' &&
@@ -527,32 +740,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (existing != null)
-            Container(
-              padding: const EdgeInsets.all(10),
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Current: ${existing.resultStatus == 'RECORDED' ? existing.numericValue?.toString() ?? '-' : existing.resultStatus}',
-                    style: const TextStyle(
-                        color: Colors.green, fontWeight: FontWeight.w600),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => _undoRating(context, existing),
-                    child:
-                        const Text('Undo', style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
-            ),
+            _buildCurrentOrCorrectedRow(context, existing),
           const Text('Status',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           const SizedBox(height: 8),
@@ -696,9 +884,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
             const Spacer(),
             GestureDetector(
-              onLongPress: _isSaving ? null : () => _saveRating(context),
+              onLongPress: _isSaving || !isSessionEditable(widget.session)
+                  ? null
+                  : () => _saveRating(context),
               child: FilledButton.icon(
-                onPressed: _isSaving ? null : () => _saveRating(context),
+                onPressed: _isSaving || !isSessionEditable(widget.session)
+                    ? null
+                    : () => _saveRating(context),
                 icon: _isSaving
                     ? const SizedBox(
                         width: 18,
@@ -743,6 +935,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
     setState(() => _isSaving = true);
 
+    final userId = await ref.read(currentUserIdProvider.future);
     final useCase = ref.read(saveRatingUseCaseProvider);
     final result = await useCase.execute(
       SaveRatingInput(
@@ -754,6 +947,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         numericValue: numericValue,
         textValue: _selectedMissingReason,
         raterName: widget.session.raterName,
+        performedByUserId: userId,
+        isSessionClosed: widget.session.endedAt != null,
         minValue: _currentAssessment.minValue,
         maxValue: _currentAssessment.maxValue,
       ),
@@ -789,9 +984,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       // silent
     } else {
       if (!context.mounted) return;
+      final msg = result.errorMessage ?? 'Save failed';
+      if (msg == kClosedSessionBlockedMessage) {
+        ref.read(diagnosticsStoreProvider).recordError(msg, code: 'closed_session_write_blocked');
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.errorMessage ?? 'Save failed'),
+          content: Text(msg),
           backgroundColor: Colors.red,
         ),
       );
@@ -825,7 +1024,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Undo Rating'),
         content: Text(
-            'Undo rating for Plot ${widget.plot.plotId} – ${_currentAssessment.name}?'),
+            'Undo rating for Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)} – ${_currentAssessment.name}?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -841,11 +1040,31 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       return;
     }
 
-    final repo = ref.read(ratingRepositoryProvider);
-    await repo.undoRating(
+    final userId = await ref.read(currentUserIdProvider.future);
+    final useCase = ref.read(undoRatingUseCaseProvider);
+    final result = await useCase.execute(
       currentRatingId: existing.id,
+      sessionId: widget.session.id,
+      isSessionClosed: widget.session.endedAt != null,
       raterName: widget.session.raterName,
+      performedByUserId: userId,
     );
+    if (!mounted) return;
+    if (!result.success) {
+      if (result.errorMessage == kClosedSessionBlockedMessage) {
+        ref.read(diagnosticsStoreProvider).recordError(
+              result.errorMessage!,
+              code: 'closed_session_write_blocked',
+            );
+      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Undo failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _showFlagDialog(BuildContext context) async {
@@ -853,7 +1072,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Flag Plot ${widget.plot.plotId}'),
+        title: Text('Flag Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}'),
         content: TextField(
           controller: descController,
           decoration: const InputDecoration(

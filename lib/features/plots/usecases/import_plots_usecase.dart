@@ -3,48 +3,167 @@ import '../plot_repository.dart';
 import '../../trials/trial_repository.dart';
 import '../../../core/database/app_database.dart';
 
+/// Charter PART 16: Import status categories for transparency.
+enum ImportStatusCategory {
+  matchedSuccessfully,
+  autoHandled,
+  needsUserReview,
+  mustFixBeforeImport,
+}
+
+/// Result of the Import Review step (Charter PART 16).
+class ImportReviewResult {
+  final int matchedSuccessfullyCount;
+  final List<String> autoHandledMessages;
+  final List<String> needsUserReviewItems;
+  final List<String> mustFixErrors;
+  final List<Map<String, dynamic>>? normalizedRows;
+
+  const ImportReviewResult({
+    required this.matchedSuccessfullyCount,
+    this.autoHandledMessages = const [],
+    this.needsUserReviewItems = const [],
+    this.mustFixErrors = const [],
+    this.normalizedRows,
+  });
+
+  bool get canProceed =>
+      mustFixErrors.isEmpty && normalizedRows != null && normalizedRows!.isNotEmpty;
+}
+
 class ImportPlotsUseCase {
   final PlotRepository _plotRepository;
   final TrialRepository _trialRepository;
 
   ImportPlotsUseCase(this._plotRepository, this._trialRepository);
 
+  /// Optional column aliases for plot_id (Charter: auto-handled mapping).
+  static const Map<String, String> _plotIdAliases = {
+    'plot_id': 'plot_id',
+    'plot': 'plot_id',
+    'Plot': 'plot_id',
+    'Plot ID': 'plot_id',
+    'plot id': 'plot_id',
+  };
+
+  /// Structural scan + mapping + validation. Returns review for user approval.
+  ImportReviewResult analyzeForImport(ImportPlotsInput input) {
+    final autoHandled = <String>[];
+    final mustFix = <String>[];
+    final needsReview = <String>[];
+
+    if (input.rows.isEmpty) {
+      mustFix.add('No rows found in CSV');
+      return ImportReviewResult(
+        matchedSuccessfullyCount: 0,
+        mustFixErrors: mustFix,
+      );
+    }
+
+    final firstRow = input.rows.first;
+    final headers = firstRow.keys.map((k) => k.toString().trim()).toList();
+    String? plotIdHeader;
+    for (final h in headers) {
+      final canonical = _plotIdAliases[h];
+      if (canonical != null) {
+        if (plotIdHeader != null) {
+          needsReview.add("Multiple columns may map to plot_id: '$plotIdHeader' and '$h'. Confirm which to use.");
+        }
+        plotIdHeader ??= h;
+      }
+    }
+    if (plotIdHeader == null) {
+      mustFix.add("Required column 'plot_id' (or alias: Plot, plot) missing from CSV");
+      return ImportReviewResult(
+        matchedSuccessfullyCount: 0,
+        mustFixErrors: mustFix,
+      );
+    }
+    if (plotIdHeader != 'plot_id') {
+      autoHandled.add("Column '$plotIdHeader' mapped to plot_id");
+    }
+
+    final normalizedRows = <Map<String, dynamic>>[];
+    final seenPlotIds = <String>{};
+    int matchedCount = 0;
+
+    for (int i = 0; i < input.rows.length; i++) {
+      final row = input.rows[i];
+      final rowNum = i + 2;
+      final plotIdVal = row[plotIdHeader]?.toString().trim() ?? '';
+      final normalized = <String, dynamic>{
+        'plot_id': plotIdVal,
+        'rep': row['rep'],
+        'row': row['row'],
+        'column': row['column'],
+        'plot_sort_index': row['plot_sort_index'],
+      };
+
+      final plotId = plotIdVal.isEmpty ? null : plotIdVal;
+      if (plotId == null || plotId.isEmpty) {
+        mustFix.add('Row $rowNum: missing plot_id');
+        continue;
+      }
+      if (seenPlotIds.contains(plotId)) {
+        mustFix.add('Row $rowNum: duplicate plot_id "$plotId"');
+        continue;
+      }
+      seenPlotIds.add(plotId);
+
+      if (row['rep'] != null) {
+        final repVal = int.tryParse(row['rep'].toString());
+        if (repVal == null) {
+          autoHandled.add('Row $rowNum: invalid rep "${row['rep']}", ignored');
+        }
+      }
+      normalizedRows.add(normalized);
+      matchedCount++;
+    }
+
+    if (matchedCount == 0 && mustFix.isEmpty) {
+      mustFix.add('No valid rows to import after validation');
+    }
+
+    return ImportReviewResult(
+      matchedSuccessfullyCount: matchedCount,
+      autoHandledMessages: autoHandled,
+      needsUserReviewItems: needsReview,
+      mustFixErrors: mustFix,
+      normalizedRows: mustFix.isEmpty && matchedCount > 0 ? normalizedRows : null,
+    );
+  }
+
+  /// Protocol Model Integration — run after user approval. Uses rows from review (canonical keys).
   Future<ImportPlotsResult> execute(ImportPlotsInput input) async {
     final warnings = <String>[];
     final validPlots = <PlotsCompanion>[];
     final seenPlotIds = <String>{};
 
-    // Blocking condition — zero valid rows
     if (input.rows.isEmpty) {
       return ImportPlotsResult.failure('No rows found in CSV');
     }
 
-    // Blocking condition — required columns missing
     final firstRow = input.rows.first;
     if (!firstRow.containsKey('plot_id')) {
       return ImportPlotsResult.failure(
           'Required column "plot_id" missing from CSV');
     }
 
-    // Process each row — forgiving import per spec
     for (int i = 0; i < input.rows.length; i++) {
       final row = input.rows[i];
-      final rowNum = i + 2; // 1-based, accounting for header
+      final rowNum = i + 2;
 
       final plotId = row['plot_id']?.toString().trim();
       if (plotId == null || plotId.isEmpty) {
         warnings.add('Row $rowNum: missing plot_id, skipped');
         continue;
       }
-
-      // Duplicate plot ID check
       if (seenPlotIds.contains(plotId)) {
         warnings.add('Row $rowNum: duplicate plot_id "$plotId", skipped');
         continue;
       }
       seenPlotIds.add(plotId);
 
-      // Parse optional fields
       int? rep;
       if (row['rep'] != null) {
         rep = int.tryParse(row['rep'].toString());
@@ -57,7 +176,6 @@ class ImportPlotsUseCase {
       if (row['plot_sort_index'] != null) {
         plotSortIndex = int.tryParse(row['plot_sort_index'].toString());
       } else {
-        // Default sort index to row position if not provided
         plotSortIndex = i + 1;
       }
 
@@ -71,17 +189,13 @@ class ImportPlotsUseCase {
       ));
     }
 
-    // Blocking condition — no valid rows after filtering
     if (validPlots.isEmpty) {
       return ImportPlotsResult.failure(
           'No valid rows found after processing CSV');
     }
 
-    // Single transaction — full rollback on failure per spec
     try {
       await _plotRepository.insertPlotsBulk(validPlots);
-
-      // Write import event
       await _trialRepository.getTrialById(input.trialId);
 
       return ImportPlotsResult.success(

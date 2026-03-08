@@ -1,62 +1,132 @@
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../../core/app_info.dart';
 import '../data/export_repository.dart';
 
+/// Result of a session CSV export. Use [success] to decide UI.
 class ExportResult {
-  final String filePath;
+  final bool success;
+  final String? filePath;
   final int rowCount;
-  ExportResult({required this.filePath, required this.rowCount});
+  final String? errorMessage;
+  final String? warningMessage;
+
+  const ExportResult._({
+    required this.success,
+    this.filePath,
+    this.rowCount = 0,
+    this.errorMessage,
+    this.warningMessage,
+  });
+
+  factory ExportResult.ok({
+    required String filePath,
+    required int rowCount,
+    String? warningMessage,
+  }) =>
+      ExportResult._(
+        success: true,
+        filePath: filePath,
+        rowCount: rowCount,
+        warningMessage: warningMessage,
+      );
+
+  factory ExportResult.failure(String message) => ExportResult._(
+        success: false,
+        errorMessage: message,
+      );
 }
 
 /// Export a closed session to CSV.
 /// Writes to app documents directory (works on Android/iOS).
+/// Includes export metadata (timestamp, app version) and validates session state.
 class ExportSessionCsvUsecase {
   final ExportRepository repo;
   ExportSessionCsvUsecase(this.repo);
 
   /// Pass trial/session metadata from UI so we don't depend on DB session fields here.
+  /// [isSessionClosed]: if false and [requireSessionClosed] is true, returns failure.
+  /// [exportedByDisplayName]: current user for attribution in export metadata.
   Future<ExportResult> exportSessionToCsv({
     required int sessionId,
+    required int trialId,
     required String trialName,
     required String sessionName,
     required String sessionDateLocal,
     String? sessionRaterName,
+    String? exportedByDisplayName,
+    bool isSessionClosed = true,
+    bool requireSessionClosed = true,
   }) async {
-    final rows = await repo.buildSessionExportRows(sessionId: sessionId);
+    try {
+      if (requireSessionClosed && !isSessionClosed) {
+        return ExportResult.failure(
+          'Session must be closed before export. Close the session first.',
+        );
+      }
 
-    final enriched = rows.map((m) => <String, Object?>{
-          'trial_name': trialName,
-          'session_name': sessionName,
-          'session_date_local': sessionDateLocal,
-          'session_rater_name': sessionRaterName,
-          ...m,
-        }).toList();
+      final rows = await repo.buildSessionExportRows(sessionId: sessionId);
+      final exportTimestampUtc = DateTime.now().toUtc().toIso8601String();
 
-    final headers = enriched.isNotEmpty
-        ? enriched.first.keys.toList()
-        : <String>[
-            'trial_name',
-            'session_name',
-            'session_date_local',
-            'session_rater_name',
-          ];
+      final enriched = rows.map((m) => <String, Object?>{
+            'trial_id': trialId,
+            'session_id': sessionId,
+            'trial_name': trialName,
+            'session_name': sessionName,
+            'session_date_local': sessionDateLocal,
+            'session_rater_name': sessionRaterName,
+            'export_timestamp_utc': exportTimestampUtc,
+            'app_version': kAppVersion,
+            ...m,
+            if (exportedByDisplayName != null) 'exported_by': exportedByDisplayName,
+          }).toList();
 
-    final data = <List<dynamic>>[
-      headers,
-      ...enriched.map((m) => headers.map((h) => m[h]).toList()),
-    ];
+      final baseHeaders = <String>[
+        'trial_id',
+        'session_id',
+        'trial_name',
+        'session_name',
+        'session_date_local',
+        'session_rater_name',
+        'export_timestamp_utc',
+        'app_version',
+      ];
+      final headers = enriched.isNotEmpty
+          ? enriched.first.keys.toList()
+          : [
+              ...baseHeaders,
+              if (exportedByDisplayName != null) 'exported_by',
+            ];
 
-    final csv = const ListToCsvConverter().convert(data);
+      final data = <List<dynamic>>[
+        headers,
+        ...enriched.map((m) => headers.map((h) => m[h]).toList()),
+      ];
 
-    final path = await _writeCsv(
-      sessionId: sessionId,
-      trialName: trialName,
-      sessionName: sessionName,
-      csv: csv,
-    );
+      final csv = const ListToCsvConverter().convert(data);
 
-    return ExportResult(filePath: path, rowCount: rows.length);
+      final path = await _writeCsv(
+        sessionId: sessionId,
+        trialName: trialName,
+        sessionName: sessionName,
+        csv: csv,
+      );
+
+      final warning = rows.isEmpty
+          ? 'No ratings in this session. Export file contains headers only.'
+          : null;
+
+      return ExportResult.ok(
+        filePath: path,
+        rowCount: rows.length,
+        warningMessage: warning,
+      );
+    } catch (e, st) {
+      return ExportResult.failure(
+        'Export failed: ${e.toString()}\n${st.toString().split('\n').take(3).join('\n')}',
+      );
+    }
   }
 
   Future<String> _writeCsv({

@@ -23,6 +23,7 @@ class SavePhotoUseCase {
         finalPath: input.finalPath,
         caption: input.caption,
         raterName: input.raterName,
+        performedByUserId: input.performedByUserId,
       );
 
       return SavePhotoResult.success(photo);
@@ -40,6 +41,7 @@ class SavePhotoInput {
   final String finalPath;
   final String? caption;
   final String? raterName;
+  final int? performedByUserId;
 
   const SavePhotoInput({
     required this.trialId,
@@ -49,6 +51,7 @@ class SavePhotoInput {
     required this.finalPath,
     this.caption,
     this.raterName,
+    this.performedByUserId,
   });
 }
 
