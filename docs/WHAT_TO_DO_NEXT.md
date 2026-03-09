@@ -7,7 +7,7 @@
 - **Diagnostics** — AppError + diagnostics screen (About → Diagnostics): recent errors, copy single, **copy all**, clear; integrity checks. Errors recorded from export, ratings, etc.
 - **Docs** — [EXPORT.md](EXPORT.md), [PROTOCOL_IMPORT.md](PROTOCOL_IMPORT.md), [CHANGELOG.md](CHANGELOG.md). About screen version from `kAppVersion`.
 
-**Next:** Manual test (export single + batch, trial detail lock, diagnostics). Then: **Login / user attribution** (4.2) or **PlotContext in session detail / plot queue** (2.1, 2.2) or **Edit/delete treatment** (3.1).
+**Next:** Manual test (export single + batch, trial detail lock, diagnostics). Then: **Login / user attribution** (4.2) or **Edit/delete treatment** (3.1). (Plot queue now shows treatment per plot [2.2]; session detail already showed treatment [2.1].)
 
 ---
 
