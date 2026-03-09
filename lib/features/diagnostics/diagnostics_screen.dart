@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_info.dart';
 import '../../core/diagnostics/app_error.dart';
+import '../../core/diagnostics/diagnostics_store.dart';
 import '../../core/providers.dart';
 import 'integrity_check_result.dart';
 
@@ -51,6 +52,17 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
     }
   }
 
+  Future<void> _copyAllErrors(DiagnosticsStore store) async {
+    final report = store.recentErrors.map((e) => e.toCopyableReport()).join('\n---\n');
+    if (report.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: report));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Copied ${store.recentErrors.length} error(s) to clipboard')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = ref.watch(diagnosticsStoreProvider);
@@ -63,7 +75,12 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
         actions: [
-          if (errors.isNotEmpty)
+          if (errors.isNotEmpty) ...[
+            IconButton(
+              icon: const Icon(Icons.copy_all),
+              tooltip: 'Copy all errors',
+              onPressed: () => _copyAllErrors(store),
+            ),
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               tooltip: 'Clear errors',
@@ -72,6 +89,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                 setState(() {});
               },
             ),
+          ],
         ],
       ),
       body: ListView(
