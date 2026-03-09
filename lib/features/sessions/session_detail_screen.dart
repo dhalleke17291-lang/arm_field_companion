@@ -145,6 +145,12 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('${result.rowCount} ratings exported'),
+              if (result.auditFilePath != null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text('Session audit events exported (separate file).',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ),
               if (result.warningMessage != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -171,8 +177,12 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             FilledButton.icon(
               onPressed: () async {
                 Navigator.pop(context);
+                final files = [XFile(result.filePath!)];
+                if (result.auditFilePath != null) {
+                  files.add(XFile(result.auditFilePath!));
+                }
                 await Share.shareXFiles(
-                  [XFile(result.filePath!)],
+                  files,
                   subject: '${widget.trial.name} - ${widget.session.name} Export',
                 );
               },

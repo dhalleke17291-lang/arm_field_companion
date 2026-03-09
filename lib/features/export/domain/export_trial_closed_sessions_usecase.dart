@@ -69,6 +69,7 @@ class ExportTrialClosedSessionsUsecase {
               result.errorMessage ?? 'Export failed for session "${session.name}"');
         }
         if (result.filePath != null) csvPaths.add(result.filePath!);
+        if (result.auditFilePath != null) csvPaths.add(result.auditFilePath!);
       }
 
       if (csvPaths.isEmpty) {

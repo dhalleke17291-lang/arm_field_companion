@@ -124,4 +124,26 @@ class ExportRepository {
     }
     return byRating;
   }
+
+  /// Session-scoped audit events for export (SESSION_STARTED, SESSION_CLOSED, RATING_SAVED, etc.).
+  /// Sort order: created_at ascending.
+  Future<List<Map<String, Object?>>> buildSessionAuditExportRows({
+    required int sessionId,
+  }) async {
+    final rows = await (db.select(db.auditEvents)
+          ..where((e) => e.sessionId.equals(sessionId))
+          ..orderBy([(e) => drift.OrderingTerm.asc(e.createdAt)]))
+        .get();
+    return rows.map((e) => <String, Object?>{
+          'trial_id': e.trialId,
+          'session_id': e.sessionId,
+          'audit_id': e.id,
+          'event_type': e.eventType,
+          'description': e.description,
+          'performed_by': e.performedBy,
+          'performed_by_user_id': e.performedByUserId,
+          'created_at_utc': e.createdAt.toUtc().toIso8601String(),
+          'metadata': e.metadata,
+        }).toList();
+  }
 }

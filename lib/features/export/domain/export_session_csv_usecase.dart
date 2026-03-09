@@ -8,6 +8,8 @@ import '../data/export_repository.dart';
 class ExportResult {
   final bool success;
   final String? filePath;
+  /// Path to session audit events CSV when available.
+  final String? auditFilePath;
   final int rowCount;
   final String? errorMessage;
   final String? warningMessage;
@@ -15,6 +17,7 @@ class ExportResult {
   const ExportResult._({
     required this.success,
     this.filePath,
+    this.auditFilePath,
     this.rowCount = 0,
     this.errorMessage,
     this.warningMessage,
@@ -24,12 +27,14 @@ class ExportResult {
     required String filePath,
     required int rowCount,
     String? warningMessage,
+    String? auditFilePath,
   }) =>
       ExportResult._(
         success: true,
         filePath: filePath,
         rowCount: rowCount,
         warningMessage: warningMessage,
+        auditFilePath: auditFilePath,
       );
 
   factory ExportResult.failure(String message) => ExportResult._(
@@ -113,6 +118,23 @@ class ExportSessionCsvUsecase {
         csv: csv,
       );
 
+      String? auditPath;
+      final auditRows = await repo.buildSessionAuditExportRows(sessionId: sessionId);
+      if (auditRows.isNotEmpty) {
+        final auditHeaders = auditRows.first.keys.toList();
+        final auditData = <List<dynamic>>[
+          auditHeaders,
+          ...auditRows.map((m) => auditHeaders.map((h) => m[h]).toList()),
+        ];
+        final auditCsv = const ListToCsvConverter().convert(auditData);
+        auditPath = await _writeAuditCsv(
+          sessionId: sessionId,
+          trialName: trialName,
+          sessionName: sessionName,
+          csv: auditCsv,
+        );
+      }
+
       final warning = rows.isEmpty
           ? 'No ratings in this session. Export file contains headers only.'
           : null;
@@ -121,6 +143,7 @@ class ExportSessionCsvUsecase {
         filePath: path,
         rowCount: rows.length,
         warningMessage: warning,
+        auditFilePath: auditPath,
       );
     } catch (e, st) {
       return ExportResult.failure(
@@ -144,6 +167,22 @@ class ExportSessionCsvUsecase {
         '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_$sessionId.csv',
     );
 
+    await file.writeAsString(csv, flush: true);
+    return file.path;
+  }
+
+  Future<String> _writeAuditCsv({
+    required int sessionId,
+    required String trialName,
+    required String sessionName,
+    required String csv,
+  }) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final safeTrial = _safeFilePart(trialName);
+    final safeSession = _safeFilePart(sessionName);
+    final file = File(
+      '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_${sessionId}_audit.csv',
+    );
     await file.writeAsString(csv, flush: true);
     return file.path;
   }
