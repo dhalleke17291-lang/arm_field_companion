@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_info.dart';
 import '../diagnostics/diagnostics_screen.dart';
 
 /// Minimal About / App Info screen.
@@ -7,7 +8,6 @@ class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   static const String appName = 'Ag-Quest Field Companion';
-  static const String version = '1.0.0';
   static const String developerCredit = 'Developed by Parminder Singh';
 
   @override
@@ -33,7 +33,7 @@ class AboutScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Version $version',
+                'Version $kAppVersion',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),

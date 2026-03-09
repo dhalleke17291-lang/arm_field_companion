@@ -1,5 +1,16 @@
 # What to Do Next
 
+## Recent work (done)
+
+- **Trial lifecycle and protocol lock** — Trial status (Draft / Ready / Active / Closed / Archived), status bar, protocol lock chip and message, activation confirmation. Section headers (Plots, Assessments, Seeding) use standard Add/Bulk Assign and show lock notice when locked; disabled actions with tooltips.
+- **Export foundation** — Session export includes ratings CSV + session-scoped **audit CSV** when present; batch export ZIP contains both per session. See [EXPORT.md](EXPORT.md).
+- **Diagnostics** — AppError + diagnostics screen (About → Diagnostics): recent errors, copy single, **copy all**, clear; integrity checks. Errors recorded from export, ratings, etc.
+- **Docs** — [EXPORT.md](EXPORT.md), [PROTOCOL_IMPORT.md](PROTOCOL_IMPORT.md), [CHANGELOG.md](CHANGELOG.md). About screen version from `kAppVersion`.
+
+**Next:** Manual test (export single + batch, trial detail lock, diagnostics). Then: **Login / user attribution** (4.2) or **PlotContext in session detail / plot queue** (2.1, 2.2) or **Edit/delete treatment** (3.1).
+
+---
+
 Based on the current app state and the **quality-driven order** in [DEVELOPMENT_CRITERIA.md](DEVELOPMENT_CRITERIA.md), here is the prioritized list. Focus remains **researcher and technician convenience** and **protocol backbone first**.
 
 ---
