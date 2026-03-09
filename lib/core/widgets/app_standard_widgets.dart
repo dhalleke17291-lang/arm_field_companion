@@ -25,6 +25,18 @@ class AppUiConstants {
   static const double listPaddingV = 6;
   /// Primary action button: vertical padding (compact)
   static const double primaryButtonPaddingV = 12;
+  /// Lock notice: horizontal padding (under section headers, in lock rows)
+  static const double lockNoticePaddingH = 12;
+  /// Lock notice: vertical padding (space above/below the message line)
+  static const double lockNoticePaddingV = 4;
+  /// Lock notice: space above when shown under a section header
+  static const double lockNoticeSpacingAbove = 0;
+  /// Lock notice: space below when shown under a section header
+  static const double lockNoticeSpacingBelow = 6;
+  /// Section-level Add button: icon size (use in [StandardSectionAddButton]).
+  static const double sectionAddIconSize = 18;
+  /// Section-level Add button: label.
+  static const String sectionAddLabel = 'Add';
 }
 
 /// Standard section header for list-based sections (Assessments, Seeding, etc.).
@@ -76,6 +88,33 @@ class StandardSectionHeader extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Standard Add action for [StandardSectionHeader].action.
+/// Use this for section-level "Add" so placement and style stay consistent.
+/// When [onPressed] is null the button is disabled; set [disabledTooltip] to explain why (e.g. protocol lock).
+class StandardSectionAddButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final String? disabledTooltip;
+
+  const StandardSectionAddButton({
+    super.key,
+    this.onPressed,
+    this.disabledTooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final widget = TextButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.add, size: AppUiConstants.sectionAddIconSize),
+      label: const Text(AppUiConstants.sectionAddLabel),
+    );
+    if (onPressed == null && disabledTooltip != null && disabledTooltip!.isNotEmpty) {
+      return Tooltip(message: disabledTooltip!, child: widget);
+    }
+    return widget;
   }
 }
 
@@ -215,6 +254,86 @@ class StandardDetailRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Inline lock explanation text. Use under section headers, in empty states, or in
+/// lock rows (e.g. Treatments) so the lock reason is visible before the user taps.
+/// One consistent style: compact, subtle, same padding and color everywhere.
+class ProtocolLockNotice extends StatelessWidget {
+  final String message;
+
+  const ProtocolLockNotice({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    if (message.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppUiConstants.lockNoticePaddingH,
+        AppUiConstants.lockNoticePaddingV,
+        AppUiConstants.lockNoticePaddingH,
+        AppUiConstants.lockNoticeSpacingBelow,
+      ),
+      child: Text(
+        message,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+}
+
+/// Source/state label for operational entries (seeding, applications).
+/// Use one consistent badge for: Prefilled from Protocol, Manual, Recorded.
+/// Compact and professional; same styling everywhere.
+enum OperationalSource {
+  prefilledFromProtocol,
+  manual,
+  recorded,
+}
+
+class OperationalSourceBadge extends StatelessWidget {
+  final OperationalSource source;
+
+  const OperationalSourceBadge({super.key, required this.source});
+
+  static const String _prefilledLabel = 'Prefilled from Protocol';
+  static const String _manualLabel = 'Manual';
+  static const String _recordedLabel = 'Recorded';
+
+  String get _label {
+    switch (source) {
+      case OperationalSource.prefilledFromProtocol:
+        return _prefilledLabel;
+      case OperationalSource.manual:
+        return _manualLabel;
+      case OperationalSource.recorded:
+        return _recordedLabel;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        _label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: scheme.onSurfaceVariant,
+        ),
       ),
     );
   }

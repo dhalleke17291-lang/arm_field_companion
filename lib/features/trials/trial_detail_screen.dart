@@ -193,7 +193,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final label = labelForTrialStatus(trial.status);
     final locked = isProtocolLocked(trial.status);
     final statusHint = locked
-        ? 'Protocol locked ($label)'
+        ? getProtocolLockMessage(trial.status)
         : 'Protocol editable';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -979,27 +979,23 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       icon: Icons.grid_on,
       title: '${plots.length} plots',
       trailingIndicator: ProtocolLockChip(isLocked: locked, status: widget.trial.status),
-      action: !locked
-          ? TextButton.icon(
-              onPressed: () => _showBulkAssignDialog(context, ref, plots),
-              icon: Icon(Icons.assignment,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary),
-              label: Text('Bulk Assign',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 13)),
-            )
-          : Tooltip(
-              message: getProtocolLockMessage(widget.trial.status),
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text('Locked',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              ),
-            ),
+      action: Tooltip(
+          message: locked ? getProtocolLockMessage(widget.trial.status) : 'Assign treatments to multiple plots',
+          child: TextButton.icon(
+            onPressed: locked ? null : () => _showBulkAssignDialog(context, ref, plots),
+            icon: Icon(Icons.assignment,
+                size: 16,
+                color: locked
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : Theme.of(context).colorScheme.primary),
+            label: Text('Bulk Assign',
+                style: TextStyle(
+                    color: locked
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Theme.of(context).colorScheme.primary,
+                    fontSize: 13)),
+          ),
+        ),
     );
     if (!locked) return header;
     return Column(
@@ -1007,15 +1003,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       mainAxisSize: MainAxisSize.min,
       children: [
         header,
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-          child: Text(
-            getProtocolLockMessage(widget.trial.status),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
+        ProtocolLockNotice(message: getProtocolLockMessage(widget.trial.status)),
       ],
     );
   }
@@ -1434,31 +1422,13 @@ class _AssessmentsTab extends ConsumerWidget {
           icon: Icons.assessment,
           title: '${assessments.length} assessments',
           trailingIndicator: ProtocolLockChip(isLocked: locked, status: trial.status),
-          action: locked
-              ? Tooltip(
-                  message: getProtocolLockMessage(trial.status),
-                  child: TextButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add'),
-                  ),
-                )
-              : TextButton.icon(
-                  onPressed: () => _showAddAssessmentDialog(context, ref),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add'),
-                ),
+          action: StandardSectionAddButton(
+            onPressed: locked ? null : () => _showAddAssessmentDialog(context, ref),
+            disabledTooltip: locked ? getProtocolLockMessage(trial.status) : null,
+          ),
         ),
         if (locked)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-            child: Text(
-              getProtocolLockMessage(trial.status),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
+          ProtocolLockNotice(message: getProtocolLockMessage(trial.status)),
         Expanded(
           child: ListView.builder(
             itemCount: assessments.length,
@@ -1622,8 +1592,7 @@ class _SeedingTab extends ConsumerWidget {
             StandardSectionHeader(
               icon: Icons.agriculture,
               title: '${records.length} seeding events',
-              action: IconButton(
-                icon: const Icon(Icons.add),
+              action: StandardSectionAddButton(
                 onPressed: () => _addSeeding(context, ref),
               ),
             ),
