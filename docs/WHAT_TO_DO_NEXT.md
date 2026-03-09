@@ -2,6 +2,7 @@
 
 ## Recent work (done)
 
+- **Treatment truth cleanup** — Plots list body, plot layout diagnostics, and integrity check now use Assignment-first resolution for treatment/unassigned. PlotRepository assignment write methods deprecated in favour of AssignmentRepository.
 - **Trial lifecycle and protocol lock** — Trial status (Draft / Ready / Active / Closed / Archived), status bar, protocol lock chip and message, activation confirmation. Section headers (Plots, Assessments, Seeding) use standard Add/Bulk Assign and show lock notice when locked; disabled actions with tooltips.
 - **Export foundation** — Session export includes ratings CSV + session-scoped **audit CSV** when present; batch export ZIP contains both per session. See [EXPORT.md](EXPORT.md).
 - **Diagnostics** — AppError + diagnostics screen (About → Diagnostics): recent errors, copy single, **copy all**, clear; integrity checks. Errors recorded from export, ratings, etc.
@@ -19,16 +20,20 @@ Based on the current app state and the **quality-driven order** in [DEVELOPMENT_
 
 **Already in place:**
 - Trials, Plots, Assessments, Treatments, TreatmentComponents; optional `Plots.treatmentId`.
+- **Assignments** table and **AssignmentRepository**: treatment-for-plot resolution is Assignment-first, then Plot fallback. Plots list, grid, header, layout diagnostics, and integrity check all use this. Writes go through AssignmentRepository only (PlotRepository assignment methods are deprecated).
+- **Trial lifecycle and protocol lock**: Trial status (Draft / Ready / Active / Closed / Archived); protocol lock when Active/Closed/Archived; lock chip, notice, and disabled actions across trial detail.
 - **PlotContext** DTO + **ResolvePlotTreatment** use case + `plotContextProvider`; used in Plot detail and Rating screen.
-- Treatments tab: list, add treatment, view components in bottom sheet. Bulk and per-plot **assignment** (treatmentId on Plots).
-- Execution: Sessions, ratings, notes, photos, seeding, applications (with mark complete/partial), CSV export.
-- Constitution, Development Criteria, and user philosophy (researcher/technician convenience) documented.
+- Treatments tab: list, add treatment, view components. Bulk and per-plot **assignment** via Assignments (Bulk Assign / long-press on plot).
+- **Session detail and plot queue** show treatment per plot (assignment-based where used).
+- **Assessment library**: AssessmentDefinitions + TrialAssessments; trial tab "Assessments for this trial" with "From library" and "Custom". **Create session and ratings use legacy Assessments only** — TrialAssessments (library) do not yet participate in session or rating flow.
+- Execution: Sessions, ratings, notes, photos, seeding, applications (with mark complete/partial), CSV export, audit CSV.
+- AppError/diagnostics screen; integrity checks (assignment-aware for plots without treatment).
+- Constitution, Development Criteria, and user philosophy documented.
 
 **Gaps vs constitution / development order:**
-- No formal **trial lifecycle** (Draft → Active → etc.) or restrictions when trial is active.
-- Assignments not yet **read-only during execution** (protocol truth).
-- Session detail and plot queue do **not** show treatment context (could use PlotContext for technician convenience).
-- No **login/user attribution** or **AppError/diagnostics** (honest failure).
+- Assignments not yet **read-only during execution** (protocol truth) — lock prevents edits when trial is Active/Closed/Archived, but no separate "assignments locked" state.
+- **Login/user attribution** optional; many flows still allow null.
+- **TrialAssessments in sessions**: library assessments are trial-level only; to use them in sessions would require create-session and rating flow to support trial_assessment_id.
 
 ---
 

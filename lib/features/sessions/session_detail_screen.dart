@@ -32,6 +32,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
     final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
+    final assignments = ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
+    final plotIdToTreatmentId = {for (var a in assignments) a.plotId: a.treatmentId};
 
     return Scaffold(
       appBar: AppBar(
@@ -78,7 +80,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     index: _selectedTabIndex,
                     children: [
                       _buildContent(context, ref, plots, ratings, assessments,
-                          treatments),
+                          treatments, plotIdToTreatmentId),
                       _buildRateTab(context, ref, trial, session, plots,
                           assessments),
                     ],
@@ -274,8 +276,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     List<RatingRecord> ratings,
     List<Assessment> assessments,
     List<Treatment> treatments,
+    Map<int, int?> plotIdToTreatmentId,
   ) {
     final ratedCount = ratings.map((r) => r.plotPk).toSet().length;
+    final treatmentMap = {for (final t in treatments) t.id: t};
     return Column(
       children: [
         // Section header (same as Trial Plots tab)
@@ -327,7 +331,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   ratings.where((r) => r.plotPk == plot.id).toList();
               final displayNum = getDisplayPlotLabel(plot, plots);
               final treatmentLabel = getTreatmentDisplayLabel(
-                  plot, {for (final t in treatments) t.id: t});
+                  plot, treatmentMap, treatmentIdOverride: plotIdToTreatmentId[plot.id]);
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

@@ -33,6 +33,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final ratingsAsync = ref.watch(sessionRatingsProvider(widget.session.id));
     final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentById = {for (final t in treatments) t.id: t};
+    final assignments = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final plotIdToTreatmentId = {for (var a in assignments) a.plotId: a.treatmentId};
 
     return Scaffold(
       appBar: AppBar(
@@ -73,7 +75,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (ratings) =>
-                  _buildQueue(context, plots, assessments, ratedPks, ratings, treatmentById),
+                  _buildQueue(context, plots, assessments, ratedPks, ratings, treatmentById, plotIdToTreatmentId),
             ),
           ),
         ),
@@ -88,6 +90,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Set<int> ratedPks,
     List<RatingRecord> ratings,
     Map<int, Treatment> treatmentById,
+    Map<int, int?> plotIdToTreatmentId,
   ) {
     var filtered = plots;
     if (_repFilter != null) {
@@ -270,7 +273,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ],
                   ),
                 )
-              : _buildGroupedList(context, filtered, assessments, ratedPks, ratings, treatmentById, allPlotsForTrial: plots),
+              : _buildGroupedList(context, filtered, assessments, ratedPks, ratings, treatmentById, plotIdToTreatmentId, allPlotsForTrial: plots),
         ),
       ],
     );
@@ -282,7 +285,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     List<Assessment> assessments,
     Set<int> ratedPks,
     List<RatingRecord> ratings,
-    Map<int, Treatment> treatmentById, {
+    Map<int, Treatment> treatmentById,
+    Map<int, int?> plotIdToTreatmentId, {
     required List<Plot> allPlotsForTrial,
   }) {
     final groups = <int?, List<Plot>>{};
@@ -308,7 +312,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         items.add(_PlotQueueTile(
           plot: plot,
           allPlotsForTrial: allPlotsForTrial,
-          treatmentLabel: getTreatmentDisplayLabel(plot, treatmentById),
+          treatmentLabel: getTreatmentDisplayLabel(plot, treatmentById, treatmentIdOverride: plotIdToTreatmentId[plot.id]),
           isRated: ratedPks.contains(plot.id),
           plotRatings: plotRatings,
           assessments: assessments,

@@ -114,6 +114,7 @@ class PlotRepository {
 
   /// Updates treatment assignment for a single plot.
   /// [assignmentSource]: 'imported' | 'manual' | null (unknown).
+  @Deprecated('Use AssignmentRepository for assignment updates. This updates Plot only and is legacy.')
   Future<void> updatePlotTreatment(
     int plotPk,
     int? treatmentId, {
@@ -131,6 +132,7 @@ class PlotRepository {
 
   /// Updates treatment assignments for multiple plots in one transaction.
   /// [assignmentSource]: e.g. 'manual' when user bulk-assigns.
+  @Deprecated('Use AssignmentRepository.upsertBulk for assignment updates. This updates Plot only and is legacy.')
   Future<void> updatePlotsTreatmentsBulk(
     Map<int, int?> plotPkToTreatmentId, {
     String? assignmentSource,

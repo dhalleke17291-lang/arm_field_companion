@@ -135,11 +135,14 @@ class PlotLayoutDiagnostics {
         unassignedPlotLabels.isNotEmpty;
 }
 
+/// [plotIdToEffectiveTreatmentId] optional: when provided, unassigned is based on
+/// Assignment-first resolution (plotId -> treatmentId). When null, uses Plot.treatmentId only (legacy).
 PlotLayoutDiagnostics computePlotLayoutDiagnostics(
   List<Plot> plots,
   int? Function(Plot) displayNumber,
-  String Function(Plot) displayLabel,
-) {
+  String Function(Plot) displayLabel, [
+  Map<int, int?>? plotIdToEffectiveTreatmentId,
+]) {
   final noRep = <String>[];
   final duplicatePositionInRep = <String>[];
   final unassignedPlotLabels = <String>[];
@@ -165,7 +168,10 @@ PlotLayoutDiagnostics computePlotLayoutDiagnostics(
   }
 
   for (final p in plots) {
-    if (p.treatmentId == null) unassignedPlotLabels.add(displayLabel(p));
+    final effectiveTreatmentId = plotIdToEffectiveTreatmentId != null
+        ? (plotIdToEffectiveTreatmentId[p.id] ?? p.treatmentId)
+        : p.treatmentId;
+    if (effectiveTreatmentId == null) unassignedPlotLabels.add(displayLabel(p));
   }
 
   return PlotLayoutDiagnostics._(

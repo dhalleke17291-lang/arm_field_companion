@@ -35,9 +35,11 @@ String getDisplayPlotLabel(Plot plot, List<Plot> sameTrialPlots) {
 }
 
 /// Treatment label for UI: treatment code or "Unassigned".
-String getTreatmentDisplayLabel(Plot plot, Map<int, Treatment> treatmentById) {
-  if (plot.treatmentId == null) return 'Unassigned';
-  final t = treatmentById[plot.treatmentId];
+/// Use [treatmentIdOverride] when resolution is via Assignments (Plot → Assignment → Treatment).
+String getTreatmentDisplayLabel(Plot plot, Map<int, Treatment> treatmentById, {int? treatmentIdOverride}) {
+  final tid = treatmentIdOverride ?? plot.treatmentId;
+  if (tid == null) return 'Unassigned';
+  final t = treatmentById[tid];
   return t?.code ?? 'Unassigned';
 }
 

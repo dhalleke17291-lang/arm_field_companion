@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
 import '../../data/repositories/treatment_repository.dart';
+import '../../data/repositories/assignment_repository.dart';
 import '../plots/plot_repository.dart';
 import '../trials/trial_repository.dart';
 import 'protocol_import_models.dart';
@@ -11,11 +12,13 @@ class ProtocolImportUseCase {
   final TrialRepository _trialRepository;
   final TreatmentRepository _treatmentRepository;
   final PlotRepository _plotRepository;
+  final AssignmentRepository _assignmentRepository;
 
   ProtocolImportUseCase(
     this._trialRepository,
     this._treatmentRepository,
     this._plotRepository,
+    this._assignmentRepository,
   );
 
   /// [existingTrialId] if adding to existing trial; null to create new trial from TRIAL section.
@@ -285,7 +288,7 @@ class ProtocolImportUseCase {
       }
       await _plotRepository.insertPlotsBulk(companions);
 
-      // Apply treatment assignment exactly as in protocol file (randomization preserved).
+      // Apply treatment assignment via Assignments table (randomization preserved).
       for (final p in review.normalizedPlots) {
         final treatmentCode = p['treatment_code'] as String?;
         if (treatmentCode == null) continue;
@@ -293,11 +296,15 @@ class ProtocolImportUseCase {
         if (tid == null) continue;
         final plot = await _plotRepository.getPlotByPlotId(trialId, p['plot_id'] as String);
         if (plot != null) {
-          await _plotRepository.updatePlotTreatment(
-            plot.id,
-            tid,
+          await _assignmentRepository.upsert(
+            trialId: trialId,
+            plotId: plot.id,
+            treatmentId: tid,
+            replication: plot.rep,
+            range: plot.fieldRow,
+            column: plot.fieldColumn,
             assignmentSource: 'imported',
-            assignmentUpdatedAt: DateTime.now().toUtc(),
+            assignedAt: DateTime.now().toUtc(),
           );
         }
       }

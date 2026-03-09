@@ -1,12 +1,12 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/trial_state.dart';
-import '../plot_repository.dart';
+import '../../../data/repositories/assignment_repository.dart';
 
-/// Updates plot treatment assignment(s). Respects protocol lock (no edits when trial is active/closed/archived).
+/// Updates plot treatment assignment(s) via Assignments table. Respects protocol lock.
 class UpdatePlotAssignmentUseCase {
-  final PlotRepository _plotRepository;
+  final AssignmentRepository _assignmentRepository;
 
-  UpdatePlotAssignmentUseCase(this._plotRepository);
+  UpdatePlotAssignmentUseCase(this._assignmentRepository);
 
   /// Update a single plot's treatment assignment (manual).
   /// Sets assignmentSource = manual, assignmentUpdatedAt = now.
@@ -20,11 +20,12 @@ class UpdatePlotAssignmentUseCase {
       return UpdateAssignmentResult.failure(getProtocolLockMessage(trial.status));
     }
     try {
-      await _plotRepository.updatePlotTreatment(
-        plotPk,
-        treatmentId,
+      await _assignmentRepository.upsert(
+        trialId: trial.id,
+        plotId: plotPk,
+        treatmentId: treatmentId,
         assignmentSource: 'manual',
-        assignmentUpdatedAt: DateTime.now().toUtc(),
+        assignedAt: DateTime.now().toUtc(),
       );
       return UpdateAssignmentResult.success();
     } catch (e) {
@@ -45,10 +46,11 @@ class UpdatePlotAssignmentUseCase {
       return UpdateAssignmentResult.success();
     }
     try {
-      await _plotRepository.updatePlotsTreatmentsBulk(
-        plotPkToTreatmentId,
+      await _assignmentRepository.upsertBulk(
+        trialId: trial.id,
+        plotPkToTreatmentId: plotPkToTreatmentId,
         assignmentSource: 'manual',
-        assignmentUpdatedAt: DateTime.now().toUtc(),
+        assignedAt: DateTime.now().toUtc(),
       );
       return UpdateAssignmentResult.success();
     } catch (e) {

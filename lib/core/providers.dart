@@ -1,4 +1,7 @@
 import "../data/repositories/treatment_repository.dart";
+import "../data/repositories/assignment_repository.dart";
+import "../data/repositories/assessment_definition_repository.dart";
+import "../data/repositories/trial_assessment_repository.dart";
 import "../data/repositories/application_repository.dart";
 import "../domain/models/plot_context.dart";
 import "../domain/usecases/resolve_plot_treatment.dart";
@@ -41,9 +44,33 @@ final plotRepositoryProvider = Provider<PlotRepository>((ref) {
   return PlotRepository(ref.watch(databaseProvider));
 });
 
+final assignmentRepositoryProvider = Provider<AssignmentRepository>((ref) {
+  return AssignmentRepository(ref.watch(databaseProvider));
+});
+
+final assessmentDefinitionRepositoryProvider = Provider<AssessmentDefinitionRepository>((ref) {
+  return AssessmentDefinitionRepository(ref.watch(databaseProvider));
+});
+
+final trialAssessmentRepositoryProvider = Provider<TrialAssessmentRepository>((ref) {
+  return TrialAssessmentRepository(ref.watch(databaseProvider));
+});
+
+final assessmentDefinitionsProvider = StreamProvider<List<AssessmentDefinition>>((ref) {
+  return ref.watch(assessmentDefinitionRepositoryProvider).watchAll(activeOnly: true);
+});
+
+final trialAssessmentsForTrialProvider = StreamProvider.family<List<TrialAssessment>, int>((ref, trialId) {
+  return ref.watch(trialAssessmentRepositoryProvider).watchForTrial(trialId);
+});
+
+final trialAssessmentsWithDefinitionsForTrialProvider = StreamProvider.family<List<(TrialAssessment, AssessmentDefinition)>, int>((ref, trialId) {
+  return ref.watch(trialAssessmentRepositoryProvider).watchForTrialWithDefinitions(trialId);
+});
+
 final updatePlotAssignmentUseCaseProvider =
     Provider<UpdatePlotAssignmentUseCase>((ref) {
-  return UpdatePlotAssignmentUseCase(ref.watch(plotRepositoryProvider));
+  return UpdatePlotAssignmentUseCase(ref.watch(assignmentRepositoryProvider));
 });
 
 final protocolImportUseCaseProvider = Provider<ProtocolImportUseCase>((ref) {
@@ -51,6 +78,7 @@ final protocolImportUseCaseProvider = Provider<ProtocolImportUseCase>((ref) {
     ref.watch(trialRepositoryProvider),
     ref.watch(treatmentRepositoryProvider),
     ref.watch(plotRepositoryProvider),
+    ref.watch(assignmentRepositoryProvider),
   );
 });
 
@@ -314,12 +342,17 @@ final plotRatingHistoryProvider =
 // ===== Treatment =====
 
 final treatmentRepositoryProvider = Provider<TreatmentRepository>((ref) {
-  return TreatmentRepository(ref.watch(databaseProvider));
+  return TreatmentRepository(ref.watch(databaseProvider), ref.watch(assignmentRepositoryProvider));
 });
 
 final treatmentsForTrialProvider =
     StreamProvider.family<List<Treatment>, int>((ref, trialId) {
   return ref.watch(treatmentRepositoryProvider).watchTreatmentsForTrial(trialId);
+});
+
+final assignmentsForTrialProvider =
+    StreamProvider.family<List<Assignment>, int>((ref, trialId) {
+  return ref.watch(assignmentRepositoryProvider).watchForTrial(trialId);
 });
 
 final resolvePlotTreatmentProvider = Provider<ResolvePlotTreatment>((ref) {

@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import 'assignment_repository.dart';
 
 class TreatmentRepository {
   final AppDatabase _db;
+  final AssignmentRepository? _assignmentRepository;
 
-  TreatmentRepository(this._db);
+  TreatmentRepository(this._db, [this._assignmentRepository]);
 
   Future<List<Treatment>> getTreatmentsForTrial(int trialId) {
     return (_db.select(_db.treatments)
@@ -26,12 +28,18 @@ class TreatmentRepository {
   }
 
   Future<Treatment?> getTreatmentForPlot(int plotPk) async {
+    // Plot → Assignment → Treatment (ARM resolution)
+    if (_assignmentRepository != null) {
+      final a = await _assignmentRepository!.getForPlot(plotPk);
+      if (a != null && a.treatmentId != null) {
+        return getTreatmentById(a.treatmentId!);
+      }
+    }
+    // Fallback: legacy Plot.treatmentId
     final plot = await (_db.select(_db.plots)
           ..where((p) => p.id.equals(plotPk)))
         .getSingleOrNull();
-
     if (plot == null || plot.treatmentId == null) return null;
-
     return getTreatmentById(plot.treatmentId!);
   }
 

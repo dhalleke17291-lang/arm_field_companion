@@ -26,10 +26,13 @@ class PlotDetailScreen extends ConsumerWidget {
         ref.watch(assessmentsForTrialProvider(trial.id)).value ?? [];
     final plotContextAsync = ref.watch(plotContextProvider(plot.id));
     final plots = ref.watch(plotsForTrialProvider(trial.id)).value ?? [];
+    final assignments = ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
+    final assignmentForPlot = assignments.where((a) => a.plotId == plot.id).firstOrNull;
     final plotToShow = plots.where((p) => p.id == plot.id).firstOrNull ?? plot;
     final displayNum = getDisplayPlotLabel(plotToShow, plots);
     final assignmentSourceLabel = getAssignmentSourceLabel(
-        treatmentId: plotToShow.treatmentId, assignmentSource: plotToShow.assignmentSource);
+        treatmentId: assignmentForPlot?.treatmentId ?? plotToShow.treatmentId,
+        assignmentSource: assignmentForPlot?.assignmentSource ?? plotToShow.assignmentSource);
 
     return Scaffold(
       appBar: AppBar(

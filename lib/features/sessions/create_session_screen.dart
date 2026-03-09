@@ -144,6 +144,11 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
             'Assessment set is locked once session starts',
             style: TextStyle(color: Colors.grey, fontSize: 12),
           ),
+          const SizedBox(height: 2),
+          const Text(
+            "Only custom assessments from the trial's Assessments tab can be added to sessions.",
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
           const SizedBox(height: 8),
 
           assessments.isEmpty

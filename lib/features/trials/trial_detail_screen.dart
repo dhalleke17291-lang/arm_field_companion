@@ -17,6 +17,7 @@ import '../plots/plot_detail_screen.dart';
 import '../seeding/record_seeding_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
 import 'plot_layout_model.dart';
+import 'assessment_library_picker_dialog.dart';
 import '../../core/providers.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../core/widgets/loading_error_widgets.dart';
@@ -569,10 +570,16 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
   Widget _buildPlotsContent(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
     final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+    final plotIdToEffectiveTreatmentId = {
+      for (final p in plots) p.id: assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId,
+    };
     final layoutDiag = computePlotLayoutDiagnostics(
       plots,
       (p) => getDisplayPlotNumber(p, plots),
       (p) => getDisplayPlotLabel(p, plots),
+      plotIdToEffectiveTreatmentId,
     );
     return Column(
       children: [
@@ -593,6 +600,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                       trial: widget.trial,
                       layer: _layoutLayer,
                       appPlotRecords: _appPlotRecords,
+                      plotIdToTreatmentId: {for (var a in ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? []) a.plotId: a.treatmentId},
                       onLongPressPlot: isProtocolLocked(widget.trial.status)
                           ? null
                           : (plot) => _showAssignTreatmentDialog(context, ref, plot, plots),
@@ -769,9 +777,11 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       return;
     }
 
-    // Map of plotPk -> selected treatmentId
+    // Map of plotPk -> selected treatmentId (from Assignments then Plot fallback)
+    final assignmentsList = ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     final Map<int, int?> assignments = {
-      for (final p in plots) p.id: p.treatmentId,
+      for (final p in plots) p.id: assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId,
     };
 
     await showDialog(
@@ -881,7 +891,9 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       return;
     }
 
-    int? selectedId = plot.treatmentId;
+    final assignmentsList = ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final a = assignmentsList.where((x) => x.plotId == plot.id).firstOrNull;
+    int? selectedId = a?.treatmentId ?? plot.treatmentId;
     final displayNum = getDisplayPlotLabel(plot, plots);
 
     await showDialog(
@@ -975,9 +987,19 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
   Widget _buildPlotsHeader(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
     final locked = isProtocolLocked(widget.trial.status);
+    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+    final assignedCount = plots.where((p) =>
+        (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) != null).length;
+    final unassignedCount = plots.length - assignedCount;
+    final title = plots.isEmpty
+        ? '${plots.length} plots'
+        : unassignedCount == 0
+            ? '${plots.length} plots · $assignedCount assigned'
+            : '${plots.length} plots · $assignedCount assigned, $unassignedCount unassigned';
     final header = StandardSectionHeader(
       icon: Icons.grid_on,
-      title: '${plots.length} plots',
+      title: title,
       trailingIndicator: ProtocolLockChip(isLocked: locked, status: widget.trial.status),
       action: Tooltip(
           message: locked ? getProtocolLockMessage(widget.trial.status) : 'Assign treatments to multiple plots',
@@ -1012,14 +1034,19 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       BuildContext context, WidgetRef ref, List<Plot> plots) {
     final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
+    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     return ListView.builder(
       itemCount: plots.length,
       itemBuilder: (context, index) {
         final plot = plots[index];
+        final assignment = assignmentByPlotId[plot.id];
+        final effectiveTreatmentId = assignment?.treatmentId ?? plot.treatmentId;
+        final effectiveSource = assignment?.assignmentSource ?? plot.assignmentSource;
         final displayNum = getDisplayPlotLabel(plot, plots);
-        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap);
+        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap, treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
-            treatmentId: plot.treatmentId, assignmentSource: plot.assignmentSource);
+            treatmentId: effectiveTreatmentId, assignmentSource: effectiveSource);
         return ListTile(
           dense: true,
           leading: Container(
@@ -1045,10 +1072,10 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                   treatmentLabel,
                   style: TextStyle(
                     fontSize: 12,
-                    color: plot.treatmentId != null
+                    color: effectiveTreatmentId != null
                         ? Theme.of(context).colorScheme.primary
                         : Colors.grey.shade700,
-                    fontWeight: plot.treatmentId != null ? FontWeight.w600 : null,
+                    fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : null,
                   ),
                 ),
               ),
@@ -1094,6 +1121,7 @@ class _PlotLayoutGrid extends StatelessWidget {
   final Trial trial;
   final _LayoutLayer layer;
   final List<ApplicationPlotRecord> appPlotRecords;
+  final Map<int, int?>? plotIdToTreatmentId;
   final void Function(Plot plot)? onLongPressPlot;
 
   const _PlotLayoutGrid({
@@ -1102,6 +1130,7 @@ class _PlotLayoutGrid extends StatelessWidget {
     required this.trial,
     required this.layer,
     required this.appPlotRecords,
+    this.plotIdToTreatmentId,
     this.onLongPressPlot,
   });
 
@@ -1140,10 +1169,11 @@ class _PlotLayoutGrid extends StatelessWidget {
       }
       return Colors.grey.shade300;
     }
-    if (plot.treatmentId == null) {
+    final effectiveTid = plotIdToTreatmentId?[plot.id] ?? plot.treatmentId;
+    if (effectiveTid == null) {
       return Colors.grey.shade400;
     }
-    final treatmentIndex = treatments.indexWhere((t) => t.id == plot.treatmentId);
+    final treatmentIndex = treatments.indexWhere((t) => t.id == effectiveTid);
     final colors = [
       const Color(0xFF2D5A40),
       Colors.blue.shade700,
@@ -1285,6 +1315,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                                     treatments: treatments,
                                     trial: trial,
                                     tileColor: _tileColorFor(repRow.plots[i]),
+                                    treatmentIdOverride: plotIdToTreatmentId?[repRow.plots[i].id] ?? repRow.plots[i].treatmentId,
                                     displayLabel: getDisplayPlotLabel(repRow.plots[i], plots),
                                     onLongPress: onLongPressPlot != null
                                         ? () => onLongPressPlot!(repRow.plots[i])
@@ -1316,6 +1347,7 @@ class _PlotGridTile extends StatelessWidget {
   final List<Treatment> treatments;
   final Trial trial;
   final Color tileColor;
+  final int? treatmentIdOverride;
   final String? displayLabel;
   final VoidCallback? onLongPress;
 
@@ -1325,13 +1357,15 @@ class _PlotGridTile extends StatelessWidget {
     required this.treatments,
     required this.trial,
     required this.tileColor,
+    this.treatmentIdOverride,
     this.displayLabel,
     this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    final treatment = plot.treatmentId != null ? treatmentMap[plot.treatmentId] : null;
+    final effectiveTid = treatmentIdOverride ?? plot.treatmentId;
+    final treatment = effectiveTid != null ? treatmentMap[effectiveTid] : null;
     final label = displayLabel ?? plot.plotId;
     return Material(
       color: tileColor,
@@ -1388,70 +1422,129 @@ class _AssessmentsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assessmentsAsync = ref.watch(assessmentsForTrialProvider(trial.id));
+    final libraryAsync = ref.watch(trialAssessmentsWithDefinitionsForTrialProvider(trial.id));
+    final legacyAsync = ref.watch(assessmentsForTrialProvider(trial.id));
 
-    return assessmentsAsync.when(
+    if (libraryAsync.isLoading && legacyAsync.isLoading) {
+      return const AppLoadingView();
+    }
+    return libraryAsync.when(
       loading: () => const AppLoadingView(),
-      error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(assessmentsForTrialProvider(trial.id))),
-      data: (assessments) => assessments.isEmpty
-          ? _buildEmptyAssessments(context, ref)
-          : _buildAssessmentsList(context, ref, assessments),
+      error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(trialAssessmentsWithDefinitionsForTrialProvider(trial.id))),
+      data: (libraryList) => legacyAsync.when(
+        loading: () => const AppLoadingView(),
+        error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(assessmentsForTrialProvider(trial.id))),
+        data: (legacyList) => _buildAssessmentsContent(context, ref, libraryList, legacyList),
+      ),
     );
   }
 
-  Widget _buildEmptyAssessments(BuildContext context, WidgetRef ref) {
+  Widget _buildAssessmentsContent(
+    BuildContext context,
+    WidgetRef ref,
+    List<(TrialAssessment, AssessmentDefinition)> libraryList,
+    List<Assessment> legacyList,
+  ) {
     final locked = isProtocolLocked(trial.status);
-    return StandardEmptyState(
-      icon: Icons.assessment,
-      title: 'No Assessments Yet',
-      subtitle: locked
-          ? getProtocolLockMessage(trial.status)
-          : 'Add assessments to define what to measure.',
-      actionLabel: 'Add Assessment',
-      onAction: locked ? null : () => _showAddAssessmentDialog(context, ref),
-      disabledTooltipMessage: locked ? getProtocolLockMessage(trial.status) : null,
-    );
-  }
-
-  Widget _buildAssessmentsList(
-      BuildContext context, WidgetRef ref, List<Assessment> assessments) {
-    final locked = isProtocolLocked(trial.status);
+    final total = libraryList.length + legacyList.length;
+    if (total == 0) {
+      return StandardEmptyState(
+        icon: Icons.assessment,
+        title: 'No Assessments Yet',
+        subtitle: locked
+            ? getProtocolLockMessage(trial.status)
+            : 'Add from library or create a custom assessment.',
+        actionLabel: 'Add from library',
+        onAction: locked ? null : () => AssessmentLibraryPickerDialog.show(context, trial.id),
+        disabledTooltipMessage: locked ? getProtocolLockMessage(trial.status) : null,
+      );
+    }
     return Column(
       children: [
         StandardSectionHeader(
           icon: Icons.assessment,
-          title: '${assessments.length} assessments',
+          title: 'Assessments for this trial ($total)',
           trailingIndicator: ProtocolLockChip(isLocked: locked, status: trial.status),
-          action: StandardSectionAddButton(
-            onPressed: locked ? null : () => _showAddAssessmentDialog(context, ref),
-            disabledTooltip: locked ? getProtocolLockMessage(trial.status) : null,
+          action: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton.icon(
+                icon: const Icon(Icons.library_add, size: 18),
+                label: const Text('From library'),
+                onPressed: locked ? null : () => AssessmentLibraryPickerDialog.show(context, trial.id),
+              ),
+              const SizedBox(width: 8),
+              StandardSectionAddButton(
+                onPressed: locked ? null : () => _showAddAssessmentDialog(context, ref),
+                disabledTooltip: locked ? getProtocolLockMessage(trial.status) : null,
+              ),
+            ],
           ),
         ),
         if (locked)
           ProtocolLockNotice(message: getProtocolLockMessage(trial.status)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Text(
+            'Library items are trial-level only. Only custom assessments can be added to sessions.',
+            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+        ),
         Expanded(
-          child: ListView.builder(
-            itemCount: assessments.length,
-            itemBuilder: (context, index) {
-              final assessment = assessments[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
-                  child: Icon(Icons.analytics,
-                      color: Theme.of(context).colorScheme.primary, size: 20),
+          child: ListView(
+            children: [
+              if (libraryList.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 8, bottom: 4),
+                  child: Text(
+                    'From library',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ),
-                title: Text(assessment.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(
-                    '${assessment.dataType}${assessment.unit != null ? " (${assessment.unit})" : ""}'),
-                trailing: assessment.isActive
-                    ? const Icon(Icons.check_circle,
-                        color: Colors.green, size: 20)
-                    : const Icon(Icons.pause_circle,
-                        color: Colors.grey, size: 20),
-              );
-            },
+                ...libraryList.map((pair) {
+                  final ta = pair.$1;
+                  final def = pair.$2;
+                  final name = ta.displayNameOverride ?? def.name;
+                  return ListTile(
+                    dense: true,
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(Icons.analytics, color: Theme.of(context).colorScheme.primary, size: 20),
+                    ),
+                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text('${def.dataType}${def.unit != null ? " (${def.unit})" : ""}'),
+                    trailing: ta.isActive ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : const Icon(Icons.pause_circle, color: Colors.grey, size: 20),
+                  );
+                }),
+              ],
+              if (legacyList.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 12, bottom: 4),
+                  child: Text(
+                    'Custom',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                ...legacyList.map((assessment) => ListTile(
+                  dense: true,
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    child: Icon(Icons.analytics, color: Theme.of(context).colorScheme.primary, size: 20),
+                  ),
+                  title: Text(assessment.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('${assessment.dataType}${assessment.unit != null ? " (${assessment.unit})" : ""}'),
+                  trailing: assessment.isActive ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : const Icon(Icons.pause_circle, color: Colors.grey, size: 20),
+                )),
+              ],
+            ],
           ),
         ),
       ],

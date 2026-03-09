@@ -24,16 +24,19 @@ class IntegrityCheckRepository {
       ));
     }
 
-    // Plots with no treatment assigned
-    final plotsWithoutTreatment = await (_db.select(_db.plots)
-          ..where((p) => p.treatmentId.isNull()))
-        .get();
+    // Plots with no treatment assigned (Assignment-first, then Plot fallback)
+    final assignmentRows = await _db.select(_db.assignments).get();
+    final plotIdToTreatmentId = {for (var a in assignmentRows) a.plotId: a.treatmentId};
+    final allPlots = await _db.select(_db.plots).get();
+    final plotsWithoutTreatment = allPlots
+        .where((p) => (plotIdToTreatmentId[p.id] ?? p.treatmentId) == null)
+        .toList();
     if (plotsWithoutTreatment.isNotEmpty) {
       issues.add(IntegrityIssue(
         code: 'plots_without_treatment',
         summary: 'Plots without treatment assignment',
         count: plotsWithoutTreatment.length,
-        detail: 'Plots that have no treatment linked.',
+        detail: 'Plots that have no treatment linked (Assignment or Plot).',
         severity: IntegritySeverity.warning,
       ));
     }

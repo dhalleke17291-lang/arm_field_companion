@@ -1990,6 +1990,1711 @@ class AssessmentsCompanion extends UpdateCompanion<Assessment> {
   }
 }
 
+class $AssessmentDefinitionsTable extends AssessmentDefinitions
+    with TableInfo<$AssessmentDefinitionsTable, AssessmentDefinition> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssessmentDefinitionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+      'code', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 50),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 255),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 50),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _dataTypeMeta =
+      const VerificationMeta('dataType');
+  @override
+  late final GeneratedColumn<String> dataType = GeneratedColumn<String>(
+      'data_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('numeric'));
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+      'unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _scaleMinMeta =
+      const VerificationMeta('scaleMin');
+  @override
+  late final GeneratedColumn<double> scaleMin = GeneratedColumn<double>(
+      'scale_min', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _scaleMaxMeta =
+      const VerificationMeta('scaleMax');
+  @override
+  late final GeneratedColumn<double> scaleMax = GeneratedColumn<double>(
+      'scale_max', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _targetMeta = const VerificationMeta('target');
+  @override
+  late final GeneratedColumn<String> target = GeneratedColumn<String>(
+      'target', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+      'method', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _defaultInstructionsMeta =
+      const VerificationMeta('defaultInstructions');
+  @override
+  late final GeneratedColumn<String> defaultInstructions =
+      GeneratedColumn<String>('default_instructions', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _timingTypeMeta =
+      const VerificationMeta('timingType');
+  @override
+  late final GeneratedColumn<String> timingType = GeneratedColumn<String>(
+      'timing_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isSystemMeta =
+      const VerificationMeta('isSystem');
+  @override
+  late final GeneratedColumn<bool> isSystem = GeneratedColumn<bool>(
+      'is_system', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_system" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        code,
+        name,
+        category,
+        dataType,
+        unit,
+        scaleMin,
+        scaleMax,
+        target,
+        method,
+        defaultInstructions,
+        timingType,
+        isSystem,
+        isActive,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assessment_definitions';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<AssessmentDefinition> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+          _codeMeta, code.isAcceptableOrUnknown(data['code']!, _codeMeta));
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('data_type')) {
+      context.handle(_dataTypeMeta,
+          dataType.isAcceptableOrUnknown(data['data_type']!, _dataTypeMeta));
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+          _unitMeta, unit.isAcceptableOrUnknown(data['unit']!, _unitMeta));
+    }
+    if (data.containsKey('scale_min')) {
+      context.handle(_scaleMinMeta,
+          scaleMin.isAcceptableOrUnknown(data['scale_min']!, _scaleMinMeta));
+    }
+    if (data.containsKey('scale_max')) {
+      context.handle(_scaleMaxMeta,
+          scaleMax.isAcceptableOrUnknown(data['scale_max']!, _scaleMaxMeta));
+    }
+    if (data.containsKey('target')) {
+      context.handle(_targetMeta,
+          target.isAcceptableOrUnknown(data['target']!, _targetMeta));
+    }
+    if (data.containsKey('method')) {
+      context.handle(_methodMeta,
+          method.isAcceptableOrUnknown(data['method']!, _methodMeta));
+    }
+    if (data.containsKey('default_instructions')) {
+      context.handle(
+          _defaultInstructionsMeta,
+          defaultInstructions.isAcceptableOrUnknown(
+              data['default_instructions']!, _defaultInstructionsMeta));
+    }
+    if (data.containsKey('timing_type')) {
+      context.handle(
+          _timingTypeMeta,
+          timingType.isAcceptableOrUnknown(
+              data['timing_type']!, _timingTypeMeta));
+    }
+    if (data.containsKey('is_system')) {
+      context.handle(_isSystemMeta,
+          isSystem.isAcceptableOrUnknown(data['is_system']!, _isSystemMeta));
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AssessmentDefinition map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssessmentDefinition(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      code: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}code'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      dataType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}data_type'])!,
+      unit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}unit']),
+      scaleMin: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}scale_min']),
+      scaleMax: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}scale_max']),
+      target: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}target']),
+      method: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}method']),
+      defaultInstructions: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}default_instructions']),
+      timingType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}timing_type']),
+      isSystem: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_system'])!,
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $AssessmentDefinitionsTable createAlias(String alias) {
+    return $AssessmentDefinitionsTable(attachedDatabase, alias);
+  }
+}
+
+class AssessmentDefinition extends DataClass
+    implements Insertable<AssessmentDefinition> {
+  final int id;
+  final String code;
+  final String name;
+  final String category;
+  final String dataType;
+  final String? unit;
+  final double? scaleMin;
+  final double? scaleMax;
+  final String? target;
+  final String? method;
+  final String? defaultInstructions;
+  final String? timingType;
+  final bool isSystem;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const AssessmentDefinition(
+      {required this.id,
+      required this.code,
+      required this.name,
+      required this.category,
+      required this.dataType,
+      this.unit,
+      this.scaleMin,
+      this.scaleMax,
+      this.target,
+      this.method,
+      this.defaultInstructions,
+      this.timingType,
+      required this.isSystem,
+      required this.isActive,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['code'] = Variable<String>(code);
+    map['name'] = Variable<String>(name);
+    map['category'] = Variable<String>(category);
+    map['data_type'] = Variable<String>(dataType);
+    if (!nullToAbsent || unit != null) {
+      map['unit'] = Variable<String>(unit);
+    }
+    if (!nullToAbsent || scaleMin != null) {
+      map['scale_min'] = Variable<double>(scaleMin);
+    }
+    if (!nullToAbsent || scaleMax != null) {
+      map['scale_max'] = Variable<double>(scaleMax);
+    }
+    if (!nullToAbsent || target != null) {
+      map['target'] = Variable<String>(target);
+    }
+    if (!nullToAbsent || method != null) {
+      map['method'] = Variable<String>(method);
+    }
+    if (!nullToAbsent || defaultInstructions != null) {
+      map['default_instructions'] = Variable<String>(defaultInstructions);
+    }
+    if (!nullToAbsent || timingType != null) {
+      map['timing_type'] = Variable<String>(timingType);
+    }
+    map['is_system'] = Variable<bool>(isSystem);
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  AssessmentDefinitionsCompanion toCompanion(bool nullToAbsent) {
+    return AssessmentDefinitionsCompanion(
+      id: Value(id),
+      code: Value(code),
+      name: Value(name),
+      category: Value(category),
+      dataType: Value(dataType),
+      unit: unit == null && nullToAbsent ? const Value.absent() : Value(unit),
+      scaleMin: scaleMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scaleMin),
+      scaleMax: scaleMax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scaleMax),
+      target:
+          target == null && nullToAbsent ? const Value.absent() : Value(target),
+      method:
+          method == null && nullToAbsent ? const Value.absent() : Value(method),
+      defaultInstructions: defaultInstructions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(defaultInstructions),
+      timingType: timingType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timingType),
+      isSystem: Value(isSystem),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory AssessmentDefinition.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssessmentDefinition(
+      id: serializer.fromJson<int>(json['id']),
+      code: serializer.fromJson<String>(json['code']),
+      name: serializer.fromJson<String>(json['name']),
+      category: serializer.fromJson<String>(json['category']),
+      dataType: serializer.fromJson<String>(json['dataType']),
+      unit: serializer.fromJson<String?>(json['unit']),
+      scaleMin: serializer.fromJson<double?>(json['scaleMin']),
+      scaleMax: serializer.fromJson<double?>(json['scaleMax']),
+      target: serializer.fromJson<String?>(json['target']),
+      method: serializer.fromJson<String?>(json['method']),
+      defaultInstructions:
+          serializer.fromJson<String?>(json['defaultInstructions']),
+      timingType: serializer.fromJson<String?>(json['timingType']),
+      isSystem: serializer.fromJson<bool>(json['isSystem']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'code': serializer.toJson<String>(code),
+      'name': serializer.toJson<String>(name),
+      'category': serializer.toJson<String>(category),
+      'dataType': serializer.toJson<String>(dataType),
+      'unit': serializer.toJson<String?>(unit),
+      'scaleMin': serializer.toJson<double?>(scaleMin),
+      'scaleMax': serializer.toJson<double?>(scaleMax),
+      'target': serializer.toJson<String?>(target),
+      'method': serializer.toJson<String?>(method),
+      'defaultInstructions': serializer.toJson<String?>(defaultInstructions),
+      'timingType': serializer.toJson<String?>(timingType),
+      'isSystem': serializer.toJson<bool>(isSystem),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  AssessmentDefinition copyWith(
+          {int? id,
+          String? code,
+          String? name,
+          String? category,
+          String? dataType,
+          Value<String?> unit = const Value.absent(),
+          Value<double?> scaleMin = const Value.absent(),
+          Value<double?> scaleMax = const Value.absent(),
+          Value<String?> target = const Value.absent(),
+          Value<String?> method = const Value.absent(),
+          Value<String?> defaultInstructions = const Value.absent(),
+          Value<String?> timingType = const Value.absent(),
+          bool? isSystem,
+          bool? isActive,
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      AssessmentDefinition(
+        id: id ?? this.id,
+        code: code ?? this.code,
+        name: name ?? this.name,
+        category: category ?? this.category,
+        dataType: dataType ?? this.dataType,
+        unit: unit.present ? unit.value : this.unit,
+        scaleMin: scaleMin.present ? scaleMin.value : this.scaleMin,
+        scaleMax: scaleMax.present ? scaleMax.value : this.scaleMax,
+        target: target.present ? target.value : this.target,
+        method: method.present ? method.value : this.method,
+        defaultInstructions: defaultInstructions.present
+            ? defaultInstructions.value
+            : this.defaultInstructions,
+        timingType: timingType.present ? timingType.value : this.timingType,
+        isSystem: isSystem ?? this.isSystem,
+        isActive: isActive ?? this.isActive,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  AssessmentDefinition copyWithCompanion(AssessmentDefinitionsCompanion data) {
+    return AssessmentDefinition(
+      id: data.id.present ? data.id.value : this.id,
+      code: data.code.present ? data.code.value : this.code,
+      name: data.name.present ? data.name.value : this.name,
+      category: data.category.present ? data.category.value : this.category,
+      dataType: data.dataType.present ? data.dataType.value : this.dataType,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      scaleMin: data.scaleMin.present ? data.scaleMin.value : this.scaleMin,
+      scaleMax: data.scaleMax.present ? data.scaleMax.value : this.scaleMax,
+      target: data.target.present ? data.target.value : this.target,
+      method: data.method.present ? data.method.value : this.method,
+      defaultInstructions: data.defaultInstructions.present
+          ? data.defaultInstructions.value
+          : this.defaultInstructions,
+      timingType:
+          data.timingType.present ? data.timingType.value : this.timingType,
+      isSystem: data.isSystem.present ? data.isSystem.value : this.isSystem,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentDefinition(')
+          ..write('id: $id, ')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('category: $category, ')
+          ..write('dataType: $dataType, ')
+          ..write('unit: $unit, ')
+          ..write('scaleMin: $scaleMin, ')
+          ..write('scaleMax: $scaleMax, ')
+          ..write('target: $target, ')
+          ..write('method: $method, ')
+          ..write('defaultInstructions: $defaultInstructions, ')
+          ..write('timingType: $timingType, ')
+          ..write('isSystem: $isSystem, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      code,
+      name,
+      category,
+      dataType,
+      unit,
+      scaleMin,
+      scaleMax,
+      target,
+      method,
+      defaultInstructions,
+      timingType,
+      isSystem,
+      isActive,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssessmentDefinition &&
+          other.id == this.id &&
+          other.code == this.code &&
+          other.name == this.name &&
+          other.category == this.category &&
+          other.dataType == this.dataType &&
+          other.unit == this.unit &&
+          other.scaleMin == this.scaleMin &&
+          other.scaleMax == this.scaleMax &&
+          other.target == this.target &&
+          other.method == this.method &&
+          other.defaultInstructions == this.defaultInstructions &&
+          other.timingType == this.timingType &&
+          other.isSystem == this.isSystem &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AssessmentDefinitionsCompanion
+    extends UpdateCompanion<AssessmentDefinition> {
+  final Value<int> id;
+  final Value<String> code;
+  final Value<String> name;
+  final Value<String> category;
+  final Value<String> dataType;
+  final Value<String?> unit;
+  final Value<double?> scaleMin;
+  final Value<double?> scaleMax;
+  final Value<String?> target;
+  final Value<String?> method;
+  final Value<String?> defaultInstructions;
+  final Value<String?> timingType;
+  final Value<bool> isSystem;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const AssessmentDefinitionsCompanion({
+    this.id = const Value.absent(),
+    this.code = const Value.absent(),
+    this.name = const Value.absent(),
+    this.category = const Value.absent(),
+    this.dataType = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.scaleMin = const Value.absent(),
+    this.scaleMax = const Value.absent(),
+    this.target = const Value.absent(),
+    this.method = const Value.absent(),
+    this.defaultInstructions = const Value.absent(),
+    this.timingType = const Value.absent(),
+    this.isSystem = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  AssessmentDefinitionsCompanion.insert({
+    this.id = const Value.absent(),
+    required String code,
+    required String name,
+    required String category,
+    this.dataType = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.scaleMin = const Value.absent(),
+    this.scaleMax = const Value.absent(),
+    this.target = const Value.absent(),
+    this.method = const Value.absent(),
+    this.defaultInstructions = const Value.absent(),
+    this.timingType = const Value.absent(),
+    this.isSystem = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : code = Value(code),
+        name = Value(name),
+        category = Value(category);
+  static Insertable<AssessmentDefinition> custom({
+    Expression<int>? id,
+    Expression<String>? code,
+    Expression<String>? name,
+    Expression<String>? category,
+    Expression<String>? dataType,
+    Expression<String>? unit,
+    Expression<double>? scaleMin,
+    Expression<double>? scaleMax,
+    Expression<String>? target,
+    Expression<String>? method,
+    Expression<String>? defaultInstructions,
+    Expression<String>? timingType,
+    Expression<bool>? isSystem,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (code != null) 'code': code,
+      if (name != null) 'name': name,
+      if (category != null) 'category': category,
+      if (dataType != null) 'data_type': dataType,
+      if (unit != null) 'unit': unit,
+      if (scaleMin != null) 'scale_min': scaleMin,
+      if (scaleMax != null) 'scale_max': scaleMax,
+      if (target != null) 'target': target,
+      if (method != null) 'method': method,
+      if (defaultInstructions != null)
+        'default_instructions': defaultInstructions,
+      if (timingType != null) 'timing_type': timingType,
+      if (isSystem != null) 'is_system': isSystem,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  AssessmentDefinitionsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? code,
+      Value<String>? name,
+      Value<String>? category,
+      Value<String>? dataType,
+      Value<String?>? unit,
+      Value<double?>? scaleMin,
+      Value<double?>? scaleMax,
+      Value<String?>? target,
+      Value<String?>? method,
+      Value<String?>? defaultInstructions,
+      Value<String?>? timingType,
+      Value<bool>? isSystem,
+      Value<bool>? isActive,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return AssessmentDefinitionsCompanion(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      dataType: dataType ?? this.dataType,
+      unit: unit ?? this.unit,
+      scaleMin: scaleMin ?? this.scaleMin,
+      scaleMax: scaleMax ?? this.scaleMax,
+      target: target ?? this.target,
+      method: method ?? this.method,
+      defaultInstructions: defaultInstructions ?? this.defaultInstructions,
+      timingType: timingType ?? this.timingType,
+      isSystem: isSystem ?? this.isSystem,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (dataType.present) {
+      map['data_type'] = Variable<String>(dataType.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (scaleMin.present) {
+      map['scale_min'] = Variable<double>(scaleMin.value);
+    }
+    if (scaleMax.present) {
+      map['scale_max'] = Variable<double>(scaleMax.value);
+    }
+    if (target.present) {
+      map['target'] = Variable<String>(target.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
+    if (defaultInstructions.present) {
+      map['default_instructions'] = Variable<String>(defaultInstructions.value);
+    }
+    if (timingType.present) {
+      map['timing_type'] = Variable<String>(timingType.value);
+    }
+    if (isSystem.present) {
+      map['is_system'] = Variable<bool>(isSystem.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentDefinitionsCompanion(')
+          ..write('id: $id, ')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('category: $category, ')
+          ..write('dataType: $dataType, ')
+          ..write('unit: $unit, ')
+          ..write('scaleMin: $scaleMin, ')
+          ..write('scaleMax: $scaleMax, ')
+          ..write('target: $target, ')
+          ..write('method: $method, ')
+          ..write('defaultInstructions: $defaultInstructions, ')
+          ..write('timingType: $timingType, ')
+          ..write('isSystem: $isSystem, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TrialAssessmentsTable extends TrialAssessments
+    with TableInfo<$TrialAssessmentsTable, TrialAssessment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrialAssessmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _assessmentDefinitionIdMeta =
+      const VerificationMeta('assessmentDefinitionId');
+  @override
+  late final GeneratedColumn<int> assessmentDefinitionId = GeneratedColumn<int>(
+      'assessment_definition_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES assessment_definitions (id)'));
+  static const VerificationMeta _displayNameOverrideMeta =
+      const VerificationMeta('displayNameOverride');
+  @override
+  late final GeneratedColumn<String> displayNameOverride =
+      GeneratedColumn<String>('display_name_override', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _requiredMeta =
+      const VerificationMeta('required');
+  @override
+  late final GeneratedColumn<bool> required = GeneratedColumn<bool>(
+      'required', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("required" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _selectedFromProtocolMeta =
+      const VerificationMeta('selectedFromProtocol');
+  @override
+  late final GeneratedColumn<bool> selectedFromProtocol = GeneratedColumn<bool>(
+      'selected_from_protocol', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("selected_from_protocol" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _selectedManuallyMeta =
+      const VerificationMeta('selectedManually');
+  @override
+  late final GeneratedColumn<bool> selectedManually = GeneratedColumn<bool>(
+      'selected_manually', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("selected_manually" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _defaultInSessionsMeta =
+      const VerificationMeta('defaultInSessions');
+  @override
+  late final GeneratedColumn<bool> defaultInSessions = GeneratedColumn<bool>(
+      'default_in_sessions', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("default_in_sessions" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _sortOrderMeta =
+      const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+      'sort_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _timingModeMeta =
+      const VerificationMeta('timingMode');
+  @override
+  late final GeneratedColumn<String> timingMode = GeneratedColumn<String>(
+      'timing_mode', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _daysAfterPlantingMeta =
+      const VerificationMeta('daysAfterPlanting');
+  @override
+  late final GeneratedColumn<int> daysAfterPlanting = GeneratedColumn<int>(
+      'days_after_planting', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _daysAfterTreatmentMeta =
+      const VerificationMeta('daysAfterTreatment');
+  @override
+  late final GeneratedColumn<int> daysAfterTreatment = GeneratedColumn<int>(
+      'days_after_treatment', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _growthStageMeta =
+      const VerificationMeta('growthStage');
+  @override
+  late final GeneratedColumn<String> growthStage = GeneratedColumn<String>(
+      'growth_stage', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _methodOverrideMeta =
+      const VerificationMeta('methodOverride');
+  @override
+  late final GeneratedColumn<String> methodOverride = GeneratedColumn<String>(
+      'method_override', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _instructionOverrideMeta =
+      const VerificationMeta('instructionOverride');
+  @override
+  late final GeneratedColumn<String> instructionOverride =
+      GeneratedColumn<String>('instruction_override', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _legacyAssessmentIdMeta =
+      const VerificationMeta('legacyAssessmentId');
+  @override
+  late final GeneratedColumn<int> legacyAssessmentId = GeneratedColumn<int>(
+      'legacy_assessment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES assessments (id)'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        assessmentDefinitionId,
+        displayNameOverride,
+        required,
+        selectedFromProtocol,
+        selectedManually,
+        defaultInSessions,
+        sortOrder,
+        timingMode,
+        daysAfterPlanting,
+        daysAfterTreatment,
+        growthStage,
+        methodOverride,
+        instructionOverride,
+        isActive,
+        legacyAssessmentId,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trial_assessments';
+  @override
+  VerificationContext validateIntegrity(Insertable<TrialAssessment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('assessment_definition_id')) {
+      context.handle(
+          _assessmentDefinitionIdMeta,
+          assessmentDefinitionId.isAcceptableOrUnknown(
+              data['assessment_definition_id']!, _assessmentDefinitionIdMeta));
+    } else if (isInserting) {
+      context.missing(_assessmentDefinitionIdMeta);
+    }
+    if (data.containsKey('display_name_override')) {
+      context.handle(
+          _displayNameOverrideMeta,
+          displayNameOverride.isAcceptableOrUnknown(
+              data['display_name_override']!, _displayNameOverrideMeta));
+    }
+    if (data.containsKey('required')) {
+      context.handle(_requiredMeta,
+          required.isAcceptableOrUnknown(data['required']!, _requiredMeta));
+    }
+    if (data.containsKey('selected_from_protocol')) {
+      context.handle(
+          _selectedFromProtocolMeta,
+          selectedFromProtocol.isAcceptableOrUnknown(
+              data['selected_from_protocol']!, _selectedFromProtocolMeta));
+    }
+    if (data.containsKey('selected_manually')) {
+      context.handle(
+          _selectedManuallyMeta,
+          selectedManually.isAcceptableOrUnknown(
+              data['selected_manually']!, _selectedManuallyMeta));
+    }
+    if (data.containsKey('default_in_sessions')) {
+      context.handle(
+          _defaultInSessionsMeta,
+          defaultInSessions.isAcceptableOrUnknown(
+              data['default_in_sessions']!, _defaultInSessionsMeta));
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(_sortOrderMeta,
+          sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
+    }
+    if (data.containsKey('timing_mode')) {
+      context.handle(
+          _timingModeMeta,
+          timingMode.isAcceptableOrUnknown(
+              data['timing_mode']!, _timingModeMeta));
+    }
+    if (data.containsKey('days_after_planting')) {
+      context.handle(
+          _daysAfterPlantingMeta,
+          daysAfterPlanting.isAcceptableOrUnknown(
+              data['days_after_planting']!, _daysAfterPlantingMeta));
+    }
+    if (data.containsKey('days_after_treatment')) {
+      context.handle(
+          _daysAfterTreatmentMeta,
+          daysAfterTreatment.isAcceptableOrUnknown(
+              data['days_after_treatment']!, _daysAfterTreatmentMeta));
+    }
+    if (data.containsKey('growth_stage')) {
+      context.handle(
+          _growthStageMeta,
+          growthStage.isAcceptableOrUnknown(
+              data['growth_stage']!, _growthStageMeta));
+    }
+    if (data.containsKey('method_override')) {
+      context.handle(
+          _methodOverrideMeta,
+          methodOverride.isAcceptableOrUnknown(
+              data['method_override']!, _methodOverrideMeta));
+    }
+    if (data.containsKey('instruction_override')) {
+      context.handle(
+          _instructionOverrideMeta,
+          instructionOverride.isAcceptableOrUnknown(
+              data['instruction_override']!, _instructionOverrideMeta));
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('legacy_assessment_id')) {
+      context.handle(
+          _legacyAssessmentIdMeta,
+          legacyAssessmentId.isAcceptableOrUnknown(
+              data['legacy_assessment_id']!, _legacyAssessmentIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TrialAssessment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrialAssessment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      assessmentDefinitionId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}assessment_definition_id'])!,
+      displayNameOverride: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}display_name_override']),
+      required: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}required'])!,
+      selectedFromProtocol: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}selected_from_protocol'])!,
+      selectedManually: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}selected_manually'])!,
+      defaultInSessions: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}default_in_sessions'])!,
+      sortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
+      timingMode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}timing_mode']),
+      daysAfterPlanting: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}days_after_planting']),
+      daysAfterTreatment: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}days_after_treatment']),
+      growthStage: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}growth_stage']),
+      methodOverride: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}method_override']),
+      instructionOverride: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}instruction_override']),
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      legacyAssessmentId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}legacy_assessment_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $TrialAssessmentsTable createAlias(String alias) {
+    return $TrialAssessmentsTable(attachedDatabase, alias);
+  }
+}
+
+class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
+  final int id;
+  final int trialId;
+  final int assessmentDefinitionId;
+  final String? displayNameOverride;
+  final bool required;
+  final bool selectedFromProtocol;
+  final bool selectedManually;
+  final bool defaultInSessions;
+  final int sortOrder;
+  final String? timingMode;
+  final int? daysAfterPlanting;
+  final int? daysAfterTreatment;
+  final String? growthStage;
+  final String? methodOverride;
+  final String? instructionOverride;
+  final bool isActive;
+  final int? legacyAssessmentId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const TrialAssessment(
+      {required this.id,
+      required this.trialId,
+      required this.assessmentDefinitionId,
+      this.displayNameOverride,
+      required this.required,
+      required this.selectedFromProtocol,
+      required this.selectedManually,
+      required this.defaultInSessions,
+      required this.sortOrder,
+      this.timingMode,
+      this.daysAfterPlanting,
+      this.daysAfterTreatment,
+      this.growthStage,
+      this.methodOverride,
+      this.instructionOverride,
+      required this.isActive,
+      this.legacyAssessmentId,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['assessment_definition_id'] = Variable<int>(assessmentDefinitionId);
+    if (!nullToAbsent || displayNameOverride != null) {
+      map['display_name_override'] = Variable<String>(displayNameOverride);
+    }
+    map['required'] = Variable<bool>(required);
+    map['selected_from_protocol'] = Variable<bool>(selectedFromProtocol);
+    map['selected_manually'] = Variable<bool>(selectedManually);
+    map['default_in_sessions'] = Variable<bool>(defaultInSessions);
+    map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || timingMode != null) {
+      map['timing_mode'] = Variable<String>(timingMode);
+    }
+    if (!nullToAbsent || daysAfterPlanting != null) {
+      map['days_after_planting'] = Variable<int>(daysAfterPlanting);
+    }
+    if (!nullToAbsent || daysAfterTreatment != null) {
+      map['days_after_treatment'] = Variable<int>(daysAfterTreatment);
+    }
+    if (!nullToAbsent || growthStage != null) {
+      map['growth_stage'] = Variable<String>(growthStage);
+    }
+    if (!nullToAbsent || methodOverride != null) {
+      map['method_override'] = Variable<String>(methodOverride);
+    }
+    if (!nullToAbsent || instructionOverride != null) {
+      map['instruction_override'] = Variable<String>(instructionOverride);
+    }
+    map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || legacyAssessmentId != null) {
+      map['legacy_assessment_id'] = Variable<int>(legacyAssessmentId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  TrialAssessmentsCompanion toCompanion(bool nullToAbsent) {
+    return TrialAssessmentsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      assessmentDefinitionId: Value(assessmentDefinitionId),
+      displayNameOverride: displayNameOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayNameOverride),
+      required: Value(required),
+      selectedFromProtocol: Value(selectedFromProtocol),
+      selectedManually: Value(selectedManually),
+      defaultInSessions: Value(defaultInSessions),
+      sortOrder: Value(sortOrder),
+      timingMode: timingMode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timingMode),
+      daysAfterPlanting: daysAfterPlanting == null && nullToAbsent
+          ? const Value.absent()
+          : Value(daysAfterPlanting),
+      daysAfterTreatment: daysAfterTreatment == null && nullToAbsent
+          ? const Value.absent()
+          : Value(daysAfterTreatment),
+      growthStage: growthStage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(growthStage),
+      methodOverride: methodOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(methodOverride),
+      instructionOverride: instructionOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(instructionOverride),
+      isActive: Value(isActive),
+      legacyAssessmentId: legacyAssessmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(legacyAssessmentId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory TrialAssessment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrialAssessment(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      assessmentDefinitionId:
+          serializer.fromJson<int>(json['assessmentDefinitionId']),
+      displayNameOverride:
+          serializer.fromJson<String?>(json['displayNameOverride']),
+      required: serializer.fromJson<bool>(json['required']),
+      selectedFromProtocol:
+          serializer.fromJson<bool>(json['selectedFromProtocol']),
+      selectedManually: serializer.fromJson<bool>(json['selectedManually']),
+      defaultInSessions: serializer.fromJson<bool>(json['defaultInSessions']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      timingMode: serializer.fromJson<String?>(json['timingMode']),
+      daysAfterPlanting: serializer.fromJson<int?>(json['daysAfterPlanting']),
+      daysAfterTreatment: serializer.fromJson<int?>(json['daysAfterTreatment']),
+      growthStage: serializer.fromJson<String?>(json['growthStage']),
+      methodOverride: serializer.fromJson<String?>(json['methodOverride']),
+      instructionOverride:
+          serializer.fromJson<String?>(json['instructionOverride']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      legacyAssessmentId: serializer.fromJson<int?>(json['legacyAssessmentId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'assessmentDefinitionId': serializer.toJson<int>(assessmentDefinitionId),
+      'displayNameOverride': serializer.toJson<String?>(displayNameOverride),
+      'required': serializer.toJson<bool>(required),
+      'selectedFromProtocol': serializer.toJson<bool>(selectedFromProtocol),
+      'selectedManually': serializer.toJson<bool>(selectedManually),
+      'defaultInSessions': serializer.toJson<bool>(defaultInSessions),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'timingMode': serializer.toJson<String?>(timingMode),
+      'daysAfterPlanting': serializer.toJson<int?>(daysAfterPlanting),
+      'daysAfterTreatment': serializer.toJson<int?>(daysAfterTreatment),
+      'growthStage': serializer.toJson<String?>(growthStage),
+      'methodOverride': serializer.toJson<String?>(methodOverride),
+      'instructionOverride': serializer.toJson<String?>(instructionOverride),
+      'isActive': serializer.toJson<bool>(isActive),
+      'legacyAssessmentId': serializer.toJson<int?>(legacyAssessmentId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  TrialAssessment copyWith(
+          {int? id,
+          int? trialId,
+          int? assessmentDefinitionId,
+          Value<String?> displayNameOverride = const Value.absent(),
+          bool? required,
+          bool? selectedFromProtocol,
+          bool? selectedManually,
+          bool? defaultInSessions,
+          int? sortOrder,
+          Value<String?> timingMode = const Value.absent(),
+          Value<int?> daysAfterPlanting = const Value.absent(),
+          Value<int?> daysAfterTreatment = const Value.absent(),
+          Value<String?> growthStage = const Value.absent(),
+          Value<String?> methodOverride = const Value.absent(),
+          Value<String?> instructionOverride = const Value.absent(),
+          bool? isActive,
+          Value<int?> legacyAssessmentId = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      TrialAssessment(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        assessmentDefinitionId:
+            assessmentDefinitionId ?? this.assessmentDefinitionId,
+        displayNameOverride: displayNameOverride.present
+            ? displayNameOverride.value
+            : this.displayNameOverride,
+        required: required ?? this.required,
+        selectedFromProtocol: selectedFromProtocol ?? this.selectedFromProtocol,
+        selectedManually: selectedManually ?? this.selectedManually,
+        defaultInSessions: defaultInSessions ?? this.defaultInSessions,
+        sortOrder: sortOrder ?? this.sortOrder,
+        timingMode: timingMode.present ? timingMode.value : this.timingMode,
+        daysAfterPlanting: daysAfterPlanting.present
+            ? daysAfterPlanting.value
+            : this.daysAfterPlanting,
+        daysAfterTreatment: daysAfterTreatment.present
+            ? daysAfterTreatment.value
+            : this.daysAfterTreatment,
+        growthStage: growthStage.present ? growthStage.value : this.growthStage,
+        methodOverride:
+            methodOverride.present ? methodOverride.value : this.methodOverride,
+        instructionOverride: instructionOverride.present
+            ? instructionOverride.value
+            : this.instructionOverride,
+        isActive: isActive ?? this.isActive,
+        legacyAssessmentId: legacyAssessmentId.present
+            ? legacyAssessmentId.value
+            : this.legacyAssessmentId,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  TrialAssessment copyWithCompanion(TrialAssessmentsCompanion data) {
+    return TrialAssessment(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      assessmentDefinitionId: data.assessmentDefinitionId.present
+          ? data.assessmentDefinitionId.value
+          : this.assessmentDefinitionId,
+      displayNameOverride: data.displayNameOverride.present
+          ? data.displayNameOverride.value
+          : this.displayNameOverride,
+      required: data.required.present ? data.required.value : this.required,
+      selectedFromProtocol: data.selectedFromProtocol.present
+          ? data.selectedFromProtocol.value
+          : this.selectedFromProtocol,
+      selectedManually: data.selectedManually.present
+          ? data.selectedManually.value
+          : this.selectedManually,
+      defaultInSessions: data.defaultInSessions.present
+          ? data.defaultInSessions.value
+          : this.defaultInSessions,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      timingMode:
+          data.timingMode.present ? data.timingMode.value : this.timingMode,
+      daysAfterPlanting: data.daysAfterPlanting.present
+          ? data.daysAfterPlanting.value
+          : this.daysAfterPlanting,
+      daysAfterTreatment: data.daysAfterTreatment.present
+          ? data.daysAfterTreatment.value
+          : this.daysAfterTreatment,
+      growthStage:
+          data.growthStage.present ? data.growthStage.value : this.growthStage,
+      methodOverride: data.methodOverride.present
+          ? data.methodOverride.value
+          : this.methodOverride,
+      instructionOverride: data.instructionOverride.present
+          ? data.instructionOverride.value
+          : this.instructionOverride,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      legacyAssessmentId: data.legacyAssessmentId.present
+          ? data.legacyAssessmentId.value
+          : this.legacyAssessmentId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialAssessment(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('assessmentDefinitionId: $assessmentDefinitionId, ')
+          ..write('displayNameOverride: $displayNameOverride, ')
+          ..write('required: $required, ')
+          ..write('selectedFromProtocol: $selectedFromProtocol, ')
+          ..write('selectedManually: $selectedManually, ')
+          ..write('defaultInSessions: $defaultInSessions, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('timingMode: $timingMode, ')
+          ..write('daysAfterPlanting: $daysAfterPlanting, ')
+          ..write('daysAfterTreatment: $daysAfterTreatment, ')
+          ..write('growthStage: $growthStage, ')
+          ..write('methodOverride: $methodOverride, ')
+          ..write('instructionOverride: $instructionOverride, ')
+          ..write('isActive: $isActive, ')
+          ..write('legacyAssessmentId: $legacyAssessmentId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      assessmentDefinitionId,
+      displayNameOverride,
+      required,
+      selectedFromProtocol,
+      selectedManually,
+      defaultInSessions,
+      sortOrder,
+      timingMode,
+      daysAfterPlanting,
+      daysAfterTreatment,
+      growthStage,
+      methodOverride,
+      instructionOverride,
+      isActive,
+      legacyAssessmentId,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrialAssessment &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.assessmentDefinitionId == this.assessmentDefinitionId &&
+          other.displayNameOverride == this.displayNameOverride &&
+          other.required == this.required &&
+          other.selectedFromProtocol == this.selectedFromProtocol &&
+          other.selectedManually == this.selectedManually &&
+          other.defaultInSessions == this.defaultInSessions &&
+          other.sortOrder == this.sortOrder &&
+          other.timingMode == this.timingMode &&
+          other.daysAfterPlanting == this.daysAfterPlanting &&
+          other.daysAfterTreatment == this.daysAfterTreatment &&
+          other.growthStage == this.growthStage &&
+          other.methodOverride == this.methodOverride &&
+          other.instructionOverride == this.instructionOverride &&
+          other.isActive == this.isActive &&
+          other.legacyAssessmentId == this.legacyAssessmentId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int> assessmentDefinitionId;
+  final Value<String?> displayNameOverride;
+  final Value<bool> required;
+  final Value<bool> selectedFromProtocol;
+  final Value<bool> selectedManually;
+  final Value<bool> defaultInSessions;
+  final Value<int> sortOrder;
+  final Value<String?> timingMode;
+  final Value<int?> daysAfterPlanting;
+  final Value<int?> daysAfterTreatment;
+  final Value<String?> growthStage;
+  final Value<String?> methodOverride;
+  final Value<String?> instructionOverride;
+  final Value<bool> isActive;
+  final Value<int?> legacyAssessmentId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const TrialAssessmentsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.assessmentDefinitionId = const Value.absent(),
+    this.displayNameOverride = const Value.absent(),
+    this.required = const Value.absent(),
+    this.selectedFromProtocol = const Value.absent(),
+    this.selectedManually = const Value.absent(),
+    this.defaultInSessions = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.timingMode = const Value.absent(),
+    this.daysAfterPlanting = const Value.absent(),
+    this.daysAfterTreatment = const Value.absent(),
+    this.growthStage = const Value.absent(),
+    this.methodOverride = const Value.absent(),
+    this.instructionOverride = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.legacyAssessmentId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  TrialAssessmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required int assessmentDefinitionId,
+    this.displayNameOverride = const Value.absent(),
+    this.required = const Value.absent(),
+    this.selectedFromProtocol = const Value.absent(),
+    this.selectedManually = const Value.absent(),
+    this.defaultInSessions = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.timingMode = const Value.absent(),
+    this.daysAfterPlanting = const Value.absent(),
+    this.daysAfterTreatment = const Value.absent(),
+    this.growthStage = const Value.absent(),
+    this.methodOverride = const Value.absent(),
+    this.instructionOverride = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.legacyAssessmentId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : trialId = Value(trialId),
+        assessmentDefinitionId = Value(assessmentDefinitionId);
+  static Insertable<TrialAssessment> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? assessmentDefinitionId,
+    Expression<String>? displayNameOverride,
+    Expression<bool>? required,
+    Expression<bool>? selectedFromProtocol,
+    Expression<bool>? selectedManually,
+    Expression<bool>? defaultInSessions,
+    Expression<int>? sortOrder,
+    Expression<String>? timingMode,
+    Expression<int>? daysAfterPlanting,
+    Expression<int>? daysAfterTreatment,
+    Expression<String>? growthStage,
+    Expression<String>? methodOverride,
+    Expression<String>? instructionOverride,
+    Expression<bool>? isActive,
+    Expression<int>? legacyAssessmentId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (assessmentDefinitionId != null)
+        'assessment_definition_id': assessmentDefinitionId,
+      if (displayNameOverride != null)
+        'display_name_override': displayNameOverride,
+      if (required != null) 'required': required,
+      if (selectedFromProtocol != null)
+        'selected_from_protocol': selectedFromProtocol,
+      if (selectedManually != null) 'selected_manually': selectedManually,
+      if (defaultInSessions != null) 'default_in_sessions': defaultInSessions,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (timingMode != null) 'timing_mode': timingMode,
+      if (daysAfterPlanting != null) 'days_after_planting': daysAfterPlanting,
+      if (daysAfterTreatment != null)
+        'days_after_treatment': daysAfterTreatment,
+      if (growthStage != null) 'growth_stage': growthStage,
+      if (methodOverride != null) 'method_override': methodOverride,
+      if (instructionOverride != null)
+        'instruction_override': instructionOverride,
+      if (isActive != null) 'is_active': isActive,
+      if (legacyAssessmentId != null)
+        'legacy_assessment_id': legacyAssessmentId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  TrialAssessmentsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int>? assessmentDefinitionId,
+      Value<String?>? displayNameOverride,
+      Value<bool>? required,
+      Value<bool>? selectedFromProtocol,
+      Value<bool>? selectedManually,
+      Value<bool>? defaultInSessions,
+      Value<int>? sortOrder,
+      Value<String?>? timingMode,
+      Value<int?>? daysAfterPlanting,
+      Value<int?>? daysAfterTreatment,
+      Value<String?>? growthStage,
+      Value<String?>? methodOverride,
+      Value<String?>? instructionOverride,
+      Value<bool>? isActive,
+      Value<int?>? legacyAssessmentId,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return TrialAssessmentsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      assessmentDefinitionId:
+          assessmentDefinitionId ?? this.assessmentDefinitionId,
+      displayNameOverride: displayNameOverride ?? this.displayNameOverride,
+      required: required ?? this.required,
+      selectedFromProtocol: selectedFromProtocol ?? this.selectedFromProtocol,
+      selectedManually: selectedManually ?? this.selectedManually,
+      defaultInSessions: defaultInSessions ?? this.defaultInSessions,
+      sortOrder: sortOrder ?? this.sortOrder,
+      timingMode: timingMode ?? this.timingMode,
+      daysAfterPlanting: daysAfterPlanting ?? this.daysAfterPlanting,
+      daysAfterTreatment: daysAfterTreatment ?? this.daysAfterTreatment,
+      growthStage: growthStage ?? this.growthStage,
+      methodOverride: methodOverride ?? this.methodOverride,
+      instructionOverride: instructionOverride ?? this.instructionOverride,
+      isActive: isActive ?? this.isActive,
+      legacyAssessmentId: legacyAssessmentId ?? this.legacyAssessmentId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (assessmentDefinitionId.present) {
+      map['assessment_definition_id'] =
+          Variable<int>(assessmentDefinitionId.value);
+    }
+    if (displayNameOverride.present) {
+      map['display_name_override'] =
+          Variable<String>(displayNameOverride.value);
+    }
+    if (required.present) {
+      map['required'] = Variable<bool>(required.value);
+    }
+    if (selectedFromProtocol.present) {
+      map['selected_from_protocol'] =
+          Variable<bool>(selectedFromProtocol.value);
+    }
+    if (selectedManually.present) {
+      map['selected_manually'] = Variable<bool>(selectedManually.value);
+    }
+    if (defaultInSessions.present) {
+      map['default_in_sessions'] = Variable<bool>(defaultInSessions.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (timingMode.present) {
+      map['timing_mode'] = Variable<String>(timingMode.value);
+    }
+    if (daysAfterPlanting.present) {
+      map['days_after_planting'] = Variable<int>(daysAfterPlanting.value);
+    }
+    if (daysAfterTreatment.present) {
+      map['days_after_treatment'] = Variable<int>(daysAfterTreatment.value);
+    }
+    if (growthStage.present) {
+      map['growth_stage'] = Variable<String>(growthStage.value);
+    }
+    if (methodOverride.present) {
+      map['method_override'] = Variable<String>(methodOverride.value);
+    }
+    if (instructionOverride.present) {
+      map['instruction_override'] = Variable<String>(instructionOverride.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (legacyAssessmentId.present) {
+      map['legacy_assessment_id'] = Variable<int>(legacyAssessmentId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialAssessmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('assessmentDefinitionId: $assessmentDefinitionId, ')
+          ..write('displayNameOverride: $displayNameOverride, ')
+          ..write('required: $required, ')
+          ..write('selectedFromProtocol: $selectedFromProtocol, ')
+          ..write('selectedManually: $selectedManually, ')
+          ..write('defaultInSessions: $defaultInSessions, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('timingMode: $timingMode, ')
+          ..write('daysAfterPlanting: $daysAfterPlanting, ')
+          ..write('daysAfterTreatment: $daysAfterTreatment, ')
+          ..write('growthStage: $growthStage, ')
+          ..write('methodOverride: $methodOverride, ')
+          ..write('instructionOverride: $instructionOverride, ')
+          ..write('isActive: $isActive, ')
+          ..write('legacyAssessmentId: $legacyAssessmentId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -2647,6 +4352,820 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   }
 }
 
+class $AssignmentsTable extends Assignments
+    with TableInfo<$AssignmentsTable, Assignment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssignmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _plotIdMeta = const VerificationMeta('plotId');
+  @override
+  late final GeneratedColumn<int> plotId = GeneratedColumn<int>(
+      'plot_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES plots (id)'));
+  static const VerificationMeta _treatmentIdMeta =
+      const VerificationMeta('treatmentId');
+  @override
+  late final GeneratedColumn<int> treatmentId = GeneratedColumn<int>(
+      'treatment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES treatments (id)'));
+  static const VerificationMeta _replicationMeta =
+      const VerificationMeta('replication');
+  @override
+  late final GeneratedColumn<int> replication = GeneratedColumn<int>(
+      'replication', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _blockMeta = const VerificationMeta('block');
+  @override
+  late final GeneratedColumn<int> block = GeneratedColumn<int>(
+      'block', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _rangeMeta = const VerificationMeta('range');
+  @override
+  late final GeneratedColumn<int> range = GeneratedColumn<int>(
+      'range', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _columnMeta = const VerificationMeta('column');
+  @override
+  late final GeneratedColumn<int> column = GeneratedColumn<int>(
+      'column', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _isCheckMeta =
+      const VerificationMeta('isCheck');
+  @override
+  late final GeneratedColumn<bool> isCheck = GeneratedColumn<bool>(
+      'is_check', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_check" IN (0, 1))'));
+  static const VerificationMeta _isControlMeta =
+      const VerificationMeta('isControl');
+  @override
+  late final GeneratedColumn<bool> isControl = GeneratedColumn<bool>(
+      'is_control', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_control" IN (0, 1))'));
+  static const VerificationMeta _assignmentSourceMeta =
+      const VerificationMeta('assignmentSource');
+  @override
+  late final GeneratedColumn<String> assignmentSource = GeneratedColumn<String>(
+      'assignment_source', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _assignedAtMeta =
+      const VerificationMeta('assignedAt');
+  @override
+  late final GeneratedColumn<DateTime> assignedAt = GeneratedColumn<DateTime>(
+      'assigned_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _assignedByMeta =
+      const VerificationMeta('assignedBy');
+  @override
+  late final GeneratedColumn<int> assignedBy = GeneratedColumn<int>(
+      'assigned_by', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        plotId,
+        treatmentId,
+        replication,
+        block,
+        range,
+        column,
+        position,
+        isCheck,
+        isControl,
+        assignmentSource,
+        assignedAt,
+        assignedBy,
+        notes,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assignments';
+  @override
+  VerificationContext validateIntegrity(Insertable<Assignment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('plot_id')) {
+      context.handle(_plotIdMeta,
+          plotId.isAcceptableOrUnknown(data['plot_id']!, _plotIdMeta));
+    } else if (isInserting) {
+      context.missing(_plotIdMeta);
+    }
+    if (data.containsKey('treatment_id')) {
+      context.handle(
+          _treatmentIdMeta,
+          treatmentId.isAcceptableOrUnknown(
+              data['treatment_id']!, _treatmentIdMeta));
+    }
+    if (data.containsKey('replication')) {
+      context.handle(
+          _replicationMeta,
+          replication.isAcceptableOrUnknown(
+              data['replication']!, _replicationMeta));
+    }
+    if (data.containsKey('block')) {
+      context.handle(
+          _blockMeta, block.isAcceptableOrUnknown(data['block']!, _blockMeta));
+    }
+    if (data.containsKey('range')) {
+      context.handle(
+          _rangeMeta, range.isAcceptableOrUnknown(data['range']!, _rangeMeta));
+    }
+    if (data.containsKey('column')) {
+      context.handle(_columnMeta,
+          column.isAcceptableOrUnknown(data['column']!, _columnMeta));
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    }
+    if (data.containsKey('is_check')) {
+      context.handle(_isCheckMeta,
+          isCheck.isAcceptableOrUnknown(data['is_check']!, _isCheckMeta));
+    }
+    if (data.containsKey('is_control')) {
+      context.handle(_isControlMeta,
+          isControl.isAcceptableOrUnknown(data['is_control']!, _isControlMeta));
+    }
+    if (data.containsKey('assignment_source')) {
+      context.handle(
+          _assignmentSourceMeta,
+          assignmentSource.isAcceptableOrUnknown(
+              data['assignment_source']!, _assignmentSourceMeta));
+    }
+    if (data.containsKey('assigned_at')) {
+      context.handle(
+          _assignedAtMeta,
+          assignedAt.isAcceptableOrUnknown(
+              data['assigned_at']!, _assignedAtMeta));
+    }
+    if (data.containsKey('assigned_by')) {
+      context.handle(
+          _assignedByMeta,
+          assignedBy.isAcceptableOrUnknown(
+              data['assigned_by']!, _assignedByMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Assignment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Assignment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      plotId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}plot_id'])!,
+      treatmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}treatment_id']),
+      replication: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}replication']),
+      block: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}block']),
+      range: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}range']),
+      column: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}column']),
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position']),
+      isCheck: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_check']),
+      isControl: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_control']),
+      assignmentSource: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}assignment_source']),
+      assignedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}assigned_at']),
+      assignedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}assigned_by']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $AssignmentsTable createAlias(String alias) {
+    return $AssignmentsTable(attachedDatabase, alias);
+  }
+}
+
+class Assignment extends DataClass implements Insertable<Assignment> {
+  final int id;
+  final int trialId;
+  final int plotId;
+  final int? treatmentId;
+  final int? replication;
+  final int? block;
+  final int? range;
+  final int? column;
+  final int? position;
+  final bool? isCheck;
+  final bool? isControl;
+  final String? assignmentSource;
+  final DateTime? assignedAt;
+  final int? assignedBy;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const Assignment(
+      {required this.id,
+      required this.trialId,
+      required this.plotId,
+      this.treatmentId,
+      this.replication,
+      this.block,
+      this.range,
+      this.column,
+      this.position,
+      this.isCheck,
+      this.isControl,
+      this.assignmentSource,
+      this.assignedAt,
+      this.assignedBy,
+      this.notes,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['plot_id'] = Variable<int>(plotId);
+    if (!nullToAbsent || treatmentId != null) {
+      map['treatment_id'] = Variable<int>(treatmentId);
+    }
+    if (!nullToAbsent || replication != null) {
+      map['replication'] = Variable<int>(replication);
+    }
+    if (!nullToAbsent || block != null) {
+      map['block'] = Variable<int>(block);
+    }
+    if (!nullToAbsent || range != null) {
+      map['range'] = Variable<int>(range);
+    }
+    if (!nullToAbsent || column != null) {
+      map['column'] = Variable<int>(column);
+    }
+    if (!nullToAbsent || position != null) {
+      map['position'] = Variable<int>(position);
+    }
+    if (!nullToAbsent || isCheck != null) {
+      map['is_check'] = Variable<bool>(isCheck);
+    }
+    if (!nullToAbsent || isControl != null) {
+      map['is_control'] = Variable<bool>(isControl);
+    }
+    if (!nullToAbsent || assignmentSource != null) {
+      map['assignment_source'] = Variable<String>(assignmentSource);
+    }
+    if (!nullToAbsent || assignedAt != null) {
+      map['assigned_at'] = Variable<DateTime>(assignedAt);
+    }
+    if (!nullToAbsent || assignedBy != null) {
+      map['assigned_by'] = Variable<int>(assignedBy);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  AssignmentsCompanion toCompanion(bool nullToAbsent) {
+    return AssignmentsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      plotId: Value(plotId),
+      treatmentId: treatmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(treatmentId),
+      replication: replication == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replication),
+      block:
+          block == null && nullToAbsent ? const Value.absent() : Value(block),
+      range:
+          range == null && nullToAbsent ? const Value.absent() : Value(range),
+      column:
+          column == null && nullToAbsent ? const Value.absent() : Value(column),
+      position: position == null && nullToAbsent
+          ? const Value.absent()
+          : Value(position),
+      isCheck: isCheck == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isCheck),
+      isControl: isControl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isControl),
+      assignmentSource: assignmentSource == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assignmentSource),
+      assignedAt: assignedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assignedAt),
+      assignedBy: assignedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assignedBy),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory Assignment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Assignment(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      plotId: serializer.fromJson<int>(json['plotId']),
+      treatmentId: serializer.fromJson<int?>(json['treatmentId']),
+      replication: serializer.fromJson<int?>(json['replication']),
+      block: serializer.fromJson<int?>(json['block']),
+      range: serializer.fromJson<int?>(json['range']),
+      column: serializer.fromJson<int?>(json['column']),
+      position: serializer.fromJson<int?>(json['position']),
+      isCheck: serializer.fromJson<bool?>(json['isCheck']),
+      isControl: serializer.fromJson<bool?>(json['isControl']),
+      assignmentSource: serializer.fromJson<String?>(json['assignmentSource']),
+      assignedAt: serializer.fromJson<DateTime?>(json['assignedAt']),
+      assignedBy: serializer.fromJson<int?>(json['assignedBy']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'plotId': serializer.toJson<int>(plotId),
+      'treatmentId': serializer.toJson<int?>(treatmentId),
+      'replication': serializer.toJson<int?>(replication),
+      'block': serializer.toJson<int?>(block),
+      'range': serializer.toJson<int?>(range),
+      'column': serializer.toJson<int?>(column),
+      'position': serializer.toJson<int?>(position),
+      'isCheck': serializer.toJson<bool?>(isCheck),
+      'isControl': serializer.toJson<bool?>(isControl),
+      'assignmentSource': serializer.toJson<String?>(assignmentSource),
+      'assignedAt': serializer.toJson<DateTime?>(assignedAt),
+      'assignedBy': serializer.toJson<int?>(assignedBy),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  Assignment copyWith(
+          {int? id,
+          int? trialId,
+          int? plotId,
+          Value<int?> treatmentId = const Value.absent(),
+          Value<int?> replication = const Value.absent(),
+          Value<int?> block = const Value.absent(),
+          Value<int?> range = const Value.absent(),
+          Value<int?> column = const Value.absent(),
+          Value<int?> position = const Value.absent(),
+          Value<bool?> isCheck = const Value.absent(),
+          Value<bool?> isControl = const Value.absent(),
+          Value<String?> assignmentSource = const Value.absent(),
+          Value<DateTime?> assignedAt = const Value.absent(),
+          Value<int?> assignedBy = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      Assignment(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        plotId: plotId ?? this.plotId,
+        treatmentId: treatmentId.present ? treatmentId.value : this.treatmentId,
+        replication: replication.present ? replication.value : this.replication,
+        block: block.present ? block.value : this.block,
+        range: range.present ? range.value : this.range,
+        column: column.present ? column.value : this.column,
+        position: position.present ? position.value : this.position,
+        isCheck: isCheck.present ? isCheck.value : this.isCheck,
+        isControl: isControl.present ? isControl.value : this.isControl,
+        assignmentSource: assignmentSource.present
+            ? assignmentSource.value
+            : this.assignmentSource,
+        assignedAt: assignedAt.present ? assignedAt.value : this.assignedAt,
+        assignedBy: assignedBy.present ? assignedBy.value : this.assignedBy,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  Assignment copyWithCompanion(AssignmentsCompanion data) {
+    return Assignment(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      plotId: data.plotId.present ? data.plotId.value : this.plotId,
+      treatmentId:
+          data.treatmentId.present ? data.treatmentId.value : this.treatmentId,
+      replication:
+          data.replication.present ? data.replication.value : this.replication,
+      block: data.block.present ? data.block.value : this.block,
+      range: data.range.present ? data.range.value : this.range,
+      column: data.column.present ? data.column.value : this.column,
+      position: data.position.present ? data.position.value : this.position,
+      isCheck: data.isCheck.present ? data.isCheck.value : this.isCheck,
+      isControl: data.isControl.present ? data.isControl.value : this.isControl,
+      assignmentSource: data.assignmentSource.present
+          ? data.assignmentSource.value
+          : this.assignmentSource,
+      assignedAt:
+          data.assignedAt.present ? data.assignedAt.value : this.assignedAt,
+      assignedBy:
+          data.assignedBy.present ? data.assignedBy.value : this.assignedBy,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Assignment(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('plotId: $plotId, ')
+          ..write('treatmentId: $treatmentId, ')
+          ..write('replication: $replication, ')
+          ..write('block: $block, ')
+          ..write('range: $range, ')
+          ..write('column: $column, ')
+          ..write('position: $position, ')
+          ..write('isCheck: $isCheck, ')
+          ..write('isControl: $isControl, ')
+          ..write('assignmentSource: $assignmentSource, ')
+          ..write('assignedAt: $assignedAt, ')
+          ..write('assignedBy: $assignedBy, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      plotId,
+      treatmentId,
+      replication,
+      block,
+      range,
+      column,
+      position,
+      isCheck,
+      isControl,
+      assignmentSource,
+      assignedAt,
+      assignedBy,
+      notes,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Assignment &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.plotId == this.plotId &&
+          other.treatmentId == this.treatmentId &&
+          other.replication == this.replication &&
+          other.block == this.block &&
+          other.range == this.range &&
+          other.column == this.column &&
+          other.position == this.position &&
+          other.isCheck == this.isCheck &&
+          other.isControl == this.isControl &&
+          other.assignmentSource == this.assignmentSource &&
+          other.assignedAt == this.assignedAt &&
+          other.assignedBy == this.assignedBy &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AssignmentsCompanion extends UpdateCompanion<Assignment> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int> plotId;
+  final Value<int?> treatmentId;
+  final Value<int?> replication;
+  final Value<int?> block;
+  final Value<int?> range;
+  final Value<int?> column;
+  final Value<int?> position;
+  final Value<bool?> isCheck;
+  final Value<bool?> isControl;
+  final Value<String?> assignmentSource;
+  final Value<DateTime?> assignedAt;
+  final Value<int?> assignedBy;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const AssignmentsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.plotId = const Value.absent(),
+    this.treatmentId = const Value.absent(),
+    this.replication = const Value.absent(),
+    this.block = const Value.absent(),
+    this.range = const Value.absent(),
+    this.column = const Value.absent(),
+    this.position = const Value.absent(),
+    this.isCheck = const Value.absent(),
+    this.isControl = const Value.absent(),
+    this.assignmentSource = const Value.absent(),
+    this.assignedAt = const Value.absent(),
+    this.assignedBy = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  AssignmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required int plotId,
+    this.treatmentId = const Value.absent(),
+    this.replication = const Value.absent(),
+    this.block = const Value.absent(),
+    this.range = const Value.absent(),
+    this.column = const Value.absent(),
+    this.position = const Value.absent(),
+    this.isCheck = const Value.absent(),
+    this.isControl = const Value.absent(),
+    this.assignmentSource = const Value.absent(),
+    this.assignedAt = const Value.absent(),
+    this.assignedBy = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : trialId = Value(trialId),
+        plotId = Value(plotId);
+  static Insertable<Assignment> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? plotId,
+    Expression<int>? treatmentId,
+    Expression<int>? replication,
+    Expression<int>? block,
+    Expression<int>? range,
+    Expression<int>? column,
+    Expression<int>? position,
+    Expression<bool>? isCheck,
+    Expression<bool>? isControl,
+    Expression<String>? assignmentSource,
+    Expression<DateTime>? assignedAt,
+    Expression<int>? assignedBy,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (plotId != null) 'plot_id': plotId,
+      if (treatmentId != null) 'treatment_id': treatmentId,
+      if (replication != null) 'replication': replication,
+      if (block != null) 'block': block,
+      if (range != null) 'range': range,
+      if (column != null) 'column': column,
+      if (position != null) 'position': position,
+      if (isCheck != null) 'is_check': isCheck,
+      if (isControl != null) 'is_control': isControl,
+      if (assignmentSource != null) 'assignment_source': assignmentSource,
+      if (assignedAt != null) 'assigned_at': assignedAt,
+      if (assignedBy != null) 'assigned_by': assignedBy,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  AssignmentsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int>? plotId,
+      Value<int?>? treatmentId,
+      Value<int?>? replication,
+      Value<int?>? block,
+      Value<int?>? range,
+      Value<int?>? column,
+      Value<int?>? position,
+      Value<bool?>? isCheck,
+      Value<bool?>? isControl,
+      Value<String?>? assignmentSource,
+      Value<DateTime?>? assignedAt,
+      Value<int?>? assignedBy,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return AssignmentsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      plotId: plotId ?? this.plotId,
+      treatmentId: treatmentId ?? this.treatmentId,
+      replication: replication ?? this.replication,
+      block: block ?? this.block,
+      range: range ?? this.range,
+      column: column ?? this.column,
+      position: position ?? this.position,
+      isCheck: isCheck ?? this.isCheck,
+      isControl: isControl ?? this.isControl,
+      assignmentSource: assignmentSource ?? this.assignmentSource,
+      assignedAt: assignedAt ?? this.assignedAt,
+      assignedBy: assignedBy ?? this.assignedBy,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (plotId.present) {
+      map['plot_id'] = Variable<int>(plotId.value);
+    }
+    if (treatmentId.present) {
+      map['treatment_id'] = Variable<int>(treatmentId.value);
+    }
+    if (replication.present) {
+      map['replication'] = Variable<int>(replication.value);
+    }
+    if (block.present) {
+      map['block'] = Variable<int>(block.value);
+    }
+    if (range.present) {
+      map['range'] = Variable<int>(range.value);
+    }
+    if (column.present) {
+      map['column'] = Variable<int>(column.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (isCheck.present) {
+      map['is_check'] = Variable<bool>(isCheck.value);
+    }
+    if (isControl.present) {
+      map['is_control'] = Variable<bool>(isControl.value);
+    }
+    if (assignmentSource.present) {
+      map['assignment_source'] = Variable<String>(assignmentSource.value);
+    }
+    if (assignedAt.present) {
+      map['assigned_at'] = Variable<DateTime>(assignedAt.value);
+    }
+    if (assignedBy.present) {
+      map['assigned_by'] = Variable<int>(assignedBy.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssignmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('plotId: $plotId, ')
+          ..write('treatmentId: $treatmentId, ')
+          ..write('replication: $replication, ')
+          ..write('block: $block, ')
+          ..write('range: $range, ')
+          ..write('column: $column, ')
+          ..write('position: $position, ')
+          ..write('isCheck: $isCheck, ')
+          ..write('isControl: $isControl, ')
+          ..write('assignmentSource: $assignmentSource, ')
+          ..write('assignedAt: $assignedAt, ')
+          ..write('assignedBy: $assignedBy, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -3154,8 +5673,18 @@ class $SessionAssessmentsTable extends SessionAssessments
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES assessments (id)'));
+  static const VerificationMeta _trialAssessmentIdMeta =
+      const VerificationMeta('trialAssessmentId');
   @override
-  List<GeneratedColumn> get $columns => [id, sessionId, assessmentId];
+  late final GeneratedColumn<int> trialAssessmentId = GeneratedColumn<int>(
+      'trial_assessment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trial_assessments (id)'));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, sessionId, assessmentId, trialAssessmentId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3183,6 +5712,12 @@ class $SessionAssessmentsTable extends SessionAssessments
     } else if (isInserting) {
       context.missing(_assessmentIdMeta);
     }
+    if (data.containsKey('trial_assessment_id')) {
+      context.handle(
+          _trialAssessmentIdMeta,
+          trialAssessmentId.isAcceptableOrUnknown(
+              data['trial_assessment_id']!, _trialAssessmentIdMeta));
+    }
     return context;
   }
 
@@ -3198,6 +5733,8 @@ class $SessionAssessmentsTable extends SessionAssessments
           .read(DriftSqlType.int, data['${effectivePrefix}session_id'])!,
       assessmentId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}assessment_id'])!,
+      trialAssessmentId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}trial_assessment_id']),
     );
   }
 
@@ -3212,14 +5749,21 @@ class SessionAssessment extends DataClass
   final int id;
   final int sessionId;
   final int assessmentId;
+  final int? trialAssessmentId;
   const SessionAssessment(
-      {required this.id, required this.sessionId, required this.assessmentId});
+      {required this.id,
+      required this.sessionId,
+      required this.assessmentId,
+      this.trialAssessmentId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['session_id'] = Variable<int>(sessionId);
     map['assessment_id'] = Variable<int>(assessmentId);
+    if (!nullToAbsent || trialAssessmentId != null) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId);
+    }
     return map;
   }
 
@@ -3228,6 +5772,9 @@ class SessionAssessment extends DataClass
       id: Value(id),
       sessionId: Value(sessionId),
       assessmentId: Value(assessmentId),
+      trialAssessmentId: trialAssessmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trialAssessmentId),
     );
   }
 
@@ -3238,6 +5785,7 @@ class SessionAssessment extends DataClass
       id: serializer.fromJson<int>(json['id']),
       sessionId: serializer.fromJson<int>(json['sessionId']),
       assessmentId: serializer.fromJson<int>(json['assessmentId']),
+      trialAssessmentId: serializer.fromJson<int?>(json['trialAssessmentId']),
     );
   }
   @override
@@ -3247,14 +5795,22 @@ class SessionAssessment extends DataClass
       'id': serializer.toJson<int>(id),
       'sessionId': serializer.toJson<int>(sessionId),
       'assessmentId': serializer.toJson<int>(assessmentId),
+      'trialAssessmentId': serializer.toJson<int?>(trialAssessmentId),
     };
   }
 
-  SessionAssessment copyWith({int? id, int? sessionId, int? assessmentId}) =>
+  SessionAssessment copyWith(
+          {int? id,
+          int? sessionId,
+          int? assessmentId,
+          Value<int?> trialAssessmentId = const Value.absent()}) =>
       SessionAssessment(
         id: id ?? this.id,
         sessionId: sessionId ?? this.sessionId,
         assessmentId: assessmentId ?? this.assessmentId,
+        trialAssessmentId: trialAssessmentId.present
+            ? trialAssessmentId.value
+            : this.trialAssessmentId,
       );
   SessionAssessment copyWithCompanion(SessionAssessmentsCompanion data) {
     return SessionAssessment(
@@ -3263,6 +5819,9 @@ class SessionAssessment extends DataClass
       assessmentId: data.assessmentId.present
           ? data.assessmentId.value
           : this.assessmentId,
+      trialAssessmentId: data.trialAssessmentId.present
+          ? data.trialAssessmentId.value
+          : this.trialAssessmentId,
     );
   }
 
@@ -3271,55 +5830,67 @@ class SessionAssessment extends DataClass
     return (StringBuffer('SessionAssessment(')
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
-          ..write('assessmentId: $assessmentId')
+          ..write('assessmentId: $assessmentId, ')
+          ..write('trialAssessmentId: $trialAssessmentId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, sessionId, assessmentId);
+  int get hashCode =>
+      Object.hash(id, sessionId, assessmentId, trialAssessmentId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is SessionAssessment &&
           other.id == this.id &&
           other.sessionId == this.sessionId &&
-          other.assessmentId == this.assessmentId);
+          other.assessmentId == this.assessmentId &&
+          other.trialAssessmentId == this.trialAssessmentId);
 }
 
 class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
   final Value<int> id;
   final Value<int> sessionId;
   final Value<int> assessmentId;
+  final Value<int?> trialAssessmentId;
   const SessionAssessmentsCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.assessmentId = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
   });
   SessionAssessmentsCompanion.insert({
     this.id = const Value.absent(),
     required int sessionId,
     required int assessmentId,
+    this.trialAssessmentId = const Value.absent(),
   })  : sessionId = Value(sessionId),
         assessmentId = Value(assessmentId);
   static Insertable<SessionAssessment> custom({
     Expression<int>? id,
     Expression<int>? sessionId,
     Expression<int>? assessmentId,
+    Expression<int>? trialAssessmentId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (assessmentId != null) 'assessment_id': assessmentId,
+      if (trialAssessmentId != null) 'trial_assessment_id': trialAssessmentId,
     });
   }
 
   SessionAssessmentsCompanion copyWith(
-      {Value<int>? id, Value<int>? sessionId, Value<int>? assessmentId}) {
+      {Value<int>? id,
+      Value<int>? sessionId,
+      Value<int>? assessmentId,
+      Value<int?>? trialAssessmentId}) {
     return SessionAssessmentsCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       assessmentId: assessmentId ?? this.assessmentId,
+      trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
     );
   }
 
@@ -3335,6 +5906,9 @@ class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
     if (assessmentId.present) {
       map['assessment_id'] = Variable<int>(assessmentId.value);
     }
+    if (trialAssessmentId.present) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId.value);
+    }
     return map;
   }
 
@@ -3343,7 +5917,8 @@ class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
     return (StringBuffer('SessionAssessmentsCompanion(')
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
-          ..write('assessmentId: $assessmentId')
+          ..write('assessmentId: $assessmentId, ')
+          ..write('trialAssessmentId: $trialAssessmentId')
           ..write(')'))
         .toString();
   }
@@ -3390,6 +5965,15 @@ class $RatingRecordsTable extends RatingRecords
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES assessments (id)'));
+  static const VerificationMeta _trialAssessmentIdMeta =
+      const VerificationMeta('trialAssessmentId');
+  @override
+  late final GeneratedColumn<int> trialAssessmentId = GeneratedColumn<int>(
+      'trial_assessment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trial_assessments (id)'));
   static const VerificationMeta _sessionIdMeta =
       const VerificationMeta('sessionId');
   @override
@@ -3485,6 +6069,7 @@ class $RatingRecordsTable extends RatingRecords
         trialId,
         plotPk,
         assessmentId,
+        trialAssessmentId,
         sessionId,
         subUnitId,
         resultStatus,
@@ -3531,6 +6116,12 @@ class $RatingRecordsTable extends RatingRecords
               data['assessment_id']!, _assessmentIdMeta));
     } else if (isInserting) {
       context.missing(_assessmentIdMeta);
+    }
+    if (data.containsKey('trial_assessment_id')) {
+      context.handle(
+          _trialAssessmentIdMeta,
+          trialAssessmentId.isAcceptableOrUnknown(
+              data['trial_assessment_id']!, _trialAssessmentIdMeta));
     }
     if (data.containsKey('session_id')) {
       context.handle(_sessionIdMeta,
@@ -3619,6 +6210,8 @@ class $RatingRecordsTable extends RatingRecords
           .read(DriftSqlType.int, data['${effectivePrefix}plot_pk'])!,
       assessmentId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}assessment_id'])!,
+      trialAssessmentId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}trial_assessment_id']),
       sessionId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}session_id'])!,
       subUnitId: attachedDatabase.typeMapping
@@ -3659,6 +6252,7 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
   final int trialId;
   final int plotPk;
   final int assessmentId;
+  final int? trialAssessmentId;
   final int sessionId;
   final int? subUnitId;
   final String resultStatus;
@@ -3677,6 +6271,7 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       required this.trialId,
       required this.plotPk,
       required this.assessmentId,
+      this.trialAssessmentId,
       required this.sessionId,
       this.subUnitId,
       required this.resultStatus,
@@ -3697,6 +6292,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
     map['trial_id'] = Variable<int>(trialId);
     map['plot_pk'] = Variable<int>(plotPk);
     map['assessment_id'] = Variable<int>(assessmentId);
+    if (!nullToAbsent || trialAssessmentId != null) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId);
+    }
     map['session_id'] = Variable<int>(sessionId);
     if (!nullToAbsent || subUnitId != null) {
       map['sub_unit_id'] = Variable<int>(subUnitId);
@@ -3737,6 +6335,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       trialId: Value(trialId),
       plotPk: Value(plotPk),
       assessmentId: Value(assessmentId),
+      trialAssessmentId: trialAssessmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trialAssessmentId),
       sessionId: Value(sessionId),
       subUnitId: subUnitId == null && nullToAbsent
           ? const Value.absent()
@@ -3779,6 +6380,7 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       trialId: serializer.fromJson<int>(json['trialId']),
       plotPk: serializer.fromJson<int>(json['plotPk']),
       assessmentId: serializer.fromJson<int>(json['assessmentId']),
+      trialAssessmentId: serializer.fromJson<int?>(json['trialAssessmentId']),
       sessionId: serializer.fromJson<int>(json['sessionId']),
       subUnitId: serializer.fromJson<int?>(json['subUnitId']),
       resultStatus: serializer.fromJson<String>(json['resultStatus']),
@@ -3805,6 +6407,7 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       'trialId': serializer.toJson<int>(trialId),
       'plotPk': serializer.toJson<int>(plotPk),
       'assessmentId': serializer.toJson<int>(assessmentId),
+      'trialAssessmentId': serializer.toJson<int?>(trialAssessmentId),
       'sessionId': serializer.toJson<int>(sessionId),
       'subUnitId': serializer.toJson<int?>(subUnitId),
       'resultStatus': serializer.toJson<String>(resultStatus),
@@ -3826,6 +6429,7 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           int? trialId,
           int? plotPk,
           int? assessmentId,
+          Value<int?> trialAssessmentId = const Value.absent(),
           int? sessionId,
           Value<int?> subUnitId = const Value.absent(),
           String? resultStatus,
@@ -3844,6 +6448,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
         trialId: trialId ?? this.trialId,
         plotPk: plotPk ?? this.plotPk,
         assessmentId: assessmentId ?? this.assessmentId,
+        trialAssessmentId: trialAssessmentId.present
+            ? trialAssessmentId.value
+            : this.trialAssessmentId,
         sessionId: sessionId ?? this.sessionId,
         subUnitId: subUnitId.present ? subUnitId.value : this.subUnitId,
         resultStatus: resultStatus ?? this.resultStatus,
@@ -3875,6 +6482,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       assessmentId: data.assessmentId.present
           ? data.assessmentId.value
           : this.assessmentId,
+      trialAssessmentId: data.trialAssessmentId.present
+          ? data.trialAssessmentId.value
+          : this.trialAssessmentId,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       subUnitId: data.subUnitId.present ? data.subUnitId.value : this.subUnitId,
       resultStatus: data.resultStatus.present
@@ -3911,6 +6521,7 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           ..write('trialId: $trialId, ')
           ..write('plotPk: $plotPk, ')
           ..write('assessmentId: $assessmentId, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
           ..write('sessionId: $sessionId, ')
           ..write('subUnitId: $subUnitId, ')
           ..write('resultStatus: $resultStatus, ')
@@ -3934,6 +6545,7 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       trialId,
       plotPk,
       assessmentId,
+      trialAssessmentId,
       sessionId,
       subUnitId,
       resultStatus,
@@ -3955,6 +6567,7 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           other.trialId == this.trialId &&
           other.plotPk == this.plotPk &&
           other.assessmentId == this.assessmentId &&
+          other.trialAssessmentId == this.trialAssessmentId &&
           other.sessionId == this.sessionId &&
           other.subUnitId == this.subUnitId &&
           other.resultStatus == this.resultStatus &&
@@ -3975,6 +6588,7 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
   final Value<int> trialId;
   final Value<int> plotPk;
   final Value<int> assessmentId;
+  final Value<int?> trialAssessmentId;
   final Value<int> sessionId;
   final Value<int?> subUnitId;
   final Value<String> resultStatus;
@@ -3993,6 +6607,7 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.trialId = const Value.absent(),
     this.plotPk = const Value.absent(),
     this.assessmentId = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.subUnitId = const Value.absent(),
     this.resultStatus = const Value.absent(),
@@ -4012,6 +6627,7 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     required int trialId,
     required int plotPk,
     required int assessmentId,
+    this.trialAssessmentId = const Value.absent(),
     required int sessionId,
     this.subUnitId = const Value.absent(),
     this.resultStatus = const Value.absent(),
@@ -4034,6 +6650,7 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     Expression<int>? trialId,
     Expression<int>? plotPk,
     Expression<int>? assessmentId,
+    Expression<int>? trialAssessmentId,
     Expression<int>? sessionId,
     Expression<int>? subUnitId,
     Expression<String>? resultStatus,
@@ -4053,6 +6670,7 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       if (trialId != null) 'trial_id': trialId,
       if (plotPk != null) 'plot_pk': plotPk,
       if (assessmentId != null) 'assessment_id': assessmentId,
+      if (trialAssessmentId != null) 'trial_assessment_id': trialAssessmentId,
       if (sessionId != null) 'session_id': sessionId,
       if (subUnitId != null) 'sub_unit_id': subUnitId,
       if (resultStatus != null) 'result_status': resultStatus,
@@ -4074,6 +6692,7 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       Value<int>? trialId,
       Value<int>? plotPk,
       Value<int>? assessmentId,
+      Value<int?>? trialAssessmentId,
       Value<int>? sessionId,
       Value<int?>? subUnitId,
       Value<String>? resultStatus,
@@ -4092,6 +6711,7 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       trialId: trialId ?? this.trialId,
       plotPk: plotPk ?? this.plotPk,
       assessmentId: assessmentId ?? this.assessmentId,
+      trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
       sessionId: sessionId ?? this.sessionId,
       subUnitId: subUnitId ?? this.subUnitId,
       resultStatus: resultStatus ?? this.resultStatus,
@@ -4122,6 +6742,9 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     }
     if (assessmentId.present) {
       map['assessment_id'] = Variable<int>(assessmentId.value);
+    }
+    if (trialAssessmentId.present) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId.value);
     }
     if (sessionId.present) {
       map['session_id'] = Variable<int>(sessionId.value);
@@ -4172,6 +6795,7 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
           ..write('trialId: $trialId, ')
           ..write('plotPk: $plotPk, ')
           ..write('assessmentId: $assessmentId, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
           ..write('sessionId: $sessionId, ')
           ..write('subUnitId: $subUnitId, ')
           ..write('resultStatus: $resultStatus, ')
@@ -10762,7 +13386,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TreatmentComponentsTable treatmentComponents =
       $TreatmentComponentsTable(this);
   late final $AssessmentsTable assessments = $AssessmentsTable(this);
+  late final $AssessmentDefinitionsTable assessmentDefinitions =
+      $AssessmentDefinitionsTable(this);
+  late final $TrialAssessmentsTable trialAssessments =
+      $TrialAssessmentsTable(this);
   late final $PlotsTable plots = $PlotsTable(this);
+  late final $AssignmentsTable assignments = $AssignmentsTable(this);
   late final $SessionsTable sessions = $SessionsTable(this);
   late final $SessionAssessmentsTable sessionAssessments =
       $SessionAssessmentsTable(this);
@@ -10796,7 +13425,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         treatments,
         treatmentComponents,
         assessments,
+        assessmentDefinitions,
+        trialAssessments,
         plots,
+        assignments,
         sessions,
         sessionAssessments,
         ratingRecords,
@@ -10927,6 +13559,19 @@ class $$UsersTableFilterComposer
       column: $state.table.updatedAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ComposableFilter assignmentsRefs(
+      ComposableFilter Function($$AssignmentsTableFilterComposer f) f) {
+    final $$AssignmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.assignments,
+        getReferencedColumn: (t) => t.assignedBy,
+        builder: (joinBuilder, parentComposers) =>
+            $$AssignmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.assignments, joinBuilder, parentComposers)));
+    return f(composer);
+  }
 
   ComposableFilter sessionsRefs(
       ComposableFilter Function($$SessionsTableFilterComposer f) f) {
@@ -11177,6 +13822,20 @@ class $$TrialsTableFilterComposer
     return f(composer);
   }
 
+  ComposableFilter trialAssessmentsRefs(
+      ComposableFilter Function($$TrialAssessmentsTableFilterComposer f) f) {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
   ComposableFilter plotsRefs(
       ComposableFilter Function($$PlotsTableFilterComposer f) f) {
     final $$PlotsTableFilterComposer composer = $state.composerBuilder(
@@ -11187,6 +13846,19 @@ class $$TrialsTableFilterComposer
         builder: (joinBuilder, parentComposers) => $$PlotsTableFilterComposer(
             ComposerState(
                 $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter assignmentsRefs(
+      ComposableFilter Function($$AssignmentsTableFilterComposer f) f) {
+    final $$AssignmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.assignments,
+        getReferencedColumn: (t) => t.trialId,
+        builder: (joinBuilder, parentComposers) =>
+            $$AssignmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.assignments, joinBuilder, parentComposers)));
     return f(composer);
   }
 
@@ -11543,6 +14215,19 @@ class $$TreatmentsTableFilterComposer
         builder: (joinBuilder, parentComposers) => $$PlotsTableFilterComposer(
             ComposerState(
                 $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter assignmentsRefs(
+      ComposableFilter Function($$AssignmentsTableFilterComposer f) f) {
+    final $$AssignmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.assignments,
+        getReferencedColumn: (t) => t.treatmentId,
+        builder: (joinBuilder, parentComposers) =>
+            $$AssignmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.assignments, joinBuilder, parentComposers)));
     return f(composer);
   }
 }
@@ -11930,6 +14615,20 @@ class $$AssessmentsTableFilterComposer
     return composer;
   }
 
+  ComposableFilter trialAssessmentsRefs(
+      ComposableFilter Function($$TrialAssessmentsTableFilterComposer f) f) {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.legacyAssessmentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
   ComposableFilter sessionAssessmentsRefs(
       ComposableFilter Function($$SessionAssessmentsTableFilterComposer f) f) {
     final $$SessionAssessmentsTableFilterComposer composer = $state
@@ -12008,6 +14707,746 @@ class $$AssessmentsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$TrialsTableOrderingComposer(ComposerState(
                 $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$AssessmentDefinitionsTableCreateCompanionBuilder
+    = AssessmentDefinitionsCompanion Function({
+  Value<int> id,
+  required String code,
+  required String name,
+  required String category,
+  Value<String> dataType,
+  Value<String?> unit,
+  Value<double?> scaleMin,
+  Value<double?> scaleMax,
+  Value<String?> target,
+  Value<String?> method,
+  Value<String?> defaultInstructions,
+  Value<String?> timingType,
+  Value<bool> isSystem,
+  Value<bool> isActive,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$AssessmentDefinitionsTableUpdateCompanionBuilder
+    = AssessmentDefinitionsCompanion Function({
+  Value<int> id,
+  Value<String> code,
+  Value<String> name,
+  Value<String> category,
+  Value<String> dataType,
+  Value<String?> unit,
+  Value<double?> scaleMin,
+  Value<double?> scaleMax,
+  Value<String?> target,
+  Value<String?> method,
+  Value<String?> defaultInstructions,
+  Value<String?> timingType,
+  Value<bool> isSystem,
+  Value<bool> isActive,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AssessmentDefinitionsTable,
+    AssessmentDefinition,
+    $$AssessmentDefinitionsTableFilterComposer,
+    $$AssessmentDefinitionsTableOrderingComposer,
+    $$AssessmentDefinitionsTableCreateCompanionBuilder,
+    $$AssessmentDefinitionsTableUpdateCompanionBuilder> {
+  $$AssessmentDefinitionsTableTableManager(
+      _$AppDatabase db, $AssessmentDefinitionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$AssessmentDefinitionsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$AssessmentDefinitionsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> code = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> category = const Value.absent(),
+            Value<String> dataType = const Value.absent(),
+            Value<String?> unit = const Value.absent(),
+            Value<double?> scaleMin = const Value.absent(),
+            Value<double?> scaleMax = const Value.absent(),
+            Value<String?> target = const Value.absent(),
+            Value<String?> method = const Value.absent(),
+            Value<String?> defaultInstructions = const Value.absent(),
+            Value<String?> timingType = const Value.absent(),
+            Value<bool> isSystem = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              AssessmentDefinitionsCompanion(
+            id: id,
+            code: code,
+            name: name,
+            category: category,
+            dataType: dataType,
+            unit: unit,
+            scaleMin: scaleMin,
+            scaleMax: scaleMax,
+            target: target,
+            method: method,
+            defaultInstructions: defaultInstructions,
+            timingType: timingType,
+            isSystem: isSystem,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String code,
+            required String name,
+            required String category,
+            Value<String> dataType = const Value.absent(),
+            Value<String?> unit = const Value.absent(),
+            Value<double?> scaleMin = const Value.absent(),
+            Value<double?> scaleMax = const Value.absent(),
+            Value<String?> target = const Value.absent(),
+            Value<String?> method = const Value.absent(),
+            Value<String?> defaultInstructions = const Value.absent(),
+            Value<String?> timingType = const Value.absent(),
+            Value<bool> isSystem = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              AssessmentDefinitionsCompanion.insert(
+            id: id,
+            code: code,
+            name: name,
+            category: category,
+            dataType: dataType,
+            unit: unit,
+            scaleMin: scaleMin,
+            scaleMax: scaleMax,
+            target: target,
+            method: method,
+            defaultInstructions: defaultInstructions,
+            timingType: timingType,
+            isSystem: isSystem,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+        ));
+}
+
+class $$AssessmentDefinitionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $AssessmentDefinitionsTable> {
+  $$AssessmentDefinitionsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get code => $state.composableBuilder(
+      column: $state.table.code,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get category => $state.composableBuilder(
+      column: $state.table.category,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get dataType => $state.composableBuilder(
+      column: $state.table.dataType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get unit => $state.composableBuilder(
+      column: $state.table.unit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get scaleMin => $state.composableBuilder(
+      column: $state.table.scaleMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get scaleMax => $state.composableBuilder(
+      column: $state.table.scaleMax,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get target => $state.composableBuilder(
+      column: $state.table.target,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get method => $state.composableBuilder(
+      column: $state.table.method,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get defaultInstructions => $state.composableBuilder(
+      column: $state.table.defaultInstructions,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get timingType => $state.composableBuilder(
+      column: $state.table.timingType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isSystem => $state.composableBuilder(
+      column: $state.table.isSystem,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isActive => $state.composableBuilder(
+      column: $state.table.isActive,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ComposableFilter trialAssessmentsRefs(
+      ComposableFilter Function($$TrialAssessmentsTableFilterComposer f) f) {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.assessmentDefinitionId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$AssessmentDefinitionsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $AssessmentDefinitionsTable> {
+  $$AssessmentDefinitionsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get code => $state.composableBuilder(
+      column: $state.table.code,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get category => $state.composableBuilder(
+      column: $state.table.category,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get dataType => $state.composableBuilder(
+      column: $state.table.dataType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get unit => $state.composableBuilder(
+      column: $state.table.unit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get scaleMin => $state.composableBuilder(
+      column: $state.table.scaleMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get scaleMax => $state.composableBuilder(
+      column: $state.table.scaleMax,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get target => $state.composableBuilder(
+      column: $state.table.target,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get method => $state.composableBuilder(
+      column: $state.table.method,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get defaultInstructions => $state.composableBuilder(
+      column: $state.table.defaultInstructions,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get timingType => $state.composableBuilder(
+      column: $state.table.timingType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isSystem => $state.composableBuilder(
+      column: $state.table.isSystem,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isActive => $state.composableBuilder(
+      column: $state.table.isActive,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$TrialAssessmentsTableCreateCompanionBuilder
+    = TrialAssessmentsCompanion Function({
+  Value<int> id,
+  required int trialId,
+  required int assessmentDefinitionId,
+  Value<String?> displayNameOverride,
+  Value<bool> required,
+  Value<bool> selectedFromProtocol,
+  Value<bool> selectedManually,
+  Value<bool> defaultInSessions,
+  Value<int> sortOrder,
+  Value<String?> timingMode,
+  Value<int?> daysAfterPlanting,
+  Value<int?> daysAfterTreatment,
+  Value<String?> growthStage,
+  Value<String?> methodOverride,
+  Value<String?> instructionOverride,
+  Value<bool> isActive,
+  Value<int?> legacyAssessmentId,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$TrialAssessmentsTableUpdateCompanionBuilder
+    = TrialAssessmentsCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int> assessmentDefinitionId,
+  Value<String?> displayNameOverride,
+  Value<bool> required,
+  Value<bool> selectedFromProtocol,
+  Value<bool> selectedManually,
+  Value<bool> defaultInSessions,
+  Value<int> sortOrder,
+  Value<String?> timingMode,
+  Value<int?> daysAfterPlanting,
+  Value<int?> daysAfterTreatment,
+  Value<String?> growthStage,
+  Value<String?> methodOverride,
+  Value<String?> instructionOverride,
+  Value<bool> isActive,
+  Value<int?> legacyAssessmentId,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$TrialAssessmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TrialAssessmentsTable,
+    TrialAssessment,
+    $$TrialAssessmentsTableFilterComposer,
+    $$TrialAssessmentsTableOrderingComposer,
+    $$TrialAssessmentsTableCreateCompanionBuilder,
+    $$TrialAssessmentsTableUpdateCompanionBuilder> {
+  $$TrialAssessmentsTableTableManager(
+      _$AppDatabase db, $TrialAssessmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$TrialAssessmentsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$TrialAssessmentsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int> assessmentDefinitionId = const Value.absent(),
+            Value<String?> displayNameOverride = const Value.absent(),
+            Value<bool> required = const Value.absent(),
+            Value<bool> selectedFromProtocol = const Value.absent(),
+            Value<bool> selectedManually = const Value.absent(),
+            Value<bool> defaultInSessions = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+            Value<String?> timingMode = const Value.absent(),
+            Value<int?> daysAfterPlanting = const Value.absent(),
+            Value<int?> daysAfterTreatment = const Value.absent(),
+            Value<String?> growthStage = const Value.absent(),
+            Value<String?> methodOverride = const Value.absent(),
+            Value<String?> instructionOverride = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<int?> legacyAssessmentId = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              TrialAssessmentsCompanion(
+            id: id,
+            trialId: trialId,
+            assessmentDefinitionId: assessmentDefinitionId,
+            displayNameOverride: displayNameOverride,
+            required: required,
+            selectedFromProtocol: selectedFromProtocol,
+            selectedManually: selectedManually,
+            defaultInSessions: defaultInSessions,
+            sortOrder: sortOrder,
+            timingMode: timingMode,
+            daysAfterPlanting: daysAfterPlanting,
+            daysAfterTreatment: daysAfterTreatment,
+            growthStage: growthStage,
+            methodOverride: methodOverride,
+            instructionOverride: instructionOverride,
+            isActive: isActive,
+            legacyAssessmentId: legacyAssessmentId,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required int assessmentDefinitionId,
+            Value<String?> displayNameOverride = const Value.absent(),
+            Value<bool> required = const Value.absent(),
+            Value<bool> selectedFromProtocol = const Value.absent(),
+            Value<bool> selectedManually = const Value.absent(),
+            Value<bool> defaultInSessions = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+            Value<String?> timingMode = const Value.absent(),
+            Value<int?> daysAfterPlanting = const Value.absent(),
+            Value<int?> daysAfterTreatment = const Value.absent(),
+            Value<String?> growthStage = const Value.absent(),
+            Value<String?> methodOverride = const Value.absent(),
+            Value<String?> instructionOverride = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<int?> legacyAssessmentId = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              TrialAssessmentsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            assessmentDefinitionId: assessmentDefinitionId,
+            displayNameOverride: displayNameOverride,
+            required: required,
+            selectedFromProtocol: selectedFromProtocol,
+            selectedManually: selectedManually,
+            defaultInSessions: defaultInSessions,
+            sortOrder: sortOrder,
+            timingMode: timingMode,
+            daysAfterPlanting: daysAfterPlanting,
+            daysAfterTreatment: daysAfterTreatment,
+            growthStage: growthStage,
+            methodOverride: methodOverride,
+            instructionOverride: instructionOverride,
+            isActive: isActive,
+            legacyAssessmentId: legacyAssessmentId,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+        ));
+}
+
+class $$TrialAssessmentsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $TrialAssessmentsTable> {
+  $$TrialAssessmentsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get displayNameOverride => $state.composableBuilder(
+      column: $state.table.displayNameOverride,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get required => $state.composableBuilder(
+      column: $state.table.required,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get selectedFromProtocol => $state.composableBuilder(
+      column: $state.table.selectedFromProtocol,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get selectedManually => $state.composableBuilder(
+      column: $state.table.selectedManually,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get defaultInSessions => $state.composableBuilder(
+      column: $state.table.defaultInSessions,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get sortOrder => $state.composableBuilder(
+      column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get timingMode => $state.composableBuilder(
+      column: $state.table.timingMode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get daysAfterPlanting => $state.composableBuilder(
+      column: $state.table.daysAfterPlanting,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get daysAfterTreatment => $state.composableBuilder(
+      column: $state.table.daysAfterTreatment,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get growthStage => $state.composableBuilder(
+      column: $state.table.growthStage,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get methodOverride => $state.composableBuilder(
+      column: $state.table.methodOverride,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get instructionOverride => $state.composableBuilder(
+      column: $state.table.instructionOverride,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isActive => $state.composableBuilder(
+      column: $state.table.isActive,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$AssessmentDefinitionsTableFilterComposer get assessmentDefinitionId {
+    final $$AssessmentDefinitionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.assessmentDefinitionId,
+            referencedTable: $state.db.assessmentDefinitions,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentDefinitionsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.assessmentDefinitions,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+
+  $$AssessmentsTableFilterComposer get legacyAssessmentId {
+    final $$AssessmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.legacyAssessmentId,
+        referencedTable: $state.db.assessments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$AssessmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.assessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  ComposableFilter sessionAssessmentsRefs(
+      ComposableFilter Function($$SessionAssessmentsTableFilterComposer f) f) {
+    final $$SessionAssessmentsTableFilterComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.sessionAssessments,
+            getReferencedColumn: (t) => t.trialAssessmentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$SessionAssessmentsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.sessionAssessments,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ratingRecordsRefs(
+      ComposableFilter Function($$RatingRecordsTableFilterComposer f) f) {
+    final $$RatingRecordsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.ratingRecords,
+        getReferencedColumn: (t) => t.trialAssessmentId,
+        builder: (joinBuilder, parentComposers) =>
+            $$RatingRecordsTableFilterComposer(ComposerState($state.db,
+                $state.db.ratingRecords, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$TrialAssessmentsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $TrialAssessmentsTable> {
+  $$TrialAssessmentsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get displayNameOverride => $state.composableBuilder(
+      column: $state.table.displayNameOverride,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get required => $state.composableBuilder(
+      column: $state.table.required,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get selectedFromProtocol => $state.composableBuilder(
+      column: $state.table.selectedFromProtocol,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get selectedManually => $state.composableBuilder(
+      column: $state.table.selectedManually,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get defaultInSessions => $state.composableBuilder(
+      column: $state.table.defaultInSessions,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get sortOrder => $state.composableBuilder(
+      column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get timingMode => $state.composableBuilder(
+      column: $state.table.timingMode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get daysAfterPlanting => $state.composableBuilder(
+      column: $state.table.daysAfterPlanting,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get daysAfterTreatment => $state.composableBuilder(
+      column: $state.table.daysAfterTreatment,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get growthStage => $state.composableBuilder(
+      column: $state.table.growthStage,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get methodOverride => $state.composableBuilder(
+      column: $state.table.methodOverride,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get instructionOverride => $state.composableBuilder(
+      column: $state.table.instructionOverride,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isActive => $state.composableBuilder(
+      column: $state.table.isActive,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$AssessmentDefinitionsTableOrderingComposer get assessmentDefinitionId {
+    final $$AssessmentDefinitionsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.assessmentDefinitionId,
+            referencedTable: $state.db.assessmentDefinitions,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentDefinitionsTableOrderingComposer(ComposerState(
+                    $state.db,
+                    $state.db.assessmentDefinitions,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+
+  $$AssessmentsTableOrderingComposer get legacyAssessmentId {
+    final $$AssessmentsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.legacyAssessmentId,
+        referencedTable: $state.db.assessments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$AssessmentsTableOrderingComposer(ComposerState($state.db,
+                $state.db.assessments, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -12202,6 +15641,19 @@ class $$PlotsTableFilterComposer
             $$TreatmentsTableFilterComposer(ComposerState($state.db,
                 $state.db.treatments, joinBuilder, parentComposers)));
     return composer;
+  }
+
+  ComposableFilter assignmentsRefs(
+      ComposableFilter Function($$AssignmentsTableFilterComposer f) f) {
+    final $$AssignmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.assignments,
+        getReferencedColumn: (t) => t.plotId,
+        builder: (joinBuilder, parentComposers) =>
+            $$AssignmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.assignments, joinBuilder, parentComposers)));
+    return f(composer);
   }
 
   ComposableFilter ratingRecordsRefs(
@@ -12410,6 +15862,376 @@ class $$PlotsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$TreatmentsTableOrderingComposer(ComposerState($state.db,
                 $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$AssignmentsTableCreateCompanionBuilder = AssignmentsCompanion
+    Function({
+  Value<int> id,
+  required int trialId,
+  required int plotId,
+  Value<int?> treatmentId,
+  Value<int?> replication,
+  Value<int?> block,
+  Value<int?> range,
+  Value<int?> column,
+  Value<int?> position,
+  Value<bool?> isCheck,
+  Value<bool?> isControl,
+  Value<String?> assignmentSource,
+  Value<DateTime?> assignedAt,
+  Value<int?> assignedBy,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$AssignmentsTableUpdateCompanionBuilder = AssignmentsCompanion
+    Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int> plotId,
+  Value<int?> treatmentId,
+  Value<int?> replication,
+  Value<int?> block,
+  Value<int?> range,
+  Value<int?> column,
+  Value<int?> position,
+  Value<bool?> isCheck,
+  Value<bool?> isControl,
+  Value<String?> assignmentSource,
+  Value<DateTime?> assignedAt,
+  Value<int?> assignedBy,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$AssignmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AssignmentsTable,
+    Assignment,
+    $$AssignmentsTableFilterComposer,
+    $$AssignmentsTableOrderingComposer,
+    $$AssignmentsTableCreateCompanionBuilder,
+    $$AssignmentsTableUpdateCompanionBuilder> {
+  $$AssignmentsTableTableManager(_$AppDatabase db, $AssignmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$AssignmentsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$AssignmentsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int> plotId = const Value.absent(),
+            Value<int?> treatmentId = const Value.absent(),
+            Value<int?> replication = const Value.absent(),
+            Value<int?> block = const Value.absent(),
+            Value<int?> range = const Value.absent(),
+            Value<int?> column = const Value.absent(),
+            Value<int?> position = const Value.absent(),
+            Value<bool?> isCheck = const Value.absent(),
+            Value<bool?> isControl = const Value.absent(),
+            Value<String?> assignmentSource = const Value.absent(),
+            Value<DateTime?> assignedAt = const Value.absent(),
+            Value<int?> assignedBy = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              AssignmentsCompanion(
+            id: id,
+            trialId: trialId,
+            plotId: plotId,
+            treatmentId: treatmentId,
+            replication: replication,
+            block: block,
+            range: range,
+            column: column,
+            position: position,
+            isCheck: isCheck,
+            isControl: isControl,
+            assignmentSource: assignmentSource,
+            assignedAt: assignedAt,
+            assignedBy: assignedBy,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required int plotId,
+            Value<int?> treatmentId = const Value.absent(),
+            Value<int?> replication = const Value.absent(),
+            Value<int?> block = const Value.absent(),
+            Value<int?> range = const Value.absent(),
+            Value<int?> column = const Value.absent(),
+            Value<int?> position = const Value.absent(),
+            Value<bool?> isCheck = const Value.absent(),
+            Value<bool?> isControl = const Value.absent(),
+            Value<String?> assignmentSource = const Value.absent(),
+            Value<DateTime?> assignedAt = const Value.absent(),
+            Value<int?> assignedBy = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              AssignmentsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            plotId: plotId,
+            treatmentId: treatmentId,
+            replication: replication,
+            block: block,
+            range: range,
+            column: column,
+            position: position,
+            isCheck: isCheck,
+            isControl: isControl,
+            assignmentSource: assignmentSource,
+            assignedAt: assignedAt,
+            assignedBy: assignedBy,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+        ));
+}
+
+class $$AssignmentsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $AssignmentsTable> {
+  $$AssignmentsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get replication => $state.composableBuilder(
+      column: $state.table.replication,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get block => $state.composableBuilder(
+      column: $state.table.block,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get range => $state.composableBuilder(
+      column: $state.table.range,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get column => $state.composableBuilder(
+      column: $state.table.column,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get position => $state.composableBuilder(
+      column: $state.table.position,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isCheck => $state.composableBuilder(
+      column: $state.table.isCheck,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isControl => $state.composableBuilder(
+      column: $state.table.isControl,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get assignmentSource => $state.composableBuilder(
+      column: $state.table.assignmentSource,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get assignedAt => $state.composableBuilder(
+      column: $state.table.assignedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableFilterComposer get plotId {
+    final $$PlotsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotId,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TreatmentsTableFilterComposer get treatmentId {
+    final $$TreatmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.treatmentId,
+        referencedTable: $state.db.treatments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TreatmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get assignedBy {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assignedBy,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$AssignmentsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $AssignmentsTable> {
+  $$AssignmentsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get replication => $state.composableBuilder(
+      column: $state.table.replication,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get block => $state.composableBuilder(
+      column: $state.table.block,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get range => $state.composableBuilder(
+      column: $state.table.range,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get column => $state.composableBuilder(
+      column: $state.table.column,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get position => $state.composableBuilder(
+      column: $state.table.position,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isCheck => $state.composableBuilder(
+      column: $state.table.isCheck,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isControl => $state.composableBuilder(
+      column: $state.table.isControl,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get assignmentSource => $state.composableBuilder(
+      column: $state.table.assignmentSource,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get assignedAt => $state.composableBuilder(
+      column: $state.table.assignedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableOrderingComposer get plotId {
+    final $$PlotsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotId,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TreatmentsTableOrderingComposer get treatmentId {
+    final $$TreatmentsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.treatmentId,
+        referencedTable: $state.db.treatments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TreatmentsTableOrderingComposer(ComposerState($state.db,
+                $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get assignedBy {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assignedBy,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -12773,12 +16595,14 @@ typedef $$SessionAssessmentsTableCreateCompanionBuilder
   Value<int> id,
   required int sessionId,
   required int assessmentId,
+  Value<int?> trialAssessmentId,
 });
 typedef $$SessionAssessmentsTableUpdateCompanionBuilder
     = SessionAssessmentsCompanion Function({
   Value<int> id,
   Value<int> sessionId,
   Value<int> assessmentId,
+  Value<int?> trialAssessmentId,
 });
 
 class $$SessionAssessmentsTableTableManager extends RootTableManager<
@@ -12802,21 +16626,25 @@ class $$SessionAssessmentsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<int> sessionId = const Value.absent(),
             Value<int> assessmentId = const Value.absent(),
+            Value<int?> trialAssessmentId = const Value.absent(),
           }) =>
               SessionAssessmentsCompanion(
             id: id,
             sessionId: sessionId,
             assessmentId: assessmentId,
+            trialAssessmentId: trialAssessmentId,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int sessionId,
             required int assessmentId,
+            Value<int?> trialAssessmentId = const Value.absent(),
           }) =>
               SessionAssessmentsCompanion.insert(
             id: id,
             sessionId: sessionId,
             assessmentId: assessmentId,
+            trialAssessmentId: trialAssessmentId,
           ),
         ));
 }
@@ -12852,6 +16680,19 @@ class $$SessionAssessmentsTableFilterComposer
                 $state.db.assessments, joinBuilder, parentComposers)));
     return composer;
   }
+
+  $$TrialAssessmentsTableFilterComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
 }
 
 class $$SessionAssessmentsTableOrderingComposer
@@ -12885,6 +16726,19 @@ class $$SessionAssessmentsTableOrderingComposer
                 $state.db.assessments, joinBuilder, parentComposers)));
     return composer;
   }
+
+  $$TrialAssessmentsTableOrderingComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
 }
 
 typedef $$RatingRecordsTableCreateCompanionBuilder = RatingRecordsCompanion
@@ -12893,6 +16747,7 @@ typedef $$RatingRecordsTableCreateCompanionBuilder = RatingRecordsCompanion
   required int trialId,
   required int plotPk,
   required int assessmentId,
+  Value<int?> trialAssessmentId,
   required int sessionId,
   Value<int?> subUnitId,
   Value<String> resultStatus,
@@ -12913,6 +16768,7 @@ typedef $$RatingRecordsTableUpdateCompanionBuilder = RatingRecordsCompanion
   Value<int> trialId,
   Value<int> plotPk,
   Value<int> assessmentId,
+  Value<int?> trialAssessmentId,
   Value<int> sessionId,
   Value<int?> subUnitId,
   Value<String> resultStatus,
@@ -12949,6 +16805,7 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<int> trialId = const Value.absent(),
             Value<int> plotPk = const Value.absent(),
             Value<int> assessmentId = const Value.absent(),
+            Value<int?> trialAssessmentId = const Value.absent(),
             Value<int> sessionId = const Value.absent(),
             Value<int?> subUnitId = const Value.absent(),
             Value<String> resultStatus = const Value.absent(),
@@ -12968,6 +16825,7 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             trialId: trialId,
             plotPk: plotPk,
             assessmentId: assessmentId,
+            trialAssessmentId: trialAssessmentId,
             sessionId: sessionId,
             subUnitId: subUnitId,
             resultStatus: resultStatus,
@@ -12987,6 +16845,7 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             required int trialId,
             required int plotPk,
             required int assessmentId,
+            Value<int?> trialAssessmentId = const Value.absent(),
             required int sessionId,
             Value<int?> subUnitId = const Value.absent(),
             Value<String> resultStatus = const Value.absent(),
@@ -13006,6 +16865,7 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             trialId: trialId,
             plotPk: plotPk,
             assessmentId: assessmentId,
+            trialAssessmentId: trialAssessmentId,
             sessionId: sessionId,
             subUnitId: subUnitId,
             resultStatus: resultStatus,
@@ -13124,6 +16984,19 @@ class $$RatingRecordsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$AssessmentsTableFilterComposer(ComposerState($state.db,
                 $state.db.assessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableFilterComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
     return composer;
   }
 
@@ -13271,6 +17144,19 @@ class $$RatingRecordsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$AssessmentsTableOrderingComposer(ComposerState($state.db,
                 $state.db.assessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableOrderingComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
     return composer;
   }
 
@@ -16405,8 +20291,14 @@ class $AppDatabaseManager {
       $$TreatmentComponentsTableTableManager(_db, _db.treatmentComponents);
   $$AssessmentsTableTableManager get assessments =>
       $$AssessmentsTableTableManager(_db, _db.assessments);
+  $$AssessmentDefinitionsTableTableManager get assessmentDefinitions =>
+      $$AssessmentDefinitionsTableTableManager(_db, _db.assessmentDefinitions);
+  $$TrialAssessmentsTableTableManager get trialAssessments =>
+      $$TrialAssessmentsTableTableManager(_db, _db.trialAssessments);
   $$PlotsTableTableManager get plots =>
       $$PlotsTableTableManager(_db, _db.plots);
+  $$AssignmentsTableTableManager get assignments =>
+      $$AssignmentsTableTableManager(_db, _db.assignments);
   $$SessionsTableTableManager get sessions =>
       $$SessionsTableTableManager(_db, _db.sessions);
   $$SessionAssessmentsTableTableManager get sessionAssessments =>

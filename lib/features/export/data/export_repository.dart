@@ -16,12 +16,14 @@ class ExportRepository {
     final rr = db.ratingRecords;
     final p = db.plots;
     final a = db.assessments;
+    final asg = db.assignments;
     final t = db.treatments;
 
     final query = db.select(rr).join([
       drift.innerJoin(p, p.id.equalsExp(rr.plotPk)),
       drift.innerJoin(a, a.id.equalsExp(rr.assessmentId)),
-      drift.leftOuterJoin(t, t.id.equalsExp(p.treatmentId)),
+      drift.leftOuterJoin(asg, asg.plotId.equalsExp(p.id) & asg.trialId.equalsExp(p.trialId)),
+      drift.leftOuterJoin(t, t.id.equalsExp(asg.treatmentId)),
     ])
       ..where(rr.sessionId.equals(sessionId) & rr.isCurrent.equals(true))
       ..orderBy([
@@ -42,6 +44,7 @@ class ExportRepository {
       final rating = row.readTable(rr);
       final plot = row.readTable(p);
       final assessment = row.readTable(a);
+      final assignment = row.readTableOrNull(asg);
       final treatment = row.readTableOrNull(t);
       final correction = corrections[rating.id];
 
@@ -53,12 +56,12 @@ class ExportRepository {
         // Plot
         'plot_id': plot.plotId,
         'rep': plot.rep,
-        // Treatment (full lineage per Charter PART 10)
-        'treatment_id': plot.treatmentId,
+        // Treatment via Assignment (Plot → Assignment → Treatment)
+        'treatment_id': assignment?.treatmentId ?? plot.treatmentId,
         'treatment_code': treatment?.code,
         'treatment_name': treatment?.name,
-        'assignment_source': plot.assignmentSource,
-        'assignment_updated_at_utc': plot.assignmentUpdatedAt?.toUtc().toIso8601String(),
+        'assignment_source': assignment?.assignmentSource ?? plot.assignmentSource,
+        'assignment_updated_at_utc': (assignment?.assignedAt ?? plot.assignmentUpdatedAt)?.toUtc().toIso8601String(),
         'row': plot.row,
         'column': plot.column,
         'plot_sort_index': plot.plotSortIndex,
