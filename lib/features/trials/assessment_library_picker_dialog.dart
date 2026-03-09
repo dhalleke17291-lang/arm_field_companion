@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/loading_error_widgets.dart';
+import '../../core/widgets/app_dialog.dart';
 
 const Map<String, String> _categoryLabels = {
   'crop_injury': 'Crop Injury',
@@ -36,10 +37,10 @@ class AssessmentLibraryPickerDialog extends ConsumerWidget {
     final definitionsAsync = ref.watch(assessmentDefinitionsProvider);
     final trialListAsync = ref.watch(trialAssessmentsForTrialProvider(trialId));
 
-    return AlertDialog(
-      title: const Text('Add from library'),
+    return AppDialog(
+      title: 'Add from library',
       content: SizedBox(
-        width: double.maxFinite,
+        width: double.infinity,
         child: definitionsAsync.when(
           loading: () => const AppLoadingView(),
           error: (e, st) => AppErrorView(
@@ -91,48 +92,54 @@ class AssessmentLibraryPickerDialog extends ConsumerWidget {
                         ),
                         ...list.map((def) {
                           final already = alreadyIds.contains(def.id);
-                          return ListTile(
-                            dense: true,
-                            leading: Icon(
-                              Icons.analytics_outlined,
-                              size: 22,
-                              color: already
-                                  ? Theme.of(context).colorScheme.outline
-                                  : Theme.of(context).colorScheme.primary,
-                            ),
-                            title: Text(
-                              def.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: already
-                                    ? Theme.of(context).colorScheme.outline
-                                    : null,
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              leading: CircleAvatar(
+                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                child: Icon(
+                                  Icons.analytics_outlined,
+                                  size: 20,
+                                  color: already
+                                      ? Theme.of(context).colorScheme.outline
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
                               ),
-                            ),
-                            subtitle: Text(
-                              '${def.dataType}${def.unit != null ? " (${def.unit})" : ""}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              title: Text(
+                                def.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: already
+                                      ? Theme.of(context).colorScheme.outline
+                                      : null,
+                                ),
                               ),
+                              subtitle: Text(
+                                '${def.dataType}${def.unit != null ? " (${def.unit})" : ""}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              trailing: already
+                                  ? const Icon(Icons.check_circle, size: 20, color: Colors.green)
+                                  : const Icon(Icons.chevron_right, size: 18),
+                              onTap: already
+                                  ? null
+                                  : () async {
+                                      await ref
+                                          .read(trialAssessmentRepositoryProvider)
+                                          .addToTrial(
+                                            trialId: trialId,
+                                            assessmentDefinitionId: def.id,
+                                            selectedManually: true,
+                                          );
+                                      if (context.mounted) {
+                                        Navigator.of(context).pop();
+                                      }
+                                    },
                             ),
-                            trailing: already
-                                ? const Icon(Icons.check, size: 20, color: Colors.green)
-                                : null,
-                            onTap: already
-                                ? null
-                                : () async {
-                                    await ref
-                                        .read(trialAssessmentRepositoryProvider)
-                                        .addToTrial(
-                                          trialId: trialId,
-                                          assessmentDefinitionId: def.id,
-                                          selectedManually: true,
-                                        );
-                                    if (context.mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  },
                           );
                         }),
                         const SizedBox(height: 8),

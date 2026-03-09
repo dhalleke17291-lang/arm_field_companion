@@ -21,6 +21,7 @@ import 'assessment_library_picker_dialog.dart';
 import '../../core/providers.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../core/widgets/loading_error_widgets.dart';
+import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/app_standard_widgets.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
@@ -559,8 +560,12 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     final trial = widget.trial;
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     return plotsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, st) => Center(child: Text('Error: $e')),
+      loading: () => const AppLoadingView(),
+      error: (e, st) => AppErrorView(
+        error: e,
+        stackTrace: st,
+        onRetry: () => ref.invalidate(plotsForTrialProvider(trial.id)),
+      ),
       data: (plots) => plots.isEmpty
           ? _buildEmptyPlots(context, ref)
           : _buildPlotsContent(context, ref, plots),
@@ -1463,7 +1468,7 @@ class _AssessmentsTab extends ConsumerWidget {
       children: [
         StandardSectionHeader(
           icon: Icons.assessment,
-          title: 'Assessments for this trial ($total)',
+          title: total == 1 ? '1 assessment' : '$total assessments',
           trailingIndicator: ProtocolLockChip(isLocked: locked, status: trial.status),
           action: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1483,15 +1488,9 @@ class _AssessmentsTab extends ConsumerWidget {
         ),
         if (locked)
           ProtocolLockNotice(message: getProtocolLockMessage(trial.status)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Text(
-            'Library items are trial-level only. Only custom assessments can be added to sessions.',
-            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ),
         Expanded(
           child: ListView(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
             children: [
               if (libraryList.isNotEmpty) ...[
                 Padding(
@@ -1509,15 +1508,18 @@ class _AssessmentsTab extends ConsumerWidget {
                   final ta = pair.$1;
                   final def = pair.$2;
                   final name = ta.displayNameOverride ?? def.name;
-                  return ListTile(
-                    dense: true,
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                      child: Icon(Icons.analytics, color: Theme.of(context).colorScheme.primary, size: 20),
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        child: Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                      ),
+                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text('${def.dataType}${def.unit != null ? " (${def.unit})" : ""}'),
+                      trailing: ta.isActive ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : const Icon(Icons.chevron_right, size: 18),
                     ),
-                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('${def.dataType}${def.unit != null ? " (${def.unit})" : ""}'),
-                    trailing: ta.isActive ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : const Icon(Icons.pause_circle, color: Colors.grey, size: 20),
                   );
                 }),
               ],
@@ -1533,15 +1535,18 @@ class _AssessmentsTab extends ConsumerWidget {
                     ),
                   ),
                 ),
-                ...legacyList.map((assessment) => ListTile(
-                  dense: true,
-                  leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    child: Icon(Icons.analytics, color: Theme.of(context).colorScheme.primary, size: 20),
+                ...legacyList.map((assessment) => Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                    ),
+                    title: Text(assessment.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text('${assessment.dataType}${assessment.unit != null ? " (${assessment.unit})" : ""}'),
+                    trailing: assessment.isActive ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : const Icon(Icons.chevron_right, size: 18),
                   ),
-                  title: Text(assessment.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text('${assessment.dataType}${assessment.unit != null ? " (${assessment.unit})" : ""}'),
-                  trailing: assessment.isActive ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : const Icon(Icons.pause_circle, color: Colors.grey, size: 20),
                 )),
               ],
             ],
@@ -2359,38 +2364,37 @@ class _TreatmentsTab extends ConsumerWidget {
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Treatment'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: codeController,
-                decoration: const InputDecoration(
-                  labelText: 'Code (e.g. T1, T2)',
-                  border: OutlineInputBorder(),
-                ),
+      builder: (ctx) => AppDialog(
+        title: 'Add Treatment',
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: codeController,
+              decoration: const InputDecoration(
+                labelText: 'Code (e.g. T1, T2)',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
-                ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
-                  border: OutlineInputBorder(),
-                ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                border: OutlineInputBorder(),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -2507,8 +2511,12 @@ class SessionsView extends ConsumerWidget {
           const Divider(height: 1),
           Expanded(
             child: sessionsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+              loading: () => const AppLoadingView(),
+              error: (e, st) => AppErrorView(
+                error: e,
+                stackTrace: st,
+                onRetry: () => ref.invalidate(sessionsForTrialProvider(trial.id)),
+              ),
               data: (sessions) => sessions.isEmpty
                   ? _buildEmptySessions(context)
                   : _buildSessionsList(context, ref, sessions),
@@ -2533,11 +2541,22 @@ class SessionsView extends ConsumerWidget {
     );
   }
 
+  /// Normalize to YYYY-MM-DD so grouping and header formatting never see a full datetime string.
+  static String _normalizeSessionDateKey(String sessionDateLocal) {
+    if (sessionDateLocal.length >= 10) return sessionDateLocal.substring(0, 10);
+    final space = sessionDateLocal.indexOf(' ');
+    if (space > 0) return sessionDateLocal.substring(0, space);
+    final t = sessionDateLocal.indexOf('T');
+    if (t > 0) return sessionDateLocal.substring(0, t);
+    return sessionDateLocal;
+  }
+
   Widget _buildSessionsList(
       BuildContext context, WidgetRef ref, List<Session> sessions) {
     final groups = <String, List<Session>>{};
     for (final session in sessions) {
-      groups.putIfAbsent(session.sessionDateLocal, () => []).add(session);
+      final key = _normalizeSessionDateKey(session.sessionDateLocal);
+      groups.putIfAbsent(key, () => []).add(session);
     }
     final sortedDates = groups.keys.toList()..sort((a, b) => b.compareTo(a));
 
@@ -2679,7 +2698,11 @@ class SessionsView extends ConsumerWidget {
 
   String _formatDateHeader(String dateStr) {
     try {
-      final parts = dateStr.split('-');
+      // Use only the date part (YYYY-MM-DD); handle "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DDTHH:mm:ss".
+      final dateOnly = dateStr.length >= 10
+          ? dateStr.substring(0, 10)
+          : (dateStr.contains(' ') ? dateStr.split(' ').first : (dateStr.contains('T') ? dateStr.split('T').first : dateStr));
+      final parts = dateOnly.split('-');
       if (parts.length != 3) return dateStr;
       final months = [
         '',
@@ -2696,8 +2719,10 @@ class SessionsView extends ConsumerWidget {
         'Nov',
         'Dec'
       ];
-      final day = int.parse(parts[2]);
-      final month = months[int.parse(parts[1])];
+      final day = int.tryParse(parts[2]);
+      final monthIdx = int.tryParse(parts[1]);
+      if (day == null || monthIdx == null || monthIdx < 1 || monthIdx > 12) return dateStr;
+      final month = months[monthIdx];
       final year = parts[0];
       return '$day $month $year';
     } catch (_) {

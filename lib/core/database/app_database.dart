@@ -388,7 +388,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -427,9 +427,15 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               'CREATE UNIQUE INDEX IF NOT EXISTS idx_assignments_trial_plot ON assignments(trial_id, plot_id)',
             );
+            // Drift DateTimeColumn expects INTEGER (unix seconds), not text from datetime('now').
             await customStatement('''
               INSERT INTO assignments (trial_id, plot_id, treatment_id, replication, range, "column", assignment_source, assigned_at, created_at, updated_at)
-              SELECT trial_id, id, treatment_id, rep, field_row, field_column, assignment_source, assignment_updated_at, datetime('now'), datetime('now')
+              SELECT trial_id, id, treatment_id, rep, field_row, field_column, assignment_source,
+                CASE WHEN assignment_updated_at IS NULL THEN NULL
+                     WHEN typeof(assignment_updated_at) = 'text' THEN strftime('%s', assignment_updated_at)
+                     ELSE assignment_updated_at END,
+                strftime('%s', 'now'),
+                strftime('%s', 'now')
               FROM plots
             ''');
           }
@@ -439,6 +445,24 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(sessionAssessments, sessionAssessments.trialAssessmentId);
             await m.addColumn(ratingRecords, ratingRecords.trialAssessmentId);
             await _seedAssessmentDefinitions();
+          }
+          // Repair assignments + assessment_definitions: v10/v11 wrote datetime('now') (text); Drift expects INTEGER unix seconds.
+          if (from < 12) {
+            await customStatement(
+              "UPDATE assignments SET created_at = strftime('%s', created_at) WHERE typeof(created_at) = 'text'",
+            );
+            await customStatement(
+              "UPDATE assignments SET updated_at = strftime('%s', updated_at) WHERE typeof(updated_at) = 'text'",
+            );
+            await customStatement(
+              "UPDATE assignments SET assigned_at = strftime('%s', assigned_at) WHERE assigned_at IS NOT NULL AND typeof(assigned_at) = 'text'",
+            );
+            await customStatement(
+              "UPDATE assessment_definitions SET created_at = strftime('%s', created_at) WHERE typeof(created_at) = 'text'",
+            );
+            await customStatement(
+              "UPDATE assessment_definitions SET updated_at = strftime('%s', updated_at) WHERE typeof(updated_at) = 'text'",
+            );
           }
           await _createIndexes();
         },
@@ -459,7 +483,7 @@ class AppDatabase extends _$AppDatabase {
     for (final r in rows) {
       await customStatement(
         'INSERT INTO assessment_definitions (code, name, category, data_type, unit, scale_min, scale_max, is_system, is_active, created_at, updated_at) '
-        "VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, datetime('now'), datetime('now'))",
+        "VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, strftime('%s','now'), strftime('%s','now'))",
         [r[0], r[1], r[2], r[3], r[4], r[5], r[6]],
       );
     }
