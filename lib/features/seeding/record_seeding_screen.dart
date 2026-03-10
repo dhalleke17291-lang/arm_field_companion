@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 
@@ -75,7 +76,7 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
     final operatorName = _operatorController.text.trim();
     final comments = _commentsController.text.trim();
 
-    await db.into(db.seedingRecords).insert(
+    final recordId = await db.into(db.seedingRecords).insert(
           SeedingRecordsCompanion.insert(
             trialId: widget.trial.id,
             seedingDate: _seedingDate.value,
@@ -84,6 +85,62 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
             comments: drift.Value(comments.isEmpty ? null : comments),
           ),
         );
+
+    // Persist all form fields so they show in the seeding event detail
+    final extraFields = <Map<String, dynamic>>[
+      {'key': 'equipment', 'label': 'Equipment / Planter', 'type': 'text', 'text': _equipmentController.text.trim()},
+      {'key': 'variety', 'label': 'Variety / Hybrid', 'type': 'text', 'text': _varietyController.text.trim()},
+      {'key': 'seed_lot', 'label': 'Seed Lot', 'type': 'text', 'text': _seedLotController.text.trim()},
+      {'key': 'seeding_rate', 'label': 'Seeding Rate', 'type': 'number', 'text': _seedingRateController.text.trim()},
+      {'key': 'rate_unit', 'label': 'Rate Unit', 'type': 'text', 'text': _rateUnitController.text.trim()},
+      {'key': 'seeding_depth', 'label': 'Seeding Depth', 'type': 'number', 'text': _seedingDepthController.text.trim()},
+      {'key': 'depth_unit', 'label': 'Depth Unit', 'type': 'text', 'text': _depthUnitController.text.trim()},
+      {'key': 'row_spacing', 'label': 'Row Spacing', 'type': 'number', 'text': _rowSpacingController.text.trim()},
+      {'key': 'spacing_unit', 'label': 'Spacing Unit', 'type': 'text', 'text': _spacingUnitController.text.trim()},
+      {'key': 'rows_per_plot', 'label': 'Rows Per Plot', 'type': 'number', 'text': _rowsPerPlotController.text.trim()},
+      {'key': 'row_length', 'label': 'Row Length', 'type': 'number', 'text': _rowLengthController.text.trim()},
+      {'key': 'row_length_unit', 'label': 'Row Length Unit', 'type': 'text', 'text': _rowLengthUnitController.text.trim()},
+      {'key': 'soil_temp', 'label': 'Soil Temperature', 'type': 'text', 'text': _soilTempController.text.trim()},
+      {'key': 'soil_moisture', 'label': 'Soil Moisture', 'type': 'text', 'text': _soilMoistureController.text.trim()},
+      {'key': 'conditions_notes', 'label': 'Conditions / Notes', 'type': 'text', 'text': _conditionsNotesController.text.trim()},
+    ];
+
+    int sortOrder = 0;
+    for (final f in extraFields) {
+      final key = f['key'] as String;
+      final label = f['label'] as String;
+      final type = f['type'] as String;
+      final text = f['text'] as String?;
+      if (text == null || text.isEmpty) continue;
+
+      final existing = await (db.select(db.protocolSeedingFields)
+            ..where((p) => p.trialId.equals(widget.trial.id) & p.fieldKey.equals(key)))
+          .getSingleOrNull();
+      if (existing == null) {
+        await db.into(db.protocolSeedingFields).insert(
+              ProtocolSeedingFieldsCompanion.insert(
+                trialId: widget.trial.id,
+                fieldKey: key,
+                fieldLabel: label,
+                fieldType: type,
+              ),
+            );
+      }
+
+      final isNum = type == 'number' || type == 'numeric';
+      final numVal = isNum ? double.tryParse(text) : null;
+      await db.into(db.seedingFieldValues).insert(
+            SeedingFieldValuesCompanion.insert(
+              seedingRecordId: recordId,
+              fieldKey: key,
+              fieldLabel: label,
+              valueText: isNum && numVal != null ? const drift.Value.absent() : drift.Value(text),
+              valueNumber: isNum && numVal != null ? drift.Value(numVal) : const drift.Value.absent(),
+              unit: const drift.Value.absent(),
+              sortOrder: drift.Value(sortOrder++),
+            ),
+          );
+    }
 
     if (!mounted) return;
     setState(() => _isSaving = false);
@@ -128,15 +185,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Record Seeding'),
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: const GradientScreenHeader(title: 'Record Seeding'),
       body: _isSaving
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

@@ -31,11 +31,12 @@ class AppDialog extends StatelessWidget {
     }
 
     return AlertDialog(
+      backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-      contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       title: Text(
         title,
         style: theme.textTheme.titleMedium?.copyWith(
@@ -43,7 +44,7 @@ class AppDialog extends StatelessWidget {
         ),
       ),
       content: body,
-      actionsAlignment: MainAxisAlignment.end,
+      actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: actions,
     );
   }

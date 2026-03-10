@@ -118,4 +118,45 @@ class TrialAssessmentRepository {
         .getSingleOrNull();
     return r != null;
   }
+
+  /// Resolves trial assessment IDs to legacy Assessment IDs for session creation.
+  /// Creates legacy Assessment rows (with unique name "DisplayName — TA{id}") when needed.
+  Future<List<int>> getOrCreateLegacyAssessmentIdsForTrialAssessments(
+    int trialId,
+    List<int> trialAssessmentIds,
+  ) async {
+    if (trialAssessmentIds.isEmpty) return [];
+    final result = <int>[];
+    for (final taId in trialAssessmentIds) {
+      final ta = await getById(taId);
+      if (ta == null || ta.trialId != trialId) continue;
+      final defs = await (_db.select(_db.assessmentDefinitions)
+            ..where((d) => d.id.equals(ta.assessmentDefinitionId)))
+          .get();
+      final def = defs.isNotEmpty ? defs.single : null;
+      if (def == null) continue;
+      final displayName = ta.displayNameOverride ?? def.name;
+      final uniqueName = "$displayName — TA$taId";
+      final existing = await (_db.select(_db.assessments)
+            ..where((a) =>
+                a.trialId.equals(trialId) & a.name.equals(uniqueName)))
+          .getSingleOrNull();
+      if (existing != null) {
+        result.add(existing.id);
+        continue;
+      }
+      final id = await _db.into(_db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: uniqueName,
+              dataType: Value(def.dataType),
+              unit: Value(def.unit),
+              minValue: Value(def.scaleMin),
+              maxValue: Value(def.scaleMax),
+            ),
+          );
+      result.add(id);
+    }
+    return result;
+  }
 }

@@ -78,6 +78,14 @@ String getProtocolLockMessage(String? status) {
   return 'Protocol is locked because this trial is $label.';
 }
 
+/// Full explanation when locked: what you cannot edit and what you can still do.
+/// Use in status bar or help so users understand lock vs. unlock behavior.
+String getProtocolLockExplanation(String? status) {
+  if (status == null || !isProtocolLocked(status)) return '';
+  return "When locked you cannot add or edit: treatments, plots, assessments, or plot assignments. "
+      "You can still: run sessions, record ratings, add plot notes, and export.";
+}
+
 /// Next status(es) allowed from current (for UI transitions).
 List<String> allowedNextTrialStatuses(String? status) {
   switch (status) {

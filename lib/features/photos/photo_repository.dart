@@ -106,4 +106,15 @@ class PhotoRepository {
           ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
         .watch();
   }
+
+  /// All photos for a trial (any session, any plot). Ordered by session then createdAt.
+  Stream<List<Photo>> watchPhotosForTrial(int trialId) {
+    return (_db.select(_db.photos)
+          ..where((p) => p.trialId.equals(trialId))
+          ..orderBy([
+            (p) => OrderingTerm.asc(p.sessionId),
+            (p) => OrderingTerm.asc(p.createdAt),
+          ]))
+        .watch();
+  }
 }

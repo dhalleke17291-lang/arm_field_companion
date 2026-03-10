@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -86,23 +87,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '${widget.currentPlotIndex + 1} of ${widget.allPlots.length} plots',
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
-            ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: GradientScreenHeader(
+        title: 'Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}',
+        subtitle: '${widget.currentPlotIndex + 1} of ${widget.allPlots.length} plots',
+        titleFontSize: 17,
         actions: [
           _buildOfflineIndicator(),
           _buildFlagButton(context),
@@ -734,6 +723,70 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _valueController.text.isEmpty) {
       _prefillFromLastValue();
     }
+    // Full-screen writing area for notes/observation; one tap Save & Next saves and navigates
+    if (_isTextAssessment && _selectedStatus == 'RECORDED') {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (existing != null)
+              _buildCurrentOrCorrectedRow(context, existing),
+            const Text('Status',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                'RECORDED',
+                'NOT_OBSERVED',
+                'NOT_APPLICABLE',
+                'MISSING_CONDITION',
+                'TECHNICAL_ISSUE',
+              ].map((status) {
+                final isSelected = _selectedStatus == status;
+                return ChoiceChip(
+                  label: Text(
+                    _statusLabel(status),
+                    style: TextStyle(
+                        fontSize: 12, color: isSelected ? Colors.white : null),
+                  ),
+                  selected: isSelected,
+                  selectedColor: _statusColor(status),
+                  onSelected: (_) {
+                    setState(() {
+                      _selectedStatus = status;
+                      if (status != 'RECORDED') _valueController.clear();
+                      if (status != 'MISSING_CONDITION') {
+                        _selectedMissingReason = null;
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: TextField(
+                controller: _valueController,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
+                maxLines: null,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Add notes or observation…',
+                  alignLabelWithHint: true,
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                autofocus: true,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -795,42 +848,64 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             const SizedBox(height: 20),
             const Text('Value',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            if (_currentAssessment.minValue != null ||
-                _currentAssessment.maxValue != null ||
-                _currentAssessment.unit != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Scale: ${_currentAssessment.minValue ?? "?"}–${_currentAssessment.maxValue ?? "?"}${_currentAssessment.unit != null ? " ${_currentAssessment.unit}" : ""}',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+            if (_isTextAssessment) ...[
+              const SizedBox(height: 8),
+              TextField(
+                controller: _valueController,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
+                maxLines: 6,
+                minLines: 4,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Add notes or observation…',
+                  alignLabelWithHint: true,
+                  filled: true,
+                  fillColor: Colors.white,
                 ),
+                autofocus: true,
               ),
+            ] else ...[
+              if (_currentAssessment.minValue != null ||
+                  _currentAssessment.maxValue != null ||
+                  _currentAssessment.unit != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Scale: ${_currentAssessment.minValue ?? "?"}–${_currentAssessment.maxValue ?? "?"}${_currentAssessment.unit != null ? " ${_currentAssessment.unit}" : ""}',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              TextField(
+                controller: _valueController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: '0',
+                  suffixText: _currentAssessment.unit,
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              _buildQuickButtons(),
             ],
-            const SizedBox(height: 8),
-            TextField(
-              controller: _valueController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                hintText: '0',
-                suffixText: _currentAssessment.unit,
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            _buildQuickButtons(),
           ],
         ],
       ),
     );
   }
+
+  bool get _isTextAssessment =>
+      _currentAssessment.dataType.toLowerCase() == 'text';
 
   Widget _buildQuickButtons() {
     final min = _currentAssessment.minValue?.toInt() ?? 0;
@@ -920,17 +995,26 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   Future<void> _saveRating(BuildContext context) async {
     double? numericValue;
+    String? textValue;
     if (_selectedStatus == 'RECORDED') {
-      numericValue = double.tryParse(_valueController.text);
-      if (numericValue == null && _valueController.text.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter a valid number'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
+      if (_isTextAssessment) {
+        textValue = _valueController.text.trim().isNotEmpty
+            ? _valueController.text.trim()
+            : null;
+      } else {
+        numericValue = double.tryParse(_valueController.text);
+        if (numericValue == null && _valueController.text.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter a valid number'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
       }
+    } else if (_selectedStatus == 'MISSING_CONDITION') {
+      textValue = _selectedMissingReason;
     }
 
     setState(() => _isSaving = true);
@@ -945,7 +1029,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         sessionId: widget.session.id,
         resultStatus: _selectedStatus,
         numericValue: numericValue,
-        textValue: _selectedMissingReason,
+        textValue: textValue,
         raterName: widget.session.raterName,
         performedByUserId: userId,
         isSessionClosed: widget.session.endedAt != null,

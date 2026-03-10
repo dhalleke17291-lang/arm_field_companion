@@ -280,6 +280,16 @@ final plotFlagsForPlotSessionProvider =
       .watch();
 });
 
+/// Set of plot IDs that have at least one flag in this session (for session/queue UI).
+final flaggedPlotIdsForSessionProvider =
+    StreamProvider.family<Set<int>, int>((ref, sessionId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.plotFlags)
+        ..where((f) => f.sessionId.equals(sessionId)))
+      .watch()
+      .map((list) => list.map((f) => f.plotPk).toSet());
+});
+
 class PhotosForPlotParams {
   final int trialId;
   final int plotPk;
@@ -309,6 +319,11 @@ final photosForPlotProvider =
         plotPk: params.plotPk,
         sessionId: params.sessionId,
       );
+});
+
+/// All photos for a trial (for trial-level Photos tab). Group by session in UI.
+final photosForTrialProvider = StreamProvider.family<List<Photo>, int>((ref, trialId) {
+  return ref.watch(photoRepositoryProvider).watchPhotosForTrial(trialId);
 });
 
 class PlotRatingParams {

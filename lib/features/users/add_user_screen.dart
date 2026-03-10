@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 
@@ -56,11 +57,8 @@ class _AddUserScreenState extends ConsumerState<AddUserScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add User'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: const GradientScreenHeader(title: 'Add User'),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

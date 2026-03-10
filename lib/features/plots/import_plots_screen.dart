@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
@@ -27,11 +28,8 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Import Plots'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: const GradientScreenHeader(title: 'Import Plots'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

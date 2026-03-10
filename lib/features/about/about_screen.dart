@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/app_info.dart';
 import '../diagnostics/diagnostics_screen.dart';
 
@@ -14,11 +15,8 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('About'),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: const GradientScreenHeader(title: 'About'),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),

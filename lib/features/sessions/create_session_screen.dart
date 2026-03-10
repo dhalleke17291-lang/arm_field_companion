@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
@@ -18,7 +19,8 @@ class CreateSessionScreen extends ConsumerStatefulWidget {
 class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   final _nameController = TextEditingController();
   final _raterController = TextEditingController();
-  final Set<int> _selectedAssessmentIds = {};
+  final Set<int> _selectedLegacyAssessmentIds = {};
+  final Set<int> _selectedTrialAssessmentIds = {};
   bool _isCreating = false;
 
   @override
@@ -55,25 +57,30 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final assessmentsAsync =
-        ref.watch(assessmentsForTrialProvider(widget.trial.id));
+    final legacyAsync = ref.watch(assessmentsForTrialProvider(widget.trial.id));
+    final trialAsync = ref.watch(trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('New Session'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: assessmentsAsync.when(
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: const GradientScreenHeader(title: 'New Session'),
+      body: legacyAsync.when(
         loading: () => const AppLoadingView(),
         error: (e, st) => Center(child: Text('Error: $e')),
-        data: (assessments) => _buildForm(context, assessments),
+        data: (legacy) => trialAsync.when(
+          loading: () => _buildForm(context, legacy, []),
+          error: (e, st) => _buildForm(context, legacy, []),
+          data: (trialPairs) => _buildForm(context, legacy, trialPairs),
+        ),
       ),
       bottomNavigationBar: _buildStartButton(context),
     );
   }
 
-  Widget _buildForm(BuildContext context, List<Assessment> assessments) {
+  Widget _buildForm(BuildContext context, List<Assessment> legacy, List<(TrialAssessment, AssessmentDefinition)> trialPairs) {
+    final assessments = legacy;
+    final hasTrial = trialPairs.isNotEmpty;
+    final combinedEmpty = assessments.isEmpty && !hasTrial;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -132,8 +139,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
               const Text('Assessments to Rate',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               const Spacer(),
-              if (_selectedAssessmentIds.isNotEmpty)
-                Text('${_selectedAssessmentIds.length} selected',
+              if (_selectedLegacyAssessmentIds.isNotEmpty || _selectedTrialAssessmentIds.isNotEmpty)
+                Text('${_selectedLegacyAssessmentIds.length + _selectedTrialAssessmentIds.length} selected',
                     style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600)),
@@ -151,7 +158,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
           ),
           const SizedBox(height: 8),
 
-          assessments.isEmpty
+          combinedEmpty
               ? Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -167,38 +174,60 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                   ),
                 )
               : Column(
-                  children: assessments.map((assessment) {
-                    final isSelected =
-                        _selectedAssessmentIds.contains(assessment.id);
-                    return CheckboxListTile(
-                      value: isSelected,
-                      onChanged: (val) {
-                        setState(() {
-                          if (val == true) {
-                            _selectedAssessmentIds.add(assessment.id);
-                          } else {
-                            _selectedAssessmentIds.remove(assessment.id);
-                          }
-                        });
-                      },
-                      title: Text(assessment.name,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: assessment.unit != null
-                          ? Text(
-                              '${assessment.unit}${assessment.minValue != null ? " • ${assessment.minValue}–${assessment.maxValue}" : ""}')
-                          : null,
-                      secondary: CircleAvatar(
-                        backgroundColor: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey.shade200,
-                        child: Icon(Icons.analytics,
-                            color: isSelected ? Colors.white : Colors.grey,
-                            size: 20),
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    );
-                  }).toList(),
+                  children: [
+                    ...assessments.map((assessment) {
+                      final isSelected = _selectedLegacyAssessmentIds.contains(assessment.id);
+                      return CheckboxListTile(
+                        value: isSelected,
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              _selectedLegacyAssessmentIds.add(assessment.id);
+                            } else {
+                              _selectedLegacyAssessmentIds.remove(assessment.id);
+                            }
+                            
+                          });
+                        },
+                        title: Text(assessment.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: assessment.unit != null
+                            ? Text('${assessment.unit}${assessment.minValue != null ? " • ${assessment.minValue}–${assessment.maxValue}" : ""}')
+                            : null,
+                        secondary: CircleAvatar(
+                          backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade200,
+                          child: Icon(Icons.analytics, color: isSelected ? Colors.white : Colors.grey, size: 20),
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      );
+                    }),
+                    ...trialPairs.map((pair) {
+                      final ta = pair.$1;
+                      final def = pair.$2;
+                      final displayName = ta.displayNameOverride ?? def.name;
+                      final isSelected = _selectedTrialAssessmentIds.contains(ta.id);
+                      return CheckboxListTile(
+                        value: isSelected,
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              _selectedTrialAssessmentIds.add(ta.id);
+                            } else {
+                              _selectedTrialAssessmentIds.remove(ta.id);
+                            }
+                          });
+                        },
+                        title: Text(displayName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: def.unit != null
+                            ? Text('${def.unit}${def.scaleMin != null && def.scaleMax != null ? " • ${def.scaleMin}–${def.scaleMax}" : ""}')
+                            : null,
+                        secondary: CircleAvatar(
+                          backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade200,
+                          child: Icon(Icons.analytics, color: isSelected ? Colors.white : Colors.grey, size: 20),
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      );
+                    }),
+                  ],
                 ),
         ],
       ),
@@ -268,7 +297,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       if (proceed != true) return;
     }
 
-    if (_selectedAssessmentIds.isEmpty) {
+    if (_selectedLegacyAssessmentIds.isEmpty && _selectedTrialAssessmentIds.isEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -290,12 +319,19 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
         ? (currentUser?.displayName)
         : _raterController.text.trim();
 
+    final trialRepo = ref.read(trialAssessmentRepositoryProvider);
+    final resolvedTrialIds = await trialRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
+      widget.trial.id,
+      _selectedTrialAssessmentIds.toList(),
+    );
+    final assessmentIds = [..._selectedLegacyAssessmentIds, ...resolvedTrialIds];
+
     final useCase = ref.read(createSessionUseCaseProvider);
     final result = await useCase.execute(CreateSessionInput(
       trialId: widget.trial.id,
       name: _nameController.text.trim(),
       sessionDateLocal: sessionDateLocal,
-      assessmentIds: _selectedAssessmentIds.toList(),
+      assessmentIds: assessmentIds,
       raterName: raterName,
       createdByUserId: userId,
     ));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
@@ -37,19 +38,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final plotIdToTreatmentId = {for (var a in assignments) a.plotId: a.treatmentId};
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.trial.name,
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-            Text(widget.session.name,
-                style: const TextStyle(fontSize: 12, color: Colors.white70)),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: GradientScreenHeader(
+        title: widget.trial.name,
+        subtitle: widget.session.name,
+        titleFontSize: 17,
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -74,8 +67,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             data: (ratedPks) => ratingsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, st) => Center(child: Text('Error: $e')),
-              data: (ratings) =>
-                  _buildQueue(context, plots, assessments, ratedPks, ratings, treatmentById, plotIdToTreatmentId),
+              data: (ratings) {
+                  final flaggedIds = ref.watch(flaggedPlotIdsForSessionProvider(widget.session.id)).valueOrNull ?? <int>{};
+                  return _buildQueue(context, plots, assessments, ratedPks, ratings, treatmentById, plotIdToTreatmentId, flaggedIds);
+                },
             ),
           ),
         ),
@@ -91,6 +86,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     List<RatingRecord> ratings,
     Map<int, Treatment> treatmentById,
     Map<int, int?> plotIdToTreatmentId,
+    Set<int> flaggedIds,
   ) {
     var filtered = plots;
     if (_repFilter != null) {
@@ -273,7 +269,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ],
                   ),
                 )
-              : _buildGroupedList(context, filtered, assessments, ratedPks, ratings, treatmentById, plotIdToTreatmentId, allPlotsForTrial: plots),
+              : _buildGroupedList(context, filtered, assessments, ratedPks, ratings, treatmentById, plotIdToTreatmentId, flaggedIds, allPlotsForTrial: plots),
         ),
       ],
     );
@@ -286,7 +282,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Set<int> ratedPks,
     List<RatingRecord> ratings,
     Map<int, Treatment> treatmentById,
-    Map<int, int?> plotIdToTreatmentId, {
+    Map<int, int?> plotIdToTreatmentId,
+    Set<int> flaggedIds, {
     required List<Plot> allPlotsForTrial,
   }) {
     final groups = <int?, List<Plot>>{};
@@ -318,6 +315,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           assessments: assessments,
           trial: widget.trial,
           session: widget.session,
+          isFlagged: flaggedIds.contains(plot.id),
+          hasIssues: plotRatings.any((r) => r.resultStatus != 'RECORDED'),
         ));
       }
     }
@@ -461,6 +460,8 @@ class _PlotQueueTile extends ConsumerWidget {
   final List<Assessment> assessments;
   final Trial trial;
   final Session session;
+  final bool isFlagged;
+  final bool hasIssues;
 
   const _PlotQueueTile({
     required this.plot,
@@ -471,6 +472,8 @@ class _PlotQueueTile extends ConsumerWidget {
     required this.assessments,
     required this.trial,
     required this.session,
+    required this.isFlagged,
+    required this.hasIssues,
   });
 
   @override
@@ -502,6 +505,25 @@ class _PlotQueueTile extends ConsumerWidget {
               child: Text(titleText,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
+            if (isFlagged)
+              const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Icon(Icons.flag, color: Colors.amber, size: 20),
+              ),
+            if (hasIssues)
+              Container(
+                margin: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.orange.shade300),
+                ),
+                child: Text(
+                  'Issues',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
+                ),
+              ),
             if (isRated)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

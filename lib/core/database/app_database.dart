@@ -395,6 +395,7 @@ class AppDatabase extends _$AppDatabase {
         onCreate: (Migrator m) async {
           await m.createAll();
           await _createIndexes();
+          await _seedAssessmentDefinitions();
         },
         onUpgrade: (Migrator m, int from, int to) async {
           if (from < 2) {
@@ -467,6 +468,14 @@ class AppDatabase extends _$AppDatabase {
           await _createIndexes();
         },
       );
+
+  /// Call after reset or when definitions table is empty. Idempotent: only inserts if table is empty.
+  Future<void> ensureAssessmentDefinitionsSeeded() async {
+    final existing = await select(assessmentDefinitions).get();
+    if (existing.isEmpty) {
+      await _seedAssessmentDefinitions();
+    }
+  }
 
   Future<void> _seedAssessmentDefinitions() async {
     const rows = [

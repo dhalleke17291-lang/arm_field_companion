@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/database/app_database.dart';
 
 class PhotoViewerScreen extends StatefulWidget {
@@ -51,7 +52,8 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
     final photos = widget.photos;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Photos')),
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: const GradientScreenHeader(title: 'Photos'),
       body: PageView.builder(
         controller: _controller,
         itemCount: photos.length,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/current_user.dart';
 import '../../core/database/app_database.dart';
@@ -15,11 +16,8 @@ class UserSelectionScreen extends ConsumerWidget {
     final usersAsync = ref.watch(activeUsersProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select User'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: const GradientScreenHeader(title: 'Select User'),
       body: usersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),

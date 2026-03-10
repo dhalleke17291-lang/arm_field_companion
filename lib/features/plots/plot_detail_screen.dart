@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
@@ -35,20 +36,11 @@ class PlotDetailScreen extends ConsumerWidget {
         assignmentSource: assignmentForPlot?.assignmentSource ?? plotToShow.assignmentSource);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Plot $displayNum',
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            if (plotToShow.rep != null)
-              Text('Rep ${plotToShow.rep}',
-                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: GradientScreenHeader(
+        title: 'Plot $displayNum',
+        subtitle: plotToShow.rep != null ? 'Rep ${plotToShow.rep}' : null,
+        titleFontSize: 17,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_note),

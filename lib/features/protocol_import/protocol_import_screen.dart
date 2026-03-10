@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
@@ -31,10 +32,10 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.trial == null ? 'Import Protocol (New Trial)' : 'Import Protocol (Add to Trial)'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: GradientScreenHeader(
+        title: widget.trial == null ? 'Import Protocol (New Trial)' : 'Import Protocol (Add to Trial)',
+        titleFontSize: 18,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

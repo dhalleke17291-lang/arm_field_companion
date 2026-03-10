@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/design/app_design_tokens.dart';
 import 'core/diagnostics/diagnostics_store.dart';
 import 'core/providers.dart';
 import 'splash_screen.dart';
@@ -90,24 +91,23 @@ class ArmFieldCompanionApp extends StatelessWidget {
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: surfaceWarm,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: primaryGreen,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
-          color: Colors.white,
+        titleTextStyle: AppDesignTokens.headerTitleStyle(
           fontSize: 22,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.2,
+          color: Colors.white,
         ),
       ),
       cardTheme: CardThemeData(
         color: surfaceCard,
-        elevation: 0,
+        elevation: 1,
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFFE8E4DE), width: 1),
+          side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
         ),
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),

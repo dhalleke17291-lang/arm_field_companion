@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
@@ -36,22 +37,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final plotIdToTreatmentId = {for (var a in assignments) a.plotId: a.treatmentId};
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(session.name,
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-            Text(session.sessionDateLocal,
-                style: const TextStyle(fontSize: 12, color: Colors.white70)),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: GradientScreenHeader(
+        title: session.name,
+        subtitle: session.sessionDateLocal,
+        titleFontSize: 17,
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
+            icon: const Icon(Icons.download, color: Colors.white),
             tooltip: 'Export to CSV',
             onPressed: () => _exportCsv(context, ref),
           ),
@@ -79,7 +72,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   child: IndexedStack(
                     index: _selectedTabIndex,
                     children: [
-                      _buildContent(context, ref, plots, ratings, assessments,
+                      _buildContent(context, ref, session, plots, ratings, assessments,
                           treatments, plotIdToTreatmentId),
                       _buildRateTab(context, ref, trial, session, plots,
                           assessments),
@@ -272,6 +265,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
+    Session session,
     List<Plot> plots,
     List<RatingRecord> ratings,
     List<Assessment> assessments,
@@ -280,6 +274,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   ) {
     final ratedCount = ratings.map((r) => r.plotPk).toSet().length;
     final treatmentMap = {for (final t in treatments) t.id: t};
+    final flaggedIds = ref.watch(flaggedPlotIdsForSessionProvider(session.id)).valueOrNull ?? <int>{};
     return Column(
       children: [
         // Section header (same as Trial Plots tab)
@@ -333,6 +328,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               final treatmentLabel = getTreatmentDisplayLabel(
                   plot, treatmentMap, treatmentIdOverride: plotIdToTreatmentId[plot.id]);
 
+              final hasIssues = plotRatings.any((r) => r.resultStatus != 'RECORDED');
+              final isFlagged = flaggedIds.contains(plot.id);
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 child: ExpansionTile(
@@ -356,6 +353,31 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: plot.rep != null ? Text('Rep ${plot.rep}') : null,
+                  trailing: (isFlagged || hasIssues)
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isFlagged)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 6),
+                                child: Icon(Icons.flag, color: Colors.amber, size: 22),
+                              ),
+                            if (hasIssues)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.orange.shade300),
+                                ),
+                                child: Text(
+                                  'Missing / issues',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
+                                ),
+                              ),
+                          ],
+                        )
+                      : null,
                   children: plotRatings.isEmpty
                       ? [
                           const ListTile(

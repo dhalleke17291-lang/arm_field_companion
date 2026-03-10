@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +23,11 @@ import '../../core/providers.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/widgets/app_dialog.dart';
+import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/app_standard_widgets.dart';
+import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/app_empty_state.dart';
+import '../photos/photo_viewer_screen.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -41,7 +46,7 @@ class TrialDetailScreen extends ConsumerStatefulWidget {
 class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   int _selectedTabIndex = 0;
   int _previousTabIndex = 0;
-  static const int _sessionsIndex = 5;
+  static const int _sessionsIndex = 6;
 
   static const Duration _hubHintDelay = Duration(milliseconds: 600);
   static const Duration _hubHintScrollDuration = Duration(milliseconds: 450);
@@ -134,25 +139,94 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final trialAsync = ref.watch(trialProvider(widget.trial.id));
     final currentTrial = trialAsync.valueOrNull ?? widget.trial;
 
+    const g800 = Color(0xFF2D5A40);
+    const g700 = Color(0xFF3D7A57);
+    const bgWarm = Color(0xFFF4F1EB);
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(currentTrial.name,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            if (currentTrial.crop != null)
-              Text(currentTrial.crop!,
-                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: bgWarm,
       body: Column(
         children: [
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [g800, g700],
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      tooltip: 'Back',
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Trial',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.7),
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            currentTrial.name,
+                            style: AppDesignTokens.headerTitleStyle(
+                              fontSize: 17,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (currentTrial.crop != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              currentTrial.crop!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (currentTrial.status.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          currentTrial.status,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           _buildTrialStatusBar(context, ref, currentTrial),
+          const SizedBox(height: 12),
           SizedBox(
             height: 110,
             child: _TrialModuleHub(
@@ -166,8 +240,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               onUserScroll: _dismissHubHint,
             ),
           ),
+          const SizedBox(height: 12),
           if (_selectedTabIndex != _sessionsIndex)
             _buildSessionsBar(context, ref.watch(sessionsForTrialProvider(widget.trial.id))),
+          if (_selectedTabIndex != _sessionsIndex)
+            const SizedBox(height: 12),
           Expanded(
             child: IndexedStack(
               index: _selectedTabIndex,
@@ -177,6 +254,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 _ApplicationsTab(trial: currentTrial),
                 _AssessmentsTab(trial: currentTrial),
                 _TreatmentsTab(trial: currentTrial),
+                _PhotosTab(trial: currentTrial),
                 SessionsView(
                   trial: currentTrial,
                   onBack: () =>
@@ -247,12 +325,33 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            statusHint,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          if (locked)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  statusHint,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  getProtocolLockExplanation(trial.status),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            )
+          else
+            Text(
+              statusHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -300,7 +399,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   Widget _buildSessionsBar(
       BuildContext context, AsyncValue<List<Session>> sessionsAsync) {
     final scheme = Theme.of(context).colorScheme;
-    final surfaceTint = scheme.primary.withValues(alpha: 0.08);
     final subtitle = sessionsAsync.when(
       loading: () => 'Start or continue a session',
       error: (_, __) => 'Start or continue a session',
@@ -308,18 +406,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Material(
-        color: surfaceTint,
-        borderRadius: BorderRadius.circular(18),
-        elevation: 0,
-        shadowColor: Colors.black26,
+      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: 8),
+      child: AppCard(
+        margin: EdgeInsets.zero,
         child: InkWell(
           onTap: () => setState(() {
             _previousTabIndex = _selectedTabIndex;
             _selectedTabIndex = _sessionsIndex;
           }),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
@@ -329,7 +424,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   color: Theme.of(context).colorScheme.primary,
                   size: 22,
                 ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,6 +499,7 @@ class _TrialModuleHub extends StatelessWidget {
       (2, Icons.science, 'Applications'),
       (3, Icons.assessment, 'Assessments'),
       (4, Icons.science_outlined, 'Treatments'),
+      (5, Icons.photo_library, 'Photos'),
     ];
 
     final listView = ListView.separated(
@@ -445,6 +541,7 @@ class _TrialModuleHub extends StatelessWidget {
   }
 }
 
+
 class _DockTile extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -472,37 +569,25 @@ class _DockTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? scheme.primaryContainer
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: selected ? activeColor : inactiveColor,
-                  size: selected ? 24 : 20,
-                ),
+              Icon(
+                icon,
+                color: selected ? activeColor : inactiveColor,
+                size: selected ? 26 : 22,
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               Text(
                 label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: selected ? activeColor : inactiveColor,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: selected ? 13 : 12,
+                  fontSize: selected ? 13.5 : 12.5,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 height: 2,
@@ -590,7 +675,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       children: [
         _buildPlotsHeader(context, ref, plots),
         if (layoutDiag.hasIssues) _buildLayoutDiagnosticsBanner(context, layoutDiag),
-        _buildListLayoutToggle(context),
+        _buildListLayoutToggle(context, ref, plots),
         if (_showLayoutView) ...[
           _buildLayerSwitcher(context),
           if (_layoutLayer == _LayoutLayer.applications)
@@ -668,7 +753,9 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
               border: OutlineInputBorder(),
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
-            initialValue: _selectedAppEvent,
+            initialValue: _selectedAppEvent == null
+                ? null
+                : completed.where((e) => e.id == _selectedAppEvent!.id).firstOrNull ?? completed.first,
             items: completed.map((e) => DropdownMenuItem<ApplicationEvent>(
               value: e,
               child: Text('A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
@@ -692,59 +779,92 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     );
   }
 
-  Widget _buildListLayoutToggle(BuildContext context) {
+  Widget _buildListLayoutToggle(BuildContext context, WidgetRef ref, List<Plot> plots) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: SegmentedButton<bool>(
-        segments: const [
-          ButtonSegment(value: false, label: Text('List'), icon: Icon(Icons.list)),
-          ButtonSegment(value: true, label: Text('Layout'), icon: Icon(Icons.grid_on)),
+      child: Row(
+        children: [
+          Expanded(
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false, label: Text('List'), icon: Icon(Icons.list)),
+                ButtonSegment(value: true, label: Text('Layout'), icon: Icon(Icons.grid_on)),
+              ],
+              selected: {_showLayoutView},
+              onSelectionChanged: (Set<bool> selected) {
+                setState(() => _showLayoutView = selected.first);
+              },
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.fullscreen),
+            tooltip: 'Open in full screen',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => _PlotsFullScreenPage(
+                    trial: widget.trial,
+                    isLayoutView: _showLayoutView,
+                    initialLayoutLayer: _layoutLayer,
+                    selectedAppEvent: _selectedAppEvent,
+                    appPlotRecords: _appPlotRecords,
+                  ),
+                ),
+              );
+            },
+          ),
         ],
-        selected: {_showLayoutView},
-        onSelectionChanged: (Set<bool> selected) {
-          setState(() => _showLayoutView = selected.first);
-        },
       ),
     );
   }
 
   Widget _buildEmptyPlots(BuildContext context, WidgetRef ref) {
     final locked = isProtocolLocked(widget.trial.status);
-    return StandardEmptyState(
-      icon: Icons.grid_on,
-      title: 'No Plots Yet',
-      subtitle: locked
-          ? getProtocolLockMessage(widget.trial.status)
-          : 'Import plots via CSV to get started',
-      actionLabel: 'Import Plots from CSV',
-      actionIcon: Icons.upload_file,
-      onAction: locked
+    final primaryButton = FilledButton.icon(
+      onPressed: locked
           ? null
           : () => Navigator.push(
               context,
               MaterialPageRoute(
                   builder: (_) =>
                       ImportPlotsScreen(trial: widget.trial))),
-      disabledTooltipMessage: locked ? getProtocolLockMessage(widget.trial.status) : null,
-      trailingActions: locked
-          ? null
-          : [
-              OutlinedButton.icon(
-                onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            ProtocolImportScreen(trial: widget.trial))),
-                icon: const Icon(Icons.folder_special),
-                label: const Text('Import Protocol (Treatments + Plots)'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () => _seedTestPlots(context, ref),
-                icon: const Icon(Icons.science),
-                label: const Text('Add 10 Test Plots'),
-              ),
-            ],
+      icon: const Icon(Icons.upload_file),
+      label: const Text('Import Plots from CSV'),
+    );
+    return AppEmptyState(
+      icon: Icons.grid_on,
+      title: 'No Plots Yet',
+      subtitle: locked
+          ? getProtocolLockMessage(widget.trial.status)
+          : 'Import plots via CSV to get started',
+      action: locked
+          ? Tooltip(
+              message: getProtocolLockMessage(widget.trial.status),
+              child: primaryButton,
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                primaryButton,
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              ProtocolImportScreen(trial: widget.trial))),
+                  icon: const Icon(Icons.folder_special),
+                  label: const Text('Import Protocol (Treatments + Plots)'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _seedTestPlots(context, ref),
+                  icon: const Icon(Icons.science),
+                  label: const Text('Add 10 Test Plots'),
+                ),
+              ],
+            ),
     );
   }
 
@@ -1052,7 +1172,14 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
         final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap, treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
             treatmentId: effectiveTreatmentId, assignmentSource: effectiveSource);
-        return ListTile(
+        return AppCard(
+          margin: const EdgeInsets.only(
+            left: AppDesignTokens.spacing16,
+            right: AppDesignTokens.spacing16,
+            top: 6,
+            bottom: 6,
+          ),
+          child: ListTile(
           dense: true,
           leading: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1112,6 +1239,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
             }
             _showAssignTreatmentDialog(context, ref, plot, plots);
           },
+        ),
         );
       },
     );
@@ -1420,6 +1548,300 @@ class _PlotGridTile extends StatelessWidget {
   }
 }
 
+
+/// Full-screen page for Plots list or layout (opened from List/Layout toggle button).
+class _PlotsFullScreenPage extends ConsumerStatefulWidget {
+  final Trial trial;
+  final bool isLayoutView;
+  final _LayoutLayer initialLayoutLayer;
+  final ApplicationEvent? selectedAppEvent;
+  final List<ApplicationPlotRecord> appPlotRecords;
+
+  const _PlotsFullScreenPage({
+    required this.trial,
+    required this.isLayoutView,
+    required this.initialLayoutLayer,
+    this.selectedAppEvent,
+    this.appPlotRecords = const [],
+  });
+
+  @override
+  ConsumerState<_PlotsFullScreenPage> createState() => _PlotsFullScreenPageState();
+}
+
+class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
+  late _LayoutLayer _layoutLayer;
+  ApplicationEvent? _selectedAppEvent;
+  List<ApplicationPlotRecord> _appPlotRecords = [];
+  bool _loadingAppRecords = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _layoutLayer = widget.initialLayoutLayer;
+    _selectedAppEvent = widget.selectedAppEvent;
+    _appPlotRecords = List.from(widget.appPlotRecords);
+  }
+
+  Future<void> _loadAppRecords(ApplicationEvent event) async {
+    setState(() {
+      _selectedAppEvent = event;
+      _loadingAppRecords = true;
+    });
+    final repo = ref.read(applicationRepositoryProvider);
+    final records = await repo.getPlotRecordsForEvent(event.id);
+    if (mounted) {
+      setState(() {
+        _appPlotRecords = records;
+        _loadingAppRecords = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plotsAsync = ref.watch(plotsForTrialProvider(widget.trial.id));
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.isLayoutView ? 'Plots — Layout' : 'Plots — List'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: plotsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(child: Text('Error: $e')),
+        data: (plots) {
+          if (plots.isEmpty) {
+            return const Center(child: Text('No plots'));
+          }
+          if (!widget.isLayoutView) {
+            return _buildListBody(context, ref, plots);
+          }
+          final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+          final assignments = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+          final Map<int, int?> plotIdToTreatmentId = {
+            for (final a in assignments) a.plotId: a.treatmentId
+          };
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: SegmentedButton<_LayoutLayer>(
+                  style: const ButtonStyle(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  segments: const [
+                    ButtonSegment(value: _LayoutLayer.treatments, label: Text('Treats'), icon: Icon(Icons.science, size: 14)),
+                    ButtonSegment(value: _LayoutLayer.applications, label: Text('Apps'), icon: Icon(Icons.water_drop, size: 14)),
+                    ButtonSegment(value: _LayoutLayer.ratings, label: Text('Ratings'), icon: Icon(Icons.bar_chart, size: 14)),
+                  ],
+                  selected: {_layoutLayer},
+                  onSelectionChanged: (val) => setState(() => _layoutLayer = val.first),
+                ),
+              ),
+              if (_layoutLayer == _LayoutLayer.applications)
+                _buildAppEventSelector(context, ref),
+              Expanded(
+                child: _layoutLayer == _LayoutLayer.ratings
+                    ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: Colors.grey)))
+                    : SingleChildScrollView(
+                        child: _PlotLayoutGrid(
+                          plots: plots,
+                          treatments: treatments,
+                          trial: widget.trial,
+                          layer: _layoutLayer,
+                          appPlotRecords: _appPlotRecords,
+                          plotIdToTreatmentId: plotIdToTreatmentId,
+                          onLongPressPlot: isProtocolLocked(widget.trial.status)
+                              ? null
+                              : (plot) => _showAssignDialog(context, ref, plot, plots),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAppEventSelector(BuildContext context, WidgetRef ref) {
+    final eventsAsync = ref.watch(applicationsForTrialProvider(widget.trial.id));
+    return eventsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (e, _) => const SizedBox.shrink(),
+      data: (events) {
+        final completed = events.where((e) => e.status == 'completed').toList();
+        if (completed.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Text('No completed application events yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<ApplicationEvent>(
+                  key: ValueKey<ApplicationEvent?>(_selectedAppEvent),
+                  decoration: const InputDecoration(
+                    labelText: 'Select Application Event',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  initialValue: _selectedAppEvent == null
+                      ? null
+                      : completed.where((e) => e.id == _selectedAppEvent!.id).firstOrNull ?? completed.first,
+                  items: completed.map((e) => DropdownMenuItem<ApplicationEvent>(
+                    value: e,
+                    child: Text('A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
+                  )).toList(),
+                  onChanged: (e) { if (e != null) _loadAppRecords(e); },
+                ),
+              ),
+              if (_loadingAppRecords)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildListBody(BuildContext context, WidgetRef ref, List<Plot> plots) {
+    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final treatmentMap = {for (final t in treatments) t.id: t};
+    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: plots.length,
+      itemBuilder: (context, index) {
+        final plot = plots[index];
+        final assignment = assignmentByPlotId[plot.id];
+        final effectiveTreatmentId = assignment?.treatmentId ?? plot.treatmentId;
+        final effectiveSource = assignment?.assignmentSource ?? plot.assignmentSource;
+        final displayNum = getDisplayPlotLabel(plot, plots);
+        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap, treatmentIdOverride: effectiveTreatmentId);
+        final sourceLabel = getAssignmentSourceLabel(
+            treatmentId: effectiveTreatmentId, assignmentSource: effectiveSource);
+        return AppCard(
+          margin: const EdgeInsets.only(left: 16, right: 16, top: 6, bottom: 6),
+          child: ListTile(
+            dense: true,
+            leading: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                displayNum,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+              ),
+            ),
+            title: Text('Plot $displayNum', style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    treatmentLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: effectiveTreatmentId != null
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey.shade700,
+                      fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : null,
+                    ),
+                  ),
+                ),
+                if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
+                  Text(sourceLabel, style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+              ],
+            ),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => PlotDetailScreen(trial: widget.trial, plot: plot)),
+            ),
+            onLongPress: () {
+              if (isProtocolLocked(widget.trial.status)) return;
+              _showAssignDialog(context, ref, plot, plots);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showAssignDialog(BuildContext context, WidgetRef ref, Plot plot, List<Plot> plots) async {
+    final treatments = ref.read(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    if (treatments.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No treatments defined yet. Add treatments first.')),
+      );
+      return;
+    }
+    final assignmentsList = ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final a = assignmentsList.where((x) => x.plotId == plot.id).firstOrNull;
+    int? selectedId = a?.treatmentId ?? plot.treatmentId;
+    final displayNum = getDisplayPlotLabel(plot, plots);
+    if (!context.mounted) return;
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('Assign Treatment — Plot $displayNum'),
+          content: DropdownButtonFormField<int>(
+            initialValue: selectedId,
+            decoration: const InputDecoration(
+              labelText: 'Treatment',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Unassigned')),
+              ...treatments.map((t) => DropdownMenuItem(
+                value: t.id,
+                child: Text('${t.code}  —  ${t.name}'),
+              )),
+            ],
+            onChanged: (v) => setDialogState(() => selectedId = v),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                final useCase = ref.read(updatePlotAssignmentUseCaseProvider);
+                final result = await useCase.updateOne(
+                  trial: widget.trial,
+                  plotPk: plot.id,
+                  treatmentId: selectedId,
+                );
+                if (!ctx.mounted) return;
+                if (!result.success) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text(result.errorMessage ?? 'Update failed'), backgroundColor: Colors.red),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AssessmentsTab extends ConsumerWidget {
   final Trial trial;
 
@@ -1453,35 +1875,53 @@ class _AssessmentsTab extends ConsumerWidget {
     final locked = isProtocolLocked(trial.status);
     final total = libraryList.length + legacyList.length;
     if (total == 0) {
-      return StandardEmptyState(
+      final button = FilledButton(
+        onPressed: locked ? null : () => _showAddAssessmentOptions(context, ref),
+        child: const Text('Add Assessment'),
+      );
+      return AppEmptyState(
         icon: Icons.assessment,
         title: 'No Assessments Yet',
         subtitle: locked
             ? getProtocolLockMessage(trial.status)
             : 'Add from library or create a custom assessment.',
-        actionLabel: 'Add from library',
-        onAction: locked ? null : () => AssessmentLibraryPickerDialog.show(context, trial.id),
-        disabledTooltipMessage: locked ? getProtocolLockMessage(trial.status) : null,
+        action: locked && getProtocolLockMessage(trial.status).isNotEmpty
+            ? Tooltip(message: getProtocolLockMessage(trial.status), child: button)
+            : button,
       );
     }
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Column(
       children: [
-        StandardSectionHeader(
-          icon: Icons.assessment,
-          title: total == 1 ? '1 assessment' : '$total assessments',
-          trailingIndicator: ProtocolLockChip(isLocked: locked, status: trial.status),
-          action: Row(
-            mainAxisSize: MainAxisSize.min,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            border: Border(bottom: BorderSide(color: scheme.outline.withValues(alpha: 0.2))),
+          ),
+          child: Row(
             children: [
-              TextButton.icon(
-                icon: const Icon(Icons.library_add, size: 18),
-                label: const Text('From library'),
-                onPressed: locked ? null : () => AssessmentLibraryPickerDialog.show(context, trial.id),
+              Icon(Icons.assessment_outlined, size: 20, color: scheme.onSurfaceVariant),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  total == 1 ? '1 assessment' : '$total assessments',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              ProtocolLockChip(isLocked: locked, status: trial.status),
               const SizedBox(width: 8),
-              StandardSectionAddButton(
-                onPressed: locked ? null : () => _showAddAssessmentDialog(context, ref),
-                disabledTooltip: locked ? getProtocolLockMessage(trial.status) : null,
+              Tooltip(
+                message: locked ? getProtocolLockMessage(trial.status) : 'Add assessment',
+                child: IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: locked ? null : () => _showAddAssessmentOptions(context, ref),
+                ),
               ),
             ],
           ),
@@ -1490,17 +1930,16 @@ class _AssessmentsTab extends ConsumerWidget {
           ProtocolLockNotice(message: getProtocolLockMessage(trial.status)),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             children: [
               if (libraryList.isNotEmpty) ...[
                 Padding(
-                  padding: const EdgeInsets.only(left: 12, top: 8, bottom: 4),
+                  padding: const EdgeInsets.only(left: 4, top: 4, bottom: 6),
                   child: Text(
                     'From library',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -1509,43 +1948,82 @@ class _AssessmentsTab extends ConsumerWidget {
                   final def = pair.$2;
                   final name = ta.displayNameOverride ?? def.name;
                   return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                    elevation: 0,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: scheme.outline.withValues(alpha: 0.3)),
+                    ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      leading: CircleAvatar(
-                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                        child: Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.analytics_outlined, size: 20, color: scheme.primary),
                       ),
-                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text('${def.dataType}${def.unit != null ? " (${def.unit})" : ""}'),
-                      trailing: ta.isActive ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : const Icon(Icons.chevron_right, size: 18),
+                      title: Text(
+                        name,
+                        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSurface),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          '${def.dataType}${def.unit != null ? " (${def.unit})" : ""}',
+                          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ),
+                      trailing: ta.isActive
+                          ? Icon(Icons.check_circle_outline, size: 20, color: scheme.primary)
+                          : Icon(Icons.chevron_right, size: 20, color: scheme.onSurfaceVariant),
                     ),
                   );
                 }),
               ],
               if (legacyList.isNotEmpty) ...[
                 Padding(
-                  padding: const EdgeInsets.only(left: 12, top: 12, bottom: 4),
+                  padding: const EdgeInsets.only(left: 4, top: 16, bottom: 6),
                   child: Text(
                     'Custom',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 ...legacyList.map((assessment) => Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                  elevation: 0,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: scheme.outline.withValues(alpha: 0.3)),
+                  ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                      child: Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.analytics_outlined, size: 20, color: scheme.primary),
                     ),
-                    title: Text(assessment.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('${assessment.dataType}${assessment.unit != null ? " (${assessment.unit})" : ""}'),
-                    trailing: assessment.isActive ? const Icon(Icons.check_circle, color: Colors.green, size: 20) : const Icon(Icons.chevron_right, size: 18),
+                    title: Text(
+                      assessment.name,
+                      style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSurface),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '${assessment.dataType}${assessment.unit != null ? " (${assessment.unit})" : ""}',
+                        style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ),
+                    trailing: assessment.isActive
+                        ? Icon(Icons.check_circle_outline, size: 20, color: scheme.primary)
+                        : Icon(Icons.chevron_right, size: 20, color: scheme.onSurfaceVariant),
                   ),
                 )),
               ],
@@ -1553,6 +2031,105 @@ class _AssessmentsTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+
+  void _showAddAssessmentOptions(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E7EB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(left: 20, bottom: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Add Assessment',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D5A40).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.library_books_outlined,
+                    color: Color(0xFF2D5A40),
+                    size: 20,
+                  ),
+                ),
+                title: const Text(
+                  'From Library',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+                ),
+                subtitle: const Text(
+                  'Choose from standard templates',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  AssessmentLibraryPickerDialog.show(context, trial.id);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D5A40).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.edit_outlined,
+                    color: Color(0xFF2D5A40),
+                    size: 20,
+                  ),
+                ),
+                title: const Text(
+                  'Custom Assessment',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+                ),
+                subtitle: const Text(
+                  'Create your own assessment',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _showAddAssessmentDialog(context, ref);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1565,56 +2142,55 @@ class _AssessmentsTab extends ConsumerWidget {
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Assessment'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Assessment Name *',
-                  border: OutlineInputBorder(),
-                ),
-                autofocus: true,
+      builder: (context) => AppDialog(
+        title: 'Add Assessment',
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Assessment Name *',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: unitController,
-                decoration: const InputDecoration(
-                  labelText: 'Unit (e.g. %, cm, score)',
-                  border: OutlineInputBorder(),
-                ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: unitController,
+              decoration: const InputDecoration(
+                labelText: 'Unit (e.g. %, cm, score)',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: minController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Min Value',
-                        border: OutlineInputBorder(),
-                      ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: minController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Min Value',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: maxController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Max Value',
-                        border: OutlineInputBorder(),
-                      ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: maxController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Max Value',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -1676,12 +2252,15 @@ class _SeedingTab extends ConsumerWidget {
         final records = snapshot.data!;
 
         if (records.isEmpty) {
-          return StandardEmptyState(
+          return AppEmptyState(
             icon: Icons.agriculture,
             title: 'No Seeding Records Yet',
             subtitle: 'Record the seeding operation for this trial',
-            actionLabel: 'Add Seeding Event',
-            onAction: () => _addSeeding(context, ref),
+            action: FilledButton.icon(
+              onPressed: () => _addSeeding(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Seeding Event'),
+            ),
           );
         }
 
@@ -1798,6 +2377,7 @@ class _SeedingDetailScreenState extends ConsumerState<_SeedingDetailScreen> {
   final Map<String, String?> _dateValues = {};
   bool _initialized = false;
   bool _isSaving = false;
+  bool _isReadOnly = true;
 
   @override
   void dispose() {
@@ -1886,6 +2466,13 @@ class _SeedingDetailScreenState extends ConsumerState<_SeedingDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Seeding Event'),
+        actions: [
+          IconButton(
+            icon: Icon(_isReadOnly ? Icons.edit_outlined : Icons.done),
+            tooltip: _isReadOnly ? 'Edit' : 'Done',
+            onPressed: () => setState(() => _isReadOnly = !_isReadOnly),
+          ),
+        ],
       ),
       body: FutureBuilder<List<dynamic>>(
         future: Future.wait([
@@ -1933,6 +2520,10 @@ class _SeedingDetailScreenState extends ConsumerState<_SeedingDetailScreen> {
             }
 
             _initialized = true;
+          }
+
+          if (_isReadOnly) {
+            return _buildSeedingReadOnlyView(context, dateText, existingValues);
           }
 
           return Padding(
@@ -2112,6 +2703,52 @@ class _SeedingDetailScreenState extends ConsumerState<_SeedingDetailScreen> {
       ),
     );
   }
+
+  Widget _buildSeedingReadOnlyView(
+      BuildContext context, String dateText, List<dynamic> existingValues) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _readOnlyRow(context, 'Date', dateText),
+          const SizedBox(height: 16),
+          _readOnlyRow(context, 'Operator',
+              widget.record.operatorName ?? 'Not recorded'),
+          const SizedBox(height: 16),
+          _readOnlyRow(context, 'Comments',
+              widget.record.comments ?? 'None'),
+          if (existingValues.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text('Details',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ...existingValues.map<Widget>((v) {
+              final label = v.fieldLabel as String? ?? v.fieldKey as String;
+              final value = v.valueText ?? v.valueNumber?.toString() ??
+                  v.valueDate ?? (v.valueBool == true ? 'Yes' : v.valueBool == false ? 'No' : '—');
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _readOnlyRow(context, label, value.toString()),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _readOnlyRow(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 16)),
+      ],
+    );
+  }
 }
 
 Future<void> _addProtocolField(
@@ -2245,13 +2882,17 @@ class _TreatmentsTab extends ConsumerWidget {
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
     final locked = isProtocolLocked(trial.status);
-    return StandardEmptyState(
+    final button = FilledButton(
+      onPressed: locked ? null : () => _showAddTreatmentDialog(context, ref),
+      child: const Text('Add Treatment'),
+    );
+    return AppEmptyState(
       icon: Icons.science_outlined,
       title: 'No Treatments Yet',
       subtitle: locked ? getProtocolLockMessage(trial.status) : 'Add the treatment groups for this trial.',
-      actionLabel: 'Add Treatment',
-      onAction: locked ? null : () => _showAddTreatmentDialog(context, ref),
-      disabledTooltipMessage: locked ? getProtocolLockMessage(trial.status) : null,
+      action: locked && getProtocolLockMessage(trial.status).isNotEmpty
+          ? Tooltip(message: getProtocolLockMessage(trial.status), child: button)
+          : button,
     );
   }
 
@@ -2377,7 +3018,7 @@ class _TreatmentsTab extends ConsumerWidget {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
@@ -2385,7 +3026,7 @@ class _TreatmentsTab extends ConsumerWidget {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             TextField(
               controller: descController,
               maxLines: 2,
@@ -2422,6 +3063,129 @@ class _TreatmentsTab extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+// ─────────────────────────────────────────────
+// PHOTOS TAB (by session history)
+// ─────────────────────────────────────────────
+
+class _PhotosTab extends ConsumerWidget {
+  final Trial trial;
+
+  const _PhotosTab({required this.trial});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final photosAsync = ref.watch(photosForTrialProvider(trial.id));
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
+
+    return photosAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, st) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text('Could not load photos: $e', textAlign: TextAlign.center),
+        ),
+      ),
+      data: (photos) {
+        if (photos.isEmpty) {
+          return const AppEmptyState(
+            icon: Icons.photo_library_outlined,
+            title: 'No photos yet',
+            subtitle: 'Photos taken during sessions will appear here, grouped by session.',
+          );
+        }
+        final sessions = sessionsAsync.valueOrNull ?? <Session>[];
+        final sessionById = {for (var s in sessions) s.id: s};
+        final bySession = <int, List<Photo>>{};
+        for (final p in photos) {
+          bySession.putIfAbsent(p.sessionId, () => []).add(p);
+        }
+        final sessionIds = bySession.keys.toList()..sort();
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          itemCount: sessionIds.length,
+          itemBuilder: (context, i) {
+            final sessionId = sessionIds[i];
+            final sessionPhotos = bySession[sessionId]!;
+            final session = sessionById[sessionId];
+            final title = session?.name ?? 'Session $sessionId';
+            final subtitle = session?.sessionDateLocal ?? '';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                    ),
+                  SizedBox(
+                    height: 100,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: sessionPhotos.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, j) {
+                        final p = sessionPhotos[j];
+                        final file = File(p.filePath);
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => PhotoViewerScreen(
+                                  photos: sessionPhotos,
+                                  initialIndex: j,
+                                ),
+                              ),
+                            );
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              width: 88,
+                              height: 88,
+                              color: Colors.black12,
+                              child: file.existsSync()
+                                  ? Image.file(file, fit: BoxFit.cover)
+                                  : const Center(
+                                      child: Icon(Icons.broken_image, color: Colors.grey),
+                                    ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -2528,16 +3292,18 @@ class SessionsView extends ConsumerWidget {
   }
 
   Widget _buildEmptySessions(BuildContext context) {
-    return StandardEmptyState(
+    return AppEmptyState(
       icon: Icons.folder_open,
       title: 'No Sessions Yet',
       subtitle: 'Start a session to begin collecting field data.',
-      actionLabel: 'Start Session',
-      actionIcon: Icons.play_arrow,
-      onAction: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => CreateSessionScreen(trial: trial))),
+      action: FilledButton.icon(
+        onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => CreateSessionScreen(trial: trial))),
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Start Session'),
+      ),
     );
   }
 
@@ -2620,6 +3386,11 @@ class SessionsView extends ConsumerWidget {
   Widget _buildSessionListTile(
       BuildContext context, WidgetRef ref, Session session) {
     final isOpen = session.endedAt == null;
+    final ratings = ref.watch(sessionRatingsProvider(session.id)).valueOrNull ?? [];
+    final flaggedIds = ref.watch(flaggedPlotIdsForSessionProvider(session.id)).valueOrNull ?? <int>{};
+    final hasFlags = flaggedIds.isNotEmpty;
+    final hasIssues = ratings.any((r) => r.resultStatus != 'RECORDED');
+    final showIssueIndicators = !isOpen && (hasFlags || hasIssues);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
@@ -2667,8 +3438,32 @@ class SessionsView extends ConsumerWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.bold)),
               )
-            : const Text('Closed',
-                style: TextStyle(color: Colors.grey, fontSize: 12)),
+            : showIssueIndicators
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (hasFlags)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 6),
+                          child: Icon(Icons.flag, color: Colors.amber, size: 20),
+                        ),
+                      if (hasIssues)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.orange.shade300),
+                          ),
+                          child: Text(
+                            'Has issues',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
+                          ),
+                        ),
+                    ],
+                  )
+                : const Text('Closed',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
       ),
     );
   }
@@ -2784,12 +3579,15 @@ class _ApplicationsTab extends ConsumerWidget {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return StandardEmptyState(
+    return AppEmptyState(
       icon: Icons.science,
       title: 'No Application Events Yet',
       subtitle: 'Record spray, granular and other application events',
-      actionLabel: 'Add Application Event',
-      onAction: () => _showAddEventDialog(context, ref),
+      action: FilledButton.icon(
+        onPressed: () => _showAddEventDialog(context, ref),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Application Event'),
+      ),
     );
   }
 
