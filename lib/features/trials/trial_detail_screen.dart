@@ -1788,7 +1788,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                       fontSize: 12,
                       color: effectiveTreatmentId != null
                           ? Theme.of(context).colorScheme.primary
-                          : Colors.grey.shade700,
+                          : AppDesignTokens.secondaryText,
                       fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : null,
                     ),
                   ),
@@ -4276,7 +4276,7 @@ class _ApplicationsTab extends ConsumerWidget {
           SizedBox(
             width: 100,
             child: Text(label,
-                style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                style: const TextStyle(color: AppDesignTokens.secondaryText, fontSize: 13)),
           ),
           Expanded(
             child: Text(value,
