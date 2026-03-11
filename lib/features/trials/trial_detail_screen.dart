@@ -3305,24 +3305,24 @@ class _PhotosTab extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
                     child: Text(
                       title,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F2937),
+                        color: AppDesignTokens.primaryText,
                       ),
                     ),
                   ),
                   if (subtitle.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
                       child: Text(
                         subtitle,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6B7280),
+                          color: AppDesignTokens.secondaryText,
                         ),
                       ),
                     ),
@@ -3353,7 +3353,7 @@ class _PhotosTab extends ConsumerWidget {
                             child: Container(
                               width: 88,
                               height: 88,
-                              color: Colors.black12,
+                              color: AppDesignTokens.borderCrisp,
                               child: file.existsSync()
                                   ? Image.file(file, fit: BoxFit.cover)
                                   : const Center(
