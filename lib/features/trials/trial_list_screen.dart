@@ -530,13 +530,6 @@ class _TrialQuickActions extends ConsumerWidget {
                 icon: const Icon(Icons.play_circle_outline, size: 18),
                 label: const Text('Continue Session'),
               ),
-            if (!hasOpenSession)
-              TextButton.icon(
-                onPressed: () =>
-                    _quickRateNewSession(context, ref, trial),
-                icon: const Icon(Icons.flash_on, size: 18),
-                label: const Text('Quick Rate'),
-              ),
           ],
         );
       },
@@ -593,22 +586,6 @@ class _TrialQuickActions extends ConsumerWidget {
         ),
       ),
       (route) => route.isFirst,
-    );
-  }
-
-  Future<void> _quickRateNewSession(
-    BuildContext context,
-    WidgetRef ref,
-    Trial trial,
-  ) async {
-    // For now, Quick Rate is a thin wrapper that routes the user to
-    // the trial detail screen's Sessions tab to create a session,
-    // then rely on the existing Start Rating entry from there.
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => TrialDetailScreen(trial: trial),
-      ),
     );
   }
 }
