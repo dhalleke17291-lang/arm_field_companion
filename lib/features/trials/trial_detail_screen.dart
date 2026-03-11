@@ -4529,13 +4529,15 @@ class _TreatmentComponentsSheetState
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text('Add Product'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D5A40),
+                        backgroundColor: AppDesignTokens.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                            horizontal: AppDesignTokens.spacing16,
+                            vertical: AppDesignTokens.spacing8),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(
+                                AppDesignTokens.radiusSmall)),
                         textStyle: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w700),
                       ),
@@ -4570,21 +4572,22 @@ class _TreatmentComponentsSheetState
           Container(
             width: 64, height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFFD1FAE5),
+              color: AppDesignTokens.successBg,
               borderRadius: BorderRadius.circular(32),
             ),
             child: const Icon(Icons.science_outlined,
-                size: 32, color: Color(0xFF2D5A40)),
+                size: 32, color: AppDesignTokens.primary),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppDesignTokens.spacing16),
           const Text('No products yet',
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937))),
+                  color: AppDesignTokens.primaryText)),
           const SizedBox(height: 6),
           const Text('Add products, rates and timing',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+              style: TextStyle(
+                  fontSize: 13, color: AppDesignTokens.secondaryText)),
           if (!locked) ...[
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -4592,11 +4595,12 @@ class _TreatmentComponentsSheetState
               icon: const Icon(Icons.add, size: 16),
               label: const Text('Add Product'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D5A40),
+                backgroundColor: AppDesignTokens.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(
+                        AppDesignTokens.radiusSmall)),
               ),
             ),
           ],
@@ -4616,34 +4620,34 @@ class _TreatmentComponentsSheetState
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: const Color(0xFFEAECF0)),
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
         boxShadow: const [
           BoxShadow(
               color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppDesignTokens.spacing16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 32, height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(8),
+                color: AppDesignTokens.emptyBadgeBg,
+                borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
               ),
               child: Center(
                 child: Text('${i + 1}',
                     style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
-                        color: Color(0xFF2D5A40))),
+                        color: AppDesignTokens.primary)),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppDesignTokens.spacing12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4652,17 +4656,18 @@ class _TreatmentComponentsSheetState
                       style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: Color(0xFF111827))),
+                          color: AppDesignTokens.primaryText)),
                   if (ratePart != null) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.water_drop_outlined,
-                            size: 13, color: Color(0xFF6B7280)),
+                            size: 13, color: AppDesignTokens.secondaryText),
                         const SizedBox(width: 4),
                         Text(ratePart,
                             style: const TextStyle(
-                                fontSize: 12, color: Color(0xFF6B7280))),
+                                fontSize: 12,
+                                color: AppDesignTokens.secondaryText)),
                       ],
                     ),
                   ],
@@ -4671,11 +4676,12 @@ class _TreatmentComponentsSheetState
                     Row(
                       children: [
                         const Icon(Icons.schedule,
-                            size: 13, color: Color(0xFF6B7280)),
+                            size: 13, color: AppDesignTokens.secondaryText),
                         const SizedBox(width: 4),
                         Text(timingPart,
                             style: const TextStyle(
-                                fontSize: 12, color: Color(0xFF6B7280))),
+                                fontSize: 12,
+                                color: AppDesignTokens.secondaryText)),
                       ],
                     ),
                   ],
@@ -4683,7 +4689,8 @@ class _TreatmentComponentsSheetState
                     const SizedBox(height: 2),
                     Text(c.notes!,
                         style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF9CA3AF))),
+                            fontSize: 11,
+                            color: AppDesignTokens.emptyBadgeFg)),
                   ],
                 ],
               ),
@@ -4712,21 +4719,23 @@ class _TreatmentComponentsSheetState
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFFF8F6F2),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: AppDesignTokens.backgroundSurface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusLarge)),
         title: const Text('Remove Product',
             style: TextStyle(
-                fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+                fontWeight: FontWeight.w700,
+                color: AppDesignTokens.primaryText)),
         content: Text(
           'Remove "${component.productName}" from ${widget.treatment.code}?',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+          style: const TextStyle(
+              fontSize: 14, color: AppDesignTokens.secondaryText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF6B7280))),
+                style: TextStyle(color: AppDesignTokens.secondaryText)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
