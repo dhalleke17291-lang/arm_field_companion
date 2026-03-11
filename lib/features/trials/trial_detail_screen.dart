@@ -1234,10 +1234,11 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
           child: ListTile(
           dense: true,
           leading: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(8),
+              color: AppDesignTokens.primary,
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
             ),
             child: Text(
               displayNum,
@@ -1248,7 +1249,9 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
             ),
           ),
           title: Text('Plot $displayNum',
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText)),
           subtitle: Row(
             children: [
               Expanded(
@@ -1257,8 +1260,8 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                   style: TextStyle(
                     fontSize: 12,
                     color: effectiveTreatmentId != null
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey.shade700,
+                        ? AppDesignTokens.primary
+                        : AppDesignTokens.secondaryText,
                     fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : null,
                   ),
                 ),
@@ -1266,15 +1269,16 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
               if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
                 Text(
                   sourceLabel,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 10,
-                    color: Colors.grey.shade600,
+                    color: AppDesignTokens.secondaryText,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
             ],
           ),
-          trailing: const Icon(Icons.chevron_right, size: 18),
+          trailing: const Icon(Icons.chevron_right,
+              size: 18, color: AppDesignTokens.iconSubtle),
           onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
