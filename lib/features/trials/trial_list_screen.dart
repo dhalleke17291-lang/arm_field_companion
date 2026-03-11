@@ -10,6 +10,9 @@ import '../about/about_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
 import 'usecases/create_trial_usecase.dart';
 import 'trial_detail_screen.dart';
+import '../sessions/usecases/start_or_continue_rating_usecase.dart';
+import '../sessions/session_detail_screen.dart';
+import '../ratings/rating_screen.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
 
@@ -250,7 +253,8 @@ class TrialListScreen extends ConsumerWidget {
   Widget _buildTrialList(
       BuildContext context, WidgetRef ref, List<Trial> trials) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0, AppDesignTokens.spacing16, AppDesignTokens.spacing24),
+      padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0,
+          AppDesignTokens.spacing16, AppDesignTokens.spacing24),
       children: [
         const Align(
           alignment: Alignment.centerLeft,
@@ -265,10 +269,13 @@ class TrialListScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppDesignTokens.spacing16),
-        ...trials.map((t) => Padding(
-          padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
-          child: _TrialCard(trial: t),
-        )),
+        ...trials.map(
+          (t) => Padding(
+            padding:
+                const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+            child: _TrialCard(trial: t),
+          ),
+        ),
       ],
     );
   }
@@ -407,7 +414,7 @@ class _TrialCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
+          child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () {
             Navigator.push(
@@ -485,13 +492,131 @@ class _TrialCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right, size: 18, color: Color(0xFF8FA898)),
+                    const Icon(Icons.chevron_right,
+                        size: 18, color: Color(0xFF8FA898)),
                   ],
                 ),
+                const SizedBox(height: 10),
+                _TrialQuickActions(trial: trial),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Quick actions row under each trial card: Continue, Quick Rate, Details.
+class _TrialQuickActions extends ConsumerWidget {
+  final Trial trial;
+
+  const _TrialQuickActions({required this.trial});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final openSessionAsync = ref.watch(openSessionProvider(trial.id));
+
+    return openSessionAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (openSession) {
+        final hasOpenSession = openSession != null;
+        return Row(
+          children: [
+            if (hasOpenSession)
+              TextButton.icon(
+                onPressed: () =>
+                    _continueLastSession(context, ref, trial, openSession),
+                icon: const Icon(Icons.play_circle_outline, size: 18),
+                label: const Text('Continue Session'),
+              ),
+            if (!hasOpenSession)
+              TextButton.icon(
+                onPressed: () =>
+                    _quickRateNewSession(context, ref, trial),
+                icon: const Icon(Icons.flash_on, size: 18),
+                label: const Text('Quick Rate'),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _continueLastSession(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+    Session session,
+  ) async {
+    final useCase = ref.read(startOrContinueRatingUseCaseProvider);
+
+    final result =
+        await useCase.execute(StartOrContinueRatingInput(sessionId: session.id));
+
+    if (!context.mounted) return;
+
+    if (!result.success ||
+        result.trial == null ||
+        result.session == null ||
+        result.allPlotsSerpentine == null ||
+        result.assessments == null ||
+        result.startPlotIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ??
+              'Unable to continue session for this trial.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final resolvedTrial = result.trial!;
+    final resolvedSession = result.session!;
+    final plots = result.allPlotsSerpentine!;
+    final assessments = result.assessments!;
+    final startIndex = result.startPlotIndex!;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SessionDetailScreen(
+          trial: resolvedTrial,
+          session: resolvedSession,
+        ),
+      ),
+    );
+
+    // Then deep-link into rating at the resolved next plot.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RatingScreen(
+          trial: resolvedTrial,
+          session: resolvedSession,
+          plot: plots[startIndex],
+          assessments: assessments,
+          allPlots: plots,
+          currentPlotIndex: startIndex,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _quickRateNewSession(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+  ) async {
+    // For now, Quick Rate is a thin wrapper that routes the user to
+    // the trial detail screen's Sessions tab to create a session,
+    // then rely on the existing Start Rating entry from there.
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => TrialDetailScreen(trial: trial),
       ),
     );
   }
