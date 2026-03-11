@@ -583,8 +583,8 @@ class _PlotQueueTile extends ConsumerWidget {
               displayNum,
             );
           } else {
-            final plots = ref.read(plotsForTrialProvider(trial.id)).value ?? [];
-            final index = plots.indexWhere((p) => p.id == plot.id);
+            final index =
+                allPlotsForTrial.indexWhere((p) => p.id == plot.id);
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -593,7 +593,7 @@ class _PlotQueueTile extends ConsumerWidget {
                   session: session,
                   plot: plot,
                   assessments: assessments,
-                  allPlots: plots,
+                  allPlots: allPlotsForTrial,
                   currentPlotIndex: index < 0 ? 0 : index,
                 ),
               ),
@@ -715,9 +715,8 @@ class _PlotQueueTile extends ConsumerWidget {
               child: FilledButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  final plots =
-                      ref.read(plotsForTrialProvider(trial.id)).value ?? [];
-                  final index = plots.indexWhere((p) => p.id == plot.id);
+                  final index =
+                      allPlotsForTrial.indexWhere((p) => p.id == plot.id);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -726,7 +725,7 @@ class _PlotQueueTile extends ConsumerWidget {
                         session: session,
                         plot: plot,
                         assessments: assessments,
-                        allPlots: plots,
+                        allPlots: allPlotsForTrial,
                         currentPlotIndex: index < 0 ? 0 : index,
                       ),
                     ),
