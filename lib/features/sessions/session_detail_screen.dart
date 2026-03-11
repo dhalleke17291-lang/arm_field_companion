@@ -7,6 +7,8 @@ import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import 'package:share_plus/share_plus.dart';
 import '../plots/plot_queue_screen.dart';
+import '../ratings/rating_screen.dart';
+import 'usecases/start_or_continue_rating_usecase.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -244,17 +246,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PlotQueueScreen(
-                      trial: trial,
-                      session: session,
-                    ),
-                  ),
-                );
-              },
+              onPressed: () => _startOrContinueRating(context, ref, trial, session),
               icon: const Icon(Icons.play_arrow),
               label: const Text('Start Rating'),
               style: ElevatedButton.styleFrom(
@@ -270,6 +262,125 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _startOrContinueRating(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+    Session session,
+  ) async {
+    final useCase = ref.read(startOrContinueRatingUseCaseProvider);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Preparing rating session...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final result = await useCase
+        .execute(StartOrContinueRatingInput(sessionId: session.id));
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    if (!result.success ||
+        result.trial == null ||
+        result.session == null ||
+        result.allPlotsSerpentine == null ||
+        result.assessments == null ||
+        result.startPlotIndex == null) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Cannot Start Rating'),
+          content: Text(result.errorMessage ??
+              'Unable to resolve plots and assessments for this session.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final resolvedTrial = result.trial!;
+    final resolvedSession = result.session!;
+    final plots = result.allPlotsSerpentine!;
+    final assessments = result.assessments!;
+    final startIndex = result.startPlotIndex!;
+
+    if (result.isSessionComplete) {
+      // All plots have ratings — let the user choose between review in queue
+      // or jumping into the last plot in the rating screen.
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('All Plots Rated'),
+          content: const Text(
+            'All plots in this session already have ratings. '
+            'You can review or edit values from the plot queue, '
+            'or open the last plot in the rating screen.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PlotQueueScreen(
+                      trial: resolvedTrial,
+                      session: resolvedSession,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open Plot Queue'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RatingScreen(
+                      trial: resolvedTrial,
+                      session: resolvedSession,
+                      plot: plots[startIndex],
+                      assessments: assessments,
+                      allPlots: plots,
+                      currentPlotIndex: startIndex,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open Last Plot'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Normal case: start or resume at the next unrated plot in serpentine order.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RatingScreen(
+          trial: resolvedTrial,
+          session: resolvedSession,
+          plot: plots[startIndex],
+          assessments: assessments,
+          allPlots: plots,
+          currentPlotIndex: startIndex,
         ),
       ),
     );
