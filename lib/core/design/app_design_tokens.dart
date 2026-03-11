@@ -47,6 +47,25 @@ class AppDesignTokens {
   static const Color warningBorder = Color(0xFFFED7AA);
   /// Flag indicator color.
   static const Color flagColor = Color(0xFFF59E0B);
+  /// Application status — applied.
+  static const Color appliedColor = Color(0xFF16A34A);
+  /// Application status — skipped.
+  static const Color skippedColor = Color(0xFFEA580C);
+  /// Application status — missed.
+  static const Color missedColor = Color(0xFFDC2626);
+  /// Application status — no record / unassigned grid tile.
+  static const Color noRecordColor = Color(0xFFD1D5DB);
+  /// Unassigned plot tile in grid.
+  static const Color unassignedColor = Color(0xFF9CA3AF);
+  /// Treatment palette for bird's-eye grid — cycles by index.
+  static const List<Color> treatmentPalette = [
+    Color(0xFF2D5A40),
+    Color(0xFF1D4ED8),
+    Color(0xFFEA580C),
+    Color(0xFF7C3AED),
+    Color(0xFFDC2626),
+    Color(0xFF0F766E),
+  ];
   /// Open session badge background.
   static const Color openSessionBg = Color(0xFF16A34A);
   /// Open session indicator background (light).

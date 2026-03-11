@@ -1344,36 +1344,19 @@ class _PlotLayoutGrid extends StatelessWidget {
   Color _tileColorFor(Plot plot) {
     if (layer == _LayoutLayer.applications) {
       final record = appPlotRecords.where((r) => r.plotPk == plot.id).firstOrNull;
-      if (record == null) {
-        return Colors.grey.shade300;
-      }
-      if (record.status == 'applied') {
-        return Colors.green.shade600;
-      }
-      if (record.status == 'skipped') {
-        return Colors.orange.shade600;
-      }
-      if (record.status == 'missed') {
-        return Colors.red.shade600;
-      }
-      return Colors.grey.shade300;
+      if (record == null) return AppDesignTokens.noRecordColor;
+      if (record.status == 'applied') return AppDesignTokens.appliedColor;
+      if (record.status == 'skipped') return AppDesignTokens.skippedColor;
+      if (record.status == 'missed') return AppDesignTokens.missedColor;
+      return AppDesignTokens.noRecordColor;
     }
     final effectiveTid = plotIdToTreatmentId?[plot.id] ?? plot.treatmentId;
-    if (effectiveTid == null) {
-      return Colors.grey.shade400;
-    }
+    if (effectiveTid == null) return AppDesignTokens.unassignedColor;
     final treatmentIndex = treatments.indexWhere((t) => t.id == effectiveTid);
-    final colors = [
-      const Color(0xFF2D5A40),
-      Colors.blue.shade700,
-      Colors.orange.shade700,
-      Colors.purple.shade700,
-      Colors.red.shade700,
-      Colors.teal.shade700,
-    ];
     return treatmentIndex >= 0
-        ? colors[treatmentIndex % colors.length]
-        : Colors.grey.shade400;
+        ? AppDesignTokens.treatmentPalette[
+            treatmentIndex % AppDesignTokens.treatmentPalette.length]
+        : AppDesignTokens.unassignedColor;
   }
 
   @override
@@ -1393,10 +1376,10 @@ class _PlotLayoutGrid extends StatelessWidget {
                   spacing: 12,
                   runSpacing: 6,
                   children: [
-                    _legendChip(Colors.green.shade600, 'Applied'),
-                    _legendChip(Colors.orange.shade600, 'Skipped'),
-                    _legendChip(Colors.red.shade600, 'Missed'),
-                    _legendChip(Colors.grey.shade300, 'No record'),
+                    _legendChip(AppDesignTokens.appliedColor, 'Applied'),
+                    _legendChip(AppDesignTokens.skippedColor, 'Skipped'),
+                    _legendChip(AppDesignTokens.missedColor, 'Missed'),
+                    _legendChip(AppDesignTokens.noRecordColor, 'No record'),
                   ],
                 )
               : Wrap(
@@ -1404,18 +1387,11 @@ class _PlotLayoutGrid extends StatelessWidget {
                   runSpacing: 6,
                   children: [
                     ...treatments.asMap().entries.map((entry) {
-                      final colors = [
-                        const Color(0xFF2D5A40),
-                        Colors.blue.shade700,
-                        Colors.orange.shade700,
-                        Colors.purple.shade700,
-                        Colors.red.shade700,
-                        Colors.teal.shade700,
-                      ];
-                      final color = colors[entry.key % colors.length];
+                      final color = AppDesignTokens.treatmentPalette[
+                          entry.key % AppDesignTokens.treatmentPalette.length];
                       return _legendChip(color, '${entry.value.code} ${entry.value.name}');
                     }),
-                    _legendChip(Colors.grey.shade400, 'Unassigned'),
+                    _legendChip(AppDesignTokens.unassignedColor, 'Unassigned'),
                   ],
                 ),
         ),
