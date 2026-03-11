@@ -2322,9 +2322,22 @@ class _SeedingTab extends ConsumerWidget {
                           ? r.comments!.trim()
                           : null;
 
-                  return Card(
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                  return Container(
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: AppDesignTokens.spacing16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppDesignTokens.cardSurface,
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusCard),
+                      border: Border.all(color: AppDesignTokens.borderCrisp),
+                      boxShadow: const [
+                        BoxShadow(
+                            color: Color(0x08000000),
+                            blurRadius: 4,
+                            offset: Offset(0, 2)),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
                     child: ListTile(
                       onTap: () => Navigator.push(
                         context,
@@ -2333,37 +2346,47 @@ class _SeedingTab extends ConsumerWidget {
                         ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      leading: CircleAvatar(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.primaryContainer,
-                        child: Icon(
-                          Icons.agriculture,
-                          color: Theme.of(context).colorScheme.primary,
+                          horizontal: AppDesignTokens.spacing16,
+                          vertical: AppDesignTokens.spacing8),
+                      leading: Container(
+                        padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+                        decoration: BoxDecoration(
+                          color: AppDesignTokens.sectionHeaderBg,
+                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
                         ),
+                        child: const Icon(Icons.agriculture,
+                            size: 20, color: AppDesignTokens.primary),
                       ),
                       title: Text(
                         'Seeding $dateText',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppDesignTokens.primaryText),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const SizedBox(height: 4),
-                          Text(operatorText),
+                          Text(operatorText,
+                              style: const TextStyle(
+                                  color: AppDesignTokens.secondaryText,
+                                  fontSize: 12)),
                           if (commentsText != null) ...[
                             const SizedBox(height: 4),
                             Text(
                               commentsText,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.grey.shade700),
+                              style: const TextStyle(
+                                  color: AppDesignTokens.secondaryText,
+                                  fontSize: 12),
                             ),
                           ],
                         ],
                       ),
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: AppDesignTokens.iconSubtle),
                     ),
                   );
                 },
