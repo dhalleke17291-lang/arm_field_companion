@@ -62,6 +62,7 @@ class GradientScreenHeader extends StatelessWidget implements PreferredSizeWidge
                       style: AppDesignTokens.headerTitleStyle(
                         fontSize: titleFontSize,
                         color: Colors.white,
+                        letterSpacing: -0.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -73,6 +74,7 @@ class GradientScreenHeader extends StatelessWidget implements PreferredSizeWidge
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.white.withValues(alpha: 0.8),
+                          letterSpacing: 0.2,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

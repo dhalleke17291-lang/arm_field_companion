@@ -5,7 +5,7 @@ import '../../../core/app_info.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/session_lock.dart';
 
-/// SaveRatingUseCase — centerpiece of ARM Field Companion
+/// SaveRatingUseCase — centerpiece of Ag-Quest Field Companion
 /// 
 /// Enforces all spec invariants:
 /// 1. numericValue must be NULL if resultStatus != RECORDED

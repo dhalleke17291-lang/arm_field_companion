@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
@@ -37,7 +38,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final plotIdToTreatmentId = {for (var a in assignments) a.plotId: a.treatmentId};
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EB),
+      backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: GradientScreenHeader(
         title: session.name,
         subtitle: session.sessionDateLocal,
@@ -147,7 +148,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       style: TextStyle(fontSize: 12, color: Colors.grey)),
                 ),
               if (result.warningMessage != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppDesignTokens.spacing8),
                 Text(
                   result.warningMessage!,
                   style: TextStyle(
@@ -181,7 +182,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   files,
                   subject: '${widget.trial.name} - ${widget.session.name} Export',
                   sharePositionOrigin: box == null
-                      ? Rect.fromLTWH(0, 0, 100, 100)
+                      ? const Rect.fromLTWH(0, 0, 100, 100)
                       : box.localToGlobal(Offset.zero) & box.size,
                 );
               },
@@ -242,7 +243,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
+            ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -256,8 +257,16 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               },
               icon: const Icon(Icons.play_arrow),
               label: const Text('Start Rating'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppDesignTokens.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDesignTokens.spacing24,
+                    vertical: AppDesignTokens.spacing16),
+                shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusCard)),
               ),
             ),
           ],
@@ -276,6 +285,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     List<Treatment> treatments,
     Map<int, int?> plotIdToTreatmentId,
   ) {
+    final scheme = Theme.of(context).colorScheme;
     final ratedCount = ratings.map((r) => r.plotPk).toSet().length;
     final treatmentMap = {for (final t in treatments) t.id: t};
     final flaggedIds = ref.watch(flaggedPlotIdsForSessionProvider(session.id)).valueOrNull ?? <int>{};
@@ -283,35 +293,62 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       children: [
         // Section header (same as Trial Plots tab)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: Theme.of(context).colorScheme.primaryContainer,
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+          decoration: const BoxDecoration(
+            color: AppDesignTokens.sectionHeaderBg,
+            border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+          ),
           child: Row(
             children: [
-              Icon(Icons.grid_on,
-                  color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Text('${plots.length} plots',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary)),
+              const Icon(Icons.grid_on,
+                  color: AppDesignTokens.primary, size: 16),
+              const SizedBox(width: AppDesignTokens.spacing8),
+              Text(
+                '${plots.length} plots',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: AppDesignTokens.primary),
+              ),
               const Spacer(),
-              Text('$ratedCount / ${plots.length} rated',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.primary)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
+                decoration: BoxDecoration(
+                  color: AppDesignTokens.successBg,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '$ratedCount / ${plots.length} rated',
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppDesignTokens.successFg),
+                ),
+              ),
             ],
           ),
         ),
+        // Plots with issues (only for closed sessions)
+        if (session.endedAt != null) ...[
+          _buildSessionIssuesSection(
+            context,
+            session,
+            plots,
+            ratings,
+            flaggedIds,
+          ),
+        ],
         // Assessment chips
         if (assessments.isNotEmpty)
           SizedBox(
             height: 44,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing8),
               itemCount: assessments.length,
               itemBuilder: (context, index) => Padding(
-                padding: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.only(right: AppDesignTokens.spacing8),
                 child: Chip(
                   label: Text(assessments[index].name,
                       style: const TextStyle(fontSize: 12)),
@@ -334,11 +371,25 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
               final hasIssues = plotRatings.any((r) => r.resultStatus != 'RECORDED');
               final isFlagged = flaggedIds.contains(plot.id);
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              return Container(
+                margin: const EdgeInsets.symmetric(
+                    horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusCard),
+                  border: Border.all(color: AppDesignTokens.borderCrisp),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x08000000),
+                        blurRadius: 4,
+                        offset: Offset(0, 2)),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: ExpansionTile(
                   leading: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing8),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2D5A40),
                       borderRadius: BorderRadius.circular(6),
@@ -363,20 +414,20 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                           children: [
                             if (isFlagged)
                               const Padding(
-                                padding: EdgeInsets.only(right: 6),
+                                padding: EdgeInsets.only(right: AppDesignTokens.spacing8),
                                 child: Icon(Icons.flag, color: Colors.amber, size: 22),
                               ),
                             if (hasIssues)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.shade100,
+                                  color: scheme.tertiaryContainer,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.orange.shade300),
+                                  border: Border.all(color: scheme.outlineVariant),
                                 ),
                                 child: Text(
                                   'Missing / issues',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.onTertiaryContainer),
                                 ),
                               ),
                           ],
@@ -417,6 +468,104 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       ],
     );
   }
+
+  /// Read-only summary of plots with issues (flagged or missing/unavailable readings).
+  /// Only shown for closed sessions when there are issues.
+  Widget _buildSessionIssuesSection(
+    BuildContext context,
+    Session session,
+    List<Plot> plots,
+    List<RatingRecord> ratings,
+    Set<int> flaggedIds,
+  ) {
+    final issuePlotIds = ratings
+        .where((r) => r.resultStatus != 'RECORDED')
+        .map((r) => r.plotPk)
+        .toSet();
+    if (flaggedIds.isEmpty && issuePlotIds.isEmpty) return const SizedBox.shrink();
+
+    final flaggedPlots = plots.where((p) => flaggedIds.contains(p.id)).toList();
+    final issuePlots = plots.where((p) => issuePlotIds.contains(p.id)).toList();
+    final flaggedLabels = flaggedPlots.map((p) => getDisplayPlotLabel(p, plots)).toList();
+    final issueLabels = issuePlots.map((p) => getDisplayPlotLabel(p, plots)).toList();
+    final scheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      label: 'Plots with issues: ${flaggedLabels.length} flagged, ${issueLabels.length} with reading issues',
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing8, AppDesignTokens.spacing16, 0),
+        padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+        decoration: BoxDecoration(
+          color: scheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          border: Border.all(color: scheme.outlineVariant),
+        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 18, color: scheme.onTertiaryContainer),
+              const SizedBox(width: AppDesignTokens.spacing8),
+              Text(
+                'Plots with issues',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onTertiaryContainer,
+                ),
+              ),
+            ],
+          ),
+          if (flaggedLabels.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    'Flagged:',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onTertiaryContainer),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    flaggedLabels.join(', '),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (issueLabels.isNotEmpty) ...[
+            const SizedBox(height: AppDesignTokens.spacing8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    'Reading issues:',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onTertiaryContainer),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    issueLabels.join(', '),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+      ),
+    );
+  }
+
 }
 
 /// Dock-style tab bar for session detail (same look as trial's Plots / Sessions dock).
@@ -442,13 +591,13 @@ class _SessionDockBar extends StatelessWidget {
     return Container(
       height: 110,
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      padding: const EdgeInsets.only(top: AppDesignTokens.spacing8, bottom: AppDesignTokens.spacing8),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16),
         physics: const BouncingScrollPhysics(),
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, __) => const SizedBox(width: AppDesignTokens.spacing12),
         itemBuilder: (context, index) {
           final item = items[index];
           final isSelected = selectedIndex == item.$1;
@@ -492,13 +641,13 @@ class _SessionDockTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppDesignTokens.spacing8),
                 decoration: BoxDecoration(
                   color: selected
                       ? scheme.primaryContainer

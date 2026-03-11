@@ -76,6 +76,7 @@ class StandardSectionHeader extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
                 color: scheme.primary,
+                letterSpacing: 0.15,
               ),
               overflow: TextOverflow.ellipsis,
             ),

@@ -10,6 +10,7 @@ import '../about/about_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
 import 'usecases/create_trial_usecase.dart';
 import 'trial_detail_screen.dart';
+// Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
 
 Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
@@ -57,9 +58,9 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
     final box = context.findRenderObject() as RenderBox?;
     await Share.shareXFiles(
       files,
-      text: 'ARM Field Companion – ${files.length} trial export(s), $exportedCount session(s)',
+      text: 'Ag-Quest Field Companion – ${files.length} trial export(s), $exportedCount session(s)',
       sharePositionOrigin: box == null
-          ? Rect.fromLTWH(0, 0, 100, 100)
+          ? const Rect.fromLTWH(0, 0, 100, 100)
           : box.localToGlobal(Offset.zero) & box.size,
     );
     if (context.mounted) {
@@ -102,7 +103,7 @@ class TrialListScreen extends ConsumerWidget {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+                padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,12 +120,12 @@ class TrialListScreen extends ConsumerWidget {
                         Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.file_download_outlined, color: Colors.white),
+                              icon: const Icon(Icons.file_upload_outlined, color: Colors.white),
                               tooltip: 'Export all trial data (closed sessions)',
                               onPressed: () => _exportAllTrials(context, ref),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.file_upload_outlined, color: Colors.white),
+                              icon: const Icon(Icons.file_download_outlined, color: Colors.white),
                               tooltip: 'Import Protocol',
                               onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ProtocolImportScreen())),
                             ),
@@ -138,16 +139,16 @@ class TrialListScreen extends ConsumerWidget {
                       ],
                     ),
                     trialsAsync.when(
-                      loading: () => const SizedBox(height: 12),
-                      error: (_, __) => const SizedBox(height: 12),
+                      loading: () => const SizedBox(height: AppDesignTokens.spacing12),
+                      error: (_, __) => const SizedBox(height: AppDesignTokens.spacing12),
                       data: (trials) {
                         final active = trials.where((t) => t.status.toLowerCase() == 'active').length;
                         return Padding(
-                          padding: const EdgeInsets.only(top: 20),
+                          padding: const EdgeInsets.only(top: AppDesignTokens.spacing24),
                           child: Row(
                             children: [
                               Expanded(child: _summaryPill(context, '${trials.length}', 'Trials')),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: AppDesignTokens.spacing12),
                               Expanded(child: _summaryPill(context, '$active', 'Active')),
                             ],
                           ),
@@ -187,7 +188,7 @@ class TrialListScreen extends ConsumerWidget {
 
   Widget _summaryPill(BuildContext context, String value, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: AppDesignTokens.spacing8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
@@ -249,7 +250,7 @@ class TrialListScreen extends ConsumerWidget {
   Widget _buildTrialList(
       BuildContext context, WidgetRef ref, List<Trial> trials) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0, AppDesignTokens.spacing16, AppDesignTokens.spacing24),
       children: [
         const Align(
           alignment: Alignment.centerLeft,
@@ -263,9 +264,9 @@ class TrialListScreen extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppDesignTokens.spacing16),
         ...trials.map((t) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
           child: _TrialCard(trial: t),
         )),
       ],

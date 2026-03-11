@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="arm_field_companion"
+        android:label="Ag-Quest Field Companion"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:name="${applicationName}"

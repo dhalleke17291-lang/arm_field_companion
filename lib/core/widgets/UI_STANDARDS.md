@@ -1,4 +1,4 @@
-# ARM Field Companion — UI standards
+# Ag-Quest Field Companion — UI standards
 
 Use these so similar elements look and behave the same across the app.
 

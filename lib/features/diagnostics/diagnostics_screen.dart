@@ -562,7 +562,7 @@ class _ResetConfirmDialogState extends State<_ResetConfirmDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'You are about to permanently delete ALL data in ARM Field Companion.',
+              'You are about to permanently delete ALL data in Ag-Quest Field Companion.',
               style: TextStyle(height: 1.4),
             ),
             const SizedBox(height: 8),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/app_info.dart';
 import '../diagnostics/diagnostics_screen.dart';
@@ -39,7 +40,11 @@ class AboutScreen extends StatelessWidget {
               const SizedBox(height: 32),
               Text(
                 developerCredit,
-                style: theme.textTheme.bodyLarge,
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                  fontWeight: FontWeight.w400,
+                ),
               ),
               const SizedBox(height: 32),
               OutlinedButton.icon(

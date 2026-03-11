@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/design/app_design_tokens.dart';
 import 'core/diagnostics/diagnostics_store.dart';
@@ -43,7 +44,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ARM Field Companion',
+      title: 'Ag-Quest Field Companion',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       home: const SplashScreen(),
@@ -103,11 +104,11 @@ class ArmFieldCompanionApp extends StatelessWidget {
       ),
       cardTheme: CardThemeData(
         color: surfaceCard,
-        elevation: 1,
-        shadowColor: Colors.black.withValues(alpha: 0.05),
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.06),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+          side: const BorderSide(color: Color(0xFFEAECF0), width: 1),
         ),
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
@@ -214,39 +215,44 @@ class ArmFieldCompanionApp extends StatelessWidget {
         thickness: 1,
         space: 1,
       ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
+      textTheme: TextTheme(
+        headlineLarge: GoogleFonts.plusJakartaSans(
           fontSize: 40,
           fontWeight: FontWeight.w900,
           color: onSurfaceWarm,
           letterSpacing: -0.5,
         ),
-        headlineMedium: TextStyle(
+        headlineMedium: GoogleFonts.plusJakartaSans(
           fontSize: 34,
           fontWeight: FontWeight.w800,
           color: onSurfaceWarm,
+          letterSpacing: -0.25,
         ),
-        titleLarge: TextStyle(
+        titleLarge: GoogleFonts.plusJakartaSans(
           fontSize: 26,
           fontWeight: FontWeight.w800,
           color: onSurfaceWarm,
+          letterSpacing: -0.2,
         ),
-        titleMedium: TextStyle(
+        titleMedium: GoogleFonts.plusJakartaSans(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: onSurfaceWarm,
+          letterSpacing: 0,
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: GoogleFonts.plusJakartaSans(
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: onSurfaceWarm,
+          letterSpacing: 0.15,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: GoogleFonts.plusJakartaSans(
           fontSize: 15,
           fontWeight: FontWeight.w500,
           color: subtleGrey,
+          letterSpacing: 0.15,
         ),
-        labelLarge: TextStyle(
+        labelLarge: GoogleFonts.plusJakartaSans(
           fontSize: 17,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.3,

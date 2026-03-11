@@ -21,7 +21,6 @@ import '../protocol_import/imported_protocol_file_screen.dart';
 import 'plot_layout_model.dart';
 import 'assessment_library_picker_dialog.dart';
 import '../../core/providers.dart';
-import '../../data/repositories/treatment_repository.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/design/app_design_tokens.dart';
@@ -304,7 +303,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
           ),
           _buildTrialStatusBar(context, ref, currentTrial),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDesignTokens.spacing12),
           SizedBox(
             height: 110,
             child: _TrialModuleHub(
@@ -318,11 +317,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               onUserScroll: _dismissHubHint,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppDesignTokens.spacing12),
           if (_selectedTabIndex != _sessionsIndex)
             _buildSessionsBar(context, ref.watch(sessionsForTrialProvider(widget.trial.id))),
           if (_selectedTabIndex != _sessionsIndex)
-            const SizedBox(height: 12),
+            const SizedBox(height: AppDesignTokens.spacing12),
           Expanded(
             child: IndexedStack(
               index: _selectedTabIndex,
@@ -355,7 +354,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         : 'Protocol editable';
     final latestImportAsync = ref.watch(latestImportEventForTrialProvider(trial.id));
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,21 +366,21 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   style: TextStyle(
                       fontSize: 13,
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppDesignTokens.spacing8),
               Chip(
                 label: Text(label, style: const TextStyle(fontSize: 12)),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: 0),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppDesignTokens.spacing8),
               ProtocolLockChip(isLocked: locked, status: trial.status),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppDesignTokens.spacing12),
               latestImportAsync.when(
                 data: (evt) {
                   final path = evt?.savedFilePath;
                   if (path == null || path.trim().isEmpty) return const SizedBox.shrink();
                   return Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: AppDesignTokens.spacing8),
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.push(
@@ -397,7 +396,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                       icon: const Icon(Icons.description_outlined, size: 16),
                       label: const Text('View import'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12),
                         minimumSize: const Size(0, 32),
                       ),
                     ),
@@ -406,16 +405,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppDesignTokens.spacing8),
 
               ...nextStatuses.map((next) {
             final nextLabel = labelForTrialStatus(next);
             return Padding(
-              padding: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.only(right: AppDesignTokens.spacing8),
               child: FilledButton.tonal(
                 onPressed: () => _transitionTrialStatus(context, ref, next),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12),
                   minimumSize: const Size(0, 32),
                 ),
                 child: Text(
@@ -435,7 +434,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           }),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppDesignTokens.spacing4),
           if (locked)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,7 +516,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
       child: AppCard(
         margin: EdgeInsets.zero,
         child: InkWell(
@@ -527,7 +526,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           }),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
             child: Row(
               children: [
                 Icon(
@@ -535,7 +534,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   color: Theme.of(context).colorScheme.primary,
                   size: 22,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppDesignTokens.spacing12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -785,7 +784,9 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     return Column(
       children: [
         _buildPlotsHeader(context, ref, plots),
-        if (layoutDiag.hasIssues) _buildLayoutDiagnosticsBanner(context, layoutDiag),
+        if (layoutDiag.hasIssues) ...[
+          _buildLayoutDiagnosticsBanner(context, layoutDiag),
+        ],
         _buildListLayoutToggle(context, ref, plots),
         if (_showLayoutView) ...[
           _buildLayerSwitcher(context),
@@ -1162,6 +1163,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
   Widget _buildPlotsHeader(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
     final locked = isProtocolLocked(widget.trial.status);
+    final scheme = Theme.of(context).colorScheme;
     final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     final assignedCount = plots.where((p) =>
@@ -1177,22 +1179,22 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       title: title,
       trailingIndicator: ProtocolLockChip(isLocked: locked, status: widget.trial.status),
       action: Tooltip(
-          message: locked ? getProtocolLockMessage(widget.trial.status) : 'Assign treatments to multiple plots',
-          child: TextButton.icon(
-            onPressed: locked ? null : () => _showBulkAssignDialog(context, ref, plots),
-            icon: Icon(Icons.assignment,
-                size: 16,
-                color: locked
-                    ? Theme.of(context).colorScheme.onSurfaceVariant
-                    : Theme.of(context).colorScheme.primary),
-            label: Text('Bulk Assign',
-                style: TextStyle(
-                    color: locked
-                        ? Theme.of(context).colorScheme.onSurfaceVariant
-                        : Theme.of(context).colorScheme.primary,
-                    fontSize: 13)),
-          ),
+        message: locked ? getProtocolLockMessage(widget.trial.status) : 'Assign treatments to multiple plots',
+        child: TextButton.icon(
+          onPressed: locked ? null : () => _showBulkAssignDialog(context, ref, plots),
+          icon: Icon(Icons.assignment,
+              size: 16,
+              color: locked
+                  ? scheme.onSurfaceVariant
+                  : scheme.primary),
+          label: Text('Bulk Assign',
+              style: TextStyle(
+                  color: locked
+                      ? scheme.onSurfaceVariant
+                      : scheme.primary,
+                  fontSize: 13)),
         ),
+      ),
     );
     if (!locked) return header;
     return Column(
@@ -1420,7 +1422,8 @@ class _PlotLayoutGrid extends StatelessWidget {
   static const double _repLabelWidth = 52.0;
   static const double _tileSpacing = 6.0;
   static const double _minTileSize = 40.0;
-  static const double _tileHeight = 48.0;
+  static const double _tileSizeScale = 0.5;
+  static const double _minCellSize = 20.0;
 
   Widget _buildRepBasedGrid(BuildContext context, Map<int, Treatment> treatmentMap) {
     final blocks = buildRepBasedLayout(plots);
@@ -1465,6 +1468,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                       ? (plotRowWidth - (n - 1) * _tileSpacing) / n
                       : 0.0;
                   final size = tileWidth.clamp(_minTileSize, double.infinity);
+                  final cellSize = (size * _tileSizeScale).clamp(_minCellSize, double.infinity);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: _tileSpacing),
                     child: Row(
@@ -1490,9 +1494,9 @@ class _PlotLayoutGrid extends StatelessWidget {
                                 for (var i = 0; i < repRow.plots.length; i++) ...[
                                   if (i > 0) const SizedBox(width: _tileSpacing),
                                   SizedBox(
-                                    width: size,
-                                    height: _tileHeight,
-                                  child: _PlotGridTile(
+                                    width: cellSize,
+                                    height: cellSize,
+                                    child: _PlotGridTile(
                                     plot: repRow.plots[i],
                                     treatmentMap: treatmentMap,
                                     treatments: treatments,
@@ -3010,7 +3014,7 @@ class _TreatmentsTab extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '${componentCount} ${componentCount == 1 ? "product" : "products"}',
+                              '$componentCount ${componentCount == 1 ? "product" : "products"}',
                               style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -3384,7 +3388,7 @@ class SessionsView extends ConsumerWidget {
                       text:
                           '${trial.name} – ${result.sessionCount} closed sessions',
                       sharePositionOrigin: box == null
-                          ? Rect.fromLTWH(0, 0, 100, 100)
+                          ? const Rect.fromLTWH(0, 0, 100, 100)
                           : box.localToGlobal(Offset.zero) & box.size,
                     );
                     if (!context.mounted) return;
@@ -3522,8 +3526,14 @@ class SessionsView extends ConsumerWidget {
     final ratings = ref.watch(sessionRatingsProvider(session.id)).valueOrNull ?? [];
     final flaggedIds = ref.watch(flaggedPlotIdsForSessionProvider(session.id)).valueOrNull ?? <int>{};
     final hasFlags = flaggedIds.isNotEmpty;
-    final hasIssues = ratings.any((r) => r.resultStatus != 'RECORDED');
+    final issuePlotIds = ratings
+        .where((r) => r.resultStatus != 'RECORDED')
+        .map((r) => r.plotPk)
+        .toSet();
+    final hasIssues = issuePlotIds.isNotEmpty;
     final showIssueIndicators = !isOpen && (hasFlags || hasIssues);
+    final flaggedCount = flaggedIds.length;
+    final issuePlotCount = issuePlotIds.length;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
@@ -3576,10 +3586,24 @@ class SessionsView extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (hasFlags)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 6),
-                          child: Icon(Icons.flag, color: Colors.amber, size: 20),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.flag, color: Colors.amber, size: 20),
+                              const SizedBox(width: 2),
+                              Text(
+                                '$flaggedCount flagged',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.amber.shade800),
+                              ),
+                            ],
+                          ),
                         ),
+                      if (hasFlags && hasIssues) const SizedBox(width: 8),
                       if (hasIssues)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -3589,7 +3613,7 @@ class SessionsView extends ConsumerWidget {
                             border: Border.all(color: Colors.orange.shade300),
                           ),
                           child: Text(
-                            'Has issues',
+                            '$issuePlotCount reading issues',
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
                           ),
                         ),
@@ -3724,95 +3748,99 @@ class _ApplicationsTab extends ConsumerWidget {
     );
   }
 
+  Widget _buildApplicationsListView(BuildContext context, WidgetRef ref, List<ApplicationEvent> events) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
+      itemCount: events.length,
+      itemBuilder: (context, index) {
+        final e = events[index];
+        final dateStr =
+            '${e.applicationDate.year}-${e.applicationDate.month.toString().padLeft(2, '0')}-${e.applicationDate.day.toString().padLeft(2, '0')}';
+        final isCompleted = e.status == 'completed';
+        return Card(
+          child: ListTile(
+            leading: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isCompleted
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.transparent,
+                border: isCompleted
+                    ? null
+                    : Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('A${e.applicationNumber}',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: isCompleted
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.primary)),
+            ),
+            title: Row(children: [
+              Expanded(
+                child: Text(
+                  e.timingLabel ?? '${_methodLabel(e.method)} — $dateStr',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Builder(builder: (ctx2) {
+                final isPartial = e.partialFlag;
+                final bgColor = isCompleted
+                    ? (isPartial ? Colors.amber.shade100 : Colors.green.shade100)
+                    : Colors.orange.shade50;
+                final fgColor = isCompleted
+                    ? (isPartial ? Colors.amber.shade800 : Colors.green.shade700)
+                    : Colors.orange.shade700;
+                final icn = isCompleted
+                    ? (isPartial ? Icons.warning_amber_rounded : Icons.check_circle)
+                    : Icons.schedule;
+                final lbl = isCompleted
+                    ? (isPartial ? 'Partial' : 'Completed')
+                    : 'Planned';
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icn, size: 11, color: fgColor),
+                      const SizedBox(width: 3),
+                      Text(
+                        lbl,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: fgColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ]),
+            subtitle: Text([
+              _methodLabel(e.method),
+              if (e.growthStage != null) e.growthStage!,
+              if (e.operatorName != null) e.operatorName!,
+              if (e.partialFlag) 'Partial',
+            ].whereType<String>().join('  ·  ')),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () => _showEventDetail(context, e),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildList(BuildContext context, WidgetRef ref, List<ApplicationEvent> events) {
     return Stack(
       children: [
-        ListView.builder(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
-          itemCount: events.length,
-          itemBuilder: (context, index) {
-            final e = events[index];
-            final dateStr =
-                '${e.applicationDate.year}-${e.applicationDate.month.toString().padLeft(2, '0')}-${e.applicationDate.day.toString().padLeft(2, '0')}';
-            final isCompleted = e.status == 'completed';
-            return Card(
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isCompleted
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.transparent,
-                    border: isCompleted
-                        ? null
-                        : Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text('A${e.applicationNumber}',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: isCompleted
-                              ? Colors.white
-                              : Theme.of(context).colorScheme.primary)),
-                ),
-                title: Row(children: [
-                  Expanded(
-                    child: Text(
-                      e.timingLabel ?? '${_methodLabel(e.method)} — $dateStr',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Builder(builder: (ctx2) {
-                    final isPartial = e.partialFlag;
-                    final bgColor = isCompleted
-                        ? (isPartial ? Colors.amber.shade100 : Colors.green.shade100)
-                        : Colors.orange.shade50;
-                    final fgColor = isCompleted
-                        ? (isPartial ? Colors.amber.shade800 : Colors.green.shade700)
-                        : Colors.orange.shade700;
-                    final icn = isCompleted
-                        ? (isPartial ? Icons.warning_amber_rounded : Icons.check_circle)
-                        : Icons.schedule;
-                    final lbl = isCompleted
-                        ? (isPartial ? 'Partial' : 'Completed')
-                        : 'Planned';
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(icn, size: 11, color: fgColor),
-                          const SizedBox(width: 3),
-                          Text(
-                            lbl,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: fgColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ]),
-                subtitle: Text([
-                  _methodLabel(e.method),
-                  if (e.growthStage != null) e.growthStage!,
-                  if (e.operatorName != null) e.operatorName!,
-                  if (e.partialFlag) 'Partial',
-                ].whereType<String>().join('  ·  ')),
-                trailing: const Icon(Icons.chevron_right, size: 18),
-                onTap: () => _showEventDetail(context, e),
-              ),
-            );
-          },
-        ),
+        _buildApplicationsListView(context, ref, events),
         Positioned(
           bottom: 16,
           right: 16,
