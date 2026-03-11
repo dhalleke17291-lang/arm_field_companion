@@ -21,6 +21,7 @@ import '../features/ratings/usecases/undo_rating_usecase.dart';
 import '../features/ratings/usecases/apply_correction_usecase.dart';
 import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
+import '../features/sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../features/export/data/export_repository.dart';
 import '../features/export/domain/export_session_csv_usecase.dart';
 import '../features/export/domain/export_trial_closed_sessions_usecase.dart';
@@ -149,6 +150,16 @@ final createSessionUseCaseProvider = Provider<CreateSessionUseCase>((ref) {
 
 final closeSessionUseCaseProvider = Provider<CloseSessionUseCase>((ref) {
   return CloseSessionUseCase(ref.watch(sessionRepositoryProvider));
+});
+
+final startOrContinueRatingUseCaseProvider =
+    Provider<StartOrContinueRatingUseCase>((ref) {
+  return StartOrContinueRatingUseCase(
+    ref.watch(sessionRepositoryProvider),
+    ref.watch(trialRepositoryProvider),
+    ref.watch(plotRepositoryProvider),
+    ref.watch(ratingRepositoryProvider),
+  );
 });
 
 final trialsStreamProvider = StreamProvider((ref) {
