@@ -11,7 +11,6 @@ import '../protocol_import/protocol_import_screen.dart';
 import 'usecases/create_trial_usecase.dart';
 import 'trial_detail_screen.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
-import '../sessions/session_detail_screen.dart';
 import '../ratings/rating_screen.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
@@ -579,18 +578,9 @@ class _TrialQuickActions extends ConsumerWidget {
     final assessments = result.assessments!;
     final startIndex = result.startPlotIndex!;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SessionDetailScreen(
-          trial: resolvedTrial,
-          session: resolvedSession,
-        ),
-      ),
-    );
-
-    // Then deep-link into rating at the resolved next plot.
-    Navigator.push(
+    // Build the route stack: Home → RatingScreen
+    // Single tap, correct back navigation (back returns to home).
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
         builder: (_) => RatingScreen(
@@ -602,6 +592,7 @@ class _TrialQuickActions extends ConsumerWidget {
           currentPlotIndex: startIndex,
         ),
       ),
+      (route) => route.isFirst,
     );
   }
 
