@@ -22,6 +22,14 @@ class AppDesignTokens {
 
   /// Divider and light borders.
   static const Color divider = Color(0xFFE5E7EB);
+  /// Primary text — near black for titles and strong labels.
+  static const Color primaryText = Color(0xFF111827);
+  /// Chevron and subtle icon color.
+  static const Color iconSubtle = Color(0xFFD1D5DB);
+  /// Empty state / no-content badge background.
+  static const Color emptyBadgeBg = Color(0xFFF3F4F6);
+  /// Empty state / no-content badge foreground.
+  static const Color emptyBadgeFg = Color(0xFF9CA3AF);
 
   /// Crisp border — slightly cooler than divider, for card edges.
   static const Color borderCrisp = Color(0xFFEAECF0);

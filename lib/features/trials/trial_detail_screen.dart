@@ -2972,20 +2972,22 @@ class _TreatmentsTab extends ConsumerWidget {
                 return Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFEAECF0)),
+                    color: AppDesignTokens.cardSurface,
+                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+                    border: Border.all(color: AppDesignTokens.borderCrisp),
                     boxShadow: const [
                       BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
                     ],
                   ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
                     leading: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D5A40),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppDesignTokens.primary,
+                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
                       ),
                       child: Text(t.code,
                           style: const TextStyle(
@@ -2998,19 +3000,21 @@ class _TreatmentsTab extends ConsumerWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: Color(0xFF111827))),
+                            color: AppDesignTokens.primaryText)),
                     subtitle: t.description != null
                         ? Text(t.description!,
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)))
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppDesignTokens.secondaryText))
                         : null,
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (componentCount > 0)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFD1FAE5),
+                              color: AppDesignTokens.successBg,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -3018,14 +3022,14 @@ class _TreatmentsTab extends ConsumerWidget {
                               style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF047857)),
+                                  color: AppDesignTokens.successFg),
                             ),
                           )
                         else
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF3F4F6),
+                              color: AppDesignTokens.emptyBadgeBg,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
@@ -3033,11 +3037,11 @@ class _TreatmentsTab extends ConsumerWidget {
                               style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF9CA3AF)),
+                                  color: AppDesignTokens.emptyBadgeFg),
                             ),
                           ),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.chevron_right, size: 18, color: Color(0xFFD1D5DB)),
+                        const SizedBox(width: AppDesignTokens.spacing8),
+                        const Icon(Icons.chevron_right, size: 18, color: AppDesignTokens.iconSubtle),
                       ],
                     ),
                     onTap: () => _showTreatmentComponents(context, ref, t),
