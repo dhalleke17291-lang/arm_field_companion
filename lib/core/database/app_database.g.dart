@@ -12981,6 +12981,12 @@ class $ImportEventsTable extends ImportEvents
   late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
       'file_name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _savedFilePathMeta =
+      const VerificationMeta('savedFilePath');
+  @override
+  late final GeneratedColumn<String> savedFilePath = GeneratedColumn<String>(
+      'saved_file_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -13021,6 +13027,7 @@ class $ImportEventsTable extends ImportEvents
         id,
         trialId,
         fileName,
+        savedFilePath,
         status,
         rowsImported,
         rowsSkipped,
@@ -13051,6 +13058,12 @@ class $ImportEventsTable extends ImportEvents
           fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta));
     } else if (isInserting) {
       context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('saved_file_path')) {
+      context.handle(
+          _savedFilePathMeta,
+          savedFilePath.isAcceptableOrUnknown(
+              data['saved_file_path']!, _savedFilePathMeta));
     }
     if (data.containsKey('status')) {
       context.handle(_statusMeta,
@@ -13093,6 +13106,8 @@ class $ImportEventsTable extends ImportEvents
           .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
       fileName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}file_name'])!,
+      savedFilePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}saved_file_path']),
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
       rowsImported: attachedDatabase.typeMapping
@@ -13116,6 +13131,7 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
   final int id;
   final int trialId;
   final String fileName;
+  final String? savedFilePath;
   final String status;
   final int rowsImported;
   final int rowsSkipped;
@@ -13125,6 +13141,7 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
       {required this.id,
       required this.trialId,
       required this.fileName,
+      this.savedFilePath,
       required this.status,
       required this.rowsImported,
       required this.rowsSkipped,
@@ -13136,6 +13153,9 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
     map['id'] = Variable<int>(id);
     map['trial_id'] = Variable<int>(trialId);
     map['file_name'] = Variable<String>(fileName);
+    if (!nullToAbsent || savedFilePath != null) {
+      map['saved_file_path'] = Variable<String>(savedFilePath);
+    }
     map['status'] = Variable<String>(status);
     map['rows_imported'] = Variable<int>(rowsImported);
     map['rows_skipped'] = Variable<int>(rowsSkipped);
@@ -13151,6 +13171,9 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
       id: Value(id),
       trialId: Value(trialId),
       fileName: Value(fileName),
+      savedFilePath: savedFilePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(savedFilePath),
       status: Value(status),
       rowsImported: Value(rowsImported),
       rowsSkipped: Value(rowsSkipped),
@@ -13168,6 +13191,7 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
       id: serializer.fromJson<int>(json['id']),
       trialId: serializer.fromJson<int>(json['trialId']),
       fileName: serializer.fromJson<String>(json['fileName']),
+      savedFilePath: serializer.fromJson<String?>(json['savedFilePath']),
       status: serializer.fromJson<String>(json['status']),
       rowsImported: serializer.fromJson<int>(json['rowsImported']),
       rowsSkipped: serializer.fromJson<int>(json['rowsSkipped']),
@@ -13182,6 +13206,7 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
       'id': serializer.toJson<int>(id),
       'trialId': serializer.toJson<int>(trialId),
       'fileName': serializer.toJson<String>(fileName),
+      'savedFilePath': serializer.toJson<String?>(savedFilePath),
       'status': serializer.toJson<String>(status),
       'rowsImported': serializer.toJson<int>(rowsImported),
       'rowsSkipped': serializer.toJson<int>(rowsSkipped),
@@ -13194,6 +13219,7 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
           {int? id,
           int? trialId,
           String? fileName,
+          Value<String?> savedFilePath = const Value.absent(),
           String? status,
           int? rowsImported,
           int? rowsSkipped,
@@ -13203,6 +13229,8 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
         fileName: fileName ?? this.fileName,
+        savedFilePath:
+            savedFilePath.present ? savedFilePath.value : this.savedFilePath,
         status: status ?? this.status,
         rowsImported: rowsImported ?? this.rowsImported,
         rowsSkipped: rowsSkipped ?? this.rowsSkipped,
@@ -13214,6 +13242,9 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
       id: data.id.present ? data.id.value : this.id,
       trialId: data.trialId.present ? data.trialId.value : this.trialId,
       fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      savedFilePath: data.savedFilePath.present
+          ? data.savedFilePath.value
+          : this.savedFilePath,
       status: data.status.present ? data.status.value : this.status,
       rowsImported: data.rowsImported.present
           ? data.rowsImported.value
@@ -13231,6 +13262,7 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
           ..write('id: $id, ')
           ..write('trialId: $trialId, ')
           ..write('fileName: $fileName, ')
+          ..write('savedFilePath: $savedFilePath, ')
           ..write('status: $status, ')
           ..write('rowsImported: $rowsImported, ')
           ..write('rowsSkipped: $rowsSkipped, ')
@@ -13241,8 +13273,8 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
   }
 
   @override
-  int get hashCode => Object.hash(id, trialId, fileName, status, rowsImported,
-      rowsSkipped, warnings, createdAt);
+  int get hashCode => Object.hash(id, trialId, fileName, savedFilePath, status,
+      rowsImported, rowsSkipped, warnings, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -13250,6 +13282,7 @@ class ImportEvent extends DataClass implements Insertable<ImportEvent> {
           other.id == this.id &&
           other.trialId == this.trialId &&
           other.fileName == this.fileName &&
+          other.savedFilePath == this.savedFilePath &&
           other.status == this.status &&
           other.rowsImported == this.rowsImported &&
           other.rowsSkipped == this.rowsSkipped &&
@@ -13261,6 +13294,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
   final Value<int> id;
   final Value<int> trialId;
   final Value<String> fileName;
+  final Value<String?> savedFilePath;
   final Value<String> status;
   final Value<int> rowsImported;
   final Value<int> rowsSkipped;
@@ -13270,6 +13304,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
     this.fileName = const Value.absent(),
+    this.savedFilePath = const Value.absent(),
     this.status = const Value.absent(),
     this.rowsImported = const Value.absent(),
     this.rowsSkipped = const Value.absent(),
@@ -13280,6 +13315,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
     this.id = const Value.absent(),
     required int trialId,
     required String fileName,
+    this.savedFilePath = const Value.absent(),
     required String status,
     this.rowsImported = const Value.absent(),
     this.rowsSkipped = const Value.absent(),
@@ -13292,6 +13328,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
     Expression<int>? id,
     Expression<int>? trialId,
     Expression<String>? fileName,
+    Expression<String>? savedFilePath,
     Expression<String>? status,
     Expression<int>? rowsImported,
     Expression<int>? rowsSkipped,
@@ -13302,6 +13339,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
       if (id != null) 'id': id,
       if (trialId != null) 'trial_id': trialId,
       if (fileName != null) 'file_name': fileName,
+      if (savedFilePath != null) 'saved_file_path': savedFilePath,
       if (status != null) 'status': status,
       if (rowsImported != null) 'rows_imported': rowsImported,
       if (rowsSkipped != null) 'rows_skipped': rowsSkipped,
@@ -13314,6 +13352,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
       {Value<int>? id,
       Value<int>? trialId,
       Value<String>? fileName,
+      Value<String?>? savedFilePath,
       Value<String>? status,
       Value<int>? rowsImported,
       Value<int>? rowsSkipped,
@@ -13323,6 +13362,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
       fileName: fileName ?? this.fileName,
+      savedFilePath: savedFilePath ?? this.savedFilePath,
       status: status ?? this.status,
       rowsImported: rowsImported ?? this.rowsImported,
       rowsSkipped: rowsSkipped ?? this.rowsSkipped,
@@ -13342,6 +13382,9 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
     }
     if (fileName.present) {
       map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (savedFilePath.present) {
+      map['saved_file_path'] = Variable<String>(savedFilePath.value);
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
@@ -13367,6 +13410,7 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
           ..write('id: $id, ')
           ..write('trialId: $trialId, ')
           ..write('fileName: $fileName, ')
+          ..write('savedFilePath: $savedFilePath, ')
           ..write('status: $status, ')
           ..write('rowsImported: $rowsImported, ')
           ..write('rowsSkipped: $rowsSkipped, ')
@@ -20099,6 +20143,7 @@ typedef $$ImportEventsTableCreateCompanionBuilder = ImportEventsCompanion
   Value<int> id,
   required int trialId,
   required String fileName,
+  Value<String?> savedFilePath,
   required String status,
   Value<int> rowsImported,
   Value<int> rowsSkipped,
@@ -20110,6 +20155,7 @@ typedef $$ImportEventsTableUpdateCompanionBuilder = ImportEventsCompanion
   Value<int> id,
   Value<int> trialId,
   Value<String> fileName,
+  Value<String?> savedFilePath,
   Value<String> status,
   Value<int> rowsImported,
   Value<int> rowsSkipped,
@@ -20137,6 +20183,7 @@ class $$ImportEventsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<int> trialId = const Value.absent(),
             Value<String> fileName = const Value.absent(),
+            Value<String?> savedFilePath = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<int> rowsImported = const Value.absent(),
             Value<int> rowsSkipped = const Value.absent(),
@@ -20147,6 +20194,7 @@ class $$ImportEventsTableTableManager extends RootTableManager<
             id: id,
             trialId: trialId,
             fileName: fileName,
+            savedFilePath: savedFilePath,
             status: status,
             rowsImported: rowsImported,
             rowsSkipped: rowsSkipped,
@@ -20157,6 +20205,7 @@ class $$ImportEventsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             required int trialId,
             required String fileName,
+            Value<String?> savedFilePath = const Value.absent(),
             required String status,
             Value<int> rowsImported = const Value.absent(),
             Value<int> rowsSkipped = const Value.absent(),
@@ -20167,6 +20216,7 @@ class $$ImportEventsTableTableManager extends RootTableManager<
             id: id,
             trialId: trialId,
             fileName: fileName,
+            savedFilePath: savedFilePath,
             status: status,
             rowsImported: rowsImported,
             rowsSkipped: rowsSkipped,
@@ -20186,6 +20236,11 @@ class $$ImportEventsTableFilterComposer
 
   ColumnFilters<String> get fileName => $state.composableBuilder(
       column: $state.table.fileName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get savedFilePath => $state.composableBuilder(
+      column: $state.table.savedFilePath,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -20237,6 +20292,11 @@ class $$ImportEventsTableOrderingComposer
 
   ColumnOrderings<String> get fileName => $state.composableBuilder(
       column: $state.table.fileName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get savedFilePath => $state.composableBuilder(
+      column: $state.table.savedFilePath,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

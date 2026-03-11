@@ -90,7 +90,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: GradientScreenHeader(
         title: 'Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}',
-        subtitle: '${widget.currentPlotIndex + 1} of ${widget.allPlots.length} plots',
+        subtitle: widget.session.raterName != null
+            ? 'Session ${widget.session.id} · ${widget.session.raterName}'
+            : 'Session ${widget.session.id}',
         titleFontSize: 17,
         actions: [
           _buildOfflineIndicator(),
@@ -100,6 +102,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       body: Column(
         children: [
           _buildPlotInfoBar(context),
+          _buildProgressBar(context),
 
           if (!isSessionEditable(widget.session)) _buildClosedSessionBanner(context),
 
@@ -478,44 +481,168 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  Widget _buildProgressBar(BuildContext context) {
+    final plotProgress = (widget.currentPlotIndex + 1) / widget.allPlots.length;
+    final assessLabel = widget.assessments.length > 1
+        ? 'Assessment ${_assessmentIndex + 1} of ${widget.assessments.length}  ·  '
+        : '';
+    return Container(
+      color: const Color(0xFFF8F6F2),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '${assessLabel}Plot ${widget.currentPlotIndex + 1} of ${widget.allPlots.length}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF6B7280),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${(plotProgress * 100).toInt()}% complete',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2D5A40),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: plotProgress,
+              minHeight: 5,
+              backgroundColor: const Color(0xFFE5E7EB),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2D5A40)),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAssessmentSelector(BuildContext context) {
     if (widget.assessments.length == 1) {
       return Container(
-        padding: const EdgeInsets.all(12),
-        child: Text(
-          _currentAssessment.name,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        color: const Color(0xFFF8F6F2),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2D5A40),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _currentAssessment.name,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+            if (_currentAssessment.unit != null) ...[
+              const SizedBox(width: 6),
+              Text(
+                '· ${_currentAssessment.unit}',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              ),
+            ],
+          ],
         ),
       );
     }
 
-    return SizedBox(
-      height: 44,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        itemCount: widget.assessments.length,
-        itemBuilder: (context, index) {
-          final assessment = widget.assessments[index];
-          final isSelected = assessment.id == _currentAssessment.id;
-          return Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: FilterChip(
-              label: Text(assessment.name),
-              selected: isSelected,
-              onSelected: (_) {
-                setState(() {
-                  _assessmentIndex = index;
-                  _currentAssessment = assessment;
-                  _valueController.clear();
-                  _selectedStatus = 'RECORDED';
-                  _selectedMissingReason = null;
-                });
-                _prefillFromLastValue();
+    return Container(
+      color: const Color(0xFFF8F6F2),
+      padding: const EdgeInsets.fromLTRB(16, 0, 0, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ASSESSMENT',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF9CA3AF),
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(right: 16),
+              itemCount: widget.assessments.length,
+              itemBuilder: (context, index) {
+                final assessment = widget.assessments[index];
+                final isSelected = assessment.id == _currentAssessment.id;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _assessmentIndex = index;
+                        _currentAssessment = assessment;
+                        _valueController.clear();
+                        _selectedStatus = 'RECORDED';
+                        _selectedMissingReason = null;
+                      });
+                      _prefillFromLastValue();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF2D5A40)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF2D5A40)
+                              : const Color(0xFFE5E7EB),
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                const BoxShadow(
+                                  color: Color(0x302D5A40),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        assessment.name,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF6B7280),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -918,17 +1045,47 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             .where((v) => v >= min && v <= max)
             .toList();
 
+    final currentVal = double.tryParse(_valueController.text)?.toInt();
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: quickValues.map((val) {
-        return SizedBox(
-          width: 56,
-          height: 48,
-          child: OutlinedButton(
-            onPressed: () => _valueController.text = val.toString(),
-            style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
-            child: Text(val.toString(), style: const TextStyle(fontSize: 16)),
+        final isSelected = currentVal == val;
+        return GestureDetector(
+          onTap: () => setState(() => _valueController.text = val.toString()),
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFF2D5A40) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xFF2D5A40)
+                    : const Color(0xFFE5E7EB),
+                width: isSelected ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? const Color(0x402D5A40)
+                      : Colors.black.withValues(alpha: 0.05),
+                  blurRadius: isSelected ? 10 : 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                val.toString(),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? Colors.white : const Color(0xFF1F2937),
+                ),
+              ),
+            ),
           ),
         );
       }).toList(),
@@ -936,55 +1093,116 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
+    final isLast = widget.currentPlotIndex >= widget.allPlots.length - 1;
+    final isLastAssessment = _assessmentIndex >= widget.assessments.length - 1;
+    final isVeryLast = isLast && isLastAssessment;
+
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         decoration: BoxDecoration(
           color: Colors.white,
+          border: const Border(top: BorderSide(color: Color(0xFFEAECF0))),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 4,
-              offset: const Offset(0, -2),
-            )
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
           ],
         ),
         child: Row(
           children: [
+            // Previous button
             if (widget.currentPlotIndex > 0)
-              IconButton(
-                onPressed: () => _navigatePlot(context, -1),
-                icon: const Icon(Icons.chevron_left),
-                tooltip: 'Previous plot',
-              ),
-            const Spacer(),
-            GestureDetector(
-              onLongPress: _isSaving || !isSessionEditable(widget.session)
-                  ? null
-                  : () => _saveRating(context),
-              child: FilledButton.icon(
-                onPressed: _isSaving || !isSessionEditable(widget.session)
-                    ? null
-                    : () => _saveRating(context),
-                icon: _isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(_isSaving ? 'Saving...' : 'Save & Next'),
-                style: FilledButton.styleFrom(minimumSize: const Size(160, 48)),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: IconButton(
+                  onPressed: () => _navigatePlot(context, -1),
+                  icon: const Icon(Icons.chevron_left,
+                      color: Color(0xFF6B7280), size: 22),
+                  tooltip: 'Previous plot',
+                ),
+              )
+            else
+              const SizedBox(width: 50),
+            const SizedBox(width: 12),
+            // Save button
+            Expanded(
+              child: SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isSaving || !isSessionEditable(widget.session)
+                      ? null
+                      : () => _saveRating(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2D5A40),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFE5E7EB),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              isVeryLast ? 'Save & Finish' : 'Save & Next',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              isVeryLast
+                                  ? Icons.check_circle_outline
+                                  : Icons.arrow_forward,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 12),
+            // Next button
             if (widget.currentPlotIndex < widget.allPlots.length - 1)
-              IconButton(
-                onPressed: () => _navigatePlot(context, 1),
-                icon: const Icon(Icons.chevron_right),
-                tooltip: 'Next plot',
-              ),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: IconButton(
+                  onPressed: () => _navigatePlot(context, 1),
+                  icon: const Icon(Icons.chevron_right,
+                      color: Color(0xFF6B7280), size: 22),
+                  tooltip: 'Next plot',
+                ),
+              )
+            else
+              const SizedBox(width: 50),
           ],
         ),
       ),
@@ -1062,7 +1280,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _prefillFromLastValue();
       } else {
         if (!context.mounted) return;
-        _navigatePlot(context, 1);
+        // Last assessment on last plot — session complete
+        if (widget.currentPlotIndex >= widget.allPlots.length - 1) {
+          _showSessionCompleteDialog(context);
+        } else {
+          _navigatePlot(context, 1);
+        }
       }
     } else if (result.isDebounced) {
       // silent
@@ -1079,6 +1302,87 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _showSessionCompleteDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFFF8F6F2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: EdgeInsets.zero,
+        titlePadding: EdgeInsets.zero,
+        content: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1FAE5),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                child: const Icon(Icons.check_circle,
+                    color: Color(0xFF2D5A40), size: 36),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'All Plots Rated',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "You've completed all ${widget.allPlots.length} plots in this session.",
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF6B7280),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    int count = 0;
+                    Navigator.of(context).popUntil((_) => count++ >= 2);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2D5A40),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Back to Session',
+                      style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text(
+                  'Keep reviewing plots',
+                  style: TextStyle(
+                      color: Color(0xFF6B7280), fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _navigatePlot(BuildContext context, int direction) {

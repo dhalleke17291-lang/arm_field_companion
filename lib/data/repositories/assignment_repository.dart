@@ -93,6 +93,19 @@ class AssignmentRepository {
         notes: Value(notes),
       ));
     }
+    // Audit trail
+    await _db.into(_db.auditEvents).insert(
+      AuditEventsCompanion.insert(
+        trialId: Value(trialId),
+        plotPk: Value(plotId),
+        eventType: 'TREATMENT_ASSIGNED',
+        description: treatmentId != null
+            ? 'Treatment $treatmentId assigned to plot $plotId'
+            : 'Treatment unassigned from plot $plotId',
+        performedBy: Value(assignmentSource),
+        performedByUserId: Value(assignedBy),
+      ),
+    );
   }
 
   /// Bulk upsert: one assignment per plot.
@@ -114,5 +127,16 @@ class AssignmentRepository {
         );
       }
     });
+
+    // Summary audit event for bulk operation
+    await _db.into(_db.auditEvents).insert(
+      AuditEventsCompanion.insert(
+        trialId: Value(trialId),
+        eventType: 'TREATMENT_ASSIGNED_BULK',
+        description:
+            'Bulk assignment: ${plotPkToTreatmentId.length} plots updated',
+        performedBy: Value(assignmentSource),
+      ),
+    );
   }
 }

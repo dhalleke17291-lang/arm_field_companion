@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +12,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
 import '../../core/trial_state.dart';
 import 'protocol_import_models.dart';
+import 'imported_protocol_file_screen.dart';
 
 /// Full protocol import (Charter PART 16): one CSV with sections TRIAL, TREATMENT, PLOT.
 /// [trial] null = create new trial from file; non-null = add treatments/plots to this trial.
@@ -28,6 +31,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
   List<Map<String, dynamic>>? _rows;
   ProtocolImportReviewResult? _review;
   ProtocolImportExecuteResult? _executeResult;
+  String? _savedCopyPath;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +80,30 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
                 style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 52)),
               ),
             ),
+            if (_savedCopyPath != null) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    final p = _savedCopyPath;
+                    if (p == null) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => ImportedProtocolFileScreen(
+                          filePath: p,
+                          title: _fileName,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.description_outlined),
+                  label: const Text('Open saved copy (read-only)'),
+                  style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 52)),
+                ),
+              ),
+            ],
             if (_review != null) ...[
               const SizedBox(height: 20),
               _buildReviewCard(),
@@ -274,12 +302,30 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
 
     setState(() {
       _fileName = file.name;
+      _savedCopyPath = null;
       _review = null;
       _executeResult = null;
     });
 
     try {
-      final content = await File(file.path!).readAsString();
+      final originalPath = file.path!;
+      // Save a private read-only copy for reference
+      try {
+        final docsDir = await getApplicationDocumentsDirectory();
+        final importsDir = Directory('${docsDir.path}/afc_imports');
+        if (!await importsDir.exists()) {
+          await importsDir.create(recursive: true);
+        }
+        final ts = DateTime.now().millisecondsSinceEpoch;
+        final safeName = file.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+        final savedPath = '${importsDir.path}/trial_${widget.trial?.id ?? 'new'}_${ts}_$safeName';
+        await File(originalPath).copy(savedPath);
+        if (mounted) setState(() => _savedCopyPath = savedPath);
+      } catch (_) {
+        // Best-effort only; import can proceed without saved copy.
+      }
+
+      final content = await File(originalPath).readAsString();
       final list = const CsvToListConverter(eol: '\n').convert(content);
       if (list.isEmpty) {
         setState(() => _rows = []);
@@ -335,7 +381,30 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
         _review = null;
       }
     });
-    if (result.success && result.trialId != null && widget.trial == null && mounted) {
+    
+    if (result.success) {
+      final db = ref.read(databaseProvider);
+      final trialId = widget.trial?.id ?? result.trialId;
+      if (trialId != null) {
+        try {
+          await db.into(db.importEvents).insert(
+                ImportEventsCompanion.insert(
+                  trialId: trialId,
+                  fileName: _fileName ?? 'protocol.csv',
+                  savedFilePath: drift.Value(_savedCopyPath),
+                  status: 'SUCCESS',
+                  rowsImported: drift.Value(result.treatmentsImported + result.plotsImported),
+                  rowsSkipped: const drift.Value(0),
+                  warnings: const drift.Value(null),
+                ),
+              );
+        } catch (_) {
+          // Best-effort; import succeeded even if event recording fails.
+        }
+      }
+    }
+
+if (result.success && result.trialId != null && widget.trial == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Trial created. ID: ${result.trialId}')),
       );

@@ -176,9 +176,13 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 if (result.auditFilePath != null) {
                   files.add(XFile(result.auditFilePath!));
                 }
+                final box = context.findRenderObject() as RenderBox?;
                 await Share.shareXFiles(
                   files,
                   subject: '${widget.trial.name} - ${widget.session.name} Export',
+                  sharePositionOrigin: box == null
+                      ? Rect.fromLTWH(0, 0, 100, 100)
+                      : box.localToGlobal(Offset.zero) & box.size,
                 );
               },
               icon: const Icon(Icons.share),

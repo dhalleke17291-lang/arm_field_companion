@@ -6,6 +6,7 @@ import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../ratings/rating_screen.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/plot_sort.dart';
 
 class PlotQueueScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -80,7 +81,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
 
   Widget _buildQueue(
     BuildContext context,
-    List<Plot> plots,
+    List<Plot> rawPlots,
     List<Assessment> assessments,
     Set<int> ratedPks,
     List<RatingRecord> ratings,
@@ -88,6 +89,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Map<int, int?> plotIdToTreatmentId,
     Set<int> flaggedIds,
   ) {
+    // Apply serpentine walking order for rating navigation
+    final plots = sortPlotsSerpentine(rawPlots);
     var filtered = plots;
     if (_repFilter != null) {
       filtered = filtered.where((p) => p.rep == _repFilter).toList();
@@ -116,6 +119,26 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary)),
               const Spacer(),
+              if (plots.any((p) => p.fieldRow != null))
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D5A40),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.route, size: 11, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text('Serpentine',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
               if (_showUnratedOnly)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

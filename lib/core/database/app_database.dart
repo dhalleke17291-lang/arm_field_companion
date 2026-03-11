@@ -350,6 +350,7 @@ class ImportEvents extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
   TextColumn get fileName => text()();
+  TextColumn get savedFilePath => text().nullable()();
   TextColumn get status => text()();
   IntColumn get rowsImported => integer().withDefault(const Constant(0))();
   IntColumn get rowsSkipped => integer().withDefault(const Constant(0))();
@@ -388,7 +389,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -464,6 +465,9 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               "UPDATE assessment_definitions SET updated_at = strftime('%s', updated_at) WHERE typeof(updated_at) = 'text'",
             );
+          }
+          if (from < 13) {
+            await m.addColumn(importEvents, importEvents.savedFilePath);
           }
           await _createIndexes();
         },

@@ -90,6 +90,12 @@ class TreatmentRepository {
           ),
         );
   }
+
+  Future<void> deleteComponent(int componentId) async {
+    await (_db.delete(_db.treatmentComponents)
+      ..where((c) => c.id.equals(componentId)))
+        .go();
+  }
 }
 
 class TreatmentNotFoundException implements Exception {

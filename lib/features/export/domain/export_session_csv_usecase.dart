@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/app_info.dart';
+import 'package:drift/drift.dart';
+import '../../../core/database/app_database.dart';
 import '../data/export_repository.dart';
 
 /// Result of a session CSV export. Use [success] to decide UI.
@@ -138,6 +140,23 @@ class ExportSessionCsvUsecase {
       final warning = rows.isEmpty
           ? 'No ratings in this session. Export file contains headers only.'
           : null;
+
+      // Audit trail
+      try {
+        final auditDb = repo.db;
+        await auditDb.into(auditDb.auditEvents).insert(
+          AuditEventsCompanion.insert(
+            trialId: Value(trialId),
+            sessionId: Value(sessionId),
+            eventType: 'EXPORT_TRIGGERED',
+            description:
+                'Session \$sessionId exported — \${rows.length} rows — by \${exportedByDisplayName ?? "unknown"}',
+            performedBy: Value(exportedByDisplayName),
+          ),
+        );
+      } catch (_) {
+        // Audit failure must never block export
+      }
 
       return ExportResult.ok(
         filePath: path,

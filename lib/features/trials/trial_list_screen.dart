@@ -54,9 +54,13 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
     return;
   }
   try {
+    final box = context.findRenderObject() as RenderBox?;
     await Share.shareXFiles(
       files,
       text: 'ARM Field Companion – ${files.length} trial export(s), $exportedCount session(s)',
+      sharePositionOrigin: box == null
+          ? Rect.fromLTWH(0, 0, 100, 100)
+          : box.localToGlobal(Offset.zero) & box.size,
     );
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

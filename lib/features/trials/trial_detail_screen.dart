@@ -17,6 +17,7 @@ import '../plots/import_plots_screen.dart';
 import '../plots/plot_detail_screen.dart';
 import '../seeding/record_seeding_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
+import '../protocol_import/imported_protocol_file_screen.dart';
 import 'plot_layout_model.dart';
 import 'assessment_library_picker_dialog.dart';
 import '../../core/providers.dart';
@@ -33,6 +34,83 @@ import '../photos/photo_viewer_screen.dart';
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
 
 enum _LayoutLayer { treatments, applications, ratings }
+
+
+Future<void> showAssignTreatmentDialogForTrial({
+  required Trial trial,
+  required BuildContext context,
+  required WidgetRef ref,
+  required Plot plot,
+  required List<Plot> plots,
+}) async {
+  final treatments = ref.read(treatmentsForTrialProvider(trial.id)).value ?? [];
+
+  if (treatments.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No treatments defined yet. Add treatments first.'),
+      ),
+    );
+    return;
+  }
+
+  final assignmentsList = ref.read(assignmentsForTrialProvider(trial.id)).value ?? [];
+  final a = assignmentsList.where((x) => x.plotId == plot.id).firstOrNull;
+  int? selectedId = a?.treatmentId ?? plot.treatmentId;
+  final displayNum = getDisplayPlotLabel(plot, plots);
+
+  await showDialog(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) => AlertDialog(
+        title: Text('Assign Treatment — Plot $displayNum'),
+        content: DropdownButtonFormField<int>(
+          initialValue: selectedId,
+          decoration: const InputDecoration(
+            labelText: 'Treatment',
+            border: OutlineInputBorder(),
+          ),
+          items: [
+            const DropdownMenuItem(value: null, child: Text('Unassigned')),
+            ...treatments.map((t) => DropdownMenuItem(
+                  value: t.id,
+                  child: Text('${t.code}  —  ${t.name}'),
+                )),
+          ],
+          onChanged: (v) => setDialogState(() => selectedId = v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final useCase = ref.read(updatePlotAssignmentUseCaseProvider);
+              final result = await useCase.updateOne(
+                trial: trial,
+                plotPk: plot.id,
+                treatmentId: selectedId,
+              );
+              if (!ctx.mounted) return;
+              if (!result.success) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(
+                    content: Text(result.errorMessage ?? 'Update failed'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
 class TrialDetailScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -275,6 +353,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final statusHint = locked
         ? getProtocolLockMessage(trial.status)
         : 'Protocol editable';
+    final latestImportAsync = ref.watch(latestImportEventForTrialProvider(trial.id));
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -297,6 +376,38 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               const SizedBox(width: 8),
               ProtocolLockChip(isLocked: locked, status: trial.status),
               const SizedBox(width: 12),
+              latestImportAsync.when(
+                data: (evt) {
+                  final path = evt?.savedFilePath;
+                  if (path == null || path.trim().isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => ImportedProtocolFileScreen(
+                              filePath: path,
+                              title: evt?.fileName,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.description_outlined, size: 16),
+                      label: const Text('View import'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        minimumSize: const Size(0, 32),
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              const SizedBox(width: 8),
+
               ...nextStatuses.map((next) {
             final nextLabel = labelForTrialStatus(next);
             return Padding(
@@ -1004,73 +1115,12 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
 
   Future<void> _showAssignTreatmentDialog(
       BuildContext context, WidgetRef ref, Plot plot, List<Plot> plots) async {
-    final treatments =
-        ref.read(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-
-    if (treatments.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'No treatments defined yet. Add treatments first.')),
-      );
-      return;
-    }
-
-    final assignmentsList = ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final a = assignmentsList.where((x) => x.plotId == plot.id).firstOrNull;
-    int? selectedId = a?.treatmentId ?? plot.treatmentId;
-    final displayNum = getDisplayPlotLabel(plot, plots);
-
-    await showDialog(
+    return showAssignTreatmentDialogForTrial(
+      trial: widget.trial,
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Text('Assign Treatment — Plot $displayNum'),
-          content: DropdownButtonFormField<int>(
-            initialValue: selectedId,
-            decoration: const InputDecoration(
-              labelText: 'Treatment',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Unassigned')),
-              ...treatments.map((t) => DropdownMenuItem(
-                    value: t.id,
-                    child: Text('${t.code}  —  ${t.name}'),
-                  )),
-            ],
-            onChanged: (v) => setDialogState(() => selectedId = v),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final useCase = ref.read(updatePlotAssignmentUseCaseProvider);
-                final result = await useCase.updateOne(
-                  trial: widget.trial,
-                  plotPk: plot.id,
-                  treatmentId: selectedId,
-                );
-                if (!ctx.mounted) return;
-                if (!result.success) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(
-                      content: Text(result.errorMessage ?? 'Update failed'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(ctx);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
+      ref: ref,
+      plot: plot,
+      plots: plots,
     );
   }
 
@@ -1782,62 +1832,12 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   }
 
   Future<void> _showAssignDialog(BuildContext context, WidgetRef ref, Plot plot, List<Plot> plots) async {
-    final treatments = ref.read(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-    if (treatments.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No treatments defined yet. Add treatments first.')),
-      );
-      return;
-    }
-    final assignmentsList = ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final a = assignmentsList.where((x) => x.plotId == plot.id).firstOrNull;
-    int? selectedId = a?.treatmentId ?? plot.treatmentId;
-    final displayNum = getDisplayPlotLabel(plot, plots);
-    if (!context.mounted) return;
-    await showDialog(
+    return showAssignTreatmentDialogForTrial(
+      trial: widget.trial,
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Text('Assign Treatment — Plot $displayNum'),
-          content: DropdownButtonFormField<int>(
-            initialValue: selectedId,
-            decoration: const InputDecoration(
-              labelText: 'Treatment',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Unassigned')),
-              ...treatments.map((t) => DropdownMenuItem(
-                value: t.id,
-                child: Text('${t.code}  —  ${t.name}'),
-              )),
-            ],
-            onChanged: (v) => setDialogState(() => selectedId = v),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () async {
-                final useCase = ref.read(updatePlotAssignmentUseCaseProvider);
-                final result = await useCase.updateOne(
-                  trial: widget.trial,
-                  plotPk: plot.id,
-                  treatmentId: selectedId,
-                );
-                if (!ctx.mounted) return;
-                if (!result.success) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(content: Text(result.errorMessage ?? 'Update failed'), backgroundColor: Colors.red),
-                  );
-                  return;
-                }
-                Navigator.pop(ctx);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
+      ref: ref,
+      plot: plot,
+      plots: plots,
     );
   }
 }
@@ -2871,12 +2871,47 @@ class _TreatmentsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
 
-    return treatmentsAsync.when(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Treatments',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Open in full screen',
+                icon: const Icon(Icons.fullscreen),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(title: const Text('Treatments')),
+                        body: _TreatmentsTab(trial: trial),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: treatmentsAsync.when(
       loading: () => const AppLoadingView(),
       error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(treatmentsForTrialProvider(trial.id))),
       data: (treatments) => treatments.isEmpty
           ? _buildEmpty(context, ref)
           : _buildList(context, ref, treatments),
+    ),
+        ),
+      ],
     );
   }
 
@@ -2926,26 +2961,85 @@ class _TreatmentsTab extends ConsumerWidget {
             }
             final i = locked ? index - 1 : index;
             final t = treatments[i];
-            return Card(
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            return FutureBuilder<List<TreatmentComponent>>(
+              future: ref.read(treatmentRepositoryProvider).getComponentsForTreatment(t.id),
+              builder: (context, snapshot) {
+                final componentCount = snapshot.data?.length ?? 0;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFEAECF0)),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+                    ],
                   ),
-                  child: Text(t.code,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.white)),
-                ),
-                title: Text(t.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: t.description != null ? Text(t.description!) : null,
-                trailing: const Icon(Icons.chevron_right, size: 18),
-                onTap: () => _showTreatmentComponents(context, ref, t),
-              ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    leading: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D5A40),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(t.code,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: Colors.white,
+                              letterSpacing: 0.2)),
+                    ),
+                    title: Text(t.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: Color(0xFF111827))),
+                    subtitle: t.description != null
+                        ? Text(t.description!,
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)))
+                        : null,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (componentCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD1FAE5),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${componentCount} ${componentCount == 1 ? "product" : "products"}',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF047857)),
+                            ),
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'No products',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF9CA3AF)),
+                            ),
+                          ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.chevron_right, size: 18, color: Color(0xFFD1D5DB)),
+                      ],
+                    ),
+                    onTap: () => _showTreatmentComponents(context, ref, t),
+                  ),
+                );
+              },
             );
           },
         ),
@@ -3082,7 +3176,39 @@ class _PhotosTab extends ConsumerWidget {
     final photosAsync = ref.watch(photosForTrialProvider(trial.id));
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
 
-    return photosAsync.when(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Photos',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Open in full screen',
+                icon: const Icon(Icons.fullscreen),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(title: const Text('Photos')),
+                        body: _PhotosTab(trial: trial),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: photosAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(
         child: Padding(
@@ -3186,6 +3312,9 @@ class _PhotosTab extends ConsumerWidget {
           },
         );
       },
+    ),
+        ),
+      ],
     );
   }
 }
@@ -3249,10 +3378,14 @@ class SessionsView extends ConsumerWidget {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).clearSnackBars();
                   if (result.success) {
+                    final box = context.findRenderObject() as RenderBox?;
                     await Share.shareXFiles(
                       [XFile(result.filePath!)],
                       text:
                           '${trial.name} – ${result.sessionCount} closed sessions',
+                      sharePositionOrigin: box == null
+                          ? Rect.fromLTWH(0, 0, 100, 100)
+                          : box.localToGlobal(Offset.zero) & box.size,
                     );
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -4203,11 +4336,12 @@ class _ApplicationsTab extends ConsumerWidget {
   }
 }
 
+
 // ─────────────────────────────────────────────
 // TREATMENT COMPONENTS BOTTOM SHEET
 // ─────────────────────────────────────────────
 
-class _TreatmentComponentsSheet extends ConsumerWidget {
+class _TreatmentComponentsSheet extends ConsumerStatefulWidget {
   final Trial trial;
   final Treatment treatment;
 
@@ -4217,127 +4351,118 @@ class _TreatmentComponentsSheet extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final repo = ref.watch(treatmentRepositoryProvider);
+  ConsumerState<_TreatmentComponentsSheet> createState() =>
+      _TreatmentComponentsSheetState();
+}
+
+class _TreatmentComponentsSheetState
+    extends ConsumerState<_TreatmentComponentsSheet> {
+  List<TreatmentComponent> _components = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComponents();
+  }
+
+  Future<void> _loadComponents() async {
+    final repo = ref.read(treatmentRepositoryProvider);
+    final result =
+        await repo.getComponentsForTreatment(widget.treatment.id);
+    if (mounted) setState(() { _components = result; _loading = false; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locked = isProtocolLocked(widget.trial.status);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
       minChildSize: 0.4,
-      maxChildSize: 0.9,
+      maxChildSize: 0.92,
       expand: false,
       builder: (context, scrollController) {
         return Column(
           children: [
-            // Handle
             Container(
               margin: const EdgeInsets.only(top: 10, bottom: 4),
-              width: 40,
-              height: 4,
+              width: 40, height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: const Color(0xFFE5E7EB),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFFEAECF0))),
+              ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
+                      color: const Color(0xFF2D5A40),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(treatment.code,
+                    child: Text(widget.treatment.code,
                         style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.bold)),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(treatment.name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.treatment.name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: Color(0xFF111827))),
+                        if (_components.isNotEmpty)
+                          Text(
+                            '${_components.length} ${_components.length == 1 ? "product" : "products"}',
+                            style: const TextStyle(
+                                fontSize: 11, color: Color(0xFF6B7280)),
+                          ),
+                      ],
+                    ),
                   ),
-                  FilledButton.icon(
-                    onPressed: () =>
-                        _showAddComponentDialog(context, ref, repo),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Add'),
-                  ),
+                  if (!locked)
+                    ElevatedButton.icon(
+                      onPressed: () => _showAddComponentDialog(context),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add Product'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2D5A40),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        textStyle: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                    ),
                 ],
               ),
             ),
-            const Divider(height: 1),
-            // Components list
             Expanded(
-              child: FutureBuilder<List<TreatmentComponent>>(
-                future: repo.getComponentsForTreatment(treatment.id),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final components = snapshot.data!;
-                  if (components.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.science_outlined,
-                              size: 48,
-                              color: Colors.grey.shade300),
-                          const SizedBox(height: 12),
-                          const Text('No components yet',
-                              style: TextStyle(color: Colors.grey)),
-                          const SizedBox(height: 8),
-                          const Text(
-                              'Add products, rates and timing',
-                              style: TextStyle(
-                                  color: Colors.grey, fontSize: 12)),
-                        ],
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.all(8),
-                    itemCount: components.length,
-                    itemBuilder: (context, i) {
-                      final c = components[i];
-                      final ratePart = (c.rate != null && c.rateUnit != null)
-                          ? '${c.rate} ${c.rateUnit}'
-                          : null;
-                      final timingPart = c.applicationTiming;
-                      final subtitle = [
-                        if (ratePart != null) ratePart,
-                        if (timingPart != null) timingPart,
-                      ].join('  ·  ');
-                      return Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
-                            child: Text('${i + 1}',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary)),
-                          ),
-                          title: Text(c.productName,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                          subtitle:
-                              subtitle.isNotEmpty ? Text(subtitle) : null,
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _components.isEmpty
+                      ? _buildEmpty(context, locked)
+                      : ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                          itemCount: _components.length,
+                          itemBuilder: (context, i) =>
+                              _buildComponentTile(context, i),
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
             ),
           ],
         );
@@ -4345,8 +4470,193 @@ class _TreatmentComponentsSheet extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddComponentDialog(
-      BuildContext context, WidgetRef ref, TreatmentRepository repo) async {
+  Widget _buildEmpty(BuildContext context, bool locked) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 64, height: 64,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD1FAE5),
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: const Icon(Icons.science_outlined,
+                size: 32, color: Color(0xFF2D5A40)),
+          ),
+          const SizedBox(height: 16),
+          const Text('No products yet',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937))),
+          const SizedBox(height: 6),
+          const Text('Add products, rates and timing',
+              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+          if (!locked) ...[
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _showAddComponentDialog(context),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add Product'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2D5A40),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComponentTile(BuildContext context, int i) {
+    final c = _components[i];
+    final locked = isProtocolLocked(widget.trial.status);
+    final ratePart = (c.rate != null && c.rateUnit != null)
+        ? '${c.rate} ${c.rateUnit}'
+        : null;
+    final timingPart = c.applicationTiming;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: const Color(0xFFEAECF0)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text('${i + 1}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: Color(0xFF2D5A40))),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(c.productName,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: Color(0xFF111827))),
+                  if (ratePart != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.water_drop_outlined,
+                            size: 13, color: Color(0xFF6B7280)),
+                        const SizedBox(width: 4),
+                        Text(ratePart,
+                            style: const TextStyle(
+                                fontSize: 12, color: Color(0xFF6B7280))),
+                      ],
+                    ),
+                  ],
+                  if (timingPart != null) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.schedule,
+                            size: 13, color: Color(0xFF6B7280)),
+                        const SizedBox(width: 4),
+                        Text(timingPart,
+                            style: const TextStyle(
+                                fontSize: 12, color: Color(0xFF6B7280))),
+                      ],
+                    ),
+                  ],
+                  if (c.notes != null && c.notes!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(c.notes!,
+                        style: const TextStyle(
+                            fontSize: 11, color: Color(0xFF9CA3AF))),
+                  ],
+                ],
+              ),
+            ),
+            if (!locked)
+              GestureDetector(
+                onTap: () => _confirmDelete(context, c),
+                child: Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.delete_outline,
+                      size: 16, color: Color(0xFFDC2626)),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(
+      BuildContext context, TreatmentComponent component) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFFF8F6F2),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Remove Product',
+            style: TextStyle(
+                fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+        content: Text(
+          'Remove "${component.productName}" from ${widget.treatment.code}?',
+          style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    final repo = ref.read(treatmentRepositoryProvider);
+    await repo.deleteComponent(component.id);
+    await _loadComponents();
+  }
+
+  Future<void> _showAddComponentDialog(BuildContext context) async {
     final productController = TextEditingController();
     final rateController = TextEditingController();
     final rateUnitController = TextEditingController();
@@ -4355,66 +4665,67 @@ class _TreatmentComponentsSheet extends ConsumerWidget {
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Add Component to ${treatment.code}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: productController,
-                decoration: const InputDecoration(
-                  labelText: 'Product Name *',
-                  border: OutlineInputBorder(),
-                ),
+      builder: (ctx) => AppDialog(
+        title: 'Add Product to ${widget.treatment.code}',
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: productController,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Product Name *',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      controller: rateController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Rate',
-                        border: OutlineInputBorder(),
-                      ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: rateController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Rate',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      controller: rateUnitController,
-                      decoration: const InputDecoration(
-                        labelText: 'Unit (e.g. L/ha)',
-                        border: OutlineInputBorder(),
-                      ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: rateUnitController,
+                    decoration: const InputDecoration(
+                      labelText: 'Unit (e.g. L/ha)',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: timingController,
-                decoration: const InputDecoration(
-                  labelText: 'Application Timing (optional)',
-                  border: OutlineInputBorder(),
                 ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: timingController,
+              decoration: const InputDecoration(
+                labelText: 'Application Timing (optional)',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
-                ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                border: OutlineInputBorder(),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -4424,9 +4735,10 @@ class _TreatmentComponentsSheet extends ConsumerWidget {
           FilledButton(
             onPressed: () async {
               if (productController.text.trim().isEmpty) return;
+              final repo = ref.read(treatmentRepositoryProvider);
               await repo.insertComponent(
-                treatmentId: treatment.id,
-                trialId: trial.id,
+                treatmentId: widget.treatment.id,
+                trialId: widget.trial.id,
                 productName: productController.text.trim(),
                 rate: rateController.text.trim().isEmpty
                     ? null
@@ -4441,9 +4753,15 @@ class _TreatmentComponentsSheet extends ConsumerWidget {
                     ? null
                     : notesController.text.trim(),
               );
+              productController.dispose();
+              rateController.dispose();
+              rateUnitController.dispose();
+              timingController.dispose();
+              notesController.dispose();
               if (ctx.mounted) Navigator.pop(ctx);
+              await _loadComponents();
             },
-            child: const Text('Add'),
+            child: const Text('Add Product'),
           ),
         ],
       ),

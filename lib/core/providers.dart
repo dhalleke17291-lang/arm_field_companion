@@ -265,6 +265,18 @@ final exportTrialClosedSessionsUsecaseProvider =
   );
 });
 
+
+/// Latest protocol import event for a trial (for opening saved CSV reference).
+final latestImportEventForTrialProvider =
+    StreamProvider.family<ImportEvent?, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.importEvents)
+        ..where((e) => e.trialId.equals(trialId))
+        ..orderBy([(e) => drift.OrderingTerm.desc(e.createdAt)])
+        ..limit(1))
+      .watchSingleOrNull();
+});
+
 // ===== Photos =====
 
 final savePhotoUseCaseProvider = Provider<SavePhotoUseCase>((ref) {
