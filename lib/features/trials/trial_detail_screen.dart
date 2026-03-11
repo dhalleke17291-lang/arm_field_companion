@@ -3557,18 +3557,23 @@ class SessionsView extends ConsumerWidget {
 
   Widget _buildSessionDateHeader(BuildContext context, String date) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.grey.shade100,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+      decoration: const BoxDecoration(
+        color: AppDesignTokens.sectionHeaderBg,
+        border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+      ),
       child: Row(
         children: [
-          Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+          const Icon(Icons.calendar_today,
+              size: 14, color: AppDesignTokens.secondaryText),
           const SizedBox(width: 6),
           Text(
             _formatDateHeader(date),
-            style: TextStyle(
+            style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: Colors.grey.shade700),
+                color: AppDesignTokens.secondaryText),
           ),
         ],
       ),
@@ -3589,8 +3594,19 @@ class SessionsView extends ConsumerWidget {
     final showIssueIndicators = !isOpen && (hasFlags || hasIssues);
     final flaggedCount = flaggedIds.length;
     final issuePlotCount = issuePlotIds.length;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    return Container(
+      margin: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
       child: ListTile(
         onTap: () {
           if (isOpen) {
@@ -3610,31 +3626,39 @@ class SessionsView extends ConsumerWidget {
         onLongPress: isOpen
             ? () => _confirmCloseSession(context, ref, session)
             : null,
-        leading: CircleAvatar(
-          backgroundColor:
-              isOpen ? Colors.green.shade100 : Colors.grey.shade100,
+        leading: Container(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+          decoration: BoxDecoration(
+            color: isOpen
+                ? AppDesignTokens.openSessionBgLight
+                : AppDesignTokens.emptyBadgeBg,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+          ),
           child: Icon(
             isOpen ? Icons.play_circle : Icons.check_circle,
-            color: isOpen ? Colors.green : Colors.grey,
+            color: isOpen ? AppDesignTokens.openSessionBg : AppDesignTokens.emptyBadgeFg,
+            size: 20,
           ),
         ),
         title: Text(
             _shortSessionName(session.name, session.sessionDateLocal),
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: AppDesignTokens.primaryText)),
         subtitle: Text(_formatSessionTimes(session)),
         trailing: isOpen
             ? Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppDesignTokens.openSessionBg,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text('Open',
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 11,
-                        fontWeight: FontWeight.bold)),
+                        fontWeight: FontWeight.w700)),
               )
             : showIssueIndicators
                 ? Row(
@@ -3646,36 +3670,42 @@ class SessionsView extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.flag, color: Colors.amber, size: 20),
+                              const Icon(Icons.flag,
+                                  color: AppDesignTokens.flagColor, size: 20),
                               const SizedBox(width: 2),
                               Text(
                                 '$flaggedCount flagged',
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.amber.shade800),
+                                    color: AppDesignTokens.flagColor),
                               ),
                             ],
                           ),
                         ),
-                      if (hasFlags && hasIssues) const SizedBox(width: 8),
+                      if (hasFlags && hasIssues)
+                        const SizedBox(width: AppDesignTokens.spacing8),
                       if (hasIssues)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade100,
+                            color: AppDesignTokens.warningBg,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.orange.shade300),
+                            border: Border.all(color: AppDesignTokens.warningBorder),
                           ),
                           child: Text(
                             '$issuePlotCount reading issues',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
+                            style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppDesignTokens.warningFg),
                           ),
                         ),
                     ],
                   )
                 : const Text('Closed',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    style: TextStyle(
+                        color: AppDesignTokens.secondaryText, fontSize: 12)),
       ),
     );
   }

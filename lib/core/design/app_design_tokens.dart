@@ -39,6 +39,18 @@ class AppDesignTokens {
   static const Color successBg = Color(0xFFD1FAE5);
   /// Success green foreground.
   static const Color successFg = Color(0xFF047857);
+  /// Warning/issue badge background.
+  static const Color warningBg = Color(0xFFFFEDD5);
+  /// Warning/issue badge foreground.
+  static const Color warningFg = Color(0xFF9A3412);
+  /// Warning/issue badge border.
+  static const Color warningBorder = Color(0xFFFED7AA);
+  /// Flag indicator color.
+  static const Color flagColor = Color(0xFFF59E0B);
+  /// Open session badge background.
+  static const Color openSessionBg = Color(0xFF16A34A);
+  /// Open session indicator background (light).
+  static const Color openSessionBgLight = Color(0xFFDCFCE7);
 
   // ——— Spacing ———
   static const double spacing4 = 4;
