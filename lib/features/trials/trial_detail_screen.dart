@@ -1899,21 +1899,24 @@ class _AssessmentsTab extends ConsumerWidget {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            border: Border(bottom: BorderSide(color: scheme.outline.withValues(alpha: 0.2))),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing16, vertical: 10),
+          decoration: const BoxDecoration(
+            color: AppDesignTokens.sectionHeaderBg,
+            border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
           ),
           child: Row(
             children: [
-              Icon(Icons.assessment_outlined, size: 20, color: scheme.onSurfaceVariant),
-              const SizedBox(width: 10),
+              const Icon(Icons.assessment_outlined,
+                  size: 16, color: AppDesignTokens.primary),
+              const SizedBox(width: AppDesignTokens.spacing8),
               Expanded(
                 child: Text(
                   total == 1 ? '1 assessment' : '$total assessments',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: AppDesignTokens.primary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1951,37 +1954,49 @@ class _AssessmentsTab extends ConsumerWidget {
                   final ta = pair.$1;
                   final def = pair.$2;
                   final name = ta.displayNameOverride ?? def.name;
-                  return Card(
-                    elevation: 0,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: scheme.outline.withValues(alpha: 0.3)),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                    decoration: BoxDecoration(
+                      color: AppDesignTokens.cardSurface,
+                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+                      border: Border.all(color: AppDesignTokens.borderCrisp),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+                      ],
                     ),
+                    clipBehavior: Clip.antiAlias,
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
                       leading: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(AppDesignTokens.spacing8),
                         decoration: BoxDecoration(
-                          color: scheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppDesignTokens.sectionHeaderBg,
+                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
                         ),
-                        child: Icon(Icons.analytics_outlined, size: 20, color: scheme.primary),
+                        child: const Icon(Icons.analytics_outlined,
+                            size: 20, color: AppDesignTokens.primary),
                       ),
                       title: Text(
                         name,
-                        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSurface),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppDesignTokens.primaryText),
                       ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           '${def.dataType}${def.unit != null ? " (${def.unit})" : ""}',
-                          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                          style: const TextStyle(
+                              color: AppDesignTokens.secondaryText,
+                              fontSize: 12),
                         ),
                       ),
                       trailing: ta.isActive
-                          ? Icon(Icons.check_circle_outline, size: 20, color: scheme.primary)
-                          : Icon(Icons.chevron_right, size: 20, color: scheme.onSurfaceVariant),
+                          ? const Icon(Icons.check_circle_outline,
+                              size: 20, color: AppDesignTokens.primary)
+                          : const Icon(Icons.chevron_right,
+                              size: 20, color: AppDesignTokens.iconSubtle),
                     ),
                   );
                 }),
@@ -1997,37 +2012,49 @@ class _AssessmentsTab extends ConsumerWidget {
                     ),
                   ),
                 ),
-                ...legacyList.map((assessment) => Card(
-                  elevation: 0,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: scheme.outline.withValues(alpha: 0.3)),
+                ...legacyList.map((assessment) => Container(
+                  margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.cardSurface,
+                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+                    border: Border.all(color: AppDesignTokens.borderCrisp),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+                    ],
                   ),
+                  clipBehavior: Clip.antiAlias,
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppDesignTokens.spacing8),
                       decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppDesignTokens.sectionHeaderBg,
+                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
                       ),
-                      child: Icon(Icons.analytics_outlined, size: 20, color: scheme.primary),
+                      child: const Icon(Icons.analytics_outlined,
+                          size: 20, color: AppDesignTokens.primary),
                     ),
                     title: Text(
                       assessment.name,
-                      style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSurface),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.primaryText),
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         '${assessment.dataType}${assessment.unit != null ? " (${assessment.unit})" : ""}',
-                        style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                        style: const TextStyle(
+                            color: AppDesignTokens.secondaryText,
+                            fontSize: 12),
                       ),
                     ),
                     trailing: assessment.isActive
-                        ? Icon(Icons.check_circle_outline, size: 20, color: scheme.primary)
-                        : Icon(Icons.chevron_right, size: 20, color: scheme.onSurfaceVariant),
+                        ? const Icon(Icons.check_circle_outline,
+                            size: 20, color: AppDesignTokens.primary)
+                        : const Icon(Icons.chevron_right,
+                            size: 20, color: AppDesignTokens.iconSubtle),
                   ),
                 )),
               ],
@@ -2042,9 +2069,10 @@ class _AssessmentsTab extends ConsumerWidget {
   void _showAddAssessmentOptions(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppDesignTokens.cardSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppDesignTokens.radiusLarge)),
       ),
       builder: (sheetContext) => SafeArea(
         child: Padding(

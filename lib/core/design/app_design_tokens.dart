@@ -52,6 +52,8 @@ class AppDesignTokens {
   /// Card and medium surfaces.
   static const double radiusCard = 12;
 
+  /// Extra small elements (icon containers, tight badges).
+  static const double radiusXSmall = 8;
   /// Small elements (chips, inputs).
   static const double radiusSmall = 10;
 
