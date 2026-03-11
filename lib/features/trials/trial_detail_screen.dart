@@ -216,11 +216,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final trialAsync = ref.watch(trialProvider(widget.trial.id));
     final currentTrial = trialAsync.valueOrNull ?? widget.trial;
 
-    const g800 = Color(0xFF2D5A40);
-    const g700 = Color(0xFF3D7A57);
-    const bgWarm = Color(0xFFF4F1EB);
     return Scaffold(
-      backgroundColor: bgWarm,
+      backgroundColor: AppDesignTokens.backgroundSurface,
       body: Column(
         children: [
           Container(
@@ -229,7 +226,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [g800, g700],
+                colors: [AppDesignTokens.primary, AppDesignTokens.primaryLight],
               ),
             ),
             child: SafeArea(
@@ -794,7 +791,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
             _buildAppEventSelector(context, ref),
           Expanded(
             child: _layoutLayer == _LayoutLayer.ratings
-                ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: Colors.grey)))
+                ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: AppDesignTokens.secondaryText)))
                 : SingleChildScrollView(
                     child: _PlotLayoutGrid(
                       plots: plots,
@@ -843,14 +840,14 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
         if (events.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No application events recorded yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            child: Text('No application events recorded yet', style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 13)),
           );
         }
         final completed = events.where((e) => e.status == 'completed').toList();
         if (completed.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No completed application events yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            child: Text('No completed application events yet', style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 13)),
           );
         }
         return Padding(
@@ -1423,7 +1420,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
                     'Field Layout — Rep-based',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                    style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 11),
                   ),
                 ),
               ...blocks.expand((block) {
@@ -1459,7 +1456,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                           child: Text(
                             'Rep ${repRow.repNumber}',
                             style: TextStyle(
-                              color: Colors.grey.shade700,
+                              color: AppDesignTokens.secondaryText,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1680,7 +1677,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                 _buildAppEventSelector(context, ref),
               Expanded(
                 child: _layoutLayer == _LayoutLayer.ratings
-                    ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: Colors.grey)))
+                    ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: AppDesignTokens.secondaryText)))
                     : SingleChildScrollView(
                         child: _PlotLayoutGrid(
                           plots: plots,
@@ -1712,7 +1709,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         if (completed.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No completed application events yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            child: Text('No completed application events yet', style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 13)),
           );
         }
         return Padding(
@@ -1797,7 +1794,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   ),
                 ),
                 if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
-                  Text(sourceLabel, style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+                  Text(sourceLabel, style: TextStyle(fontSize: 10, color: AppDesignTokens.secondaryText, fontStyle: FontStyle.italic)),
               ],
             ),
             trailing: const Icon(Icons.chevron_right, size: 18),
@@ -2063,14 +2060,14 @@ class _AssessmentsTab extends ConsumerWidget {
               Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
+                margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
+                  color: AppDesignTokens.dragHandle,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const Padding(
-                padding: EdgeInsets.only(left: 20, bottom: 8),
+                padding: EdgeInsets.only(left: 20, bottom: AppDesignTokens.spacing8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -2078,7 +2075,7 @@ class _AssessmentsTab extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
+                      color: AppDesignTokens.primaryText,
                     ),
                   ),
                 ),
@@ -2088,12 +2085,12 @@ class _AssessmentsTab extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D5A40).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppDesignTokens.primaryTint,
+                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
                   ),
                   child: const Icon(
                     Icons.library_books_outlined,
-                    color: Color(0xFF2D5A40),
+                    color: AppDesignTokens.primary,
                     size: 20,
                   ),
                 ),
@@ -2103,7 +2100,7 @@ class _AssessmentsTab extends ConsumerWidget {
                 ),
                 subtitle: const Text(
                   'Choose from standard templates',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -2115,12 +2112,12 @@ class _AssessmentsTab extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D5A40).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppDesignTokens.primaryTint,
+                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
                   ),
                   child: const Icon(
                     Icons.edit_outlined,
-                    color: Color(0xFF2D5A40),
+                    color: AppDesignTokens.primary,
                     size: 20,
                   ),
                 ),
@@ -2130,7 +2127,7 @@ class _AssessmentsTab extends ConsumerWidget {
                 ),
                 subtitle: const Text(
                   'Create your own assessment',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -3337,7 +3334,7 @@ class _PhotosTab extends ConsumerWidget {
                               child: file.existsSync()
                                   ? Image.file(file, fit: BoxFit.cover)
                                   : const Center(
-                                      child: Icon(Icons.broken_image, color: Colors.grey),
+                                      child: Icon(Icons.broken_image, color: AppDesignTokens.secondaryText),
                                     ),
                             ),
                           ),
@@ -3380,7 +3377,7 @@ class SessionsView extends ConsumerWidget {
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F6F2),
+      backgroundColor: AppDesignTokens.backgroundSurface,
       body: Column(
         children: [
           Row(
@@ -3853,11 +3850,11 @@ class _ApplicationsTab extends ConsumerWidget {
               Builder(builder: (ctx2) {
                 final isPartial = e.partialFlag;
                 final bgColor = isCompleted
-                    ? (isPartial ? Colors.amber.shade100 : Colors.green.shade100)
-                    : Colors.orange.shade50;
+                    ? (isPartial ? AppDesignTokens.partialBg : AppDesignTokens.openSessionBgLight)
+                    : AppDesignTokens.plannedBg;
                 final fgColor = isCompleted
-                    ? (isPartial ? Colors.amber.shade800 : Colors.green.shade700)
-                    : Colors.orange.shade700;
+                    ? (isPartial ? AppDesignTokens.partialFg : AppDesignTokens.appliedColor)
+                    : AppDesignTokens.plannedFg;
                 final icn = isCompleted
                     ? (isPartial ? Icons.warning_amber_rounded : Icons.check_circle)
                     : Icons.schedule;
@@ -3957,7 +3954,7 @@ class _ApplicationsTab extends ConsumerWidget {
             const SizedBox(height: 4),
             const Text(
               'If only some plots were sprayed, choose No and create a second event for the remaining plots.',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 12),
             ),
           ],
         ),
@@ -4482,22 +4479,24 @@ class _TreatmentComponentsSheetState
               margin: const EdgeInsets.only(top: 10, bottom: 4),
               width: 40, height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
+                color: AppDesignTokens.dragHandle,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.fromLTRB(
+                  AppDesignTokens.spacing16, AppDesignTokens.spacing8,
+                  AppDesignTokens.spacing16, AppDesignTokens.spacing12),
               decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFEAECF0))),
+                border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2D5A40),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppDesignTokens.primary,
+                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
                     ),
                     child: Text(widget.treatment.code,
                         style: const TextStyle(
@@ -4505,7 +4504,7 @@ class _TreatmentComponentsSheetState
                             fontWeight: FontWeight.w800,
                             fontSize: 13)),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: AppDesignTokens.spacing8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4514,12 +4513,12 @@ class _TreatmentComponentsSheetState
                             style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
-                                color: Color(0xFF111827))),
+                                color: AppDesignTokens.primaryText)),
                         if (_components.isNotEmpty)
                           Text(
                             '${_components.length} ${_components.length == 1 ? "product" : "products"}',
                             style: const TextStyle(
-                                fontSize: 11, color: Color(0xFF6B7280)),
+                                fontSize: 11, color: AppDesignTokens.secondaryText),
                           ),
                       ],
                     ),

@@ -70,6 +70,20 @@ class AppDesignTokens {
   static const Color openSessionBg = Color(0xFF16A34A);
   /// Open session indicator background (light).
   static const Color openSessionBgLight = Color(0xFFDCFCE7);
+  /// Secondary brand green (gradient, hover states).
+  static const Color primaryLight = Color(0xFF3D7A57);
+  /// Partial completion badge background.
+  static const Color partialBg = Color(0xFFFEF3C7);
+  /// Partial completion badge foreground.
+  static const Color partialFg = Color(0xFF92400E);
+  /// Planned/pending badge background.
+  static const Color plannedBg = Color(0xFFFFF7ED);
+  /// Planned/pending badge foreground.
+  static const Color plannedFg = Color(0xFFEA580C);
+  /// Bottom sheet drag handle color.
+  static const Color dragHandle = Color(0xFFE5E7EB);
+  /// Primary tint background (icon containers, hover).
+  static const Color primaryTint = Color(0x1A2D5A40);
 
   // ——— Spacing ———
   static const double spacing4 = 4;
