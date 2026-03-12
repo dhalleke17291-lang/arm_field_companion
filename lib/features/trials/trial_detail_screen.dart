@@ -3547,21 +3547,33 @@ class SessionsView extends ConsumerWidget {
                       ),
                 ),
               ),
-              IconButton(
+              PopupMenuButton<String>(
                 icon: const Icon(Icons.download_for_offline),
                 tooltip: 'Export all closed sessions',
-                onPressed: () async {
-                  final useCase =
-                      ref.read(exportTrialClosedSessionsUsecaseProvider);
+                onSelected: (value) async {
                   final user = await ref.read(currentUserProvider.future);
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Exporting...')));
-                  final result = await useCase.execute(
-                    trialId: trial.id,
-                    trialName: trial.name,
-                    exportedByDisplayName: user?.displayName,
+                    SnackBar(
+                        content: Text(value == 'arm_xml'
+                            ? 'Exporting ARM XML...'
+                            : 'Exporting...')),
                   );
+                  final result = value == 'arm_xml'
+                      ? await ref
+                          .read(exportTrialClosedSessionsArmXmlUsecaseProvider)
+                          .execute(
+                            trialId: trial.id,
+                            trialName: trial.name,
+                            exportedByDisplayName: user?.displayName,
+                          )
+                      : await ref
+                          .read(exportTrialClosedSessionsUsecaseProvider)
+                          .execute(
+                            trialId: trial.id,
+                            trialName: trial.name,
+                            exportedByDisplayName: user?.displayName,
+                          );
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).clearSnackBars();
                   if (result.success) {
@@ -3589,6 +3601,14 @@ class SessionsView extends ConsumerWidget {
                     );
                   }
                 },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                      value: 'csv',
+                      child: Text('Export all to CSV (ZIP)')),
+                  const PopupMenuItem(
+                      value: 'arm_xml',
+                      child: Text('Export all as ARM XML (ZIP)')),
+                ],
               ),
             ],
           ),

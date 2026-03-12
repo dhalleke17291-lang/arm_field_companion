@@ -1,19 +1,22 @@
-# Export (CSV)
+# Export (CSV and ARM XML)
 
-Session ratings and session-scoped audit events can be exported to CSV from the app. Export is available from **Session detail** (one closed session) and **Trial detail** (all closed sessions for a trial as a ZIP).
+Session ratings and session-scoped audit events can be exported from the app. **CSV** export is available from **Session detail** (one closed session) and **Trial detail** (all closed sessions for a trial as a ZIP). **ARM XML** export is available per closed session from Session detail.
 
 ## Single-session export
 
-- **Where:** Session detail screen → Export to CSV (session must be closed).
-- **Files produced:**
+- **Where:** Session detail screen → Export menu (session must be closed). Options: **Export to CSV**, **Export as ARM XML**.
+- **Files produced (CSV):**
   - **Ratings CSV** — `AFC_export_<trial>_<session>_session_<id>.csv`
   - **Audit CSV** (when the session has audit events) — `AFC_export_<trial>_<session>_session_<id>_audit.csv`
-- **Share:** Both files are shared when the audit file exists.
+- **Files produced (ARM XML):**
+  - **ARM-style XML** — `AFC_arm_export_<trial>_<session>_session_<id>.xml`
+- **Share:** CSV flow shares both files when audit exists; ARM XML flow shares the single XML file.
 
 ## Batch export (trial)
 
-- **Where:** Trial detail → Sessions → Export all closed sessions.
-- **Output:** One ZIP containing, per closed session, the ratings CSV and (when present) the audit CSV. Filenames as above.
+- **Where:** Trial detail → Sessions → Export menu (download icon). Options: **Export all to CSV (ZIP)**, **Export all as ARM XML (ZIP)**.
+- **Output (CSV):** One ZIP containing, per closed session, the ratings CSV and (when present) the audit CSV. Filenames as in single-session export.
+- **Output (ARM XML):** One ZIP containing one ARM-style XML file per closed session. Filename pattern: `AFC_trial_<trial>_arm_xml_<timestamp>.zip`.
 
 ## Ratings CSV columns
 
@@ -30,8 +33,21 @@ Session ratings and session-scoped audit events can be exported to CSV from the 
 
 Event types include `SESSION_STARTED`, `SESSION_CLOSED`, `RATING_SAVED`, `RATING_UNDONE`, and others as recorded by the app.
 
+## ARM XML export (session)
+
+- **Where:** Session detail → Export → Export as ARM XML (session must be closed).
+- **Output:** One XML file per closed session. Root element: `arm_export` (attributes: `version`, `source`, `app_version`, `export_timestamp_utc`, `exported_by`). Child sections: `trial`, `session`, `treatments`, `assessments`, `plots`, `ratings`. Rating values use effective values (after correction when applicable).
+- **Note:** The element names and structure are schema-agnostic placeholders. When a real ARM XML sample or schema is available, the exporter can be updated to match.
+
+## ARM XML batch export (trial)
+
+- **Where:** Trial detail → Sessions → Export → Export all as ARM XML (ZIP).
+- **Output:** One ZIP containing one XML file per closed session (same structure as single-session ARM XML). Share flow is the same as CSV batch.
+
 ## References
 
 - Export repository: `lib/features/export/data/export_repository.dart`
 - Session CSV use case: `lib/features/export/domain/export_session_csv_usecase.dart`
-- Batch use case: `lib/features/export/domain/export_trial_closed_sessions_usecase.dart`
+- Session ARM XML use case: `lib/features/export/domain/export_session_arm_xml_usecase.dart`
+- Batch CSV use case: `lib/features/export/domain/export_trial_closed_sessions_usecase.dart`
+- Batch ARM XML use case: `lib/features/export/domain/export_trial_closed_sessions_arm_xml_usecase.dart`

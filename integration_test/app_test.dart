@@ -118,8 +118,9 @@ void main() {
       await tester.tap(find.text('Session 1'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // Should be on PlotQueueScreen — tap the single plot tile (title is "Plot 1 · ...").
-      await tester.tap(find.textContaining('Plot 1'));
+      // Should be on PlotQueueScreen — tap the single plot tile.
+      // Label is rep*100 + position = 101 (rep:1, first plot in rep).
+      await tester.tap(find.text('101'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Should land on RatingScreen.

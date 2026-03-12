@@ -26,7 +26,9 @@ import '../features/sessions/usecases/close_session_usecase.dart';
 import '../features/sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../features/export/data/export_repository.dart';
 import '../features/export/domain/export_session_csv_usecase.dart';
+import '../features/export/domain/export_session_arm_xml_usecase.dart';
 import '../features/export/domain/export_trial_closed_sessions_usecase.dart';
+import '../features/export/domain/export_trial_closed_sessions_arm_xml_usecase.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
@@ -281,10 +283,23 @@ final exportSessionCsvUsecaseProvider =
   return ExportSessionCsvUsecase(ref.watch(exportRepositoryProvider));
 });
 
+final exportSessionArmXmlUsecaseProvider =
+    Provider<ExportSessionArmXmlUsecase>((ref) {
+  return ExportSessionArmXmlUsecase(ref.watch(exportRepositoryProvider));
+});
+
 final exportTrialClosedSessionsUsecaseProvider =
     Provider<ExportTrialClosedSessionsUsecase>((ref) {
   return ExportTrialClosedSessionsUsecase(
     ref.watch(exportSessionCsvUsecaseProvider),
+    ref.watch(sessionRepositoryProvider),
+  );
+});
+
+final exportTrialClosedSessionsArmXmlUsecaseProvider =
+    Provider<ExportTrialClosedSessionsArmXmlUsecase>((ref) {
+  return ExportTrialClosedSessionsArmXmlUsecase(
+    ref.watch(exportSessionArmXmlUsecaseProvider),
     ref.watch(sessionRepositoryProvider),
   );
 });

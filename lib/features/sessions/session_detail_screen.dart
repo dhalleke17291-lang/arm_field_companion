@@ -46,10 +46,17 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         subtitle: session.sessionDateLocal,
         titleFontSize: 17,
         actions: [
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.download, color: Colors.white),
-            tooltip: 'Export to CSV',
-            onPressed: () => _exportCsv(context, ref),
+            tooltip: 'Export',
+            onSelected: (value) {
+              if (value == 'csv') _exportCsv(context, ref);
+              if (value == 'arm_xml') _exportArmXml(context, ref);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'csv', child: Text('Export to CSV')),
+              const PopupMenuItem(value: 'arm_xml', child: Text('Export as ARM XML')),
+            ],
           ),
         ],
       ),
@@ -200,6 +207,93 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Export failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportArmXml(BuildContext context, WidgetRef ref) async {
+    final usecase = ref.read(exportSessionArmXmlUsecaseProvider);
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exporting ARM XML...')),
+      );
+      final currentUser = await ref.read(currentUserProvider.future);
+      final result = await usecase.exportSessionToArmXml(
+        sessionId: widget.session.id,
+        trialId: widget.trial.id,
+        trialName: widget.trial.name,
+        sessionName: widget.session.name,
+        sessionDateLocal: widget.session.sessionDateLocal,
+        sessionRaterName: widget.session.raterName,
+        exportedByDisplayName: currentUser?.displayName,
+        isSessionClosed: widget.session.endedAt != null,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      if (!result.success) {
+        ref.read(diagnosticsStoreProvider).recordError(
+              result.errorMessage ?? 'Unknown error',
+              code: 'arm_xml_export_failed',
+            );
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('ARM XML Export Failed'),
+            content: SelectableText(result.errorMessage ?? 'Unknown error'),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('ARM XML Export Complete'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Session exported as ARM-style XML.'),
+              const SizedBox(height: 8),
+              const Text('Saved to:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              SelectableText(result.filePath!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                final box = context.findRenderObject() as RenderBox?;
+                await Share.shareXFiles(
+                  [XFile(result.filePath!)],
+                  subject: '${widget.trial.name} - ${widget.session.name} ARM Export',
+                  sharePositionOrigin: box == null
+                      ? const Rect.fromLTWH(0, 0, 100, 100)
+                      : box.localToGlobal(Offset.zero) & box.size,
+                );
+              },
+              icon: const Icon(Icons.share),
+              label: const Text('Share'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ARM XML export failed: $e'), backgroundColor: Colors.red),
         );
       }
     }
