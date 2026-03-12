@@ -20,6 +20,7 @@ import '../protocol_import/protocol_import_screen.dart';
 import '../protocol_import/imported_protocol_file_screen.dart';
 import 'plot_layout_model.dart';
 import 'assessment_library_picker_dialog.dart';
+import 'full_protocol_details_screen.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/widgets/app_dialog.dart';
@@ -294,6 +295,17 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           ),
                         ),
                       ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.description_outlined, color: Colors.white, size: 22),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => FullProtocolDetailsScreen(trial: currentTrial),
+                        ),
+                      ),
+                      tooltip: 'View full protocol',
+                    ),
                   ],
                 ),
               ),
