@@ -386,6 +386,9 @@ class ImportEvents extends Table {
   ImportEvents,
 ])
 class AppDatabase extends _$AppDatabase {
+  /// In-memory database for testing only.
+  AppDatabase.forTesting(super.e);
+
   AppDatabase() : super(_openConnection());
 
   @override
