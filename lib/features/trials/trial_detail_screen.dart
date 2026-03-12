@@ -1416,11 +1416,12 @@ class _PlotLayoutGrid extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (blocks.length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 6),
                   child: Text(
                     'Field Layout — Rep-based',
-                    style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 11),
+                    style: TextStyle(
+                        color: AppDesignTokens.secondaryText, fontSize: 11),
                   ),
                 ),
               ...blocks.expand((block) {
@@ -1455,7 +1456,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                           width: _repLabelWidth,
                           child: Text(
                             'Rep ${repRow.repNumber}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppDesignTokens.secondaryText,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -1794,7 +1795,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   ),
                 ),
                 if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
-                  Text(sourceLabel, style: TextStyle(fontSize: 10, color: AppDesignTokens.secondaryText, fontStyle: FontStyle.italic)),
+                  Text(sourceLabel, style: const TextStyle(fontSize: 10, color: AppDesignTokens.secondaryText, fontStyle: FontStyle.italic)),
               ],
             ),
             trailing: const Icon(Icons.chevron_right, size: 18),
