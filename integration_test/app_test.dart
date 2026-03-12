@@ -47,7 +47,7 @@ void main() {
       final trialId = await db.into(db.trials).insert(
             TrialsCompanion.insert(
               name: 'Test Trial',
-              status: const drift.Value('active'),
+              status: const drift.Value('draft'),
               crop: const drift.Value('Corn'),
               location: const drift.Value('Field A'),
               season: const drift.Value('2026'),
@@ -119,8 +119,8 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Should be on PlotQueueScreen — tap the single plot tile.
-      // Label is rep*100 + position = 101 (rep:1, first plot in rep).
-      await tester.tap(find.text('101'));
+      // Plot has no rep set so fallback label = plotId = '1'.
+      await tester.tap(find.text('1'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Should land on RatingScreen.
