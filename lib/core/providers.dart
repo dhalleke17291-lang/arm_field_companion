@@ -16,6 +16,8 @@ import '../features/sessions/session_repository.dart';
 import '../features/ratings/rating_repository.dart';
 import '../features/photos/photo_repository.dart';
 import '../features/trials/usecases/create_trial_usecase.dart';
+import '../features/trials/usecases/update_treatment_usecase.dart';
+import '../features/trials/usecases/delete_treatment_usecase.dart';
 import '../features/ratings/usecases/save_rating_usecase.dart';
 import '../features/ratings/usecases/undo_rating_usecase.dart';
 import '../features/ratings/usecases/apply_correction_usecase.dart';
@@ -124,6 +126,14 @@ final currentUserProvider = FutureProvider.autoDispose<User?>((ref) async {
 
 final createTrialUseCaseProvider = Provider<CreateTrialUseCase>((ref) {
   return CreateTrialUseCase(ref.watch(trialRepositoryProvider));
+});
+
+final updateTreatmentUseCaseProvider = Provider<UpdateTreatmentUseCase>((ref) {
+  return UpdateTreatmentUseCase(ref.watch(treatmentRepositoryProvider));
+});
+
+final deleteTreatmentUseCaseProvider = Provider<DeleteTreatmentUseCase>((ref) {
+  return DeleteTreatmentUseCase(ref.watch(treatmentRepositoryProvider));
 });
 
 final saveRatingUseCaseProvider = Provider<SaveRatingUseCase>((ref) {

@@ -67,6 +67,33 @@ class TreatmentRepository {
         );
   }
 
+  Future<void> updateTreatment(
+    int id, {
+    String? code,
+    String? name,
+    String? description,
+  }) async {
+    await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
+          TreatmentsCompanion(
+            code: code != null ? Value(code) : const Value.absent(),
+            name: name != null ? Value(name) : const Value.absent(),
+            description: description != null ? Value(description) : const Value.absent(),
+          ),
+        );
+  }
+
+  /// Deletes treatment and its components; clears plot/assignment references.
+  Future<void> deleteTreatment(int id) async {
+    await (_db.delete(_db.treatmentComponents)
+          ..where((c) => c.treatmentId.equals(id)))
+        .go();
+    await (_db.update(_db.assignments)..where((a) => a.treatmentId.equals(id)))
+        .write(const AssignmentsCompanion(treatmentId: Value(null)));
+    await (_db.update(_db.plots)..where((p) => p.treatmentId.equals(id)))
+        .write(const PlotsCompanion(treatmentId: Value(null)));
+    await (_db.delete(_db.treatments)..where((t) => t.id.equals(id))).go();
+  }
+
   Future<int> insertComponent({
     required int treatmentId,
     required int trialId,

@@ -3070,7 +3070,24 @@ class _TreatmentsTab extends ConsumerWidget {
                             ),
                           ),
                         const SizedBox(width: AppDesignTokens.spacing8),
-                        const Icon(Icons.chevron_right, size: 18, color: AppDesignTokens.iconSubtle),
+                        if (!locked)
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert, size: 20, color: AppDesignTokens.iconSubtle),
+                            tooltip: 'Edit or delete treatment',
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _showEditTreatmentDialog(context, ref, trial, t);
+                              } else if (value == 'delete') {
+                                _showDeleteTreatmentDialog(context, ref, trial, t);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                              const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                            ],
+                          )
+                        else
+                          const Icon(Icons.chevron_right, size: 18, color: AppDesignTokens.iconSubtle),
                       ],
                     ),
                     onTap: () => _showTreatmentComponents(context, ref, t),
@@ -3126,6 +3143,117 @@ class _TreatmentsTab extends ConsumerWidget {
         treatment: treatment,
       ),
     );
+  }
+
+  Future<void> _showEditTreatmentDialog(
+      BuildContext context, WidgetRef ref, Trial trial, Treatment treatment) async {
+    final codeController = TextEditingController(text: treatment.code);
+    final nameController = TextEditingController(text: treatment.name);
+    final descController = TextEditingController(text: treatment.description ?? '');
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AppDialog(
+        title: 'Edit Treatment',
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: codeController,
+              decoration: const InputDecoration(
+                labelText: 'Code (e.g. T1, T2)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final useCase = ref.read(updateTreatmentUseCaseProvider);
+              final result = await useCase.execute(
+                trial: trial,
+                treatmentId: treatment.id,
+                code: codeController.text,
+                name: nameController.text,
+                description: descController.text.trim().isEmpty ? null : descController.text.trim(),
+              );
+              if (!ctx.mounted) return;
+              if (result.success) {
+                ref.invalidate(treatmentsForTrialProvider(trial.id));
+                Navigator.pop(ctx);
+              } else {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(content: Text(result.errorMessage ?? 'Update failed'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showDeleteTreatmentDialog(
+      BuildContext context, WidgetRef ref, Trial trial, Treatment treatment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Treatment'),
+        content: Text(
+          'Delete "${treatment.code} — ${treatment.name}"? Plots assigned to this treatment will be unassigned. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final useCase = ref.read(deleteTreatmentUseCaseProvider);
+    final result = await useCase.execute(trial: trial, treatmentId: treatment.id);
+    if (!context.mounted) return;
+    if (result.success) {
+      ref.invalidate(treatmentsForTrialProvider(trial.id));
+      ref.invalidate(assignmentsForTrialProvider(trial.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Treatment deleted')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.errorMessage ?? 'Delete failed'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   Future<void> _showAddTreatmentDialog(
