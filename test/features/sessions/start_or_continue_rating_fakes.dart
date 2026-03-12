@@ -10,10 +10,13 @@ import 'package:arm_field_companion/features/sessions/usecases/start_or_continue
 class FakeSessionRepository implements SessionRepository {
   final List<Session> sessions;
   final Map<int, List<Assessment>> sessionAssessments;
+  /// When set, createSession returns this instead of throwing.
+  final Session? sessionToReturnFromCreate;
 
   FakeSessionRepository({
     this.sessions = const [],
     this.sessionAssessments = const {},
+    this.sessionToReturnFromCreate,
   });
 
   @override
@@ -44,8 +47,11 @@ class FakeSessionRepository implements SessionRepository {
     required List<int> assessmentIds,
     String? raterName,
     int? createdByUserId,
-  }) async =>
-      throw UnimplementedError();
+  }) async {
+    final s = sessionToReturnFromCreate;
+    if (s != null) return s;
+    throw UnimplementedError();
+  }
 
   @override
   Future<void> closeSession(

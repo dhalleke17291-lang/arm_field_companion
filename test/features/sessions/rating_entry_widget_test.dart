@@ -106,6 +106,51 @@ void main() {
     });
   });
 
+  group('Quick Rate (trial list, no open session)', () {
+    testWidgets('tapping Quick Rate creates session and navigates to RatingScreen',
+        (WidgetTester tester) async {
+      fakeUseCase.result = StartOrContinueRatingResult.success(
+        trial: trial,
+        session: session,
+        allPlotsSerpentine: plots,
+        assessments: assessments,
+        startPlotIndex: 0,
+        isSessionComplete: false,
+      );
+
+      final fakeSessionRepo = FakeSessionRepository(
+        sessions: const [],
+        sessionAssessments: const {},
+        sessionToReturnFromCreate: session,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trialsStreamProvider.overrideWith((ref) => Stream.value([trial])),
+            openSessionProvider(1).overrideWith((ref) => Stream.value(null)),
+            assessmentsForTrialProvider(1).overrideWith((ref) =>
+                Stream.value(assessments)),
+            sessionRepositoryProvider.overrideWithValue(fakeSessionRepo),
+            startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
+          ],
+          child: const MaterialApp(
+            home: TrialListScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Quick Rate'), findsOneWidget);
+      await tester.tap(find.text('Quick Rate'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(RatingScreen), findsOneWidget);
+    });
+  });
+
   group('Rating entry from SessionDetail', () {
     testWidgets('Start Rating success: use case called, RatingScreen pushed',
         (WidgetTester tester) async {
