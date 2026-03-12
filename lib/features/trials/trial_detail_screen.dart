@@ -112,6 +112,95 @@ Future<void> showAssignTreatmentDialogForTrial({
   );
 }
 
+class _AddTestPlotsDialog extends StatefulWidget {
+  const _AddTestPlotsDialog();
+
+  @override
+  State<_AddTestPlotsDialog> createState() => _AddTestPlotsDialogState();
+}
+
+class _AddTestPlotsDialogState extends State<_AddTestPlotsDialog> {
+  late final TextEditingController _repsController;
+  late final TextEditingController _plotsPerRepController;
+
+  @override
+  void initState() {
+    super.initState();
+    _repsController = TextEditingController(text: '6');
+    _plotsPerRepController = TextEditingController(text: '8');
+  }
+
+  @override
+  void dispose() {
+    _repsController.dispose();
+    _plotsPerRepController.dispose();
+    super.dispose();
+  }
+
+  int get _reps => (int.tryParse(_repsController.text) ?? 6).clamp(1, 99);
+  int get _plotsPerRep => (int.tryParse(_plotsPerRepController.text) ?? 8).clamp(1, 99);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add Test Plots'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Create plots by reps and plots per rep (e.g. 6 reps × 8 plots = 48).',
+              style: TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _repsController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Reps',
+                border: OutlineInputBorder(),
+                hintText: '6',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _plotsPerRepController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Plots per rep',
+                border: OutlineInputBorder(),
+                hintText: '8',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Total: ${_reps * _plotsPerRep} plots',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, (reps: _reps, plotsPerRep: _plotsPerRep)),
+          child: const Text('Add Plots'),
+        ),
+      ],
+    );
+  }
+}
+
 class TrialDetailScreen extends ConsumerStatefulWidget {
   final Trial trial;
 
@@ -363,18 +452,25 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         : 'Protocol editable';
     final latestImportAsync = ref.watch(latestImportEventForTrialProvider(trial.id));
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing12),
+      decoration: const BoxDecoration(
+        color: AppDesignTokens.sectionHeaderBg,
+        border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Text('Status:',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              const Text(
+                'Status:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText,
+                ),
+              ),
               const SizedBox(width: AppDesignTokens.spacing8),
               Chip(
                 label: Text(label, style: const TextStyle(fontSize: 12)),
@@ -450,16 +546,17 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               children: [
                 Text(
                   statusHint,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.secondaryText,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   getProtocolLockExplanation(trial.status),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  style: const TextStyle(
                     fontSize: 12,
+                    color: AppDesignTokens.secondaryText,
                   ),
                 ),
               ],
@@ -467,8 +564,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           else
             Text(
               statusHint,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppDesignTokens.secondaryText,
               ),
             ),
         ],
@@ -517,7 +615,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
   Widget _buildSessionsBar(
       BuildContext context, AsyncValue<List<Session>> sessionsAsync) {
-    final scheme = Theme.of(context).colorScheme;
     final subtitle = sessionsAsync.when(
       loading: () => 'Start or continue a session',
       error: (_, __) => 'Start or continue a session',
@@ -526,22 +623,36 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
-      child: AppCard(
-        margin: EdgeInsets.zero,
+      child: Material(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        clipBehavior: Clip.antiAlias,
+        elevation: 0,
         child: InkWell(
           onTap: () => setState(() {
             _previousTabIndex = _selectedTabIndex;
             _selectedTabIndex = _sessionsIndex;
           }),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+              border: Border.all(color: AppDesignTokens.borderCrisp),
+            ),
             child: Row(
               children: [
-                Icon(
-                  Icons.assignment_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 22,
+                Container(
+                  padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.primaryTint,
+                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                  ),
+                  child: const Icon(
+                    Icons.assignment_outlined,
+                    color: AppDesignTokens.primary,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: AppDesignTokens.spacing12),
                 Expanded(
@@ -549,30 +660,30 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
+                      const Text(
                         'Sessions',
                         style: TextStyle(
-                          color: scheme.onSurface,
-                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.primaryText,
+                          fontWeight: FontWeight.w700,
                           fontSize: 15,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: TextStyle(
-                          color: scheme.onSurfaceVariant,
-                          fontSize: 12,
+                        style: const TextStyle(
+                          color: AppDesignTokens.secondaryText,
+                          fontSize: 13,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  color: scheme.onSurfaceVariant,
-                  size: 22,
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppDesignTokens.iconSubtle,
+                  size: 24,
                 ),
               ],
             ),
@@ -624,10 +735,10 @@ class _TrialModuleHub extends StatelessWidget {
     final listView = ListView.separated(
       controller: scrollController,
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.only(left: 14, right: 48),
+      padding: const EdgeInsets.only(left: AppDesignTokens.spacing16, right: 48),
       physics: const BouncingScrollPhysics(),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 12),
+      separatorBuilder: (_, __) => const SizedBox(width: AppDesignTokens.spacing12),
       itemBuilder: (context, index) {
         final item = items[index];
         return _DockTile(
@@ -654,7 +765,7 @@ class _TrialModuleHub extends StatelessWidget {
     return Container(
       height: 110,
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      padding: const EdgeInsets.only(top: AppDesignTokens.spacing8, bottom: AppDesignTokens.spacing8),
       child: content,
     );
   }
@@ -676,44 +787,40 @@ class _DockTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final activeColor = scheme.primary;
-    final inactiveColor = scheme.primary.withValues(alpha: 0.55);
-
     return AnimatedScale(
-      scale: selected ? 1.18 : 0.92,
+      scale: selected ? 1.12 : 0.96,
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                color: selected ? activeColor : inactiveColor,
+                color: selected ? AppDesignTokens.primary : AppDesignTokens.iconSubtle,
                 size: selected ? 26 : 22,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? activeColor : inactiveColor,
+                  color: selected ? AppDesignTokens.primary : AppDesignTokens.secondaryText,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: selected ? 13.5 : 12.5,
+                  fontSize: selected ? 13 : 12,
                 ),
               ),
               const SizedBox(height: 4),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 height: 2,
-                width: selected ? 22 : 0,
+                width: selected ? 20 : 0,
                 decoration: BoxDecoration(
-                  color: activeColor,
-                  borderRadius: BorderRadius.circular(2),
+                  color: AppDesignTokens.primary,
+                  borderRadius: BorderRadius.circular(1),
                 ),
               )
             ],
@@ -792,7 +899,11 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       (p) => getDisplayPlotLabel(p, plots),
       plotIdToEffectiveTreatmentId,
     );
-    return Column(
+    // Top section (header, banner, toggle, layer switcher, app selector) is constrained
+    // so the grid/list Expanded always gets space and we avoid bottom overflow.
+    const double maxTopSectionHeight = 320;
+    final topSection = Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildPlotsHeader(context, ref, plots, assignmentsLocked),
         if (layoutDiag.hasIssues) ...[
@@ -803,24 +914,47 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
           _buildLayerSwitcher(context),
           if (_layoutLayer == _LayoutLayer.applications)
             _buildAppEventSelector(context, ref),
+        ],
+      ],
+    );
+    return Column(
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: maxTopSectionHeight),
+          child: SingleChildScrollView(
+            child: topSection,
+          ),
+        ),
+        if (_showLayoutView)
           Expanded(
             child: _layoutLayer == _LayoutLayer.ratings
                 ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: AppDesignTokens.secondaryText)))
-                : SingleChildScrollView(
-                    child: _PlotLayoutGrid(
-                      plots: plots,
-                      treatments: treatments,
-                      trial: widget.trial,
-                      layer: _layoutLayer,
-                      appPlotRecords: _appPlotRecords,
-                      plotIdToTreatmentId: {for (var a in ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? []) a.plotId: a.treatmentId},
-                      onLongPressPlot: assignmentsLocked
-                          ? null
-                          : (plot) => _showAssignTreatmentDialog(context, ref, plot, plots),
-                    ),
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return InteractiveViewer(
+                        minScale: 0.25,
+                        maxScale: 4.0,
+                        panEnabled: true,
+                        scaleEnabled: true,
+                        child: SizedBox(
+                          width: constraints.maxWidth,
+                          child: _PlotLayoutGrid(
+                            plots: plots,
+                            treatments: treatments,
+                            trial: widget.trial,
+                            layer: _layoutLayer,
+                            appPlotRecords: _appPlotRecords,
+                            plotIdToTreatmentId: {for (var a in ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? []) a.plotId: a.treatmentId},
+                            onLongPressPlot: assignmentsLocked
+                                ? null
+                                : (plot) => _showAssignTreatmentDialog(context, ref, plot, plots),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-          ),
-        ] else
+          )
+        else
           Expanded(child: _buildPlotsListBody(context, ref, plots, assignmentsLocked)),
       ],
     );
@@ -904,7 +1038,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
 
   Widget _buildListLayoutToggle(BuildContext context, WidgetRef ref, List<Plot> plots) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
       child: Row(
         children: [
           Expanded(
@@ -944,6 +1078,11 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
 
   Widget _buildEmptyPlots(BuildContext context, WidgetRef ref) {
     final locked = isProtocolLocked(widget.trial.status);
+    const buttonPadding = EdgeInsets.symmetric(
+      horizontal: AppDesignTokens.spacing24,
+      vertical: AppDesignTokens.spacing12,
+    );
+    const gap = SizedBox(height: AppDesignTokens.spacing12);
     final primaryButton = FilledButton.icon(
       onPressed: locked
           ? null
@@ -952,7 +1091,15 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
               MaterialPageRoute(
                   builder: (_) =>
                       ImportPlotsScreen(trial: widget.trial))),
-      icon: const Icon(Icons.upload_file),
+      style: FilledButton.styleFrom(
+        backgroundColor: AppDesignTokens.primary,
+        foregroundColor: Colors.white,
+        padding: buttonPadding,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        ),
+      ),
+      icon: const Icon(Icons.upload_file, size: 20),
       label: const Text('Import Plots from CSV'),
     );
     return AppEmptyState(
@@ -966,46 +1113,88 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
               message: getProtocolLockMessage(widget.trial.status),
               child: primaryButton,
             )
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                primaryButton,
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                              ProtocolImportScreen(trial: widget.trial))),
-                  icon: const Icon(Icons.folder_special),
-                  label: const Text('Import Protocol (Treatments + Plots)'),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => _seedTestPlots(context, ref),
-                  icon: const Icon(Icons.science),
-                  label: const Text('Add 10 Test Plots'),
-                ),
-              ],
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  primaryButton,
+                  gap,
+                  Tooltip(
+                    message: 'Treatments and plots from file',
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  ProtocolImportScreen(trial: widget.trial))),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppDesignTokens.primaryText,
+                        side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                        padding: buttonPadding,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                        ),
+                      ),
+                      icon: const Icon(Icons.folder_special, size: 20),
+                      label: const Text('Import Protocol'),
+                    ),
+                  ),
+                  gap,
+                  OutlinedButton.icon(
+                    onPressed: () => _showAddTestPlotsDialog(context, ref),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppDesignTokens.secondaryText,
+                      side: const BorderSide(color: AppDesignTokens.divider),
+                      padding: buttonPadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                      ),
+                    ),
+                    icon: const Icon(Icons.science_outlined, size: 20),
+                    label: const Text('Add Test Plots'),
+                  ),
+                ],
+              ),
             ),
     );
   }
 
-  Future<void> _seedTestPlots(BuildContext context, WidgetRef ref) async {
+  Future<void> _showAddTestPlotsDialog(BuildContext context, WidgetRef ref) async {
+    final result = await showDialog<({int reps, int plotsPerRep})>(
+      context: context,
+      builder: (ctx) => const _AddTestPlotsDialog(),
+    );
+    if (result != null && context.mounted) {
+      await _seedTestPlots(context, ref, result.reps, result.plotsPerRep);
+    }
+  }
+
+  Future<void> _seedTestPlots(
+      BuildContext context, WidgetRef ref, int reps, int plotsPerRep) async {
     final db = ref.read(databaseProvider);
-    for (int i = 1; i <= 10; i++) {
-      await db.into(db.plots).insert(
-            PlotsCompanion.insert(
-              trialId: widget.trial.id,
-              plotId: i.toString().padLeft(3, '0'),
-              plotSortIndex: drift.Value(i),
-              rep: drift.Value((i / 3).ceil()),
-            ),
-          );
+    int sortIndex = 0;
+    for (int rep = 1; rep <= reps; rep++) {
+      for (int pos = 1; pos <= plotsPerRep; pos++) {
+        sortIndex++;
+        final plotId = '$rep${pos.toString().padLeft(2, '0')}';
+        await db.into(db.plots).insert(
+              PlotsCompanion.insert(
+                trialId: widget.trial.id,
+                plotId: plotId,
+                plotSortIndex: drift.Value(sortIndex),
+                rep: drift.Value(rep),
+              ),
+            );
+      }
     }
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('10 test plots added'), backgroundColor: Colors.green));
+      final total = reps * plotsPerRep;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('$total test plots added ($reps reps × $plotsPerRep plots each)'),
+        backgroundColor: Colors.green,
+      ));
     }
   }
 
@@ -1149,21 +1338,25 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       messages.add('${diag.unassignedPlotLabels.length} unassigned');
     }
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.amber.shade200),
+        color: AppDesignTokens.warningBg,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        border: Border.all(color: AppDesignTokens.warningBorder),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, size: 16, color: Colors.amber.shade800),
-          const SizedBox(width: 8),
+          const Icon(Icons.info_outline_rounded, size: 18, color: AppDesignTokens.warningFg),
+          const SizedBox(width: AppDesignTokens.spacing8),
           Expanded(
             child: Text(
               messages.join(' · '),
-              style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppDesignTokens.warningFg,
+              ),
             ),
           ),
         ],
@@ -1175,7 +1368,6 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
     final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
     final message = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
-    final scheme = Theme.of(context).colorScheme;
     final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     final assignedCount = plots.where((p) =>
@@ -1194,17 +1386,18 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
         message: assignmentsLocked ? message : 'Assign treatments to multiple plots',
         child: TextButton.icon(
           onPressed: assignmentsLocked ? null : () => _showBulkAssignDialog(context, ref, plots),
-          icon: Icon(Icons.assignment,
-              size: 16,
+          icon: Icon(Icons.assignment_outlined,
+              size: 18,
               color: assignmentsLocked
-                  ? scheme.onSurfaceVariant
-                  : scheme.primary),
+                  ? AppDesignTokens.iconSubtle
+                  : AppDesignTokens.primary),
           label: Text('Bulk Assign',
               style: TextStyle(
                   color: assignmentsLocked
-                      ? scheme.onSurfaceVariant
-                      : scheme.primary,
-                  fontSize: 13)),
+                      ? AppDesignTokens.secondaryText
+                      : AppDesignTokens.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
         ),
       ),
     );
@@ -1238,16 +1431,34 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
         final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap, treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
             treatmentId: effectiveTreatmentId, assignmentSource: effectiveSource);
-        return AppCard(
+        return Container(
           margin: const EdgeInsets.only(
             left: AppDesignTokens.spacing16,
             right: AppDesignTokens.spacing16,
             top: 6,
             bottom: 6,
           ),
+          decoration: BoxDecoration(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x08000000),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
           child: ListTile(
-          dense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppDesignTokens.spacing16,
+            vertical: AppDesignTokens.spacing8,
+          ),
           leading: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(
                 horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
             decoration: BoxDecoration(
@@ -1257,7 +1468,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
             child: Text(
               displayNum,
               style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   fontSize: 13,
                   color: Colors.white),
             ),
@@ -1265,34 +1476,38 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
           title: Text('Plot $displayNum',
               style: const TextStyle(
                   fontWeight: FontWeight.w600,
+                  fontSize: 15,
                   color: AppDesignTokens.primaryText)),
-          subtitle: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  treatmentLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: effectiveTreatmentId != null
-                        ? AppDesignTokens.primary
-                        : AppDesignTokens.secondaryText,
-                    fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : null,
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    treatmentLabel,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: effectiveTreatmentId != null
+                          ? AppDesignTokens.primary
+                          : AppDesignTokens.secondaryText,
+                      fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : FontWeight.w400,
+                    ),
                   ),
                 ),
-              ),
-              if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
-                Text(
-                  sourceLabel,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppDesignTokens.secondaryText,
-                    fontStyle: FontStyle.italic,
+                if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
+                  Text(
+                    sourceLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppDesignTokens.secondaryText,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-          trailing: const Icon(Icons.chevron_right,
-              size: 18, color: AppDesignTokens.iconSubtle),
+          trailing: const Icon(Icons.chevron_right_rounded,
+              size: 22, color: AppDesignTokens.iconSubtle),
           onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -1413,15 +1628,20 @@ class _PlotLayoutGrid extends StatelessWidget {
 
   static const double _repLabelWidth = 52.0;
   static const double _tileSpacing = 6.0;
-  static const double _minTileSize = 40.0;
-  static const double _tileSizeScale = 0.5;
+  static const double _minTileSize = 32.0;
+  static const double _maxTileSize = 72.0;
+  static const double _tileSizeScale = 0.85;
   static const double _minCellSize = 20.0;
+  static const double _maxCellSize = 64.0;
 
   Widget _buildRepBasedGrid(BuildContext context, Map<int, Treatment> treatmentMap) {
     final blocks = buildRepBasedLayout(plots);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final contentWidth = constraints.maxWidth - 24; // horizontal padding
+        final maxW = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final contentWidth = maxW - 24;
         final plotRowWidth = contentWidth - _repLabelWidth - _tileSpacing;
 
         return Padding(
@@ -1460,8 +1680,8 @@ class _PlotLayoutGrid extends StatelessWidget {
                   final tileWidth = n > 0
                       ? (plotRowWidth - (n - 1) * _tileSpacing) / n
                       : 0.0;
-                  final size = tileWidth.clamp(_minTileSize, double.infinity);
-                  final cellSize = (size * _tileSizeScale).clamp(_minCellSize, double.infinity);
+                  final size = tileWidth.clamp(_minTileSize, _maxTileSize);
+                  final cellSize = (size * _tileSizeScale).clamp(_minCellSize, _maxCellSize);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: _tileSpacing),
                     child: Row(
@@ -1673,7 +1893,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           final Map<int, int?> plotIdToTreatmentId = {
             for (final a in assignments) a.plotId: a.treatmentId
           };
-          return Column(
+          const double maxTopHeight = 200;
+          final topSection = Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1693,21 +1915,42 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               ),
               if (_layoutLayer == _LayoutLayer.applications)
                 _buildAppEventSelector(context, ref),
+            ],
+          );
+          return Column(
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: maxTopHeight),
+                child: SingleChildScrollView(
+                  child: topSection,
+                ),
+              ),
               Expanded(
                 child: _layoutLayer == _LayoutLayer.ratings
                     ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: AppDesignTokens.secondaryText)))
-                    : SingleChildScrollView(
-                        child: _PlotLayoutGrid(
-                          plots: plots,
-                          treatments: treatments,
-                          trial: widget.trial,
-                          layer: _layoutLayer,
-                          appPlotRecords: _appPlotRecords,
-                          plotIdToTreatmentId: plotIdToTreatmentId,
-                          onLongPressPlot: assignmentsLocked
-                              ? null
-                              : (plot) => _showAssignDialog(context, ref, plot, plots),
-                        ),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          return InteractiveViewer(
+                            minScale: 0.25,
+                            maxScale: 4.0,
+                            panEnabled: true,
+                            scaleEnabled: true,
+                            child: SizedBox(
+                              width: constraints.maxWidth,
+                              child: _PlotLayoutGrid(
+                                plots: plots,
+                                treatments: treatments,
+                                trial: widget.trial,
+                                layer: _layoutLayer,
+                                appPlotRecords: _appPlotRecords,
+                                plotIdToTreatmentId: plotIdToTreatmentId,
+                                onLongPressPlot: assignmentsLocked
+                                    ? null
+                                    : (plot) => _showAssignDialog(context, ref, plot, plots),
+                              ),
+                            ),
+                          );
+                        },
                       ),
               ),
             ],
@@ -2259,7 +2502,7 @@ class _AssessmentsTab extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────
-// SEEDING TAB (placeholder)
+// SEEDING TAB
 // ─────────────────────────────────────────────
 
 class _SeedingTab extends ConsumerWidget {
@@ -2269,20 +2512,20 @@ class _SeedingTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final db = ref.watch(databaseProvider);
+    final recordsAsync = ref.watch(seedingRecordsForTrialProvider(trial.id));
 
-    return FutureBuilder(
-      future: (db.select(db.seedingRecords)
-            ..where((t) => t.trialId.equals(trial.id))
-            ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
-          .get(),
-      builder: (context, AsyncSnapshot<List> snapshot) {
-        if (!snapshot.hasData) {
-          return const AppLoadingView();
-        }
-
-        final records = snapshot.data!;
-
+    return recordsAsync.when(
+      loading: () => const AppLoadingView(),
+      error: (e, st) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          child: Text(
+            'Failed to load seeding records: $e',
+            style: const TextStyle(color: AppDesignTokens.secondaryText),
+          ),
+        ),
+      ),
+      data: (records) {
         if (records.isEmpty) {
           return AppEmptyState(
             icon: Icons.agriculture,
@@ -2398,13 +2641,15 @@ class _SeedingTab extends ConsumerWidget {
     );
   }
 
-  Future<void> _addSeeding(BuildContext context, WidgetRef ref) async {
+  void _addSeeding(BuildContext context, WidgetRef ref) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => RecordSeedingScreen(trial: trial),
       ),
-    );
+    ).then((_) {
+      ref.invalidate(seedingRecordsForTrialProvider(trial.id));
+    });
   }
 }
 
@@ -3517,6 +3762,54 @@ class _SessionListEntry {
   const _SessionListEntry({required this.isHeader, this.date, this.session});
 }
 
+/// Compact pill for session status (Open, Needs attention). Professional, consistent styling.
+class _SessionPill extends StatelessWidget {
+  const _SessionPill({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    this.icon,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing12,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: foregroundColor),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: foregroundColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class SessionsView extends ConsumerWidget {
   final Trial trial;
   final VoidCallback? onBack;
@@ -3739,9 +4032,8 @@ class SessionsView extends ConsumerWidget {
         .map((r) => r.plotPk)
         .toSet();
     final hasIssues = issuePlotIds.isNotEmpty;
-    final showIssueIndicators = !isOpen && (hasFlags || hasIssues);
-    final flaggedCount = flaggedIds.length;
-    final issuePlotCount = issuePlotIds.length;
+    final needsAttention = hasFlags || hasIssues;
+
     return Container(
       margin: const EdgeInsets.symmetric(
           horizontal: AppDesignTokens.spacing16, vertical: 4),
@@ -3795,65 +4087,47 @@ class SessionsView extends ConsumerWidget {
                 fontSize: 15,
                 color: AppDesignTokens.primaryText)),
         subtitle: Text(_formatSessionTimes(session)),
-        trailing: isOpen
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppDesignTokens.openSessionBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text('Open',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700)),
-              )
-            : showIssueIndicators
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (hasFlags)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.flag,
-                                  color: AppDesignTokens.flagColor, size: 20),
-                              const SizedBox(width: 2),
-                              Text(
-                                '$flaggedCount flagged',
-                                style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppDesignTokens.flagColor),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (hasFlags && hasIssues)
-                        const SizedBox(width: AppDesignTokens.spacing8),
-                      if (hasIssues)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppDesignTokens.warningBg,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppDesignTokens.warningBorder),
-                          ),
-                          child: Text(
-                            '$issuePlotCount reading issues',
-                            style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppDesignTokens.warningFg),
-                          ),
-                        ),
-                    ],
-                  )
-                : const Text('Closed',
-                    style: TextStyle(
-                        color: AppDesignTokens.secondaryText, fontSize: 12)),
+        trailing: _buildSessionTrailing(isOpen, needsAttention),
+      ),
+    );
+  }
+
+  /// Elegant trailing: Open pill, or Needs attention pill, or Closed.
+  Widget _buildSessionTrailing(bool isOpen, bool needsAttention) {
+    if (isOpen && !needsAttention) {
+      return const _SessionPill(
+        label: 'Open',
+        backgroundColor: AppDesignTokens.openSessionBg,
+        foregroundColor: Colors.white,
+      );
+    }
+    if (needsAttention) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isOpen) ...[
+            const _SessionPill(
+              label: 'Open',
+              backgroundColor: AppDesignTokens.openSessionBg,
+              foregroundColor: Colors.white,
+            ),
+            const SizedBox(width: AppDesignTokens.spacing8),
+          ],
+          const _SessionPill(
+            label: 'Needs attention',
+            backgroundColor: AppDesignTokens.warningBg,
+            foregroundColor: AppDesignTokens.warningFg,
+            icon: Icons.info_outline_rounded,
+          ),
+        ],
+      );
+    }
+    return const Text(
+      'Closed',
+      style: TextStyle(
+        color: AppDesignTokens.secondaryText,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
@@ -4599,6 +4873,155 @@ class _ApplicationsTab extends ConsumerWidget {
 
 
 // ─────────────────────────────────────────────
+// ADD COMPONENT DIALOG (StatefulWidget owns controllers for safe lifecycle)
+// ─────────────────────────────────────────────
+
+class _AddComponentDialog extends StatefulWidget {
+  const _AddComponentDialog({
+    required this.trial,
+    required this.treatment,
+    required this.ref,
+    required this.onSaved,
+  });
+
+  final Trial trial;
+  final Treatment treatment;
+  final WidgetRef ref;
+  final Future<void> Function() onSaved;
+
+  @override
+  State<_AddComponentDialog> createState() => _AddComponentDialogState();
+}
+
+class _AddComponentDialogState extends State<_AddComponentDialog> {
+  late final TextEditingController productController;
+  late final TextEditingController rateController;
+  late final TextEditingController rateUnitController;
+  late final TextEditingController timingController;
+  late final TextEditingController notesController;
+
+  @override
+  void initState() {
+    super.initState();
+    productController = TextEditingController();
+    rateController = TextEditingController();
+    rateUnitController = TextEditingController();
+    timingController = TextEditingController();
+    notesController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    productController.dispose();
+    rateController.dispose();
+    rateUnitController.dispose();
+    timingController.dispose();
+    notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      title: 'Add Product to ${widget.treatment.code}',
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: productController,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Product Name *',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: rateController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Rate',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: rateUnitController,
+                  decoration: const InputDecoration(
+                    labelText: 'Unit (e.g. L/ha)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: timingController,
+            decoration: const InputDecoration(
+              labelText: 'Application Timing (optional)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: notesController,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Notes (optional)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            if (productController.text.trim().isEmpty) return;
+            final repo = widget.ref.read(treatmentRepositoryProvider);
+            await repo.insertComponent(
+              treatmentId: widget.treatment.id,
+              trialId: widget.trial.id,
+              productName: productController.text.trim(),
+              rate: rateController.text.trim().isEmpty
+                  ? null
+                  : rateController.text.trim(),
+              rateUnit: rateUnitController.text.trim().isEmpty
+                  ? null
+                  : rateUnitController.text.trim(),
+              applicationTiming: timingController.text.trim().isEmpty
+                  ? null
+                  : timingController.text.trim(),
+              notes: notesController.text.trim().isEmpty
+                  ? null
+                  : notesController.text.trim(),
+            );
+            if (!context.mounted) return;
+            Navigator.pop(context);
+            await widget.onSaved();
+          },
+          child: const Text('Add Product'),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
 // TREATMENT COMPONENTS BOTTOM SHEET
 // ─────────────────────────────────────────────
 
@@ -4632,6 +5055,8 @@ class _TreatmentComponentsSheetState
     final result =
         await repo.getComponentsForTreatment(widget.treatment.id);
     if (mounted) setState(() { _components = result; _loading = false; });
+    // So the Treatments tab (treatment cards with product counts) rebuilds and shows updated counts.
+    ref.invalidate(treatmentsForTrialProvider(widget.trial.id));
   }
 
   @override
@@ -4929,113 +5354,13 @@ class _TreatmentComponentsSheetState
   }
 
   Future<void> _showAddComponentDialog(BuildContext context) async {
-    final productController = TextEditingController();
-    final rateController = TextEditingController();
-    final rateUnitController = TextEditingController();
-    final timingController = TextEditingController();
-    final notesController = TextEditingController();
-
     await showDialog(
       context: context,
-      builder: (ctx) => AppDialog(
-        title: 'Add Product to ${widget.treatment.code}',
-        scrollable: true,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: productController,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Product Name *',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: rateController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Rate',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: rateUnitController,
-                    decoration: const InputDecoration(
-                      labelText: 'Unit (e.g. L/ha)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: timingController,
-              decoration: const InputDecoration(
-                labelText: 'Application Timing (optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: notesController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              if (productController.text.trim().isEmpty) return;
-              final repo = ref.read(treatmentRepositoryProvider);
-              await repo.insertComponent(
-                treatmentId: widget.treatment.id,
-                trialId: widget.trial.id,
-                productName: productController.text.trim(),
-                rate: rateController.text.trim().isEmpty
-                    ? null
-                    : rateController.text.trim(),
-                rateUnit: rateUnitController.text.trim().isEmpty
-                    ? null
-                    : rateUnitController.text.trim(),
-                applicationTiming: timingController.text.trim().isEmpty
-                    ? null
-                    : timingController.text.trim(),
-                notes: notesController.text.trim().isEmpty
-                    ? null
-                    : notesController.text.trim(),
-              );
-              productController.dispose();
-              rateController.dispose();
-              rateUnitController.dispose();
-              timingController.dispose();
-              notesController.dispose();
-              if (ctx.mounted) Navigator.pop(ctx);
-              await _loadComponents();
-            },
-            child: const Text('Add Product'),
-          ),
-        ],
+      builder: (_) => _AddComponentDialog(
+        trial: widget.trial,
+        treatment: widget.treatment,
+        ref: ref,
+        onSaved: _loadComponents,
       ),
     );
   }

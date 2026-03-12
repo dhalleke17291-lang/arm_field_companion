@@ -32,6 +32,8 @@ import '../features/export/domain/export_trial_closed_sessions_arm_xml_usecase.d
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
+import '../features/today/domain/activity_event.dart';
+import '../features/today/today_activity_repository.dart';
 import 'current_user.dart';
 import 'diagnostics/diagnostics_store.dart';
 import 'last_session_store.dart';
@@ -114,6 +116,54 @@ final diagnosticsStoreProvider = Provider<DiagnosticsStore>((ref) {
 
 final integrityCheckRepositoryProvider = Provider<IntegrityCheckRepository>((ref) {
   return IntegrityCheckRepository(ref.watch(databaseProvider));
+});
+
+final todayActivityRepositoryProvider = Provider<TodayActivityRepository>((ref) {
+  return TodayActivityRepository(ref.watch(databaseProvider));
+});
+
+/// Activity events for a given day (wall-clock date "yyyy-MM-dd"). AutoDispose, refresh on read.
+final todayActivityProvider =
+    FutureProvider.autoDispose.family<List<ActivityEvent>, String>((ref, dateLocal) async {
+  final repo = ref.watch(todayActivityRepositoryProvider);
+  final userId = await ref.watch(currentUserIdProvider.future);
+  return repo.getActivityForDate(dateLocal, currentUserId: userId);
+});
+
+/// Days with at least one activity (empty days excluded), with event count. For work log history.
+final workLogDatesProvider =
+    FutureProvider.autoDispose<List<({String dateLocal, int eventCount})>>((ref) async {
+  final repo = ref.watch(todayActivityRepositoryProvider);
+  final userId = await ref.watch(currentUserIdProvider.future);
+  return repo.getDatesWithActivity(currentUserId: userId);
+});
+
+/// Sessions for work log: filter by date (sessionDateLocal) and optionally current user (createdByUserId).
+final workLogSessionsProvider =
+    FutureProvider.autoDispose.family<List<Session>, String>((ref, dateLocal) async {
+  final repo = ref.watch(sessionRepositoryProvider);
+  final userId = await ref.watch(currentUserIdProvider.future);
+  return repo.getSessionsForDate(dateLocal, createdByUserId: userId);
+});
+
+/// Number of plots rated in this session (current ratings only).
+final ratingCountForSessionProvider =
+    FutureProvider.autoDispose.family<int, int>((ref, sessionId) async {
+  final set = await ref.watch(ratedPlotPksProvider(sessionId).future);
+  return set.length;
+});
+
+/// Number of plots flagged in this session.
+final flagCountForSessionProvider =
+    FutureProvider.autoDispose.family<int, int>((ref, sessionId) async {
+  final set = await ref.watch(flaggedPlotIdsForSessionProvider(sessionId).future);
+  return set.length;
+});
+
+/// Number of photos in this session.
+final photoCountForSessionProvider =
+    FutureProvider.autoDispose.family<int, int>((ref, sessionId) {
+  return ref.read(photoRepositoryProvider).getPhotoCountForSession(sessionId);
 });
 
 final activeUsersProvider = StreamProvider<List<User>>((ref) {
@@ -209,6 +259,16 @@ final sessionsForTrialProvider =
         ..where((s) => s.trialId.equals(trialId))
         ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
       .watch();
+});
+
+/// Seeding records for a trial (for Seeding tab). Invalidate after add/edit/delete.
+final seedingRecordsForTrialProvider =
+    FutureProvider.autoDispose.family<List<SeedingRecord>, int>((ref, trialId) async {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.seedingRecords)
+        ..where((t) => t.trialId.equals(trialId))
+        ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
+      .get();
 });
 
 final openSessionProvider =
