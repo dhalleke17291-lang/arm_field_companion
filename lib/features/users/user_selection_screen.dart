@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/current_user.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
-import '../trials/trial_list_screen.dart';
+import '../shell/main_shell_screen.dart';
 import 'add_user_screen.dart';
 
 /// Shown when no current_user_id is set. User taps to select or adds a new user.
@@ -107,7 +107,7 @@ class UserSelectionScreen extends ConsumerWidget {
     if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const TrialListScreen()),
+      MaterialPageRoute(builder: (_) => const MainShellScreen()),
     );
   }
 
@@ -123,7 +123,7 @@ class UserSelectionScreen extends ConsumerWidget {
       if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const TrialListScreen()),
+        MaterialPageRoute(builder: (_) => const MainShellScreen()),
       );
     }
   }

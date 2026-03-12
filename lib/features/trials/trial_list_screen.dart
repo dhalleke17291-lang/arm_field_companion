@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/app_info.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/last_session_store.dart';
@@ -18,6 +19,34 @@ import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
+
+void _showAppInfoDialog(BuildContext context) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text(AboutScreen.appName),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ignore: prefer_const_constructors - string is not constant (kAppVersion)
+          Text('Version $kAppVersion', style: const TextStyle(fontSize: 14)),
+          const SizedBox(height: 8),
+          Text(
+            AboutScreen.developerCredit,
+            style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.8)),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
 
 /// Shared navigation to rating for a given open session (used by Continue Session and Continue Last Session card).
 Future<void> _navigateToRatingForSession(
@@ -140,11 +169,27 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
   }
 }
 
-class TrialListScreen extends ConsumerWidget {
+class TrialListScreen extends ConsumerStatefulWidget {
   const TrialListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TrialListScreen> createState() => _TrialListScreenState();
+}
+
+class _TrialListScreenState extends ConsumerState<TrialListScreen> {
+  String _searchQuery = '';
+  final _searchFocusNode = FocusNode();
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchFocusNode.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final trialsAsync = ref.watch(trialsStreamProvider);
 
     const g800 = Color(0xFF2D5A40);
@@ -183,6 +228,17 @@ class TrialListScreen extends ConsumerWidget {
                         Row(
                           children: [
                             IconButton(
+                              icon: const Icon(Icons.search, color: Colors.white),
+                              tooltip: 'Search trials by name',
+                              onPressed: () {
+                                setState(() {
+                                  _searchQuery = '';
+                                  _searchController.clear();
+                                });
+                                _searchFocusNode.requestFocus();
+                              },
+                            ),
+                            IconButton(
                               icon: const Icon(Icons.file_upload_outlined, color: Colors.white),
                               tooltip: 'Export all trial data (closed sessions)',
                               onPressed: () => _exportAllTrials(context, ref),
@@ -195,7 +251,7 @@ class TrialListScreen extends ConsumerWidget {
                             IconButton(
                               icon: const Icon(Icons.info_outline, color: Colors.white),
                               tooltip: 'About',
-                              onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
+                              onPressed: () => _showAppInfoDialog(context),
                             ),
                           ],
                         ),
@@ -208,11 +264,48 @@ class TrialListScreen extends ConsumerWidget {
                         final active = trials.where((t) => t.status.toLowerCase() == 'active').length;
                         return Padding(
                           padding: const EdgeInsets.only(top: AppDesignTokens.spacing24),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(child: _summaryPill(context, '${trials.length}', 'Trials')),
-                              const SizedBox(width: AppDesignTokens.spacing12),
-                              Expanded(child: _summaryPill(context, '$active', 'Active')),
+                              Row(
+                                children: [
+                                  Expanded(child: _summaryPill(context, '${trials.length}', 'Trials')),
+                                  const SizedBox(width: AppDesignTokens.spacing12),
+                                  Expanded(child: _summaryPill(context, '$active', 'Active')),
+                                ],
+                              ),
+                              if (trials.isNotEmpty) ...[
+                                const SizedBox(height: AppDesignTokens.spacing12),
+                                TextField(
+                                  controller: _searchController,
+                                  focusNode: _searchFocusNode,
+                                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search trials by name...',
+                                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14),
+                                    prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 22),
+                                    suffixIcon: _searchController.text.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.clear, color: Colors.white70, size: 20),
+                                            onPressed: () {
+                                              setState(() {
+                                                _searchController.clear();
+                                                _searchQuery = '';
+                                              });
+                                            },
+                                          )
+                                        : null,
+                                    filled: true,
+                                    fillColor: Colors.white.withValues(alpha: 0.15),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  ),
+                                  onChanged: (value) => setState(() => _searchQuery = value.trim()),
+                                ),
+                              ],
                             ],
                           ),
                         );
@@ -234,9 +327,19 @@ class TrialListScreen extends ConsumerWidget {
             child: trialsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, st) => Center(child: Text('Error: $e')),
-              data: (trials) => trials.isEmpty
-                  ? _buildEmptyState(context)
-                  : _buildTrialList(context, ref, trials),
+              data: (trials) {
+                if (trials.isEmpty) return _buildEmptyState(context);
+                final filtered = _searchQuery.isEmpty
+                    ? trials
+                    : trials
+                        .where((t) =>
+                            t.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+                        .toList();
+                if (filtered.isEmpty && _searchQuery.isNotEmpty) {
+                  return _buildTrialList(context, ref, filtered, noResultsMessage: 'No trials match "$_searchQuery"');
+                }
+                return _buildTrialList(context, ref, filtered);
+              },
             ),
           ),
         ],
@@ -311,26 +414,15 @@ class TrialListScreen extends ConsumerWidget {
   }
 
   Widget _buildTrialList(
-      BuildContext context, WidgetRef ref, List<Trial> trials) {
-    final lastSessionAsync = ref.watch(lastSessionContextProvider);
+      BuildContext context, WidgetRef ref, List<Trial> trials,
+      {String? noResultsMessage}) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0,
           AppDesignTokens.spacing16, AppDesignTokens.spacing24),
       children: [
-        ...lastSessionAsync.when(
-          loading: () => [],
-          error: (_, __) => [],
-          data: (ctx) => ctx != null
-              ? [
-                  _ContinueLastSessionCard(
-                    trial: ctx.trial,
-                    session: ctx.session,
-                    onTap: () => _navigateToRatingForSession(
-                        context, ref, ctx.trial, ctx.session),
-                  ),
-                  const SizedBox(height: AppDesignTokens.spacing16),
-                ]
-              : [],
+        _ContinueLastSessionSection(
+          onNavigate: (trial, session) =>
+              _navigateToRatingForSession(context, ref, trial, session),
         ),
         const Align(
           alignment: Alignment.centerLeft,
@@ -345,13 +437,28 @@ class TrialListScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppDesignTokens.spacing16),
-        ...trials.map(
-          (t) => Padding(
-            padding:
-                const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
-            child: _TrialCard(trial: t),
+        if (noResultsMessage != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppDesignTokens.spacing16),
+            child: Center(
+              child: Text(
+                noResultsMessage,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppDesignTokens.secondaryText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        else
+          ...trials.map(
+            (t) => Padding(
+              padding:
+                  const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+              child: _TrialCard(trial: t),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -451,7 +558,46 @@ class TrialListScreen extends ConsumerWidget {
   }
 }
 
+/// Format session date for card subtitle (e.g. "11 Mar 2026").
+String _formatSessionDateForCard(String sessionDateLocal) {
+  final d = DateTime.tryParse('$sessionDateLocal 12:00:00');
+  if (d == null) return sessionDateLocal;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  final month = d.month >= 1 && d.month <= 12 ? months[d.month - 1] : '';
+  return '${d.day} $month ${d.year}';
+}
+
 /// Persistent "Continue Last Session" card (survives app restarts).
+/// Isolate ref.watch(lastSessionContextProvider) so it disposes cleanly (avoids _dependents.isEmpty).
+class _ContinueLastSessionSection extends ConsumerWidget {
+  const _ContinueLastSessionSection({required this.onNavigate});
+
+  final void Function(Trial trial, Session session) onNavigate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lastSessionAsync = ref.watch(lastSessionContextProvider);
+    return lastSessionAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (ctx) {
+        if (ctx == null) return const SizedBox.shrink();
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ContinueLastSessionCard(
+              trial: ctx.trial,
+              session: ctx.session,
+              onTap: () => onNavigate(ctx.trial, ctx.session),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing16),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _ContinueLastSessionCard extends StatelessWidget {
   final Trial trial;
   final Session session;
@@ -519,14 +665,14 @@ class _ContinueLastSessionCard extends StatelessWidget {
                       Text(
                         trial.name,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1F2937),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        session.name,
+                        '${_formatSessionDateForCard(session.sessionDateLocal)} · ${session.name}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF6B7280),
@@ -623,7 +769,7 @@ class _TrialCard extends StatelessWidget {
                                 child: Text(
                                   trial.name,
                                   style: const TextStyle(
-                                    fontSize: 15,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                     color: Color(0xFF1A2E20),
                                     letterSpacing: -0.2,

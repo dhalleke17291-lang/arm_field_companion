@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/current_user.dart';
-import 'features/trials/trial_list_screen.dart';
+import 'features/shell/main_shell_screen.dart';
 import 'features/users/user_selection_screen.dart';
 
 const String kSplashLogoAsset = 'assets/Branding/splash_logo.png';
@@ -57,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
       final next = userId == null
           ? const UserSelectionScreen()
-          : const TrialListScreen();
+          : const MainShellScreen();
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(

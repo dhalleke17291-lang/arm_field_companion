@@ -75,6 +75,17 @@ class PlotDetailScreen extends ConsumerWidget {
                   if (plotToShow.plotSortIndex != null)
                     StandardDetailRow(label: 'Sort Index', value: plotToShow.plotSortIndex.toString()),
                   StandardDetailRow(label: 'Trial', value: trial.name),
+                  if (trial.plotDimensions != null ||
+                      trial.plotRows != null ||
+                      trial.plotSpacing != null) ...[
+                    const Divider(),
+                    if (trial.plotDimensions != null)
+                      StandardDetailRow(label: 'Plot dimensions', value: trial.plotDimensions!),
+                    if (trial.plotRows != null)
+                      StandardDetailRow(label: 'Number of rows', value: trial.plotRows.toString()),
+                    if (trial.plotSpacing != null)
+                      StandardDetailRow(label: 'Plot spacing', value: trial.plotSpacing!),
+                  ],
                   const Divider(),
                   if (plotToShow.notes != null && plotToShow.notes!.trim().isNotEmpty)
                     Padding(

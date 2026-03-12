@@ -26,6 +26,12 @@ class Trials extends Table {
   TextColumn get location => text().nullable()();
   TextColumn get season => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('active'))();
+  /// Plot dimensions (e.g. "10 m × 2 m"). Trial-level default.
+  TextColumn get plotDimensions => text().nullable()();
+  /// Number of rows per plot. Trial-level default.
+  IntColumn get plotRows => integer().nullable()();
+  /// Spacing between plots (e.g. "0.5 m"). Trial-level default.
+  TextColumn get plotSpacing => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -163,6 +169,8 @@ class SessionAssessments extends Table {
   IntColumn get sessionId => integer().references(Sessions, #id)();
   IntColumn get assessmentId => integer().references(Assessments, #id)();
   IntColumn get trialAssessmentId => integer().references(TrialAssessments, #id).nullable()();
+  /// User-defined order for rating flow (0, 1, 2, …). Same sequence applies to every plot.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
 
 class RatingRecords extends Table {
@@ -392,7 +400,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -471,6 +479,14 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 13) {
             await m.addColumn(importEvents, importEvents.savedFilePath);
+          }
+          if (from < 14) {
+            await m.addColumn(sessionAssessments, sessionAssessments.sortOrder);
+          }
+          if (from < 15) {
+            await m.addColumn(trials, trials.plotDimensions);
+            await m.addColumn(trials, trials.plotRows);
+            await m.addColumn(trials, trials.plotSpacing);
           }
           await _createIndexes();
         },

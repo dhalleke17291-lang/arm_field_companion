@@ -426,6 +426,24 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('active'));
+  static const VerificationMeta _plotDimensionsMeta =
+      const VerificationMeta('plotDimensions');
+  @override
+  late final GeneratedColumn<String> plotDimensions = GeneratedColumn<String>(
+      'plot_dimensions', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _plotRowsMeta =
+      const VerificationMeta('plotRows');
+  @override
+  late final GeneratedColumn<int> plotRows = GeneratedColumn<int>(
+      'plot_rows', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _plotSpacingMeta =
+      const VerificationMeta('plotSpacing');
+  @override
+  late final GeneratedColumn<String> plotSpacing = GeneratedColumn<String>(
+      'plot_spacing', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -443,8 +461,19 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, crop, location, season, status, createdAt, updatedAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        crop,
+        location,
+        season,
+        status,
+        plotDimensions,
+        plotRows,
+        plotSpacing,
+        createdAt,
+        updatedAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -480,6 +509,22 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('plot_dimensions')) {
+      context.handle(
+          _plotDimensionsMeta,
+          plotDimensions.isAcceptableOrUnknown(
+              data['plot_dimensions']!, _plotDimensionsMeta));
+    }
+    if (data.containsKey('plot_rows')) {
+      context.handle(_plotRowsMeta,
+          plotRows.isAcceptableOrUnknown(data['plot_rows']!, _plotRowsMeta));
+    }
+    if (data.containsKey('plot_spacing')) {
+      context.handle(
+          _plotSpacingMeta,
+          plotSpacing.isAcceptableOrUnknown(
+              data['plot_spacing']!, _plotSpacingMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -509,6 +554,12 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.string, data['${effectivePrefix}season']),
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      plotDimensions: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plot_dimensions']),
+      plotRows: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}plot_rows']),
+      plotSpacing: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plot_spacing']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -529,6 +580,15 @@ class Trial extends DataClass implements Insertable<Trial> {
   final String? location;
   final String? season;
   final String status;
+
+  /// Plot dimensions (e.g. "10 m × 2 m"). Trial-level default.
+  final String? plotDimensions;
+
+  /// Number of rows per plot. Trial-level default.
+  final int? plotRows;
+
+  /// Spacing between plots (e.g. "0.5 m"). Trial-level default.
+  final String? plotSpacing;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Trial(
@@ -538,6 +598,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.location,
       this.season,
       required this.status,
+      this.plotDimensions,
+      this.plotRows,
+      this.plotSpacing,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -555,6 +618,15 @@ class Trial extends DataClass implements Insertable<Trial> {
       map['season'] = Variable<String>(season);
     }
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || plotDimensions != null) {
+      map['plot_dimensions'] = Variable<String>(plotDimensions);
+    }
+    if (!nullToAbsent || plotRows != null) {
+      map['plot_rows'] = Variable<int>(plotRows);
+    }
+    if (!nullToAbsent || plotSpacing != null) {
+      map['plot_spacing'] = Variable<String>(plotSpacing);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -571,6 +643,15 @@ class Trial extends DataClass implements Insertable<Trial> {
       season:
           season == null && nullToAbsent ? const Value.absent() : Value(season),
       status: Value(status),
+      plotDimensions: plotDimensions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotDimensions),
+      plotRows: plotRows == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotRows),
+      plotSpacing: plotSpacing == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotSpacing),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -586,6 +667,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       location: serializer.fromJson<String?>(json['location']),
       season: serializer.fromJson<String?>(json['season']),
       status: serializer.fromJson<String>(json['status']),
+      plotDimensions: serializer.fromJson<String?>(json['plotDimensions']),
+      plotRows: serializer.fromJson<int?>(json['plotRows']),
+      plotSpacing: serializer.fromJson<String?>(json['plotSpacing']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -600,6 +684,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       'location': serializer.toJson<String?>(location),
       'season': serializer.toJson<String?>(season),
       'status': serializer.toJson<String>(status),
+      'plotDimensions': serializer.toJson<String?>(plotDimensions),
+      'plotRows': serializer.toJson<int?>(plotRows),
+      'plotSpacing': serializer.toJson<String?>(plotSpacing),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -612,6 +699,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<String?> location = const Value.absent(),
           Value<String?> season = const Value.absent(),
           String? status,
+          Value<String?> plotDimensions = const Value.absent(),
+          Value<int?> plotRows = const Value.absent(),
+          Value<String?> plotSpacing = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       Trial(
@@ -621,6 +711,10 @@ class Trial extends DataClass implements Insertable<Trial> {
         location: location.present ? location.value : this.location,
         season: season.present ? season.value : this.season,
         status: status ?? this.status,
+        plotDimensions:
+            plotDimensions.present ? plotDimensions.value : this.plotDimensions,
+        plotRows: plotRows.present ? plotRows.value : this.plotRows,
+        plotSpacing: plotSpacing.present ? plotSpacing.value : this.plotSpacing,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -632,6 +726,12 @@ class Trial extends DataClass implements Insertable<Trial> {
       location: data.location.present ? data.location.value : this.location,
       season: data.season.present ? data.season.value : this.season,
       status: data.status.present ? data.status.value : this.status,
+      plotDimensions: data.plotDimensions.present
+          ? data.plotDimensions.value
+          : this.plotDimensions,
+      plotRows: data.plotRows.present ? data.plotRows.value : this.plotRows,
+      plotSpacing:
+          data.plotSpacing.present ? data.plotSpacing.value : this.plotSpacing,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -646,6 +746,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('location: $location, ')
           ..write('season: $season, ')
           ..write('status: $status, ')
+          ..write('plotDimensions: $plotDimensions, ')
+          ..write('plotRows: $plotRows, ')
+          ..write('plotSpacing: $plotSpacing, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -653,8 +756,8 @@ class Trial extends DataClass implements Insertable<Trial> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, name, crop, location, season, status, createdAt, updatedAt);
+  int get hashCode => Object.hash(id, name, crop, location, season, status,
+      plotDimensions, plotRows, plotSpacing, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -665,6 +768,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.location == this.location &&
           other.season == this.season &&
           other.status == this.status &&
+          other.plotDimensions == this.plotDimensions &&
+          other.plotRows == this.plotRows &&
+          other.plotSpacing == this.plotSpacing &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -676,6 +782,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<String?> location;
   final Value<String?> season;
   final Value<String> status;
+  final Value<String?> plotDimensions;
+  final Value<int?> plotRows;
+  final Value<String?> plotSpacing;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const TrialsCompanion({
@@ -685,6 +794,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.location = const Value.absent(),
     this.season = const Value.absent(),
     this.status = const Value.absent(),
+    this.plotDimensions = const Value.absent(),
+    this.plotRows = const Value.absent(),
+    this.plotSpacing = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -695,6 +807,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.location = const Value.absent(),
     this.season = const Value.absent(),
     this.status = const Value.absent(),
+    this.plotDimensions = const Value.absent(),
+    this.plotRows = const Value.absent(),
+    this.plotSpacing = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : name = Value(name);
@@ -705,6 +820,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<String>? location,
     Expression<String>? season,
     Expression<String>? status,
+    Expression<String>? plotDimensions,
+    Expression<int>? plotRows,
+    Expression<String>? plotSpacing,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -715,6 +833,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (location != null) 'location': location,
       if (season != null) 'season': season,
       if (status != null) 'status': status,
+      if (plotDimensions != null) 'plot_dimensions': plotDimensions,
+      if (plotRows != null) 'plot_rows': plotRows,
+      if (plotSpacing != null) 'plot_spacing': plotSpacing,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -727,6 +848,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<String?>? location,
       Value<String?>? season,
       Value<String>? status,
+      Value<String?>? plotDimensions,
+      Value<int?>? plotRows,
+      Value<String?>? plotSpacing,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt}) {
     return TrialsCompanion(
@@ -736,6 +860,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       location: location ?? this.location,
       season: season ?? this.season,
       status: status ?? this.status,
+      plotDimensions: plotDimensions ?? this.plotDimensions,
+      plotRows: plotRows ?? this.plotRows,
+      plotSpacing: plotSpacing ?? this.plotSpacing,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -762,6 +889,15 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (plotDimensions.present) {
+      map['plot_dimensions'] = Variable<String>(plotDimensions.value);
+    }
+    if (plotRows.present) {
+      map['plot_rows'] = Variable<int>(plotRows.value);
+    }
+    if (plotSpacing.present) {
+      map['plot_spacing'] = Variable<String>(plotSpacing.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -780,6 +916,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('location: $location, ')
           ..write('season: $season, ')
           ..write('status: $status, ')
+          ..write('plotDimensions: $plotDimensions, ')
+          ..write('plotRows: $plotRows, ')
+          ..write('plotSpacing: $plotSpacing, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -5682,9 +5821,17 @@ class $SessionAssessmentsTable extends SessionAssessments
       requiredDuringInsert: false,
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'REFERENCES trial_assessments (id)'));
+  static const VerificationMeta _sortOrderMeta =
+      const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+      'sort_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, sessionId, assessmentId, trialAssessmentId];
+      [id, sessionId, assessmentId, trialAssessmentId, sortOrder];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -5718,6 +5865,10 @@ class $SessionAssessmentsTable extends SessionAssessments
           trialAssessmentId.isAcceptableOrUnknown(
               data['trial_assessment_id']!, _trialAssessmentIdMeta));
     }
+    if (data.containsKey('sort_order')) {
+      context.handle(_sortOrderMeta,
+          sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
+    }
     return context;
   }
 
@@ -5735,6 +5886,8 @@ class $SessionAssessmentsTable extends SessionAssessments
           .read(DriftSqlType.int, data['${effectivePrefix}assessment_id'])!,
       trialAssessmentId: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}trial_assessment_id']),
+      sortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
     );
   }
 
@@ -5750,11 +5903,15 @@ class SessionAssessment extends DataClass
   final int sessionId;
   final int assessmentId;
   final int? trialAssessmentId;
+
+  /// User-defined order for rating flow (0, 1, 2, …). Same sequence applies to every plot.
+  final int sortOrder;
   const SessionAssessment(
       {required this.id,
       required this.sessionId,
       required this.assessmentId,
-      this.trialAssessmentId});
+      this.trialAssessmentId,
+      required this.sortOrder});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5764,6 +5921,7 @@ class SessionAssessment extends DataClass
     if (!nullToAbsent || trialAssessmentId != null) {
       map['trial_assessment_id'] = Variable<int>(trialAssessmentId);
     }
+    map['sort_order'] = Variable<int>(sortOrder);
     return map;
   }
 
@@ -5775,6 +5933,7 @@ class SessionAssessment extends DataClass
       trialAssessmentId: trialAssessmentId == null && nullToAbsent
           ? const Value.absent()
           : Value(trialAssessmentId),
+      sortOrder: Value(sortOrder),
     );
   }
 
@@ -5786,6 +5945,7 @@ class SessionAssessment extends DataClass
       sessionId: serializer.fromJson<int>(json['sessionId']),
       assessmentId: serializer.fromJson<int>(json['assessmentId']),
       trialAssessmentId: serializer.fromJson<int?>(json['trialAssessmentId']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
     );
   }
   @override
@@ -5796,6 +5956,7 @@ class SessionAssessment extends DataClass
       'sessionId': serializer.toJson<int>(sessionId),
       'assessmentId': serializer.toJson<int>(assessmentId),
       'trialAssessmentId': serializer.toJson<int?>(trialAssessmentId),
+      'sortOrder': serializer.toJson<int>(sortOrder),
     };
   }
 
@@ -5803,7 +5964,8 @@ class SessionAssessment extends DataClass
           {int? id,
           int? sessionId,
           int? assessmentId,
-          Value<int?> trialAssessmentId = const Value.absent()}) =>
+          Value<int?> trialAssessmentId = const Value.absent(),
+          int? sortOrder}) =>
       SessionAssessment(
         id: id ?? this.id,
         sessionId: sessionId ?? this.sessionId,
@@ -5811,6 +5973,7 @@ class SessionAssessment extends DataClass
         trialAssessmentId: trialAssessmentId.present
             ? trialAssessmentId.value
             : this.trialAssessmentId,
+        sortOrder: sortOrder ?? this.sortOrder,
       );
   SessionAssessment copyWithCompanion(SessionAssessmentsCompanion data) {
     return SessionAssessment(
@@ -5822,6 +5985,7 @@ class SessionAssessment extends DataClass
       trialAssessmentId: data.trialAssessmentId.present
           ? data.trialAssessmentId.value
           : this.trialAssessmentId,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
     );
   }
 
@@ -5831,14 +5995,15 @@ class SessionAssessment extends DataClass
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('assessmentId: $assessmentId, ')
-          ..write('trialAssessmentId: $trialAssessmentId')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, sessionId, assessmentId, trialAssessmentId);
+      Object.hash(id, sessionId, assessmentId, trialAssessmentId, sortOrder);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5846,7 +6011,8 @@ class SessionAssessment extends DataClass
           other.id == this.id &&
           other.sessionId == this.sessionId &&
           other.assessmentId == this.assessmentId &&
-          other.trialAssessmentId == this.trialAssessmentId);
+          other.trialAssessmentId == this.trialAssessmentId &&
+          other.sortOrder == this.sortOrder);
 }
 
 class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
@@ -5854,17 +6020,20 @@ class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
   final Value<int> sessionId;
   final Value<int> assessmentId;
   final Value<int?> trialAssessmentId;
+  final Value<int> sortOrder;
   const SessionAssessmentsCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.assessmentId = const Value.absent(),
     this.trialAssessmentId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
   });
   SessionAssessmentsCompanion.insert({
     this.id = const Value.absent(),
     required int sessionId,
     required int assessmentId,
     this.trialAssessmentId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
   })  : sessionId = Value(sessionId),
         assessmentId = Value(assessmentId);
   static Insertable<SessionAssessment> custom({
@@ -5872,12 +6041,14 @@ class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
     Expression<int>? sessionId,
     Expression<int>? assessmentId,
     Expression<int>? trialAssessmentId,
+    Expression<int>? sortOrder,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (assessmentId != null) 'assessment_id': assessmentId,
       if (trialAssessmentId != null) 'trial_assessment_id': trialAssessmentId,
+      if (sortOrder != null) 'sort_order': sortOrder,
     });
   }
 
@@ -5885,12 +6056,14 @@ class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
       {Value<int>? id,
       Value<int>? sessionId,
       Value<int>? assessmentId,
-      Value<int?>? trialAssessmentId}) {
+      Value<int?>? trialAssessmentId,
+      Value<int>? sortOrder}) {
     return SessionAssessmentsCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       assessmentId: assessmentId ?? this.assessmentId,
       trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 
@@ -5909,6 +6082,9 @@ class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
     if (trialAssessmentId.present) {
       map['trial_assessment_id'] = Variable<int>(trialAssessmentId.value);
     }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
     return map;
   }
 
@@ -5918,7 +6094,8 @@ class SessionAssessmentsCompanion extends UpdateCompanion<SessionAssessment> {
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('assessmentId: $assessmentId, ')
-          ..write('trialAssessmentId: $trialAssessmentId')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
   }
@@ -13707,6 +13884,9 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<String?> location,
   Value<String?> season,
   Value<String> status,
+  Value<String?> plotDimensions,
+  Value<int?> plotRows,
+  Value<String?> plotSpacing,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -13717,6 +13897,9 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<String?> location,
   Value<String?> season,
   Value<String> status,
+  Value<String?> plotDimensions,
+  Value<int?> plotRows,
+  Value<String?> plotSpacing,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -13744,6 +13927,9 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<String?> location = const Value.absent(),
             Value<String?> season = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String?> plotDimensions = const Value.absent(),
+            Value<int?> plotRows = const Value.absent(),
+            Value<String?> plotSpacing = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
           }) =>
@@ -13754,6 +13940,9 @@ class $$TrialsTableTableManager extends RootTableManager<
             location: location,
             season: season,
             status: status,
+            plotDimensions: plotDimensions,
+            plotRows: plotRows,
+            plotSpacing: plotSpacing,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -13764,6 +13953,9 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<String?> location = const Value.absent(),
             Value<String?> season = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String?> plotDimensions = const Value.absent(),
+            Value<int?> plotRows = const Value.absent(),
+            Value<String?> plotSpacing = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
           }) =>
@@ -13774,6 +13966,9 @@ class $$TrialsTableTableManager extends RootTableManager<
             location: location,
             season: season,
             status: status,
+            plotDimensions: plotDimensions,
+            plotRows: plotRows,
+            plotSpacing: plotSpacing,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -13810,6 +14005,21 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<String> get status => $state.composableBuilder(
       column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plotDimensions => $state.composableBuilder(
+      column: $state.table.plotDimensions,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get plotRows => $state.composableBuilder(
+      column: $state.table.plotRows,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plotSpacing => $state.composableBuilder(
+      column: $state.table.plotSpacing,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -14121,6 +14331,21 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<String> get status => $state.composableBuilder(
       column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plotDimensions => $state.composableBuilder(
+      column: $state.table.plotDimensions,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get plotRows => $state.composableBuilder(
+      column: $state.table.plotRows,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plotSpacing => $state.composableBuilder(
+      column: $state.table.plotSpacing,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -16640,6 +16865,7 @@ typedef $$SessionAssessmentsTableCreateCompanionBuilder
   required int sessionId,
   required int assessmentId,
   Value<int?> trialAssessmentId,
+  Value<int> sortOrder,
 });
 typedef $$SessionAssessmentsTableUpdateCompanionBuilder
     = SessionAssessmentsCompanion Function({
@@ -16647,6 +16873,7 @@ typedef $$SessionAssessmentsTableUpdateCompanionBuilder
   Value<int> sessionId,
   Value<int> assessmentId,
   Value<int?> trialAssessmentId,
+  Value<int> sortOrder,
 });
 
 class $$SessionAssessmentsTableTableManager extends RootTableManager<
@@ -16671,24 +16898,28 @@ class $$SessionAssessmentsTableTableManager extends RootTableManager<
             Value<int> sessionId = const Value.absent(),
             Value<int> assessmentId = const Value.absent(),
             Value<int?> trialAssessmentId = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
           }) =>
               SessionAssessmentsCompanion(
             id: id,
             sessionId: sessionId,
             assessmentId: assessmentId,
             trialAssessmentId: trialAssessmentId,
+            sortOrder: sortOrder,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int sessionId,
             required int assessmentId,
             Value<int?> trialAssessmentId = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
           }) =>
               SessionAssessmentsCompanion.insert(
             id: id,
             sessionId: sessionId,
             assessmentId: assessmentId,
             trialAssessmentId: trialAssessmentId,
+            sortOrder: sortOrder,
           ),
         ));
 }
@@ -16698,6 +16929,11 @@ class $$SessionAssessmentsTableFilterComposer
   $$SessionAssessmentsTableFilterComposer(super.$state);
   ColumnFilters<int> get id => $state.composableBuilder(
       column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get sortOrder => $state.composableBuilder(
+      column: $state.table.sortOrder,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -16744,6 +16980,11 @@ class $$SessionAssessmentsTableOrderingComposer
   $$SessionAssessmentsTableOrderingComposer(super.$state);
   ColumnOrderings<int> get id => $state.composableBuilder(
       column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get sortOrder => $state.composableBuilder(
+      column: $state.table.sortOrder,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../core/session_lock.dart';
@@ -19,6 +20,8 @@ import '../../core/session_resume_store.dart';
 import '../photos/usecases/save_photo_usecase.dart';
 import 'last_value_memory.dart';
 import 'usecases/save_rating_usecase.dart';
+import '../sessions/rating_order_sheet.dart';
+import '../sessions/session_detail_screen.dart';
 
 class RatingScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -109,7 +112,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EB),
+      backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: GradientScreenHeader(
         title: 'Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}',
         subtitle: widget.session.raterName != null
@@ -119,6 +122,26 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         actions: [
           _buildOfflineIndicator(),
           _buildFlagButton(context),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            tooltip: 'More options',
+            onSelected: (value) {
+              if (value == 'rating_order') _showRatingOrderSheet(context);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'rating_order',
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.swap_vert, size: 20),
+                    SizedBox(width: 12),
+                    Text('Set rating order'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: Column(
@@ -381,7 +404,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         return IconButton(
           icon: Icon(
             isFlagged ? Icons.flag : Icons.flag_outlined,
-            color: isFlagged ? Colors.amber : null,
+            color: isFlagged ? AppDesignTokens.flagColor : AppDesignTokens.secondaryText,
           ),
           onPressed: () => _toggleFlag(context),
           onLongPress: () => _showFlagDialog(context),
@@ -391,14 +414,40 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         );
       },
       loading: () => const IconButton(
-        icon: Icon(Icons.flag_outlined),
+        icon: Icon(Icons.flag_outlined, color: Colors.white),
         onPressed: null,
         tooltip: 'Flag plot',
       ),
       error: (_, __) => IconButton(
-        icon: const Icon(Icons.flag_outlined),
+        icon: const Icon(Icons.flag_outlined, color: Colors.white),
         onPressed: () => _showFlagDialog(context),
         tooltip: 'Flag plot',
+      ),
+    );
+  }
+
+  void _showRatingOrderSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => RatingOrderSheetContent(
+        session: widget.session,
+        assessments: List.from(widget.assessments),
+        ref: ref,
+        onSaved: () {
+          ref.invalidate(sessionAssessmentsProvider(widget.session.id));
+          if (ctx.mounted) Navigator.pop(ctx);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Rating order updated. It will apply when you start or continue a session.',
+                ),
+              ),
+            );
+          }
+        },
       ),
     );
   }
@@ -413,6 +462,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 f.plotPk.equals(widget.plot.id) &
                 f.sessionId.equals(widget.session.id)))
           .go();
+      ref.invalidate(flaggedPlotIdsForSessionProvider(widget.session.id));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Flag removed')),
@@ -429,6 +479,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               raterName: drift.Value(widget.session.raterName),
             ),
           );
+      ref.invalidate(flaggedPlotIdsForSessionProvider(widget.session.id));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Plot flagged')),
@@ -439,65 +490,102 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   Widget _buildPlotInfoBar(BuildContext context) {
     final plotCtx = ref.watch(plotContextProvider(widget.plot.id));
+    final plotLabel = getDisplayPlotLabel(widget.plot, widget.allPlots);
+    final subtitleParts = <String>[
+      widget.trial.name,
+      widget.session.name,
+      if (widget.plot.rep != null) 'Rep ${widget.plot.rep}',
+    ];
+    final subtitle = subtitleParts.join(' · ');
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: Row(
+      margin: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing16, 0),
+      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.grid_on,
-              size: 16, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(
-            'Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          if (widget.plot.rep != null) ...[
-            const SizedBox(width: 8),
-            Text('Rep ${widget.plot.rep}',
-                style: const TextStyle(color: Colors.grey)),
-          ],
-          plotCtx.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (ctx) => ctx.hasTreatment
-                ? Row(children: [
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        ctx.treatmentCode,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Plot $plotLabel',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: AppDesignTokens.primaryText,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(ctx.treatmentName,
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
                         style: const TextStyle(
-                            color: Colors.grey, fontSize: 12)),
-                  ])
-                : const SizedBox.shrink(),
+                          fontSize: 12,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              plotCtx.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (ctx) => ctx.hasTreatment
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppDesignTokens.primary,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          ctx.treatmentCode,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${widget.currentPlotIndex + 1} of ${widget.allPlots.length}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppDesignTokens.secondaryText,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            tooltip: 'Take photo',
-            icon: const Icon(Icons.photo_camera, size: 20),
-            onPressed: () => _capturePhoto(context),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Take photo',
+                icon: const Icon(Icons.photo_camera, size: 22, color: AppDesignTokens.secondaryText),
+                onPressed: () => _capturePhoto(context),
+              ),
+              if (widget.session.raterName != null)
+                Text(
+                  widget.session.raterName!,
+                  style: const TextStyle(color: AppDesignTokens.secondaryText, fontSize: 12),
+                ),
+            ],
           ),
-          const Spacer(),
-          if (widget.session.raterName != null)
-            Text(
-              widget.session.raterName!,
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-            ),
         ],
       ),
     );
@@ -505,81 +593,46 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   Widget _buildProgressBar(BuildContext context) {
     final plotProgress = (widget.currentPlotIndex + 1) / widget.allPlots.length;
-    final assessLabel = widget.assessments.length > 1
-        ? 'Assessment ${_assessmentIndex + 1} of ${widget.assessments.length}  ·  '
-        : '';
-    return Container(
-      color: const Color(0xFFF8F6F2),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                '${assessLabel}Plot ${widget.currentPlotIndex + 1} of ${widget.allPlots.length}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280),
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${(plotProgress * 100).toInt()}% complete',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2D5A40),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: plotProgress,
-              minHeight: 5,
-              backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2D5A40)),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
+    return SizedBox(
+      height: 6,
+      width: double.infinity,
+      child: LinearProgressIndicator(
+        value: plotProgress,
+        minHeight: 6,
+        backgroundColor: AppDesignTokens.backgroundSurface,
+        valueColor: const AlwaysStoppedAnimation<Color>(AppDesignTokens.primary),
       ),
     );
   }
 
   Widget _buildAssessmentSelector(BuildContext context) {
     if (widget.assessments.length == 1) {
-      return Container(
-        color: const Color(0xFFF8F6F2),
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing8),
         child: Row(
           children: [
             Container(
               width: 6,
               height: 6,
               decoration: const BoxDecoration(
-                color: Color(0xFF2D5A40),
+                color: AppDesignTokens.primary,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppDesignTokens.spacing8),
             Text(
               _currentAssessment.name,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
+                color: AppDesignTokens.primaryText,
               ),
             ),
             if (_currentAssessment.unit != null) ...[
               const SizedBox(width: 6),
               Text(
                 '· ${_currentAssessment.unit}',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                style: const TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
               ),
             ],
           ],
@@ -587,84 +640,60 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       );
     }
 
-    return Container(
-      color: const Color(0xFFF8F6F2),
-      padding: const EdgeInsets.fromLTRB(16, 0, 0, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'ASSESSMENT',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF9CA3AF),
-              letterSpacing: 0.8,
-            ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing8),
+      child: SizedBox(
+        height: 36,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (var index = 0; index < widget.assessments.length; index++) ...[
+                if (index > 0) const SizedBox(width: AppDesignTokens.spacing8),
+                _buildAssessmentChip(context, index),
+              ],
+            ],
           ),
-          const SizedBox(height: 6),
-          SizedBox(
-            height: 40,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(right: 16),
-              itemCount: widget.assessments.length,
-              itemBuilder: (context, index) {
-                final assessment = widget.assessments[index];
-                final isSelected = assessment.id == _currentAssessment.id;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _assessmentIndex = index;
-                        _currentAssessment = assessment;
-                        _valueController.clear();
-                        _selectedStatus = 'RECORDED';
-                        _selectedMissingReason = null;
-                      });
-                      _prefillFromLastValue();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF2D5A40)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF2D5A40)
-                              : const Color(0xFFE5E7EB),
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                const BoxShadow(
-                                  color: Color(0x302D5A40),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        assessment.name,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF6B7280),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssessmentChip(BuildContext context, int index) {
+    final assessment = widget.assessments[index];
+    final isSelected = assessment.id == _currentAssessment.id;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _assessmentIndex = index;
+          _currentAssessment = assessment;
+          _valueController.clear();
+          _selectedStatus = 'RECORDED';
+          _selectedMissingReason = null;
+        });
+        _prefillFromLastValue();
+      },
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppDesignTokens.primary
+              : AppDesignTokens.cardSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppDesignTokens.borderCrisp),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          assessment.name,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: isSelected
+                ? Colors.white
+                : AppDesignTokens.secondaryText,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -875,46 +904,72 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     // Full-screen writing area for notes/observation; one tap Save & Next saves and navigates
     if (_isTextAssessment && _selectedStatus == 'RECORDED') {
       return Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDesignTokens.spacing16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (existing != null)
               _buildCurrentOrCorrectedRow(context, existing),
-            const Text('Status',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                'RECORDED',
-                'NOT_OBSERVED',
-                'NOT_APPLICABLE',
-                'MISSING_CONDITION',
-                'TECHNICAL_ISSUE',
-              ].map((status) {
-                final isSelected = _selectedStatus == status;
-                return ChoiceChip(
-                  label: Text(
-                    _statusLabel(status),
-                    style: TextStyle(
-                        fontSize: 12, color: isSelected ? Colors.white : null),
+            const SizedBox(height: AppDesignTokens.spacing16),
+            Container(
+              padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+              decoration: BoxDecoration(
+                color: AppDesignTokens.cardSurface,
+                borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+                border: Border.all(color: AppDesignTokens.borderCrisp),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Status',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      )),
+                  const SizedBox(height: AppDesignTokens.spacing8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      'RECORDED',
+                      'NOT_OBSERVED',
+                      'NOT_APPLICABLE',
+                      'MISSING_CONDITION',
+                      'TECHNICAL_ISSUE',
+                    ].map((status) {
+                      final isSelected = _selectedStatus == status;
+                      return ChoiceChip(
+                        label: Text(
+                          _statusLabel(status),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isSelected ? Colors.white : AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppDesignTokens.primary,
+                        backgroundColor: AppDesignTokens.backgroundSurface,
+                        side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedStatus = status;
+                            if (status != 'RECORDED') _valueController.clear();
+                            if (status != 'MISSING_CONDITION') {
+                              _selectedMissingReason = null;
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
                   ),
-                  selected: isSelected,
-                  selectedColor: _statusColor(status),
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedStatus = status;
-                      if (status != 'RECORDED') _valueController.clear();
-                      if (status != 'MISSING_CONDITION') {
-                        _selectedMissingReason = null;
-                      }
-                    });
-                  },
-                );
-              }).toList(),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDesignTokens.spacing16),
             Expanded(
               child: TextField(
                 controller: _valueController,
@@ -926,7 +981,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   hintText: 'Add notes or observation…',
                   alignLabelWithHint: true,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: AppDesignTokens.cardSurface,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
                 autofocus: true,
@@ -937,117 +992,159 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       );
     }
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (existing != null)
             _buildCurrentOrCorrectedRow(context, existing),
-          const Text('Status',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              'RECORDED',
-              'NOT_OBSERVED',
-              'NOT_APPLICABLE',
-              'MISSING_CONDITION',
-              'TECHNICAL_ISSUE',
-            ].map((status) {
-              final isSelected = _selectedStatus == status;
-              return ChoiceChip(
-                label: Text(
-                  _statusLabel(status),
-                  style: TextStyle(
-                      fontSize: 12, color: isSelected ? Colors.white : null),
-                ),
-                selected: isSelected,
-                selectedColor: _statusColor(status),
-                onSelected: (_) {
-                  setState(() {
-                    _selectedStatus = status;
-                    if (status != 'RECORDED') _valueController.clear();
-                    if (status != 'MISSING_CONDITION') {
-                      _selectedMissingReason = null;
-                    }
-                  });
-                },
-              );
-            }).toList(),
-          ),
-          if (_selectedStatus == 'MISSING_CONDITION') ...[
-            const SizedBox(height: 12),
-            const Text('Reason',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: _missingReasons.map((reason) {
-                return FilterChip(
-                  label: Text(reason, style: const TextStyle(fontSize: 12)),
-                  selected: _selectedMissingReason == reason,
-                  onSelected: (_) =>
-                      setState(() => _selectedMissingReason = reason),
-                );
-              }).toList(),
-            ),
-          ],
-          if (_selectedStatus == 'RECORDED') ...[
-            const SizedBox(height: 20),
-            const Text('Value',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            if (_isTextAssessment) ...[
-              const SizedBox(height: 8),
-              TextField(
-                controller: _valueController,
-                keyboardType: TextInputType.multiline,
-                textInputAction: TextInputAction.newline,
-                maxLines: 6,
-                minLines: 4,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Add notes or observation…',
-                  alignLabelWithHint: true,
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                autofocus: true,
-              ),
-            ] else ...[
-              if (_currentAssessment.minValue != null ||
-                  _currentAssessment.maxValue != null ||
-                  _currentAssessment.unit != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Scale: ${_currentAssessment.minValue ?? "?"}–${_currentAssessment.maxValue ?? "?"}${_currentAssessment.unit != null ? " ${_currentAssessment.unit}" : ""}',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+          const SizedBox(height: AppDesignTokens.spacing16),
+          Container(
+            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+            decoration: BoxDecoration(
+              color: AppDesignTokens.cardSurface,
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+              border: Border.all(color: AppDesignTokens.borderCrisp),
+              boxShadow: const [
+                BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
               ],
-              const SizedBox(height: 8),
-              TextField(
-                controller: _valueController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: '0',
-                  suffixText: _currentAssessment.unit,
-                  filled: true,
-                  fillColor: Colors.white,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Status',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: AppDesignTokens.secondaryText,
+                    )),
+                const SizedBox(height: AppDesignTokens.spacing8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    'RECORDED',
+                    'NOT_OBSERVED',
+                    'NOT_APPLICABLE',
+                    'MISSING_CONDITION',
+                    'TECHNICAL_ISSUE',
+                  ].map((status) {
+                    final isSelected = _selectedStatus == status;
+                    return ChoiceChip(
+                      label: Text(
+                        _statusLabel(status),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isSelected ? Colors.white : AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                      selected: isSelected,
+                      selectedColor: AppDesignTokens.primary,
+                      backgroundColor: AppDesignTokens.backgroundSurface,
+                      side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedStatus = status;
+                          if (status != 'RECORDED') _valueController.clear();
+                          if (status != 'MISSING_CONDITION') {
+                            _selectedMissingReason = null;
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
                 ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              _buildQuickButtons(),
-            ],
-          ],
+                if (_selectedStatus == 'MISSING_CONDITION') ...[
+                  const SizedBox(height: AppDesignTokens.spacing12),
+                  const Text('Reason',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      )),
+                  const SizedBox(height: AppDesignTokens.spacing8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: _missingReasons.map((reason) {
+                      return FilterChip(
+                        label: Text(reason, style: const TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText)),
+                        selected: _selectedMissingReason == reason,
+                        selectedColor: AppDesignTokens.primary,
+                        backgroundColor: AppDesignTokens.backgroundSurface,
+                        side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                        onSelected: (_) =>
+                            setState(() => _selectedMissingReason = reason),
+                      );
+                    }).toList(),
+                  ),
+                ],
+                if (_selectedStatus == 'RECORDED') ...[
+                  const SizedBox(height: AppDesignTokens.spacing24),
+                  const Text('Value',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      )),
+                  if (_isTextAssessment) ...[
+                    const SizedBox(height: AppDesignTokens.spacing8),
+                    TextField(
+                      controller: _valueController,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      maxLines: 6,
+                      minLines: 4,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Add notes or observation…',
+                        alignLabelWithHint: true,
+                        filled: true,
+                        fillColor: AppDesignTokens.cardSurface,
+                      ),
+                      autofocus: true,
+                    ),
+                  ] else ...[
+                    if (_currentAssessment.minValue != null ||
+                        _currentAssessment.maxValue != null ||
+                        _currentAssessment.unit != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Scale: ${_currentAssessment.minValue ?? "?"}–${_currentAssessment.maxValue ?? "?"}${_currentAssessment.unit != null ? " ${_currentAssessment.unit}" : ""}',
+                        style: const TextStyle(
+                          color: AppDesignTokens.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppDesignTokens.spacing8),
+                    TextField(
+                      controller: _valueController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w800,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: '0',
+                        suffixText: _currentAssessment.unit,
+                        filled: true,
+                        fillColor: AppDesignTokens.cardSurface,
+                      ),
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: AppDesignTokens.spacing12),
+                    _buildQuickButtons(),
+                  ],
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1080,19 +1177,19 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF2D5A40) : Colors.white,
+              color: isSelected ? AppDesignTokens.primary : AppDesignTokens.cardSurface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF2D5A40)
-                    : const Color(0xFFE5E7EB),
+                    ? AppDesignTokens.primary
+                    : AppDesignTokens.borderCrisp,
                 width: isSelected ? 2 : 1,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isSelected
                       ? const Color(0x402D5A40)
-                      : Colors.black.withValues(alpha: 0.05),
+                      : const Color(0x0D000000),
                   blurRadius: isSelected ? 10 : 4,
                   offset: const Offset(0, 2),
                 ),
@@ -1104,7 +1201,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: isSelected ? Colors.white : const Color(0xFF1F2937),
+                  color: isSelected ? Colors.white : AppDesignTokens.primaryText,
                 ),
               ),
             ),
@@ -1118,44 +1215,42 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final isLast = widget.currentPlotIndex >= widget.allPlots.length - 1;
     final isLastAssessment = _assessmentIndex >= widget.assessments.length - 1;
     final isVeryLast = isLast && isLastAssessment;
+    final canGoBack = widget.currentPlotIndex > 0;
 
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: const Border(top: BorderSide(color: Color(0xFFEAECF0))),
+        padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing12, AppDesignTokens.spacing16, AppDesignTokens.spacing12),
+        decoration: const BoxDecoration(
+          color: AppDesignTokens.cardSurface,
+          border: Border(top: BorderSide(color: AppDesignTokens.borderCrisp)),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
+            BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, -2)),
           ],
         ),
         child: Row(
           children: [
-            // Previous button
-            if (widget.currentPlotIndex > 0)
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+            SizedBox(
+              height: 52,
+              child: OutlinedButton(
+                onPressed: canGoBack ? () => _navigatePlot(context, -1) : null,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppDesignTokens.secondaryText,
+                  side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                  ),
                 ),
-                child: IconButton(
-                  onPressed: () => _navigatePlot(context, -1),
-                  icon: const Icon(Icons.chevron_left,
-                      color: Color(0xFF6B7280), size: 22),
-                  tooltip: 'Previous plot',
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.arrow_back, size: 18),
+                    SizedBox(width: 6),
+                    Text('Back', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ],
                 ),
-              )
-            else
-              const SizedBox(width: 50),
-            const SizedBox(width: 12),
-            // Save button
+              ),
+            ),
+            const SizedBox(width: AppDesignTokens.spacing12),
             Expanded(
               child: SizedBox(
                 height: 52,
@@ -1164,13 +1259,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       ? null
                       : () => _saveRating(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2D5A40),
+                    backgroundColor: AppDesignTokens.primary,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFE5E7EB),
+                    disabledBackgroundColor: AppDesignTokens.divider,
                     elevation: 0,
                     shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
+                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
                     ),
                   ),
                   child: _isSaving
@@ -1190,7 +1285,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.2,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -1205,26 +1299,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            // Next button
-            if (widget.currentPlotIndex < widget.allPlots.length - 1)
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                ),
-                child: IconButton(
-                  onPressed: () => _navigatePlot(context, 1),
-                  icon: const Icon(Icons.chevron_right,
-                      color: Color(0xFF6B7280), size: 22),
-                  tooltip: 'Next plot',
-                ),
-              )
-            else
-              const SizedBox(width: 50),
           ],
         ),
       ),
@@ -1284,6 +1358,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     setState(() => _isSaving = false);
 
     if (result.isSuccess) {
+      ref.invalidate(sessionRatingsProvider(widget.session.id));
+      ref.invalidate(ratedPlotPksProvider(widget.session.id));
       if (numericValue != null) {
         ref.read(lastValueMemoryProvider.notifier).set(
               widget.session.id,
@@ -1393,8 +1469,17 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.of(ctx).pop();
-                    int count = 0;
-                    Navigator.of(context).popUntil((_) => count++ >= 2);
+                    if (!context.mounted) return;
+                    Navigator.of(context).pop();
+                    if (!context.mounted) return;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SessionDetailScreen(
+                          trial: widget.trial,
+                          session: widget.session,
+                        ),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2D5A40),
@@ -1447,6 +1532,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       }
     }
 
+    // Sequence resets for each new plot: always start at first assessment (A1).
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -1457,7 +1543,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           assessments: widget.assessments,
           allPlots: widget.allPlots,
           currentPlotIndex: nextIndex,
-          initialAssessmentIndex: _assessmentIndex,
+          initialAssessmentIndex: null,
         ),
       ),
     );
@@ -1495,7 +1581,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       performedByUserId: userId,
     );
     if (!mounted) return;
-    if (!result.success) {
+    if (result.success) {
+      ref.invalidate(sessionRatingsProvider(widget.session.id));
+      ref.invalidate(ratedPlotPksProvider(widget.session.id));
+    } else {
       if (result.errorMessage == kClosedSessionBlockedMessage) {
         ref.read(diagnosticsStoreProvider).recordError(
               result.errorMessage!,
@@ -1591,22 +1680,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'RECORDED':
-        return Colors.green;
-      case 'NOT_OBSERVED':
-        return Colors.orange;
-      case 'NOT_APPLICABLE':
-        return Colors.blue;
-      case 'MISSING_CONDITION':
-        return Colors.red;
-      case 'TECHNICAL_ISSUE':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
-  }
 }
 
 class _PhotoViewerScreen extends StatefulWidget {

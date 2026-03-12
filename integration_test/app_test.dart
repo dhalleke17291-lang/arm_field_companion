@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -168,6 +169,45 @@ void main() {
       expect(find.byType(RatingScreen), findsOneWidget);
     });
 
+    testWidgets('RatingScreen: save with invalid number shows validation snackbar',
+        (tester) async {
+      await seedOpenSession(db);
+      await pumpApp(tester);
+      await waitForTrialList(tester);
+
+      await tester.tap(find.text('Continue Session'));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(find.byType(RatingScreen), findsOneWidget);
+
+      final valueField = find.descendant(
+        of: find.byType(RatingScreen),
+        matching: find.byType(TextField),
+      );
+      expect(valueField, findsOneWidget);
+      await tester.enterText(valueField.first, 'abc');
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(find.text('Save & Finish'));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+
+      expect(find.text('Please enter a valid number'), findsOneWidget);
+    });
+
+    testWidgets('Export when only open sessions shows error snackbar',
+        (tester) async {
+      await seedOpenSession(db);
+      await pumpApp(tester);
+      await waitForTrialList(tester);
+
+      await tester.tap(find.byIcon(Icons.file_upload_outlined));
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+
+      expect(
+        find.text('No closed sessions to export. Close sessions first.'),
+        findsOneWidget,
+      );
+    });
+
     // Error path covered by widget test rating_entry_widget_test.dart (Start Rating failure).
     testWidgets('Start Rating error path: no plots → error dialog',
         (tester) async {
@@ -208,13 +248,13 @@ void main() {
       await tester.tap(find.text('Empty Session'));
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
-      // Switch to Rate tab (dock shows "Plots" and "Rate").
-      await tester.tap(find.text('Rate'));
+      // Switch to Rate tab via key (key present in UI for testability).
+      await tester.tap(find.byKey(const Key('session_detail_rate_tab')));
       await tester.pumpAndSettle(const Duration(seconds: 1));
       await tester.tap(find.text('Start Rating'));
       await tester.pump(const Duration(seconds: 2));
 
       expect(find.text('Cannot Start Rating'), findsOneWidget);
-    }, skip: true); // Rate tab finder flaky on device; widget test covers error dialog
+    }, skip: true); // Session detail Rate tab not found on device; widget test covers error dialog
   });
 }

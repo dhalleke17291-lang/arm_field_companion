@@ -40,6 +40,12 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
                   _Row('Location', trial.location!),
                 if (trial.season != null && trial.season!.isNotEmpty)
                   _Row('Season', trial.season!),
+                if (trial.plotDimensions != null)
+                  _Row('Plot dimensions', trial.plotDimensions!),
+                if (trial.plotRows != null)
+                  _Row('Number of rows', trial.plotRows.toString()),
+                if (trial.plotSpacing != null)
+                  _Row('Plot spacing', trial.plotSpacing!),
               ],
             ),
           ),

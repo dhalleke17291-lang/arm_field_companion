@@ -12,7 +12,9 @@ import '../../core/session_resume_store.dart';
 import 'package:share_plus/share_plus.dart';
 import '../plots/plot_queue_screen.dart';
 import '../ratings/rating_screen.dart';
+import '../derived/derived_snapshot_provider.dart';
 import 'usecases/start_or_continue_rating_usecase.dart';
+import 'rating_order_sheet.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -333,6 +335,13 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
+            _SessionProgressFromDerived(sessionId: session.id),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => _showRatingOrderSheet(context, ref, session, assessments),
+              icon: const Icon(Icons.swap_vert, size: 18),
+              label: const Text('Set rating order'),
+            ),
             Text(
               'Open the plot queue to enter or edit ratings.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -361,6 +370,28 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showRatingOrderSheet(
+    BuildContext context,
+    WidgetRef ref,
+    Session session,
+    List<Assessment> assessments,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => RatingOrderSheetContent(
+        session: session,
+        assessments: List.from(assessments),
+        ref: ref,
+        onSaved: () {
+          ref.invalidate(sessionAssessmentsProvider(session.id));
+          if (ctx.mounted) Navigator.pop(ctx);
+        },
       ),
     );
   }
@@ -824,6 +855,7 @@ class _SessionDockBar extends StatelessWidget {
           final item = items[index];
           final isSelected = selectedIndex == item.$1;
           return _SessionDockTile(
+            key: item.$1 == 1 ? const Key('session_detail_rate_tab') : null,
             icon: item.$2,
             label: item.$3,
             selected: isSelected,
@@ -831,6 +863,36 @@ class _SessionDockBar extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Isolate ref.watch(derivedSnapshotForSessionProvider) so it disposes cleanly (avoids _dependents.isEmpty).
+class _SessionProgressFromDerived extends ConsumerWidget {
+  const _SessionProgressFromDerived({required this.sessionId});
+
+  final int sessionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final snapshotAsync = ref.watch(derivedSnapshotForSessionProvider(sessionId));
+    return snapshotAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (snapshot) {
+        if (snapshot == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            '${snapshot.ratedPlotCount} / ${snapshot.totalPlotCount} plots rated (${snapshot.progressPct.toStringAsFixed(0)}%)',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
     );
   }
 }
@@ -843,6 +905,7 @@ class _SessionDockTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _SessionDockTile({
+    super.key,
     required this.icon,
     required this.label,
     required this.selected,

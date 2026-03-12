@@ -95,6 +95,26 @@ Sections 1–4 are **done**. See "Recent work (done)" above.
 
 ---
 
+## Remaining gap to 9.0
+
+- **Diagnostics — DerivedSnapshot for researchers:** ✅ Done. Diagnostics screen shows a “Derived data (session progress)” card for the last continued session (trial · session, plots rated, progress %, calcVersion).
+- **ARM XML round-trip:** Blocked on a **real ARM file or schema**. See [EXPORT.md](EXPORT.md). Export is schema-agnostic until then.
+- **More integration test coverage — error paths:** ✅ Done. “Start Rating error path: no plots → error dialog” uses `Key('session_detail_rate_tab')` so the Rate tab is found reliably; key added for testability; test still skipped on device; widget test covers error dialog.
+- **Lab/Derived wired into UI:** ✅ Done. Session detail → Rate tab shows “X / Y plots rated (Z%)” from `derivedSnapshotForSessionProvider`.
+
+---
+
+## Remaining gap to 9.5+
+
+- **ARM schema compliance** — Once a real ARM XML sample/schema is available: align export structure, add round-trip or validation, document any gaps.
+- **Lab sample flow** — LabSamples, LabMeasurements; sample lineage; optional link from execution to lab.
+- **Calculator support** — Spray, seed, dilution tools; optional integration with applications/rates.
+- **Assignment matrix view** — Grid by rep/block; treatment overlay; export-friendly.
+- **Dashboards / reporting** — Trial-level summaries, completion %, derived views.
+- **Performance and polish** — Large-trial responsiveness, diagnostics export, offline robustness.
+
+---
+
 ## Field speed (researcher/technician convenience)
 
 For rating and plot-queue flows, prioritise **field speed** and **tap reduction**. See **docs/FIELD_SPEED_IMPROVEMENTS.md** for the full list (Tiers 1–4). The first batch is implemented; the second batch (quick note templates, rep completion haptic, wakelock, end-of-session summary) and later items should be kept in mind for upcoming development. Every extra tap costs 3–5 seconds in the field.

@@ -38,6 +38,7 @@ Event types include `SESSION_STARTED`, `SESSION_CLOSED`, `RATING_SAVED`, `RATING
 - **Where:** Session detail → Export → Export as ARM XML (session must be closed).
 - **Output:** One XML file per closed session. Root element: `arm_export` (attributes: `version`, `source`, `app_version`, `export_timestamp_utc`, `exported_by`). Child sections: `trial`, `session`, `treatments`, `assessments`, `plots`, `ratings`. Rating values use effective values (after correction when applicable).
 - **Note:** The element names and structure are schema-agnostic placeholders. When a real ARM XML sample or schema is available, the exporter can be updated to match.
+- **Round-trip validation:** ARM XML round-trip (export → validate against schema / re-import) is **blocked on a real ARM file or schema**. Until then, export is best-effort and may need adjustment once the target format is confirmed.
 
 ## ARM XML batch export (trial)
 

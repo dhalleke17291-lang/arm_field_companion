@@ -42,7 +42,16 @@ class AboutScreen extends ConsumerWidget {
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              Text(
+                developerCredit,
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 32),
               userAsync.when(
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
@@ -72,15 +81,6 @@ class AboutScreen extends ConsumerWidget {
                     ],
                   );
                 },
-              ),
-              const SizedBox(height: 32),
-              Text(
-                developerCredit,
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
-                  fontWeight: FontWeight.w400,
-                ),
               ),
               const SizedBox(height: 32),
               OutlinedButton.icon(

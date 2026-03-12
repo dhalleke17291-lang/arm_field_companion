@@ -8,6 +8,7 @@ import '../../core/diagnostics/app_error.dart';
 import '../../core/diagnostics/diagnostics_store.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
+import '../../features/derived/derived_snapshot_provider.dart';
 import '../../shared/widgets/app_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/diagnostics/reset_app_data.dart';
@@ -285,6 +286,9 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
             ),
           ),
           const SizedBox(height: 16),
+
+          // Derived data (session progress) — surfaces DerivedSnapshot for researchers
+          _DerivedDataSection(),
 
           const SizedBox(height: 16),
           // App info
@@ -603,6 +607,120 @@ class _ResetConfirmDialogState extends State<_ResetConfirmDialog> {
           child: const Text('Delete All Data'),
         ),
       ],
+    );
+  }
+}
+
+/// Surfaces DerivedSnapshot (session progress) for researchers on the diagnostics screen.
+/// Split into two widgets so each ref.watch has its own element and disposes cleanly (avoids _dependents.isEmpty).
+class _DerivedDataSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lastSessionAsync = ref.watch(lastSessionContextProvider);
+    return AppCard(
+      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Derived data (session progress)',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Read-only session progress from the derived layer. Shown for last continued session.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+          ),
+          const SizedBox(height: 12),
+          lastSessionAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            error: (_, __) => const Text('Unable to load last session.'),
+            data: (ctx) {
+              if (ctx == null) {
+                return Text(
+                  'No recent session. Continue a session from home to see derived progress here.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                );
+              }
+              return _DerivedSnapshotContent(trialName: ctx.trial.name, sessionName: ctx.session.name, sessionId: ctx.session.id);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DerivedSnapshotContent extends ConsumerWidget {
+  const _DerivedSnapshotContent({
+    required this.trialName,
+    required this.sessionName,
+    required this.sessionId,
+  });
+
+  final String trialName;
+  final String sessionName;
+  final int sessionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final snapshotAsync = ref.watch(derivedSnapshotForSessionProvider(sessionId));
+    return snapshotAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (_, __) => const Text('Unable to load snapshot.'),
+      data: (snapshot) {
+        if (snapshot == null) {
+          return const Text('No snapshot for this session.');
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$trialName · $sessionName',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Plots rated: ${snapshot.ratedPlotCount} / ${snapshot.totalPlotCount} (${snapshot.progressPct.toStringAsFixed(1)}%)',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'calcVersion: ${snapshot.calcVersion}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
