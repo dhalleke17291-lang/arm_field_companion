@@ -78,6 +78,18 @@ String getProtocolLockMessage(String? status) {
   return 'Protocol is locked because this trial is $label.';
 }
 
+/// True when plot assignments must not be edited (protocol lock or trial has session data).
+bool isAssignmentsLocked(String? status, bool hasSessions) {
+  return isProtocolLocked(status) || hasSessions;
+}
+
+/// Message when an assignment action is blocked.
+String getAssignmentsLockMessage(String? status, bool hasSessions) {
+  if (isProtocolLocked(status)) return getProtocolLockMessage(status);
+  if (hasSessions) return 'Assignments are fixed because this trial has session data.';
+  return '';
+}
+
 /// Full explanation when locked: what you cannot edit and what you can still do.
 /// Use in status bar or help so users understand lock vs. unlock behavior.
 String getProtocolLockExplanation(String? status) {

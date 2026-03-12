@@ -1,23 +1,28 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/trial_state.dart';
 import '../../../data/repositories/assignment_repository.dart';
+import '../../sessions/session_repository.dart';
 
-/// Updates plot treatment assignment(s) via Assignments table. Respects protocol lock.
+/// Updates plot treatment assignment(s) via Assignments table.
+/// Respects protocol lock and assignments lock (trial has session data).
 class UpdatePlotAssignmentUseCase {
   final AssignmentRepository _assignmentRepository;
+  final SessionRepository _sessionRepository;
 
-  UpdatePlotAssignmentUseCase(this._assignmentRepository);
+  UpdatePlotAssignmentUseCase(this._assignmentRepository, this._sessionRepository);
 
   /// Update a single plot's treatment assignment (manual).
   /// Sets assignmentSource = manual, assignmentUpdatedAt = now.
-  /// Returns [UpdateAssignmentResult.failure] if protocol is locked.
+  /// Returns [UpdateAssignmentResult.failure] if assignments are locked.
   Future<UpdateAssignmentResult> updateOne({
     required Trial trial,
     required int plotPk,
     required int? treatmentId,
   }) async {
-    if (isProtocolLocked(trial.status)) {
-      return UpdateAssignmentResult.failure(getProtocolLockMessage(trial.status));
+    final sessions = await _sessionRepository.getSessionsForTrial(trial.id);
+    if (isAssignmentsLocked(trial.status, sessions.isNotEmpty)) {
+      return UpdateAssignmentResult.failure(
+          getAssignmentsLockMessage(trial.status, sessions.isNotEmpty));
     }
     try {
       await _assignmentRepository.upsert(
@@ -39,8 +44,10 @@ class UpdatePlotAssignmentUseCase {
     required Trial trial,
     required Map<int, int?> plotPkToTreatmentId,
   }) async {
-    if (isProtocolLocked(trial.status)) {
-      return UpdateAssignmentResult.failure(getProtocolLockMessage(trial.status));
+    final sessions = await _sessionRepository.getSessionsForTrial(trial.id);
+    if (isAssignmentsLocked(trial.status, sessions.isNotEmpty)) {
+      return UpdateAssignmentResult.failure(
+          getAssignmentsLockMessage(trial.status, sessions.isNotEmpty));
     }
     if (plotPkToTreatmentId.isEmpty) {
       return UpdateAssignmentResult.success();

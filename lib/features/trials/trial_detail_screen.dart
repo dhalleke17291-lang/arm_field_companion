@@ -768,6 +768,8 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       BuildContext context, WidgetRef ref, List<Plot> plots) {
     final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsLocked = isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     final plotIdToEffectiveTreatmentId = {
       for (final p in plots) p.id: assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId,
@@ -780,7 +782,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     );
     return Column(
       children: [
-        _buildPlotsHeader(context, ref, plots),
+        _buildPlotsHeader(context, ref, plots, assignmentsLocked),
         if (layoutDiag.hasIssues) ...[
           _buildLayoutDiagnosticsBanner(context, layoutDiag),
         ],
@@ -800,14 +802,14 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                       layer: _layoutLayer,
                       appPlotRecords: _appPlotRecords,
                       plotIdToTreatmentId: {for (var a in ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? []) a.plotId: a.treatmentId},
-                      onLongPressPlot: isProtocolLocked(widget.trial.status)
+                      onLongPressPlot: assignmentsLocked
                           ? null
                           : (plot) => _showAssignTreatmentDialog(context, ref, plot, plots),
                     ),
                   ),
           ),
         ] else
-          Expanded(child: _buildPlotsListBody(context, ref, plots)),
+          Expanded(child: _buildPlotsListBody(context, ref, plots, assignmentsLocked)),
       ],
     );
   }
@@ -1158,8 +1160,9 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
   }
 
   Widget _buildPlotsHeader(
-      BuildContext context, WidgetRef ref, List<Plot> plots) {
-    final locked = isProtocolLocked(widget.trial.status);
+      BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
+    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final message = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
     final scheme = Theme.of(context).colorScheme;
     final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
@@ -1174,38 +1177,40 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     final header = StandardSectionHeader(
       icon: Icons.grid_on,
       title: title,
-      trailingIndicator: ProtocolLockChip(isLocked: locked, status: widget.trial.status),
+      trailingIndicator: ProtocolLockChip(isLocked: assignmentsLocked, status: widget.trial.status),
       action: Tooltip(
-        message: locked ? getProtocolLockMessage(widget.trial.status) : 'Assign treatments to multiple plots',
+        message: assignmentsLocked ? message : 'Assign treatments to multiple plots',
         child: TextButton.icon(
-          onPressed: locked ? null : () => _showBulkAssignDialog(context, ref, plots),
+          onPressed: assignmentsLocked ? null : () => _showBulkAssignDialog(context, ref, plots),
           icon: Icon(Icons.assignment,
               size: 16,
-              color: locked
+              color: assignmentsLocked
                   ? scheme.onSurfaceVariant
                   : scheme.primary),
           label: Text('Bulk Assign',
               style: TextStyle(
-                  color: locked
+                  color: assignmentsLocked
                       ? scheme.onSurfaceVariant
                       : scheme.primary,
                   fontSize: 13)),
         ),
       ),
     );
-    if (!locked) return header;
+    if (!assignmentsLocked) return header;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         header,
-        ProtocolLockNotice(message: getProtocolLockMessage(widget.trial.status)),
+        ProtocolLockNotice(message: message),
       ],
     );
   }
 
   Widget _buildPlotsListBody(
-      BuildContext context, WidgetRef ref, List<Plot> plots) {
+      BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
+    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsLockMessage = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
     final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
     final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
@@ -1282,11 +1287,9 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                   builder: (_) =>
                       PlotDetailScreen(trial: widget.trial, plot: plot))),
           onLongPress: () {
-            if (isProtocolLocked(widget.trial.status)) {
+            if (assignmentsLocked) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(
-                        getProtocolLockMessage(widget.trial.status))),
+                SnackBar(content: Text(assignmentsLockMessage)),
               );
               return;
             }
@@ -1648,8 +1651,10 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           if (plots.isEmpty) {
             return const Center(child: Text('No plots'));
           }
+          final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+          final assignmentsLocked = isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
           if (!widget.isLayoutView) {
-            return _buildListBody(context, ref, plots);
+            return _buildListBody(context, ref, plots, assignmentsLocked);
           }
           final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
           final assignments = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
@@ -1687,7 +1692,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                           layer: _layoutLayer,
                           appPlotRecords: _appPlotRecords,
                           plotIdToTreatmentId: plotIdToTreatmentId,
-                          onLongPressPlot: isProtocolLocked(widget.trial.status)
+                          onLongPressPlot: assignmentsLocked
                               ? null
                               : (plot) => _showAssignDialog(context, ref, plot, plots),
                         ),
@@ -1747,7 +1752,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     );
   }
 
-  Widget _buildListBody(BuildContext context, WidgetRef ref, List<Plot> plots) {
+  Widget _buildListBody(BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
+    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsLockMessage = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
     final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
     final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
@@ -1804,7 +1811,10 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               MaterialPageRoute(builder: (_) => PlotDetailScreen(trial: widget.trial, plot: plot)),
             ),
             onLongPress: () {
-              if (isProtocolLocked(widget.trial.status)) return;
+              if (assignmentsLocked) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(assignmentsLockMessage)));
+                return;
+              }
               _showAssignDialog(context, ref, plot, plots);
             },
           ),

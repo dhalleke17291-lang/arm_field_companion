@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/features/plots/usecases/update_plot_assignment_usecase.dart';
+import 'package:arm_field_companion/features/sessions/session_repository.dart';
 
 class MockAssignmentRepository implements AssignmentRepository {
   final List<Map<String, dynamic>> _upserted = [];
@@ -67,6 +68,42 @@ class MockAssignmentRepository implements AssignmentRepository {
   }
 }
 
+/// Mock that returns configurable session list for assignments-lock check.
+class MockSessionRepository implements SessionRepository {
+  List<Session> sessionsForTrial = [];
+
+  @override
+  Future<List<Session>> getSessionsForTrial(int trialId) async =>
+      List.from(sessionsForTrial);
+
+  @override
+  Future<Session?> getOpenSession(int trialId) async => null;
+
+  @override
+  Stream<Session?> watchOpenSession(int trialId) => Stream.value(null);
+
+  @override
+  Future<Session> createSession({
+    required int trialId,
+    required String name,
+    required String sessionDateLocal,
+    required List<int> assessmentIds,
+    String? raterName,
+    int? createdByUserId,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> closeSession(int sessionId,
+      {String? raterName, int? closedByUserId}) async {}
+
+  @override
+  Future<List<Assessment>> getSessionAssessments(int sessionId) async => [];
+
+  @override
+  Future<Session?> getSessionById(int sessionId) async => null;
+}
+
 Trial _trial({String status = 'ACTIVE'}) => Trial(
       id: 1,
       name: 'Test Trial',
@@ -81,10 +118,12 @@ Trial _trial({String status = 'ACTIVE'}) => Trial(
 void main() {
   late UpdatePlotAssignmentUseCase useCase;
   late MockAssignmentRepository mockRepo;
+  late MockSessionRepository mockSessionRepo;
 
   setUp(() {
     mockRepo = MockAssignmentRepository();
-    useCase = UpdatePlotAssignmentUseCase(mockRepo);
+    mockSessionRepo = MockSessionRepository();
+    useCase = UpdatePlotAssignmentUseCase(mockRepo, mockSessionRepo);
   });
 
   group('UpdatePlotAssignmentUseCase — updateOne', () {
@@ -140,6 +179,30 @@ void main() {
       );
       expect(result.success, false);
       expect(result.errorMessage, contains('Update failed'));
+    });
+
+    test('LOCK: rejects when trial has sessions (assignments fixed)', () async {
+      mockSessionRepo.sessionsForTrial = [
+        Session(
+          id: 1,
+          trialId: 1,
+          name: 'S1',
+          startedAt: DateTime.now(),
+          endedAt: null,
+          sessionDateLocal: '2026-01-01',
+          raterName: null,
+          createdByUserId: null,
+          status: 'open',
+        ),
+      ];
+      final result = await useCase.updateOne(
+        trial: _trial(status: 'draft'),
+        plotPk: 10,
+        treatmentId: 5,
+      );
+      expect(result.success, false);
+      expect(result.errorMessage, contains('session data'));
+      expect(mockRepo.upserted, isEmpty);
     });
   });
 

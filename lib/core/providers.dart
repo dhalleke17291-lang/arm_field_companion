@@ -73,7 +73,10 @@ final trialAssessmentsWithDefinitionsForTrialProvider = StreamProvider.family<Li
 
 final updatePlotAssignmentUseCaseProvider =
     Provider<UpdatePlotAssignmentUseCase>((ref) {
-  return UpdatePlotAssignmentUseCase(ref.watch(assignmentRepositoryProvider));
+  return UpdatePlotAssignmentUseCase(
+    ref.watch(assignmentRepositoryProvider),
+    ref.watch(sessionRepositoryProvider),
+  );
 });
 
 final protocolImportUseCaseProvider = Provider<ProtocolImportUseCase>((ref) {
