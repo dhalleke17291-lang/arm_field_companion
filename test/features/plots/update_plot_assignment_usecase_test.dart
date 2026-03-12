@@ -77,6 +77,10 @@ class MockSessionRepository implements SessionRepository {
       List.from(sessionsForTrial);
 
   @override
+  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) async =>
+      [];
+
+  @override
   Future<Session?> getOpenSession(int trialId) async => null;
 
   @override
@@ -102,6 +106,12 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Future<Session?> getSessionById(int sessionId) async => null;
+
+  @override
+  Future<void> updateSessionAssessmentOrder(
+    int sessionId,
+    List<int> assessmentIdsInOrder,
+  ) async {}
 }
 
 Trial _trial({String status = 'ACTIVE'}) => Trial(

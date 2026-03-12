@@ -43,6 +43,10 @@ class _FakeSessionRepository implements SessionRepository {
       _sessions.where((s) => s.trialId == trialId).toList();
 
   @override
+  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) async =>
+      _sessions.where((s) => s.sessionDateLocal == dateLocal).toList();
+
+  @override
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -62,6 +66,12 @@ class _FakeSessionRepository implements SessionRepository {
   }) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> updateSessionAssessmentOrder(
+    int sessionId,
+    List<int> assessmentIdsInOrder,
+  ) async {}
 }
 
 class _FakeTrialRepository implements TrialRepository {

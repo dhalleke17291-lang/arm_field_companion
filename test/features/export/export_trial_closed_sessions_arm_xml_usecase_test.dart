@@ -37,6 +37,10 @@ class _MockSessionRepository implements SessionRepository {
   }
 
   @override
+  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) async =>
+      [];
+
+  @override
   Stream<Session?> watchOpenSession(int trialId) => throw UnimplementedError();
 
   @override
@@ -68,6 +72,12 @@ class _MockSessionRepository implements SessionRepository {
   @override
   Future<List<Assessment>> getSessionAssessments(int sessionId) async =>
       throw UnimplementedError();
+
+  @override
+  Future<void> updateSessionAssessmentOrder(
+    int sessionId,
+    List<int> assessmentIdsInOrder,
+  ) async {}
 }
 
 class _FakePathProvider extends PathProviderPlatform {

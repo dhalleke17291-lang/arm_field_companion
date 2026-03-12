@@ -25,6 +25,20 @@ class SessionRepository {
         .get();
   }
 
+  /// Sessions for a given local date (yyyy-MM-dd). Optionally filter by createdByUserId.
+  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) {
+    var query = _db.select(_db.sessions)
+      ..where((s) {
+        var pred = s.sessionDateLocal.equals(dateLocal);
+        if (createdByUserId != null) {
+          pred = pred & s.createdByUserId.equals(createdByUserId);
+        }
+        return pred;
+      })
+      ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]);
+    return query.get();
+  }
+
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -49,11 +63,12 @@ class SessionRepository {
             ),
           );
 
-      for (final assessmentId in assessmentIds) {
+      for (var i = 0; i < assessmentIds.length; i++) {
         await _db.into(_db.sessionAssessments).insert(
               SessionAssessmentsCompanion.insert(
                 sessionId: sessionId,
-                assessmentId: assessmentId,
+                assessmentId: assessmentIds[i],
+                sortOrder: Value(i),
               ),
             );
       }
@@ -99,15 +114,33 @@ class SessionRepository {
 
   Future<List<Assessment>> getSessionAssessments(int sessionId) async {
     final sessionAssessmentRows = await (_db.select(_db.sessionAssessments)
-          ..where((sa) => sa.sessionId.equals(sessionId)))
+          ..where((sa) => sa.sessionId.equals(sessionId))
+          ..orderBy([(sa) => OrderingTerm.asc(sa.sortOrder), (sa) => OrderingTerm.asc(sa.id)]))
         .get();
 
     final assessmentIds =
         sessionAssessmentRows.map((sa) => sa.assessmentId).toList();
+    if (assessmentIds.isEmpty) return [];
 
-    return (_db.select(_db.assessments)
+    final assessments = await (_db.select(_db.assessments)
           ..where((a) => a.id.isIn(assessmentIds)))
         .get();
+    final byId = {for (final a in assessments) a.id: a};
+    return [for (final id in assessmentIds) byId[id]!];
+  }
+
+  /// Updates the rating order for this session. Same sequence applies to every plot.
+  Future<void> updateSessionAssessmentOrder(
+    int sessionId,
+    List<int> assessmentIdsInOrder,
+  ) async {
+    for (var i = 0; i < assessmentIdsInOrder.length; i++) {
+      await (_db.update(_db.sessionAssessments)
+            ..where((sa) =>
+                sa.sessionId.equals(sessionId) &
+                sa.assessmentId.equals(assessmentIdsInOrder[i])))
+          .write(SessionAssessmentsCompanion(sortOrder: Value(i)));
+    }
   }
 
   Future<Session?> getSessionById(int sessionId) {

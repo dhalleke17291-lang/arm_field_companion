@@ -40,6 +40,10 @@ class FakeSessionRepository implements SessionRepository {
       sessions.where((s) => s.trialId == trialId).toList();
 
   @override
+  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) async =>
+      sessions.where((s) => s.sessionDateLocal == dateLocal).toList();
+
+  @override
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -59,6 +63,12 @@ class FakeSessionRepository implements SessionRepository {
     String? raterName,
     int? closedByUserId,
   }) async {}
+
+  @override
+  Future<void> updateSessionAssessmentOrder(
+    int sessionId,
+    List<int> assessmentIdsInOrder,
+  ) async {}
 }
 
 class FakeTrialRepository implements TrialRepository {
