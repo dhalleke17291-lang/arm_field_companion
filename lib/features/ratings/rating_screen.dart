@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +13,7 @@ import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../core/session_lock.dart';
+import '../../core/quick_note_templates.dart';
 import '../photos/usecases/save_photo_usecase.dart';
 import 'last_value_memory.dart';
 import 'usecases/save_rating_usecase.dart';
@@ -65,10 +68,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     super.initState();
     _assessmentIndex = 0;
     _currentAssessment = widget.assessments[0];
+    WakelockPlus.enable();
   }
 
   @override
   void dispose() {
+    WakelockPlus.disable();
     _valueController.dispose();
     super.dispose();
   }
@@ -1305,6 +1310,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   Future<void> _showSessionCompleteDialog(BuildContext context) async {
+    final flaggedIds = await ref.read(flaggedPlotIdsForSessionProvider(widget.session.id).future);
+    final flaggedCount = flaggedIds.length;
+    final photoCount = await ref.read(photoRepositoryProvider).getPhotoCountForSession(widget.session.id);
+    final plotCount = widget.allPlots.length;
+    final summary = '$plotCount plots rated · $flaggedCount flagged · $photoCount photos';
+
+    if (!context.mounted) return;
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -1339,12 +1351,22 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "You've completed all ${widget.allPlots.length} plots in this session.",
+                "You've completed all $plotCount plots in this session.",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13,
                   color: Color(0xFF6B7280),
                   height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                summary,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 24),
@@ -1389,6 +1411,23 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final nextIndex = widget.currentPlotIndex + direction;
     if (nextIndex < 0 || nextIndex >= widget.allPlots.length) {
       return;
+    }
+
+    // Rep completion feedback: haptic when leaving the last plot in current rep (field speed).
+    if (direction == 1) {
+      final currentRep = widget.plot.rep;
+      if (currentRep != null) {
+        bool isLastInRep = true;
+        for (int i = widget.currentPlotIndex + 1; i < widget.allPlots.length; i++) {
+          if (widget.allPlots[i].rep == currentRep) {
+            isLastInRep = false;
+            break;
+          }
+        }
+        if (isLastInRep) {
+          HapticFeedback.mediumImpact();
+        }
+      }
     }
 
     Navigator.pushReplacement(
@@ -1461,14 +1500,34 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Flag Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}'),
-        content: TextField(
-          controller: descController,
-          decoration: const InputDecoration(
-            labelText: 'Description',
-            border: OutlineInputBorder(),
-            hintText: 'e.g. Weed patch, border effect',
-          ),
-          autofocus: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: kQuickNoteTemplates.map((label) {
+                return ActionChip(
+                  label: Text(label),
+                  onPressed: () {
+                    final before = descController.text.trim();
+                    descController.text = before.isEmpty ? label : '$before, $label';
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+                hintText: 'e.g. Weed patch, border effect',
+              ),
+              autofocus: true,
+            ),
+          ],
         ),
         actions: [
           TextButton(

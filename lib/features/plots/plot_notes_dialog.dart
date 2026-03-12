@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import '../../core/quick_note_templates.dart';
 
 /// Shows a dialog to view and edit notes for a plot. Saves via [PlotRepository].
 Future<void> showPlotNotesDialog(
@@ -19,14 +20,34 @@ Future<void> showPlotNotesDialog(
         title: Text('Notes — Plot ${plot.plotId}'),
         content: SizedBox(
           width: double.maxFinite,
-          child: TextField(
-            controller: controller,
-            maxLines: 6,
-            decoration: const InputDecoration(
-              hintText: 'Add notes for this plot...',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: kQuickNoteTemplates.map((label) {
+                  return ActionChip(
+                    label: Text(label),
+                    onPressed: () {
+                      final before = controller.text.trim();
+                      controller.text = before.isEmpty ? label : '$before, $label';
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  hintText: 'Add notes for this plot...',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+              ),
+            ],
           ),
         ),
         actions: [

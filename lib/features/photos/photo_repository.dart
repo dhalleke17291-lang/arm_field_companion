@@ -62,6 +62,13 @@ class PhotoRepository {
     });
   }
 
+  Future<int> getPhotoCountForSession(int sessionId) async {
+    final list = await (_db.select(_db.photos)
+          ..where((p) => p.sessionId.equals(sessionId)))
+        .get();
+    return list.length;
+  }
+
   Future<List<Photo>> getPhotosForPlot({
     required int trialId,
     required int plotPk,

@@ -30,6 +30,7 @@ dependencies:
   flutter_native_splash: ^2.4.4
   flutter_launcher_icons: ^0.14.4
   shared_preferences: ^2.2.2
+  wakelock_plus: ^1.2.8
 
 dev_dependencies:
   flutter_test:

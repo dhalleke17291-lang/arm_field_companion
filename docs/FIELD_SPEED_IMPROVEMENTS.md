@@ -37,7 +37,7 @@ The following are **already in the app** — keep them in mind when changing the
 |---|------|--------|----------|--------|-------|
 | **6** | **Assessment carousel — swipe** | ⚠️ Chips only | ✅ Yes | Small–Medium | We have horizontal assessment chips. Add swipe (e.g. `PageView` or `Dismissible`/gesture) on rating area to switch assessment; sync with `_assessmentIndex`. Keeps chips as secondary. |
 | **7** | **Bulk same-value entry** | ❌ Not yet | ✅ Yes | Medium | “Apply this value to all remaining plots in this rep” → new UseCase: for current rep + assessment, write same rating to all plots in rep that don’t have a rating yet. Button in rating screen or plot queue. |
-| **8** | **Quick note templates** | ❌ Not yet | ✅ Yes | Small | In notes sheet: show chips `Lodging` · `Spray miss` · `Border effect` · `Animal damage` · `Uneven stand`. One tap = insert that note for current plot/session. Uses existing Notes table. |
+| **8** | **Quick note templates** | ✅ **Done** | — | — | Chips in plot notes dialog and flag description dialog; one tap inserts template. |
 | **9** | **Session resume** | ❌ Not yet | ✅ Yes | Medium | Persist “last plot index + last assessment index” per session (e.g. small table or SharedPreferences). On opening session → plot queue or rating, restore that position. |
 | **10** | **Plot completion indicator** | ✅ **Already have** | — | — | Plot queue uses `ratedPks` and shows rated vs unrated (e.g. check vs circle). Can polish (e.g. stronger green/empty visual) if needed. |
 
@@ -47,10 +47,10 @@ The following are **already in the app** — keep them in mind when changing the
 
 | # | Item | Status | Can add? | Effort | Notes |
 |---|------|--------|----------|--------|-------|
-| **11** | **Rep completion feedback** | ❌ Not yet | ✅ Yes | Small | When save triggers move to next plot and that was the **last plot in current rep**, trigger `HapticFeedback.mediumImpact()` or short vibration. No UI, tactile only. |
+| **11** | **Rep completion feedback** | ✅ **Done** | — | — | Haptic when leaving last plot in rep (`_navigatePlot` in RatingScreen). |
 | **12** | **Offline indicator** | ❌ Not yet | ✅ Yes | Small | Small persistent badge/chip (e.g. “Saved locally” or “Offline”) in app bar or bottom bar so technician never wonders “will this save?”. |
 | **13** | **Large tap targets** | ⚠️ Partial | ✅ Yes | Small | Audit main actions (Save, Next, flag, chips); ensure min 48–56dp. Theme or local `minimumSize` / `minTouchTargetSize`. |
-| **14** | **Screen stays on during session** | ❌ Not yet | ✅ Yes | Small | Add `wakelock_plus` (or similar), enable when entering plot queue or rating session, disable when leaving. One dependency + a few calls. |
+| **14** | **Screen stays on during session** | ✅ **Done** | — | — | `wakelock_plus`; enable in PlotQueueScreen and RatingScreen initState, disable in dispose. |
 | **15** | **Previous plot quick review** | ❌ Not yet | ✅ Yes | Small–Medium | “Previous plot” button or app bar action → bottom sheet or overlay with last plot’s saved rating(s) for current assessment. Use existing rating read APIs. |
 
 ---
@@ -78,12 +78,12 @@ The following are **already in the app** — keep them in mind when changing the
 5. **Offline indicator** — Small “Saved locally” or “Offline” badge. Reassurance, no logic change.
 6. **Hold-to-save** — Long-press Save to save; reduces accidental saves while walking. UI-only.
 
-**Second batch (still small, high value):**
+**Second batch (all done):**
 
-7. **Quick note templates** — Chips in notes sheet.  
-8. **Rep completion feedback** — Haptic when rep is completed.  
-9. **Screen stays on** — Wakelock during rating session.  
-10. **End-of-session summary** — Summary when last plot is done.
+7. **Quick note templates** — ✅ Chips in plot notes and flag dialogs (`kQuickNoteTemplates`).  
+8. **Rep completion feedback** — ✅ Haptic when leaving last plot in rep.  
+9. **Screen stays on** — ✅ Wakelock in PlotQueueScreen and RatingScreen.  
+10. **End-of-session summary** — ✅ "X plots rated · Y flagged · Z photos" in session complete dialog.
 
 **Later (medium effort):**
 

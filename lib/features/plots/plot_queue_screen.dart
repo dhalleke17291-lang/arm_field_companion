@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
@@ -25,6 +27,18 @@ class PlotQueueScreen extends ConsumerStatefulWidget {
 class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   int? _repFilter;
   bool _showUnratedOnly = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WakelockPlus.enable();
+  }
+
+  @override
+  void dispose() {
+    WakelockPlus.disable();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
