@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
+import '../../core/last_session_store.dart';
+import '../../core/session_resume_store.dart';
 import 'package:share_plus/share_plus.dart';
 import '../plots/plot_queue_screen.dart';
 import '../ratings/rating_screen.dart';
@@ -409,7 +413,18 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final resolvedSession = result.session!;
     final plots = result.allPlotsSerpentine!;
     final assessments = result.assessments!;
-    final startIndex = result.startPlotIndex!;
+    int startIndex = result.startPlotIndex!;
+    int? initialAssessmentIndex;
+
+    final prefs = await SharedPreferences.getInstance();
+    final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
+    if (pos != null && pos.$1 >= 0 && pos.$1 < plots.length) {
+      startIndex = pos.$1;
+      initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
+    }
+    LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
+
+    if (!context.mounted) return;
 
     if (result.isSessionComplete) {
       // All plots have ratings — let the user choose between review in queue
@@ -452,6 +467,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       assessments: assessments,
                       allPlots: plots,
                       currentPlotIndex: startIndex,
+                      initialAssessmentIndex: initialAssessmentIndex,
                     ),
                   ),
                 );
@@ -475,6 +491,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           assessments: assessments,
           allPlots: plots,
           currentPlotIndex: startIndex,
+          initialAssessmentIndex: initialAssessmentIndex,
         ),
       ),
     );

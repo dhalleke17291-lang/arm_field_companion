@@ -34,6 +34,8 @@ import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
 import 'current_user.dart';
 import 'diagnostics/diagnostics_store.dart';
+import 'last_session_store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -212,6 +214,32 @@ final sessionsForTrialProvider =
 final openSessionProvider =
     StreamProvider.family<Session?, int>((ref, trialId) {
   return ref.watch(sessionRepositoryProvider).watchOpenSession(trialId);
+});
+
+/// Resolved trial + session for "Continue Last Session" home card.
+class LastSessionContext {
+  const LastSessionContext({required this.trial, required this.session});
+  final Trial trial;
+  final Session session;
+}
+
+/// Last session (trialId, sessionId) persisted for "Continue Last Session" home card. Valid only if session still exists and is open.
+final lastSessionContextProvider =
+    FutureProvider.autoDispose<LastSessionContext?>((ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  final ids = LastSessionStore(prefs).get();
+  if (ids == null) return null;
+  final trialRepo = ref.read(trialRepositoryProvider);
+  final sessionRepo = ref.read(sessionRepositoryProvider);
+  final trial = await trialRepo.getTrialById(ids.$1);
+  final session = await sessionRepo.getSessionById(ids.$2);
+  if (trial == null ||
+      session == null ||
+      session.endedAt != null ||
+      session.trialId != trial.id) {
+    return null;
+  }
+  return LastSessionContext(trial: trial, session: session);
 });
 
 final sessionAssessmentsProvider =

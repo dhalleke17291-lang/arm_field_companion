@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
+import '../../core/last_session_store.dart';
+import '../../core/session_resume_store.dart';
 import '../../core/database/app_database.dart';
 import '../../core/crop_icons.dart';
 import '../../core/widgets/app_dialog.dart';
@@ -15,6 +19,62 @@ import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
+/// Shared navigation to rating for a given open session (used by Continue Session and Continue Last Session card).
+Future<void> _navigateToRatingForSession(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Session session,
+) async {
+  final useCase = ref.read(startOrContinueRatingUseCaseProvider);
+  final result =
+      await useCase.execute(StartOrContinueRatingInput(sessionId: session.id));
+  if (!context.mounted) return;
+  if (!result.success ||
+      result.trial == null ||
+      result.session == null ||
+      result.allPlotsSerpentine == null ||
+      result.assessments == null ||
+      result.startPlotIndex == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.errorMessage ??
+            'Unable to continue session for this trial.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+  final resolvedTrial = result.trial!;
+  final resolvedSession = result.session!;
+  final plots = result.allPlotsSerpentine!;
+  final assessments = result.assessments!;
+  int startIndex = result.startPlotIndex!;
+  int? initialAssessmentIndex;
+  final prefs = await SharedPreferences.getInstance();
+  final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
+  if (pos != null && pos.$1 >= 0 && pos.$1 < plots.length) {
+    startIndex = pos.$1;
+    initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
+  }
+  LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
+  if (!context.mounted) return;
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (_) => RatingScreen(
+        trial: resolvedTrial,
+        session: resolvedSession,
+        plot: plots[startIndex],
+        assessments: assessments,
+        allPlots: plots,
+        currentPlotIndex: startIndex,
+        initialAssessmentIndex: initialAssessmentIndex,
+      ),
+    ),
+    (route) => route.isFirst,
+  );
+}
 
 Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
   final trials = ref.read(trialsStreamProvider).value ?? [];
@@ -252,10 +312,26 @@ class TrialListScreen extends ConsumerWidget {
 
   Widget _buildTrialList(
       BuildContext context, WidgetRef ref, List<Trial> trials) {
+    final lastSessionAsync = ref.watch(lastSessionContextProvider);
     return ListView(
       padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0,
           AppDesignTokens.spacing16, AppDesignTokens.spacing24),
       children: [
+        ...lastSessionAsync.when(
+          loading: () => [],
+          error: (_, __) => [],
+          data: (ctx) => ctx != null
+              ? [
+                  _ContinueLastSessionCard(
+                    trial: ctx.trial,
+                    session: ctx.session,
+                    onTap: () => _navigateToRatingForSession(
+                        context, ref, ctx.trial, ctx.session),
+                  ),
+                  const SizedBox(height: AppDesignTokens.spacing16),
+                ]
+              : [],
+        ),
         const Align(
           alignment: Alignment.centerLeft,
           child: Text(
@@ -370,6 +446,101 @@ class TrialListScreen extends ConsumerWidget {
             child: const Text('Create'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Persistent "Continue Last Session" card (survives app restarts).
+class _ContinueLastSessionCard extends StatelessWidget {
+  final Trial trial;
+  final Session session;
+  final VoidCallback onTap;
+
+  const _ContinueLastSessionCard({
+    required this.trial,
+    required this.session,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFE8E2D8)),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                  blurRadius: 12,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.play_circle_filled,
+                    color: Color(0xFF16A34A),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: AppDesignTokens.spacing12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Continue Last Session',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF16A34A),
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        trial.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        session.name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B7280),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Color(0xFF8FA898)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -549,51 +720,7 @@ class _TrialQuickActions extends ConsumerWidget {
     Trial trial,
     Session session,
   ) async {
-    final useCase = ref.read(startOrContinueRatingUseCaseProvider);
-
-    final result =
-        await useCase.execute(StartOrContinueRatingInput(sessionId: session.id));
-
-    if (!context.mounted) return;
-
-    if (!result.success ||
-        result.trial == null ||
-        result.session == null ||
-        result.allPlotsSerpentine == null ||
-        result.assessments == null ||
-        result.startPlotIndex == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.errorMessage ??
-              'Unable to continue session for this trial.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final resolvedTrial = result.trial!;
-    final resolvedSession = result.session!;
-    final plots = result.allPlotsSerpentine!;
-    final assessments = result.assessments!;
-    final startIndex = result.startPlotIndex!;
-
-    // Build the route stack: Home → RatingScreen
-    // Single tap, correct back navigation (back returns to home).
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RatingScreen(
-          trial: resolvedTrial,
-          session: resolvedSession,
-          plot: plots[startIndex],
-          assessments: assessments,
-          allPlots: plots,
-          currentPlotIndex: startIndex,
-        ),
-      ),
-      (route) => route.isFirst,
-    );
+    await _navigateToRatingForSession(context, ref, trial, session);
   }
 
   Future<void> _quickRate(
@@ -684,8 +811,18 @@ class _TrialQuickActions extends ConsumerWidget {
     final resolvedSession = result.session!;
     final plots = result.allPlotsSerpentine!;
     final assessments = result.assessments!;
-    final startIndex = result.startPlotIndex!;
+    int startIndex = result.startPlotIndex!;
+    int? initialAssessmentIndex;
 
+    final prefs = await SharedPreferences.getInstance();
+    final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
+    if (pos != null && pos.$1 >= 0 && pos.$1 < plots.length) {
+      startIndex = pos.$1;
+      initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
+    }
+    LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
+
+    if (!context.mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -696,6 +833,7 @@ class _TrialQuickActions extends ConsumerWidget {
           assessments: assessments,
           allPlots: plots,
           currentPlotIndex: startIndex,
+          initialAssessmentIndex: initialAssessmentIndex,
         ),
       ),
       (route) => route.isFirst,

@@ -11,7 +11,9 @@
 - **Full Protocol Details** — Drill-down from trial detail header (description icon); read-only trial info, treatments, assessments, plots/assigned count.
 - **Diagnostics** — AppError + diagnostics screen (About → Diagnostics): recent errors, copy single, **copy all**, clear; integrity checks.
 - **Docs** — [EXPORT.md](EXPORT.md) (CSV + ARM XML), [PROTOCOL_IMPORT.md](PROTOCOL_IMPORT.md), [CHANGELOG.md](CHANGELOG.md). About screen version from `kAppVersion`.
-- **Tests** — Widget tests (Continue Session, Quick Rate, Start Rating); ARM XML use case tests; Full Protocol Details screen tests; batch ARM XML tests; integration tests (draft trial, fallback plot label).
+- **Tests** — Widget tests (Continue Session, Quick Rate, Start Rating); ARM XML use case tests; Full Protocol Details screen tests; batch ARM XML tests; integration tests (draft trial, fallback plot label, **Quick Rate flow**; error path covered by widget test).
+- **Continue Last Session persistent home card** — SharedPreferences last (trialId, sessionId); card at top of home when session still exists and is open; survives restarts.
+- **Lab/Derived/Diagnostics MVP (B4/B5)** — Pure calc functions (`derived_calc.dart`: session progress, trial sessions closed fraction); `DerivedSnapshot` model with `calcVersion`; `derivedSnapshotForSessionProvider` cache.
 
 ---
 
@@ -84,7 +86,12 @@ Based on the current app state and the **quality-driven order** in [DEVELOPMENT_
 Sections 1–4 are **done**. See "Recent work (done)" above.
 
 
-**Next priorities:** (1) TrialAssessments in sessions — wire library assessments into create-session and rating flow. (2) Field speed second batch — see FIELD_SPEED_IMPROVEMENTS.md. (3) Later: importer, lab, calculator, matrix view, dashboards.
+**Next priorities (in order):**
+
+1. **Field speed — Later** (see FIELD_SPEED_IMPROVEMENTS.md): Session resume (persist last plot/assessment index) → Bulk same-value entry → Assessment swipe carousel → Previous plot quick review → Large tap targets audit.
+2. **Broader support:** Importer (plots/treatments from file), lab sample flow, calculator, assignment matrix view, dashboards.
+
+*Note:* TrialAssessments already participate in sessions: Create Session and Quick Rate use library assessments via `getOrCreateLegacyAssessmentIdsForTrialAssessments` (legacy sync). No change needed unless we add explicit trial_assessment_id on session_assessments for traceability.
 
 ---
 

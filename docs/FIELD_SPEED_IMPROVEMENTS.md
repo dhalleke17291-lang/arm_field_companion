@@ -87,7 +87,7 @@ The following are **already in the app** — keep them in mind when changing the
 
 **Later (medium effort):**
 
-- Session resume (persist position).  
+- Session resume (persist position). ✅ **Done** — last plot index + assessment index saved per session; restored when opening rating (Continue Session, Start Rating, plot queue tap).  
 - Bulk same-value entry (new UseCase).  
 - Assessment swipe carousel (gesture + state sync).  
 - Previous plot quick review (sheet with last rating).  

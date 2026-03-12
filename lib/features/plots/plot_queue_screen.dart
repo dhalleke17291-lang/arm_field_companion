@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/widgets/gradient_screen_header.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
+import '../../core/session_resume_store.dart';
 import '../ratings/rating_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/plot_sort.dart';
@@ -415,6 +417,13 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       return;
     }
     if (!context.mounted) return;
+    int? initialAssessmentIndex;
+    final prefs = await SharedPreferences.getInstance();
+    final pos = SessionResumeStore(prefs).getPosition(widget.session.id);
+    if (pos != null && pos.$1 == index) {
+      initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
+    }
+    if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -425,6 +434,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           assessments: assessments,
           allPlots: plots,
           currentPlotIndex: index,
+          initialAssessmentIndex: initialAssessmentIndex,
         ),
       ),
     );
@@ -584,7 +594,7 @@ class _PlotQueueTile extends ConsumerWidget {
         trailing: isRated
             ? const Icon(Icons.chevron_right, color: Colors.grey)
             : const Icon(Icons.chevron_right),
-        onTap: () {
+        onTap: () async {
           if (isRated && plotRatings.isNotEmpty) {
             _showRatingSummarySheet(
               context,
@@ -599,6 +609,15 @@ class _PlotQueueTile extends ConsumerWidget {
           } else {
             final index =
                 allPlotsForTrial.indexWhere((p) => p.id == plot.id);
+            final idx = index < 0 ? 0 : index;
+            int? initialAssessmentIndex;
+            final prefs = await SharedPreferences.getInstance();
+            final pos = SessionResumeStore(prefs).getPosition(session.id);
+            if (pos != null && pos.$1 == idx) {
+              initialAssessmentIndex =
+                  pos.$2.clamp(0, assessments.length - 1);
+            }
+            if (!context.mounted) return;
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -608,7 +627,8 @@ class _PlotQueueTile extends ConsumerWidget {
                   plot: plot,
                   assessments: assessments,
                   allPlots: allPlotsForTrial,
-                  currentPlotIndex: index < 0 ? 0 : index,
+                  currentPlotIndex: idx,
+                  initialAssessmentIndex: initialAssessmentIndex,
                 ),
               ),
             );
@@ -727,10 +747,19 @@ class _PlotQueueTile extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(ctx);
                   final index =
                       allPlotsForTrial.indexWhere((p) => p.id == plot.id);
+                  final idx = index < 0 ? 0 : index;
+                  int? initialAssessmentIndex;
+                  final prefs = await SharedPreferences.getInstance();
+                  final pos = SessionResumeStore(prefs).getPosition(session.id);
+                  if (pos != null && pos.$1 == idx) {
+                    initialAssessmentIndex =
+                        pos.$2.clamp(0, assessments.length - 1);
+                  }
+                  if (!context.mounted) return;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -740,7 +769,8 @@ class _PlotQueueTile extends ConsumerWidget {
                         plot: plot,
                         assessments: assessments,
                         allPlots: allPlotsForTrial,
-                        currentPlotIndex: index < 0 ? 0 : index,
+                        currentPlotIndex: idx,
+                        initialAssessmentIndex: initialAssessmentIndex,
                       ),
                     ),
                   );

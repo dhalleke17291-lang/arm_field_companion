@@ -8,12 +8,14 @@ import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../core/session_lock.dart';
 import '../../core/quick_note_templates.dart';
+import '../../core/session_resume_store.dart';
 import '../photos/usecases/save_photo_usecase.dart';
 import 'last_value_memory.dart';
 import 'usecases/save_rating_usecase.dart';
@@ -25,6 +27,8 @@ class RatingScreen extends ConsumerStatefulWidget {
   final List<Assessment> assessments;
   final List<Plot> allPlots;
   final int currentPlotIndex;
+  /// Restored from session resume (field speed). When set, open on this assessment chip.
+  final int? initialAssessmentIndex;
 
   const RatingScreen({
     super.key,
@@ -34,6 +38,7 @@ class RatingScreen extends ConsumerStatefulWidget {
     required this.assessments,
     required this.allPlots,
     required this.currentPlotIndex,
+    this.initialAssessmentIndex,
   });
 
   @override
@@ -66,16 +71,28 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   @override
   void initState() {
     super.initState();
-    _assessmentIndex = 0;
-    _currentAssessment = widget.assessments[0];
+    final raw = widget.initialAssessmentIndex ?? 0;
+    _assessmentIndex = raw.clamp(0, widget.assessments.length - 1);
+    _currentAssessment = widget.assessments[_assessmentIndex];
     WakelockPlus.enable();
   }
 
   @override
   void dispose() {
     WakelockPlus.disable();
+    _saveResumePosition();
     _valueController.dispose();
     super.dispose();
+  }
+
+  void _saveResumePosition() {
+    SharedPreferences.getInstance().then((prefs) {
+      SessionResumeStore(prefs).savePosition(
+        widget.session.id,
+        widget.currentPlotIndex,
+        _assessmentIndex,
+      );
+    });
   }
 
   @override
@@ -1440,6 +1457,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           assessments: widget.assessments,
           allPlots: widget.allPlots,
           currentPlotIndex: nextIndex,
+          initialAssessmentIndex: _assessmentIndex,
         ),
       ),
     );

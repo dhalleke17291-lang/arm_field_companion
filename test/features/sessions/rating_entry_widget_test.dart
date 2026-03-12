@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
-import 'start_or_continue_rating_fakes.dart';
-import 'package:arm_field_companion/features/sessions/usecases/start_or_continue_rating_usecase.dart';
-import 'package:arm_field_companion/features/sessions/session_detail_screen.dart';
 import 'package:arm_field_companion/features/ratings/rating_screen.dart';
+import 'package:arm_field_companion/features/sessions/session_detail_screen.dart';
+import 'package:arm_field_companion/features/sessions/usecases/start_or_continue_rating_usecase.dart';
 import 'package:arm_field_companion/features/trials/trial_list_screen.dart';
+import 'start_or_continue_rating_fakes.dart';
 
 void main() {
   late Trial trial;
+
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+  });
   late Session session;
   late List<Plot> plots;
   late List<Assessment> assessments;
@@ -100,7 +106,8 @@ void main() {
       expect(find.text('Continue Session'), findsOneWidget);
       await tester.tap(find.text('Continue Session'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(RatingScreen), findsOneWidget);
     });
@@ -145,7 +152,8 @@ void main() {
       expect(find.text('Quick Rate'), findsOneWidget);
       await tester.tap(find.text('Quick Rate'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(RatingScreen), findsOneWidget);
     });
@@ -188,7 +196,8 @@ void main() {
 
       await tester.tap(find.text('Start Rating'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(RatingScreen), findsOneWidget);
     });
