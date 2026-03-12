@@ -4,11 +4,14 @@
 
 - **Treatment truth cleanup** — Plots list body, plot layout diagnostics, and integrity check now use Assignment-first resolution for treatment/unassigned. PlotRepository assignment write methods deprecated in favour of AssignmentRepository.
 - **Trial lifecycle and protocol lock** — Trial status (Draft / Ready / Active / Closed / Archived), status bar, protocol lock chip and message, activation confirmation. Section headers (Plots, Assessments, Seeding) use standard Add/Bulk Assign and show lock notice when locked; disabled actions with tooltips.
-- **Export foundation** — Session export includes ratings CSV + session-scoped **audit CSV** when present; batch export ZIP contains both per session. See [EXPORT.md](EXPORT.md).
-- **Diagnostics** — AppError + diagnostics screen (About → Diagnostics): recent errors, copy single, **copy all**, clear; integrity checks. Errors recorded from export, ratings, etc.
-- **Docs** — [EXPORT.md](EXPORT.md), [PROTOCOL_IMPORT.md](PROTOCOL_IMPORT.md), [CHANGELOG.md](CHANGELOG.md). About screen version from `kAppVersion`.
-
-**Next:** Manual test (export single + batch, trial detail lock, diagnostics). Then: **Login / user attribution** (4.2) or **Edit/delete treatment** (3.1). (Plot queue now shows treatment per plot [2.2]; session detail already showed treatment [2.1].)
+- **Assignments as protocol truth (1.3)** — When trial is Active/Closed/Archived or has any session, assignments are locked: Bulk Assign and per-plot assignment disabled with clear message. UpdatePlotAssignmentUseCase enforces lock.
+- **Edit / delete treatment (3.1)** — Treatments tab: edit and delete when protocol not locked; use cases with protocol lock check.
+- **Login / user attribution (4.2)** — Current user on About screen; "Change User" / "Select User"; session and export attribution.
+- **Export foundation** — Session export: ratings CSV + audit CSV; batch ZIP. **ARM XML export**: session (Export menu) and trial batch (Sessions → Export → CSV or ARM XML ZIP). See [EXPORT.md](EXPORT.md).
+- **Full Protocol Details** — Drill-down from trial detail header (description icon); read-only trial info, treatments, assessments, plots/assigned count.
+- **Diagnostics** — AppError + diagnostics screen (About → Diagnostics): recent errors, copy single, **copy all**, clear; integrity checks.
+- **Docs** — [EXPORT.md](EXPORT.md) (CSV + ARM XML), [PROTOCOL_IMPORT.md](PROTOCOL_IMPORT.md), [CHANGELOG.md](CHANGELOG.md). About screen version from `kAppVersion`.
+- **Tests** — Widget tests (Continue Session, Quick Rate, Start Rating); ARM XML use case tests; Full Protocol Details screen tests; batch ARM XML tests; integration tests (draft trial, fallback plot label).
 
 ---
 
@@ -31,15 +34,14 @@ Based on the current app state and the **quality-driven order** in [DEVELOPMENT_
 - Constitution, Development Criteria, and user philosophy documented.
 
 **Gaps vs constitution / development order:**
-- Assignments not yet **read-only during execution** (protocol truth) — lock prevents edits when trial is Active/Closed/Archived, but no separate "assignments locked" state.
-- **Login/user attribution** optional; many flows still allow null.
-- **TrialAssessments in sessions**: library assessments are trial-level only; to use them in sessions would require create-session and rating flow to support trial_assessment_id.
+- **TrialAssessments in sessions**: library assessments are trial-level only; create-session and rating flow use legacy Assessments only. To use library assessments in sessions would require create-session and rating flow to support trial_assessment_id.
+- **Login/user attribution**: current user is displayed and used for export/session; flows still allow null user (optional).
 
 ---
 
 ## Next Steps (in order)
 
-### 1. Protocol backbone — TrialState and assignment discipline
+### 1. Protocol backbone — TrialState and assignment discipline ✅ (done)
 
 | # | Task | Why |
 |---|------|-----|
@@ -47,20 +49,20 @@ Based on the current app state and the **quality-driven order** in [DEVELOPMENT_
 | 1.2 | **Restrict structural edits when Active** — When `trial.status == 'active'`: disable or warn on add/remove plots, change assessments, import that changes structure. Allow execution (sessions, ratings, applications) as normal. | Protects research integrity; matches “protocol read-only during execution.” |
 | 1.3 | **Assignments as protocol truth** — When trial is Active (or has at least one session), treat assignments as read-only: disable “Bulk Assign Treatments” and per-plot assignment changes, or show “Locked — protocol is fixed.” | Constitution §8: assignments are read-only during execution. |
 
-### 2. Protocol backbone — PlotContext and technician convenience
+### 2. Protocol backbone — PlotContext and technician convenience ✅ (done)
 
 | # | Task | Why |
 |---|------|-----|
 | 2.1 | **Session detail: show treatment per plot** — For each plot row, resolve **PlotContext** and show treatment code (e.g. “Plot 101 · T2”). Use existing `plotContextProvider(plot.id)`. | Technician convenience; single source of truth. |
 | 2.2 | **Plot queue: show treatment per plot** — In `_PlotQueueTile`, show treatment code (e.g. “101 · T2”) using PlotContext so technicians see context at a glance. | Same as above; consistency with plot detail and rating screen. |
 
-### 3. Protocol backbone — Treatments (small gaps)
+### 3. Protocol backbone — Treatments ✅ (done)
 
 | # | Task | Why |
 |---|------|-----|
 | 3.1 | **Edit / delete treatment** — Add edit and delete for Treatments (and optionally components) when trial is in Draft (or when no sessions exist). | Protocol can be corrected before execution; avoids dead data. |
 
-### 4. Operationally trustworthy (after backbone is solid)
+### 4. Operationally trustworthy ✅ (done)
 
 | # | Task | Why |
 |---|------|-----|
@@ -79,14 +81,10 @@ Based on the current app state and the **quality-driven order** in [DEVELOPMENT_
 
 ## Recommended immediate focus
 
-**Start with 1.1 and 1.2 (trial lifecycle + restrict edits when Active).**  
-That gives you:
+Sections 1–4 are **done**. See "Recent work (done)" above.
 
-- Clear trial state for researchers.
-- Protocol protected once field work starts.
-- Foundation for 1.3 (assignments read-only) and for future “Ready → Active” workflow.
 
-Then add **2.1 and 2.2** (PlotContext in session detail and plot queue) for quick **technician convenience** wins with minimal risk.
+**Next priorities:** (1) TrialAssessments in sessions — wire library assessments into create-session and rating flow. (2) Field speed second batch — see FIELD_SPEED_IMPROVEMENTS.md. (3) Later: importer, lab, calculator, matrix view, dashboards.
 
 ---
 
