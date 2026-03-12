@@ -11,6 +11,7 @@ import '../protocol_import/protocol_import_screen.dart';
 import 'usecases/create_trial_usecase.dart';
 import 'trial_detail_screen.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
+import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
@@ -530,6 +531,12 @@ class _TrialQuickActions extends ConsumerWidget {
                 icon: const Icon(Icons.play_circle_outline, size: 18),
                 label: const Text('Continue Session'),
               ),
+            if (!hasOpenSession)
+              TextButton.icon(
+                onPressed: () => _quickRate(context, ref, trial),
+                icon: const Icon(Icons.flash_on, size: 18),
+                label: const Text('Quick Rate'),
+              ),
           ],
         );
       },
@@ -573,6 +580,112 @@ class _TrialQuickActions extends ConsumerWidget {
 
     // Build the route stack: Home → RatingScreen
     // Single tap, correct back navigation (back returns to home).
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RatingScreen(
+          trial: resolvedTrial,
+          session: resolvedSession,
+          plot: plots[startIndex],
+          assessments: assessments,
+          allPlots: plots,
+          currentPlotIndex: startIndex,
+        ),
+      ),
+      (route) => route.isFirst,
+    );
+  }
+
+  Future<void> _quickRate(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+  ) async {
+    final dateStr =
+        '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
+
+    List<int> assessmentIds;
+    final legacy =
+        await ref.read(assessmentsForTrialProvider(trial.id).future);
+    if (legacy.isNotEmpty) {
+      assessmentIds = legacy.map((a) => a.id).toList();
+    } else {
+      final trialPairs = await ref
+          .read(trialAssessmentsWithDefinitionsForTrialProvider(trial.id).future);
+      if (trialPairs.isEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Add assessments to the trial first. Open trial → Assessments.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      final trialRepo = ref.read(trialAssessmentRepositoryProvider);
+      assessmentIds = await trialRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
+        trial.id,
+        trialPairs.map((p) => p.$1.id).toList(),
+      );
+      if (assessmentIds.isEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not resolve assessments for this trial.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    final createUseCase = ref.read(createSessionUseCaseProvider);
+    final createResult = await createUseCase.execute(CreateSessionInput(
+      trialId: trial.id,
+      name: '$dateStr Quick',
+      sessionDateLocal: dateStr,
+      assessmentIds: assessmentIds,
+    ));
+
+    if (!context.mounted) return;
+    if (!createResult.success || createResult.session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(createResult.errorMessage ?? 'Could not create session.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final session = createResult.session!;
+    final useCase = ref.read(startOrContinueRatingUseCaseProvider);
+    final result =
+        await useCase.execute(StartOrContinueRatingInput(sessionId: session.id));
+
+    if (!context.mounted) return;
+    if (!result.success ||
+        result.trial == null ||
+        result.session == null ||
+        result.allPlotsSerpentine == null ||
+        result.assessments == null ||
+        result.startPlotIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Unable to start rating.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final resolvedTrial = result.trial!;
+    final resolvedSession = result.session!;
+    final plots = result.allPlotsSerpentine!;
+    final assessments = result.assessments!;
+    final startIndex = result.startPlotIndex!;
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
