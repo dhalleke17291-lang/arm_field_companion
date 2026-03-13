@@ -43,7 +43,7 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
                 if (trial.plotDimensions != null)
                   _Row('Plot dimensions', trial.plotDimensions!),
                 if (trial.plotRows != null)
-                  _Row('Number of rows', trial.plotRows.toString()),
+                  _Row('Number of ranges', trial.plotRows.toString()),
                 if (trial.plotSpacing != null)
                   _Row('Plot spacing', trial.plotSpacing!),
               ],
