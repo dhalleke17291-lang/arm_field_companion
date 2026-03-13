@@ -1207,96 +1207,214 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  /// Persistent next-action dock: same location, same order, every time.
+  /// Plot + Assessment + Treatment at top; Save (secondary) + Save & Next (primary); Prev, Jump, Flag below.
   Widget _buildBottomBar(BuildContext context) {
-    final isLast = widget.currentPlotIndex >= widget.allPlots.length - 1;
+    final isLastPlot = widget.currentPlotIndex >= widget.allPlots.length - 1;
     final isLastAssessment = _assessmentIndex >= widget.assessments.length - 1;
-    final isVeryLast = isLast && isLastAssessment;
+    final isVeryLast = isLastPlot && isLastAssessment;
     final canGoBack = widget.currentPlotIndex > 0;
+    final plotLabel = getDisplayPlotLabel(widget.plot, widget.allPlots);
+    final assessmentLabel = _currentAssessment.name;
+
+    // Dynamic primary button label and optional destination
+    String primaryLabel;
+    String? destination;
+    if (isVeryLast) {
+      primaryLabel = 'Save & Finish';
+    } else if (isLastAssessment) {
+      primaryLabel = 'Save & Next Plot';
+      final nextPlot = widget.allPlots[widget.currentPlotIndex + 1];
+      destination = getDisplayPlotLabel(nextPlot, widget.allPlots);
+    } else {
+      primaryLabel = 'Save & Next';
+      destination = widget.assessments[_assessmentIndex + 1].name;
+    }
+
+    final plotCtx = ref.watch(plotContextProvider(widget.plot.id));
+    final ctx = plotCtx.valueOrNull;
+    final treatmentCode = ctx != null && ctx.hasTreatment ? ctx.treatmentCode : null;
+
+    final editable = isSessionEditable(widget.session);
 
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing12, AppDesignTokens.spacing16, AppDesignTokens.spacing12),
+        padding: const EdgeInsets.fromLTRB(
+          AppDesignTokens.spacing16,
+          AppDesignTokens.spacing8,
+          AppDesignTokens.spacing16,
+          AppDesignTokens.spacing12,
+        ),
         decoration: const BoxDecoration(
           color: AppDesignTokens.cardSurface,
           border: Border(top: BorderSide(color: AppDesignTokens.borderCrisp)),
           boxShadow: [
             BoxShadow(
-                color: AppDesignTokens.shadowMedium,
-                blurRadius: 8,
-                offset: Offset(0, -2)),
+              color: AppDesignTokens.shadowMedium,
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
           ],
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              height: 52,
-              child: OutlinedButton(
-                onPressed: canGoBack ? () => _navigatePlot(context, -1) : null,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppDesignTokens.secondaryText,
-                  side: const BorderSide(color: AppDesignTokens.borderCrisp),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+            // Dock header: Plot · Assessment, treatment muted
+            Row(
+              children: [
+                Text(
+                  'Plot $plotLabel',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppDesignTokens.primaryText,
                   ),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.arrow_back, size: 18),
-                    SizedBox(width: 6),
-                    Text('Back', style: TextStyle(fontWeight: FontWeight.w600)),
-                  ],
+                Text(
+                  ' · $assessmentLabel',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+              ],
+            ),
+            if (treatmentCode != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                'Treatment $treatmentCode',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppDesignTokens.secondaryText,
                 ),
               ),
-            ),
-            const SizedBox(width: AppDesignTokens.spacing8),
-            Expanded(
-              child: SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isSaving || !isSessionEditable(widget.session)
-                      ? null
-                      : () => _saveRating(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppDesignTokens.primary,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppDesignTokens.divider,
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+            ],
+            const SizedBox(height: AppDesignTokens.spacing8),
+            // Main actions: Save (outlined) + Save & Next (primary, dominant)
+            Row(
+              children: [
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: _isSaving || !editable
+                        ? null
+                        : () => _saveRating(context, navigateAfterSave: false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppDesignTokens.primary,
+                      side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                      ),
+                    ),
+                    child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: AppDesignTokens.spacing8),
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _isSaving || !editable
+                          ? null
+                          : () => _saveRating(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppDesignTokens.primary,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: AppDesignTokens.divider,
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                        ),
+                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        primaryLabel,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      isVeryLast ? Icons.check_circle_outline : Icons.arrow_forward,
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
+                                if (destination != null) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '→ $destination',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
                     ),
                   ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              isVeryLast ? 'Save & Finish' : 'Save & Next',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              isVeryLast
-                                  ? Icons.check_circle_outline
-                                  : Icons.arrow_forward,
-                              size: 18,
-                            ),
-                          ],
-                        ),
                 ),
-              ),
+              ],
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            // Secondary: Prev, Jump, Flag (small)
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: canGoBack ? () => _navigatePlot(context, -1) : null,
+                  icon: const Icon(Icons.arrow_back, size: 18),
+                  label: const Text('Prev', style: TextStyle(fontSize: 13)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppDesignTokens.secondaryText,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 36),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showJumpToPlotDialog(context),
+                  icon: const Icon(Icons.search, size: 18),
+                  label: const Text('Jump', style: TextStyle(fontSize: 13)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppDesignTokens.secondaryText,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 36),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _showFlagDialog(context),
+                  icon: const Icon(Icons.flag_outlined, size: 20),
+                  tooltip: 'Flag plot',
+                  style: IconButton.styleFrom(
+                    foregroundColor: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1304,9 +1422,72 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  Future<void> _showJumpToPlotDialog(BuildContext context) async {
+    if (widget.allPlots.isEmpty) return;
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Jump to Plot'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Plot number',
+            hintText: 'e.g. 101',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Go'),
+          ),
+        ],
+      ),
+    );
+    if (result == null || result.isEmpty || !mounted) return;
+    if (!context.mounted) return;
+    final index = widget.allPlots.indexWhere(
+      (p) => getDisplayPlotLabel(p, widget.allPlots) == result,
+    );
+    if (index < 0) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Plot "$result" not found')),
+        );
+      }
+      return;
+    }
+    if (index == widget.currentPlotIndex) return;
+    if (!context.mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RatingScreen(
+          trial: widget.trial,
+          session: widget.session,
+          plot: widget.allPlots[index],
+          assessments: widget.assessments,
+          allPlots: widget.allPlots,
+          currentPlotIndex: index,
+          initialAssessmentIndex: null,
+        ),
+      ),
+    );
+  }
+
   // ===== Actions =====
 
-  Future<void> _saveRating(BuildContext context) async {
+  /// Saves the current rating. When [navigateAfterSave] is true (default), advances to next
+  /// assessment or next plot or shows session complete; when false, stays on current plot/assessment.
+  Future<void> _saveRating(BuildContext context, {bool navigateAfterSave = true}) async {
     double? numericValue;
     String? textValue;
     if (_selectedStatus == 'RECORDED') {
@@ -1365,6 +1546,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               _currentAssessment.id,
               numericValue,
             );
+      }
+      if (!navigateAfterSave) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Saved')),
+          );
+        }
+        return;
       }
       if (_assessmentIndex < widget.assessments.length - 1) {
         setState(() {
