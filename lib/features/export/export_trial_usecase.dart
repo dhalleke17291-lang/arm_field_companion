@@ -42,9 +42,11 @@ class ExportTrialUseCase {
   final AssignmentRepository _assignmentRepository;
 
   static const List<String> _observationsHeaders = [
+    'trial_id',
     'trial_name',
     'session_name',
     'session_date',
+    'plot_id',
     'plot_label',
     'rep',
     'plot_position',
@@ -57,6 +59,7 @@ class ExportTrialUseCase {
     'rater_name',
     'days_after_seeding',
     'days_after_first_application',
+    'export_timestamp',
   ];
 
   static const List<String> _treatmentsHeaders = [
@@ -67,14 +70,18 @@ class ExportTrialUseCase {
     'rate',
     'rate_unit',
     'formulation',
+    'export_timestamp',
   ];
 
   static const List<String> _plotAssignmentsHeaders = [
+    'trial_id',
+    'plot_id',
     'plot_label',
     'rep',
     'column',
     'treatment_code',
     'treatment_name',
+    'export_timestamp',
   ];
 
   static const List<String> _applicationsHeaders = [
@@ -92,6 +99,7 @@ class ExportTrialUseCase {
     'humidity_pct',
     'notes',
     'days_after_seeding',
+    'export_timestamp',
   ];
 
   static const List<String> _seedingHeaders = [
@@ -104,6 +112,7 @@ class ExportTrialUseCase {
     'row_spacing_cm',
     'equipment_used',
     'notes',
+    'export_timestamp',
   ];
 
   static const List<String> _sessionsHeaders = [
@@ -113,9 +122,11 @@ class ExportTrialUseCase {
     'plot_count_rated',
     'rater_name',
     'notes',
+    'export_timestamp',
   ];
 
   Future<TrialExportBundle> execute(String trialId) async {
+    final exportTimestamp = DateTime.now().toUtc().toIso8601String();
     final trialPk = int.parse(trialId);
     final trial = await _trialRepository.getTrialById(trialPk);
     if (trial == null) throw ExportTrialException('Trial not found: $trialId');
@@ -145,24 +156,34 @@ class ExportTrialUseCase {
       assignmentByPlot: assignmentByPlot,
       seedingDate: seedingDate,
       firstAppDate: firstAppDate,
+      exportTimestamp: exportTimestamp,
     );
 
-    final treatmentsCsv = await _buildTreatmentsCsv(treatments);
+    final treatmentsCsv = await _buildTreatmentsCsv(
+      treatments,
+      exportTimestamp,
+    );
 
     final plotAssignmentsCsv = _buildPlotAssignmentsCsv(
       plots: plots,
       treatmentMap: treatmentMap,
       assignmentByPlot: assignmentByPlot,
+      trialPk: trialPk,
+      exportTimestamp: exportTimestamp,
     );
 
     final applicationsCsv = _buildApplicationsCsv(
       applications: applications,
       seedingDate: seedingDate,
+      exportTimestamp: exportTimestamp,
     );
 
-    final seedingCsv = _buildSeedingCsv(seeding);
+    final seedingCsv = _buildSeedingCsv(seeding, exportTimestamp);
 
-    final sessionsCsv = await _buildSessionsCsv(sessions);
+    final sessionsCsv = await _buildSessionsCsv(
+      sessions,
+      exportTimestamp,
+    );
 
     return TrialExportBundle(
       observationsCsv: observationsCsv,
@@ -174,9 +195,14 @@ class ExportTrialUseCase {
     );
   }
 
-  String _str(dynamic value) {
+  /// Exports as empty string for null, empty, or placeholder literals; otherwise string value.
+  String _cell(dynamic value) {
     if (value == null) return '';
-    return value.toString();
+    final s = value.toString().trim();
+    if (s.isEmpty) return '';
+    final lower = s.toLowerCase();
+    if (lower == 'null' || lower == 'n/a' || lower == 'none') return '';
+    return s;
   }
 
   String _date(DateTime? d) {
@@ -192,7 +218,9 @@ class ExportTrialUseCase {
     required Map<int, Assignment> assignmentByPlot,
     required DateTime? seedingDate,
     required DateTime? firstAppDate,
+    required String exportTimestamp,
   }) async {
+    final trialPk = trial.id;
     final rows = <List<String>>[];
     for (final session in sessions) {
       final sessionAssessments = await _sessionRepository.getSessionAssessments(session.id);
@@ -205,19 +233,20 @@ class ExportTrialUseCase {
         final treatment = treatmentId != null ? treatmentMap[treatmentId] : null;
         final assessment = assessmentMap[r.assessmentId];
 
-        final sessionDate = session.sessionDateLocal;
-        final plotLabel = plot?.plotId ?? '';
-        final rep = _str(assignment?.replication ?? plot?.rep);
-        final plotPosition = _str(plot?.column ?? plot?.plotSortIndex ?? assignment?.position);
-        final treatmentCode = treatment?.code ?? '';
-        final treatmentName = treatment?.name ?? '';
-        final assessmentName = assessment?.name ?? '';
-        final assessmentType = assessment?.dataType ?? '';
+        final sessionDate = _cell(session.sessionDateLocal);
+        final plotId = plot != null ? _cell(plot.id) : '';
+        final plotLabel = _cell(plot?.plotId);
+        final rep = _cell(assignment?.replication ?? plot?.rep);
+        final plotPosition = _cell(plot?.column ?? plot?.plotSortIndex ?? assignment?.position);
+        final treatmentCode = _cell(treatment?.code);
+        final treatmentName = _cell(treatment?.name);
+        final assessmentName = _cell(assessment?.name);
+        final assessmentType = _cell(assessment?.dataType);
         final value = r.numericValue != null
-            ? _str(r.numericValue)
-            : (r.textValue ?? '');
-        final unit = assessment?.unit ?? '';
-        final raterName = r.raterName ?? '';
+            ? _cell(r.numericValue)
+            : _cell(r.textValue);
+        final unit = _cell(assessment?.unit);
+        final raterName = _cell(r.raterName);
 
         int? daysAfterSeeding;
         if (seedingDate != null) {
@@ -229,9 +258,11 @@ class ExportTrialUseCase {
         }
 
         rows.add([
-          trial.name,
-          session.name,
+          _cell(trialPk),
+          _cell(trial.name),
+          _cell(session.name),
           sessionDate,
+          plotId,
           plotLabel,
           rep,
           plotPosition,
@@ -242,30 +273,44 @@ class ExportTrialUseCase {
           value,
           unit,
           raterName,
-          daysAfterSeeding != null ? _str(daysAfterSeeding) : '',
-          daysAfterFirstApp != null ? _str(daysAfterFirstApp) : '',
+          daysAfterSeeding != null ? _cell(daysAfterSeeding) : '',
+          daysAfterFirstApp != null ? _cell(daysAfterFirstApp) : '',
+          exportTimestamp,
         ]);
       }
     }
     return CsvExportService.buildCsv(_observationsHeaders, rows);
   }
 
-  Future<String> _buildTreatmentsCsv(List<Treatment> treatments) async {
+  Future<String> _buildTreatmentsCsv(
+    List<Treatment> treatments,
+    String exportTimestamp,
+  ) async {
     final rows = <List<String>>[];
     for (final t in treatments) {
       final components = await _treatmentRepository.getComponentsForTreatment(t.id);
       if (components.isEmpty) {
-        rows.add([t.code, t.name, '', '', '', '', '']);
+        rows.add([
+          _cell(t.code),
+          _cell(t.name),
+          '',
+          '',
+          '',
+          '',
+          '',
+          exportTimestamp,
+        ]);
       } else {
         for (final c in components) {
           rows.add([
-            t.code,
-            t.name,
-            c.productName,
+            _cell(t.code),
+            _cell(t.name),
+            _cell(c.productName),
             '', // active_ingredient not in schema
-            c.rate ?? '',
-            c.rateUnit ?? '',
+            _cell(c.rate),
+            _cell(c.rateUnit),
             '', // formulation not in schema
+            exportTimestamp,
           ]);
         }
       }
@@ -277,6 +322,8 @@ class ExportTrialUseCase {
     required List<Plot> plots,
     required Map<int, Treatment> treatmentMap,
     required Map<int, Assignment> assignmentByPlot,
+    required int trialPk,
+    required String exportTimestamp,
   }) {
     final rows = <List<String>>[];
     for (final plot in plots) {
@@ -284,11 +331,14 @@ class ExportTrialUseCase {
       final treatmentId = assignment?.treatmentId ?? plot.treatmentId;
       final treatment = treatmentId != null ? treatmentMap[treatmentId] : null;
       rows.add([
-        plot.plotId,
-        _str(assignment?.replication ?? plot.rep),
-        _str(assignment?.column ?? plot.column),
-        treatment?.code ?? '',
-        treatment?.name ?? '',
+        _cell(trialPk),
+        _cell(plot.id),
+        _cell(plot.plotId),
+        _cell(assignment?.replication ?? plot.rep),
+        _cell(assignment?.column ?? plot.column),
+        _cell(treatment?.code),
+        _cell(treatment?.name),
+        exportTimestamp,
       ]);
     }
     return CsvExportService.buildCsv(_plotAssignmentsHeaders, rows);
@@ -297,6 +347,7 @@ class ExportTrialUseCase {
   String _buildApplicationsCsv({
     required List<TrialApplicationEvent> applications,
     DateTime? seedingDate,
+    required String exportTimestamp,
   }) {
     final rows = <List<String>>[];
     for (final a in applications) {
@@ -306,54 +357,60 @@ class ExportTrialUseCase {
       }
       rows.add([
         _date(a.applicationDate),
-        a.productName ?? '',
-        _str(a.rate),
-        a.rateUnit ?? '',
-        _str(a.waterVolume),
-        a.growthStageCode ?? '',
-        a.operatorName ?? '',
-        a.equipmentUsed ?? '',
-        _str(a.windSpeed),
-        a.windDirection ?? '',
-        _str(a.temperature),
-        _str(a.humidity),
-        a.notes ?? '',
-        daysAfterSeeding != null ? _str(daysAfterSeeding) : '',
+        _cell(a.productName),
+        _cell(a.rate),
+        _cell(a.rateUnit),
+        _cell(a.waterVolume),
+        _cell(a.growthStageCode),
+        _cell(a.operatorName),
+        _cell(a.equipmentUsed),
+        _cell(a.windSpeed),
+        _cell(a.windDirection),
+        _cell(a.temperature),
+        _cell(a.humidity),
+        _cell(a.notes),
+        daysAfterSeeding != null ? _cell(daysAfterSeeding) : '',
+        exportTimestamp,
       ]);
     }
     return CsvExportService.buildCsv(_applicationsHeaders, rows);
   }
 
-  String _buildSeedingCsv(SeedingEvent? seeding) {
+  String _buildSeedingCsv(SeedingEvent? seeding, String exportTimestamp) {
     if (seeding == null) {
       return CsvExportService.buildCsv(_seedingHeaders, []);
     }
     final row = [
       _date(seeding.seedingDate),
-      seeding.operatorName ?? '',
-      seeding.seedLotNumber ?? '',
-      _str(seeding.seedingRate),
-      seeding.seedingRateUnit ?? '',
-      _str(seeding.seedingDepth),
-      _str(seeding.rowSpacing),
-      seeding.equipmentUsed ?? '',
-      seeding.notes ?? '',
+      _cell(seeding.operatorName),
+      _cell(seeding.seedLotNumber),
+      _cell(seeding.seedingRate),
+      _cell(seeding.seedingRateUnit),
+      _cell(seeding.seedingDepth),
+      _cell(seeding.rowSpacing),
+      _cell(seeding.equipmentUsed),
+      _cell(seeding.notes),
+      exportTimestamp,
     ];
     return CsvExportService.buildCsv(_seedingHeaders, [row]);
   }
 
-  Future<String> _buildSessionsCsv(List<Session> sessions) async {
+  Future<String> _buildSessionsCsv(
+    List<Session> sessions,
+    String exportTimestamp,
+  ) async {
     final rows = <List<String>>[];
     for (final s in sessions) {
       final ratings = await _ratingRepository.getCurrentRatingsForSession(s.id);
       final plotCountRated = ratings.map((r) => r.plotPk).toSet().length;
       rows.add([
-        s.name,
-        s.sessionDateLocal,
-        s.status,
-        _str(plotCountRated),
-        s.raterName ?? '',
+        _cell(s.name),
+        _cell(s.sessionDateLocal),
+        _cell(s.status),
+        _cell(plotCountRated),
+        _cell(s.raterName),
         '', // notes not on Session in schema
+        exportTimestamp,
       ]);
     }
     return CsvExportService.buildCsv(_sessionsHeaders, rows);

@@ -3,8 +3,8 @@ class CsvExportService {
   CsvExportService._();
 
   /// Builds a CSV string from headers and rows.
-  /// Joins with commas, wraps values containing commas in double quotes,
-  /// escapes internal double quotes by doubling, terminates lines with \n.
+  /// Joins with commas, wraps values containing any of `,`, `"`, or `\n` in
+  /// double quotes, escapes internal double quotes by doubling, terminates lines with \n.
   static String buildCsv(List<String> headers, List<List<String>> rows) {
     final buffer = StringBuffer();
     buffer.writeln(_rowToCsv(headers));
@@ -20,7 +20,7 @@ class CsvExportService {
 
   static String _escape(String value) {
     final safe = value.replaceAll('"', '""');
-    if (safe.contains(',')) {
+    if (safe.contains(',') || value.contains('"') || value.contains('\n')) {
       return '"$safe"';
     }
     return safe;

@@ -290,7 +290,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                               tooltip: 'View full protocol',
                             ),
                             IconButton(
-                              icon: const Icon(Icons.upload_outlined, color: Colors.white, size: 22),
+                              icon: const Icon(Icons.ios_share_outlined, color: Colors.white, size: 22),
                               onPressed: _isExporting
                                   ? null
                                   : () => _runExport(context, ref, currentTrial),
