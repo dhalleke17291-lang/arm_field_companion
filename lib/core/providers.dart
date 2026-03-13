@@ -3,6 +3,7 @@ import "../data/repositories/assignment_repository.dart";
 import "../data/repositories/assessment_definition_repository.dart";
 import "../data/repositories/trial_assessment_repository.dart";
 import "../data/repositories/application_repository.dart";
+import "../data/repositories/seeding_repository.dart";
 import "../domain/models/plot_context.dart";
 import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -509,6 +510,24 @@ final assignmentsForTrialProvider =
   return ref.watch(assignmentRepositoryProvider).watchForTrial(trialId);
 });
 
+/// Total count of treatment components across all treatments for a trial (Trial Summary).
+final treatmentComponentsCountForTrialProvider =
+    FutureProvider.autoDispose.family<int, int>((ref, trialId) async {
+  final repo = ref.watch(treatmentRepositoryProvider);
+  final treatments = await repo.getTreatmentsForTrial(trialId);
+  int count = 0;
+  for (final t in treatments) {
+    count += (await repo.getComponentsForTreatment(t.id)).length;
+  }
+  return count;
+});
+
+/// Count of distinct plots with at least one current rating for this trial (Trial Summary).
+final ratedPlotsCountForTrialProvider =
+    FutureProvider.autoDispose.family<int, int>((ref, trialId) {
+  return ref.read(ratingRepositoryProvider).getRatedPlotCountForTrial(trialId);
+});
+
 final resolvePlotTreatmentProvider = Provider<ResolvePlotTreatment>((ref) {
   return ResolvePlotTreatment(
     plotRepository: ref.watch(plotRepositoryProvider),
@@ -527,6 +546,30 @@ final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) {
   return ApplicationRepository(ref.watch(databaseProvider));
 });
 
+final seedingRepositoryProvider = Provider<SeedingRepository>((ref) {
+  return SeedingRepository(ref.watch(databaseProvider));
+});
+
+/// Seeding event for a trial (one per trial). AutoDispose, family keyed by trialId.
+final seedingEventForTrialProvider =
+    FutureProvider.autoDispose.family<SeedingEvent?, int>((ref, trialId) {
+  return ref.read(seedingRepositoryProvider).getSeedingEventForTrial(trialId);
+});
+
+/// Trial-level application events (trial_application_events), ordered by application_date ascending.
+final trialApplicationsForTrialProvider =
+    StreamProvider.autoDispose.family<List<TrialApplicationEvent>, int>((ref, trialId) {
+  return ref.watch(applicationRepositoryProvider).watchApplicationsForTrial(trialId);
+});
+
+/// Latest application event for a trial (most recent application_date). Null if none.
+final latestApplicationForTrialProvider =
+    FutureProvider.autoDispose.family<TrialApplicationEvent?, int>((ref, trialId) async {
+  final list = await ref.watch(applicationRepositoryProvider).getApplicationsForTrial(trialId);
+  return list.isEmpty ? null : list.last;
+});
+
+/// Slot-based application events (application_events table). Legacy Applications tab and event selector.
 final applicationsForTrialProvider =
     StreamProvider.family<List<ApplicationEvent>, int>((ref, trialId) {
   return ref.watch(applicationRepositoryProvider).watchEventsForTrial(trialId);

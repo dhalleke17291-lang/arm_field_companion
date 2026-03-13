@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,11 +14,7 @@ import 'package:drift/drift.dart' as drift;
 import '../sessions/create_session_screen.dart';
 import '../sessions/session_detail_screen.dart';
 import '../plots/plot_queue_screen.dart';
-import '../plots/import_plots_screen.dart';
 import '../plots/plot_detail_screen.dart';
-import '../seeding/record_seeding_screen.dart';
-import '../protocol_import/protocol_import_screen.dart';
-import '../protocol_import/imported_protocol_file_screen.dart';
 import 'plot_layout_model.dart';
 import 'assessment_library_picker_dialog.dart';
 import 'full_protocol_details_screen.dart';
@@ -35,6 +32,23 @@ const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
 
 enum _LayoutLayer { treatments, applications, ratings }
 
+const double _kGridMinScale = 0.15;
+const double _kGridMaxScale = 5.0;
+const double _kGridZoomFactor = 1.25;
+
+void _plotGridZoom(TransformationController controller, {required bool zoomIn}) {
+  final m = controller.value;
+  final scale = m.entry(0, 0).abs();
+  final newScale = zoomIn
+      ? (scale * _kGridZoomFactor).clamp(_kGridMinScale, _kGridMaxScale)
+      : (scale / _kGridZoomFactor).clamp(_kGridMinScale, _kGridMaxScale);
+  if ((newScale - scale).abs() < 0.001) return;
+  final tx = m.entry(0, 3);
+  final ty = m.entry(1, 3);
+  controller.value = Matrix4.identity()
+    ..scaleByDouble(newScale, newScale, 1.0, 1.0)
+    ..translateByDouble(tx, ty, 0.0, 1.0);
+}
 
 Future<void> showAssignTreatmentDialogForTrial({
   required Trial trial,
@@ -306,120 +320,138 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final trialAsync = ref.watch(trialProvider(widget.trial.id));
     final currentTrial = trialAsync.valueOrNull ?? widget.trial;
 
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+    final maxHeaderHeight = viewportHeight * 0.45;
+
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppDesignTokens.primary, AppDesignTokens.primaryLight],
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      tooltip: 'Back',
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeaderHeight),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppDesignTokens.primary, AppDesignTokens.primaryLight],
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Trial',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              letterSpacing: 1,
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Colors.white),
+                              onPressed: () => Navigator.of(context).maybePop(),
+                              tooltip: 'Back',
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            currentTrial.name,
-                            style: AppDesignTokens.headerTitleStyle(
-                              fontSize: 17,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (currentTrial.crop != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              currentTrial.crop!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: 0.7),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Trial',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white.withValues(alpha: 0.7),
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    currentTrial.name,
+                                    style: AppDesignTokens.headerTitleStyle(
+                                      fontSize: 17,
+                                      color: Colors.white,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (currentTrial.crop != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      currentTrial.crop!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
+                            if (currentTrial.status.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  currentTrial.status,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.description_outlined, color: Colors.white, size: 22),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) => FullProtocolDetailsScreen(trial: currentTrial),
+                                ),
+                              ),
+                              tooltip: 'View full protocol',
+                            ),
                           ],
-                        ],
+                        ),
                       ),
                     ),
-                    if (currentTrial.status.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          currentTrial.status,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.description_outlined, color: Colors.white, size: 22),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => FullProtocolDetailsScreen(trial: currentTrial),
-                        ),
-                      ),
-                      tooltip: 'View full protocol',
+                  ),
+                  _buildTrialStatusBar(context, ref, currentTrial),
+                  const SizedBox(height: AppDesignTokens.spacing12),
+                  SizedBox(
+                    height: 110,
+                    child: _TrialModuleHub(
+                      scrollController: _hubScrollController,
+                      selectedIndex: _selectedTabIndex == _sessionsIndex
+                          ? _previousTabIndex
+                          : _selectedTabIndex,
+                      onSelected: (index) {
+                        setState(() => _selectedTabIndex = index);
+                      },
+                      onUserScroll: _dismissHubHint,
                     ),
+                  ),
+                  const SizedBox(height: AppDesignTokens.spacing12),
+                  if (_selectedTabIndex != _sessionsIndex) ...[
+                    _buildCropLocationSection(context, currentTrial),
+                    _buildSessionsBar(
+                      context,
+                      ref.watch(sessionsForTrialProvider(widget.trial.id)),
+                      ref.watch(seedingEventForTrialProvider(widget.trial.id)),
+                    ),
+                    const SizedBox(height: AppDesignTokens.spacing12),
                   ],
-                ),
+                ],
               ),
             ),
           ),
-          _buildTrialStatusBar(context, ref, currentTrial),
-          const SizedBox(height: AppDesignTokens.spacing12),
-          SizedBox(
-            height: 110,
-            child: _TrialModuleHub(
-              scrollController: _hubScrollController,
-              selectedIndex: _selectedTabIndex == _sessionsIndex
-                  ? _previousTabIndex
-                  : _selectedTabIndex,
-              onSelected: (index) {
-                setState(() => _selectedTabIndex = index);
-              },
-              onUserScroll: _dismissHubHint,
-            ),
-          ),
-          const SizedBox(height: AppDesignTokens.spacing12),
-          if (_selectedTabIndex != _sessionsIndex)
-            _buildSessionsBar(context, ref.watch(sessionsForTrialProvider(widget.trial.id))),
-          if (_selectedTabIndex != _sessionsIndex)
-            const SizedBox(height: AppDesignTokens.spacing12),
           Expanded(
             child: IndexedStack(
               index: _selectedTabIndex,
@@ -443,14 +475,30 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
+  static const List<String> _stepperStatuses = [
+    kTrialStatusDraft,
+    kTrialStatusReady,
+    kTrialStatusActive,
+    kTrialStatusClosed,
+  ];
+
+  int _stepperIndexForStatus(String? status) {
+    if (status == null) return 0;
+    final i = _stepperStatuses.indexOf(status);
+    return i >= 0 ? i : 0;
+  }
+
   Widget _buildTrialStatusBar(BuildContext context, WidgetRef ref, Trial trial) {
+    final currentIndex = _stepperIndexForStatus(trial.status);
     final nextStatuses = allowedNextTrialStatuses(trial.status);
-    final label = labelForTrialStatus(trial.status);
-    final locked = isProtocolLocked(trial.status);
-    final statusHint = locked
-        ? getProtocolLockMessage(trial.status)
-        : 'Protocol editable';
-    final latestImportAsync = ref.watch(latestImportEventForTrialProvider(trial.id));
+    final nextStatus = nextStatuses.isNotEmpty ? nextStatuses.first : null;
+    final buttonLabel = nextStatus == kTrialStatusReady
+        ? 'Mark Ready'
+        : nextStatus == kTrialStatusActive
+            ? 'Mark Active'
+            : nextStatus == kTrialStatusClosed
+                ? 'Close Trial'
+                : null;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing12),
       decoration: const BoxDecoration(
@@ -463,112 +511,120 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         children: [
           Row(
             children: [
-              const Text(
-                'Status:',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppDesignTokens.primaryText,
-                ),
-              ),
-              const SizedBox(width: AppDesignTokens.spacing8),
-              Chip(
-                label: Text(label, style: const TextStyle(fontSize: 12)),
-                padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: 0),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              const SizedBox(width: AppDesignTokens.spacing8),
-              ProtocolLockChip(isLocked: locked, status: trial.status),
-              const SizedBox(width: AppDesignTokens.spacing12),
-              latestImportAsync.when(
-                data: (evt) {
-                  final path = evt?.savedFilePath;
-                  if (path == null || path.trim().isEmpty) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppDesignTokens.spacing8),
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => ImportedProtocolFileScreen(
-                              filePath: path,
-                              title: evt?.fileName,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.description_outlined, size: 16),
-                      label: const Text('View import'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12),
-                        minimumSize: const Size(0, 32),
-                      ),
+              for (int i = 0; i < _stepperStatuses.length; i++) ...[
+                if (i > 0)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      color: i <= currentIndex ? AppDesignTokens.primary : AppDesignTokens.divider,
                     ),
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-              const SizedBox(width: AppDesignTokens.spacing8),
-
-              ...nextStatuses.map((next) {
-            final nextLabel = labelForTrialStatus(next);
-            return Padding(
-              padding: const EdgeInsets.only(right: AppDesignTokens.spacing8),
-              child: FilledButton.tonal(
-                onPressed: () => _transitionTrialStatus(context, ref, next),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12),
-                  minimumSize: const Size(0, 32),
-                ),
-                child: Text(
-                  next == kTrialStatusReady
-                      ? 'Mark Ready'
-                      : next == kTrialStatusActive
-                          ? 'Activate'
-                          : next == kTrialStatusClosed
-                              ? 'Close'
-                              : next == kTrialStatusArchived
-                                  ? 'Archive'
-                                  : nextLabel,
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-            );
-          }),
+                  ),
+                _buildStepperDot(context, i, currentIndex),
+                if (i < _stepperStatuses.length - 1)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      color: i < currentIndex ? AppDesignTokens.primary : AppDesignTokens.divider,
+                    ),
+                  ),
+              ],
             ],
           ),
-          const SizedBox(height: AppDesignTokens.spacing4),
-          if (locked)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  statusHint,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (int i = 0; i < _stepperStatuses.length; i++)
+                Expanded(
+                  child: Text(
+                    labelForTrialStatus(_stepperStatuses[i]),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: i == currentIndex ? FontWeight.w700 : FontWeight.w500,
+                      color: i <= currentIndex ? AppDesignTokens.primaryText : AppDesignTokens.secondaryText,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  getProtocolLockExplanation(trial.status),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
+            ],
+          ),
+          if (buttonLabel != null && nextStatus != null) ...[
+            const SizedBox(height: AppDesignTokens.spacing12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _transitionTrialStatus(context, ref, nextStatus),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppDesignTokens.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
                   ),
                 ),
-              ],
-            )
-          else
-            Text(
-              statusHint,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppDesignTokens.secondaryText,
+                child: Text(buttonLabel),
               ),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepperDot(BuildContext context, int stepIndex, int currentIndex) {
+    const double size = 28;
+    final isCompleted = stepIndex < currentIndex;
+    final isCurrent = stepIndex == currentIndex;
+    final isFuture = stepIndex > currentIndex;
+    return SizedBox(
+      width: size + 8,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isCompleted
+                  ? AppDesignTokens.primary
+                  : isCurrent
+                      ? AppDesignTokens.primary
+                      : null,
+              border: Border.all(
+                color: isCurrent
+                    ? AppDesignTokens.primary
+                    : isFuture
+                        ? AppDesignTokens.divider
+                        : AppDesignTokens.primary,
+                width: isCurrent ? 3 : 1.5,
+              ),
+              boxShadow: isCurrent
+                  ? [
+                      BoxShadow(
+                        color: AppDesignTokens.primary.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: isCompleted
+                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                : isFuture
+                    ? Center(
+                        child: Text(
+                          '${stepIndex + 1}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                      )
+                    : null,
+          ),
         ],
       ),
     );
@@ -613,12 +669,62 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     }
   }
 
+  Widget _buildCropLocationSection(BuildContext context, Trial trial) {
+    final cropPart = trial.crop?.trim();
+    final seasonPart = trial.season?.trim();
+    final locationPart = trial.location?.trim();
+    final hasCropYear = (cropPart != null && cropPart.isNotEmpty) || (seasonPart != null && seasonPart.isNotEmpty);
+    final hasLocation = locationPart != null && locationPart.isNotEmpty;
+    if (!hasCropYear && !hasLocation) return const SizedBox.shrink();
+    final cropYearText = [
+      if (cropPart != null && cropPart.isNotEmpty) cropPart,
+      if (seasonPart != null && seasonPart.isNotEmpty) seasonPart,
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasCropYear)
+            Text(
+              cropYearText,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+          if (hasCropYear && hasLocation) const SizedBox(height: 4),
+          if (locationPart != null && locationPart.isNotEmpty)
+            Text(
+              locationPart,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSessionsBar(
-      BuildContext context, AsyncValue<List<Session>> sessionsAsync) {
+    BuildContext context,
+    AsyncValue<List<Session>> sessionsAsync,
+    AsyncValue<SeedingEvent?> seedingEventAsync,
+  ) {
     final subtitle = sessionsAsync.when(
       loading: () => 'Start or continue a session',
       error: (_, __) => 'Start or continue a session',
-      data: (sessions) => _sessionsBarSubtitle(sessions),
+      data: (sessions) {
+        final base = _sessionsBarSubtitle(sessions);
+        final event = seedingEventAsync.valueOrNull;
+        if (event == null) return base;
+        final days =
+            DateTime.now().difference(event.seedingDate.toLocal()).inDays;
+        return '$base · $days days since seeding';
+      },
     );
 
     return Padding(
@@ -629,13 +735,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         clipBehavior: Clip.antiAlias,
         elevation: 0,
         child: InkWell(
+          key: const Key('trial_detail_sessions_bar'),
           onTap: () => setState(() {
             _previousTabIndex = _selectedTabIndex;
             _selectedTabIndex = _sessionsIndex;
           }),
           borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing12),
+            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
               border: Border.all(color: AppDesignTokens.borderCrisp),
@@ -845,11 +952,398 @@ class _PlotsTab extends ConsumerStatefulWidget {
 }
 
 class _PlotsTabState extends ConsumerState<_PlotsTab> {
+  @override
+  Widget build(BuildContext context) {
+    final trial = widget.trial;
+    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
+    final assignmentsAsync = ref.watch(assignmentsForTrialProvider(trial.id));
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
+    final sessionCount = sessionsAsync.value?.length ?? 0;
+    final applicationsList = ref.watch(trialApplicationsForTrialProvider(trial.id)).value ?? [];
+    final applicationCount = applicationsList.length;
+    final lastApplicationDate = applicationsList.isEmpty
+        ? null
+        : applicationsList.last.applicationDate;
+    final treatmentComponentCount = ref
+        .watch(treatmentComponentsCountForTrialProvider(trial.id))
+        .valueOrNull ?? 0;
+    final ratedPlotsCount =
+        ref.watch(ratedPlotsCountForTrialProvider(trial.id)).valueOrNull ?? 0;
+    final seedingEvent = ref.watch(seedingEventForTrialProvider(trial.id)).valueOrNull;
+    final seedingDate = seedingEvent?.seedingDate;
+    return plotsAsync.when(
+      loading: () => const AppLoadingView(),
+      error: (e, st) => AppErrorView(
+        error: e,
+        stackTrace: st,
+        onRetry: () => ref.invalidate(plotsForTrialProvider(trial.id)),
+      ),
+      data: (plots) {
+        if (plots.isEmpty) {
+          return _buildPlotsSummaryWithBar(
+            context,
+            ref,
+            trial,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            treatmentsAsync.value?.length ?? 0,
+            treatmentComponentCount,
+            ratedPlotsCount,
+            sessionCount,
+            applicationCount,
+            lastApplicationDate,
+            seedingDate,
+          );
+        }
+        final treatments = treatmentsAsync.value ?? [];
+        final assignmentsList = assignmentsAsync.value ?? [];
+        final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+        final assignedCount = plots.where((p) =>
+            (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) != null).length;
+        final unassignedCount = plots.length - assignedCount;
+        final blocks = buildRepBasedLayout(plots);
+        int rowCount = 0;
+        int columnCount = 0;
+        final repNumbers = <int>{};
+        for (final block in blocks) {
+          for (final row in block.repRows) {
+            rowCount++;
+            if (row.plots.length > columnCount) columnCount = row.plots.length;
+            for (final p in row.plots) {
+              if (p.rep != null) repNumbers.add(p.rep!);
+            }
+          }
+        }
+        return _buildPlotsSummaryWithBar(
+          context,
+          ref,
+          trial,
+          plots.length,
+          rowCount,
+          columnCount,
+          repNumbers.length,
+          assignedCount,
+          unassignedCount,
+          treatments.length,
+          treatmentComponentCount,
+          ratedPlotsCount,
+          sessionCount,
+          applicationCount,
+          lastApplicationDate,
+          seedingDate,
+        );
+      },
+    );
+  }
+
+  Widget _buildPlotsSummaryWithBar(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+    int totalPlots,
+    int rowCount,
+    int columnCount,
+    int replicateCount,
+    int assignedCount,
+    int unassignedCount,
+    int treatmentCount,
+    int treatmentComponentCount,
+    int ratedPlotsCount,
+    int sessionCount,
+    int applicationCount,
+    DateTime? lastApplicationDate,
+    DateTime? seedingDate,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Trial Summary',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                _summaryRow('Total plots', '$totalPlots'),
+                _summaryRow('Ranges', '$rowCount'),
+                _summaryRow('Columns', '$columnCount'),
+                _summaryRow('Replicates', '$replicateCount'),
+                _summaryRow('Assigned plots', '$assignedCount'),
+                _summaryRow('Unassigned plots', '$unassignedCount'),
+                _summaryRow('Treatments', '$treatmentCount'),
+                _summaryRow('Treatment components', '$treatmentComponentCount'),
+                _summaryRow('Rated plots', '$ratedPlotsCount of $totalPlots'),
+                _summaryRow('Sessions', '$sessionCount'),
+                _applicationsSummaryRow(context, trial, applicationCount),
+                _lastApplicationSummaryRow(context, lastApplicationDate),
+                _seedingDateSummaryRow(seedingDate),
+              ],
+            ),
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Material(
+            color: AppDesignTokens.primary,
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => PlotDetailsScreen(trial: trial),
+                  ),
+                );
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDesignTokens.spacing16,
+                  vertical: AppDesignTokens.spacing12,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Plot Details',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: AppDesignTokens.spacing8),
+                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(width: AppDesignTokens.spacing16),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _applicationsSummaryRow(BuildContext context, Trial trial, int applicationCount) {
+    final isActiveOrClosed = trial.status == 'active' || trial.status == 'closed';
+    final showWarning = isActiveOrClosed && applicationCount == 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Applications',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(width: AppDesignTokens.spacing16),
+          if (showWarning)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.warning_amber_rounded, size: 16, color: AppDesignTokens.warningFg),
+                const SizedBox(width: 4),
+                Text(
+                  '$applicationCount',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.warningFg,
+                  ),
+                ),
+              ],
+            )
+          else
+            Text(
+              '$applicationCount',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _lastApplicationSummaryRow(BuildContext context, DateTime? lastApplicationDate) {
+    final value = lastApplicationDate != null
+        ? DateFormat('MMM d, yyyy').format(lastApplicationDate)
+        : 'None';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Last application',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(width: AppDesignTokens.spacing16),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: lastApplicationDate != null
+                  ? AppDesignTokens.primaryText
+                  : AppDesignTokens.secondaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _seedingDateSummaryRow(DateTime? seedingDate) {
+    final value = seedingDate == null
+        ? 'Not recorded'
+        : DateFormat('MMM d, yyyy').format(seedingDate.toLocal());
+    final isMuted = seedingDate == null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Seeding date',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(width: AppDesignTokens.spacing16),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isMuted
+                  ? AppDesignTokens.secondaryText
+                  : AppDesignTokens.primaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Plot Details sub-screen: List/Layout toggle, layer switcher, and full plot list or grid.
+class PlotDetailsScreen extends ConsumerStatefulWidget {
+  final Trial trial;
+
+  const PlotDetailsScreen({super.key, required this.trial});
+
+  @override
+  ConsumerState<PlotDetailsScreen> createState() => _PlotDetailsScreenState();
+}
+
+class _PlotDetailsScreenState extends ConsumerState<PlotDetailsScreen> {
   bool _showLayoutView = false;
   _LayoutLayer _layoutLayer = _LayoutLayer.treatments;
   ApplicationEvent? _selectedAppEvent;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
+  final TransformationController _gridTransformController = TransformationController();
+  final GlobalKey _plotViewportKey = GlobalKey();
+  final GlobalKey _gridContentKey = GlobalKey();
+  bool _gridCenterScheduled = false;
+
+  @override
+  void dispose() {
+    _gridTransformController.dispose();
+    super.dispose();
+  }
+
+  void _centerGridOnFirstFrame(BuildContext context, List<Plot> plots) {
+    if (!mounted) return;
+    final viewportBox = _plotViewportKey.currentContext?.findRenderObject() as RenderBox?;
+    if (viewportBox == null || !viewportBox.hasSize) return;
+    final viewportWidth = viewportBox.size.width;
+    final viewportHeight = viewportBox.size.height;
+    final gridBox = _gridContentKey.currentContext?.findRenderObject() as RenderBox?;
+    double gridWidth;
+    double gridHeight;
+    if (gridBox != null && gridBox.hasSize) {
+      gridWidth = gridBox.size.width;
+      gridHeight = gridBox.size.height;
+    } else {
+      final blocks = buildRepBasedLayout(plots);
+      int columnCount = 0;
+      int rowCount = 0;
+      for (final block in blocks) {
+        for (final row in block.repRows) {
+          if (row.plots.length > columnCount) columnCount = row.plots.length;
+          rowCount++;
+        }
+      }
+      if (columnCount == 0) return;
+      const double rowHeight = 58.0;
+      const double rowSpacing = 6.0;
+      gridWidth = columnCount * 56.0;
+      gridHeight = rowCount * (rowHeight + rowSpacing) + 24;
+    }
+    final dx = (viewportWidth - gridWidth) / 2;
+    final dy = (viewportHeight - gridHeight) / 2;
+    final dxClamped = dx > 0 ? dx : 0.0;
+    final dyClamped = dy > 0 ? dy : 0.0;
+    _gridTransformController.value = Matrix4.identity()
+      ..translateByDouble(dxClamped, dyClamped, 0.0, 1.0);
+  }
+
+  void _gridZoomIn() => _plotGridZoom(_gridTransformController, zoomIn: true);
+  void _gridZoomOut() => _plotGridZoom(_gridTransformController, zoomIn: false);
 
   Future<void> _loadAppRecords(ApplicationEvent event) async {
     setState(() {
@@ -870,50 +1364,43 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
   Widget build(BuildContext context) {
     final trial = widget.trial;
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
-    return plotsAsync.when(
-      loading: () => const AppLoadingView(),
-      error: (e, st) => AppErrorView(
-        error: e,
-        stackTrace: st,
-        onRetry: () => ref.invalidate(plotsForTrialProvider(trial.id)),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Plot Details'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      data: (plots) => plots.isEmpty
-          ? _buildEmptyPlots(context, ref)
-          : _buildPlotsContent(context, ref, plots),
+      body: plotsAsync.when(
+        loading: () => const AppLoadingView(),
+        error: (e, st) => AppErrorView(
+          error: e,
+          stackTrace: st,
+          onRetry: () => ref.invalidate(plotsForTrialProvider(trial.id)),
+        ),
+        data: (plots) => plots.isEmpty
+            ? _PlotDetailsEmptyContent(trial: trial)
+            : _buildPlotDetailsContent(context, ref, plots),
+      ),
     );
   }
 
-  Widget _buildPlotsContent(
+  Widget _buildPlotDetailsContent(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
     final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentsLocked = isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
-    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
-    final plotIdToEffectiveTreatmentId = {
-      for (final p in plots) p.id: assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId,
-    };
-    final layoutDiag = computePlotLayoutDiagnostics(
-      plots,
-      (p) => getDisplayPlotNumber(p, plots),
-      (p) => getDisplayPlotLabel(p, plots),
-      plotIdToEffectiveTreatmentId,
-    );
-    // Top section (header, banner, toggle, layer switcher, app selector) is constrained
-    // so the grid/list Expanded always gets space and we avoid bottom overflow.
     const double maxTopSectionHeight = 320;
     final topSection = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildPlotsHeader(context, ref, plots, assignmentsLocked),
-        if (layoutDiag.hasIssues) ...[
-          _buildLayoutDiagnosticsBanner(context, layoutDiag),
-        ],
-        _buildListLayoutToggle(context, ref, plots),
+        _buildPlotsHeaderForDetails(context, ref, plots, assignmentsLocked),
+        _buildListLayoutToggleForDetails(context, ref, plots),
         if (_showLayoutView) ...[
-          _buildLayerSwitcher(context),
+          _buildLayerSwitcherForDetails(context),
           if (_layoutLayer == _LayoutLayer.applications)
-            _buildAppEventSelector(context, ref),
+            _buildAppEventSelectorForDetails(context, ref),
         ],
       ],
     );
@@ -931,36 +1418,117 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                 ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: AppDesignTokens.secondaryText)))
                 : LayoutBuilder(
                     builder: (context, constraints) {
-                      return InteractiveViewer(
-                        minScale: 0.25,
-                        maxScale: 4.0,
-                        panEnabled: true,
-                        scaleEnabled: true,
-                        child: SizedBox(
-                          width: constraints.maxWidth,
-                          child: _PlotLayoutGrid(
-                            plots: plots,
-                            treatments: treatments,
-                            trial: widget.trial,
-                            layer: _layoutLayer,
-                            appPlotRecords: _appPlotRecords,
-                            plotIdToTreatmentId: {for (var a in ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? []) a.plotId: a.treatmentId},
-                            onLongPressPlot: assignmentsLocked
-                                ? null
-                                : (plot) => _showAssignTreatmentDialog(context, ref, plot, plots),
-                          ),
+                      if (!_gridCenterScheduled) {
+                        _gridCenterScheduled = true;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _centerGridOnFirstFrame(context, plots);
+                        });
+                      }
+                      final size = MediaQuery.sizeOf(context);
+                      final viewportWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                          ? constraints.maxWidth
+                          : size.width;
+                      final viewportHeight = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+                          ? constraints.maxHeight
+                          : size.height;
+                      final blocks = buildRepBasedLayout(plots);
+                      int columnCount = 0;
+                      for (final block in blocks) {
+                        for (final row in block.repRows) {
+                          if (row.plots.length > columnCount) columnCount = row.plots.length;
+                        }
+                      }
+                      const double repLabelW = 52.0;
+                      const double tileSpace = 6.0;
+                      const double cellW = 56.0;
+                      const double gridHorizontalPadding = 24.0;
+                      const double gridWidthBuffer = 8.0;
+                      final double rowContentWidth = columnCount > 0
+                          ? repLabelW + tileSpace + columnCount * cellW + (columnCount - 1) * tileSpace
+                          : viewportWidth;
+                      final double totalGridWidth = rowContentWidth + gridHorizontalPadding + gridWidthBuffer;
+                      final double gridContentWidth = totalGridWidth > viewportWidth ? totalGridWidth : viewportWidth;
+                      final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+                      final plotIdToTreatmentIdMap = {for (var a in assignmentsList) a.plotId: a.treatmentId};
+                      final applicationsList = ref.watch(trialApplicationsForTrialProvider(widget.trial.id)).value ?? [];
+                      final treatmentIdsWithApp = applicationsList.map((e) => e.treatmentId).whereType<int>().toSet();
+                      final plotPksWithTrialApplication = <int>{};
+                      for (final p in plots) {
+                        final tid = plotIdToTreatmentIdMap[p.id] ?? p.treatmentId;
+                        if (tid != null && treatmentIdsWithApp.contains(tid)) {
+                          plotPksWithTrialApplication.add(p.id);
+                        }
+                      }
+                      return ClipRect(
+                        child: Stack(
+                          children: [
+                            SizedBox(
+                              key: _plotViewportKey,
+                              width: viewportWidth,
+                              height: viewportHeight,
+                              child: InteractiveViewer(
+                                transformationController: _gridTransformController,
+                                boundaryMargin: EdgeInsets.zero,
+                                constrained: false,
+                                minScale: _kGridMinScale,
+                                maxScale: _kGridMaxScale,
+                                panEnabled: true,
+                                scaleEnabled: true,
+                                child: SizedBox(
+                                  key: _gridContentKey,
+                                  width: gridContentWidth,
+                                  child: _PlotLayoutGrid(
+                                    plots: plots,
+                                    treatments: treatments,
+                                    trial: widget.trial,
+                                    layer: _layoutLayer,
+                                    appPlotRecords: _appPlotRecords,
+                                    plotPksWithTrialApplication: plotPksWithTrialApplication,
+                                    plotIdToTreatmentId: plotIdToTreatmentIdMap,
+                                    onLongPressPlot: assignmentsLocked
+                                        ? null
+                                        : (plot) => _showAssignTreatmentDialogForDetails(context, ref, plot, plots),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: AppDesignTokens.spacing12,
+                              bottom: AppDesignTokens.spacing12,
+                              child: Material(
+                                elevation: 2,
+                                borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                                color: AppDesignTokens.cardSurface,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.zoom_out),
+                                      onPressed: _gridZoomOut,
+                                      tooltip: 'Zoom out',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.zoom_in),
+                                      onPressed: _gridZoomIn,
+                                      tooltip: 'Zoom in',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
                   ),
           )
         else
-          Expanded(child: _buildPlotsListBody(context, ref, plots, assignmentsLocked)),
+          Expanded(child: _buildPlotsListBodyForDetails(context, ref, plots, assignmentsLocked)),
       ],
     );
   }
 
-  Widget _buildLayerSwitcher(BuildContext context) {
+  Widget _buildLayerSwitcherForDetails(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: SegmentedButton<_LayoutLayer>(
@@ -979,7 +1547,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     );
   }
 
-  Widget _buildAppEventSelector(BuildContext context, WidgetRef ref) {
+  Widget _buildAppEventSelectorForDetails(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(applicationsForTrialProvider(widget.trial.id));
     return eventsAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -1004,30 +1572,26 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<ApplicationEvent>(
-            key: ValueKey<ApplicationEvent?>(_selectedAppEvent),
-            decoration: const InputDecoration(
-              labelText: 'Select Application Event',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            initialValue: _selectedAppEvent == null
-                ? null
-                : completed.where((e) => e.id == _selectedAppEvent!.id).firstOrNull ?? completed.first,
-            items: completed.map((e) => DropdownMenuItem<ApplicationEvent>(
-              value: e,
-              child: Text('A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
-            )).toList(),
-            onChanged: (e) { if (e != null) _loadAppRecords(e); },
+                  key: ValueKey<ApplicationEvent?>(_selectedAppEvent),
+                  decoration: const InputDecoration(
+                    labelText: 'Select Application Event',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  initialValue: _selectedAppEvent == null
+                      ? null
+                      : completed.where((e) => e.id == _selectedAppEvent!.id).firstOrNull ?? completed.first,
+                  items: completed.map((e) => DropdownMenuItem<ApplicationEvent>(
+                    value: e,
+                    child: Text('A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
+                  )).toList(),
+                  onChanged: (e) { if (e != null) _loadAppRecords(e); },
                 ),
               ),
               if (_loadingAppRecords)
                 const Padding(
                   padding: EdgeInsets.only(left: 8),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
+                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
             ],
           ),
@@ -1036,7 +1600,7 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     );
   }
 
-  Widget _buildListLayoutToggle(BuildContext context, WidgetRef ref, List<Plot> plots) {
+  Widget _buildListLayoutToggleForDetails(BuildContext context, WidgetRef ref, List<Plot> plots) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
       child: Row(
@@ -1076,135 +1640,283 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
     );
   }
 
-  Widget _buildEmptyPlots(BuildContext context, WidgetRef ref) {
-    final locked = isProtocolLocked(widget.trial.status);
-    const buttonPadding = EdgeInsets.symmetric(
-      horizontal: AppDesignTokens.spacing24,
-      vertical: AppDesignTokens.spacing12,
-    );
-    const gap = SizedBox(height: AppDesignTokens.spacing12);
-    final primaryButton = FilledButton.icon(
-      onPressed: locked
-          ? null
-          : () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) =>
-                      ImportPlotsScreen(trial: widget.trial))),
-      style: FilledButton.styleFrom(
-        backgroundColor: AppDesignTokens.primary,
-        foregroundColor: Colors.white,
-        padding: buttonPadding,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
-        ),
+  Widget _buildPlotsHeaderForDetails(
+      BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
+    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final message = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
+    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+    final assignedCount = plots.where((p) =>
+        (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) != null).length;
+    final unassignedCount = plots.length - assignedCount;
+    final summaryLine = plots.isEmpty
+        ? 'No plots'
+        : unassignedCount == 0
+            ? 'All $assignedCount assigned'
+            : '$assignedCount assigned · $unassignedCount unassigned';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      icon: const Icon(Icons.upload_file, size: 20),
-      label: const Text('Import Plots from CSV'),
-    );
-    return AppEmptyState(
-      icon: Icons.grid_on,
-      title: 'No Plots Yet',
-      subtitle: locked
-          ? getProtocolLockMessage(widget.trial.status)
-          : 'Import plots via CSV to get started',
-      action: locked
-          ? Tooltip(
-              message: getProtocolLockMessage(widget.trial.status),
-              child: primaryButton,
-            )
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  primaryButton,
-                  gap,
-                  Tooltip(
-                    message: 'Treatments and plots from file',
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  ProtocolImportScreen(trial: widget.trial))),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppDesignTokens.primaryText,
-                        side: const BorderSide(color: AppDesignTokens.borderCrisp),
-                        padding: buttonPadding,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
-                        ),
-                      ),
-                      icon: const Icon(Icons.folder_special, size: 20),
-                      label: const Text('Import Protocol'),
+                  Container(
+                    padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+                    decoration: BoxDecoration(
+                      color: AppDesignTokens.sectionHeaderBg,
+                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
                     ),
+                    child: const Icon(Icons.grid_on, size: 20, color: AppDesignTokens.primary),
                   ),
-                  gap,
-                  OutlinedButton.icon(
-                    onPressed: () => _showAddTestPlotsDialog(context, ref),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppDesignTokens.secondaryText,
-                      side: const BorderSide(color: AppDesignTokens.divider),
-                      padding: buttonPadding,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
-                      ),
+                  const SizedBox(width: AppDesignTokens.spacing12),
+                  Text(
+                    '${plots.length} plots',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppDesignTokens.primaryText,
+                      letterSpacing: -0.2,
                     ),
-                    icon: const Icon(Icons.science_outlined, size: 20),
-                    label: const Text('Add Test Plots'),
                   ),
                 ],
               ),
-            ),
-    );
-  }
-
-  Future<void> _showAddTestPlotsDialog(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<({int reps, int plotsPerRep})>(
-      context: context,
-      builder: (ctx) => const _AddTestPlotsDialog(),
-    );
-    if (result != null && context.mounted) {
-      await _seedTestPlots(context, ref, result.reps, result.plotsPerRep);
-    }
-  }
-
-  Future<void> _seedTestPlots(
-      BuildContext context, WidgetRef ref, int reps, int plotsPerRep) async {
-    final db = ref.read(databaseProvider);
-    int sortIndex = 0;
-    for (int rep = 1; rep <= reps; rep++) {
-      for (int pos = 1; pos <= plotsPerRep; pos++) {
-        sortIndex++;
-        final plotId = '$rep${pos.toString().padLeft(2, '0')}';
-        await db.into(db.plots).insert(
-              PlotsCompanion.insert(
-                trialId: widget.trial.id,
-                plotId: plotId,
-                plotSortIndex: drift.Value(sortIndex),
-                rep: drift.Value(rep),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: assignmentsLocked ? AppDesignTokens.secondaryText : AppDesignTokens.primary,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          assignmentsLocked ? Icons.lock_outlined : Icons.lock_open_outlined,
+                          size: 14,
+                          color: assignmentsLocked ? AppDesignTokens.secondaryText : AppDesignTokens.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          assignmentsLocked ? 'Locked' : 'Editable',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: assignmentsLocked ? AppDesignTokens.secondaryText : AppDesignTokens.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: assignmentsLocked ? message : 'Assign treatments to multiple plots',
+                    child: OutlinedButton.icon(
+                      onPressed: assignmentsLocked ? null : () => _showBulkAssignDialogForDetails(context, ref, plots),
+                      icon: Icon(
+                        Icons.grid_view,
+                        size: 18,
+                        color: assignmentsLocked ? AppDesignTokens.iconSubtle : AppDesignTokens.primary,
+                      ),
+                      label: const Text('Bulk Assign'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: assignmentsLocked ? AppDesignTokens.secondaryText : AppDesignTokens.primary,
+                        side: BorderSide(
+                          color: assignmentsLocked ? AppDesignTokens.iconSubtle : AppDesignTokens.primary,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            );
-      }
-    }
-    if (context.mounted) {
-      final total = reps * plotsPerRep;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('$total test plots added ($reps reps × $plotsPerRep plots each)'),
-        backgroundColor: Colors.green,
-      ));
-    }
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            summaryLine,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          if (assignmentsLocked && message.isNotEmpty) ...[
+            const SizedBox(height: AppDesignTokens.spacing12),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppDesignTokens.secondaryText,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
+  Widget _buildPlotsListBodyForDetails(
+      BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
+    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsLockMessage = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
+    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final treatmentMap = {for (final t in treatments) t.id: t};
+    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+    return ListView.builder(
+      itemCount: plots.length,
+      itemBuilder: (context, index) {
+        final plot = plots[index];
+        final assignment = assignmentByPlotId[plot.id];
+        final effectiveTreatmentId = assignment?.treatmentId ?? plot.treatmentId;
+        final effectiveSource = assignment?.assignmentSource ?? plot.assignmentSource;
+        final displayNum = getDisplayPlotLabel(plot, plots);
+        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap, treatmentIdOverride: effectiveTreatmentId);
+        final sourceLabel = getAssignmentSourceLabel(
+            treatmentId: effectiveTreatmentId, assignmentSource: effectiveSource);
+        return Container(
+          margin: const EdgeInsets.only(
+            left: AppDesignTokens.spacing16,
+            right: AppDesignTokens.spacing16,
+            top: 6,
+            bottom: 6,
+          ),
+          decoration: BoxDecoration(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x08000000),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing16,
+              vertical: AppDesignTokens.spacing8,
+            ),
+            leading: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
+              decoration: BoxDecoration(
+                color: AppDesignTokens.primary,
+                borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+              ),
+              child: Text(
+                displayNum,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: Colors.white),
+              ),
+            ),
+            title: Text('Plot $displayNum',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppDesignTokens.primaryText)),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      treatmentLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: effectiveTreatmentId != null
+                            ? AppDesignTokens.primary
+                            : AppDesignTokens.secondaryText,
+                        fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
+                    Text(
+                      sourceLabel,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppDesignTokens.secondaryText,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded,
+                size: 22, color: AppDesignTokens.iconSubtle),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) =>
+                        PlotDetailScreen(trial: widget.trial, plot: plot))),
+            onLongPress: () {
+              if (assignmentsLocked) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(assignmentsLockMessage)),
+                );
+                return;
+              }
+              _showAssignTreatmentDialogForDetails(context, ref, plot, plots);
+            },
+          ),
+        );
+      },
+    );
+  }
 
+  Future<void> _showAssignTreatmentDialogForDetails(
+      BuildContext context, WidgetRef ref, Plot plot, List<Plot> plots) async {
+    return showAssignTreatmentDialogForTrial(
+      trial: widget.trial,
+      context: context,
+      ref: ref,
+      plot: plot,
+      plots: plots,
+    );
+  }
 
-  Future<void> _showBulkAssignDialog(
+  Future<void> _showBulkAssignDialogForDetails(
       BuildContext context, WidgetRef ref, List<Plot> plots) async {
     final treatments =
         ref.read(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-
     if (treatments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1213,14 +1925,11 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       );
       return;
     }
-
-    // Map of plotPk -> selected treatmentId (from Assignments then Plot fallback)
     final assignmentsList = ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     final Map<int, int?> assignments = {
       for (final p in plots) p.id: assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId,
     };
-
     await showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -1246,13 +1955,13 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
                         ),
                         child: Text(getDisplayPlotLabel(plot, plots),
                             style: const TextStyle(
-                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
                                 fontSize: 12,
-                                fontWeight: FontWeight.bold)),
+                                color: Colors.white)),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: DropdownButtonFormField<int>(
+                        child: DropdownButtonFormField<int?>(
                           isDense: true,
                           initialValue: assignments[plot.id],
                           decoration: const InputDecoration(
@@ -1313,218 +2022,23 @@ class _PlotsTabState extends ConsumerState<_PlotsTab> {
       ),
     );
   }
+}
 
-  Future<void> _showAssignTreatmentDialog(
-      BuildContext context, WidgetRef ref, Plot plot, List<Plot> plots) async {
-    return showAssignTreatmentDialogForTrial(
-      trial: widget.trial,
-      context: context,
-      ref: ref,
-      plot: plot,
-      plots: plots,
-    );
-  }
+/// Empty state for PlotDetailsScreen when trial has no plots.
+class _PlotDetailsEmptyContent extends ConsumerWidget {
+  final Trial trial;
 
-  Widget _buildLayoutDiagnosticsBanner(
-      BuildContext context, PlotLayoutDiagnostics diag) {
-    final messages = <String>[];
-    if (diag.noRep.isNotEmpty) {
-      messages.add('${diag.noRep.length} plot(s) without rep');
-    }
-    if (diag.duplicatePositionInRep.isNotEmpty) {
-      messages.add('Duplicate position in rep');
-    }
-    if (diag.unassignedPlotLabels.isNotEmpty) {
-      messages.add('${diag.unassignedPlotLabels.length} unassigned');
-    }
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
-      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
-      decoration: BoxDecoration(
-        color: AppDesignTokens.warningBg,
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
-        border: Border.all(color: AppDesignTokens.warningBorder),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline_rounded, size: 18, color: AppDesignTokens.warningFg),
-          const SizedBox(width: AppDesignTokens.spacing8),
-          Expanded(
-            child: Text(
-              messages.join(' · '),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: AppDesignTokens.warningFg,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  const _PlotDetailsEmptyContent({required this.trial});
 
-  Widget _buildPlotsHeader(
-      BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
-    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-    final message = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
-    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
-    final assignedCount = plots.where((p) =>
-        (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) != null).length;
-    final unassignedCount = plots.length - assignedCount;
-    final title = plots.isEmpty
-        ? '${plots.length} plots'
-        : unassignedCount == 0
-            ? '${plots.length} plots · $assignedCount assigned'
-            : '${plots.length} plots · $assignedCount assigned, $unassignedCount unassigned';
-    final header = StandardSectionHeader(
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locked = isProtocolLocked(trial.status);
+    return AppEmptyState(
       icon: Icons.grid_on,
-      title: title,
-      trailingIndicator: ProtocolLockChip(isLocked: assignmentsLocked, status: widget.trial.status),
-      action: Tooltip(
-        message: assignmentsLocked ? message : 'Assign treatments to multiple plots',
-        child: TextButton.icon(
-          onPressed: assignmentsLocked ? null : () => _showBulkAssignDialog(context, ref, plots),
-          icon: Icon(Icons.assignment_outlined,
-              size: 18,
-              color: assignmentsLocked
-                  ? AppDesignTokens.iconSubtle
-                  : AppDesignTokens.primary),
-          label: Text('Bulk Assign',
-              style: TextStyle(
-                  color: assignmentsLocked
-                      ? AppDesignTokens.secondaryText
-                      : AppDesignTokens.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600)),
-        ),
-      ),
-    );
-    if (!assignmentsLocked) return header;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        header,
-        ProtocolLockNotice(message: message),
-      ],
-    );
-  }
-
-  Widget _buildPlotsListBody(
-      BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
-    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-    final assignmentsLockMessage = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
-    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final treatmentMap = {for (final t in treatments) t.id: t};
-    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
-    return ListView.builder(
-      itemCount: plots.length,
-      itemBuilder: (context, index) {
-        final plot = plots[index];
-        final assignment = assignmentByPlotId[plot.id];
-        final effectiveTreatmentId = assignment?.treatmentId ?? plot.treatmentId;
-        final effectiveSource = assignment?.assignmentSource ?? plot.assignmentSource;
-        final displayNum = getDisplayPlotLabel(plot, plots);
-        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap, treatmentIdOverride: effectiveTreatmentId);
-        final sourceLabel = getAssignmentSourceLabel(
-            treatmentId: effectiveTreatmentId, assignmentSource: effectiveSource);
-        return Container(
-          margin: const EdgeInsets.only(
-            left: AppDesignTokens.spacing16,
-            right: AppDesignTokens.spacing16,
-            top: 6,
-            bottom: 6,
-          ),
-          decoration: BoxDecoration(
-            color: AppDesignTokens.cardSurface,
-            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-            border: Border.all(color: AppDesignTokens.borderCrisp),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x08000000),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppDesignTokens.spacing16,
-            vertical: AppDesignTokens.spacing8,
-          ),
-          leading: Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
-            decoration: BoxDecoration(
-              color: AppDesignTokens.primary,
-              borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
-            ),
-            child: Text(
-              displayNum,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: Colors.white),
-            ),
-          ),
-          title: Text('Plot $displayNum',
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                  color: AppDesignTokens.primaryText)),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    treatmentLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: effectiveTreatmentId != null
-                          ? AppDesignTokens.primary
-                          : AppDesignTokens.secondaryText,
-                      fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                  ),
-                ),
-                if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
-                  Text(
-                    sourceLabel,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppDesignTokens.secondaryText,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          trailing: const Icon(Icons.chevron_right_rounded,
-              size: 22, color: AppDesignTokens.iconSubtle),
-          onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) =>
-                      PlotDetailScreen(trial: widget.trial, plot: plot))),
-          onLongPress: () {
-            if (assignmentsLocked) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(assignmentsLockMessage)),
-              );
-              return;
-            }
-            _showAssignTreatmentDialog(context, ref, plot, plots);
-          },
-        ),
-        );
-      },
+      title: 'No Plots Yet',
+      subtitle: locked
+          ? getProtocolLockMessage(trial.status)
+          : 'Import plots via CSV or add test plots from the Trial screen.',
     );
   }
 }
@@ -1537,6 +2051,8 @@ class _PlotLayoutGrid extends StatelessWidget {
   final Trial trial;
   final _LayoutLayer layer;
   final List<ApplicationPlotRecord> appPlotRecords;
+  /// For Applications layer v1: plot ids whose assigned treatment has at least one application event.
+  final Set<int>? plotPksWithTrialApplication;
   final Map<int, int?>? plotIdToTreatmentId;
   final void Function(Plot plot)? onLongPressPlot;
 
@@ -1546,6 +2062,7 @@ class _PlotLayoutGrid extends StatelessWidget {
     required this.trial,
     required this.layer,
     required this.appPlotRecords,
+    this.plotPksWithTrialApplication,
     this.plotIdToTreatmentId,
     this.onLongPressPlot,
   });
@@ -1570,6 +2087,17 @@ class _PlotLayoutGrid extends StatelessWidget {
 
   Color _tileColorFor(Plot plot) {
     if (layer == _LayoutLayer.applications) {
+      // v1 model: green = treatment has application, grey = unassigned, else treatment color.
+      if (plotPksWithTrialApplication != null) {
+        final effectiveTid = plotIdToTreatmentId?[plot.id] ?? plot.treatmentId;
+        if (effectiveTid == null) return AppDesignTokens.unassignedColor;
+        if (plotPksWithTrialApplication!.contains(plot.id)) return AppDesignTokens.appliedColor;
+        final treatmentIndex = treatments.indexWhere((t) => t.id == effectiveTid);
+        return treatmentIndex >= 0
+            ? AppDesignTokens.treatmentPalette[
+                treatmentIndex % AppDesignTokens.treatmentPalette.length]
+            : AppDesignTokens.unassignedColor;
+      }
       final record = appPlotRecords.where((r) => r.plotPk == plot.id).firstOrNull;
       if (record == null) return AppDesignTokens.noRecordColor;
       if (record.status == 'applied') return AppDesignTokens.appliedColor;
@@ -1602,12 +2130,17 @@ class _PlotLayoutGrid extends StatelessWidget {
               ? Wrap(
                   spacing: 12,
                   runSpacing: 6,
-                  children: [
-                    _legendChip(AppDesignTokens.appliedColor, 'Applied'),
-                    _legendChip(AppDesignTokens.skippedColor, 'Skipped'),
-                    _legendChip(AppDesignTokens.missedColor, 'Missed'),
-                    _legendChip(AppDesignTokens.noRecordColor, 'No record'),
-                  ],
+                  children: plotPksWithTrialApplication != null
+                      ? [
+                          _legendChip(AppDesignTokens.appliedColor, 'Applied'),
+                          _legendChip(AppDesignTokens.unassignedColor, 'Unassigned'),
+                        ]
+                      : [
+                          _legendChip(AppDesignTokens.appliedColor, 'Applied'),
+                          _legendChip(AppDesignTokens.skippedColor, 'Skipped'),
+                          _legendChip(AppDesignTokens.missedColor, 'Missed'),
+                          _legendChip(AppDesignTokens.noRecordColor, 'No record'),
+                        ],
                 )
               : Wrap(
                   spacing: 12,
@@ -1628,38 +2161,36 @@ class _PlotLayoutGrid extends StatelessWidget {
 
   static const double _repLabelWidth = 52.0;
   static const double _tileSpacing = 6.0;
-  static const double _minTileSize = 32.0;
-  static const double _maxTileSize = 72.0;
-  static const double _tileSizeScale = 0.85;
-  static const double _minCellSize = 20.0;
-  static const double _maxCellSize = 64.0;
+  // ignore: unused_field - kept for consistency with fixed 56px cell size
+  static const double _minTileSize = 56.0;
+  // ignore: unused_field - kept for consistency with fixed 56px cell size
+  static const double _maxTileSize = 56.0;
+  // ignore: unused_field - kept for consistency with fixed 56px cell size
+  static const double _tileSizeScale = 1.0;
+  static const double _minCellSize = 56.0;
+  // ignore: unused_field - kept for consistency with fixed 56px cell size
+  static const double _maxCellSize = 56.0;
 
   Widget _buildRepBasedGrid(BuildContext context, Map<int, Treatment> treatmentMap) {
     final blocks = buildRepBasedLayout(plots);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxW = constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : MediaQuery.sizeOf(context).width;
-        final contentWidth = maxW - 24;
-        final plotRowWidth = contentWidth - _repLabelWidth - _tileSpacing;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (blocks.length > 1)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    'Field Layout — Rep-based',
-                    style: TextStyle(
-                        color: AppDesignTokens.secondaryText, fontSize: 11),
-                  ),
+        final hasBoundedHeight = constraints.maxHeight.isFinite && constraints.maxHeight > 0;
+        final contentHeight = hasBoundedHeight ? constraints.maxHeight - 16 : null;
+        final column = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (blocks.length > 1)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 6),
+                child: Text(
+                  'Field Layout — Rep-based',
+                  style: TextStyle(
+                      color: AppDesignTokens.secondaryText, fontSize: 11),
                 ),
-              ...blocks.expand((block) {
+              ),
+            ...blocks.expand((block) {
                 final blockHeader = blocks.length > 1
                     ? [
                         Padding(
@@ -1676,65 +2207,81 @@ class _PlotLayoutGrid extends StatelessWidget {
                       ]
                     : <Widget>[];
                 final repRows = block.repRows.map((repRow) {
-                  final n = repRow.plots.length;
-                  final tileWidth = n > 0
-                      ? (plotRowWidth - (n - 1) * _tileSpacing) / n
-                      : 0.0;
-                  final size = tileWidth.clamp(_minTileSize, _maxTileSize);
-                  final cellSize = (size * _tileSizeScale).clamp(_minCellSize, _maxCellSize);
+                  const cellSize = _minCellSize;
+                  const rowHeight = _minCellSize + 2;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: _tileSpacing),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: _repLabelWidth,
-                          child: Text(
-                            'Rep ${repRow.repNumber}',
-                            style: const TextStyle(
-                              color: AppDesignTokens.secondaryText,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                    child: SizedBox(
+                      height: rowHeight,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: _repLabelWidth,
+                            child: Text(
+                              'Rep ${repRow.repNumber}',
+                              style: const TextStyle(
+                                color: AppDesignTokens.secondaryText,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: _tileSpacing),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                for (var i = 0; i < repRow.plots.length; i++) ...[
-                                  if (i > 0) const SizedBox(width: _tileSpacing),
-                                  SizedBox(
-                                    width: cellSize,
-                                    height: cellSize,
-                                    child: _PlotGridTile(
-                                    plot: repRow.plots[i],
-                                    treatmentMap: treatmentMap,
-                                    treatments: treatments,
-                                    trial: trial,
-                                    tileColor: _tileColorFor(repRow.plots[i]),
-                                    treatmentIdOverride: plotIdToTreatmentId?[repRow.plots[i].id] ?? repRow.plots[i].treatmentId,
-                                    displayLabel: getDisplayPlotLabel(repRow.plots[i], plots),
-                                    onLongPress: onLongPressPlot != null
-                                        ? () => onLongPressPlot!(repRow.plots[i])
-                                        : null,
-                                  ),
-                                  ),
-                                ],
-                              ],
+                          const SizedBox(width: _tileSpacing),
+                          Expanded(
+                            child: ClipRect(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    for (var i = 0; i < repRow.plots.length; i++) ...[
+                                      if (i > 0) const SizedBox(width: _tileSpacing),
+                                      SizedBox(
+                                        width: cellSize,
+                                        height: cellSize,
+                                        child: _PlotGridTile(
+                                          plot: repRow.plots[i],
+                                          treatmentMap: treatmentMap,
+                                          treatments: treatments,
+                                          trial: trial,
+                                          tileColor: _tileColorFor(repRow.plots[i]),
+                                          treatmentIdOverride: plotIdToTreatmentId?[repRow.plots[i].id] ?? repRow.plots[i].treatmentId,
+                                          displayLabel: getDisplayPlotLabel(repRow.plots[i], plots),
+                                          onLongPress: onLongPressPlot != null
+                                              ? () => onLongPressPlot!(repRow.plots[i])
+                                              : null,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 });
                 return [...blockHeader, ...repRows];
               }),
-            ],
-          ),
+          ],
+        );
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: contentHeight != null && contentHeight > 0
+              ? SizedBox(
+                  height: contentHeight,
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    clipBehavior: Clip.hardEdge,
+                    child: column,
+                  ),
+                )
+              : column,
         );
       },
     );
@@ -1767,47 +2314,68 @@ class _PlotGridTile extends StatelessWidget {
     final effectiveTid = treatmentIdOverride ?? plot.treatmentId;
     final treatment = effectiveTid != null ? treatmentMap[effectiveTid] : null;
     final label = displayLabel ?? plot.plotId;
-    return Material(
-      color: tileColor,
-      borderRadius: BorderRadius.circular(6),
-      child: InkWell(
-        onLongPress: onLongPress,
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PlotDetailScreen(trial: trial, plot: plot),
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: tileColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onLongPress: onLongPress,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PlotDetailScreen(trial: trial, plot: plot),
+            ),
+          ),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          highlightColor: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+            width: double.infinity,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    letterSpacing: 0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                treatment != null ? treatment.code : 'Unassigned',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 10,
+                Text(
+                  treatment != null ? treatment.code : '',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1841,6 +2409,10 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   ApplicationEvent? _selectedAppEvent;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
+  final TransformationController _gridTransformController = TransformationController();
+  final GlobalKey _plotViewportKey = GlobalKey();
+  final GlobalKey _gridContentKey = GlobalKey();
+  bool _gridCenterScheduled = false;
 
   @override
   void initState() {
@@ -1849,6 +2421,52 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     _selectedAppEvent = widget.selectedAppEvent;
     _appPlotRecords = List.from(widget.appPlotRecords);
   }
+
+  @override
+  void dispose() {
+    _gridTransformController.dispose();
+    super.dispose();
+  }
+
+  void _centerGridOnFirstFrame(BuildContext context, List<Plot> plots) {
+    if (!mounted) return;
+    final viewportBox = _plotViewportKey.currentContext?.findRenderObject() as RenderBox?;
+    if (viewportBox == null || !viewportBox.hasSize) return;
+    final viewportWidth = viewportBox.size.width;
+    final viewportHeight = viewportBox.size.height;
+    final gridBox = _gridContentKey.currentContext?.findRenderObject() as RenderBox?;
+    double gridWidth;
+    double gridHeight;
+    if (gridBox != null && gridBox.hasSize) {
+      gridWidth = gridBox.size.width;
+      gridHeight = gridBox.size.height;
+    } else {
+      final blocks = buildRepBasedLayout(plots);
+      int columnCount = 0;
+      int rowCount = 0;
+      for (final block in blocks) {
+        for (final row in block.repRows) {
+          if (row.plots.length > columnCount) columnCount = row.plots.length;
+          rowCount++;
+        }
+      }
+      if (columnCount == 0) return;
+      const double cellWidth = 56.0;
+      const double rowHeight = 58.0;
+      const double rowSpacing = 6.0;
+      gridWidth = columnCount * cellWidth;
+      gridHeight = rowCount * (rowHeight + rowSpacing) + 24;
+    }
+    final dx = (viewportWidth - gridWidth) / 2;
+    final dy = (viewportHeight - gridHeight) / 2;
+    final dxClamped = dx > 0 ? dx : 0.0;
+    final dyClamped = dy > 0 ? dy : 0.0;
+    _gridTransformController.value = Matrix4.identity()
+      ..translateByDouble(dxClamped, dyClamped, 0.0, 1.0);
+  }
+
+  void _gridZoomIn() => _plotGridZoom(_gridTransformController, zoomIn: true);
+  void _gridZoomOut() => _plotGridZoom(_gridTransformController, zoomIn: false);
 
   Future<void> _loadAppRecords(ApplicationEvent event) async {
     setState(() {
@@ -1930,24 +2548,103 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                     ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: AppDesignTokens.secondaryText)))
                     : LayoutBuilder(
                         builder: (context, constraints) {
-                          return InteractiveViewer(
-                            minScale: 0.25,
-                            maxScale: 4.0,
-                            panEnabled: true,
-                            scaleEnabled: true,
-                            child: SizedBox(
-                              width: constraints.maxWidth,
-                              child: _PlotLayoutGrid(
-                                plots: plots,
-                                treatments: treatments,
-                                trial: widget.trial,
-                                layer: _layoutLayer,
-                                appPlotRecords: _appPlotRecords,
-                                plotIdToTreatmentId: plotIdToTreatmentId,
-                                onLongPressPlot: assignmentsLocked
-                                    ? null
-                                    : (plot) => _showAssignDialog(context, ref, plot, plots),
-                              ),
+                          if (!_gridCenterScheduled) {
+                            _gridCenterScheduled = true;
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _centerGridOnFirstFrame(context, plots);
+                            });
+                          }
+                          final size = MediaQuery.sizeOf(context);
+                          final viewportWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                              ? constraints.maxWidth
+                              : size.width;
+                          final viewportHeight = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+                              ? constraints.maxHeight
+                              : size.height;
+                          final blocks = buildRepBasedLayout(plots);
+                          int columnCount = 0;
+                          for (final block in blocks) {
+                            for (final row in block.repRows) {
+                              if (row.plots.length > columnCount) columnCount = row.plots.length;
+                            }
+                          }
+                          const double repLabelW = 52.0;
+                          const double tileSpace = 6.0;
+                          const double cellW = 56.0;
+                          const double gridHorizontalPadding = 24.0; // 12 + 12 from Padding in _buildRepBasedGrid
+                          const double gridWidthBuffer = 8.0; // avoid last column clipping from rounding
+                          final double rowContentWidth = columnCount > 0
+                              ? repLabelW + tileSpace + columnCount * cellW + (columnCount - 1) * tileSpace
+                              : viewportWidth;
+                          final double totalGridWidth = rowContentWidth + gridHorizontalPadding + gridWidthBuffer;
+                          final double gridContentWidth = totalGridWidth > viewportWidth ? totalGridWidth : viewportWidth;
+                          final applicationsList = ref.watch(trialApplicationsForTrialProvider(widget.trial.id)).value ?? [];
+                          final treatmentIdsWithApp = applicationsList.map((e) => e.treatmentId).whereType<int>().toSet();
+                          final plotPksWithTrialApplication = <int>{};
+                          for (final p in plots) {
+                            final tid = plotIdToTreatmentId[p.id] ?? p.treatmentId;
+                            if (tid != null && treatmentIdsWithApp.contains(tid)) {
+                              plotPksWithTrialApplication.add(p.id);
+                            }
+                          }
+                          return ClipRect(
+                            child: Stack(
+                              children: [
+                                SizedBox(
+                                  key: _plotViewportKey,
+                                  width: viewportWidth,
+                                  height: viewportHeight,
+                                  child: InteractiveViewer(
+                                    transformationController: _gridTransformController,
+                                    boundaryMargin: EdgeInsets.zero,
+                                    constrained: false,
+                                    minScale: _kGridMinScale,
+                                    maxScale: _kGridMaxScale,
+                                    panEnabled: true,
+                                    scaleEnabled: true,
+                                    child: SizedBox(
+                                      key: _gridContentKey,
+                                      width: gridContentWidth,
+                                      child: _PlotLayoutGrid(
+                                        plots: plots,
+                                        treatments: treatments,
+                                        trial: widget.trial,
+                                        layer: _layoutLayer,
+                                        appPlotRecords: _appPlotRecords,
+                                        plotPksWithTrialApplication: plotPksWithTrialApplication,
+                                        plotIdToTreatmentId: plotIdToTreatmentId,
+                                        onLongPressPlot: assignmentsLocked
+                                            ? null
+                                            : (plot) => _showAssignDialog(context, ref, plot, plots),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: AppDesignTokens.spacing12,
+                                  bottom: AppDesignTokens.spacing12,
+                                  child: Material(
+                                    elevation: 2,
+                                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                                    color: AppDesignTokens.cardSurface,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.zoom_out),
+                                          onPressed: _gridZoomOut,
+                                          tooltip: 'Zoom out',
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.zoom_in),
+                                          onPressed: _gridZoomIn,
+                                          tooltip: 'Zoom in',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -2505,6 +3202,8 @@ class _AssessmentsTab extends ConsumerWidget {
 // SEEDING TAB
 // ─────────────────────────────────────────────
 
+const List<String> _kSeedingRateUnits = ['seeds/m²', 'kg/ha', 'lbs/ac'];
+
 class _SeedingTab extends ConsumerWidget {
   final Trial trial;
 
@@ -2512,149 +3211,500 @@ class _SeedingTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final recordsAsync = ref.watch(seedingRecordsForTrialProvider(trial.id));
+    final eventAsync = ref.watch(seedingEventForTrialProvider(trial.id));
 
-    return recordsAsync.when(
+    return eventAsync.when(
       loading: () => const AppLoadingView(),
       error: (e, st) => Center(
         child: Padding(
           padding: const EdgeInsets.all(AppDesignTokens.spacing16),
           child: Text(
-            'Failed to load seeding records: $e',
+            'Failed to load seeding event: $e',
             style: const TextStyle(color: AppDesignTokens.secondaryText),
           ),
         ),
       ),
-      data: (records) {
-        if (records.isEmpty) {
+      data: (event) {
+        if (event == null) {
           return AppEmptyState(
             icon: Icons.agriculture,
-            title: 'No Seeding Records Yet',
+            title: 'No Seeding Event Yet',
             subtitle: 'Record the seeding operation for this trial',
             action: FilledButton.icon(
-              onPressed: () => _addSeeding(context, ref),
+              onPressed: () => _openSeedingEventSheet(context, ref, null),
               icon: const Icon(Icons.add),
               label: const Text('Add Seeding Event'),
             ),
           );
         }
-
-        return Column(
-          children: [
-            StandardSectionHeader(
-              icon: Icons.agriculture,
-              title: '${records.length} seeding events',
-              action: StandardSectionAddButton(
-                onPressed: () => _addSeeding(context, ref),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: records.length,
-                itemBuilder: (context, i) {
-                  final r = records[i];
-                  final dateText =
-                      r.seedingDate.toLocal().toString().split(' ')[0];
-                  final operatorText = (r.operatorName != null &&
-                          r.operatorName!.trim().isNotEmpty)
-                      ? 'Operator: ${r.operatorName}'
-                      : 'Operator not entered';
-                  final commentsText =
-                      (r.comments != null && r.comments!.trim().isNotEmpty)
-                          ? r.comments!.trim()
-                          : null;
-
-                  return Container(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: AppDesignTokens.spacing16, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppDesignTokens.cardSurface,
-                      borderRadius:
-                          BorderRadius.circular(AppDesignTokens.radiusCard),
-                      border: Border.all(color: AppDesignTokens.borderCrisp),
-                      boxShadow: const [
-                        BoxShadow(
-                            color: Color(0x08000000),
-                            blurRadius: 4,
-                            offset: Offset(0, 2)),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ListTile(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => _SeedingDetailScreen(record: r),
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppDesignTokens.spacing16,
-                          vertical: AppDesignTokens.spacing8),
-                      leading: Container(
-                        padding: const EdgeInsets.all(AppDesignTokens.spacing8),
-                        decoration: BoxDecoration(
-                          color: AppDesignTokens.sectionHeaderBg,
-                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
-                        ),
-                        child: const Icon(Icons.agriculture,
-                            size: 20, color: AppDesignTokens.primary),
-                      ),
-                      title: Text(
-                        'Seeding $dateText',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppDesignTokens.primaryText),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(height: 4),
-                          Text(operatorText,
-                              style: const TextStyle(
-                                  color: AppDesignTokens.secondaryText,
-                                  fontSize: 12)),
-                          if (commentsText != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              commentsText,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: AppDesignTokens.secondaryText,
-                                  fontSize: 12),
-                            ),
-                          ],
-                        ],
-                      ),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: AppDesignTokens.iconSubtle),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          child: _SeedingEventSummaryCard(
+            event: event,
+            onEdit: () => _openSeedingEventSheet(context, ref, event),
+          ),
         );
       },
     );
   }
 
-  void _addSeeding(BuildContext context, WidgetRef ref) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RecordSeedingScreen(trial: trial),
+  void _openSeedingEventSheet(
+      BuildContext context, WidgetRef ref, SeedingEvent? existing) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppDesignTokens.cardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppDesignTokens.radiusLarge)),
       ),
-    ).then((_) {
-      ref.invalidate(seedingRecordsForTrialProvider(trial.id));
-    });
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, scrollController) => _SeedingEventFormSheet(
+          trial: trial,
+          existing: existing,
+          scrollController: scrollController,
+          onSaved: () {
+            ref.invalidate(seedingEventForTrialProvider(trial.id));
+            if (context.mounted) Navigator.pop(sheetContext);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SeedingEventSummaryCard extends StatelessWidget {
+  final SeedingEvent event;
+  final VoidCallback onEdit;
+
+  const _SeedingEventSummaryCard(
+      {required this.event, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    final dateText =
+        event.seedingDate.toLocal().toString().split(' ')[0];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x08000000),
+              blurRadius: 4,
+              offset: Offset(0, 2)),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.sectionHeaderBg,
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                  ),
+                  child: const Icon(Icons.agriculture,
+                      size: 20, color: AppDesignTokens.primary),
+                ),
+                const SizedBox(width: AppDesignTokens.spacing12),
+                Expanded(
+                  child: Text(
+                    'Seeding $dateText',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: AppDesignTokens.primaryText),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: onEdit,
+                  color: AppDesignTokens.primary,
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (event.operatorName != null &&
+                    event.operatorName!.trim().isNotEmpty)
+                  _summaryRow('Operator', event.operatorName!),
+                if (event.seedLotNumber != null &&
+                    event.seedLotNumber!.trim().isNotEmpty)
+                  _summaryRow('Seed lot', event.seedLotNumber!),
+                if (event.seedingRate != null)
+                  _summaryRow(
+                    'Rate',
+                    '${event.seedingRate} ${event.seedingRateUnit ?? ''}'
+                        .trim()),
+                if (event.seedingDepth != null)
+                  _summaryRow('Seeding depth', '${event.seedingDepth} cm'),
+                if (event.rowSpacing != null)
+                  _summaryRow('Row spacing', '${event.rowSpacing} cm'),
+                if (event.equipmentUsed != null &&
+                    event.equipmentUsed!.trim().isNotEmpty)
+                  _summaryRow('Equipment', event.equipmentUsed!),
+                if (event.notes != null && event.notes!.trim().isNotEmpty)
+                  _summaryRow('Notes', event.notes!),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                  fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                  fontSize: 13, color: AppDesignTokens.primaryText),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SeedingEventFormSheet extends ConsumerStatefulWidget {
+  final Trial trial;
+  final SeedingEvent? existing;
+  final ScrollController scrollController;
+  final VoidCallback onSaved;
+
+  const _SeedingEventFormSheet({
+    required this.trial,
+    required this.existing,
+    required this.scrollController,
+    required this.onSaved,
+  });
+
+  @override
+  ConsumerState<_SeedingEventFormSheet> createState() =>
+      _SeedingEventFormSheetState();
+}
+
+class _SeedingEventFormSheetState extends ConsumerState<_SeedingEventFormSheet> {
+  late final TextEditingController _operatorController;
+  late final TextEditingController _seedLotController;
+  late final TextEditingController _rateController;
+  late final TextEditingController _depthController;
+  late final TextEditingController _rowSpacingController;
+  late final TextEditingController _equipmentController;
+  late final TextEditingController _notesController;
+  DateTime _seedingDate = DateTime.now();
+  String? _rateUnit;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _seedingDate = e?.seedingDate.toLocal() ?? DateTime.now();
+    _rateUnit = e?.seedingRateUnit;
+    _operatorController =
+        TextEditingController(text: e?.operatorName ?? '');
+    _seedLotController =
+        TextEditingController(text: e?.seedLotNumber ?? '');
+    _rateController = TextEditingController(
+        text: e?.seedingRate != null ? e!.seedingRate.toString() : '');
+    _depthController = TextEditingController(
+        text: e?.seedingDepth != null ? e!.seedingDepth.toString() : '');
+    _rowSpacingController = TextEditingController(
+        text: e?.rowSpacing != null ? e!.rowSpacing.toString() : '');
+    _equipmentController =
+        TextEditingController(text: e?.equipmentUsed ?? '');
+    _notesController = TextEditingController(text: e?.notes ?? '');
+  }
+
+  @override
+  void dispose() {
+    _operatorController.dispose();
+    _seedLotController.dispose();
+    _rateController.dispose();
+    _depthController.dispose();
+    _rowSpacingController.dispose();
+    _equipmentController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _seedingDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && mounted) setState(() => _seedingDate = picked);
+  }
+
+  Future<void> _save() async {
+    final rate = _rateController.text.trim().isEmpty
+        ? null
+        : double.tryParse(_rateController.text.trim());
+    final depth = _depthController.text.trim().isEmpty
+        ? null
+        : double.tryParse(_depthController.text.trim());
+    final rowSpacing = _rowSpacingController.text.trim().isEmpty
+        ? null
+        : double.tryParse(_rowSpacingController.text.trim());
+
+    final companion = widget.existing == null
+        ? SeedingEventsCompanion.insert(
+            trialId: widget.trial.id,
+            seedingDate: _seedingDate,
+            operatorName: drift.Value(_operatorController.text.trim().isEmpty
+                ? null
+                : _operatorController.text.trim()),
+            seedLotNumber: drift.Value(_seedLotController.text.trim().isEmpty
+                ? null
+                : _seedLotController.text.trim()),
+            seedingRate: drift.Value(rate),
+            seedingRateUnit: drift.Value(_rateUnit),
+            seedingDepth: drift.Value(depth),
+            rowSpacing: drift.Value(rowSpacing),
+            equipmentUsed: drift.Value(_equipmentController.text.trim().isEmpty
+                ? null
+                : _equipmentController.text.trim()),
+            notes: drift.Value(_notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim()),
+          )
+        : SeedingEventsCompanion(
+            id: drift.Value(widget.existing!.id),
+            trialId: drift.Value(widget.trial.id),
+            seedingDate: drift.Value(_seedingDate),
+            operatorName: drift.Value(_operatorController.text.trim().isEmpty
+                ? null
+                : _operatorController.text.trim()),
+            seedLotNumber: drift.Value(_seedLotController.text.trim().isEmpty
+                ? null
+                : _seedLotController.text.trim()),
+            seedingRate: drift.Value(rate),
+            seedingRateUnit: drift.Value(_rateUnit),
+            seedingDepth: drift.Value(depth),
+            rowSpacing: drift.Value(rowSpacing),
+            equipmentUsed: drift.Value(_equipmentController.text.trim().isEmpty
+                ? null
+                : _equipmentController.text.trim()),
+            notes: drift.Value(_notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim()),
+          );
+
+    setState(() => _saving = true);
+    try {
+      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(companion);
+      if (mounted) widget.onSaved();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(
+                top: AppDesignTokens.spacing12,
+                bottom: AppDesignTokens.spacing16),
+            decoration: BoxDecoration(
+              color: AppDesignTokens.dragHandle,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16),
+            child: Text(
+              widget.existing == null
+                  ? 'Add Seeding Event'
+                  : 'Edit Seeding Event',
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesignTokens.primaryText),
+            ),
+          ),
+          const SizedBox(height: AppDesignTokens.spacing16),
+          Expanded(
+            child: ListView(
+              controller: widget.scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16),
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Date',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.primaryText)),
+                  subtitle: Text(
+                    _seedingDate.toLocal().toString().split(' ')[0],
+                    style: const TextStyle(
+                        color: AppDesignTokens.primary,
+                        fontWeight: FontWeight.w500),
+                  ),
+                  trailing: const Icon(Icons.calendar_today_outlined,
+                      color: AppDesignTokens.primary, size: 20),
+                  onTap: _pickDate,
+                ),
+                const SizedBox(height: AppDesignTokens.spacing8),
+                TextField(
+                  controller: _operatorController,
+                  decoration: const InputDecoration(
+                    labelText: 'Operator name (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _seedLotController,
+                  decoration: const InputDecoration(
+                    labelText: 'Seed lot number (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _rateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Seeding rate (optional)',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                      ),
+                    ),
+                    const SizedBox(width: AppDesignTokens.spacing8),
+                    Expanded(
+                      child: DropdownButtonFormField<String?>(
+                        // ignore: deprecated_member_use
+                        value: _rateUnit,
+                        decoration: const InputDecoration(
+                          labelText: 'Unit',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('—')),
+                          ..._kSeedingRateUnits.map(
+                            (u) => DropdownMenuItem<String?>(
+                                value: u, child: Text(u)),
+                          ),
+                        ],
+                        onChanged: (v) => setState(() => _rateUnit = v),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _depthController,
+                  decoration: const InputDecoration(
+                    labelText: 'Seeding depth cm (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _rowSpacingController,
+                  decoration: const InputDecoration(
+                    labelText: 'Row spacing cm (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _equipmentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Equipment used (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: AppDesignTokens.spacing24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _saving ? null : _save,
+                    child: Text(_saving ? 'Saving…' : 'Save'),
+                  ),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing16),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
 // ─────────────────────────────────────────────
-// APPLICATIONS TAB (placeholder)
+// APPLICATIONS TAB
 // ─────────────────────────────────────────────
 
 // ─────────────────────────────────────────────
@@ -3914,9 +4964,45 @@ class SessionsView extends ConsumerWidget {
                 stackTrace: st,
                 onRetry: () => ref.invalidate(sessionsForTrialProvider(trial.id)),
               ),
-              data: (sessions) => sessions.isEmpty
-                  ? _buildEmptySessions(context)
-                  : _buildSessionsList(context, ref, sessions),
+              data: (sessions) {
+                final applicationsList = ref.watch(trialApplicationsForTrialProvider(trial.id)).value ?? [];
+                final firstApplicationDate = applicationsList.isNotEmpty
+                    ? applicationsList.first.applicationDate
+                    : null;
+                final ratingBeforeFirstApp = firstApplicationDate != null &&
+                    sessions.any((s) => s.startedAt.isBefore(firstApplicationDate));
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (ratingBeforeFirstApp) _buildSessionDateWarningBanner(context),
+                    Expanded(
+                      child: sessions.isEmpty
+                          ? _buildEmptySessions(context)
+                          : _buildSessionsList(context, ref, sessions),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionDateWarningBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: AppDesignTokens.warningBg,
+      child: const Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: AppDesignTokens.warningFg, size: 20),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Rating recorded before first application — check session dates',
+              style: TextStyle(fontSize: 13, color: AppDesignTokens.warningFg),
             ),
           ),
         ],
@@ -4230,640 +5316,563 @@ class _ApplicationsTab extends ConsumerWidget {
   final Trial trial;
   const _ApplicationsTab({required this.trial});
 
+  static const List<String> _rateUnits = ['L/ha', 'kg/ha', 'g/ha', 'mL/ha', 'oz/ac'];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(applicationsForTrialProvider(trial.id));
-    return eventsAsync.when(
+    final applicationsAsync = ref.watch(trialApplicationsForTrialProvider(trial.id));
+    return applicationsAsync.when(
       loading: () => const AppLoadingView(),
-      error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(applicationsForTrialProvider(trial.id))),
-      data: (events) => events.isEmpty
+      error: (e, st) => AppErrorView(
+        error: e,
+        stackTrace: st,
+        onRetry: () => ref.invalidate(trialApplicationsForTrialProvider(trial.id)),
+      ),
+      data: (list) => list.isEmpty
           ? _buildEmpty(context, ref)
-          : _buildList(context, ref, events),
+          : _buildList(context, ref, list),
     );
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
     return AppEmptyState(
       icon: Icons.science,
-      title: 'No Application Events Yet',
-      subtitle: 'Record spray, granular and other application events',
+      title: 'No Applications Yet',
+      subtitle: 'Record spray, granular and other application events for this trial.',
       action: FilledButton.icon(
-        onPressed: () => _showAddEventDialog(context, ref),
+        onPressed: () => _showApplicationSheet(context, ref, null),
         icon: const Icon(Icons.add),
-        label: const Text('Add Application Event'),
+        label: const Text('Add Application'),
       ),
     );
   }
 
-  Widget _buildApplicationsListView(BuildContext context, WidgetRef ref, List<ApplicationEvent> events) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
-      itemCount: events.length,
-      itemBuilder: (context, index) {
-        final e = events[index];
-        final dateStr =
-            '${e.applicationDate.year}-${e.applicationDate.month.toString().padLeft(2, '0')}-${e.applicationDate.day.toString().padLeft(2, '0')}';
-        final isCompleted = e.status == 'completed';
-        return Card(
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isCompleted
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.transparent,
-                border: isCompleted
+  Widget _buildApplicationTile(
+    BuildContext context,
+    WidgetRef ref,
+    TrialApplicationEvent e,
+  ) {
+    final dateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
+    final productLabel = e.productName?.trim().isNotEmpty == true
+        ? e.productName!
+        : null;
+    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
+    final treatment = e.treatmentId != null
+        ? treatments.where((t) => t.id == e.treatmentId).firstOrNull
+        : null;
+
+    return Card(
+      child: ListTile(
+        title: Text(
+          dateStr,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              productLabel ?? 'No product specified',
+              style: TextStyle(
+                color: productLabel != null
                     ? null
-                    : Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
-                borderRadius: BorderRadius.circular(8),
+                    : Theme.of(context).textTheme.bodySmall?.color,
               ),
-              child: Text('A${e.applicationNumber}',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: isCompleted
-                          ? Colors.white
-                          : Theme.of(context).colorScheme.primary)),
             ),
-            title: Row(children: [
-              Expanded(
-                child: Text(
-                  e.timingLabel ?? '${_methodLabel(e.method)} — $dateStr',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+            if (e.rate != null && e.rateUnit != null)
+              Text(
+                '${e.rate} ${e.rateUnit}',
+                style: const TextStyle(fontSize: 13),
+              ),
+            if (treatment != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Chip(
+                  label: Text(treatment.code),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
-              Builder(builder: (ctx2) {
-                final isPartial = e.partialFlag;
-                final bgColor = isCompleted
-                    ? (isPartial ? AppDesignTokens.partialBg : AppDesignTokens.openSessionBgLight)
-                    : AppDesignTokens.plannedBg;
-                final fgColor = isCompleted
-                    ? (isPartial ? AppDesignTokens.partialFg : AppDesignTokens.appliedColor)
-                    : AppDesignTokens.plannedFg;
-                final icn = isCompleted
-                    ? (isPartial ? Icons.warning_amber_rounded : Icons.check_circle)
-                    : Icons.schedule;
-                final lbl = isCompleted
-                    ? (isPartial ? 'Partial' : 'Completed')
-                    : 'Planned';
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icn, size: 11, color: fgColor),
-                      const SizedBox(width: 3),
-                      Text(
-                        lbl,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: fgColor,
-                        ),
+          ],
+        ),
+        trailing: const Icon(Icons.chevron_right, size: 18),
+        onTap: () => _showApplicationSheet(context, ref, e),
+      ),
+    );
+  }
+
+  Widget _buildList(BuildContext context, WidgetRef ref, List<TrialApplicationEvent> list) {
+    return Stack(
+      children: [
+        ListView.builder(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
+          itemCount: list.length,
+          itemBuilder: (context, index) {
+            final e = list[index];
+            return Dismissible(
+              key: Key(e.id),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                color: Colors.red,
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              confirmDismiss: (direction) async {
+                return await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete Application?'),
+                    content: const Text(
+                      'This application will be permanently deleted.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Delete'),
                       ),
                     ],
                   ),
                 );
-              }),
-            ]),
-            subtitle: Text([
-              _methodLabel(e.method),
-              if (e.growthStage != null) e.growthStage!,
-              if (e.operatorName != null) e.operatorName!,
-              if (e.partialFlag) 'Partial',
-            ].whereType<String>().join('  ·  ')),
-            trailing: const Icon(Icons.chevron_right, size: 18),
-            onTap: () => _showEventDetail(context, e),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildList(BuildContext context, WidgetRef ref, List<ApplicationEvent> events) {
-    return Stack(
-      children: [
-        _buildApplicationsListView(context, ref, events),
+              },
+              onDismissed: (_) {
+                ref.read(applicationRepositoryProvider).deleteApplication(e.id);
+              },
+              child: _buildApplicationTile(context, ref, e),
+            );
+          },
+        ),
         Positioned(
           bottom: 16,
           right: 16,
           child: FloatingActionButton.extended(
             heroTag: 'add_application',
-            onPressed: () => _showAddEventDialog(context, ref),
+            onPressed: () => _showApplicationSheet(context, ref, null),
             icon: const Icon(Icons.add),
-            label: const Text('Add Event'),
+            label: const Text('Add Application'),
           ),
         ),
       ],
     );
   }
 
-  /// Completion (and future "Mark as Planned" reversal) must produce audit
-  /// records when the audit layer is built. See docs/AUDIT_APPLICATION_EVENTS.md.
-  Future<void> _showMarkCompletedDialog(
-      BuildContext context, ApplicationEvent e) async {
-    final repo = ProviderScope.containerOf(context)
-        .read(applicationRepositoryProvider);
-    final operatorController = TextEditingController(
-        text: e.operatorName ?? '');
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Mark as Completed'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              e.timingLabel ?? 'Application ${e.applicationNumber}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: operatorController,
-              decoration: const InputDecoration(
-                labelText: 'Completed by (optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Did this application cover the entire trial?',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'If only some plots were sprayed, choose No and create a second event for the remaining plots.',
-              style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          OutlinedButton(
-            onPressed: () async {
-              await repo.markCompleted(
-                eventId: e.id,
-                trialId: e.trialId,
-                completedBy: operatorController.text.trim(),
-                coversEntireTrial: false,
-                specificPlotPks: [],
-              );
-              if (ctx.mounted) Navigator.pop(ctx);
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text('No — Partial'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              await repo.markCompleted(
-                eventId: e.id,
-                trialId: e.trialId,
-                completedBy: operatorController.text.trim(),
-                coversEntireTrial: true,
-              );
-              if (ctx.mounted) Navigator.pop(ctx);
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text('Yes — Full Trial'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Every edit save must produce an audit record (event_edited) when the
-  /// audit layer is built. See docs/AUDIT_APPLICATION_EVENTS.md.
-  Future<void> _showEditEventDialog(
-      BuildContext context, ApplicationEvent e) async {
-    final repo = ProviderScope.containerOf(context)
-        .read(applicationRepositoryProvider);
-    final timingController =
-        TextEditingController(text: e.timingLabel ?? '');
-    final growthController =
-        TextEditingController(text: e.growthStage ?? '');
-    final operatorController =
-        TextEditingController(text: e.operatorName ?? '');
-    final equipmentController =
-        TextEditingController(text: e.equipment ?? '');
-    final weatherController =
-        TextEditingController(text: e.weather ?? '');
-    final notesController = TextEditingController(text: e.notes ?? '');
-    DateTime selectedDate = e.applicationDate;
-    String selectedMethod = e.method;
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final d = selectedDate;
-          final dateLabel =
-              '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-          return AlertDialog(
-            title: Text('Edit Application #${e.applicationNumber}'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: timingController,
-                    decoration: const InputDecoration(
-                        labelText: 'Timing Label',
-                        border: OutlineInputBorder()),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedMethod,
-                    decoration: const InputDecoration(
-                        labelText: 'Application Method',
-                        border: OutlineInputBorder()),
-                    items: const [
-                      DropdownMenuItem(value: 'spray', child: Text('Spray')),
-                      DropdownMenuItem(value: 'granular', child: Text('Granular')),
-                      DropdownMenuItem(value: 'seed_treatment', child: Text('Seed Treatment')),
-                      DropdownMenuItem(value: 'soil_drench', child: Text('Soil Drench')),
-                      DropdownMenuItem(value: 'fertigation', child: Text('Fertigation')),
-                      DropdownMenuItem(value: 'in_furrow', child: Text('In-Furrow')),
-                      DropdownMenuItem(value: 'broadcast', child: Text('Broadcast')),
-                      DropdownMenuItem(value: 'banded', child: Text('Banded')),
-                    ],
-                    onChanged: (v) =>
-                        setDialogState(() => selectedMethod = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate: selectedDate,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (picked != null) {
-                        setDialogState(() => selectedDate = picked);
-                      }
-                    },
-                    icon: const Icon(Icons.calendar_today),
-                    label: Text('Date: $dateLabel'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: growthController,
-                    decoration: const InputDecoration(
-                        labelText: 'Growth Stage',
-                        border: OutlineInputBorder()),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: operatorController,
-                    decoration: const InputDecoration(
-                        labelText: 'Operator',
-                        border: OutlineInputBorder()),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: equipmentController,
-                    decoration: const InputDecoration(
-                        labelText: 'Equipment',
-                        border: OutlineInputBorder()),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: weatherController,
-                    decoration: const InputDecoration(
-                        labelText: 'Weather Conditions',
-                        border: OutlineInputBorder()),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: notesController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                        labelText: 'Notes',
-                        border: OutlineInputBorder()),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel')),
-              FilledButton(
-                onPressed: () async {
-                  final updated = e.copyWith(
-                    timingLabel: drift.Value(timingController.text.trim().isEmpty
-                        ? null
-                        : timingController.text.trim()),
-                    method: selectedMethod,
-                    applicationDate: selectedDate,
-                    growthStage: drift.Value(growthController.text.trim().isEmpty
-                        ? null
-                        : growthController.text.trim()),
-                    operatorName: drift.Value(operatorController.text.trim().isEmpty
-                        ? null
-                        : operatorController.text.trim()),
-                    equipment: drift.Value(equipmentController.text.trim().isEmpty
-                        ? null
-                        : equipmentController.text.trim()),
-                    weather: drift.Value(weatherController.text.trim().isEmpty
-                        ? null
-                        : weatherController.text.trim()),
-                    notes: drift.Value(notesController.text.trim().isEmpty
-                        ? null
-                        : notesController.text.trim()),
-                  );
-                  await repo.updateEvent(updated);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showEventDetail(BuildContext context, ApplicationEvent e) {
-    final dateStr =
-        '${e.applicationDate.year}-${e.applicationDate.month.toString().padLeft(2, '0')}-${e.applicationDate.day.toString().padLeft(2, '0')}';
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('A${e.applicationNumber}',
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(e.timingLabel ?? 'Application ${e.applicationNumber}',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-            ]),
-            const Divider(height: 24),
-            _detailRow(context, Icons.science, 'Method', _methodLabel(e.method)),
-            _detailRow(context, Icons.calendar_today, 'Date', dateStr),
-            if (e.growthStage != null)
-              _detailRow(context, Icons.grass, 'Growth Stage', e.growthStage!),
-            if (e.operatorName != null)
-              _detailRow(context, Icons.person, 'Operator', e.operatorName!),
-            if (e.equipment != null)
-              _detailRow(context, Icons.precision_manufacturing, 'Equipment', e.equipment!),
-            if (e.weather != null)
-              _detailRow(context, Icons.cloud, 'Weather', e.weather!),
-            if (e.notes != null)
-              _detailRow(context, Icons.notes, 'Notes', e.notes!),
-            const SizedBox(height: 16),
-            if (e.status != 'completed' || e.partialFlag)
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    _showMarkCompletedDialog(ctx, e);
-                  },
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Mark Completed'),
-                ),
-              ),
-            if (e.status != 'completed' || e.partialFlag) const SizedBox(height: 8),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _showEditEventDialog(context, e);
-                    },
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Edit'),
-                  ),
-                ),
-              const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red)),
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: ctx,
-                        builder: (d) => AlertDialog(
-                          title: const Text('Delete Application Event?'),
-                          content: const Text(
-                              'This will permanently delete this event and all its plot records.'),
-                          actions: [
-                            TextButton(
-                                onPressed: () => Navigator.pop(d, false),
-                                child: const Text('Cancel')),
-                            FilledButton(
-                              style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.red),
-                              onPressed: () => Navigator.pop(d, true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true && ctx.mounted) {
-                        final repo = ProviderScope.containerOf(ctx)
-                            .read(applicationRepositoryProvider);
-                        await repo.deleteEvent(e.id);
-                        if (ctx.mounted) Navigator.pop(ctx);
-                      }
-                    },
-                    icon: const Icon(Icons.delete, size: 16),
-                    label: const Text('Delete'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _detailRow(BuildContext context, IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 100,
-            child: Text(label,
-                style: const TextStyle(color: AppDesignTokens.secondaryText, fontSize: 13)),
-          ),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _methodLabel(String method) {
-    const labels = {
-      'spray': 'Spray',
-      'granular': 'Granular',
-      'seed_treatment': 'Seed Treatment',
-      'soil_drench': 'Soil Drench',
-      'fertigation': 'Fertigation',
-      'in_furrow': 'In-Furrow',
-      'broadcast': 'Broadcast',
-      'banded': 'Banded',
-    };
-    return labels[method] ?? method;
-  }
-
-  Future<void> _showAddEventDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showApplicationSheet(
+    BuildContext context,
+    WidgetRef ref,
+    TrialApplicationEvent? existing,
+  ) async {
     final repo = ref.read(applicationRepositoryProvider);
-    final timingController = TextEditingController();
-    final growthController = TextEditingController();
-    final operatorController = TextEditingController();
-    final equipmentController = TextEditingController();
-    final weatherController = TextEditingController();
-    final notesController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
-    String selectedMethod = 'spray';
+    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
 
-    final nextNumber = await repo.getNextApplicationNumber(trial.id);
-    timingController.text = 'Application $nextNumber';
+    final dateController = ValueNotifier<DateTime>(
+      existing?.applicationDate ?? DateTime.now(),
+    );
+    final treatmentIdController = ValueNotifier<int?>(existing?.treatmentId);
+    final productController = TextEditingController(text: existing?.productName ?? '');
+    final rateController = TextEditingController(
+      text: existing?.rate != null ? existing!.rate.toString() : '',
+    );
+    final rateUnitController = ValueNotifier<String?>(
+      existing?.rateUnit ?? (existing == null ? _rateUnits.first : null),
+    );
+    final waterVolumeController = TextEditingController(
+      text: existing?.waterVolume != null ? existing!.waterVolume.toString() : '',
+    );
+    final growthStageController = TextEditingController(text: existing?.growthStageCode ?? '');
+    final operatorController = TextEditingController(text: existing?.operatorName ?? '');
+    final equipmentController = TextEditingController(text: existing?.equipmentUsed ?? '');
+    final windSpeedController = TextEditingController(
+      text: existing?.windSpeed != null ? existing!.windSpeed.toString() : '',
+    );
+    final windDirectionController = TextEditingController(text: existing?.windDirection ?? '');
+    final temperatureController = TextEditingController(
+      text: existing?.temperature != null ? existing!.temperature.toString() : '',
+    );
+    final humidityController = TextEditingController(
+      text: existing?.humidity != null ? existing!.humidity.toString() : '',
+    );
+    final notesController = TextEditingController(text: existing?.notes ?? '');
 
     if (!context.mounted) return;
-
-    await showDialog(
+    await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final d = selectedDate;
-          final dateLabel = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-          return AlertDialog(
-            title: Text('Add Application Event #$nextNumber'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: timingController,
-                    decoration: const InputDecoration(
-                        labelText: 'Timing Label', border: OutlineInputBorder()),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedMethod,
-                    decoration: const InputDecoration(
-                        labelText: 'Application Method', border: OutlineInputBorder()),
-                    items: const [
-                      DropdownMenuItem(value: 'spray', child: Text('Spray')),
-                      DropdownMenuItem(value: 'granular', child: Text('Granular')),
-                      DropdownMenuItem(value: 'seed_treatment', child: Text('Seed Treatment')),
-                      DropdownMenuItem(value: 'soil_drench', child: Text('Soil Drench')),
-                      DropdownMenuItem(value: 'fertigation', child: Text('Fertigation')),
-                      DropdownMenuItem(value: 'in_furrow', child: Text('In-Furrow')),
-                      DropdownMenuItem(value: 'broadcast', child: Text('Broadcast')),
-                      DropdownMenuItem(value: 'banded', child: Text('Banded')),
-                    ],
-                    onChanged: (v) => setDialogState(() => selectedMethod = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate: selectedDate,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (picked != null) setDialogState(() => selectedDate = picked);
-                    },
-                    icon: const Icon(Icons.calendar_today),
-                    label: Text('Date: $dateLabel'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(controller: growthController,
+        builder: (ctx, setState) {
+          final selectedDate = dateController.value;
+          final selectedTreatmentId = treatmentIdController.value;
+          final selectedRateUnit = rateUnitController.value ?? _rateUnits.first;
+          final dateLabel = DateFormat('MMM d, yyyy').format(selectedDate);
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      existing == null ? 'Add Application' : 'Edit Application',
+                      style: Theme.of(ctx).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          dateController.value = picked;
+                          setState(() {});
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text('Date: $dateLabel'),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<int?>(
+                      initialValue: selectedTreatmentId,
                       decoration: const InputDecoration(
-                          labelText: 'Growth Stage (e.g. GS31)', border: OutlineInputBorder())),
-                  const SizedBox(height: 12),
-                  TextField(controller: operatorController,
+                        labelText: 'Treatment',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('None'),
+                        ),
+                        ...treatments.map(
+                          (t) => DropdownMenuItem<int?>(
+                            value: t.id,
+                            child: Text(t.code),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        treatmentIdController.value = v;
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: productController,
                       decoration: const InputDecoration(
-                          labelText: 'Operator', border: OutlineInputBorder())),
-                  const SizedBox(height: 12),
-                  TextField(controller: equipmentController,
+                        labelText: 'Product Name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: rateController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Rate',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedRateUnit,
+                            decoration: const InputDecoration(
+                              labelText: 'Unit',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: _rateUnits
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                                .toList(),
+                            onChanged: (v) {
+                              rateUnitController.value = v;
+                              setState(() {});
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: waterVolumeController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
-                          labelText: 'Equipment', border: OutlineInputBorder())),
-                  const SizedBox(height: 12),
-                  TextField(controller: weatherController,
+                        labelText: 'Water Volume (L/ha)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: growthStageController,
                       decoration: const InputDecoration(
-                          labelText: 'Weather Conditions', border: OutlineInputBorder())),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: notesController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                        labelText: 'Notes (optional)', border: OutlineInputBorder()),
-                  ),
-                ],
+                        labelText: 'Growth Stage / BBCH',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: operatorController,
+                      decoration: const InputDecoration(
+                        labelText: 'Operator',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: equipmentController,
+                      decoration: const InputDecoration(
+                        labelText: 'Equipment',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Weather',
+                      style: Theme.of(ctx).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: windSpeedController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Wind Speed',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: windDirectionController,
+                            decoration: const InputDecoration(
+                              labelText: 'Wind Direction',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: temperatureController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Temperature (°C)',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: humidityController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Humidity (%)',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Notes',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        if (existing != null) ...[
+                          TextButton(
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: ctx,
+                                builder: (d) => AlertDialog(
+                                  title: const Text('Delete Application?'),
+                                  content: const Text(
+                                    'This application will be permanently deleted.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(d, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      onPressed: () => Navigator.pop(d, true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true && ctx.mounted) {
+                                await repo.deleteApplication(existing.id);
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              }
+                            },
+                            child: const Text('Delete'),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: () async {
+                            final date = dateController.value;
+                            final rate = double.tryParse(rateController.text.trim());
+                            final waterVolume = double.tryParse(
+                              waterVolumeController.text.trim(),
+                            );
+                            final windSpeed = double.tryParse(
+                              windSpeedController.text.trim(),
+                            );
+                            final temperature = double.tryParse(
+                              temperatureController.text.trim(),
+                            );
+                            final humidity = double.tryParse(
+                              humidityController.text.trim(),
+                            );
+                            if (existing == null) {
+                              await repo.createApplication(
+                                TrialApplicationEventsCompanion.insert(
+                                  trialId: trial.id,
+                                  applicationDate: date,
+                                  treatmentId: drift.Value(treatmentIdController.value),
+                                  productName: drift.Value(
+                                    productController.text.trim().isEmpty
+                                        ? null
+                                        : productController.text.trim(),
+                                  ),
+                                  rate: drift.Value(rate),
+                                  rateUnit: drift.Value(
+                                    rateUnitController.value?.trim().isEmpty == true
+                                        ? null
+                                        : rateUnitController.value,
+                                  ),
+                                  waterVolume: drift.Value(waterVolume),
+                                  growthStageCode: drift.Value(
+                                    growthStageController.text.trim().isEmpty
+                                        ? null
+                                        : growthStageController.text.trim(),
+                                  ),
+                                  operatorName: drift.Value(
+                                    operatorController.text.trim().isEmpty
+                                        ? null
+                                        : operatorController.text.trim(),
+                                  ),
+                                  equipmentUsed: drift.Value(
+                                    equipmentController.text.trim().isEmpty
+                                        ? null
+                                        : equipmentController.text.trim(),
+                                  ),
+                                  windSpeed: drift.Value(windSpeed),
+                                  windDirection: drift.Value(
+                                    windDirectionController.text.trim().isEmpty
+                                        ? null
+                                        : windDirectionController.text.trim(),
+                                  ),
+                                  temperature: drift.Value(temperature),
+                                  humidity: drift.Value(humidity),
+                                  notes: drift.Value(
+                                    notesController.text.trim().isEmpty
+                                        ? null
+                                        : notesController.text.trim(),
+                                  ),
+                                ),
+                              );
+                            } else {
+                              await repo.updateApplication(
+                                existing.id,
+                                TrialApplicationEventsCompanion(
+                                  treatmentId: drift.Value(treatmentIdController.value),
+                                  productName: drift.Value(
+                                    productController.text.trim().isEmpty
+                                        ? null
+                                        : productController.text.trim(),
+                                  ),
+                                  rate: drift.Value(rate),
+                                  rateUnit: drift.Value(
+                                    rateUnitController.value?.trim().isEmpty == true
+                                        ? null
+                                        : rateUnitController.value,
+                                  ),
+                                  waterVolume: drift.Value(waterVolume),
+                                  growthStageCode: drift.Value(
+                                    growthStageController.text.trim().isEmpty
+                                        ? null
+                                        : growthStageController.text.trim(),
+                                  ),
+                                  operatorName: drift.Value(
+                                    operatorController.text.trim().isEmpty
+                                        ? null
+                                        : operatorController.text.trim(),
+                                  ),
+                                  equipmentUsed: drift.Value(
+                                    equipmentController.text.trim().isEmpty
+                                        ? null
+                                        : equipmentController.text.trim(),
+                                  ),
+                                  windSpeed: drift.Value(windSpeed),
+                                  windDirection: drift.Value(
+                                    windDirectionController.text.trim().isEmpty
+                                        ? null
+                                        : windDirectionController.text.trim(),
+                                  ),
+                                  temperature: drift.Value(temperature),
+                                  humidity: drift.Value(humidity),
+                                  notes: drift.Value(
+                                    notesController.text.trim().isEmpty
+                                        ? null
+                                        : notesController.text.trim(),
+                                  ),
+                                  applicationDate: drift.Value(date),
+                                ),
+                              );
+                            }
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          },
+                          child: const Text('Save'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-              FilledButton(
-                onPressed: () async {
-                  await repo.insertEvent(
-                    trialId: trial.id,
-                    applicationNumber: nextNumber,
-                    timingLabel: timingController.text.trim().isEmpty
-                        ? null : timingController.text.trim(),
-                    method: selectedMethod,
-                    applicationDate: selectedDate,
-                    growthStage: growthController.text.trim().isEmpty
-                        ? null : growthController.text.trim(),
-                    operatorName: operatorController.text.trim().isEmpty
-                        ? null : operatorController.text.trim(),
-                    equipment: equipmentController.text.trim().isEmpty
-                        ? null : equipmentController.text.trim(),
-                    weather: weatherController.text.trim().isEmpty
-                        ? null : weatherController.text.trim(),
-                    notes: notesController.text.trim().isEmpty
-                        ? null : notesController.text.trim(),
-                  );
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('Save'),
-              ),
-            ],
           );
         },
       ),

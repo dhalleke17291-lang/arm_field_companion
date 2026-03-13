@@ -6,7 +6,40 @@ class ApplicationRepository {
 
   ApplicationRepository(this._db);
 
-  // ── Events ──────────────────────────────────────────────
+  // ── Trial application events (trial_application_events table) ────────────
+  // days_after_seeding is never stored; derived at read time from application_date minus seeding date.
+
+  Stream<List<TrialApplicationEvent>> watchApplicationsForTrial(int trialId) {
+    return (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.trialId.equals(trialId))
+          ..orderBy([(e) => OrderingTerm.asc(e.applicationDate)]))
+        .watch();
+  }
+
+  Future<List<TrialApplicationEvent>> getApplicationsForTrial(int trialId) {
+    return (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.trialId.equals(trialId))
+          ..orderBy([(e) => OrderingTerm.asc(e.applicationDate)]))
+        .get();
+  }
+
+  Future<void> createApplication(TrialApplicationEventsCompanion companion) {
+    return _db.into(_db.trialApplicationEvents).insert(companion);
+  }
+
+  Future<void> updateApplication(String id, TrialApplicationEventsCompanion companion) {
+    return (_db.update(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .write(companion);
+  }
+
+  Future<void> deleteApplication(String id) {
+    return (_db.delete(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .go();
+  }
+
+  // ── Slot-based application events (application_events table) ─────────────
 
   Stream<List<ApplicationEvent>> watchEventsForTrial(int trialId) {
     return (_db.select(_db.applicationEvents)
