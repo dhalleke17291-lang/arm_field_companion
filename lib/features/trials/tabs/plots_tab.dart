@@ -209,6 +209,8 @@ class PlotsTab extends ConsumerStatefulWidget {
 }
 
 class _PlotsTabState extends ConsumerState<PlotsTab> {
+  bool _showMatrix = false;
+
   @override
   Widget build(BuildContext context) {
     final trial = widget.trial;
@@ -276,25 +278,63 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             }
           }
         }
-        return _buildPlotsSummaryWithBar(
-          context,
-          ref,
-          trial,
-          plots.length,
-          rowCount,
-          columnCount,
-          repNumbers.length,
-          assignedCount,
-          unassignedCount,
-          treatments.length,
-          treatmentComponentCount,
-          ratedPlotsCount,
-          sessionCount,
-          applicationCount,
-          lastApplicationDate,
-          seedingDate,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildListMatrixToggle(context),
+            Expanded(
+              child: _showMatrix
+                  ? _AssignmentMatrix(trial: trial, plots: plots)
+                  : _buildPlotsSummaryWithBar(
+                      context,
+                      ref,
+                      trial,
+                      plots.length,
+                      rowCount,
+                      columnCount,
+                      repNumbers.length,
+                      assignedCount,
+                      unassignedCount,
+                      treatments.length,
+                      treatmentComponentCount,
+                      ratedPlotsCount,
+                      sessionCount,
+                      applicationCount,
+                      lastApplicationDate,
+                      seedingDate,
+                    ),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildListMatrixToggle(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing8,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing4,
+      ),
+      child: SegmentedButton<bool>(
+        segments: const [
+          ButtonSegment(value: false, label: Text('List'), icon: Icon(Icons.list)),
+          ButtonSegment(value: true, label: Text('Matrix'), icon: Icon(Icons.grid_on)),
+        ],
+        selected: {_showMatrix},
+        onSelectionChanged: (Set<bool> selected) {
+          setState(() => _showMatrix = selected.first);
+        },
+        style: ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
+            horizontal: AppDesignTokens.spacing12,
+            vertical: AppDesignTokens.spacing8,
+          )),
+        ),
+      ),
     );
   }
 
@@ -531,6 +571,276 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Assignment matrix: plots grouped by rep, each cell shows plot label + treatment code; tap to assign.
+class _AssignmentMatrix extends ConsumerWidget {
+  const _AssignmentMatrix({required this.trial, required this.plots});
+
+  final Trial trial;
+  final List<Plot> plots;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final assignmentsList = ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
+    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+    final treatmentById = {for (var t in treatments) t.id: t};
+
+    if (plots.isEmpty) {
+      return Center(
+        child: Text(
+          'No plots',
+          style: TextStyle(
+            fontSize: 15,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    final blocks = buildRepBasedLayout(plots);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppDesignTokens.spacing16,
+              AppDesignTokens.spacing4,
+              AppDesignTokens.spacing16,
+              AppDesignTokens.spacing12,
+            ),
+            children: [
+              for (final block in blocks)
+                for (final repRow in block.repRows) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: AppDesignTokens.spacing12,
+                      bottom: AppDesignTokens.spacing8,
+                    ),
+                    child: Text(
+                      'Rep ${repRow.repNumber}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Wrap(
+                    spacing: AppDesignTokens.spacing8,
+                    runSpacing: AppDesignTokens.spacing8,
+                    children: repRow.plots.map((plot) {
+                      final a = assignmentByPlotId[plot.id];
+                      final tid = a?.treatmentId ?? plot.treatmentId;
+                      final treatment = tid != null ? treatmentById[tid] : null;
+                      final code = treatment?.code ?? '—';
+                      final treatmentIndex = tid != null
+                          ? treatments.indexWhere((t) => t.id == tid)
+                          : null;
+                      return _AssignmentMatrixCell(
+                        plot: plot,
+                        treatmentCode: code,
+                        treatmentIndex: treatmentIndex,
+                        trial: trial,
+                        plots: plots,
+                      );
+                    }).toList(),
+                  ),
+                ],
+            ],
+          ),
+        ),
+        _AssignmentMatrixLegend(treatments: treatments),
+      ],
+    );
+  }
+}
+
+/// One shared legend below the matrix: treatment code (chip) + name. Keeps cells compact.
+class _AssignmentMatrixLegend extends StatelessWidget {
+  const _AssignmentMatrixLegend({required this.treatments});
+
+  final List<Treatment> treatments;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing12,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing16,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        border: Border(
+          top: BorderSide(color: scheme.outline.withValues(alpha: 0.4)),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Treatment legend',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppDesignTokens.spacing8),
+          if (treatments.isEmpty)
+            Text(
+              'No treatments defined',
+              style: TextStyle(
+                fontSize: 13,
+                color: scheme.onSurfaceVariant,
+              ),
+            )
+          else
+            ...treatments.map((t) => _TreatmentLegendRow(code: t.code, name: t.name)),
+        ],
+      ),
+    );
+  }
+}
+
+/// One row in the legend: [code] name.
+class _TreatmentLegendRow extends StatelessWidget {
+  const _TreatmentLegendRow({required this.code, required this.name});
+
+  final String code;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing8,
+              vertical: 4,
+            ),
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer,
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+              border: Border.all(
+                color: scheme.outline.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Text(
+              code,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: scheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDesignTokens.spacing8),
+          Expanded(
+            child: Text(
+              name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: scheme.onSurface,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Single plot cell in the assignment matrix: label + treatment code; tap opens assign dialog.
+class _AssignmentMatrixCell extends ConsumerWidget {
+  const _AssignmentMatrixCell({
+    required this.plot,
+    required this.treatmentCode,
+    required this.trial,
+    required this.plots,
+    this.treatmentIndex,
+  });
+
+  final Plot plot;
+  final String treatmentCode;
+  final Trial trial;
+  final List<Plot> plots;
+  final int? treatmentIndex;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final label = getDisplayPlotLabel(plot, plots);
+    Color bg = scheme.surface;
+    if (treatmentIndex != null && treatmentIndex! >= 0) {
+      bg = scheme.primaryContainer.withValues(
+        alpha: 0.12 + (treatmentIndex! % 3) * 0.04,
+      );
+    }
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+      child: InkWell(
+        onTap: () async {
+          await showAssignTreatmentDialogForTrial(
+            trial: trial,
+            context: context,
+            ref: ref,
+            plot: plot,
+            plots: plots,
+          );
+          ref.invalidate(assignmentsForTrialProvider(trial.id));
+        },
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDesignTokens.spacing12,
+            vertical: AppDesignTokens.spacing8,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+            border: Border.all(color: scheme.outline.withValues(alpha: 0.6)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesignTokens.primaryText,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                treatmentCode,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
