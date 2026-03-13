@@ -142,7 +142,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       final dir = await getTemporaryDirectory();
       final base = '${trial.name.replaceAll(RegExp(r'[^\w\s-]'), '_')}_export';
       final files = <XFile>[];
-      final names = ['observations', 'treatments', 'plot_assignments', 'applications', 'seeding', 'sessions'];
+      final names = [
+        'observations',
+        'treatments',
+        'plot_assignments',
+        'applications',
+        'seeding',
+        'sessions',
+        'data_dictionary',
+      ];
       final contents = [
         bundle.observationsCsv,
         bundle.treatmentsCsv,
@@ -150,6 +158,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         bundle.applicationsCsv,
         bundle.seedingCsv,
         bundle.sessionsCsv,
+        bundle.dataDictionaryCsv,
       ];
       for (var i = 0; i < names.length; i++) {
         final path = '${dir.path}/${base}_${names[i]}.csv';

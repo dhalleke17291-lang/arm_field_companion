@@ -185,6 +185,9 @@ class ExportTrialUseCase {
       exportTimestamp,
     );
 
+    const appVersion = '1.0.0';
+    final dataDictionaryCsv = _buildDataDictionary(exportTimestamp, appVersion);
+
     return TrialExportBundle(
       observationsCsv: observationsCsv,
       treatmentsCsv: treatmentsCsv,
@@ -192,7 +195,91 @@ class ExportTrialUseCase {
       applicationsCsv: applicationsCsv,
       seedingCsv: seedingCsv,
       sessionsCsv: sessionsCsv,
+      dataDictionaryCsv: dataDictionaryCsv,
     );
+  }
+
+  /// Returns a static CSV documenting all exported columns. No queries.
+  String _buildDataDictionary(String exportTimestamp, String appVersion) {
+    const headers = ['file', 'column', 'description', 'unit'];
+    final rows = <List<String>>[
+      // observations.csv
+      ['observations.csv', 'trial_id', 'Trial database identifier', ''],
+      ['observations.csv', 'trial_name', 'Name of the trial', ''],
+      ['observations.csv', 'session_name', 'Name of the rating session', ''],
+      ['observations.csv', 'session_date', 'Date ratings were recorded', 'YYYY-MM-DD'],
+      ['observations.csv', 'plot_id', 'Plot database identifier', ''],
+      ['observations.csv', 'plot_label', 'Display label of plot e.g. 101', ''],
+      ['observations.csv', 'rep', 'Replication number', ''],
+      ['observations.csv', 'plot_position', 'Column position within replication', ''],
+      ['observations.csv', 'treatment_code', 'Code assigned to treatment e.g. T1', ''],
+      ['observations.csv', 'treatment_name', 'Human-readable treatment description', ''],
+      ['observations.csv', 'assessment_name', 'Name of assessment variable', ''],
+      ['observations.csv', 'assessment_type', 'Category of assessment e.g. visual rating', ''],
+      ['observations.csv', 'value', 'Recorded rating value', 'assessment unit'],
+      ['observations.csv', 'unit', 'Unit associated with the value', ''],
+      ['observations.csv', 'rater_name', 'Name of person who recorded the rating', ''],
+      ['observations.csv', 'days_after_seeding', 'Days elapsed since seeding event', 'days'],
+      ['observations.csv', 'days_after_first_application', 'Days elapsed since first application event', 'days'],
+      ['observations.csv', 'export_timestamp', 'UTC timestamp when export was generated', 'ISO 8601'],
+      // treatments.csv
+      ['treatments.csv', 'treatment_code', 'Code assigned to treatment', ''],
+      ['treatments.csv', 'treatment_name', 'Human-readable treatment name', ''],
+      ['treatments.csv', 'component_name', 'Name of treatment component or product', ''],
+      ['treatments.csv', 'active_ingredient', 'Active ingredient if specified', ''],
+      ['treatments.csv', 'rate', 'Application rate of component', ''],
+      ['treatments.csv', 'rate_unit', 'Unit for component rate', ''],
+      ['treatments.csv', 'formulation', 'Formulation type if specified', ''],
+      ['treatments.csv', 'export_timestamp', 'UTC timestamp when export was generated', 'ISO 8601'],
+      // plot_assignments.csv
+      ['plot_assignments.csv', 'trial_id', 'Trial database identifier', ''],
+      ['plot_assignments.csv', 'plot_id', 'Plot database identifier', ''],
+      ['plot_assignments.csv', 'plot_label', 'Display label of plot', ''],
+      ['plot_assignments.csv', 'rep', 'Replication number', ''],
+      ['plot_assignments.csv', 'column', 'Column position within replication', ''],
+      ['plot_assignments.csv', 'treatment_code', 'Assigned treatment code', ''],
+      ['plot_assignments.csv', 'treatment_name', 'Assigned treatment name', ''],
+      ['plot_assignments.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
+      // applications.csv
+      ['applications.csv', 'date', 'Date of application event', 'YYYY-MM-DD'],
+      ['applications.csv', 'product_name', 'Product or active ingredient applied', ''],
+      ['applications.csv', 'rate', 'Application rate', ''],
+      ['applications.csv', 'rate_unit', 'Unit for application rate', ''],
+      ['applications.csv', 'water_volume_lha', 'Carrier water volume', 'L/ha'],
+      ['applications.csv', 'growth_stage', 'Crop growth stage at application e.g. BBCH code', ''],
+      ['applications.csv', 'operator_name', 'Person who performed application', ''],
+      ['applications.csv', 'equipment', 'Equipment used', ''],
+      ['applications.csv', 'wind_speed', 'Wind speed at time of application', ''],
+      ['applications.csv', 'wind_direction', 'Wind direction at time of application', ''],
+      ['applications.csv', 'temperature_c', 'Air temperature at application', '°C'],
+      ['applications.csv', 'humidity_pct', 'Relative humidity at application', '%'],
+      ['applications.csv', 'notes', 'Operator notes', ''],
+      ['applications.csv', 'days_after_seeding', 'Days elapsed since seeding', 'days'],
+      ['applications.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
+      // seeding.csv
+      ['seeding.csv', 'seeding_date', 'Date of seeding operation', 'YYYY-MM-DD'],
+      ['seeding.csv', 'operator_name', 'Person who performed seeding', ''],
+      ['seeding.csv', 'seed_lot_number', 'Seed lot or batch identifier', ''],
+      ['seeding.csv', 'seeding_rate', 'Seeding rate used', ''],
+      ['seeding.csv', 'seeding_rate_unit', 'Unit for seeding rate', ''],
+      ['seeding.csv', 'seeding_depth_cm', 'Seed placement depth', 'cm'],
+      ['seeding.csv', 'row_spacing_cm', 'Row spacing used', 'cm'],
+      ['seeding.csv', 'equipment_used', 'Equipment used for seeding', ''],
+      ['seeding.csv', 'notes', 'Operator notes', ''],
+      ['seeding.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
+      // sessions.csv
+      ['sessions.csv', 'session_name', 'Name or label of rating session', ''],
+      ['sessions.csv', 'session_date', 'Date session was conducted', 'YYYY-MM-DD'],
+      ['sessions.csv', 'status', 'Session status e.g. active closed', ''],
+      ['sessions.csv', 'plot_count_rated', 'Number of plots with at least one rating', ''],
+      ['sessions.csv', 'rater_name', 'Person who conducted session', ''],
+      ['sessions.csv', 'notes', 'Session notes', ''],
+      ['sessions.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
+      // metadata
+      ['metadata', 'export_timestamp', exportTimestamp, 'ISO 8601'],
+      ['metadata', 'app_version', appVersion, ''],
+    ];
+    return CsvExportService.buildCsv(headers, rows);
   }
 
   /// Exports as empty string for null, empty, or placeholder literals; otherwise string value.
