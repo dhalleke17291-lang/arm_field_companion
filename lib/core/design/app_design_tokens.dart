@@ -108,6 +108,18 @@ class AppDesignTokens {
   /// Crisp border width for cards and surfaces.
   static const double borderWidthCrisp = 1.0;
 
+  /// Light shadow for rating cards (blur 4, offset (0,2)).
+  static const Color shadowLight = Color(0x08000000);
+  static const List<BoxShadow> cardShadowRating = [
+    BoxShadow(color: shadowLight, blurRadius: 4, offset: Offset(0, 2)),
+  ];
+  /// Slightly stronger shadow (e.g. bottom bar).
+  static const Color shadowMedium = Color(0x0F000000);
+  /// Strong primary tint (e.g. quick button selected glow).
+  static const Color primaryTintStrong = Color(0x402D5A40);
+  /// Very light shadow (e.g. quick button unselected).
+  static const Color shadowVeryLight = Color(0x0D000000);
+
   /// Premium layered shadow for cards: soft depth + subtle rim.
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
