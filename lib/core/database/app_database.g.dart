@@ -13598,6 +13598,1480 @@ class ImportEventsCompanion extends UpdateCompanion<ImportEvent> {
   }
 }
 
+class $SeedingEventsTable extends SeedingEvents
+    with TableInfo<$SeedingEventsTable, SeedingEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SeedingEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      clientDefault: () => const Uuid().v4());
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _seedingDateMeta =
+      const VerificationMeta('seedingDate');
+  @override
+  late final GeneratedColumn<DateTime> seedingDate = GeneratedColumn<DateTime>(
+      'seeding_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _operatorNameMeta =
+      const VerificationMeta('operatorName');
+  @override
+  late final GeneratedColumn<String> operatorName = GeneratedColumn<String>(
+      'operator_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _seedLotNumberMeta =
+      const VerificationMeta('seedLotNumber');
+  @override
+  late final GeneratedColumn<String> seedLotNumber = GeneratedColumn<String>(
+      'seed_lot_number', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _seedingRateMeta =
+      const VerificationMeta('seedingRate');
+  @override
+  late final GeneratedColumn<double> seedingRate = GeneratedColumn<double>(
+      'seeding_rate', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _seedingRateUnitMeta =
+      const VerificationMeta('seedingRateUnit');
+  @override
+  late final GeneratedColumn<String> seedingRateUnit = GeneratedColumn<String>(
+      'seeding_rate_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _seedingDepthMeta =
+      const VerificationMeta('seedingDepth');
+  @override
+  late final GeneratedColumn<double> seedingDepth = GeneratedColumn<double>(
+      'seeding_depth', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _rowSpacingMeta =
+      const VerificationMeta('rowSpacing');
+  @override
+  late final GeneratedColumn<double> rowSpacing = GeneratedColumn<double>(
+      'row_spacing', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _equipmentUsedMeta =
+      const VerificationMeta('equipmentUsed');
+  @override
+  late final GeneratedColumn<String> equipmentUsed = GeneratedColumn<String>(
+      'equipment_used', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        seedingDate,
+        operatorName,
+        seedLotNumber,
+        seedingRate,
+        seedingRateUnit,
+        seedingDepth,
+        rowSpacing,
+        equipmentUsed,
+        notes,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'seeding_events';
+  @override
+  VerificationContext validateIntegrity(Insertable<SeedingEvent> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('seeding_date')) {
+      context.handle(
+          _seedingDateMeta,
+          seedingDate.isAcceptableOrUnknown(
+              data['seeding_date']!, _seedingDateMeta));
+    } else if (isInserting) {
+      context.missing(_seedingDateMeta);
+    }
+    if (data.containsKey('operator_name')) {
+      context.handle(
+          _operatorNameMeta,
+          operatorName.isAcceptableOrUnknown(
+              data['operator_name']!, _operatorNameMeta));
+    }
+    if (data.containsKey('seed_lot_number')) {
+      context.handle(
+          _seedLotNumberMeta,
+          seedLotNumber.isAcceptableOrUnknown(
+              data['seed_lot_number']!, _seedLotNumberMeta));
+    }
+    if (data.containsKey('seeding_rate')) {
+      context.handle(
+          _seedingRateMeta,
+          seedingRate.isAcceptableOrUnknown(
+              data['seeding_rate']!, _seedingRateMeta));
+    }
+    if (data.containsKey('seeding_rate_unit')) {
+      context.handle(
+          _seedingRateUnitMeta,
+          seedingRateUnit.isAcceptableOrUnknown(
+              data['seeding_rate_unit']!, _seedingRateUnitMeta));
+    }
+    if (data.containsKey('seeding_depth')) {
+      context.handle(
+          _seedingDepthMeta,
+          seedingDepth.isAcceptableOrUnknown(
+              data['seeding_depth']!, _seedingDepthMeta));
+    }
+    if (data.containsKey('row_spacing')) {
+      context.handle(
+          _rowSpacingMeta,
+          rowSpacing.isAcceptableOrUnknown(
+              data['row_spacing']!, _rowSpacingMeta));
+    }
+    if (data.containsKey('equipment_used')) {
+      context.handle(
+          _equipmentUsedMeta,
+          equipmentUsed.isAcceptableOrUnknown(
+              data['equipment_used']!, _equipmentUsedMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SeedingEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SeedingEvent(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      seedingDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}seeding_date'])!,
+      operatorName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}operator_name']),
+      seedLotNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}seed_lot_number']),
+      seedingRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}seeding_rate']),
+      seedingRateUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}seeding_rate_unit']),
+      seedingDepth: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}seeding_depth']),
+      rowSpacing: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}row_spacing']),
+      equipmentUsed: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}equipment_used']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $SeedingEventsTable createAlias(String alias) {
+    return $SeedingEventsTable(attachedDatabase, alias);
+  }
+}
+
+class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
+  final String id;
+  final int trialId;
+  final DateTime seedingDate;
+  final String? operatorName;
+  final String? seedLotNumber;
+  final double? seedingRate;
+  final String? seedingRateUnit;
+  final double? seedingDepth;
+  final double? rowSpacing;
+  final String? equipmentUsed;
+  final String? notes;
+  final DateTime createdAt;
+  const SeedingEvent(
+      {required this.id,
+      required this.trialId,
+      required this.seedingDate,
+      this.operatorName,
+      this.seedLotNumber,
+      this.seedingRate,
+      this.seedingRateUnit,
+      this.seedingDepth,
+      this.rowSpacing,
+      this.equipmentUsed,
+      this.notes,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['seeding_date'] = Variable<DateTime>(seedingDate);
+    if (!nullToAbsent || operatorName != null) {
+      map['operator_name'] = Variable<String>(operatorName);
+    }
+    if (!nullToAbsent || seedLotNumber != null) {
+      map['seed_lot_number'] = Variable<String>(seedLotNumber);
+    }
+    if (!nullToAbsent || seedingRate != null) {
+      map['seeding_rate'] = Variable<double>(seedingRate);
+    }
+    if (!nullToAbsent || seedingRateUnit != null) {
+      map['seeding_rate_unit'] = Variable<String>(seedingRateUnit);
+    }
+    if (!nullToAbsent || seedingDepth != null) {
+      map['seeding_depth'] = Variable<double>(seedingDepth);
+    }
+    if (!nullToAbsent || rowSpacing != null) {
+      map['row_spacing'] = Variable<double>(rowSpacing);
+    }
+    if (!nullToAbsent || equipmentUsed != null) {
+      map['equipment_used'] = Variable<String>(equipmentUsed);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SeedingEventsCompanion toCompanion(bool nullToAbsent) {
+    return SeedingEventsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      seedingDate: Value(seedingDate),
+      operatorName: operatorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(operatorName),
+      seedLotNumber: seedLotNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedLotNumber),
+      seedingRate: seedingRate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedingRate),
+      seedingRateUnit: seedingRateUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedingRateUnit),
+      seedingDepth: seedingDepth == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedingDepth),
+      rowSpacing: rowSpacing == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rowSpacing),
+      equipmentUsed: equipmentUsed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(equipmentUsed),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SeedingEvent.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SeedingEvent(
+      id: serializer.fromJson<String>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      seedingDate: serializer.fromJson<DateTime>(json['seedingDate']),
+      operatorName: serializer.fromJson<String?>(json['operatorName']),
+      seedLotNumber: serializer.fromJson<String?>(json['seedLotNumber']),
+      seedingRate: serializer.fromJson<double?>(json['seedingRate']),
+      seedingRateUnit: serializer.fromJson<String?>(json['seedingRateUnit']),
+      seedingDepth: serializer.fromJson<double?>(json['seedingDepth']),
+      rowSpacing: serializer.fromJson<double?>(json['rowSpacing']),
+      equipmentUsed: serializer.fromJson<String?>(json['equipmentUsed']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'seedingDate': serializer.toJson<DateTime>(seedingDate),
+      'operatorName': serializer.toJson<String?>(operatorName),
+      'seedLotNumber': serializer.toJson<String?>(seedLotNumber),
+      'seedingRate': serializer.toJson<double?>(seedingRate),
+      'seedingRateUnit': serializer.toJson<String?>(seedingRateUnit),
+      'seedingDepth': serializer.toJson<double?>(seedingDepth),
+      'rowSpacing': serializer.toJson<double?>(rowSpacing),
+      'equipmentUsed': serializer.toJson<String?>(equipmentUsed),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SeedingEvent copyWith(
+          {String? id,
+          int? trialId,
+          DateTime? seedingDate,
+          Value<String?> operatorName = const Value.absent(),
+          Value<String?> seedLotNumber = const Value.absent(),
+          Value<double?> seedingRate = const Value.absent(),
+          Value<String?> seedingRateUnit = const Value.absent(),
+          Value<double?> seedingDepth = const Value.absent(),
+          Value<double?> rowSpacing = const Value.absent(),
+          Value<String?> equipmentUsed = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt}) =>
+      SeedingEvent(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        seedingDate: seedingDate ?? this.seedingDate,
+        operatorName:
+            operatorName.present ? operatorName.value : this.operatorName,
+        seedLotNumber:
+            seedLotNumber.present ? seedLotNumber.value : this.seedLotNumber,
+        seedingRate: seedingRate.present ? seedingRate.value : this.seedingRate,
+        seedingRateUnit: seedingRateUnit.present
+            ? seedingRateUnit.value
+            : this.seedingRateUnit,
+        seedingDepth:
+            seedingDepth.present ? seedingDepth.value : this.seedingDepth,
+        rowSpacing: rowSpacing.present ? rowSpacing.value : this.rowSpacing,
+        equipmentUsed:
+            equipmentUsed.present ? equipmentUsed.value : this.equipmentUsed,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  SeedingEvent copyWithCompanion(SeedingEventsCompanion data) {
+    return SeedingEvent(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      seedingDate:
+          data.seedingDate.present ? data.seedingDate.value : this.seedingDate,
+      operatorName: data.operatorName.present
+          ? data.operatorName.value
+          : this.operatorName,
+      seedLotNumber: data.seedLotNumber.present
+          ? data.seedLotNumber.value
+          : this.seedLotNumber,
+      seedingRate:
+          data.seedingRate.present ? data.seedingRate.value : this.seedingRate,
+      seedingRateUnit: data.seedingRateUnit.present
+          ? data.seedingRateUnit.value
+          : this.seedingRateUnit,
+      seedingDepth: data.seedingDepth.present
+          ? data.seedingDepth.value
+          : this.seedingDepth,
+      rowSpacing:
+          data.rowSpacing.present ? data.rowSpacing.value : this.rowSpacing,
+      equipmentUsed: data.equipmentUsed.present
+          ? data.equipmentUsed.value
+          : this.equipmentUsed,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeedingEvent(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('seedingDate: $seedingDate, ')
+          ..write('operatorName: $operatorName, ')
+          ..write('seedLotNumber: $seedLotNumber, ')
+          ..write('seedingRate: $seedingRate, ')
+          ..write('seedingRateUnit: $seedingRateUnit, ')
+          ..write('seedingDepth: $seedingDepth, ')
+          ..write('rowSpacing: $rowSpacing, ')
+          ..write('equipmentUsed: $equipmentUsed, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      seedingDate,
+      operatorName,
+      seedLotNumber,
+      seedingRate,
+      seedingRateUnit,
+      seedingDepth,
+      rowSpacing,
+      equipmentUsed,
+      notes,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SeedingEvent &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.seedingDate == this.seedingDate &&
+          other.operatorName == this.operatorName &&
+          other.seedLotNumber == this.seedLotNumber &&
+          other.seedingRate == this.seedingRate &&
+          other.seedingRateUnit == this.seedingRateUnit &&
+          other.seedingDepth == this.seedingDepth &&
+          other.rowSpacing == this.rowSpacing &&
+          other.equipmentUsed == this.equipmentUsed &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
+}
+
+class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
+  final Value<String> id;
+  final Value<int> trialId;
+  final Value<DateTime> seedingDate;
+  final Value<String?> operatorName;
+  final Value<String?> seedLotNumber;
+  final Value<double?> seedingRate;
+  final Value<String?> seedingRateUnit;
+  final Value<double?> seedingDepth;
+  final Value<double?> rowSpacing;
+  final Value<String?> equipmentUsed;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const SeedingEventsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.seedingDate = const Value.absent(),
+    this.operatorName = const Value.absent(),
+    this.seedLotNumber = const Value.absent(),
+    this.seedingRate = const Value.absent(),
+    this.seedingRateUnit = const Value.absent(),
+    this.seedingDepth = const Value.absent(),
+    this.rowSpacing = const Value.absent(),
+    this.equipmentUsed = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SeedingEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required DateTime seedingDate,
+    this.operatorName = const Value.absent(),
+    this.seedLotNumber = const Value.absent(),
+    this.seedingRate = const Value.absent(),
+    this.seedingRateUnit = const Value.absent(),
+    this.seedingDepth = const Value.absent(),
+    this.rowSpacing = const Value.absent(),
+    this.equipmentUsed = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : trialId = Value(trialId),
+        seedingDate = Value(seedingDate);
+  static Insertable<SeedingEvent> custom({
+    Expression<String>? id,
+    Expression<int>? trialId,
+    Expression<DateTime>? seedingDate,
+    Expression<String>? operatorName,
+    Expression<String>? seedLotNumber,
+    Expression<double>? seedingRate,
+    Expression<String>? seedingRateUnit,
+    Expression<double>? seedingDepth,
+    Expression<double>? rowSpacing,
+    Expression<String>? equipmentUsed,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (seedingDate != null) 'seeding_date': seedingDate,
+      if (operatorName != null) 'operator_name': operatorName,
+      if (seedLotNumber != null) 'seed_lot_number': seedLotNumber,
+      if (seedingRate != null) 'seeding_rate': seedingRate,
+      if (seedingRateUnit != null) 'seeding_rate_unit': seedingRateUnit,
+      if (seedingDepth != null) 'seeding_depth': seedingDepth,
+      if (rowSpacing != null) 'row_spacing': rowSpacing,
+      if (equipmentUsed != null) 'equipment_used': equipmentUsed,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SeedingEventsCompanion copyWith(
+      {Value<String>? id,
+      Value<int>? trialId,
+      Value<DateTime>? seedingDate,
+      Value<String?>? operatorName,
+      Value<String?>? seedLotNumber,
+      Value<double?>? seedingRate,
+      Value<String?>? seedingRateUnit,
+      Value<double?>? seedingDepth,
+      Value<double?>? rowSpacing,
+      Value<String?>? equipmentUsed,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return SeedingEventsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      seedingDate: seedingDate ?? this.seedingDate,
+      operatorName: operatorName ?? this.operatorName,
+      seedLotNumber: seedLotNumber ?? this.seedLotNumber,
+      seedingRate: seedingRate ?? this.seedingRate,
+      seedingRateUnit: seedingRateUnit ?? this.seedingRateUnit,
+      seedingDepth: seedingDepth ?? this.seedingDepth,
+      rowSpacing: rowSpacing ?? this.rowSpacing,
+      equipmentUsed: equipmentUsed ?? this.equipmentUsed,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (seedingDate.present) {
+      map['seeding_date'] = Variable<DateTime>(seedingDate.value);
+    }
+    if (operatorName.present) {
+      map['operator_name'] = Variable<String>(operatorName.value);
+    }
+    if (seedLotNumber.present) {
+      map['seed_lot_number'] = Variable<String>(seedLotNumber.value);
+    }
+    if (seedingRate.present) {
+      map['seeding_rate'] = Variable<double>(seedingRate.value);
+    }
+    if (seedingRateUnit.present) {
+      map['seeding_rate_unit'] = Variable<String>(seedingRateUnit.value);
+    }
+    if (seedingDepth.present) {
+      map['seeding_depth'] = Variable<double>(seedingDepth.value);
+    }
+    if (rowSpacing.present) {
+      map['row_spacing'] = Variable<double>(rowSpacing.value);
+    }
+    if (equipmentUsed.present) {
+      map['equipment_used'] = Variable<String>(equipmentUsed.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeedingEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('seedingDate: $seedingDate, ')
+          ..write('operatorName: $operatorName, ')
+          ..write('seedLotNumber: $seedLotNumber, ')
+          ..write('seedingRate: $seedingRate, ')
+          ..write('seedingRateUnit: $seedingRateUnit, ')
+          ..write('seedingDepth: $seedingDepth, ')
+          ..write('rowSpacing: $rowSpacing, ')
+          ..write('equipmentUsed: $equipmentUsed, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TrialApplicationEventsTable extends TrialApplicationEvents
+    with TableInfo<$TrialApplicationEventsTable, TrialApplicationEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrialApplicationEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      clientDefault: () => const Uuid().v4());
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _treatmentIdMeta =
+      const VerificationMeta('treatmentId');
+  @override
+  late final GeneratedColumn<int> treatmentId = GeneratedColumn<int>(
+      'treatment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES treatments (id)'));
+  static const VerificationMeta _applicationDateMeta =
+      const VerificationMeta('applicationDate');
+  @override
+  late final GeneratedColumn<DateTime> applicationDate =
+      GeneratedColumn<DateTime>('application_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _growthStageCodeMeta =
+      const VerificationMeta('growthStageCode');
+  @override
+  late final GeneratedColumn<String> growthStageCode = GeneratedColumn<String>(
+      'growth_stage_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _operatorNameMeta =
+      const VerificationMeta('operatorName');
+  @override
+  late final GeneratedColumn<String> operatorName = GeneratedColumn<String>(
+      'operator_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _equipmentUsedMeta =
+      const VerificationMeta('equipmentUsed');
+  @override
+  late final GeneratedColumn<String> equipmentUsed = GeneratedColumn<String>(
+      'equipment_used', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _productNameMeta =
+      const VerificationMeta('productName');
+  @override
+  late final GeneratedColumn<String> productName = GeneratedColumn<String>(
+      'product_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _rateMeta = const VerificationMeta('rate');
+  @override
+  late final GeneratedColumn<double> rate = GeneratedColumn<double>(
+      'rate', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _rateUnitMeta =
+      const VerificationMeta('rateUnit');
+  @override
+  late final GeneratedColumn<String> rateUnit = GeneratedColumn<String>(
+      'rate_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _waterVolumeMeta =
+      const VerificationMeta('waterVolume');
+  @override
+  late final GeneratedColumn<double> waterVolume = GeneratedColumn<double>(
+      'water_volume', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _windSpeedMeta =
+      const VerificationMeta('windSpeed');
+  @override
+  late final GeneratedColumn<double> windSpeed = GeneratedColumn<double>(
+      'wind_speed', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _windDirectionMeta =
+      const VerificationMeta('windDirection');
+  @override
+  late final GeneratedColumn<String> windDirection = GeneratedColumn<String>(
+      'wind_direction', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _temperatureMeta =
+      const VerificationMeta('temperature');
+  @override
+  late final GeneratedColumn<double> temperature = GeneratedColumn<double>(
+      'temperature', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _humidityMeta =
+      const VerificationMeta('humidity');
+  @override
+  late final GeneratedColumn<double> humidity = GeneratedColumn<double>(
+      'humidity', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        treatmentId,
+        applicationDate,
+        growthStageCode,
+        operatorName,
+        equipmentUsed,
+        productName,
+        rate,
+        rateUnit,
+        waterVolume,
+        windSpeed,
+        windDirection,
+        temperature,
+        humidity,
+        notes,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trial_application_events';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TrialApplicationEvent> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('treatment_id')) {
+      context.handle(
+          _treatmentIdMeta,
+          treatmentId.isAcceptableOrUnknown(
+              data['treatment_id']!, _treatmentIdMeta));
+    }
+    if (data.containsKey('application_date')) {
+      context.handle(
+          _applicationDateMeta,
+          applicationDate.isAcceptableOrUnknown(
+              data['application_date']!, _applicationDateMeta));
+    } else if (isInserting) {
+      context.missing(_applicationDateMeta);
+    }
+    if (data.containsKey('growth_stage_code')) {
+      context.handle(
+          _growthStageCodeMeta,
+          growthStageCode.isAcceptableOrUnknown(
+              data['growth_stage_code']!, _growthStageCodeMeta));
+    }
+    if (data.containsKey('operator_name')) {
+      context.handle(
+          _operatorNameMeta,
+          operatorName.isAcceptableOrUnknown(
+              data['operator_name']!, _operatorNameMeta));
+    }
+    if (data.containsKey('equipment_used')) {
+      context.handle(
+          _equipmentUsedMeta,
+          equipmentUsed.isAcceptableOrUnknown(
+              data['equipment_used']!, _equipmentUsedMeta));
+    }
+    if (data.containsKey('product_name')) {
+      context.handle(
+          _productNameMeta,
+          productName.isAcceptableOrUnknown(
+              data['product_name']!, _productNameMeta));
+    }
+    if (data.containsKey('rate')) {
+      context.handle(
+          _rateMeta, rate.isAcceptableOrUnknown(data['rate']!, _rateMeta));
+    }
+    if (data.containsKey('rate_unit')) {
+      context.handle(_rateUnitMeta,
+          rateUnit.isAcceptableOrUnknown(data['rate_unit']!, _rateUnitMeta));
+    }
+    if (data.containsKey('water_volume')) {
+      context.handle(
+          _waterVolumeMeta,
+          waterVolume.isAcceptableOrUnknown(
+              data['water_volume']!, _waterVolumeMeta));
+    }
+    if (data.containsKey('wind_speed')) {
+      context.handle(_windSpeedMeta,
+          windSpeed.isAcceptableOrUnknown(data['wind_speed']!, _windSpeedMeta));
+    }
+    if (data.containsKey('wind_direction')) {
+      context.handle(
+          _windDirectionMeta,
+          windDirection.isAcceptableOrUnknown(
+              data['wind_direction']!, _windDirectionMeta));
+    }
+    if (data.containsKey('temperature')) {
+      context.handle(
+          _temperatureMeta,
+          temperature.isAcceptableOrUnknown(
+              data['temperature']!, _temperatureMeta));
+    }
+    if (data.containsKey('humidity')) {
+      context.handle(_humidityMeta,
+          humidity.isAcceptableOrUnknown(data['humidity']!, _humidityMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TrialApplicationEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrialApplicationEvent(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      treatmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}treatment_id']),
+      applicationDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}application_date'])!,
+      growthStageCode: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}growth_stage_code']),
+      operatorName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}operator_name']),
+      equipmentUsed: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}equipment_used']),
+      productName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}product_name']),
+      rate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}rate']),
+      rateUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rate_unit']),
+      waterVolume: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}water_volume']),
+      windSpeed: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}wind_speed']),
+      windDirection: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}wind_direction']),
+      temperature: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}temperature']),
+      humidity: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}humidity']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $TrialApplicationEventsTable createAlias(String alias) {
+    return $TrialApplicationEventsTable(attachedDatabase, alias);
+  }
+}
+
+class TrialApplicationEvent extends DataClass
+    implements Insertable<TrialApplicationEvent> {
+  final String id;
+  final int trialId;
+  final int? treatmentId;
+  final DateTime applicationDate;
+  final String? growthStageCode;
+  final String? operatorName;
+  final String? equipmentUsed;
+  final String? productName;
+  final double? rate;
+  final String? rateUnit;
+  final double? waterVolume;
+  final double? windSpeed;
+  final String? windDirection;
+  final double? temperature;
+  final double? humidity;
+  final String? notes;
+  final DateTime createdAt;
+  const TrialApplicationEvent(
+      {required this.id,
+      required this.trialId,
+      this.treatmentId,
+      required this.applicationDate,
+      this.growthStageCode,
+      this.operatorName,
+      this.equipmentUsed,
+      this.productName,
+      this.rate,
+      this.rateUnit,
+      this.waterVolume,
+      this.windSpeed,
+      this.windDirection,
+      this.temperature,
+      this.humidity,
+      this.notes,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    if (!nullToAbsent || treatmentId != null) {
+      map['treatment_id'] = Variable<int>(treatmentId);
+    }
+    map['application_date'] = Variable<DateTime>(applicationDate);
+    if (!nullToAbsent || growthStageCode != null) {
+      map['growth_stage_code'] = Variable<String>(growthStageCode);
+    }
+    if (!nullToAbsent || operatorName != null) {
+      map['operator_name'] = Variable<String>(operatorName);
+    }
+    if (!nullToAbsent || equipmentUsed != null) {
+      map['equipment_used'] = Variable<String>(equipmentUsed);
+    }
+    if (!nullToAbsent || productName != null) {
+      map['product_name'] = Variable<String>(productName);
+    }
+    if (!nullToAbsent || rate != null) {
+      map['rate'] = Variable<double>(rate);
+    }
+    if (!nullToAbsent || rateUnit != null) {
+      map['rate_unit'] = Variable<String>(rateUnit);
+    }
+    if (!nullToAbsent || waterVolume != null) {
+      map['water_volume'] = Variable<double>(waterVolume);
+    }
+    if (!nullToAbsent || windSpeed != null) {
+      map['wind_speed'] = Variable<double>(windSpeed);
+    }
+    if (!nullToAbsent || windDirection != null) {
+      map['wind_direction'] = Variable<String>(windDirection);
+    }
+    if (!nullToAbsent || temperature != null) {
+      map['temperature'] = Variable<double>(temperature);
+    }
+    if (!nullToAbsent || humidity != null) {
+      map['humidity'] = Variable<double>(humidity);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  TrialApplicationEventsCompanion toCompanion(bool nullToAbsent) {
+    return TrialApplicationEventsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      treatmentId: treatmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(treatmentId),
+      applicationDate: Value(applicationDate),
+      growthStageCode: growthStageCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(growthStageCode),
+      operatorName: operatorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(operatorName),
+      equipmentUsed: equipmentUsed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(equipmentUsed),
+      productName: productName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(productName),
+      rate: rate == null && nullToAbsent ? const Value.absent() : Value(rate),
+      rateUnit: rateUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rateUnit),
+      waterVolume: waterVolume == null && nullToAbsent
+          ? const Value.absent()
+          : Value(waterVolume),
+      windSpeed: windSpeed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(windSpeed),
+      windDirection: windDirection == null && nullToAbsent
+          ? const Value.absent()
+          : Value(windDirection),
+      temperature: temperature == null && nullToAbsent
+          ? const Value.absent()
+          : Value(temperature),
+      humidity: humidity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(humidity),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory TrialApplicationEvent.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrialApplicationEvent(
+      id: serializer.fromJson<String>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      treatmentId: serializer.fromJson<int?>(json['treatmentId']),
+      applicationDate: serializer.fromJson<DateTime>(json['applicationDate']),
+      growthStageCode: serializer.fromJson<String?>(json['growthStageCode']),
+      operatorName: serializer.fromJson<String?>(json['operatorName']),
+      equipmentUsed: serializer.fromJson<String?>(json['equipmentUsed']),
+      productName: serializer.fromJson<String?>(json['productName']),
+      rate: serializer.fromJson<double?>(json['rate']),
+      rateUnit: serializer.fromJson<String?>(json['rateUnit']),
+      waterVolume: serializer.fromJson<double?>(json['waterVolume']),
+      windSpeed: serializer.fromJson<double?>(json['windSpeed']),
+      windDirection: serializer.fromJson<String?>(json['windDirection']),
+      temperature: serializer.fromJson<double?>(json['temperature']),
+      humidity: serializer.fromJson<double?>(json['humidity']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'treatmentId': serializer.toJson<int?>(treatmentId),
+      'applicationDate': serializer.toJson<DateTime>(applicationDate),
+      'growthStageCode': serializer.toJson<String?>(growthStageCode),
+      'operatorName': serializer.toJson<String?>(operatorName),
+      'equipmentUsed': serializer.toJson<String?>(equipmentUsed),
+      'productName': serializer.toJson<String?>(productName),
+      'rate': serializer.toJson<double?>(rate),
+      'rateUnit': serializer.toJson<String?>(rateUnit),
+      'waterVolume': serializer.toJson<double?>(waterVolume),
+      'windSpeed': serializer.toJson<double?>(windSpeed),
+      'windDirection': serializer.toJson<String?>(windDirection),
+      'temperature': serializer.toJson<double?>(temperature),
+      'humidity': serializer.toJson<double?>(humidity),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  TrialApplicationEvent copyWith(
+          {String? id,
+          int? trialId,
+          Value<int?> treatmentId = const Value.absent(),
+          DateTime? applicationDate,
+          Value<String?> growthStageCode = const Value.absent(),
+          Value<String?> operatorName = const Value.absent(),
+          Value<String?> equipmentUsed = const Value.absent(),
+          Value<String?> productName = const Value.absent(),
+          Value<double?> rate = const Value.absent(),
+          Value<String?> rateUnit = const Value.absent(),
+          Value<double?> waterVolume = const Value.absent(),
+          Value<double?> windSpeed = const Value.absent(),
+          Value<String?> windDirection = const Value.absent(),
+          Value<double?> temperature = const Value.absent(),
+          Value<double?> humidity = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt}) =>
+      TrialApplicationEvent(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        treatmentId: treatmentId.present ? treatmentId.value : this.treatmentId,
+        applicationDate: applicationDate ?? this.applicationDate,
+        growthStageCode: growthStageCode.present
+            ? growthStageCode.value
+            : this.growthStageCode,
+        operatorName:
+            operatorName.present ? operatorName.value : this.operatorName,
+        equipmentUsed:
+            equipmentUsed.present ? equipmentUsed.value : this.equipmentUsed,
+        productName: productName.present ? productName.value : this.productName,
+        rate: rate.present ? rate.value : this.rate,
+        rateUnit: rateUnit.present ? rateUnit.value : this.rateUnit,
+        waterVolume: waterVolume.present ? waterVolume.value : this.waterVolume,
+        windSpeed: windSpeed.present ? windSpeed.value : this.windSpeed,
+        windDirection:
+            windDirection.present ? windDirection.value : this.windDirection,
+        temperature: temperature.present ? temperature.value : this.temperature,
+        humidity: humidity.present ? humidity.value : this.humidity,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  TrialApplicationEvent copyWithCompanion(
+      TrialApplicationEventsCompanion data) {
+    return TrialApplicationEvent(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      treatmentId:
+          data.treatmentId.present ? data.treatmentId.value : this.treatmentId,
+      applicationDate: data.applicationDate.present
+          ? data.applicationDate.value
+          : this.applicationDate,
+      growthStageCode: data.growthStageCode.present
+          ? data.growthStageCode.value
+          : this.growthStageCode,
+      operatorName: data.operatorName.present
+          ? data.operatorName.value
+          : this.operatorName,
+      equipmentUsed: data.equipmentUsed.present
+          ? data.equipmentUsed.value
+          : this.equipmentUsed,
+      productName:
+          data.productName.present ? data.productName.value : this.productName,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      rateUnit: data.rateUnit.present ? data.rateUnit.value : this.rateUnit,
+      waterVolume:
+          data.waterVolume.present ? data.waterVolume.value : this.waterVolume,
+      windSpeed: data.windSpeed.present ? data.windSpeed.value : this.windSpeed,
+      windDirection: data.windDirection.present
+          ? data.windDirection.value
+          : this.windDirection,
+      temperature:
+          data.temperature.present ? data.temperature.value : this.temperature,
+      humidity: data.humidity.present ? data.humidity.value : this.humidity,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialApplicationEvent(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('treatmentId: $treatmentId, ')
+          ..write('applicationDate: $applicationDate, ')
+          ..write('growthStageCode: $growthStageCode, ')
+          ..write('operatorName: $operatorName, ')
+          ..write('equipmentUsed: $equipmentUsed, ')
+          ..write('productName: $productName, ')
+          ..write('rate: $rate, ')
+          ..write('rateUnit: $rateUnit, ')
+          ..write('waterVolume: $waterVolume, ')
+          ..write('windSpeed: $windSpeed, ')
+          ..write('windDirection: $windDirection, ')
+          ..write('temperature: $temperature, ')
+          ..write('humidity: $humidity, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      treatmentId,
+      applicationDate,
+      growthStageCode,
+      operatorName,
+      equipmentUsed,
+      productName,
+      rate,
+      rateUnit,
+      waterVolume,
+      windSpeed,
+      windDirection,
+      temperature,
+      humidity,
+      notes,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrialApplicationEvent &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.treatmentId == this.treatmentId &&
+          other.applicationDate == this.applicationDate &&
+          other.growthStageCode == this.growthStageCode &&
+          other.operatorName == this.operatorName &&
+          other.equipmentUsed == this.equipmentUsed &&
+          other.productName == this.productName &&
+          other.rate == this.rate &&
+          other.rateUnit == this.rateUnit &&
+          other.waterVolume == this.waterVolume &&
+          other.windSpeed == this.windSpeed &&
+          other.windDirection == this.windDirection &&
+          other.temperature == this.temperature &&
+          other.humidity == this.humidity &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
+}
+
+class TrialApplicationEventsCompanion
+    extends UpdateCompanion<TrialApplicationEvent> {
+  final Value<String> id;
+  final Value<int> trialId;
+  final Value<int?> treatmentId;
+  final Value<DateTime> applicationDate;
+  final Value<String?> growthStageCode;
+  final Value<String?> operatorName;
+  final Value<String?> equipmentUsed;
+  final Value<String?> productName;
+  final Value<double?> rate;
+  final Value<String?> rateUnit;
+  final Value<double?> waterVolume;
+  final Value<double?> windSpeed;
+  final Value<String?> windDirection;
+  final Value<double?> temperature;
+  final Value<double?> humidity;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const TrialApplicationEventsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.treatmentId = const Value.absent(),
+    this.applicationDate = const Value.absent(),
+    this.growthStageCode = const Value.absent(),
+    this.operatorName = const Value.absent(),
+    this.equipmentUsed = const Value.absent(),
+    this.productName = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.rateUnit = const Value.absent(),
+    this.waterVolume = const Value.absent(),
+    this.windSpeed = const Value.absent(),
+    this.windDirection = const Value.absent(),
+    this.temperature = const Value.absent(),
+    this.humidity = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrialApplicationEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    this.treatmentId = const Value.absent(),
+    required DateTime applicationDate,
+    this.growthStageCode = const Value.absent(),
+    this.operatorName = const Value.absent(),
+    this.equipmentUsed = const Value.absent(),
+    this.productName = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.rateUnit = const Value.absent(),
+    this.waterVolume = const Value.absent(),
+    this.windSpeed = const Value.absent(),
+    this.windDirection = const Value.absent(),
+    this.temperature = const Value.absent(),
+    this.humidity = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : trialId = Value(trialId),
+        applicationDate = Value(applicationDate);
+  static Insertable<TrialApplicationEvent> custom({
+    Expression<String>? id,
+    Expression<int>? trialId,
+    Expression<int>? treatmentId,
+    Expression<DateTime>? applicationDate,
+    Expression<String>? growthStageCode,
+    Expression<String>? operatorName,
+    Expression<String>? equipmentUsed,
+    Expression<String>? productName,
+    Expression<double>? rate,
+    Expression<String>? rateUnit,
+    Expression<double>? waterVolume,
+    Expression<double>? windSpeed,
+    Expression<String>? windDirection,
+    Expression<double>? temperature,
+    Expression<double>? humidity,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (treatmentId != null) 'treatment_id': treatmentId,
+      if (applicationDate != null) 'application_date': applicationDate,
+      if (growthStageCode != null) 'growth_stage_code': growthStageCode,
+      if (operatorName != null) 'operator_name': operatorName,
+      if (equipmentUsed != null) 'equipment_used': equipmentUsed,
+      if (productName != null) 'product_name': productName,
+      if (rate != null) 'rate': rate,
+      if (rateUnit != null) 'rate_unit': rateUnit,
+      if (waterVolume != null) 'water_volume': waterVolume,
+      if (windSpeed != null) 'wind_speed': windSpeed,
+      if (windDirection != null) 'wind_direction': windDirection,
+      if (temperature != null) 'temperature': temperature,
+      if (humidity != null) 'humidity': humidity,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrialApplicationEventsCompanion copyWith(
+      {Value<String>? id,
+      Value<int>? trialId,
+      Value<int?>? treatmentId,
+      Value<DateTime>? applicationDate,
+      Value<String?>? growthStageCode,
+      Value<String?>? operatorName,
+      Value<String?>? equipmentUsed,
+      Value<String?>? productName,
+      Value<double?>? rate,
+      Value<String?>? rateUnit,
+      Value<double?>? waterVolume,
+      Value<double?>? windSpeed,
+      Value<String?>? windDirection,
+      Value<double?>? temperature,
+      Value<double?>? humidity,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return TrialApplicationEventsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      treatmentId: treatmentId ?? this.treatmentId,
+      applicationDate: applicationDate ?? this.applicationDate,
+      growthStageCode: growthStageCode ?? this.growthStageCode,
+      operatorName: operatorName ?? this.operatorName,
+      equipmentUsed: equipmentUsed ?? this.equipmentUsed,
+      productName: productName ?? this.productName,
+      rate: rate ?? this.rate,
+      rateUnit: rateUnit ?? this.rateUnit,
+      waterVolume: waterVolume ?? this.waterVolume,
+      windSpeed: windSpeed ?? this.windSpeed,
+      windDirection: windDirection ?? this.windDirection,
+      temperature: temperature ?? this.temperature,
+      humidity: humidity ?? this.humidity,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (treatmentId.present) {
+      map['treatment_id'] = Variable<int>(treatmentId.value);
+    }
+    if (applicationDate.present) {
+      map['application_date'] = Variable<DateTime>(applicationDate.value);
+    }
+    if (growthStageCode.present) {
+      map['growth_stage_code'] = Variable<String>(growthStageCode.value);
+    }
+    if (operatorName.present) {
+      map['operator_name'] = Variable<String>(operatorName.value);
+    }
+    if (equipmentUsed.present) {
+      map['equipment_used'] = Variable<String>(equipmentUsed.value);
+    }
+    if (productName.present) {
+      map['product_name'] = Variable<String>(productName.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<double>(rate.value);
+    }
+    if (rateUnit.present) {
+      map['rate_unit'] = Variable<String>(rateUnit.value);
+    }
+    if (waterVolume.present) {
+      map['water_volume'] = Variable<double>(waterVolume.value);
+    }
+    if (windSpeed.present) {
+      map['wind_speed'] = Variable<double>(windSpeed.value);
+    }
+    if (windDirection.present) {
+      map['wind_direction'] = Variable<String>(windDirection.value);
+    }
+    if (temperature.present) {
+      map['temperature'] = Variable<double>(temperature.value);
+    }
+    if (humidity.present) {
+      map['humidity'] = Variable<double>(humidity.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialApplicationEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('treatmentId: $treatmentId, ')
+          ..write('applicationDate: $applicationDate, ')
+          ..write('growthStageCode: $growthStageCode, ')
+          ..write('operatorName: $operatorName, ')
+          ..write('equipmentUsed: $equipmentUsed, ')
+          ..write('productName: $productName, ')
+          ..write('rate: $rate, ')
+          ..write('rateUnit: $rateUnit, ')
+          ..write('waterVolume: $waterVolume, ')
+          ..write('windSpeed: $windSpeed, ')
+          ..write('windDirection: $windDirection, ')
+          ..write('temperature: $temperature, ')
+          ..write('humidity: $humidity, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -13636,6 +15110,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ApplicationPlotRecordsTable(this);
   late final $AuditEventsTable auditEvents = $AuditEventsTable(this);
   late final $ImportEventsTable importEvents = $ImportEventsTable(this);
+  late final $SeedingEventsTable seedingEvents = $SeedingEventsTable(this);
+  late final $TrialApplicationEventsTable trialApplicationEvents =
+      $TrialApplicationEventsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -13665,7 +15142,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         applicationEvents,
         applicationPlotRecords,
         auditEvents,
-        importEvents
+        importEvents,
+        seedingEvents,
+        trialApplicationEvents
       ];
 }
 
@@ -14299,6 +15778,37 @@ class $$TrialsTableFilterComposer
                 $state.db.importEvents, joinBuilder, parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter seedingEventsRefs(
+      ComposableFilter Function($$SeedingEventsTableFilterComposer f) f) {
+    final $$SeedingEventsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.seedingEvents,
+        getReferencedColumn: (t) => t.trialId,
+        builder: (joinBuilder, parentComposers) =>
+            $$SeedingEventsTableFilterComposer(ComposerState($state.db,
+                $state.db.seedingEvents, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter trialApplicationEventsRefs(
+      ComposableFilter Function($$TrialApplicationEventsTableFilterComposer f)
+          f) {
+    final $$TrialApplicationEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialsTableOrderingComposer
@@ -14497,6 +16007,24 @@ class $$TreatmentsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$AssignmentsTableFilterComposer(ComposerState($state.db,
                 $state.db.assignments, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter trialApplicationEventsRefs(
+      ComposableFilter Function($$TrialApplicationEventsTableFilterComposer f)
+          f) {
+    final $$TrialApplicationEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.treatmentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 }
@@ -20579,6 +22107,609 @@ class $$ImportEventsTableOrderingComposer
   }
 }
 
+typedef $$SeedingEventsTableCreateCompanionBuilder = SeedingEventsCompanion
+    Function({
+  Value<String> id,
+  required int trialId,
+  required DateTime seedingDate,
+  Value<String?> operatorName,
+  Value<String?> seedLotNumber,
+  Value<double?> seedingRate,
+  Value<String?> seedingRateUnit,
+  Value<double?> seedingDepth,
+  Value<double?> rowSpacing,
+  Value<String?> equipmentUsed,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+typedef $$SeedingEventsTableUpdateCompanionBuilder = SeedingEventsCompanion
+    Function({
+  Value<String> id,
+  Value<int> trialId,
+  Value<DateTime> seedingDate,
+  Value<String?> operatorName,
+  Value<String?> seedLotNumber,
+  Value<double?> seedingRate,
+  Value<String?> seedingRateUnit,
+  Value<double?> seedingDepth,
+  Value<double?> rowSpacing,
+  Value<String?> equipmentUsed,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$SeedingEventsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SeedingEventsTable,
+    SeedingEvent,
+    $$SeedingEventsTableFilterComposer,
+    $$SeedingEventsTableOrderingComposer,
+    $$SeedingEventsTableCreateCompanionBuilder,
+    $$SeedingEventsTableUpdateCompanionBuilder> {
+  $$SeedingEventsTableTableManager(_$AppDatabase db, $SeedingEventsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$SeedingEventsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$SeedingEventsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<DateTime> seedingDate = const Value.absent(),
+            Value<String?> operatorName = const Value.absent(),
+            Value<String?> seedLotNumber = const Value.absent(),
+            Value<double?> seedingRate = const Value.absent(),
+            Value<String?> seedingRateUnit = const Value.absent(),
+            Value<double?> seedingDepth = const Value.absent(),
+            Value<double?> rowSpacing = const Value.absent(),
+            Value<String?> equipmentUsed = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SeedingEventsCompanion(
+            id: id,
+            trialId: trialId,
+            seedingDate: seedingDate,
+            operatorName: operatorName,
+            seedLotNumber: seedLotNumber,
+            seedingRate: seedingRate,
+            seedingRateUnit: seedingRateUnit,
+            seedingDepth: seedingDepth,
+            rowSpacing: rowSpacing,
+            equipmentUsed: equipmentUsed,
+            notes: notes,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            required int trialId,
+            required DateTime seedingDate,
+            Value<String?> operatorName = const Value.absent(),
+            Value<String?> seedLotNumber = const Value.absent(),
+            Value<double?> seedingRate = const Value.absent(),
+            Value<String?> seedingRateUnit = const Value.absent(),
+            Value<double?> seedingDepth = const Value.absent(),
+            Value<double?> rowSpacing = const Value.absent(),
+            Value<String?> equipmentUsed = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SeedingEventsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            seedingDate: seedingDate,
+            operatorName: operatorName,
+            seedLotNumber: seedLotNumber,
+            seedingRate: seedingRate,
+            seedingRateUnit: seedingRateUnit,
+            seedingDepth: seedingDepth,
+            rowSpacing: rowSpacing,
+            equipmentUsed: equipmentUsed,
+            notes: notes,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$SeedingEventsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $SeedingEventsTable> {
+  $$SeedingEventsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get seedingDate => $state.composableBuilder(
+      column: $state.table.seedingDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get operatorName => $state.composableBuilder(
+      column: $state.table.operatorName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get seedLotNumber => $state.composableBuilder(
+      column: $state.table.seedLotNumber,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get seedingRate => $state.composableBuilder(
+      column: $state.table.seedingRate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get seedingRateUnit => $state.composableBuilder(
+      column: $state.table.seedingRateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get seedingDepth => $state.composableBuilder(
+      column: $state.table.seedingDepth,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get rowSpacing => $state.composableBuilder(
+      column: $state.table.rowSpacing,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get equipmentUsed => $state.composableBuilder(
+      column: $state.table.equipmentUsed,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$SeedingEventsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $SeedingEventsTable> {
+  $$SeedingEventsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get seedingDate => $state.composableBuilder(
+      column: $state.table.seedingDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get operatorName => $state.composableBuilder(
+      column: $state.table.operatorName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get seedLotNumber => $state.composableBuilder(
+      column: $state.table.seedLotNumber,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get seedingRate => $state.composableBuilder(
+      column: $state.table.seedingRate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get seedingRateUnit => $state.composableBuilder(
+      column: $state.table.seedingRateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get seedingDepth => $state.composableBuilder(
+      column: $state.table.seedingDepth,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get rowSpacing => $state.composableBuilder(
+      column: $state.table.rowSpacing,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get equipmentUsed => $state.composableBuilder(
+      column: $state.table.equipmentUsed,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$TrialApplicationEventsTableCreateCompanionBuilder
+    = TrialApplicationEventsCompanion Function({
+  Value<String> id,
+  required int trialId,
+  Value<int?> treatmentId,
+  required DateTime applicationDate,
+  Value<String?> growthStageCode,
+  Value<String?> operatorName,
+  Value<String?> equipmentUsed,
+  Value<String?> productName,
+  Value<double?> rate,
+  Value<String?> rateUnit,
+  Value<double?> waterVolume,
+  Value<double?> windSpeed,
+  Value<String?> windDirection,
+  Value<double?> temperature,
+  Value<double?> humidity,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
+    = TrialApplicationEventsCompanion Function({
+  Value<String> id,
+  Value<int> trialId,
+  Value<int?> treatmentId,
+  Value<DateTime> applicationDate,
+  Value<String?> growthStageCode,
+  Value<String?> operatorName,
+  Value<String?> equipmentUsed,
+  Value<String?> productName,
+  Value<double?> rate,
+  Value<String?> rateUnit,
+  Value<double?> waterVolume,
+  Value<double?> windSpeed,
+  Value<String?> windDirection,
+  Value<double?> temperature,
+  Value<double?> humidity,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$TrialApplicationEventsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TrialApplicationEventsTable,
+    TrialApplicationEvent,
+    $$TrialApplicationEventsTableFilterComposer,
+    $$TrialApplicationEventsTableOrderingComposer,
+    $$TrialApplicationEventsTableCreateCompanionBuilder,
+    $$TrialApplicationEventsTableUpdateCompanionBuilder> {
+  $$TrialApplicationEventsTableTableManager(
+      _$AppDatabase db, $TrialApplicationEventsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$TrialApplicationEventsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$TrialApplicationEventsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int?> treatmentId = const Value.absent(),
+            Value<DateTime> applicationDate = const Value.absent(),
+            Value<String?> growthStageCode = const Value.absent(),
+            Value<String?> operatorName = const Value.absent(),
+            Value<String?> equipmentUsed = const Value.absent(),
+            Value<String?> productName = const Value.absent(),
+            Value<double?> rate = const Value.absent(),
+            Value<String?> rateUnit = const Value.absent(),
+            Value<double?> waterVolume = const Value.absent(),
+            Value<double?> windSpeed = const Value.absent(),
+            Value<String?> windDirection = const Value.absent(),
+            Value<double?> temperature = const Value.absent(),
+            Value<double?> humidity = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TrialApplicationEventsCompanion(
+            id: id,
+            trialId: trialId,
+            treatmentId: treatmentId,
+            applicationDate: applicationDate,
+            growthStageCode: growthStageCode,
+            operatorName: operatorName,
+            equipmentUsed: equipmentUsed,
+            productName: productName,
+            rate: rate,
+            rateUnit: rateUnit,
+            waterVolume: waterVolume,
+            windSpeed: windSpeed,
+            windDirection: windDirection,
+            temperature: temperature,
+            humidity: humidity,
+            notes: notes,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            required int trialId,
+            Value<int?> treatmentId = const Value.absent(),
+            required DateTime applicationDate,
+            Value<String?> growthStageCode = const Value.absent(),
+            Value<String?> operatorName = const Value.absent(),
+            Value<String?> equipmentUsed = const Value.absent(),
+            Value<String?> productName = const Value.absent(),
+            Value<double?> rate = const Value.absent(),
+            Value<String?> rateUnit = const Value.absent(),
+            Value<double?> waterVolume = const Value.absent(),
+            Value<double?> windSpeed = const Value.absent(),
+            Value<String?> windDirection = const Value.absent(),
+            Value<double?> temperature = const Value.absent(),
+            Value<double?> humidity = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TrialApplicationEventsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            treatmentId: treatmentId,
+            applicationDate: applicationDate,
+            growthStageCode: growthStageCode,
+            operatorName: operatorName,
+            equipmentUsed: equipmentUsed,
+            productName: productName,
+            rate: rate,
+            rateUnit: rateUnit,
+            waterVolume: waterVolume,
+            windSpeed: windSpeed,
+            windDirection: windDirection,
+            temperature: temperature,
+            humidity: humidity,
+            notes: notes,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$TrialApplicationEventsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $TrialApplicationEventsTable> {
+  $$TrialApplicationEventsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get applicationDate => $state.composableBuilder(
+      column: $state.table.applicationDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get growthStageCode => $state.composableBuilder(
+      column: $state.table.growthStageCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get operatorName => $state.composableBuilder(
+      column: $state.table.operatorName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get equipmentUsed => $state.composableBuilder(
+      column: $state.table.equipmentUsed,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get productName => $state.composableBuilder(
+      column: $state.table.productName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get rate => $state.composableBuilder(
+      column: $state.table.rate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get rateUnit => $state.composableBuilder(
+      column: $state.table.rateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get waterVolume => $state.composableBuilder(
+      column: $state.table.waterVolume,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get windSpeed => $state.composableBuilder(
+      column: $state.table.windSpeed,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get windDirection => $state.composableBuilder(
+      column: $state.table.windDirection,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get temperature => $state.composableBuilder(
+      column: $state.table.temperature,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get humidity => $state.composableBuilder(
+      column: $state.table.humidity,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TreatmentsTableFilterComposer get treatmentId {
+    final $$TreatmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.treatmentId,
+        referencedTable: $state.db.treatments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TreatmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$TrialApplicationEventsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $TrialApplicationEventsTable> {
+  $$TrialApplicationEventsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get applicationDate => $state.composableBuilder(
+      column: $state.table.applicationDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get growthStageCode => $state.composableBuilder(
+      column: $state.table.growthStageCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get operatorName => $state.composableBuilder(
+      column: $state.table.operatorName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get equipmentUsed => $state.composableBuilder(
+      column: $state.table.equipmentUsed,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get productName => $state.composableBuilder(
+      column: $state.table.productName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get rate => $state.composableBuilder(
+      column: $state.table.rate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get rateUnit => $state.composableBuilder(
+      column: $state.table.rateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get waterVolume => $state.composableBuilder(
+      column: $state.table.waterVolume,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get windSpeed => $state.composableBuilder(
+      column: $state.table.windSpeed,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get windDirection => $state.composableBuilder(
+      column: $state.table.windDirection,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get temperature => $state.composableBuilder(
+      column: $state.table.temperature,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get humidity => $state.composableBuilder(
+      column: $state.table.humidity,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TreatmentsTableOrderingComposer get treatmentId {
+    final $$TreatmentsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.treatmentId,
+        referencedTable: $state.db.treatments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TreatmentsTableOrderingComposer(ComposerState($state.db,
+                $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -20633,4 +22764,9 @@ class $AppDatabaseManager {
       $$AuditEventsTableTableManager(_db, _db.auditEvents);
   $$ImportEventsTableTableManager get importEvents =>
       $$ImportEventsTableTableManager(_db, _db.importEvents);
+  $$SeedingEventsTableTableManager get seedingEvents =>
+      $$SeedingEventsTableTableManager(_db, _db.seedingEvents);
+  $$TrialApplicationEventsTableTableManager get trialApplicationEvents =>
+      $$TrialApplicationEventsTableTableManager(
+          _db, _db.trialApplicationEvents);
 }

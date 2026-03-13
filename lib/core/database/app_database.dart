@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 import 'dart:io';
 
 part 'app_database.g.dart';
@@ -366,6 +367,50 @@ class ImportEvents extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// One seeding event per trial (enforced by unique trial_id). Upsert via insertOnConflictUpdate.
+class SeedingEvents extends Table {
+  TextColumn get id => text().clientDefault(() => const Uuid().v4())();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  DateTimeColumn get seedingDate => dateTime()();
+  TextColumn get operatorName => text().nullable()();
+  TextColumn get seedLotNumber => text().nullable()();
+  RealColumn get seedingRate => real().nullable()();
+  TextColumn get seedingRateUnit => text().nullable()();
+  RealColumn get seedingDepth => real().nullable()();
+  RealColumn get rowSpacing => real().nullable()();
+  TextColumn get equipmentUsed => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Application events per trial (multiple per trial). FK types match Trials.id and Treatments.id (IntColumn).
+/// days_after_seeding is never stored — derived at read time from application_date minus seeding date.
+class TrialApplicationEvents extends Table {
+  TextColumn get id => text().clientDefault(() => const Uuid().v4())();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get treatmentId => integer().references(Treatments, #id).nullable()();
+  DateTimeColumn get applicationDate => dateTime()();
+  TextColumn get growthStageCode => text().nullable()();
+  TextColumn get operatorName => text().nullable()();
+  TextColumn get equipmentUsed => text().nullable()();
+  TextColumn get productName => text().nullable()();
+  RealColumn get rate => real().nullable()();
+  TextColumn get rateUnit => text().nullable()();
+  RealColumn get waterVolume => real().nullable()();
+  RealColumn get windSpeed => real().nullable()();
+  TextColumn get windDirection => text().nullable()();
+  RealColumn get temperature => real().nullable()();
+  RealColumn get humidity => real().nullable()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -392,6 +437,8 @@ class ImportEvents extends Table {
   ApplicationPlotRecords,
   AuditEvents,
   ImportEvents,
+  SeedingEvents,
+  TrialApplicationEvents,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -400,7 +447,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -487,6 +534,15 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(trials, trials.plotDimensions);
             await m.addColumn(trials, trials.plotRows);
             await m.addColumn(trials, trials.plotSpacing);
+          }
+          if (from < 16) {
+            await m.createTable(seedingEvents);
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_seeding_events_trial ON seeding_events(trial_id)',
+            );
+          }
+          if (from < 17) {
+            await m.createTable(trialApplicationEvents);
           }
           await _createIndexes();
         },
