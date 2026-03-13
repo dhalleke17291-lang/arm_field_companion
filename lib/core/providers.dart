@@ -505,6 +505,12 @@ final treatmentsForTrialProvider =
   return ref.watch(treatmentRepositoryProvider).watchTreatmentsForTrial(trialId);
 });
 
+/// Components for a single treatment (for Treatments tab expandable list). Invalidate after add/delete.
+final treatmentComponentsForTreatmentProvider =
+    FutureProvider.autoDispose.family<List<TreatmentComponent>, int>((ref, treatmentId) {
+  return ref.watch(treatmentRepositoryProvider).getComponentsForTreatment(treatmentId);
+});
+
 final assignmentsForTrialProvider =
     StreamProvider.family<List<Assignment>, int>((ref, trialId) {
   return ref.watch(assignmentRepositoryProvider).watchForTrial(trialId);
