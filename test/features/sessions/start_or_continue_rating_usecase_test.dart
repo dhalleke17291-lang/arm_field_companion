@@ -282,6 +282,9 @@ class _FakeRatingRepository implements RatingRepository {
   }
 
   @override
+  Future<int> getRatedPlotCountForTrial(int trialId) async => 0;
+
+  @override
   Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) async {
     throw UnimplementedError();
   }

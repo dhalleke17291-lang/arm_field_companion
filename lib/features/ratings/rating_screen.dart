@@ -504,9 +504,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         color: AppDesignTokens.cardSurface,
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
         border: Border.all(color: AppDesignTokens.borderCrisp),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
-        ],
+        boxShadow: AppDesignTokens.cardShadowRating,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,10 +542,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 error: (_, __) => const SizedBox.shrink(),
                 data: (ctx) => ctx.hasTreatment
                     ? Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 3),
                         decoration: BoxDecoration(
                           color: AppDesignTokens.primary,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
                         ),
                         child: Text(
                           ctx.treatmentCode,
@@ -917,9 +917,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 color: AppDesignTokens.cardSurface,
                 borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
                 border: Border.all(color: AppDesignTokens.borderCrisp),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
-                ],
+                boxShadow: AppDesignTokens.cardShadowRating,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1005,9 +1003,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               color: AppDesignTokens.cardSurface,
               borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
               border: Border.all(color: AppDesignTokens.borderCrisp),
-              boxShadow: const [
-                BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
-              ],
+              boxShadow: AppDesignTokens.cardShadowRating,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1188,8 +1184,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               boxShadow: [
                 BoxShadow(
                   color: isSelected
-                      ? const Color(0x402D5A40)
-                      : const Color(0x0D000000),
+                      ? AppDesignTokens.primaryTintStrong
+                      : AppDesignTokens.shadowVeryLight,
                   blurRadius: isSelected ? 10 : 4,
                   offset: const Offset(0, 2),
                 ),
@@ -1224,7 +1220,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           color: AppDesignTokens.cardSurface,
           border: Border(top: BorderSide(color: AppDesignTokens.borderCrisp)),
           boxShadow: [
-            BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, -2)),
+            BoxShadow(
+                color: AppDesignTokens.shadowMedium,
+                blurRadius: 8,
+                offset: Offset(0, -2)),
           ],
         ),
         child: Row(
@@ -1250,7 +1249,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: AppDesignTokens.spacing12),
+            const SizedBox(width: AppDesignTokens.spacing8),
             Expanded(
               child: SizedBox(
                 height: 52,
@@ -1414,12 +1413,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFFF8F6F2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: AppDesignTokens.backgroundSurface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusLarge)),
         contentPadding: EdgeInsets.zero,
         titlePadding: EdgeInsets.zero,
         content: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppDesignTokens.spacing24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1427,42 +1427,42 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD1FAE5),
+                  color: AppDesignTokens.successBg,
                   borderRadius: BorderRadius.circular(32),
                 ),
                 child: const Icon(Icons.check_circle,
-                    color: Color(0xFF2D5A40), size: 36),
+                    color: AppDesignTokens.primary, size: 36),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppDesignTokens.spacing16),
               const Text(
                 'All Plots Rated',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1F2937),
+                  color: AppDesignTokens.primaryText,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppDesignTokens.spacing8),
               Text(
                 "You've completed all $plotCount plots in this session.",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF6B7280),
+                  color: AppDesignTokens.secondaryText,
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppDesignTokens.spacing8),
               Text(
                 summary,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: Color(0xFF6B7280),
+                  color: AppDesignTokens.secondaryText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppDesignTokens.spacing24),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -1482,24 +1482,24 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2D5A40),
+                    backgroundColor: AppDesignTokens.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard)),
                   ),
                   child: const Text('Back to Session',
                       style: TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w700)),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppDesignTokens.spacing8 + 2),
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
                 child: const Text(
                   'Keep reviewing plots',
                   style: TextStyle(
-                      color: Color(0xFF6B7280), fontSize: 13),
+                      color: AppDesignTokens.secondaryText, fontSize: 13),
                 ),
               ),
             ],

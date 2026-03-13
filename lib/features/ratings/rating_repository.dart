@@ -227,6 +227,15 @@ class RatingRepository {
     return ratings.map((r) => r.plotPk).toSet();
   }
 
+  /// Count of distinct plots with at least one current rating for this trial (Trial Summary).
+  Future<int> getRatedPlotCountForTrial(int trialId) async {
+    final ratings = await (_db.select(_db.ratingRecords)
+          ..where((r) =>
+              r.trialId.equals(trialId) & r.isCurrent.equals(true)))
+        .get();
+    return ratings.map((r) => r.plotPk).toSet().length;
+  }
+
   // --- Correction (immutable; original rating unchanged) ---
 
   Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) {

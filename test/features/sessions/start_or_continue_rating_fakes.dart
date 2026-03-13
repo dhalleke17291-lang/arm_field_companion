@@ -253,6 +253,9 @@ class FakeRatingRepository implements RatingRepository {
       throw UnimplementedError();
 
   @override
+  Future<int> getRatedPlotCountForTrial(int trialId) async => 0;
+
+  @override
   Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) async =>
       throw UnimplementedError();
 

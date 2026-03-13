@@ -155,6 +155,15 @@ class MockRatingRepository implements RatingRepository {
         .map((r) => r.plotPk)
         .toSet();
   }
+
+  @override
+  Future<int> getRatedPlotCountForTrial(int trialId) async {
+    return _records
+        .where((r) => r.trialId == trialId && r.isCurrent)
+        .map((r) => r.plotPk)
+        .toSet()
+        .length;
+  }
 }
 
 void main() {
