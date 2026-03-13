@@ -137,10 +137,14 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Tap the Sessions card (not the tab) to switch to sessions view.
+      await tester.ensureVisible(
+          find.byKey(const Key('trial_detail_sessions_bar')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('trial_detail_sessions_bar')));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Tap the open session tile → navigates to PlotQueueScreen.
+      // Match the session list tile (seed creates "Session 1"); avoid "Sessions" title and "New Session" button.
       await tester.tap(find.text('Session 1'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
