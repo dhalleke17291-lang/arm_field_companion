@@ -136,8 +136,8 @@ void main() {
       await tester.tap(find.text('Test Trial'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // Tap Sessions bar to switch to sessions view.
-      await tester.tap(find.text('Sessions').first);
+      // Tap the Sessions card (not the tab) to switch to sessions view.
+      await tester.tap(find.byKey(const Key('trial_detail_sessions_bar')));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Tap the open session tile → navigates to PlotQueueScreen.
