@@ -98,12 +98,7 @@ class PlotRepository {
 
   Future<List<int>> getRepsForTrial(int trialId) async {
     final plots = await getPlotsForTrial(trialId);
-    return plots
-        .map((p) => p.rep)
-        .whereType<int>()
-        .toSet()
-        .toList()
-      ..sort();
+    return plots.map((p) => p.rep).whereType<int>().toSet().toList()..sort();
   }
 
   /// Updates notes for a single plot.
@@ -114,7 +109,8 @@ class PlotRepository {
 
   /// Updates treatment assignment for a single plot.
   /// [assignmentSource]: 'imported' | 'manual' | null (unknown).
-  @Deprecated('Use AssignmentRepository for assignment updates. This updates Plot only and is legacy.')
+  @Deprecated(
+      'Use AssignmentRepository for assignment updates. This updates Plot only and is legacy.')
   Future<void> updatePlotTreatment(
     int plotPk,
     int? treatmentId, {
@@ -124,15 +120,20 @@ class PlotRepository {
     await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
       PlotsCompanion(
         treatmentId: Value(treatmentId),
-        assignmentSource: assignmentSource != null ? Value(assignmentSource) : const Value.absent(),
-        assignmentUpdatedAt: assignmentUpdatedAt != null ? Value(assignmentUpdatedAt) : const Value.absent(),
+        assignmentSource: assignmentSource != null
+            ? Value(assignmentSource)
+            : const Value.absent(),
+        assignmentUpdatedAt: assignmentUpdatedAt != null
+            ? Value(assignmentUpdatedAt)
+            : const Value.absent(),
       ),
     );
   }
 
   /// Updates treatment assignments for multiple plots in one transaction.
   /// [assignmentSource]: e.g. 'manual' when user bulk-assigns.
-  @Deprecated('Use AssignmentRepository.upsertBulk for assignment updates. This updates Plot only and is legacy.')
+  @Deprecated(
+      'Use AssignmentRepository.upsertBulk for assignment updates. This updates Plot only and is legacy.')
   Future<void> updatePlotsTreatmentsBulk(
     Map<int, int?> plotPkToTreatmentId, {
     String? assignmentSource,
@@ -144,8 +145,11 @@ class PlotRepository {
         await (_db.update(_db.plots)..where((p) => p.id.equals(entry.key)))
             .write(PlotsCompanion(
           treatmentId: Value(entry.value),
-          assignmentSource: assignmentSource != null ? Value(assignmentSource) : const Value.absent(),
-          assignmentUpdatedAt: assignmentSource != null ? Value(at) : const Value.absent(),
+          assignmentSource: assignmentSource != null
+              ? Value(assignmentSource)
+              : const Value.absent(),
+          assignmentUpdatedAt:
+              assignmentSource != null ? Value(at) : const Value.absent(),
         ));
       }
     });

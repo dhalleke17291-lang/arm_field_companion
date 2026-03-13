@@ -30,6 +30,7 @@ class RatingScreen extends ConsumerStatefulWidget {
   final List<Assessment> assessments;
   final List<Plot> allPlots;
   final int currentPlotIndex;
+
   /// Restored from session resume (field speed). When set, open on this assessment chip.
   final int? initialAssessmentIndex;
 
@@ -149,7 +150,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           _buildPlotInfoBar(context),
           _buildProgressBar(context),
 
-          if (!isSessionEditable(widget.session)) _buildClosedSessionBanner(context),
+          if (!isSessionEditable(widget.session))
+            _buildClosedSessionBanner(context),
 
           // Photos strip (shows only if photos exist)
           _buildPhotoStrip(context),
@@ -177,7 +179,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            Icon(Icons.lock, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+            Icon(Icons.lock,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+                size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -396,15 +400,17 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   Widget _buildFlagButton(BuildContext context) {
-    final flagsAsync =
-        ref.watch(plotFlagsForPlotSessionProvider((widget.plot.id, widget.session.id)));
+    final flagsAsync = ref.watch(
+        plotFlagsForPlotSessionProvider((widget.plot.id, widget.session.id)));
     return flagsAsync.when(
       data: (flags) {
         final isFlagged = flags.isNotEmpty;
         return IconButton(
           icon: Icon(
             isFlagged ? Icons.flag : Icons.flag_outlined,
-            color: isFlagged ? AppDesignTokens.flagColor : AppDesignTokens.secondaryText,
+            color: isFlagged
+                ? AppDesignTokens.flagColor
+                : AppDesignTokens.secondaryText,
           ),
           onPressed: () => _toggleFlag(context),
           onLongPress: () => _showFlagDialog(context),
@@ -453,8 +459,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   Future<void> _toggleFlag(BuildContext context) async {
-    final flags = ref.read(
-        plotFlagsForPlotSessionProvider((widget.plot.id, widget.session.id))).value ?? [];
+    final flags = ref
+            .read(plotFlagsForPlotSessionProvider(
+                (widget.plot.id, widget.session.id)))
+            .value ??
+        [];
     final db = ref.read(databaseProvider);
     if (flags.isNotEmpty) {
       await (db.delete(db.plotFlags)
@@ -498,7 +507,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     ];
     final subtitle = subtitleParts.join(' · ');
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing16, 0),
+      margin: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16,
+          AppDesignTokens.spacing16, AppDesignTokens.spacing16, 0),
       padding: const EdgeInsets.all(AppDesignTokens.spacing16),
       decoration: BoxDecoration(
         color: AppDesignTokens.cardSurface,
@@ -543,11 +553,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 data: (ctx) => ctx.hasTreatment
                     ? Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 3),
+                            horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
                           color: AppDesignTokens.primary,
-                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+                          borderRadius:
+                              BorderRadius.circular(AppDesignTokens.radiusCard),
                         ),
                         child: Text(
                           ctx.treatmentCode,
@@ -576,13 +586,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             children: [
               IconButton(
                 tooltip: 'Take photo',
-                icon: const Icon(Icons.photo_camera, size: 22, color: AppDesignTokens.secondaryText),
+                icon: const Icon(Icons.photo_camera,
+                    size: 22, color: AppDesignTokens.secondaryText),
                 onPressed: () => _capturePhoto(context),
               ),
               if (widget.session.raterName != null)
                 Text(
                   widget.session.raterName!,
-                  style: const TextStyle(color: AppDesignTokens.secondaryText, fontSize: 12),
+                  style: const TextStyle(
+                      color: AppDesignTokens.secondaryText, fontSize: 12),
                 ),
             ],
           ),
@@ -600,7 +612,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         value: plotProgress,
         minHeight: 6,
         backgroundColor: AppDesignTokens.backgroundSurface,
-        valueColor: const AlwaysStoppedAnimation<Color>(AppDesignTokens.primary),
+        valueColor:
+            const AlwaysStoppedAnimation<Color>(AppDesignTokens.primary),
       ),
     );
   }
@@ -608,7 +621,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   Widget _buildAssessmentSelector(BuildContext context) {
     if (widget.assessments.length == 1) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing8),
+        padding: const EdgeInsets.fromLTRB(
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing8),
         child: Row(
           children: [
             Container(
@@ -632,7 +649,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               const SizedBox(width: 6),
               Text(
                 '· ${_currentAssessment.unit}',
-                style: const TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
+                style: const TextStyle(
+                    fontSize: 13, color: AppDesignTokens.secondaryText),
               ),
             ],
           ],
@@ -641,14 +659,20 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing8),
+      padding: const EdgeInsets.fromLTRB(
+          AppDesignTokens.spacing16,
+          AppDesignTokens.spacing16,
+          AppDesignTokens.spacing16,
+          AppDesignTokens.spacing8),
       child: SizedBox(
         height: 36,
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              for (var index = 0; index < widget.assessments.length; index++) ...[
+              for (var index = 0;
+                  index < widget.assessments.length;
+                  index++) ...[
                 if (index > 0) const SizedBox(width: AppDesignTokens.spacing8),
                 _buildAssessmentChip(context, index),
               ],
@@ -689,9 +713,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: isSelected
-                ? Colors.white
-                : AppDesignTokens.secondaryText,
+            color: isSelected ? Colors.white : AppDesignTokens.secondaryText,
           ),
         ),
       ),
@@ -717,15 +739,20 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final correctionAsync =
         ref.watch(latestCorrectionForRatingProvider(existing.id));
     final hasCorrection = correctionAsync.valueOrNull != null;
-    final effectiveStatus =
-        hasCorrection ? correctionAsync.value!.newResultStatus : existing.resultStatus;
-    final effectiveNumeric =
-        hasCorrection ? correctionAsync.value!.newNumericValue : existing.numericValue;
-    final effectiveText =
-        hasCorrection ? correctionAsync.value!.newTextValue : existing.textValue;
+    final effectiveStatus = hasCorrection
+        ? correctionAsync.value!.newResultStatus
+        : existing.resultStatus;
+    final effectiveNumeric = hasCorrection
+        ? correctionAsync.value!.newNumericValue
+        : existing.numericValue;
+    final effectiveText = hasCorrection
+        ? correctionAsync.value!.newTextValue
+        : existing.textValue;
     final displayValue = effectiveStatus == 'RECORDED'
         ? (effectiveNumeric?.toString() ?? '-')
-        : (effectiveText?.isNotEmpty == true ? effectiveText! : effectiveStatus);
+        : (effectiveText?.isNotEmpty == true
+            ? effectiveText!
+            : effectiveStatus);
 
     return Container(
       padding: const EdgeInsets.all(10),
@@ -734,7 +761,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         color: hasCorrection ? Colors.amber.shade50 : Colors.green.shade50,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-            color: hasCorrection ? Colors.amber.shade200 : Colors.green.shade200),
+            color:
+                hasCorrection ? Colors.amber.shade200 : Colors.green.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,8 +785,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               if (isSessionEditable(widget.session))
                 TextButton(
                   onPressed: () => _undoRating(context, existing),
-                  child: const Text('Undo',
-                      style: TextStyle(color: Colors.red)),
+                  child:
+                      const Text('Undo', style: TextStyle(color: Colors.red)),
                 )
               else
                 TextButton(
@@ -801,13 +829,20 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text('New status',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 12)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
                   Wrap(
                     spacing: 6,
-                    children: ['RECORDED', 'NOT_OBSERVED', 'NOT_APPLICABLE', 'MISSING_CONDITION', 'TECHNICAL_ISSUE']
+                    children: [
+                      'RECORDED',
+                      'NOT_OBSERVED',
+                      'NOT_APPLICABLE',
+                      'MISSING_CONDITION',
+                      'TECHNICAL_ISSUE'
+                    ]
                         .map((s) => ChoiceChip(
-                              label: Text(s, style: const TextStyle(fontSize: 11)),
+                              label:
+                                  Text(s, style: const TextStyle(fontSize: 11)),
                               selected: newStatus == s,
                               onSelected: (_) => setState(() => newStatus = s),
                             ))
@@ -817,7 +852,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: newValueController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'New value',
                         border: OutlineInputBorder(),
@@ -846,8 +882,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   final reason = reasonController.text.trim();
                   if (reason.isEmpty) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                          content: Text('Reason is required')),
+                      const SnackBar(content: Text('Reason is required')),
                     );
                     return;
                   }
@@ -945,13 +980,16 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                           _statusLabel(status),
                           style: TextStyle(
                             fontSize: 12,
-                            color: isSelected ? Colors.white : AppDesignTokens.secondaryText,
+                            color: isSelected
+                                ? Colors.white
+                                : AppDesignTokens.secondaryText,
                           ),
                         ),
                         selected: isSelected,
                         selectedColor: AppDesignTokens.primary,
                         backgroundColor: AppDesignTokens.backgroundSurface,
-                        side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                        side: const BorderSide(
+                            color: AppDesignTokens.borderCrisp),
                         onSelected: (_) {
                           setState(() {
                             _selectedStatus = status;
@@ -980,7 +1018,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   alignLabelWithHint: true,
                   filled: true,
                   fillColor: AppDesignTokens.cardSurface,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
                 autofocus: true,
               ),
@@ -994,8 +1033,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (existing != null)
-            _buildCurrentOrCorrectedRow(context, existing),
+          if (existing != null) _buildCurrentOrCorrectedRow(context, existing),
           const SizedBox(height: AppDesignTokens.spacing16),
           Container(
             padding: const EdgeInsets.all(AppDesignTokens.spacing16),
@@ -1031,13 +1069,16 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         _statusLabel(status),
                         style: TextStyle(
                           fontSize: 12,
-                          color: isSelected ? Colors.white : AppDesignTokens.secondaryText,
+                          color: isSelected
+                              ? Colors.white
+                              : AppDesignTokens.secondaryText,
                         ),
                       ),
                       selected: isSelected,
                       selectedColor: AppDesignTokens.primary,
                       backgroundColor: AppDesignTokens.backgroundSurface,
-                      side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                      side:
+                          const BorderSide(color: AppDesignTokens.borderCrisp),
                       onSelected: (_) {
                         setState(() {
                           _selectedStatus = status;
@@ -1064,11 +1105,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     runSpacing: 6,
                     children: _missingReasons.map((reason) {
                       return FilterChip(
-                        label: Text(reason, style: const TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText)),
+                        label: Text(reason,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppDesignTokens.secondaryText)),
                         selected: _selectedMissingReason == reason,
                         selectedColor: AppDesignTokens.primary,
                         backgroundColor: AppDesignTokens.backgroundSurface,
-                        side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                        side: const BorderSide(
+                            color: AppDesignTokens.borderCrisp),
                         onSelected: (_) =>
                             setState(() => _selectedMissingReason = reason),
                       );
@@ -1173,7 +1218,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: isSelected ? AppDesignTokens.primary : AppDesignTokens.cardSurface,
+              color: isSelected
+                  ? AppDesignTokens.primary
+                  : AppDesignTokens.cardSurface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
@@ -1197,7 +1244,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: isSelected ? Colors.white : AppDesignTokens.primaryText,
+                  color:
+                      isSelected ? Colors.white : AppDesignTokens.primaryText,
                 ),
               ),
             ),
@@ -1233,7 +1281,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
     final plotCtx = ref.watch(plotContextProvider(widget.plot.id));
     final ctx = plotCtx.valueOrNull;
-    final treatmentCode = ctx != null && ctx.hasTreatment ? ctx.treatmentCode : null;
+    final treatmentCode =
+        ctx != null && ctx.hasTreatment ? ctx.treatmentCode : null;
 
     final editable = isSessionEditable(widget.session);
 
@@ -1303,12 +1352,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         : () => _saveRating(context, navigateAfterSave: false),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppDesignTokens.primary,
-                      side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                      side:
+                          const BorderSide(color: AppDesignTokens.borderCrisp),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                        borderRadius:
+                            BorderRadius.circular(AppDesignTokens.radiusSmall),
                       ),
                     ),
-                    child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w600)),
+                    child: const Text('Save',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(width: AppDesignTokens.spacing8),
@@ -1326,7 +1378,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         elevation: 0,
                         shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                          borderRadius: BorderRadius.circular(
+                              AppDesignTokens.radiusSmall),
                         ),
                       ),
                       child: _isSaving
@@ -1358,7 +1411,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                     ),
                                     const SizedBox(width: 6),
                                     Icon(
-                                      isVeryLast ? Icons.check_circle_outline : Icons.arrow_forward,
+                                      isVeryLast
+                                          ? Icons.check_circle_outline
+                                          : Icons.arrow_forward,
                                       size: 18,
                                     ),
                                   ],
@@ -1369,7 +1424,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                     '→ $destination',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.9),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -1386,7 +1442,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             Row(
               children: [
                 TextButton.icon(
-                  onPressed: canGoBack ? () => _navigatePlot(context, -1) : null,
+                  onPressed:
+                      canGoBack ? () => _navigatePlot(context, -1) : null,
                   icon: const Icon(Icons.arrow_back, size: 18),
                   label: const Text('Prev', style: TextStyle(fontSize: 13)),
                   style: TextButton.styleFrom(
@@ -1487,7 +1544,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   /// Saves the current rating. When [navigateAfterSave] is true (default), advances to next
   /// assessment or next plot or shows session complete; when false, stays on current plot/assessment.
-  Future<void> _saveRating(BuildContext context, {bool navigateAfterSave = true}) async {
+  Future<void> _saveRating(BuildContext context,
+      {bool navigateAfterSave = true}) async {
     double? numericValue;
     String? textValue;
     if (_selectedStatus == 'RECORDED') {
@@ -1579,7 +1637,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       if (!context.mounted) return;
       final msg = result.errorMessage ?? 'Save failed';
       if (msg == kClosedSessionBlockedMessage) {
-        ref.read(diagnosticsStoreProvider).recordError(msg, code: 'closed_session_write_blocked');
+        ref
+            .read(diagnosticsStoreProvider)
+            .recordError(msg, code: 'closed_session_write_blocked');
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1591,11 +1651,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   Future<void> _showSessionCompleteDialog(BuildContext context) async {
-    final flaggedIds = await ref.read(flaggedPlotIdsForSessionProvider(widget.session.id).future);
+    final flaggedIds = await ref
+        .read(flaggedPlotIdsForSessionProvider(widget.session.id).future);
     final flaggedCount = flaggedIds.length;
-    final photoCount = await ref.read(photoRepositoryProvider).getPhotoCountForSession(widget.session.id);
+    final photoCount = await ref
+        .read(photoRepositoryProvider)
+        .getPhotoCountForSession(widget.session.id);
     final plotCount = widget.allPlots.length;
-    final summary = '$plotCount plots rated · $flaggedCount flagged · $photoCount photos';
+    final summary =
+        '$plotCount plots rated · $flaggedCount flagged · $photoCount photos';
 
     if (!context.mounted) return;
     await showDialog(
@@ -1675,11 +1739,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard)),
+                        borderRadius:
+                            BorderRadius.circular(AppDesignTokens.radiusCard)),
                   ),
                   child: const Text('Back to Session',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700)),
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 ),
               ),
               const SizedBox(height: AppDesignTokens.spacing8 + 2),
@@ -1709,7 +1774,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       final currentRep = widget.plot.rep;
       if (currentRep != null) {
         bool isLastInRep = true;
-        for (int i = widget.currentPlotIndex + 1; i < widget.allPlots.length; i++) {
+        for (int i = widget.currentPlotIndex + 1;
+            i < widget.allPlots.length;
+            i++) {
           if (widget.allPlots[i].rep == currentRep) {
             isLastInRep = false;
             break;
@@ -1795,7 +1862,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Flag Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}'),
+        title: Text(
+            'Flag Plot ${getDisplayPlotLabel(widget.plot, widget.allPlots)}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1808,7 +1876,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   label: Text(label),
                   onPressed: () {
                     final before = descController.text.trim();
-                    descController.text = before.isEmpty ? label : '$before, $label';
+                    descController.text =
+                        before.isEmpty ? label : '$before, $label';
                   },
                 );
               }).toList(),
@@ -1868,7 +1937,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         return status;
     }
   }
-
 }
 
 class _PhotoViewerScreen extends StatefulWidget {

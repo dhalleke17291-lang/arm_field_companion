@@ -134,29 +134,36 @@ class ExportSessionArmXmlUsecase {
               builder.attribute('plot_pk', plotPk.toString());
               builder.element('plot_id', nest: plotId);
               if (rep != null) builder.element('rep', nest: rep);
-              if (treatmentId != null) builder.element('treatment_id', nest: treatmentId);
-              if (treatmentCode != null) builder.element('treatment_code', nest: treatmentCode);
+              if (treatmentId != null)
+                builder.element('treatment_id', nest: treatmentId);
+              if (treatmentCode != null)
+                builder.element('treatment_code', nest: treatmentCode);
             });
           }
         });
 
         builder.element('ratings', nest: () {
           for (final m in rows) {
-            final status = m['effective_result_status']?.toString() ?? m['result_status']?.toString() ?? '';
+            final status = m['effective_result_status']?.toString() ??
+                m['result_status']?.toString() ??
+                '';
             final numVal = m['effective_numeric_value'] ?? m['numeric_value'];
             final textVal = m['effective_text_value'] ?? m['text_value'];
             builder.element('rating', nest: () {
               builder.attribute('plot_pk', (m['plot_pk'] as int).toString());
-              builder.attribute('assessment_id', (m['assessment_id'] as int).toString());
+              builder.attribute(
+                  'assessment_id', (m['assessment_id'] as int).toString());
               builder.element('result_status', nest: status);
-              if (numVal != null) builder.element('numeric_value', nest: numVal.toString());
+              if (numVal != null)
+                builder.element('numeric_value', nest: numVal.toString());
               if (textVal != null && textVal.toString().isNotEmpty) {
                 builder.element('text_value', nest: textVal.toString());
               }
               if (m['rater_name'] != null) {
                 builder.element('rater_name', nest: m['rater_name'].toString());
               }
-              builder.element('created_at', nest: (m['created_at'] ?? '').toString());
+              builder.element('created_at',
+                  nest: (m['created_at'] ?? '').toString());
             });
           }
         });

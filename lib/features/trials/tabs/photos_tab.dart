@@ -57,7 +57,8 @@ class PhotosTab extends ConsumerWidget {
             error: (e, st) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Could not load photos: $e', textAlign: TextAlign.center),
+                child: Text('Could not load photos: $e',
+                    textAlign: TextAlign.center),
               ),
             ),
             data: (photos) {
@@ -65,7 +66,8 @@ class PhotosTab extends ConsumerWidget {
                 return const AppEmptyState(
                   icon: Icons.photo_library_outlined,
                   title: 'No photos yet',
-                  subtitle: 'Photos taken during sessions will appear here, grouped by session.',
+                  subtitle:
+                      'Photos taken during sessions will appear here, grouped by session.',
                 );
               }
               final sessions = sessionsAsync.valueOrNull ?? <Session>[];
@@ -76,7 +78,8 @@ class PhotosTab extends ConsumerWidget {
               }
               final sessionIds = bySession.keys.toList()..sort();
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 itemCount: sessionIds.length,
                 itemBuilder: (context, i) {
                   final sessionId = sessionIds[i];
@@ -90,7 +93,8 @@ class PhotosTab extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                          padding: const EdgeInsets.only(
+                              bottom: AppDesignTokens.spacing8),
                           child: Text(
                             title,
                             style: const TextStyle(
@@ -102,7 +106,8 @@ class PhotosTab extends ConsumerWidget {
                         ),
                         if (subtitle.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                            padding: const EdgeInsets.only(
+                                bottom: AppDesignTokens.spacing8),
                             child: Text(
                               subtitle,
                               style: const TextStyle(
@@ -116,7 +121,8 @@ class PhotosTab extends ConsumerWidget {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: sessionPhotos.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 8),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 8),
                             itemBuilder: (context, j) {
                               final p = sessionPhotos[j];
                               final file = File(p.filePath);
@@ -142,7 +148,9 @@ class PhotosTab extends ConsumerWidget {
                                     child: file.existsSync()
                                         ? Image.file(file, fit: BoxFit.cover)
                                         : const Center(
-                                            child: Icon(Icons.broken_image, color: AppDesignTokens.secondaryText),
+                                            child: Icon(Icons.broken_image,
+                                                color: AppDesignTokens
+                                                    .secondaryText),
                                           ),
                                   ),
                                 ),

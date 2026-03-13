@@ -58,7 +58,8 @@ void main() {
   });
 
   group('ExportSessionArmXmlUsecase', () {
-    test('FAILURE: rejects export when session is open and requireSessionClosed is true',
+    test(
+        'FAILURE: rejects export when session is open and requireSessionClosed is true',
         () async {
       final result = await useCase.exportSessionToArmXml(
         sessionId: 1,
@@ -89,7 +90,8 @@ void main() {
       expect(result.filePath, endsWith('.xml'));
     });
 
-    test('SUCCESS: written XML contains arm_export root and trial/session', () async {
+    test('SUCCESS: written XML contains arm_export root and trial/session',
+        () async {
       mockRepo.rows = [];
       final result = await useCase.exportSessionToArmXml(
         sessionId: 42,

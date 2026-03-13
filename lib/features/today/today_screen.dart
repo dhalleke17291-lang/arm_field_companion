@@ -19,7 +19,20 @@ String formatDateLabel(String dateLocal) {
   final d = DateTime.tryParse('$dateLocal 12:00:00');
   if (d == null) return dateLocal;
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
   final w = d.weekday - 1; // 1=Mon -> 0
   final weekday = w >= 0 && w < 7 ? weekdays[w] : '';
   final month = d.month >= 1 && d.month <= 12 ? months[d.month - 1] : '';
@@ -36,7 +49,20 @@ String formatTime(DateTime at) {
 
 /// Date and time on one line (e.g. "11 Mar 2026, 10:18 PM").
 String formatDateAndTime(DateTime at) {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
   final month = at.month >= 1 && at.month <= 12 ? months[at.month - 1] : '';
   final hour = at.hour == 0 ? 12 : (at.hour > 12 ? at.hour - 12 : at.hour);
   final ampm = at.hour < 12 ? 'AM' : 'PM';
@@ -133,7 +159,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           children: [
             ListTile(
               title: const Text('Today'),
-              trailing: _dateLocal == today ? const Icon(Icons.check, color: AppDesignTokens.primary) : null,
+              trailing: _dateLocal == today
+                  ? const Icon(Icons.check, color: AppDesignTokens.primary)
+                  : null,
               onTap: () {
                 setState(() => _dateLocal = today);
                 Navigator.pop(ctx);
@@ -145,8 +173,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 final isSelected = _dateLocal == d.dateLocal;
                 return ListTile(
                   title: Text(formatDateLabel(d.dateLocal)),
-                  subtitle: Text('${d.eventCount} ${d.eventCount == 1 ? 'event' : 'events'}'),
-                  trailing: isSelected ? const Icon(Icons.check, color: AppDesignTokens.primary) : null,
+                  subtitle: Text(
+                      '${d.eventCount} ${d.eventCount == 1 ? 'event' : 'events'}'),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: AppDesignTokens.primary)
+                      : null,
                   onTap: () {
                     setState(() => _dateLocal = d.dateLocal);
                     Navigator.pop(ctx);
@@ -170,7 +201,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 );
                 if (picked != null && mounted) {
                   setState(() {
-                    _dateLocal = '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                    _dateLocal =
+                        '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
                   });
                 }
               },
@@ -194,11 +226,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             tooltip: 'Sort by',
             onSelected: (value) => setState(() => _sort = value),
             itemBuilder: (context) => [
-              const PopupMenuItem(value: WorkLogSort.dateNewest, child: Text('Date (newest)')),
-              const PopupMenuItem(value: WorkLogSort.dateOldest, child: Text('Date (oldest)')),
-              const PopupMenuItem(value: WorkLogSort.trial, child: Text('Trial')),
-              const PopupMenuItem(value: WorkLogSort.session, child: Text('Session')),
-              const PopupMenuItem(value: WorkLogSort.eventType, child: Text('Event type')),
+              const PopupMenuItem(
+                  value: WorkLogSort.dateNewest, child: Text('Date (newest)')),
+              const PopupMenuItem(
+                  value: WorkLogSort.dateOldest, child: Text('Date (oldest)')),
+              const PopupMenuItem(
+                  value: WorkLogSort.trial, child: Text('Trial')),
+              const PopupMenuItem(
+                  value: WorkLogSort.session, child: Text('Session')),
+              const PopupMenuItem(
+                  value: WorkLogSort.eventType, child: Text('Event type')),
             ],
           ),
         ],
@@ -208,12 +245,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing12, AppDesignTokens.spacing16, 0),
+              padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing12, AppDesignTokens.spacing16, 0),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _showDatePickerSheet,
-                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusSmall),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppDesignTokens.spacing16,
@@ -222,7 +261,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.calendar_today, size: 18, color: Theme.of(context).colorScheme.primary),
+                        Icon(Icons.calendar_today,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: AppDesignTokens.spacing8),
                         Text(
                           formatDateLabel(_dateLocal),
@@ -233,7 +274,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down, size: 20, color: AppDesignTokens.iconSubtle),
+                        const Icon(Icons.arrow_drop_down,
+                            size: 20, color: AppDesignTokens.iconSubtle),
                       ],
                     ),
                   ),
@@ -249,7 +291,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     padding: const EdgeInsets.all(AppDesignTokens.spacing24),
                     child: Text(
                       'Unable to load activity: $e',
-                      style: const TextStyle(color: AppDesignTokens.secondaryText),
+                      style:
+                          const TextStyle(color: AppDesignTokens.secondaryText),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -260,7 +303,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     return RefreshIndicator(
                       onRefresh: () async {
                         ref.invalidate(todayActivityProvider(_dateLocal));
-                        await ref.read(todayActivityProvider(_dateLocal).future);
+                        await ref
+                            .read(todayActivityProvider(_dateLocal).future);
                       },
                       child: SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -268,7 +312,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                           height: MediaQuery.of(context).size.height * 0.5,
                           child: Center(
                             child: Padding(
-                              padding: const EdgeInsets.all(AppDesignTokens.spacing24),
+                              padding: const EdgeInsets.all(
+                                  AppDesignTokens.spacing24),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -277,7 +322,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                                     size: 56,
                                     color: AppDesignTokens.emptyBadgeFg,
                                   ),
-                                  const SizedBox(height: AppDesignTokens.spacing16),
+                                  const SizedBox(
+                                      height: AppDesignTokens.spacing16),
                                   Text(
                                     _dateLocal == todayDateLocal()
                                         ? 'Nothing recorded today yet'
@@ -303,7 +349,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                       await ref.read(todayActivityProvider(_dateLocal).future);
                     },
                     child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0, AppDesignTokens.spacing16, AppDesignTokens.spacing24),
+                      padding: const EdgeInsets.fromLTRB(
+                          AppDesignTokens.spacing16,
+                          0,
+                          AppDesignTokens.spacing16,
+                          AppDesignTokens.spacing24),
                       itemCount: sorted.length,
                       itemBuilder: (context, index) {
                         return _ActivityTile(event: sorted[index]);
@@ -388,8 +438,10 @@ class _ActivityTile extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: (iconColor ?? theme.colorScheme.primary).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                color: (iconColor ?? theme.colorScheme.primary)
+                    .withValues(alpha: 0.12),
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusXSmall),
               ),
               child: Icon(
                 icon,

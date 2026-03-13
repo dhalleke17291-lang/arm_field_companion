@@ -80,29 +80,104 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
           SeedingRecordsCompanion.insert(
             trialId: widget.trial.id,
             seedingDate: _seedingDate.value,
-            operatorName: drift.Value(
-                operatorName.isEmpty ? null : operatorName),
+            operatorName:
+                drift.Value(operatorName.isEmpty ? null : operatorName),
             comments: drift.Value(comments.isEmpty ? null : comments),
           ),
         );
 
     // Persist all form fields so they show in the seeding event detail
     final extraFields = <Map<String, dynamic>>[
-      {'key': 'equipment', 'label': 'Equipment / Planter', 'type': 'text', 'text': _equipmentController.text.trim()},
-      {'key': 'variety', 'label': 'Variety / Hybrid', 'type': 'text', 'text': _varietyController.text.trim()},
-      {'key': 'seed_lot', 'label': 'Seed Lot', 'type': 'text', 'text': _seedLotController.text.trim()},
-      {'key': 'seeding_rate', 'label': 'Seeding Rate', 'type': 'number', 'text': _seedingRateController.text.trim()},
-      {'key': 'rate_unit', 'label': 'Rate Unit', 'type': 'text', 'text': _rateUnitController.text.trim()},
-      {'key': 'seeding_depth', 'label': 'Seeding Depth', 'type': 'number', 'text': _seedingDepthController.text.trim()},
-      {'key': 'depth_unit', 'label': 'Depth Unit', 'type': 'text', 'text': _depthUnitController.text.trim()},
-      {'key': 'row_spacing', 'label': 'Row Spacing', 'type': 'number', 'text': _rowSpacingController.text.trim()},
-      {'key': 'spacing_unit', 'label': 'Spacing Unit', 'type': 'text', 'text': _spacingUnitController.text.trim()},
-      {'key': 'rows_per_plot', 'label': 'Rows Per Plot', 'type': 'number', 'text': _rowsPerPlotController.text.trim()},
-      {'key': 'row_length', 'label': 'Row Length', 'type': 'number', 'text': _rowLengthController.text.trim()},
-      {'key': 'row_length_unit', 'label': 'Row Length Unit', 'type': 'text', 'text': _rowLengthUnitController.text.trim()},
-      {'key': 'soil_temp', 'label': 'Soil Temperature', 'type': 'text', 'text': _soilTempController.text.trim()},
-      {'key': 'soil_moisture', 'label': 'Soil Moisture', 'type': 'text', 'text': _soilMoistureController.text.trim()},
-      {'key': 'conditions_notes', 'label': 'Conditions / Notes', 'type': 'text', 'text': _conditionsNotesController.text.trim()},
+      {
+        'key': 'equipment',
+        'label': 'Equipment / Planter',
+        'type': 'text',
+        'text': _equipmentController.text.trim()
+      },
+      {
+        'key': 'variety',
+        'label': 'Variety / Hybrid',
+        'type': 'text',
+        'text': _varietyController.text.trim()
+      },
+      {
+        'key': 'seed_lot',
+        'label': 'Seed Lot',
+        'type': 'text',
+        'text': _seedLotController.text.trim()
+      },
+      {
+        'key': 'seeding_rate',
+        'label': 'Seeding Rate',
+        'type': 'number',
+        'text': _seedingRateController.text.trim()
+      },
+      {
+        'key': 'rate_unit',
+        'label': 'Rate Unit',
+        'type': 'text',
+        'text': _rateUnitController.text.trim()
+      },
+      {
+        'key': 'seeding_depth',
+        'label': 'Seeding Depth',
+        'type': 'number',
+        'text': _seedingDepthController.text.trim()
+      },
+      {
+        'key': 'depth_unit',
+        'label': 'Depth Unit',
+        'type': 'text',
+        'text': _depthUnitController.text.trim()
+      },
+      {
+        'key': 'row_spacing',
+        'label': 'Row Spacing',
+        'type': 'number',
+        'text': _rowSpacingController.text.trim()
+      },
+      {
+        'key': 'spacing_unit',
+        'label': 'Spacing Unit',
+        'type': 'text',
+        'text': _spacingUnitController.text.trim()
+      },
+      {
+        'key': 'rows_per_plot',
+        'label': 'Rows Per Plot',
+        'type': 'number',
+        'text': _rowsPerPlotController.text.trim()
+      },
+      {
+        'key': 'row_length',
+        'label': 'Row Length',
+        'type': 'number',
+        'text': _rowLengthController.text.trim()
+      },
+      {
+        'key': 'row_length_unit',
+        'label': 'Row Length Unit',
+        'type': 'text',
+        'text': _rowLengthUnitController.text.trim()
+      },
+      {
+        'key': 'soil_temp',
+        'label': 'Soil Temperature',
+        'type': 'text',
+        'text': _soilTempController.text.trim()
+      },
+      {
+        'key': 'soil_moisture',
+        'label': 'Soil Moisture',
+        'type': 'text',
+        'text': _soilMoistureController.text.trim()
+      },
+      {
+        'key': 'conditions_notes',
+        'label': 'Conditions / Notes',
+        'type': 'text',
+        'text': _conditionsNotesController.text.trim()
+      },
     ];
 
     int sortOrder = 0;
@@ -114,7 +189,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
       if (text == null || text.isEmpty) continue;
 
       final existing = await (db.select(db.protocolSeedingFields)
-            ..where((p) => p.trialId.equals(widget.trial.id) & p.fieldKey.equals(key)))
+            ..where((p) =>
+                p.trialId.equals(widget.trial.id) & p.fieldKey.equals(key)))
           .getSingleOrNull();
       if (existing == null) {
         await db.into(db.protocolSeedingFields).insert(
@@ -134,8 +210,12 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
               seedingRecordId: recordId,
               fieldKey: key,
               fieldLabel: label,
-              valueText: isNum && numVal != null ? const drift.Value.absent() : drift.Value(text),
-              valueNumber: isNum && numVal != null ? drift.Value(numVal) : const drift.Value.absent(),
+              valueText: isNum && numVal != null
+                  ? const drift.Value.absent()
+                  : drift.Value(text),
+              valueNumber: isNum && numVal != null
+                  ? drift.Value(numVal)
+                  : const drift.Value.absent(),
               unit: const drift.Value.absent(),
               sortOrder: drift.Value(sortOrder++),
             ),
@@ -159,8 +239,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600, fontSize: 13)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           const SizedBox(height: 2),
           TextFormField(
             controller: controller,
@@ -222,7 +302,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
                               Text(
                                 widget.trial.crop!,
                                 style: TextStyle(
-                                    fontSize: 12, color: scheme.onSurfaceVariant),
+                                    fontSize: 12,
+                                    color: scheme.onSurfaceVariant),
                               ),
                             ],
                           ],
@@ -259,7 +340,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
                                     Icon(Icons.calendar_today,
                                         size: 18, color: primary),
                                     const SizedBox(width: 8),
-                                    Text(dateStr, style: const TextStyle(fontSize: 14)),
+                                    Text(dateStr,
+                                        style: const TextStyle(fontSize: 14)),
                                   ],
                                 ),
                               ),
@@ -276,8 +358,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
                   const SizedBox(height: 6),
                   ExpansionTile(
                     initiallyExpanded: true,
-                    tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 0, vertical: 0),
+                    tilePadding:
+                        const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                     childrenPadding: const EdgeInsets.only(
                         left: 0, right: 0, bottom: 8, top: 4),
                     title: Text(
@@ -295,8 +377,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
                   ),
                   ExpansionTile(
                     initiallyExpanded: false,
-                    tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 0, vertical: 0),
+                    tilePadding:
+                        const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                     childrenPadding: const EdgeInsets.only(
                         left: 0, right: 0, bottom: 8, top: 4),
                     title: Text(
@@ -311,26 +393,23 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
                           hint: 'Optional'),
                       _field('Seed Lot', _seedLotController, hint: 'Optional'),
                       _field('Seeding Rate', _seedingRateController,
-                          hint: 'e.g. 350',
-                          keyboardType: TextInputType.number),
+                          hint: 'e.g. 350', keyboardType: TextInputType.number),
                       _field('Rate Unit', _rateUnitController,
                           hint: 'e.g. seeds/m'),
                       _field('Seeding Depth', _seedingDepthController,
-                          hint: 'e.g. 3',
-                          keyboardType: TextInputType.number),
+                          hint: 'e.g. 3', keyboardType: TextInputType.number),
                       _field('Depth Unit', _depthUnitController,
                           hint: 'e.g. cm'),
                       _field('Row Spacing', _rowSpacingController,
-                          hint: 'e.g. 19',
-                          keyboardType: TextInputType.number),
+                          hint: 'e.g. 19', keyboardType: TextInputType.number),
                       _field('Spacing Unit', _spacingUnitController,
                           hint: 'e.g. cm'),
                     ],
                   ),
                   ExpansionTile(
                     initiallyExpanded: false,
-                    tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 0, vertical: 0),
+                    tilePadding:
+                        const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                     childrenPadding: const EdgeInsets.only(
                         left: 0, right: 0, bottom: 8, top: 4),
                     title: Text(
@@ -342,19 +421,17 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
                     ),
                     children: [
                       _field('Rows Per Plot', _rowsPerPlotController,
-                          hint: 'Optional',
-                          keyboardType: TextInputType.number),
+                          hint: 'Optional', keyboardType: TextInputType.number),
                       _field('Row Length', _rowLengthController,
-                          hint: 'Optional',
-                          keyboardType: TextInputType.number),
+                          hint: 'Optional', keyboardType: TextInputType.number),
                       _field('Row Length Unit', _rowLengthUnitController,
                           hint: 'e.g. m'),
                     ],
                   ),
                   ExpansionTile(
                     initiallyExpanded: false,
-                    tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 0, vertical: 0),
+                    tilePadding:
+                        const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                     childrenPadding: const EdgeInsets.only(
                         left: 0, right: 0, bottom: 8, top: 4),
                     title: Text(
@@ -371,8 +448,7 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
                       _field('Soil Moisture', _soilMoistureController,
                           hint: 'e.g. % or condition',
                           keyboardType: TextInputType.number),
-                      _field('Conditions / Notes',
-                          _conditionsNotesController,
+                      _field('Conditions / Notes', _conditionsNotesController,
                           hint: 'Weather, soil condition, etc.',
                           keyboardType: TextInputType.multiline),
                     ],

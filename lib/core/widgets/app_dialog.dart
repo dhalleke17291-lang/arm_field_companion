@@ -49,4 +49,3 @@ class AppDialog extends StatelessWidget {
     );
   }
 }
-

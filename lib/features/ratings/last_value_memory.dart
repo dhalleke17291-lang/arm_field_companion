@@ -11,7 +11,8 @@ class LastValueMemoryNotifier extends StateNotifier<Map<String, double>> {
     state = {...state, _key(sessionId, assessmentId): value};
   }
 
-  double? get(int sessionId, int assessmentId) => state[_key(sessionId, assessmentId)];
+  double? get(int sessionId, int assessmentId) =>
+      state[_key(sessionId, assessmentId)];
 }
 
 final lastValueMemoryProvider =

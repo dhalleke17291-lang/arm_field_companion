@@ -14,8 +14,7 @@ class MockAssignmentRepository implements AssignmentRepository {
   Future<Assignment?> getForPlot(int plotPk) async => null;
 
   @override
-  Future<Assignment?> getForTrialAndPlot(int trialId, int plotPk) async =>
-      null;
+  Future<Assignment?> getForTrialAndPlot(int trialId, int plotPk) async => null;
 
   @override
   Future<List<Assignment>> getForTrial(int trialId) async => [];
@@ -77,7 +76,8 @@ class MockSessionRepository implements SessionRepository {
       List.from(sessionsForTrial);
 
   @override
-  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) async =>
+  Future<List<Session>> getSessionsForDate(String dateLocal,
+          {int? createdByUserId}) async =>
       [];
 
   @override

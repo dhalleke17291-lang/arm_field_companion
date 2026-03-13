@@ -35,6 +35,8 @@ import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
 import '../features/diagnostics/trial_diagnostics.dart';
+import '../features/diagnostics/trial_readiness.dart';
+import '../features/diagnostics/trial_readiness_service.dart';
 import '../features/today/domain/activity_event.dart';
 import '../features/today/today_activity_repository.dart';
 import 'current_user.dart';
@@ -60,24 +62,34 @@ final assignmentRepositoryProvider = Provider<AssignmentRepository>((ref) {
   return AssignmentRepository(ref.watch(databaseProvider));
 });
 
-final assessmentDefinitionRepositoryProvider = Provider<AssessmentDefinitionRepository>((ref) {
+final assessmentDefinitionRepositoryProvider =
+    Provider<AssessmentDefinitionRepository>((ref) {
   return AssessmentDefinitionRepository(ref.watch(databaseProvider));
 });
 
-final trialAssessmentRepositoryProvider = Provider<TrialAssessmentRepository>((ref) {
+final trialAssessmentRepositoryProvider =
+    Provider<TrialAssessmentRepository>((ref) {
   return TrialAssessmentRepository(ref.watch(databaseProvider));
 });
 
-final assessmentDefinitionsProvider = StreamProvider<List<AssessmentDefinition>>((ref) {
-  return ref.watch(assessmentDefinitionRepositoryProvider).watchAll(activeOnly: true);
+final assessmentDefinitionsProvider =
+    StreamProvider<List<AssessmentDefinition>>((ref) {
+  return ref
+      .watch(assessmentDefinitionRepositoryProvider)
+      .watchAll(activeOnly: true);
 });
 
-final trialAssessmentsForTrialProvider = StreamProvider.family<List<TrialAssessment>, int>((ref, trialId) {
+final trialAssessmentsForTrialProvider =
+    StreamProvider.family<List<TrialAssessment>, int>((ref, trialId) {
   return ref.watch(trialAssessmentRepositoryProvider).watchForTrial(trialId);
 });
 
-final trialAssessmentsWithDefinitionsForTrialProvider = StreamProvider.family<List<(TrialAssessment, AssessmentDefinition)>, int>((ref, trialId) {
-  return ref.watch(trialAssessmentRepositoryProvider).watchForTrialWithDefinitions(trialId);
+final trialAssessmentsWithDefinitionsForTrialProvider =
+    StreamProvider.family<List<(TrialAssessment, AssessmentDefinition)>, int>(
+        (ref, trialId) {
+  return ref
+      .watch(trialAssessmentRepositoryProvider)
+      .watchForTrialWithDefinitions(trialId);
 });
 
 final updatePlotAssignmentUseCaseProvider =
@@ -117,17 +129,19 @@ final diagnosticsStoreProvider = Provider<DiagnosticsStore>((ref) {
   return DiagnosticsStore(maxErrors: 50);
 });
 
-final integrityCheckRepositoryProvider = Provider<IntegrityCheckRepository>((ref) {
+final integrityCheckRepositoryProvider =
+    Provider<IntegrityCheckRepository>((ref) {
   return IntegrityCheckRepository(ref.watch(databaseProvider));
 });
 
-final todayActivityRepositoryProvider = Provider<TodayActivityRepository>((ref) {
+final todayActivityRepositoryProvider =
+    Provider<TodayActivityRepository>((ref) {
   return TodayActivityRepository(ref.watch(databaseProvider));
 });
 
 /// Activity events for a given day (wall-clock date "yyyy-MM-dd"). AutoDispose, refresh on read.
-final todayActivityProvider =
-    FutureProvider.autoDispose.family<List<ActivityEvent>, String>((ref, dateLocal) async {
+final todayActivityProvider = FutureProvider.autoDispose
+    .family<List<ActivityEvent>, String>((ref, dateLocal) async {
   final repo = ref.watch(todayActivityRepositoryProvider);
   final userId = await ref.watch(currentUserIdProvider.future);
   return repo.getActivityForDate(dateLocal, currentUserId: userId);
@@ -135,15 +149,16 @@ final todayActivityProvider =
 
 /// Days with at least one activity (empty days excluded), with event count. For work log history.
 final workLogDatesProvider =
-    FutureProvider.autoDispose<List<({String dateLocal, int eventCount})>>((ref) async {
+    FutureProvider.autoDispose<List<({String dateLocal, int eventCount})>>(
+        (ref) async {
   final repo = ref.watch(todayActivityRepositoryProvider);
   final userId = await ref.watch(currentUserIdProvider.future);
   return repo.getDatesWithActivity(currentUserId: userId);
 });
 
 /// Sessions for work log: filter by date (sessionDateLocal) and optionally current user (createdByUserId).
-final workLogSessionsProvider =
-    FutureProvider.autoDispose.family<List<Session>, String>((ref, dateLocal) async {
+final workLogSessionsProvider = FutureProvider.autoDispose
+    .family<List<Session>, String>((ref, dateLocal) async {
   final repo = ref.watch(sessionRepositoryProvider);
   final userId = await ref.watch(currentUserIdProvider.future);
   return repo.getSessionsForDate(dateLocal, createdByUserId: userId);
@@ -159,7 +174,8 @@ final ratingCountForSessionProvider =
 /// Number of plots flagged in this session.
 final flagCountForSessionProvider =
     FutureProvider.autoDispose.family<int, int>((ref, sessionId) async {
-  final set = await ref.watch(flaggedPlotIdsForSessionProvider(sessionId).future);
+  final set =
+      await ref.watch(flaggedPlotIdsForSessionProvider(sessionId).future);
   return set.length;
 });
 
@@ -211,7 +227,9 @@ final applyCorrectionUseCaseProvider = Provider<ApplyCorrectionUseCase>((ref) {
 /// Latest correction for a rating (for effective value display).
 final latestCorrectionForRatingProvider =
     FutureProvider.autoDispose.family<RatingCorrection?, int>((ref, ratingId) {
-  return ref.read(ratingRepositoryProvider).getLatestCorrectionForRating(ratingId);
+  return ref
+      .read(ratingRepositoryProvider)
+      .getLatestCorrectionForRating(ratingId);
 });
 
 final createSessionUseCaseProvider = Provider<CreateSessionUseCase>((ref) {
@@ -237,8 +255,7 @@ final trialsStreamProvider = StreamProvider((ref) {
 });
 
 /// Current trial by id (e.g. for trial detail). Invalidate after status change.
-final trialProvider =
-    FutureProvider.autoDispose.family<Trial?, int>((ref, id) {
+final trialProvider = FutureProvider.autoDispose.family<Trial?, int>((ref, id) {
   return ref.watch(trialRepositoryProvider).getTrialById(id);
 });
 
@@ -250,8 +267,7 @@ final plotsForTrialProvider =
 final assessmentsForTrialProvider =
     StreamProvider.family<List<Assessment>, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
-  return (db.select(db.assessments)
-        ..where((a) => a.trialId.equals(trialId)))
+  return (db.select(db.assessments)..where((a) => a.trialId.equals(trialId)))
       .watch();
 });
 
@@ -265,8 +281,8 @@ final sessionsForTrialProvider =
 });
 
 /// Seeding records for a trial (for Seeding tab). Invalidate after add/edit/delete.
-final seedingRecordsForTrialProvider =
-    FutureProvider.autoDispose.family<List<SeedingRecord>, int>((ref, trialId) async {
+final seedingRecordsForTrialProvider = FutureProvider.autoDispose
+    .family<List<SeedingRecord>, int>((ref, trialId) async {
   final db = ref.watch(databaseProvider);
   return (db.select(db.seedingRecords)
         ..where((t) => t.trialId.equals(trialId))
@@ -314,7 +330,8 @@ final ratedPlotPksProvider =
     StreamProvider.family<Set<int>, int>((ref, sessionId) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.ratingRecords)
-        ..where((r) => r.sessionId.equals(sessionId) & r.isCurrent.equals(true)))
+        ..where(
+            (r) => r.sessionId.equals(sessionId) & r.isCurrent.equals(true)))
       .watch()
       .map((ratings) => ratings.map((r) => r.plotPk).toSet());
 });
@@ -341,13 +358,11 @@ class CurrentRatingParams {
       other.sessionId == sessionId;
 
   @override
-  int get hashCode =>
-      Object.hash(trialId, plotPk, assessmentId, sessionId);
+  int get hashCode => Object.hash(trialId, plotPk, assessmentId, sessionId);
 }
 
 final currentRatingProvider =
-    StreamProvider.family<RatingRecord?, CurrentRatingParams>(
-        (ref, params) {
+    StreamProvider.family<RatingRecord?, CurrentRatingParams>((ref, params) {
   return ref.watch(ratingRepositoryProvider).watchCurrentRating(
         trialId: params.trialId,
         plotPk: params.plotPk,
@@ -409,9 +424,15 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
 });
 
 /// Trial readiness checks for pre-export diagnostics. AutoDispose, family by trialId.
-final trialDiagnosticsProvider =
-    FutureProvider.autoDispose.family<TrialReadinessResult, int>((ref, trialId) {
+final trialDiagnosticsProvider = FutureProvider.autoDispose
+    .family<TrialReadinessResult, int>((ref, trialId) {
   return TrialDiagnosticsService().runChecks(trialId.toString(), ref);
+});
+
+/// Unified trial readiness report (blockers, warnings, passes). Used for readiness card and export gating.
+final trialReadinessProvider = FutureProvider.autoDispose
+    .family<TrialReadinessReport, int>((ref, trialId) {
+  return TrialReadinessService().runChecks(trialId.toString(), ref);
 });
 
 /// Latest protocol import event for a trial (for opening saved CSV reference).
@@ -436,7 +457,8 @@ final plotFlagsForPlotSessionProvider =
     StreamProvider.family<List<PlotFlag>, (int, int)>((ref, params) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.plotFlags)
-        ..where((f) => f.plotPk.equals(params.$1) & f.sessionId.equals(params.$2)))
+        ..where(
+            (f) => f.plotPk.equals(params.$1) & f.sessionId.equals(params.$2)))
       .watch();
 });
 
@@ -444,8 +466,7 @@ final plotFlagsForPlotSessionProvider =
 final flaggedPlotIdsForSessionProvider =
     StreamProvider.family<Set<int>, int>((ref, sessionId) {
   final db = ref.watch(databaseProvider);
-  return (db.select(db.plotFlags)
-        ..where((f) => f.sessionId.equals(sessionId)))
+  return (db.select(db.plotFlags)..where((f) => f.sessionId.equals(sessionId)))
       .watch()
       .map((list) => list.map((f) => f.plotPk).toSet());
 });
@@ -482,7 +503,8 @@ final photosForPlotProvider =
 });
 
 /// All photos for a trial (for trial-level Photos tab). Group by session in UI.
-final photosForTrialProvider = StreamProvider.family<List<Photo>, int>((ref, trialId) {
+final photosForTrialProvider =
+    StreamProvider.family<List<Photo>, int>((ref, trialId) {
   return ref.watch(photoRepositoryProvider).watchPhotosForTrial(trialId);
 });
 
@@ -504,31 +526,34 @@ class PlotRatingParams {
 
 // Returns full rating history for a plot — all records ordered newest first.
 final plotRatingHistoryProvider =
-    StreamProvider.family<List<RatingRecord>, PlotRatingParams>(
-        (ref, params) {
+    StreamProvider.family<List<RatingRecord>, PlotRatingParams>((ref, params) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.ratingRecords)
         ..where((r) =>
-            r.trialId.equals(params.trialId) &
-            r.plotPk.equals(params.plotPk))
+            r.trialId.equals(params.trialId) & r.plotPk.equals(params.plotPk))
         ..orderBy([(r) => drift.OrderingTerm.desc(r.createdAt)]))
       .watch();
 });
 // ===== Treatment =====
 
 final treatmentRepositoryProvider = Provider<TreatmentRepository>((ref) {
-  return TreatmentRepository(ref.watch(databaseProvider), ref.watch(assignmentRepositoryProvider));
+  return TreatmentRepository(
+      ref.watch(databaseProvider), ref.watch(assignmentRepositoryProvider));
 });
 
 final treatmentsForTrialProvider =
     StreamProvider.family<List<Treatment>, int>((ref, trialId) {
-  return ref.watch(treatmentRepositoryProvider).watchTreatmentsForTrial(trialId);
+  return ref
+      .watch(treatmentRepositoryProvider)
+      .watchTreatmentsForTrial(trialId);
 });
 
 /// Components for a single treatment (for Treatments tab expandable list). Invalidate after add/delete.
-final treatmentComponentsForTreatmentProvider =
-    FutureProvider.autoDispose.family<List<TreatmentComponent>, int>((ref, treatmentId) {
-  return ref.watch(treatmentRepositoryProvider).getComponentsForTreatment(treatmentId);
+final treatmentComponentsForTreatmentProvider = FutureProvider.autoDispose
+    .family<List<TreatmentComponent>, int>((ref, treatmentId) {
+  return ref
+      .watch(treatmentRepositoryProvider)
+      .getComponentsForTreatment(treatmentId);
 });
 
 final assignmentsForTrialProvider =
@@ -583,15 +608,19 @@ final seedingEventForTrialProvider =
 });
 
 /// Trial-level application events (trial_application_events), ordered by application_date ascending.
-final trialApplicationsForTrialProvider =
-    StreamProvider.autoDispose.family<List<TrialApplicationEvent>, int>((ref, trialId) {
-  return ref.watch(applicationRepositoryProvider).watchApplicationsForTrial(trialId);
+final trialApplicationsForTrialProvider = StreamProvider.autoDispose
+    .family<List<TrialApplicationEvent>, int>((ref, trialId) {
+  return ref
+      .watch(applicationRepositoryProvider)
+      .watchApplicationsForTrial(trialId);
 });
 
 /// Latest application event for a trial (most recent application_date). Null if none.
-final latestApplicationForTrialProvider =
-    FutureProvider.autoDispose.family<TrialApplicationEvent?, int>((ref, trialId) async {
-  final list = await ref.watch(applicationRepositoryProvider).getApplicationsForTrial(trialId);
+final latestApplicationForTrialProvider = FutureProvider.autoDispose
+    .family<TrialApplicationEvent?, int>((ref, trialId) async {
+  final list = await ref
+      .watch(applicationRepositoryProvider)
+      .getApplicationsForTrial(trialId);
   return list.isEmpty ? null : list.last;
 });
 

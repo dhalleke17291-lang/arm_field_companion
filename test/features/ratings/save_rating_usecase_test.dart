@@ -135,8 +135,7 @@ class MockRatingRepository implements RatingRepository {
   }
 
   @override
-  Future<List<RatingRecord>> getCurrentRatingsForSession(
-      int sessionId) async {
+  Future<List<RatingRecord>> getCurrentRatingsForSession(int sessionId) async {
     return _records
         .where((r) => r.sessionId == sessionId && r.isCurrent)
         .toList();

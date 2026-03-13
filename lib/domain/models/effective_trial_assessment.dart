@@ -46,7 +46,8 @@ class EffectiveTrialAssessment {
   }
 
   /// From TrialAssessment + AssessmentDefinition (library selection).
-  factory EffectiveTrialAssessment.fromLibrary(TrialAssessment ta, AssessmentDefinition def) {
+  factory EffectiveTrialAssessment.fromLibrary(
+      TrialAssessment ta, AssessmentDefinition def) {
     return EffectiveTrialAssessment(
       isFromLibrary: true,
       trialAssessmentId: ta.id,

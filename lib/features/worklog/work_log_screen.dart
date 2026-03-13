@@ -15,8 +15,29 @@ String workLogTodayDateLocal() {
 String formatWorkLogSubtitle(String dateLocal) {
   final d = DateTime.tryParse('$dateLocal 12:00:00');
   if (d == null) return dateLocal;
-  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const weekdays = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+  ];
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ];
   final w = d.weekday - 1;
   final weekday = w >= 0 && w < 7 ? weekdays[w] : '';
   final month = d.month >= 1 && d.month <= 12 ? months[d.month - 1] : '';
@@ -69,14 +90,28 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     if (dateLocal == workLogTodayDateLocal()) return 'Today';
     final d = DateTime.tryParse('$dateLocal 12:00:00');
     if (d == null) return dateLocal;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     final month = d.month >= 1 && d.month <= 12 ? months[d.month - 1] : '';
     return '$month ${d.day}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final sessionsAsync = ref.watch(workLogSessionsProvider(_selectedDateLocal));
+    final sessionsAsync =
+        ref.watch(workLogSessionsProvider(_selectedDateLocal));
     final subtitle = formatWorkLogSubtitle(_selectedDateLocal);
 
     return Scaffold(
@@ -124,7 +159,9 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                     AppDesignTokens.spacing16,
                     AppDesignTokens.spacing24,
                   ),
-                  children: sessions.map((s) => _buildSessionCard(context, s)).toList(),
+                  children: sessions
+                      .map((s) => _buildSessionCard(context, s))
+                      .toList(),
                 );
               },
             ),
@@ -151,7 +188,8 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => setState(() => _selectedDateLocal = dateLocal),
-                borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusSmall),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppDesignTokens.spacing16,
@@ -161,7 +199,8 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                     color: selected
                         ? AppDesignTokens.primary
                         : AppDesignTokens.cardSurface,
-                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusSmall),
                     border: selected
                         ? null
                         : Border.all(color: AppDesignTokens.borderCrisp),
@@ -210,16 +249,16 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
 
   Widget _buildSessionCard(BuildContext context, Session session) {
     final trialAsync = ref.watch(trialProvider(session.trialId));
-    final ratingCountAsync = ref.watch(ratingCountForSessionProvider(session.id));
+    final ratingCountAsync =
+        ref.watch(ratingCountForSessionProvider(session.id));
     final flagCountAsync = ref.watch(flagCountForSessionProvider(session.id));
     final photoCountAsync = ref.watch(photoCountForSessionProvider(session.id));
 
     final trialName = trialAsync.valueOrNull?.name ?? 'Trial';
     final isOpen = session.endedAt == null;
     final startStr = _formatTime(session.startedAt);
-    final endStr = session.endedAt != null
-        ? _formatTime(session.endedAt!)
-        : 'Open';
+    final endStr =
+        session.endedAt != null ? _formatTime(session.endedAt!) : 'Open';
     final durationStr = session.endedAt != null
         ? ' (${_formatDuration(session.startedAt, session.endedAt!)})'
         : '';
@@ -367,4 +406,3 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     );
   }
 }
-

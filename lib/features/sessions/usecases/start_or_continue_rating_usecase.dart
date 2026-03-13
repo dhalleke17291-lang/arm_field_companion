@@ -99,8 +99,7 @@ class StartOrContinueRatingUseCase {
   Future<StartOrContinueRatingResult> execute(
       StartOrContinueRatingInput input) async {
     try {
-      final session =
-          await _sessionRepository.getSessionById(input.sessionId);
+      final session = await _sessionRepository.getSessionById(input.sessionId);
       if (session == null) {
         return StartOrContinueRatingResult.failure('Session not found');
       }
@@ -170,4 +169,3 @@ class StartOrContinueRatingUseCase {
     }
   }
 }
-

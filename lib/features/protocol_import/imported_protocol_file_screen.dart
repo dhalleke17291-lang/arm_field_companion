@@ -18,7 +18,8 @@ class ImportedProtocolFileScreen extends StatefulWidget {
       _ImportedProtocolFileScreenState();
 }
 
-class _ImportedProtocolFileScreenState extends State<ImportedProtocolFileScreen> {
+class _ImportedProtocolFileScreenState
+    extends State<ImportedProtocolFileScreen> {
   String? _content;
   String? _error;
 

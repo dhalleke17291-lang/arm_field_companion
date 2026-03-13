@@ -20,7 +20,12 @@ class AssessmentDefinitionRepository {
     if (category != null && category.isNotEmpty) {
       query = query..where((d) => d.category.equals(category));
     }
-    return (query..orderBy([(d) => OrderingTerm.asc(d.category), (d) => OrderingTerm.asc(d.name)])).get();
+    return (query
+          ..orderBy([
+            (d) => OrderingTerm.asc(d.category),
+            (d) => OrderingTerm.asc(d.name)
+          ]))
+        .get();
   }
 
   /// Stream of all active definitions (e.g. for library picker).
@@ -29,11 +34,18 @@ class AssessmentDefinitionRepository {
     if (activeOnly) {
       query = query..where((d) => d.isActive.equals(true));
     }
-    return (query..orderBy([(d) => OrderingTerm.asc(d.category), (d) => OrderingTerm.asc(d.name)])).watch();
+    return (query
+          ..orderBy([
+            (d) => OrderingTerm.asc(d.category),
+            (d) => OrderingTerm.asc(d.name)
+          ]))
+        .watch();
   }
 
   Future<AssessmentDefinition?> getById(int id) async {
-    return (_db.select(_db.assessmentDefinitions)..where((d) => d.id.equals(id))).getSingleOrNull();
+    return (_db.select(_db.assessmentDefinitions)
+          ..where((d) => d.id.equals(id)))
+        .getSingleOrNull();
   }
 
   /// Distinct categories present in the library (for grouping the picker).
@@ -42,7 +54,11 @@ class AssessmentDefinitionRepository {
           ..addColumns([_db.assessmentDefinitions.category])
           ..where(_db.assessmentDefinitions.isActive.equals(true)))
         .get();
-    final categories = rows.map((r) => r.read(_db.assessmentDefinitions.category)).whereType<String>().toSet().toList()
+    final categories = rows
+        .map((r) => r.read(_db.assessmentDefinitions.category))
+        .whereType<String>()
+        .toSet()
+        .toList()
       ..sort();
     return categories;
   }

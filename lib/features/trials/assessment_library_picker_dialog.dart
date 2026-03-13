@@ -24,8 +24,7 @@ const Color _primaryGreen = Color(0xFF2D5A40);
 const Color _unselectedCheckColor = Color(0xFFD1D5DB);
 const Color _dialogBgColor = Color(0xFFF8F6F2);
 
-String _categoryLabel(String category) =>
-    _categoryLabels[category] ?? category;
+String _categoryLabel(String category) => _categoryLabels[category] ?? category;
 
 class AssessmentLibraryPickerDialog extends ConsumerStatefulWidget {
   final int trialId;
@@ -75,7 +74,8 @@ class _AssessmentLibraryPickerDialogState
   @override
   Widget build(BuildContext context) {
     final definitionsAsync = ref.watch(assessmentDefinitionsProvider);
-    final trialListAsync = ref.watch(trialAssessmentsForTrialProvider(widget.trialId));
+    final trialListAsync =
+        ref.watch(trialAssessmentsForTrialProvider(widget.trialId));
 
     return AlertDialog(
       backgroundColor: _dialogBgColor,
@@ -118,7 +118,9 @@ class _AssessmentLibraryPickerDialogState
               if (!_hasTriedSeeding) {
                 _hasTriedSeeding = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) async {
-                  await ref.read(databaseProvider).ensureAssessmentDefinitionsSeeded();
+                  await ref
+                      .read(databaseProvider)
+                      .ensureAssessmentDefinitionsSeeded();
                   if (mounted) ref.invalidate(assessmentDefinitionsProvider);
                 });
                 return const Center(
@@ -215,9 +217,8 @@ class _AssessmentLibraryPickerDialogState
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: isSelected
-                                      ? _primaryGreen
-                                      : _borderColor,
+                                  color:
+                                      isSelected ? _primaryGreen : _borderColor,
                                   width: isSelected ? 1.5 : 1.0,
                                 ),
                               ),
@@ -227,7 +228,8 @@ class _AssessmentLibraryPickerDialogState
                                     ? null
                                     : (val) => _toggleSelection(def.id),
                                 activeColor: _primaryGreen,
-                                controlAffinity: ListTileControlAffinity.leading,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
                                 title: Text(
                                   def.name,
                                   style: const TextStyle(

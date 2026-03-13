@@ -20,8 +20,7 @@ List<Plot> sortPlotsSerpentine(List<Plot> plots) {
     sorted.sort((a, b) {
       final repCmp = (a.rep ?? 999).compareTo(b.rep ?? 999);
       if (repCmp != 0) return repCmp;
-      final idxCmp =
-          (a.plotSortIndex ?? 999).compareTo(b.plotSortIndex ?? 999);
+      final idxCmp = (a.plotSortIndex ?? 999).compareTo(b.plotSortIndex ?? 999);
       if (idxCmp != 0) return idxCmp;
       return a.plotId.compareTo(b.plotId);
     });
@@ -29,12 +28,10 @@ List<Plot> sortPlotsSerpentine(List<Plot> plots) {
   }
 
   // Separate plots with and without grid coordinates
-  final gridPlots = plots
-      .where((p) => p.fieldRow != null && p.fieldColumn != null)
-      .toList();
-  final nonGridPlots = plots
-      .where((p) => p.fieldRow == null || p.fieldColumn == null)
-      .toList();
+  final gridPlots =
+      plots.where((p) => p.fieldRow != null && p.fieldColumn != null).toList();
+  final nonGridPlots =
+      plots.where((p) => p.fieldRow == null || p.fieldColumn == null).toList();
 
   // Group by fieldRow
   final rowMap = <int, List<Plot>>{};
@@ -62,8 +59,7 @@ List<Plot> sortPlotsSerpentine(List<Plot> plots) {
   nonGridPlots.sort((a, b) {
     final repCmp = (a.rep ?? 999).compareTo(b.rep ?? 999);
     if (repCmp != 0) return repCmp;
-    final idxCmp =
-        (a.plotSortIndex ?? 999).compareTo(b.plotSortIndex ?? 999);
+    final idxCmp = (a.plotSortIndex ?? 999).compareTo(b.plotSortIndex ?? 999);
     if (idxCmp != 0) return idxCmp;
     return a.plotId.compareTo(b.plotId);
   });

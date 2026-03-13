@@ -12,7 +12,8 @@ class SavePhotoUseCase {
       // Verify temp file exists before attempting pipeline
       final tempFile = File(input.tempPath);
       if (!await tempFile.exists()) {
-        return SavePhotoResult.failure('Temp file not found: ${input.tempPath}');
+        return SavePhotoResult.failure(
+            'Temp file not found: ${input.tempPath}');
       }
 
       final photo = await _photoRepository.savePhoto(

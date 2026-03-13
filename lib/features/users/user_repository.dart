@@ -13,7 +13,8 @@ class UserRepository {
     final id = await _db.into(_db.users).insert(
           UsersCompanion.insert(
             displayName: displayName.trim(),
-            initials: Value(initials?.trim().isNotEmpty == true ? initials!.trim() : null),
+            initials: Value(
+                initials?.trim().isNotEmpty == true ? initials!.trim() : null),
             roleKey: Value(roleKey),
           ),
         );

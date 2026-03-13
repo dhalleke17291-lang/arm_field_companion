@@ -6,9 +6,7 @@ import 'package:arm_field_companion/core/database/app_database.dart';
 int? getDisplayPlotNumber(Plot plot, List<Plot> sameTrialPlots) {
   final rep = plot.rep;
   if (rep == null) return null;
-  final inRep = sameTrialPlots
-      .where((p) => p.rep == rep)
-      .toList()
+  final inRep = sameTrialPlots.where((p) => p.rep == rep).toList()
     ..sort((a, b) {
       final sa = a.plotSortIndex ?? a.id;
       final sb = b.plotSortIndex ?? b.id;
@@ -36,7 +34,8 @@ String getDisplayPlotLabel(Plot plot, List<Plot> sameTrialPlots) {
 
 /// Treatment label for UI: treatment code or "Unassigned".
 /// Use [treatmentIdOverride] when resolution is via Assignments (Plot → Assignment → Treatment).
-String getTreatmentDisplayLabel(Plot plot, Map<int, Treatment> treatmentById, {int? treatmentIdOverride}) {
+String getTreatmentDisplayLabel(Plot plot, Map<int, Treatment> treatmentById,
+    {int? treatmentIdOverride}) {
   final tid = treatmentIdOverride ?? plot.treatmentId;
   if (tid == null) return 'Unassigned';
   final t = treatmentById[tid];

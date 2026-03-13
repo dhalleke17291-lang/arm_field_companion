@@ -17,12 +17,15 @@ String buildTreatmentFormula(List<TreatmentComponent> components) {
     final parts = <String>[
       c.productName.trim(),
       if (c.rate != null && c.rate!.trim().isNotEmpty) c.rate!.trim(),
-      if (c.rateUnit != null && c.rateUnit!.trim().isNotEmpty) c.rateUnit!.trim(),
+      if (c.rateUnit != null && c.rateUnit!.trim().isNotEmpty)
+        c.rateUnit!.trim(),
     ];
     return parts.where((s) => s.isNotEmpty).join(' ');
   }
+
   if (components.length == 1) return one(components.first);
-  if (components.length == 2) return '${one(components[0])} + ${one(components[1])}';
+  if (components.length == 2)
+    return '${one(components[0])} + ${one(components[1])}';
   return '${one(components.first)} + ${components.length - 1} more';
 }
 
@@ -70,7 +73,11 @@ class TreatmentsTab extends ConsumerWidget {
         Expanded(
           child: treatmentsAsync.when(
             loading: () => const AppLoadingView(),
-            error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () => ref.invalidate(treatmentsForTrialProvider(trial.id))),
+            error: (e, st) => AppErrorView(
+                error: e,
+                stackTrace: st,
+                onRetry: () =>
+                    ref.invalidate(treatmentsForTrialProvider(trial.id))),
             data: (treatments) => treatments.isEmpty
                 ? _buildEmpty(context, ref)
                 : _buildList(context, ref, treatments),
@@ -89,9 +96,12 @@ class TreatmentsTab extends ConsumerWidget {
     return AppEmptyState(
       icon: Icons.science_outlined,
       title: 'No Treatments Yet',
-      subtitle: locked ? getProtocolLockMessage(trial.status) : 'Add the treatment groups for this trial.',
+      subtitle: locked
+          ? getProtocolLockMessage(trial.status)
+          : 'Add the treatment groups for this trial.',
       action: locked && getProtocolLockMessage(trial.status).isNotEmpty
-          ? Tooltip(message: getProtocolLockMessage(trial.status), child: button)
+          ? Tooltip(
+              message: getProtocolLockMessage(trial.status), child: button)
           : button,
     );
   }
@@ -117,8 +127,9 @@ class TreatmentsTab extends ConsumerWidget {
                     Text(
                       getProtocolLockMessage(trial.status),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                   ],
                 ),
@@ -131,7 +142,8 @@ class TreatmentsTab extends ConsumerWidget {
               treatment: t,
               locked: locked,
               onEdit: () => _showEditTreatmentDialog(context, ref, trial, t),
-              onDelete: () => _showDeleteTreatmentDialog(context, ref, trial, t),
+              onDelete: () =>
+                  _showDeleteTreatmentDialog(context, ref, trial, t),
               onAddComponent: () => _showAddComponentSheet(context, ref, t),
               onOpenSheet: () => _showTreatmentComponents(context, ref, t),
             );
@@ -143,7 +155,8 @@ class TreatmentsTab extends ConsumerWidget {
           child: locked
               ? GestureDetector(
                   onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(getProtocolLockMessage(trial.status))),
+                    SnackBar(
+                        content: Text(getProtocolLockMessage(trial.status))),
                   ),
                   child: Tooltip(
                     message: getProtocolLockMessage(trial.status),
@@ -204,11 +217,12 @@ class TreatmentsTab extends ConsumerWidget {
     );
   }
 
-  Future<void> _showEditTreatmentDialog(
-      BuildContext context, WidgetRef ref, Trial trial, Treatment treatment) async {
+  Future<void> _showEditTreatmentDialog(BuildContext context, WidgetRef ref,
+      Trial trial, Treatment treatment) async {
     final codeController = TextEditingController(text: treatment.code);
     final nameController = TextEditingController(text: treatment.name);
-    final descController = TextEditingController(text: treatment.description ?? '');
+    final descController =
+        TextEditingController(text: treatment.description ?? '');
 
     await showDialog(
       context: context,
@@ -257,7 +271,9 @@ class TreatmentsTab extends ConsumerWidget {
                 treatmentId: treatment.id,
                 code: codeController.text,
                 name: nameController.text,
-                description: descController.text.trim().isEmpty ? null : descController.text.trim(),
+                description: descController.text.trim().isEmpty
+                    ? null
+                    : descController.text.trim(),
               );
               if (!ctx.mounted) return;
               if (result.success) {
@@ -265,7 +281,9 @@ class TreatmentsTab extends ConsumerWidget {
                 Navigator.pop(ctx);
               } else {
                 ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(content: Text(result.errorMessage ?? 'Update failed'), backgroundColor: Colors.red),
+                  SnackBar(
+                      content: Text(result.errorMessage ?? 'Update failed'),
+                      backgroundColor: Colors.red),
                 );
               }
             },
@@ -276,8 +294,8 @@ class TreatmentsTab extends ConsumerWidget {
     );
   }
 
-  Future<void> _showDeleteTreatmentDialog(
-      BuildContext context, WidgetRef ref, Trial trial, Treatment treatment) async {
+  Future<void> _showDeleteTreatmentDialog(BuildContext context, WidgetRef ref,
+      Trial trial, Treatment treatment) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -300,7 +318,8 @@ class TreatmentsTab extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
     final useCase = ref.read(deleteTreatmentUseCaseProvider);
-    final result = await useCase.execute(trial: trial, treatmentId: treatment.id);
+    final result =
+        await useCase.execute(trial: trial, treatmentId: treatment.id);
     if (!context.mounted) return;
     if (result.success) {
       ref.invalidate(treatmentsForTrialProvider(trial.id));
@@ -310,7 +329,9 @@ class TreatmentsTab extends ConsumerWidget {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.errorMessage ?? 'Delete failed'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text(result.errorMessage ?? 'Delete failed'),
+            backgroundColor: Colors.red),
       );
     }
   }
@@ -405,16 +426,19 @@ class _TreatmentExpansionTile extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_TreatmentExpansionTile> createState() => _TreatmentExpansionTileState();
+  ConsumerState<_TreatmentExpansionTile> createState() =>
+      _TreatmentExpansionTileState();
 }
 
-class _TreatmentExpansionTileState extends ConsumerState<_TreatmentExpansionTile> {
+class _TreatmentExpansionTileState
+    extends ConsumerState<_TreatmentExpansionTile> {
   bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final treatment = widget.treatment;
-    final componentsAsync = ref.watch(treatmentComponentsForTreatmentProvider(treatment.id));
+    final componentsAsync =
+        ref.watch(treatmentComponentsForTreatmentProvider(treatment.id));
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -422,13 +446,17 @@ class _TreatmentExpansionTileState extends ConsumerState<_TreatmentExpansionTile
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
         border: Border.all(color: AppDesignTokens.borderCrisp),
         boxShadow: const [
-          BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+          BoxShadow(
+              color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: componentsAsync.when(
-        loading: () => _buildTile(context, ref, componentCount: 0, components: null),
-        error: (_, __) => _buildTile(context, ref, componentCount: 0, components: null),
-        data: (components) => _buildTile(context, ref, componentCount: components.length, components: components),
+        loading: () =>
+            _buildTile(context, ref, componentCount: 0, components: null),
+        error: (_, __) =>
+            _buildTile(context, ref, componentCount: 0, components: null),
+        data: (components) => _buildTile(context, ref,
+            componentCount: components.length, components: components),
       ),
     );
   }
@@ -446,7 +474,8 @@ class _TreatmentExpansionTileState extends ConsumerState<_TreatmentExpansionTile
       onExpansionChanged: (v) => setState(() => _expanded = v),
       leading: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
+            horizontal: AppDesignTokens.spacing8,
+            vertical: AppDesignTokens.spacing4),
         decoration: BoxDecoration(
           color: AppDesignTokens.primary,
           borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
@@ -493,7 +522,8 @@ class _TreatmentExpansionTileState extends ConsumerState<_TreatmentExpansionTile
               onPressed: widget.onAddComponent,
             ),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, size: 20, color: AppDesignTokens.iconSubtle),
+              icon: const Icon(Icons.more_vert,
+                  size: 20, color: AppDesignTokens.iconSubtle),
               tooltip: 'Edit, view components, or delete treatment',
               onSelected: (value) {
                 if (value == 'edit') widget.onEdit();
@@ -502,12 +532,14 @@ class _TreatmentExpansionTileState extends ConsumerState<_TreatmentExpansionTile
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                const PopupMenuItem(value: 'sheet', child: Text('View Components')),
+                const PopupMenuItem(
+                    value: 'sheet', child: Text('View Components')),
                 const PopupMenuItem(value: 'delete', child: Text('Delete')),
               ],
             ),
           ] else
-            const Icon(Icons.expand_more, size: 20, color: AppDesignTokens.iconSubtle),
+            const Icon(Icons.expand_more,
+                size: 20, color: AppDesignTokens.iconSubtle),
         ],
       ),
       children: [
@@ -528,7 +560,8 @@ class _TreatmentExpansionTileState extends ConsumerState<_TreatmentExpansionTile
             padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Text(
               'No components yet. Tap Add Component to add products and rates.',
-              style: TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
+              style:
+                  TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
             ),
           )
         else
@@ -539,8 +572,10 @@ class _TreatmentExpansionTileState extends ConsumerState<_TreatmentExpansionTile
                 onDelete: () async {
                   final repo = ref.read(treatmentRepositoryProvider);
                   await repo.deleteComponent(c.id);
-                  ref.invalidate(treatmentComponentsForTreatmentProvider(widget.treatment.id));
-                  ref.invalidate(treatmentComponentsCountForTrialProvider(widget.trial.id));
+                  ref.invalidate(treatmentComponentsForTreatmentProvider(
+                      widget.treatment.id));
+                  ref.invalidate(treatmentComponentsCountForTrialProvider(
+                      widget.trial.id));
                 },
               )),
       ],
@@ -563,7 +598,9 @@ class _ComponentListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ratePart = (component.rate != null && component.rate!.isNotEmpty && component.rateUnit != null)
+    final ratePart = (component.rate != null &&
+            component.rate!.isNotEmpty &&
+            component.rateUnit != null)
         ? '${component.rate} ${component.rateUnit}'
         : null;
     final formulationPart = component.applicationTiming;
@@ -612,13 +649,11 @@ class _ComponentListTile extends StatelessWidget {
             if (ratePart != null)
               Text(ratePart,
                   style: const TextStyle(
-                      fontSize: 12,
-                      color: AppDesignTokens.secondaryText)),
+                      fontSize: 12, color: AppDesignTokens.secondaryText)),
             if (formulationPart != null && formulationPart.isNotEmpty)
               Text(formulationPart,
                   style: const TextStyle(
-                      fontSize: 12,
-                      color: AppDesignTokens.secondaryText)),
+                      fontSize: 12, color: AppDesignTokens.secondaryText)),
           ],
         ),
       ),
@@ -626,7 +661,14 @@ class _ComponentListTile extends StatelessWidget {
   }
 }
 
-const List<String> _componentRateUnits = ['g/ha', 'kg/ha', 'L/ha', 'mL/ha', 'oz/ac', 'lbs/ac'];
+const List<String> _componentRateUnits = [
+  'g/ha',
+  'kg/ha',
+  'L/ha',
+  'mL/ha',
+  'oz/ac',
+  'lbs/ac'
+];
 
 class _AddComponentBottomSheet extends StatefulWidget {
   final Trial trial;
@@ -642,7 +684,8 @@ class _AddComponentBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<_AddComponentBottomSheet> createState() => _AddComponentBottomSheetState();
+  State<_AddComponentBottomSheet> createState() =>
+      _AddComponentBottomSheetState();
 }
 
 class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
@@ -664,7 +707,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -692,7 +736,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                     flex: 2,
                     child: TextField(
                       controller: _rateController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Rate',
                         border: OutlineInputBorder(),
@@ -708,9 +753,11 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                         border: OutlineInputBorder(),
                       ),
                       items: _componentRateUnits
-                          .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                          .map(
+                              (u) => DropdownMenuItem(value: u, child: Text(u)))
                           .toList(),
-                      onChanged: (v) => setState(() => _rateUnit = v ?? _componentRateUnits.first),
+                      onChanged: (v) => setState(
+                          () => _rateUnit = v ?? _componentRateUnits.first),
                     ),
                   ),
                 ],
@@ -754,9 +801,10 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                             ? null
                             : _rateController.text.trim(),
                         rateUnit: _rateUnit,
-                        applicationTiming: _formulationController.text.trim().isEmpty
-                            ? null
-                            : _formulationController.text.trim(),
+                        applicationTiming:
+                            _formulationController.text.trim().isEmpty
+                                ? null
+                                : _formulationController.text.trim(),
                         notes: _notesController.text.trim().isEmpty
                             ? null
                             : _notesController.text.trim(),
@@ -845,8 +893,8 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
                 flex: 2,
                 child: TextField(
                   controller: rateController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
                     labelText: 'Rate',
                     border: OutlineInputBorder(),
@@ -949,9 +997,12 @@ class _TreatmentComponentsSheetState
 
   Future<void> _loadComponents() async {
     final repo = ref.read(treatmentRepositoryProvider);
-    final result =
-        await repo.getComponentsForTreatment(widget.treatment.id);
-    if (mounted) setState(() { _components = result; _loading = false; });
+    final result = await repo.getComponentsForTreatment(widget.treatment.id);
+    if (mounted)
+      setState(() {
+        _components = result;
+        _loading = false;
+      });
     ref.invalidate(treatmentsForTrialProvider(widget.trial.id));
   }
 
@@ -969,7 +1020,8 @@ class _TreatmentComponentsSheetState
           children: [
             Container(
               margin: const EdgeInsets.only(top: 10, bottom: 4),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: AppDesignTokens.dragHandle,
                 borderRadius: BorderRadius.circular(2),
@@ -977,18 +1029,23 @@ class _TreatmentComponentsSheetState
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(
-                  AppDesignTokens.spacing16, AppDesignTokens.spacing8,
-                  AppDesignTokens.spacing16, AppDesignTokens.spacing12),
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing8,
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing12),
               decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+                border: Border(
+                    bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppDesignTokens.primary,
-                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusXSmall),
                     ),
                     child: Text(widget.treatment.code,
                         style: const TextStyle(
@@ -1010,7 +1067,8 @@ class _TreatmentComponentsSheetState
                           Text(
                             '${_components.length} ${_components.length == 1 ? "product" : "products"}',
                             style: const TextStyle(
-                                fontSize: 11, color: AppDesignTokens.secondaryText),
+                                fontSize: 11,
+                                color: AppDesignTokens.secondaryText),
                           ),
                       ],
                     ),
@@ -1062,7 +1120,8 @@ class _TreatmentComponentsSheetState
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 64, height: 64,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               color: AppDesignTokens.successBg,
               borderRadius: BorderRadius.circular(32),
@@ -1091,8 +1150,8 @@ class _TreatmentComponentsSheetState
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        AppDesignTokens.radiusSmall)),
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusSmall)),
               ),
             ),
           ],
@@ -1126,10 +1185,12 @@ class _TreatmentComponentsSheetState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 32, height: 32,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: AppDesignTokens.emptyBadgeBg,
-                borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusXSmall),
               ),
               child: Center(
                 child: Text('${i + 1}',
@@ -1181,8 +1242,7 @@ class _TreatmentComponentsSheetState
                     const SizedBox(height: 2),
                     Text(c.notes!,
                         style: const TextStyle(
-                            fontSize: 11,
-                            color: AppDesignTokens.emptyBadgeFg)),
+                            fontSize: 11, color: AppDesignTokens.emptyBadgeFg)),
                   ],
                 ],
               ),
@@ -1191,7 +1251,8 @@ class _TreatmentComponentsSheetState
               GestureDetector(
                 onTap: () => _confirmDelete(context, c),
                 child: Container(
-                  width: 32, height: 32,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(8),

@@ -28,7 +28,8 @@ class ProtocolImportUseCase {
   }) {
     if (rows.isEmpty) {
       return const ProtocolImportReviewResult(
-        trialSection: SectionReview(matchedCount: 0, mustFix: ['No rows in file']),
+        trialSection:
+            SectionReview(matchedCount: 0, mustFix: ['No rows in file']),
         treatmentSection: SectionReview(matchedCount: 0),
         plotSection: SectionReview(matchedCount: 0),
         assignmentSection: SectionReview(matchedCount: 0),
@@ -38,7 +39,9 @@ class ProtocolImportUseCase {
     final sectionKey = _detectSectionColumn(rows.first);
     if (sectionKey == null) {
       return const ProtocolImportReviewResult(
-        trialSection: SectionReview(matchedCount: 0, mustFix: ['Required column "section" (or "type") missing. Values: TRIAL, TREATMENT, PLOT']),
+        trialSection: SectionReview(matchedCount: 0, mustFix: [
+          'Required column "section" (or "type") missing. Values: TRIAL, TREATMENT, PLOT'
+        ]),
         treatmentSection: SectionReview(matchedCount: 0),
         plotSection: SectionReview(matchedCount: 0),
         assignmentSection: SectionReview(matchedCount: 0),
@@ -63,8 +66,10 @@ class ProtocolImportUseCase {
     final trialReview = _analyzeTrialSection(trialRows, existingTrialId);
     final treatmentReview = _analyzeTreatmentSection(treatmentRows);
     final plotReview = _analyzePlotSection(plotRows);
-    final treatmentCodes = treatmentReview.normalized.map((e) => e['code'] as String).toSet();
-    final assignmentReview = _analyzeAssignmentSection(plotRows, treatmentCodes);
+    final treatmentCodes =
+        treatmentReview.normalized.map((e) => e['code'] as String).toSet();
+    final assignmentReview =
+        _analyzeAssignmentSection(plotRows, treatmentCodes);
 
     return ProtocolImportReviewResult(
       trialSection: trialReview.sectionReview,
@@ -78,35 +83,56 @@ class ProtocolImportUseCase {
   }
 
   String? _detectSectionColumn(Map<String, dynamic> firstRow) {
-    final keys = firstRow.keys.map((k) => k.toString().trim().toLowerCase()).toList();
-    if (keys.contains('section')) return firstRow.keys.firstWhere((k) => k.toString().trim().toLowerCase() == 'section');
-    if (keys.contains('type')) return firstRow.keys.firstWhere((k) => k.toString().trim().toLowerCase() == 'type');
+    final keys =
+        firstRow.keys.map((k) => k.toString().trim().toLowerCase()).toList();
+    if (keys.contains('section'))
+      return firstRow.keys
+          .firstWhere((k) => k.toString().trim().toLowerCase() == 'section');
+    if (keys.contains('type'))
+      return firstRow.keys
+          .firstWhere((k) => k.toString().trim().toLowerCase() == 'type');
     return null;
   }
 
-  ({SectionReview sectionReview, Map<String, dynamic>? normalized}) _analyzeTrialSection(
+  ({SectionReview sectionReview, Map<String, dynamic>? normalized})
+      _analyzeTrialSection(
     List<Map<String, dynamic>> rows,
     int? existingTrialId,
   ) {
     final mustFix = <String>[];
     final autoHandled = <String>[];
     if (existingTrialId != null) {
-      if (rows.isNotEmpty) autoHandled.add('TRIAL section ignored (adding to existing trial)');
-      return (sectionReview: SectionReview(matchedCount: 0, autoHandled: autoHandled), normalized: null);
+      if (rows.isNotEmpty)
+        autoHandled.add('TRIAL section ignored (adding to existing trial)');
+      return (
+        sectionReview: SectionReview(matchedCount: 0, autoHandled: autoHandled),
+        normalized: null
+      );
     }
     if (rows.isEmpty) {
-      mustFix.add('TRIAL section missing. Add one row with section=TRIAL and trial_name.');
-      return (sectionReview: SectionReview(matchedCount: 0, mustFix: mustFix), normalized: null);
+      mustFix.add(
+          'TRIAL section missing. Add one row with section=TRIAL and trial_name.');
+      return (
+        sectionReview: SectionReview(matchedCount: 0, mustFix: mustFix),
+        normalized: null
+      );
     }
     if (rows.length > 1) {
       mustFix.add('TRIAL section must have exactly one row.');
-      return (sectionReview: SectionReview(matchedCount: 0, mustFix: mustFix), normalized: null);
+      return (
+        sectionReview: SectionReview(matchedCount: 0, mustFix: mustFix),
+        normalized: null
+      );
     }
     final row = rows.single;
-    final name = row['trial_name']?.toString().trim() ?? row['trial name']?.toString().trim();
+    final name = row['trial_name']?.toString().trim() ??
+        row['trial name']?.toString().trim();
     if (name == null || name.isEmpty) {
       mustFix.add('TRIAL row: trial_name is required.');
-      return (sectionReview: SectionReview(matchedCount: 0, mustFix: mustFix), normalized: null);
+      return (
+        sectionReview: SectionReview(matchedCount: 0, mustFix: mustFix),
+        normalized: null
+      );
     }
     final normalized = <String, dynamic>{
       'trial_name': name,
@@ -114,10 +140,14 @@ class ProtocolImportUseCase {
       'location': row['location']?.toString().trim(),
       'season': row['season']?.toString().trim(),
     };
-    return (sectionReview: const SectionReview(matchedCount: 1), normalized: normalized);
+    return (
+      sectionReview: const SectionReview(matchedCount: 1),
+      normalized: normalized
+    );
   }
 
-  ({SectionReview sectionReview, List<Map<String, dynamic>> normalized}) _analyzeTreatmentSection(
+  ({SectionReview sectionReview, List<Map<String, dynamic>> normalized})
+      _analyzeTreatmentSection(
     List<Map<String, dynamic>> rows,
   ) {
     final mustFix = <String>[];
@@ -159,7 +189,8 @@ class ProtocolImportUseCase {
     );
   }
 
-  ({SectionReview sectionReview, List<Map<String, dynamic>> normalized}) _analyzePlotSection(
+  ({SectionReview sectionReview, List<Map<String, dynamic>> normalized})
+      _analyzePlotSection(
     List<Map<String, dynamic>> rows,
   ) {
     final mustFix = <String>[];
@@ -169,7 +200,9 @@ class ProtocolImportUseCase {
 
     for (var i = 0; i < rows.length; i++) {
       final row = rows[i];
-      final plotId = row['plot_id']?.toString().trim() ?? row['plot']?.toString().trim() ?? row['Plot']?.toString().trim();
+      final plotId = row['plot_id']?.toString().trim() ??
+          row['plot']?.toString().trim() ??
+          row['Plot']?.toString().trim();
       if (plotId == null || plotId.isEmpty) {
         mustFix.add('PLOT row ${i + 1}: plot_id is required.');
         continue;
@@ -179,14 +212,18 @@ class ProtocolImportUseCase {
         continue;
       }
       plotIds.add(plotId);
-      final treatmentCode = row['treatment_code']?.toString().trim() ?? row['treatment']?.toString().trim();
+      final treatmentCode = row['treatment_code']?.toString().trim() ??
+          row['treatment']?.toString().trim();
       normalized.add({
         'plot_id': plotId,
         'rep': row['rep'] != null ? int.tryParse(row['rep'].toString()) : null,
         'row': row['row']?.toString(),
         'column': row['column']?.toString(),
-        'plot_sort_index': row['plot_sort_index'] != null ? int.tryParse(row['plot_sort_index'].toString()) : (i + 1),
-        'treatment_code': treatmentCode?.isNotEmpty == true ? treatmentCode : null,
+        'plot_sort_index': row['plot_sort_index'] != null
+            ? int.tryParse(row['plot_sort_index'].toString())
+            : (i + 1),
+        'treatment_code':
+            treatmentCode?.isNotEmpty == true ? treatmentCode : null,
       });
     }
 
@@ -207,12 +244,14 @@ class ProtocolImportUseCase {
     int matched = 0;
     final mustFix = <String>[];
     for (final row in plotRows) {
-      final tc = row['treatment_code']?.toString().trim() ?? row['treatment']?.toString().trim();
+      final tc = row['treatment_code']?.toString().trim() ??
+          row['treatment']?.toString().trim();
       if (tc == null || tc.isEmpty) continue;
       if (treatmentCodes.contains(tc)) {
         matched++;
       } else {
-        mustFix.add('PLOT references treatment_code "$tc" which is not in TREATMENT section.');
+        mustFix.add(
+            'PLOT references treatment_code "$tc" which is not in TREATMENT section.');
       }
     }
     return (
@@ -231,8 +270,8 @@ class ProtocolImportUseCase {
     String? protocolLockMessage,
   }) async {
     if (isProtocolLocked) {
-      return ProtocolImportExecuteResult.failure(
-          protocolLockMessage ?? 'Protocol is locked. Change trial status to import.');
+      return ProtocolImportExecuteResult.failure(protocolLockMessage ??
+          'Protocol is locked. Change trial status to import.');
     }
     if (!review.canProceed) {
       return ProtocolImportExecuteResult.failure(
@@ -251,7 +290,8 @@ class ProtocolImportUseCase {
           season: t['season'] as String?,
         );
       } else if (existingTrialId == null) {
-        return ProtocolImportExecuteResult.failure('No trial to create and no existing trial selected.');
+        return ProtocolImportExecuteResult.failure(
+            'No trial to create and no existing trial selected.');
       }
 
       final codeToId = <String, int>{};
@@ -294,7 +334,8 @@ class ProtocolImportUseCase {
         if (treatmentCode == null) continue;
         final tid = codeToId[treatmentCode];
         if (tid == null) continue;
-        final plot = await _plotRepository.getPlotByPlotId(trialId, p['plot_id'] as String);
+        final plot = await _plotRepository.getPlotByPlotId(
+            trialId, p['plot_id'] as String);
         if (plot != null) {
           await _assignmentRepository.upsert(
             trialId: trialId,

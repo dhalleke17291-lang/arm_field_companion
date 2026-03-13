@@ -89,13 +89,11 @@ class _SeedingEventSummaryCard extends StatelessWidget {
   final SeedingEvent event;
   final VoidCallback onEdit;
 
-  const _SeedingEventSummaryCard(
-      {required this.event, required this.onEdit});
+  const _SeedingEventSummaryCard({required this.event, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
-    final dateText =
-        event.seedingDate.toLocal().toString().split(' ')[0];
+    final dateText = event.seedingDate.toLocal().toString().split(' ')[0];
 
     return Container(
       decoration: BoxDecoration(
@@ -104,9 +102,7 @@ class _SeedingEventSummaryCard extends StatelessWidget {
         border: Border.all(color: AppDesignTokens.borderCrisp),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x08000000),
-              blurRadius: 4,
-              offset: Offset(0, 2)),
+              color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       clipBehavior: Clip.antiAlias,
@@ -161,9 +157,9 @@ class _SeedingEventSummaryCard extends StatelessWidget {
                   _summaryRow('Seed lot', event.seedLotNumber!),
                 if (event.seedingRate != null)
                   _summaryRow(
-                    'Rate',
-                    '${event.seedingRate} ${event.seedingRateUnit ?? ''}'
-                        .trim()),
+                      'Rate',
+                      '${event.seedingRate} ${event.seedingRateUnit ?? ''}'
+                          .trim()),
                 if (event.seedingDepth != null)
                   _summaryRow('Seeding depth', '${event.seedingDepth} cm'),
                 if (event.rowSpacing != null)
@@ -228,7 +224,8 @@ class _SeedingEventFormSheet extends ConsumerStatefulWidget {
       _SeedingEventFormSheetState();
 }
 
-class _SeedingEventFormSheetState extends ConsumerState<_SeedingEventFormSheet> {
+class _SeedingEventFormSheetState
+    extends ConsumerState<_SeedingEventFormSheet> {
   late final TextEditingController _operatorController;
   late final TextEditingController _seedLotController;
   late final TextEditingController _rateController;
@@ -246,18 +243,15 @@ class _SeedingEventFormSheetState extends ConsumerState<_SeedingEventFormSheet> 
     final e = widget.existing;
     _seedingDate = e?.seedingDate.toLocal() ?? DateTime.now();
     _rateUnit = e?.seedingRateUnit;
-    _operatorController =
-        TextEditingController(text: e?.operatorName ?? '');
-    _seedLotController =
-        TextEditingController(text: e?.seedLotNumber ?? '');
+    _operatorController = TextEditingController(text: e?.operatorName ?? '');
+    _seedLotController = TextEditingController(text: e?.seedLotNumber ?? '');
     _rateController = TextEditingController(
         text: e?.seedingRate != null ? e!.seedingRate.toString() : '');
     _depthController = TextEditingController(
         text: e?.seedingDepth != null ? e!.seedingDepth.toString() : '');
     _rowSpacingController = TextEditingController(
         text: e?.rowSpacing != null ? e!.rowSpacing.toString() : '');
-    _equipmentController =
-        TextEditingController(text: e?.equipmentUsed ?? '');
+    _equipmentController = TextEditingController(text: e?.equipmentUsed ?? '');
     _notesController = TextEditingController(text: e?.notes ?? '');
   }
 
@@ -365,7 +359,8 @@ class _SeedingEventFormSheetState extends ConsumerState<_SeedingEventFormSheet> 
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppDesignTokens.spacing16),
             child: Text(
               widget.existing == null
                   ? 'Add Seeding Event'
@@ -380,7 +375,8 @@ class _SeedingEventFormSheetState extends ConsumerState<_SeedingEventFormSheet> 
           Expanded(
             child: ListView(
               controller: widget.scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppDesignTokens.spacing16),
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -442,8 +438,7 @@ class _SeedingEventFormSheetState extends ConsumerState<_SeedingEventFormSheet> 
                         ),
                         items: [
                           const DropdownMenuItem<String?>(
-                              value: null,
-                              child: Text('—')),
+                              value: null, child: Text('—')),
                           ..._kSeedingRateUnits.map(
                             (u) => DropdownMenuItem<String?>(
                                 value: u, child: Text(u)),
@@ -870,18 +865,25 @@ class _SeedingDetailScreenState extends ConsumerState<_SeedingDetailScreen> {
           _readOnlyRow(context, 'Operator',
               widget.record.operatorName ?? 'Not recorded'),
           const SizedBox(height: 16),
-          _readOnlyRow(context, 'Comments',
-              widget.record.comments ?? 'None'),
+          _readOnlyRow(context, 'Comments', widget.record.comments ?? 'None'),
           if (existingValues.isNotEmpty) ...[
             const SizedBox(height: 24),
             Text('Details',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold)),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             ...existingValues.map<Widget>((v) {
               final label = v.fieldLabel as String? ?? v.fieldKey as String;
-              final value = v.valueText ?? v.valueNumber?.toString() ??
-                  v.valueDate ?? (v.valueBool == true ? 'Yes' : v.valueBool == false ? 'No' : '—');
+              final value = v.valueText ??
+                  v.valueNumber?.toString() ??
+                  v.valueDate ??
+                  (v.valueBool == true
+                      ? 'Yes'
+                      : v.valueBool == false
+                          ? 'No'
+                          : '—');
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _readOnlyRow(context, label, value.toString()),

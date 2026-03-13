@@ -15,7 +15,7 @@ import '../plots/plot_queue_screen.dart';
 import 'full_protocol_details_screen.dart';
 import '../../core/providers.dart';
 import '../../core/design/app_design_tokens.dart';
-import '../diagnostics/trial_diagnostics.dart';
+import '../diagnostics/trial_readiness.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import 'tabs/assessments_tab.dart';
@@ -130,7 +130,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _runExport(BuildContext context, WidgetRef ref, Trial trial) async {
+  Future<void> _runExport(
+      BuildContext context, WidgetRef ref, Trial trial) async {
     setState(() => _isExporting = true);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -194,18 +195,145 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     }
   }
 
-  void _showExportReadinessSheet(BuildContext context, WidgetRef ref, Trial trial) {
+  Future<void> _onExportTapped(
+      BuildContext context, WidgetRef ref, Trial trial) async {
+    final report = await ref.read(trialReadinessProvider(trial.id).future);
+    if (!context.mounted) return;
+    if (report.blockerCount > 0) {
+      _showReadinessSheet(context, ref, trial, report, showExportAnyway: false);
+      return;
+    }
+    if (report.warningCount > 0) {
+      _showReadinessSheet(context, ref, trial, report, showExportAnyway: true);
+      return;
+    }
+    _runExport(context, ref, trial);
+  }
+
+  void _showReadinessSheet(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+    TrialReadinessReport report, {
+    required bool showExportAnyway,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => _ExportReadinessSheet(
-        trial: trial,
+      builder: (ctx) => _TrialReadinessSheet(
+        report: report,
+        showExportAnyway: showExportAnyway,
         onExport: () {
           Navigator.pop(ctx);
           _runExport(context, ref, trial);
         },
-        onCancel: () => Navigator.pop(ctx),
+        onClose: () => Navigator.pop(ctx),
       ),
+    );
+  }
+
+  Widget _buildReadinessCard(BuildContext context, WidgetRef ref, Trial trial) {
+    final async = ref.watch(trialReadinessProvider(trial.id));
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (report) {
+        final status = report.status;
+        String statusLabel;
+        Color borderColor;
+        switch (status) {
+          case TrialReadinessStatus.ready:
+            statusLabel = 'Ready to export';
+            borderColor = AppDesignTokens.successFg;
+            break;
+          case TrialReadinessStatus.readyWithWarnings:
+            statusLabel = 'Ready with warnings';
+            borderColor = Colors.amber.shade700;
+            break;
+          case TrialReadinessStatus.notReady:
+            statusLabel = 'Not ready to export';
+            borderColor = Theme.of(context).colorScheme.error;
+            break;
+        }
+        final parts = <String>[];
+        if (report.warningCount > 0)
+          parts.add('${report.warningCount} warnings');
+        if (report.blockerCount > 0)
+          parts.add('${report.blockerCount} blockers');
+        final countsLine =
+            parts.isEmpty ? 'All checks passed' : parts.join(' · ');
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing16, vertical: 6),
+          child: Material(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            child: InkWell(
+              onTap: () {
+                _showReadinessSheet(
+                  context,
+                  ref,
+                  trial,
+                  report,
+                  showExportAnyway: report.canExport && report.warningCount > 0,
+                );
+              },
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDesignTokens.spacing16, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusCard),
+                  border: Border.all(color: borderColor, width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: borderColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            countsLine,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppDesignTokens.secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        _showReadinessSheet(
+                          context,
+                          ref,
+                          trial,
+                          report,
+                          showExportAnyway:
+                              report.canExport && report.warningCount > 0,
+                        );
+                      },
+                      child: const Text('View details'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -224,137 +352,153 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           Column(
             children: [
               ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeaderHeight),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppDesignTokens.primary, AppDesignTokens.primaryLight],
-                      ),
-                    ),
-                    child: SafeArea(
-                      bottom: false,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back, color: Colors.white),
-                              onPressed: () => Navigator.of(context).maybePop(),
-                              tooltip: 'Back',
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Trial',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.white.withValues(alpha: 0.7),
-                                      letterSpacing: 1,
-                                    ),
+                constraints: BoxConstraints(maxHeight: maxHeaderHeight),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppDesignTokens.primary,
+                              AppDesignTokens.primaryLight
+                            ],
+                          ),
+                        ),
+                        child: SafeArea(
+                          bottom: false,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                            child: Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.arrow_back,
+                                      color: Colors.white),
+                                  onPressed: () =>
+                                      Navigator.of(context).maybePop(),
+                                  tooltip: 'Back',
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Trial',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.7),
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        currentTrial.name,
+                                        style: AppDesignTokens.headerTitleStyle(
+                                          fontSize: 17,
+                                          color: Colors.white,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (currentTrial.crop != null) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          currentTrial.crop!,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.white
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    currentTrial.name,
-                                    style: AppDesignTokens.headerTitleStyle(
-                                      fontSize: 17,
-                                      color: Colors.white,
+                                ),
+                                if (currentTrial.status.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(20),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (currentTrial.crop != null) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      currentTrial.crop!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white.withValues(alpha: 0.7),
+                                    child: Text(
+                                      currentTrial.status,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        letterSpacing: 0.3,
                                       ),
                                     ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            if (currentTrial.status.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.18),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  currentTrial.status,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                    letterSpacing: 0.3,
                                   ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.description_outlined,
+                                      color: Colors.white, size: 22),
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => FullProtocolDetailsScreen(
+                                          trial: currentTrial),
+                                    ),
+                                  ),
+                                  tooltip: 'View full protocol',
                                 ),
-                              ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.description_outlined, color: Colors.white, size: 22),
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => FullProtocolDetailsScreen(trial: currentTrial),
+                                IconButton(
+                                  icon: const Icon(Icons.ios_share_outlined,
+                                      color: Colors.white, size: 22),
+                                  onPressed: _isExporting
+                                      ? null
+                                      : () => _onExportTapped(
+                                          context, ref, currentTrial),
+                                  tooltip: 'Export trial (CSV bundle)',
                                 ),
-                              ),
-                              tooltip: 'View full protocol',
+                              ],
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.ios_share_outlined, color: Colors.white, size: 22),
-                              onPressed: _isExporting
-                                  ? null
-                                  : () => _showExportReadinessSheet(context, ref, currentTrial),
-                              tooltip: 'Export trial (CSV bundle)',
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+                      _buildTrialStatusBar(context, ref, currentTrial),
+                      const SizedBox(height: AppDesignTokens.spacing12),
+                      SizedBox(
+                        height: 110,
+                        child: _TrialModuleHub(
+                          scrollController: _hubScrollController,
+                          selectedIndex: _selectedTabIndex == _sessionsIndex
+                              ? _previousTabIndex
+                              : _selectedTabIndex,
+                          onSelected: (index) {
+                            setState(() => _selectedTabIndex = index);
+                          },
+                          onUserScroll: _dismissHubHint,
+                        ),
+                      ),
+                      const SizedBox(height: AppDesignTokens.spacing12),
+                      if (_selectedTabIndex != _sessionsIndex) ...[
+                        _buildCropLocationSection(context, currentTrial),
+                        _buildSessionsBar(
+                          context,
+                          ref.watch(sessionsForTrialProvider(widget.trial.id)),
+                          ref.watch(
+                              seedingEventForTrialProvider(widget.trial.id)),
+                        ),
+                        _buildReadinessCard(context, ref, currentTrial),
+                        const SizedBox(height: AppDesignTokens.spacing12),
+                      ],
+                    ],
                   ),
-                  _buildTrialStatusBar(context, ref, currentTrial),
-                  const SizedBox(height: AppDesignTokens.spacing12),
-                  SizedBox(
-                    height: 110,
-                    child: _TrialModuleHub(
-                      scrollController: _hubScrollController,
-                      selectedIndex: _selectedTabIndex == _sessionsIndex
-                          ? _previousTabIndex
-                          : _selectedTabIndex,
-                      onSelected: (index) {
-                        setState(() => _selectedTabIndex = index);
-                      },
-                      onUserScroll: _dismissHubHint,
-                    ),
-                  ),
-                  const SizedBox(height: AppDesignTokens.spacing12),
-                  if (_selectedTabIndex != _sessionsIndex) ...[
-                    _buildCropLocationSection(context, currentTrial),
-                    _buildSessionsBar(
-                      context,
-                      ref.watch(sessionsForTrialProvider(widget.trial.id)),
-                      ref.watch(seedingEventForTrialProvider(widget.trial.id)),
-                    ),
-                    const SizedBox(height: AppDesignTokens.spacing12),
-                  ],
-                ],
+                ),
               ),
-            ),
-          ),
               Expanded(
                 child: IndexedStack(
                   index: _selectedTabIndex,
@@ -401,7 +545,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     return i >= 0 ? i : 0;
   }
 
-  Widget _buildTrialStatusBar(BuildContext context, WidgetRef ref, Trial trial) {
+  Widget _buildTrialStatusBar(
+      BuildContext context, WidgetRef ref, Trial trial) {
     final currentIndex = _stepperIndexForStatus(trial.status);
     final nextStatuses = allowedNextTrialStatuses(trial.status);
     final nextStatus = nextStatuses.isNotEmpty ? nextStatuses.first : null;
@@ -413,7 +558,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ? 'Close Trial'
                 : null;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing12),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: AppDesignTokens.spacing12),
       decoration: const BoxDecoration(
         color: AppDesignTokens.sectionHeaderBg,
         border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
@@ -430,7 +577,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     child: Container(
                       height: 2,
                       margin: const EdgeInsets.only(bottom: 20),
-                      color: i <= currentIndex ? AppDesignTokens.primary : AppDesignTokens.divider,
+                      color: i <= currentIndex
+                          ? AppDesignTokens.primary
+                          : AppDesignTokens.divider,
                     ),
                   ),
                 _buildStepperDot(context, i, currentIndex),
@@ -439,7 +588,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     child: Container(
                       height: 2,
                       margin: const EdgeInsets.only(bottom: 20),
-                      color: i < currentIndex ? AppDesignTokens.primary : AppDesignTokens.divider,
+                      color: i < currentIndex
+                          ? AppDesignTokens.primary
+                          : AppDesignTokens.divider,
                     ),
                   ),
               ],
@@ -455,8 +606,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: i == currentIndex ? FontWeight.w700 : FontWeight.w500,
-                      color: i <= currentIndex ? AppDesignTokens.primaryText : AppDesignTokens.secondaryText,
+                      fontWeight:
+                          i == currentIndex ? FontWeight.w700 : FontWeight.w500,
+                      color: i <= currentIndex
+                          ? AppDesignTokens.primaryText
+                          : AppDesignTokens.secondaryText,
                     ),
                   ),
                 ),
@@ -467,13 +621,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => _transitionTrialStatus(context, ref, nextStatus),
+                onPressed: () =>
+                    _transitionTrialStatus(context, ref, nextStatus),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppDesignTokens.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusSmall),
                   ),
                 ),
                 child: Text(buttonLabel),
@@ -485,7 +641,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  Widget _buildStepperDot(BuildContext context, int stepIndex, int currentIndex) {
+  Widget _buildStepperDot(
+      BuildContext context, int stepIndex, int currentIndex) {
     const double size = 28;
     final isCompleted = stepIndex < currentIndex;
     final isCurrent = stepIndex == currentIndex;
@@ -586,7 +743,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final cropPart = trial.crop?.trim();
     final seasonPart = trial.season?.trim();
     final locationPart = trial.location?.trim();
-    final hasCropYear = (cropPart != null && cropPart.isNotEmpty) || (seasonPart != null && seasonPart.isNotEmpty);
+    final hasCropYear = (cropPart != null && cropPart.isNotEmpty) ||
+        (seasonPart != null && seasonPart.isNotEmpty);
     final hasLocation = locationPart != null && locationPart.isNotEmpty;
     if (!hasCropYear && !hasLocation) return const SizedBox.shrink();
     final cropYearText = [
@@ -594,7 +752,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       if (seasonPart != null && seasonPart.isNotEmpty) seasonPart,
     ].join(' · ');
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: AppDesignTokens.spacing4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -641,7 +801,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: AppDesignTokens.spacing8),
       child: Material(
         color: AppDesignTokens.cardSurface,
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
@@ -655,7 +817,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           }),
           borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppDesignTokens.spacing16, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
               border: Border.all(color: AppDesignTokens.borderCrisp),
@@ -666,7 +829,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   padding: const EdgeInsets.all(AppDesignTokens.spacing8),
                   decoration: BoxDecoration(
                     color: AppDesignTokens.primaryTint,
-                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusXSmall),
                   ),
                   child: const Icon(
                     Icons.assignment_outlined,
@@ -756,10 +920,12 @@ class _TrialModuleHub extends StatelessWidget {
     final listView = ListView.separated(
       controller: scrollController,
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.only(left: AppDesignTokens.spacing16, right: 48),
+      padding:
+          const EdgeInsets.only(left: AppDesignTokens.spacing16, right: 48),
       physics: const BouncingScrollPhysics(),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(width: AppDesignTokens.spacing12),
+      separatorBuilder: (_, __) =>
+          const SizedBox(width: AppDesignTokens.spacing12),
       itemBuilder: (context, index) {
         final item = items[index];
         return _DockTile(
@@ -786,12 +952,12 @@ class _TrialModuleHub extends StatelessWidget {
     return Container(
       height: 110,
       width: double.infinity,
-      padding: const EdgeInsets.only(top: AppDesignTokens.spacing8, bottom: AppDesignTokens.spacing8),
+      padding: const EdgeInsets.only(
+          top: AppDesignTokens.spacing8, bottom: AppDesignTokens.spacing8),
       child: content,
     );
   }
 }
-
 
 class _DockTile extends StatelessWidget {
   final IconData icon;
@@ -816,20 +982,26 @@ class _DockTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing12,
+              vertical: AppDesignTokens.spacing8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                color: selected ? AppDesignTokens.primary : AppDesignTokens.iconSubtle,
+                color: selected
+                    ? AppDesignTokens.primary
+                    : AppDesignTokens.iconSubtle,
                 size: selected ? 26 : 22,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? AppDesignTokens.primary : AppDesignTokens.secondaryText,
+                  color: selected
+                      ? AppDesignTokens.primary
+                      : AppDesignTokens.secondaryText,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   fontSize: selected ? 13 : 12,
                 ),
@@ -983,8 +1155,8 @@ class SessionsView extends ConsumerWidget {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text(
-                              'Exported ${result.sessionCount} sessions')),
+                          content:
+                              Text('Exported ${result.sessionCount} sessions')),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -997,8 +1169,7 @@ class SessionsView extends ConsumerWidget {
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
-                      value: 'csv',
-                      child: Text('Export all to CSV (ZIP)')),
+                      value: 'csv', child: Text('Export all to CSV (ZIP)')),
                   const PopupMenuItem(
                       value: 'arm_xml',
                       child: Text('Export all as ARM XML (ZIP)')),
@@ -1013,19 +1184,13 @@ class SessionsView extends ConsumerWidget {
               error: (e, st) => AppErrorView(
                 error: e,
                 stackTrace: st,
-                onRetry: () => ref.invalidate(sessionsForTrialProvider(trial.id)),
+                onRetry: () =>
+                    ref.invalidate(sessionsForTrialProvider(trial.id)),
               ),
               data: (sessions) {
-                final applicationsList = ref.watch(trialApplicationsForTrialProvider(trial.id)).value ?? [];
-                final firstApplicationDate = applicationsList.isNotEmpty
-                    ? applicationsList.first.applicationDate
-                    : null;
-                final ratingBeforeFirstApp = firstApplicationDate != null &&
-                    sessions.any((s) => s.startedAt.isBefore(firstApplicationDate));
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (ratingBeforeFirstApp) _buildSessionDateWarningBanner(context),
                     Expanded(
                       child: sessions.isEmpty
                           ? _buildEmptySessions(context)
@@ -1034,26 +1199,6 @@ class SessionsView extends ConsumerWidget {
                   ],
                 );
               },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSessionDateWarningBanner(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: AppDesignTokens.warningBg,
-      child: const Row(
-        children: [
-          Icon(Icons.warning_amber_rounded, color: AppDesignTokens.warningFg, size: 20),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Rating recorded before first application — check session dates',
-              style: TextStyle(fontSize: 13, color: AppDesignTokens.warningFg),
             ),
           ),
         ],
@@ -1136,7 +1281,8 @@ class SessionsView extends ConsumerWidget {
   Widget _buildSessionDateHeader(BuildContext context, String date) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+          horizontal: AppDesignTokens.spacing16,
+          vertical: AppDesignTokens.spacing8),
       decoration: const BoxDecoration(
         color: AppDesignTokens.sectionHeaderBg,
         border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
@@ -1161,8 +1307,11 @@ class SessionsView extends ConsumerWidget {
   Widget _buildSessionListTile(
       BuildContext context, WidgetRef ref, Session session) {
     final isOpen = session.endedAt == null;
-    final ratings = ref.watch(sessionRatingsProvider(session.id)).valueOrNull ?? [];
-    final flaggedIds = ref.watch(flaggedPlotIdsForSessionProvider(session.id)).valueOrNull ?? <int>{};
+    final ratings =
+        ref.watch(sessionRatingsProvider(session.id)).valueOrNull ?? [];
+    final flaggedIds =
+        ref.watch(flaggedPlotIdsForSessionProvider(session.id)).valueOrNull ??
+            <int>{};
     final hasFlags = flaggedIds.isNotEmpty;
     final issuePlotIds = ratings
         .where((r) => r.resultStatus != 'RECORDED')
@@ -1196,13 +1345,12 @@ class SessionsView extends ConsumerWidget {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => SessionDetailScreen(
-                        trial: trial, session: session)));
+                    builder: (_) =>
+                        SessionDetailScreen(trial: trial, session: session)));
           }
         },
-        onLongPress: isOpen
-            ? () => _confirmCloseSession(context, ref, session)
-            : null,
+        onLongPress:
+            isOpen ? () => _confirmCloseSession(context, ref, session) : null,
         leading: Container(
           padding: const EdgeInsets.all(AppDesignTokens.spacing8),
           decoration: BoxDecoration(
@@ -1213,12 +1361,13 @@ class SessionsView extends ConsumerWidget {
           ),
           child: Icon(
             isOpen ? Icons.play_circle : Icons.check_circle,
-            color: isOpen ? AppDesignTokens.openSessionBg : AppDesignTokens.emptyBadgeFg,
+            color: isOpen
+                ? AppDesignTokens.openSessionBg
+                : AppDesignTokens.emptyBadgeFg,
             size: 20,
           ),
         ),
-        title: Text(
-            _shortSessionName(session.name, session.sessionDateLocal),
+        title: Text(_shortSessionName(session.name, session.sessionDateLocal),
             style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
@@ -1297,7 +1446,9 @@ class SessionsView extends ConsumerWidget {
       // Use only the date part (YYYY-MM-DD); handle "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DDTHH:mm:ss".
       final dateOnly = dateStr.length >= 10
           ? dateStr.substring(0, 10)
-          : (dateStr.contains(' ') ? dateStr.split(' ').first : (dateStr.contains('T') ? dateStr.split('T').first : dateStr));
+          : (dateStr.contains(' ')
+              ? dateStr.split(' ').first
+              : (dateStr.contains('T') ? dateStr.split('T').first : dateStr));
       final parts = dateOnly.split('-');
       if (parts.length != 3) return dateStr;
       final months = [
@@ -1317,7 +1468,8 @@ class SessionsView extends ConsumerWidget {
       ];
       final day = int.tryParse(parts[2]);
       final monthIdx = int.tryParse(parts[1]);
-      if (day == null || monthIdx == null || monthIdx < 1 || monthIdx > 12) return dateStr;
+      if (day == null || monthIdx == null || monthIdx < 1 || monthIdx > 12)
+        return dateStr;
       final month = months[monthIdx];
       final year = parts[0];
       return '$day $month $year';
@@ -1363,47 +1515,97 @@ class SessionsView extends ConsumerWidget {
   }
 }
 
-class _ExportReadinessSheet extends ConsumerWidget {
-  const _ExportReadinessSheet({
-    required this.trial,
+class _TrialReadinessSheet extends StatelessWidget {
+  const _TrialReadinessSheet({
+    required this.report,
+    required this.showExportAnyway,
     required this.onExport,
-    required this.onCancel,
+    required this.onClose,
   });
 
-  final Trial trial;
+  final TrialReadinessReport report;
+  final bool showExportAnyway;
   final VoidCallback onExport;
-  final VoidCallback onCancel;
+  final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(trialDiagnosticsProvider(trial.id));
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final blockers = report.checks
+        .where((c) => c.severity == TrialCheckSeverity.blocker)
+        .toList();
+    final warnings = report.checks
+        .where((c) => c.severity == TrialCheckSeverity.warning)
+        .toList();
+    final passes = report.checks
+        .where((c) => c.severity == TrialCheckSeverity.pass)
+        .toList();
+
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
       minChildSize: 0.3,
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
-        return async.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: 24 + MediaQuery.paddingOf(context).bottom,
           ),
-          error: (e, _) => Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Check failed: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                const SizedBox(height: 16),
-                TextButton(onPressed: onCancel, child: const Text('Close')),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Trial readiness',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  shrinkWrap: true,
+                  children: [
+                    ...blockers.map((c) => _ReadinessCheckRow(check: c)),
+                    ...warnings.map((c) => _ReadinessCheckRow(check: c)),
+                    if (passes.isNotEmpty)
+                      ExpansionTile(
+                        initiallyExpanded: false,
+                        title: Text(
+                          'Show ${passes.length} passed checks',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        children: passes
+                            .map((c) => _ReadinessCheckRow(check: c))
+                            .toList(),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (showExportAnyway) ...[
+                FilledButton(
+                  onPressed: onExport,
+                  child: const Text('Export anyway'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: onClose,
+                  child: const Text('Cancel'),
+                ),
+              ] else ...[
+                FilledButton.tonal(
+                  onPressed: onClose,
+                  child: const Text('Close'),
+                ),
               ],
-            ),
-          ),
-          data: (result) => _ReadinessContent(
-            result: result,
-            onExport: onExport,
-            onCancel: onCancel,
-            scrollController: scrollController,
+            ],
           ),
         );
       },
@@ -1411,140 +1613,10 @@ class _ExportReadinessSheet extends ConsumerWidget {
   }
 }
 
-class _ReadinessContent extends StatelessWidget {
-  const _ReadinessContent({
-    required this.result,
-    required this.onExport,
-    required this.onCancel,
-    required this.scrollController,
-  });
+class _ReadinessCheckRow extends StatelessWidget {
+  const _ReadinessCheckRow({required this.check});
 
-  final TrialReadinessResult result;
-  final VoidCallback onExport;
-  final VoidCallback onCancel;
-  final ScrollController scrollController;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final hasErrors = result.errorCount > 0;
-    final hasWarnings = result.warningCount > 0;
-
-    String summaryText;
-    IconData summaryIcon;
-    if (hasErrors) {
-      summaryText = 'Not ready to export';
-      summaryIcon = Icons.error_outline;
-    } else if (hasWarnings) {
-      summaryText = 'Ready with warnings';
-      summaryIcon = Icons.warning_amber_outlined;
-    } else {
-      summaryText = 'Ready to export';
-      summaryIcon = Icons.check_circle_outline;
-    }
-
-    final summaryColor = hasErrors
-        ? scheme.error
-        : hasWarnings
-            ? Colors.amber.shade700
-            : AppDesignTokens.successFg;
-
-    final errors = result.checks.where((c) => c.severity == DiagnosticSeverity.error).toList();
-    final warnings = result.checks.where((c) => c.severity == DiagnosticSeverity.warning).toList();
-    final passes = result.checks.where((c) => c.severity == DiagnosticSeverity.pass).toList();
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: 24 + MediaQuery.paddingOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Trial readiness check',
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(summaryIcon, color: summaryColor, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  summaryText,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: summaryColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${result.passCount} checks passed · ${result.warningCount} warnings · ${result.errorCount} errors',
-            style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
-              controller: scrollController,
-              shrinkWrap: true,
-              children: [
-                ...errors.map((c) => _CheckRow(check: c, severity: DiagnosticSeverity.error)),
-                ...warnings.map((c) => _CheckRow(check: c, severity: DiagnosticSeverity.warning)),
-                ...passes.map((c) => _CheckRow(check: c, severity: DiagnosticSeverity.pass)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (hasErrors) ...[
-            Text(
-              'Resolve errors before exporting.',
-              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 8),
-            FilledButton.tonal(onPressed: onCancel, child: const Text('Close')),
-          ] else if (hasWarnings) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onExport,
-                    child: const Text('Export anyway'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.tonal(
-                    onPressed: onCancel,
-                    child: const Text('Cancel'),
-                  ),
-                ),
-              ],
-            ),
-          ] else ...[
-            FilledButton(
-              onPressed: onExport,
-              child: const Text('Export'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _CheckRow extends StatelessWidget {
-  const _CheckRow({required this.check, required this.severity});
-
-  final DiagnosticCheck check;
-  final DiagnosticSeverity severity;
+  final TrialReadinessCheck check;
 
   @override
   Widget build(BuildContext context) {
@@ -1552,16 +1624,16 @@ class _CheckRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     IconData icon;
     Color color;
-    switch (severity) {
-      case DiagnosticSeverity.error:
+    switch (check.severity) {
+      case TrialCheckSeverity.blocker:
         icon = Icons.close;
         color = scheme.error;
         break;
-      case DiagnosticSeverity.warning:
+      case TrialCheckSeverity.warning:
         icon = Icons.warning_amber_outlined;
         color = Colors.amber.shade700;
         break;
-      case DiagnosticSeverity.pass:
+      case TrialCheckSeverity.pass:
         icon = Icons.check;
         color = AppDesignTokens.successFg;
         break;
@@ -1580,13 +1652,17 @@ class _CheckRow extends StatelessWidget {
               children: [
                 Text(
                   check.label,
-                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 if (check.detail != null && check.detail!.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     check.detail!,
-                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ],

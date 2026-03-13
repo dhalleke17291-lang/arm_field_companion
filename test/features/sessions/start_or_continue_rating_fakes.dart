@@ -10,6 +10,7 @@ import 'package:arm_field_companion/features/sessions/usecases/start_or_continue
 class FakeSessionRepository implements SessionRepository {
   final List<Session> sessions;
   final Map<int, List<Assessment>> sessionAssessments;
+
   /// When set, createSession returns this instead of throwing.
   final Session? sessionToReturnFromCreate;
 
@@ -28,19 +29,22 @@ class FakeSessionRepository implements SessionRepository {
       sessionAssessments[sessionId] ?? const [];
 
   @override
-  Future<Session?> getOpenSession(int trialId) async =>
-      sessions.where((s) => s.trialId == trialId && s.endedAt == null).firstOrNull;
+  Future<Session?> getOpenSession(int trialId) async => sessions
+      .where((s) => s.trialId == trialId && s.endedAt == null)
+      .firstOrNull;
 
   @override
-  Stream<Session?> watchOpenSession(int trialId) =>
-      Stream.value(sessions.where((s) => s.trialId == trialId && s.endedAt == null).firstOrNull);
+  Stream<Session?> watchOpenSession(int trialId) => Stream.value(sessions
+      .where((s) => s.trialId == trialId && s.endedAt == null)
+      .firstOrNull);
 
   @override
   Future<List<Session>> getSessionsForTrial(int trialId) async =>
       sessions.where((s) => s.trialId == trialId).toList();
 
   @override
-  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) async =>
+  Future<List<Session>> getSessionsForDate(String dateLocal,
+          {int? createdByUserId}) async =>
       sessions.where((s) => s.sessionDateLocal == dateLocal).toList();
 
   @override

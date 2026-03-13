@@ -19,8 +19,8 @@ class UndoRatingUseCase {
       }
 
       // Get current rating to verify it belongs to this session
-      final ratings = await _ratingRepository
-          .getCurrentRatingsForSession(sessionId);
+      final ratings =
+          await _ratingRepository.getCurrentRatingsForSession(sessionId);
 
       final belongs = ratings.any((r) => r.id == currentRatingId);
       if (!belongs) {
@@ -50,8 +50,7 @@ class UndoRatingResult {
 
   const UndoRatingResult._({required this.success, this.errorMessage});
 
-  factory UndoRatingResult.success() =>
-      const UndoRatingResult._(success: true);
+  factory UndoRatingResult.success() => const UndoRatingResult._(success: true);
 
   factory UndoRatingResult.failure(String message) =>
       UndoRatingResult._(success: false, errorMessage: message);

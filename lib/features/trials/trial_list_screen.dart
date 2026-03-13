@@ -34,7 +34,10 @@ void _showAppInfoDialog(BuildContext context) {
           const SizedBox(height: 8),
           Text(
             AboutScreen.developerCredit,
-            style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.8)),
+            style: TextStyle(
+                fontSize: 13,
+                color:
+                    Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.8)),
           ),
         ],
       ),
@@ -150,20 +153,24 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
     final box = context.findRenderObject() as RenderBox?;
     await Share.shareXFiles(
       files,
-      text: 'Ag-Quest Field Companion – ${files.length} trial export(s), $exportedCount session(s)',
+      text:
+          'Ag-Quest Field Companion – ${files.length} trial export(s), $exportedCount session(s)',
       sharePositionOrigin: box == null
           ? const Rect.fromLTWH(0, 0, 100, 100)
           : box.localToGlobal(Offset.zero) & box.size,
     );
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Exported ${files.length} trial(s), $exportedCount session(s)')),
+        SnackBar(
+            content: Text(
+                'Exported ${files.length} trial(s), $exportedCount session(s)')),
       );
     }
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('Export failed: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -211,7 +218,11 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing16, AppDesignTokens.spacing24),
+                padding: const EdgeInsets.fromLTRB(
+                    AppDesignTokens.spacing16,
+                    AppDesignTokens.spacing16,
+                    AppDesignTokens.spacing16,
+                    AppDesignTokens.spacing24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -228,7 +239,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                         Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.search, color: Colors.white),
+                              icon:
+                                  const Icon(Icons.search, color: Colors.white),
                               tooltip: 'Search trials by name',
                               onPressed: () {
                                 setState(() {
@@ -239,17 +251,25 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                               },
                             ),
                             IconButton(
-                              icon: const Icon(Icons.file_upload_outlined, color: Colors.white),
-                              tooltip: 'Export all trial data (closed sessions)',
+                              icon: const Icon(Icons.file_upload_outlined,
+                                  color: Colors.white),
+                              tooltip:
+                                  'Export all trial data (closed sessions)',
                               onPressed: () => _exportAllTrials(context, ref),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.file_download_outlined, color: Colors.white),
+                              icon: const Icon(Icons.file_download_outlined,
+                                  color: Colors.white),
                               tooltip: 'Import Protocol',
-                              onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ProtocolImportScreen())),
+                              onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          const ProtocolImportScreen())),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.info_outline, color: Colors.white),
+                              icon: const Icon(Icons.info_outline,
+                                  color: Colors.white),
                               tooltip: 'About',
                               onPressed: () => _showAppInfoDialog(context),
                             ),
@@ -258,52 +278,74 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                       ],
                     ),
                     trialsAsync.when(
-                      loading: () => const SizedBox(height: AppDesignTokens.spacing12),
-                      error: (_, __) => const SizedBox(height: AppDesignTokens.spacing12),
+                      loading: () =>
+                          const SizedBox(height: AppDesignTokens.spacing12),
+                      error: (_, __) =>
+                          const SizedBox(height: AppDesignTokens.spacing12),
                       data: (trials) {
-                        final active = trials.where((t) => t.status.toLowerCase() == 'active').length;
+                        final active = trials
+                            .where((t) => t.status.toLowerCase() == 'active')
+                            .length;
                         return Padding(
-                          padding: const EdgeInsets.only(top: AppDesignTokens.spacing24),
+                          padding: const EdgeInsets.only(
+                              top: AppDesignTokens.spacing24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Row(
                                 children: [
-                                  Expanded(child: _summaryPill(context, '${trials.length}', 'Trials')),
-                                  const SizedBox(width: AppDesignTokens.spacing12),
-                                  Expanded(child: _summaryPill(context, '$active', 'Active')),
+                                  Expanded(
+                                      child: _summaryPill(context,
+                                          '${trials.length}', 'Trials')),
+                                  const SizedBox(
+                                      width: AppDesignTokens.spacing12),
+                                  Expanded(
+                                      child: _summaryPill(
+                                          context, '$active', 'Active')),
                                 ],
                               ),
                               if (trials.isNotEmpty) ...[
-                                const SizedBox(height: AppDesignTokens.spacing12),
+                                const SizedBox(
+                                    height: AppDesignTokens.spacing12),
                                 TextField(
                                   controller: _searchController,
                                   focusNode: _searchFocusNode,
-                                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 15),
                                   decoration: InputDecoration(
                                     hintText: 'Search trials by name...',
-                                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14),
-                                    prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 22),
-                                    suffixIcon: _searchController.text.isNotEmpty
-                                        ? IconButton(
-                                            icon: const Icon(Icons.clear, color: Colors.white70, size: 20),
-                                            onPressed: () {
-                                              setState(() {
-                                                _searchController.clear();
-                                                _searchQuery = '';
-                                              });
-                                            },
-                                          )
-                                        : null,
+                                    hintStyle: TextStyle(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.7),
+                                        fontSize: 14),
+                                    prefixIcon: const Icon(Icons.search,
+                                        color: Colors.white70, size: 22),
+                                    suffixIcon:
+                                        _searchController.text.isNotEmpty
+                                            ? IconButton(
+                                                icon: const Icon(Icons.clear,
+                                                    color: Colors.white70,
+                                                    size: 20),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _searchController.clear();
+                                                    _searchQuery = '';
+                                                  });
+                                                },
+                                              )
+                                            : null,
                                     filled: true,
-                                    fillColor: Colors.white.withValues(alpha: 0.15),
+                                    fillColor:
+                                        Colors.white.withValues(alpha: 0.15),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 10),
                                   ),
-                                  onChanged: (value) => setState(() => _searchQuery = value.trim()),
+                                  onChanged: (value) => setState(
+                                      () => _searchQuery = value.trim()),
                                 ),
                               ],
                             ],
@@ -332,11 +374,13 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                 final filtered = _searchQuery.isEmpty
                     ? trials
                     : trials
-                        .where((t) =>
-                            t.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+                        .where((t) => t.name
+                            .toLowerCase()
+                            .contains(_searchQuery.toLowerCase()))
                         .toList();
                 if (filtered.isEmpty && _searchQuery.isNotEmpty) {
-                  return _buildTrialList(context, ref, filtered, noResultsMessage: 'No trials match "$_searchQuery"');
+                  return _buildTrialList(context, ref, filtered,
+                      noResultsMessage: 'No trials match "$_searchQuery"');
                 }
                 return _buildTrialList(context, ref, filtered);
               },
@@ -361,9 +405,13 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
       ),
       child: Column(
         children: [
-          Text(value, style: AppDesignTokens.headerTitleStyle(fontSize: 20, color: Colors.white)),
+          Text(value,
+              style: AppDesignTokens.headerTitleStyle(
+                  fontSize: 20, color: Colors.white)),
           const SizedBox(height: 1),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6))),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11, color: Colors.white.withValues(alpha: 0.6))),
         ],
       ),
     );
@@ -373,7 +421,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing24),
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -439,7 +488,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
         const SizedBox(height: AppDesignTokens.spacing16),
         if (noResultsMessage != null)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppDesignTokens.spacing16),
+            padding:
+                const EdgeInsets.symmetric(vertical: AppDesignTokens.spacing16),
             child: Center(
               child: Text(
                 noResultsMessage,
@@ -454,8 +504,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
         else
           ...trials.map(
             (t) => Padding(
-              padding:
-                  const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+              padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
               child: _TrialCard(trial: t),
             ),
           ),
@@ -562,7 +611,20 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
 String _formatSessionDateForCard(String sessionDateLocal) {
   final d = DateTime.tryParse('$sessionDateLocal 12:00:00');
   if (d == null) return sessionDateLocal;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
   final month = d.month >= 1 && d.month <= 12 ? months[d.month - 1] : '';
   return '${d.day} $month ${d.year}';
 }
@@ -708,8 +770,16 @@ class _TrialCard extends StatelessWidget {
     final statusLower = trial.status.toLowerCase();
     final isActive = statusLower == 'active';
     final isDraft = statusLower == 'draft';
-    final badgeBg = isActive ? const Color(0xFFE8F2EC) : isDraft ? const Color(0xFFFFF4DC) : const Color(0xFFEFF6FF);
-    final badgeFg = isActive ? const Color(0xFF3D7A57) : isDraft ? const Color(0xFFC97A0A) : const Color(0xFF2563EB);
+    final badgeBg = isActive
+        ? const Color(0xFFE8F2EC)
+        : isDraft
+            ? const Color(0xFFFFF4DC)
+            : const Color(0xFFEFF6FF);
+    final badgeFg = isActive
+        ? const Color(0xFF3D7A57)
+        : isDraft
+            ? const Color(0xFFC97A0A)
+            : const Color(0xFF2563EB);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       decoration: BoxDecoration(
@@ -731,7 +801,7 @@ class _TrialCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-          child: InkWell(
+        child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () {
             Navigator.push(
@@ -778,7 +848,8 @@ class _TrialCard extends StatelessWidget {
                               ),
                               if (trial.status.isNotEmpty)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: badgeBg,
                                     borderRadius: BorderRadius.circular(20),
@@ -878,13 +949,12 @@ class _TrialQuickActions extends ConsumerWidget {
         '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
 
     List<int> assessmentIds;
-    final legacy =
-        await ref.read(assessmentsForTrialProvider(trial.id).future);
+    final legacy = await ref.read(assessmentsForTrialProvider(trial.id).future);
     if (legacy.isNotEmpty) {
       assessmentIds = legacy.map((a) => a.id).toList();
     } else {
-      final trialPairs = await ref
-          .read(trialAssessmentsWithDefinitionsForTrialProvider(trial.id).future);
+      final trialPairs = await ref.read(
+          trialAssessmentsWithDefinitionsForTrialProvider(trial.id).future);
       if (trialPairs.isEmpty) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -897,7 +967,8 @@ class _TrialQuickActions extends ConsumerWidget {
         return;
       }
       final trialRepo = ref.read(trialAssessmentRepositoryProvider);
-      assessmentIds = await trialRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
+      assessmentIds =
+          await trialRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
         trial.id,
         trialPairs.map((p) => p.$1.id).toList(),
       );
@@ -925,7 +996,8 @@ class _TrialQuickActions extends ConsumerWidget {
     if (!createResult.success || createResult.session == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(createResult.errorMessage ?? 'Could not create session.'),
+          content:
+              Text(createResult.errorMessage ?? 'Could not create session.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -934,8 +1006,8 @@ class _TrialQuickActions extends ConsumerWidget {
 
     final session = createResult.session!;
     final useCase = ref.read(startOrContinueRatingUseCaseProvider);
-    final result =
-        await useCase.execute(StartOrContinueRatingInput(sessionId: session.id));
+    final result = await useCase
+        .execute(StartOrContinueRatingInput(sessionId: session.id));
 
     if (!context.mounted) return;
     if (!result.success ||

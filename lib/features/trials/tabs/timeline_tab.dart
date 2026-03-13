@@ -45,7 +45,8 @@ class TimelineTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final seedingAsync = ref.watch(seedingEventForTrialProvider(trial.id));
-    final applicationsAsync = ref.watch(trialApplicationsForTrialProvider(trial.id));
+    final applicationsAsync =
+        ref.watch(trialApplicationsForTrialProvider(trial.id));
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
 
     return seedingAsync.when(
@@ -128,7 +129,8 @@ class TimelineTab extends ConsumerWidget {
           return const AppEmptyState(
             icon: Icons.timeline,
             title: 'No events recorded yet',
-            subtitle: 'Seeding, applications, and rating sessions will appear here.',
+            subtitle:
+                'Seeding, applications, and rating sessions will appear here.',
           );
         }
 

@@ -10,10 +10,12 @@ class DerivedSnapshot {
   });
 
   final int sessionId;
+
   /// Version for cache invalidation (e.g. timestamp or hash of inputs).
   final int calcVersion;
   final int ratedPlotCount;
   final int totalPlotCount;
+
   /// 0.0–1.0 session progress.
   final double progressFraction;
 

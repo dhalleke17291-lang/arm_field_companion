@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../design/app_design_tokens.dart';
 
 /// Prototype-style gradient header for screens. Use for consistent top bars.
-class GradientScreenHeader extends StatelessWidget implements PreferredSizeWidget {
+class GradientScreenHeader extends StatelessWidget
+    implements PreferredSizeWidget {
   const GradientScreenHeader({
     super.key,
     required this.title,
@@ -45,48 +46,48 @@ class GradientScreenHeader extends StatelessWidget implements PreferredSizeWidge
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
             child: Row(
-            children: [
-              leading ??
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    tooltip: 'Back',
-                  ),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: AppDesignTokens.headerTitleStyle(
-                        fontSize: titleFontSize,
-                        color: Colors.white,
-                        letterSpacing: -0.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              children: [
+                leading ??
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      tooltip: 'Back',
                     ),
-                    if (subtitle != null && subtitle!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        subtitle!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.8),
-                          letterSpacing: 0.2,
+                        title,
+                        style: AppDesignTokens.headerTitleStyle(
+                          fontSize: titleFontSize,
+                          color: Colors.white,
+                          letterSpacing: -0.3,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (subtitle != null && subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.8),
+                            letterSpacing: 0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              if (actions != null) ...actions!,
-            ],
+                if (actions != null) ...actions!,
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );

@@ -9,32 +9,46 @@ class AppUiConstants {
 
   /// Section header: horizontal padding
   static const double sectionHeaderPaddingH = 12;
+
   /// Section header: vertical padding (compact)
   static const double sectionHeaderPaddingV = 8;
+
   /// Empty state: icon size
   static const double emptyStateIconSize = 56;
+
   /// Empty state: space between icon and title
   static const double emptyStateSpacingAfterIcon = 12;
+
   /// Empty state: space between title and subtitle
   static const double emptyStateSpacingAfterTitle = 8;
+
   /// Empty state: space before primary action button
   static const double emptyStateSpacingBeforeAction = 20;
+
   /// Card list: horizontal padding
   static const double listPaddingH = 8;
+
   /// Card list: vertical padding
   static const double listPaddingV = 6;
+
   /// Primary action button: vertical padding (compact)
   static const double primaryButtonPaddingV = 12;
+
   /// Lock notice: horizontal padding (under section headers, in lock rows)
   static const double lockNoticePaddingH = 12;
+
   /// Lock notice: vertical padding (space above/below the message line)
   static const double lockNoticePaddingV = 4;
+
   /// Lock notice: space above when shown under a section header
   static const double lockNoticeSpacingAbove = 0;
+
   /// Lock notice: space below when shown under a section header
   static const double lockNoticeSpacingBelow = 6;
+
   /// Section-level Add button: icon size (use in [StandardSectionAddButton]).
   static const double sectionAddIconSize = 18;
+
   /// Section-level Add button: label.
   static const String sectionAddLabel = 'Add';
 }
@@ -45,6 +59,7 @@ class StandardSectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
   final Widget? action;
+
   /// Optional chip or badge (e.g. ProtocolLockChip) shown between title and action.
   final Widget? trailingIndicator;
 
@@ -112,14 +127,17 @@ class StandardSectionAddButton extends StatelessWidget {
       icon: const Icon(Icons.add, size: AppUiConstants.sectionAddIconSize),
       label: const Text(AppUiConstants.sectionAddLabel),
     );
-    if (onPressed == null && disabledTooltip != null && disabledTooltip!.isNotEmpty) {
+    if (onPressed == null &&
+        disabledTooltip != null &&
+        disabledTooltip!.isNotEmpty) {
       return Tooltip(message: disabledTooltip!, child: widget);
     }
     return widget;
   }
 }
 
-Widget _wrapTooltipWhenDisabled({required String? tooltip, required Widget child}) {
+Widget _wrapTooltipWhenDisabled(
+    {required String? tooltip, required Widget child}) {
   if (tooltip == null || tooltip.isEmpty) return child;
   return Tooltip(message: tooltip, child: child);
 }
@@ -132,10 +150,13 @@ class StandardEmptyState extends StatelessWidget {
   final String subtitle;
   final String actionLabel;
   final VoidCallback? onAction;
+
   /// Optional icon for the primary action button (default: Icons.add).
   final IconData? actionIcon;
+
   /// Optional widgets below the primary button (e.g. secondary actions for Plots).
   final List<Widget>? trailingActions;
+
   /// When [onAction] is null, show this tooltip on the disabled button so users understand why before tapping.
   final String? disabledTooltipMessage;
 
@@ -183,7 +204,8 @@ class StandardEmptyState extends StatelessWidget {
                 color: scheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: AppUiConstants.emptyStateSpacingBeforeAction),
+            const SizedBox(
+                height: AppUiConstants.emptyStateSpacingBeforeAction),
             _wrapTooltipWhenDisabled(
               tooltip: onAction == null ? disabledTooltipMessage : null,
               child: FilledButton.icon(
@@ -356,11 +378,13 @@ class ProtocolLockChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final label = getProtocolLockLabel(status);
-    final tooltip = isLocked && status != null && getProtocolLockMessage(status).isNotEmpty
-        ? getProtocolLockMessage(status)
-        : null;
+    final tooltip =
+        isLocked && status != null && getProtocolLockMessage(status).isNotEmpty
+            ? getProtocolLockMessage(status)
+            : null;
     Widget chip = Material(
-      color: isLocked ? scheme.surfaceContainerHighest : scheme.primaryContainer,
+      color:
+          isLocked ? scheme.surfaceContainerHighest : scheme.primaryContainer,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -391,4 +415,3 @@ class ProtocolLockChip extends StatelessWidget {
     return chip;
   }
 }
-

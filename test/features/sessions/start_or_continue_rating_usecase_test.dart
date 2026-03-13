@@ -31,19 +31,22 @@ class _FakeSessionRepository implements SessionRepository {
 
   // Unused methods for this use case in this test.
   @override
-  Future<Session?> getOpenSession(int trialId) async =>
-      _sessions.where((s) => s.trialId == trialId && s.endedAt == null).firstOrNull;
+  Future<Session?> getOpenSession(int trialId) async => _sessions
+      .where((s) => s.trialId == trialId && s.endedAt == null)
+      .firstOrNull;
 
   @override
-  Stream<Session?> watchOpenSession(int trialId) =>
-      Stream.value(_sessions.where((s) => s.trialId == trialId && s.endedAt == null).firstOrNull);
+  Stream<Session?> watchOpenSession(int trialId) => Stream.value(_sessions
+      .where((s) => s.trialId == trialId && s.endedAt == null)
+      .firstOrNull);
 
   @override
   Future<List<Session>> getSessionsForTrial(int trialId) async =>
       _sessions.where((s) => s.trialId == trialId).toList();
 
   @override
-  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) async =>
+  Future<List<Session>> getSessionsForDate(String dateLocal,
+          {int? createdByUserId}) async =>
       _sessions.where((s) => s.sessionDateLocal == dateLocal).toList();
 
   @override
@@ -475,7 +478,8 @@ void main() {
       expect(result.isSessionComplete, false);
     });
 
-    test('all rated → marks session complete and points at last index', () async {
+    test('all rated → marks session complete and points at last index',
+        () async {
       final ratingsRepo = _FakeRatingRepository([
         RatingRecord(
           id: 1,
@@ -552,4 +556,3 @@ void main() {
     });
   });
 }
-

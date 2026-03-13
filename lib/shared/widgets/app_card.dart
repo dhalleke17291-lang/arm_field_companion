@@ -31,9 +31,7 @@ class AppCard extends StatelessWidget {
         ),
         boxShadow: AppDesignTokens.cardShadow,
       ),
-      child: padding != null
-          ? Padding(padding: padding!, child: child)
-          : child,
+      child: padding != null ? Padding(padding: padding!, child: child) : child,
     );
   }
 }

@@ -81,8 +81,7 @@ class RatingRepository {
       if (existing != null) {
         await (_db.update(_db.ratingRecords)
               ..where((r) => r.id.equals(existing.id)))
-            .write(const RatingRecordsCompanion(
-                isCurrent: Value(false)));
+            .write(const RatingRecordsCompanion(isCurrent: Value(false)));
       }
 
       // Insert new current record (with optional provenance)
@@ -113,8 +112,7 @@ class RatingRepository {
               sessionId: Value(sessionId),
               plotPk: Value(plotPk),
               eventType: 'RATING_SAVED',
-              description:
-                  'Rating saved: $resultStatus ${numericValue ?? ""}',
+              description: 'Rating saved: $resultStatus ${numericValue ?? ""}',
               performedBy: Value(raterName),
               performedByUserId: Value(performedByUserId),
             ),
@@ -208,8 +206,8 @@ class RatingRepository {
   // Get all current ratings for a session
   Future<List<RatingRecord>> getCurrentRatingsForSession(int sessionId) {
     return (_db.select(_db.ratingRecords)
-          ..where((r) =>
-              r.sessionId.equals(sessionId) & r.isCurrent.equals(true)))
+          ..where(
+              (r) => r.sessionId.equals(sessionId) & r.isCurrent.equals(true)))
         .get();
   }
 
@@ -230,8 +228,7 @@ class RatingRepository {
   /// Count of distinct plots with at least one current rating for this trial (Trial Summary).
   Future<int> getRatedPlotCountForTrial(int trialId) async {
     final ratings = await (_db.select(_db.ratingRecords)
-          ..where((r) =>
-              r.trialId.equals(trialId) & r.isCurrent.equals(true)))
+          ..where((r) => r.trialId.equals(trialId) & r.isCurrent.equals(true)))
         .get();
     return ratings.map((r) => r.plotPk).toSet().length;
   }

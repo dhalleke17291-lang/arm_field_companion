@@ -169,7 +169,8 @@ void main() {
       expect(find.byType(RatingScreen), findsOneWidget);
     });
 
-    testWidgets('RatingScreen: save with invalid number shows validation snackbar',
+    testWidgets(
+        'RatingScreen: save with invalid number shows validation snackbar',
         (tester) async {
       await seedOpenSession(db);
       await pumpApp(tester);
@@ -255,6 +256,8 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
 
       expect(find.text('Cannot Start Rating'), findsOneWidget);
-    }, skip: true); // Session detail Rate tab not found on device; widget test covers error dialog
+    },
+        skip:
+            true); // Session detail Rate tab not found on device; widget test covers error dialog
   });
 }

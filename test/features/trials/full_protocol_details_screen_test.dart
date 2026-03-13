@@ -24,8 +24,14 @@ void main() {
       updatedAt: DateTime(2026, 1, 1),
     );
     treatments = [
-      const Treatment(id: 10, trialId: 1, code: 'T1', name: 'Control', description: null),
-      const Treatment(id: 11, trialId: 1, code: 'T2', name: 'Fertilizer A', description: null),
+      const Treatment(
+          id: 10, trialId: 1, code: 'T1', name: 'Control', description: null),
+      const Treatment(
+          id: 11,
+          trialId: 1,
+          code: 'T2',
+          name: 'Fertilizer A',
+          description: null),
     ];
     assessments = [
       const Assessment(
@@ -80,14 +86,18 @@ void main() {
   });
 
   group('FullProtocolDetailsScreen', () {
-    testWidgets('shows Full Protocol title and trial name', (WidgetTester tester) async {
+    testWidgets('shows Full Protocol title and trial name',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            treatmentsForTrialProvider(1).overrideWith((ref) => Stream.value(treatments)),
-            assessmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assessments)),
+            treatmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(treatments)),
+            assessmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assessments)),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            assignmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assignments)),
+            assignmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assignments)),
           ],
           child: MaterialApp(
             home: FullProtocolDetailsScreen(trial: trial),
@@ -101,14 +111,18 @@ void main() {
       expect(find.text('Wheat 2026'), findsOneWidget);
     });
 
-    testWidgets('shows Trial section with status, crop, location, season', (WidgetTester tester) async {
+    testWidgets('shows Trial section with status, crop, location, season',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            treatmentsForTrialProvider(1).overrideWith((ref) => Stream.value(treatments)),
-            assessmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assessments)),
+            treatmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(treatments)),
+            assessmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assessments)),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            assignmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assignments)),
+            assignmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assignments)),
           ],
           child: MaterialApp(
             home: FullProtocolDetailsScreen(trial: trial),
@@ -125,14 +139,18 @@ void main() {
       expect(find.text('2026'), findsWidgets);
     });
 
-    testWidgets('shows Treatments section with count and codes', (WidgetTester tester) async {
+    testWidgets('shows Treatments section with count and codes',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            treatmentsForTrialProvider(1).overrideWith((ref) => Stream.value(treatments)),
-            assessmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assessments)),
+            treatmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(treatments)),
+            assessmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assessments)),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            assignmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assignments)),
+            assignmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assignments)),
           ],
           child: MaterialApp(
             home: FullProtocolDetailsScreen(trial: trial),
@@ -147,14 +165,18 @@ void main() {
       expect(find.textContaining('T2 — Fertilizer A'), findsOneWidget);
     });
 
-    testWidgets('shows Assessments section with names', (WidgetTester tester) async {
+    testWidgets('shows Assessments section with names',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            treatmentsForTrialProvider(1).overrideWith((ref) => Stream.value(treatments)),
-            assessmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assessments)),
+            treatmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(treatments)),
+            assessmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assessments)),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            assignmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assignments)),
+            assignmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assignments)),
           ],
           child: MaterialApp(
             home: FullProtocolDetailsScreen(trial: trial),
@@ -168,14 +190,18 @@ void main() {
       expect(find.text('Yield'), findsOneWidget);
     });
 
-    testWidgets('shows Plots section with count and assigned count', (WidgetTester tester) async {
+    testWidgets('shows Plots section with count and assigned count',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            treatmentsForTrialProvider(1).overrideWith((ref) => Stream.value(treatments)),
-            assessmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assessments)),
+            treatmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(treatments)),
+            assessmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assessments)),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            assignmentsForTrialProvider(1).overrideWith((ref) => Stream.value(assignments)),
+            assignmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assignments)),
           ],
           child: MaterialApp(
             home: FullProtocolDetailsScreen(trial: trial),
@@ -190,14 +216,19 @@ void main() {
       expect(find.text('1 assigned'), findsOneWidget);
     });
 
-    testWidgets('shows loading state while providers load', (WidgetTester tester) async {
+    testWidgets('shows loading state while providers load',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            treatmentsForTrialProvider(1).overrideWith((ref) => const Stream.empty()),
-            assessmentsForTrialProvider(1).overrideWith((ref) => const Stream.empty()),
-            plotsForTrialProvider(1).overrideWith((ref) => const Stream.empty()),
-            assignmentsForTrialProvider(1).overrideWith((ref) => const Stream.empty()),
+            treatmentsForTrialProvider(1)
+                .overrideWith((ref) => const Stream.empty()),
+            assessmentsForTrialProvider(1)
+                .overrideWith((ref) => const Stream.empty()),
+            plotsForTrialProvider(1)
+                .overrideWith((ref) => const Stream.empty()),
+            assignmentsForTrialProvider(1)
+                .overrideWith((ref) => const Stream.empty()),
           ],
           child: MaterialApp(
             home: FullProtocolDetailsScreen(trial: trial),

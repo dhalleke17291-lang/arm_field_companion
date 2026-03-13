@@ -49,10 +49,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         ref.watch(sessionAssessmentsProvider(widget.session.id));
     final ratedPlotsAsync = ref.watch(ratedPlotPksProvider(widget.session.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(widget.session.id));
-    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentById = {for (final t in treatments) t.id: t};
-    final assignments = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final plotIdToTreatmentId = {for (var a in assignments) a.plotId: a.treatmentId};
+    final assignments =
+        ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final plotIdToTreatmentId = {
+      for (var a in assignments) a.plotId: a.treatmentId
+    };
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
@@ -85,9 +89,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (ratings) {
-                  final flaggedIds = ref.watch(flaggedPlotIdsForSessionProvider(widget.session.id)).valueOrNull ?? <int>{};
-                  return _buildQueue(context, plots, assessments, ratedPks, ratings, treatmentById, plotIdToTreatmentId, flaggedIds);
-                },
+                final flaggedIds = ref
+                        .watch(
+                            flaggedPlotIdsForSessionProvider(widget.session.id))
+                        .valueOrNull ??
+                    <int>{};
+                return _buildQueue(context, plots, assessments, ratedPks,
+                    ratings, treatmentById, plotIdToTreatmentId, flaggedIds);
+              },
             ),
           ),
         ),
@@ -127,8 +136,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           color: Theme.of(context).colorScheme.primaryContainer,
           child: Row(
             children: [
-              Icon(Icons.grid_on,
-                  color: Theme.of(context).colorScheme.primary),
+              Icon(Icons.grid_on, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               Text('$ratedCount / $totalPlots rated',
                   style: TextStyle(
@@ -137,7 +145,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               const Spacer(),
               if (plots.any((p) => p.fieldRow != null))
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2D5A40),
                     borderRadius: BorderRadius.circular(12),
@@ -157,7 +166,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                 ),
               if (_showUnratedOnly)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.orange,
                     borderRadius: BorderRadius.circular(12),
@@ -308,7 +318,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ],
                   ),
                 )
-              : _buildGroupedList(context, filtered, assessments, ratedPks, ratings, treatmentById, plotIdToTreatmentId, flaggedIds, allPlotsForTrial: plots),
+              : _buildGroupedList(context, filtered, assessments, ratedPks,
+                  ratings, treatmentById, plotIdToTreatmentId, flaggedIds,
+                  allPlotsForTrial: plots),
         ),
       ],
     );
@@ -343,12 +355,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         ),
       ));
       for (final plot in groups[rep]!) {
-        final plotRatings =
-            ratings.where((r) => r.plotPk == plot.id).toList();
+        final plotRatings = ratings.where((r) => r.plotPk == plot.id).toList();
         items.add(_PlotQueueTile(
           plot: plot,
           allPlotsForTrial: allPlotsForTrial,
-          treatmentLabel: getTreatmentDisplayLabel(plot, treatmentById, treatmentIdOverride: plotIdToTreatmentId[plot.id]),
+          treatmentLabel: getTreatmentDisplayLabel(plot, treatmentById,
+              treatmentIdOverride: plotIdToTreatmentId[plot.id]),
           isRated: ratedPks.contains(plot.id),
           plotRatings: plotRatings,
           assessments: assessments,
@@ -568,7 +580,10 @@ class _PlotQueueTile extends ConsumerWidget {
                 ),
                 child: Text(
                   'Issues',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.orange.shade800),
                 ),
               ),
             if (isRated)
@@ -607,15 +622,13 @@ class _PlotQueueTile extends ConsumerWidget {
               displayNum,
             );
           } else {
-            final index =
-                allPlotsForTrial.indexWhere((p) => p.id == plot.id);
+            final index = allPlotsForTrial.indexWhere((p) => p.id == plot.id);
             final idx = index < 0 ? 0 : index;
             int? initialAssessmentIndex;
             final prefs = await SharedPreferences.getInstance();
             final pos = SessionResumeStore(prefs).getPosition(session.id);
             if (pos != null && pos.$1 == idx) {
-              initialAssessmentIndex =
-                  pos.$2.clamp(0, assessments.length - 1);
+              initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
             }
             if (!context.mounted) return;
             Navigator.push(
@@ -663,7 +676,8 @@ class _PlotQueueTile extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(8),
@@ -802,7 +816,8 @@ class _PlotQueueDockBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         physics: const BouncingScrollPhysics(),
         children: const [
-          _PlotQueueDockTile(icon: Icons.grid_on, label: 'Plots', selected: true),
+          _PlotQueueDockTile(
+              icon: Icons.grid_on, label: 'Plots', selected: true),
         ],
       ),
     );
@@ -840,9 +855,7 @@ class _PlotQueueDockTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: selected
-                    ? scheme.primaryContainer
-                    : Colors.transparent,
+                color: selected ? scheme.primaryContainer : Colors.transparent,
                 shape: BoxShape.circle,
               ),
               child: Icon(

@@ -89,9 +89,8 @@ class UserSelectionScreen extends ConsumerWidget {
             ),
             title: Text(user.displayName,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: user.initials?.isNotEmpty == true
-                ? Text(user.initials!)
-                : null,
+            subtitle:
+                user.initials?.isNotEmpty == true ? Text(user.initials!) : null,
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _selectUser(context, ref, user.id),
           ),
@@ -100,7 +99,8 @@ class UserSelectionScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _selectUser(BuildContext context, WidgetRef ref, int userId) async {
+  Future<void> _selectUser(
+      BuildContext context, WidgetRef ref, int userId) async {
     await setCurrentUserId(userId);
     ref.invalidate(currentUserIdProvider);
     ref.invalidate(currentUserProvider);

@@ -133,9 +133,11 @@ class ExportTrialUseCase {
 
     final plots = await _plotRepository.getPlotsForTrial(trialPk);
     final plotMap = {for (final p in plots) p.id: p};
-    final treatments = await _treatmentRepository.getTreatmentsForTrial(trialPk);
+    final treatments =
+        await _treatmentRepository.getTreatmentsForTrial(trialPk);
     final treatmentMap = {for (final t in treatments) t.id: t};
-    final applications = await _applicationRepository.getApplicationsForTrial(trialPk);
+    final applications =
+        await _applicationRepository.getApplicationsForTrial(trialPk);
     final seeding = await _seedingRepository.getSeedingEventForTrial(trialPk);
     final sessions = await _sessionRepository.getSessionsForTrial(trialPk);
     final assignments = await _assignmentRepository.getForTrial(trialPk);
@@ -207,57 +209,172 @@ class ExportTrialUseCase {
       ['observations.csv', 'trial_id', 'Trial database identifier', ''],
       ['observations.csv', 'trial_name', 'Name of the trial', ''],
       ['observations.csv', 'session_name', 'Name of the rating session', ''],
-      ['observations.csv', 'session_date', 'Date ratings were recorded', 'YYYY-MM-DD'],
+      [
+        'observations.csv',
+        'session_date',
+        'Date ratings were recorded',
+        'YYYY-MM-DD'
+      ],
       ['observations.csv', 'plot_id', 'Plot database identifier', ''],
       ['observations.csv', 'plot_label', 'Display label of plot e.g. 101', ''],
       ['observations.csv', 'rep', 'Replication number', ''],
-      ['observations.csv', 'plot_position', 'Column position within replication', ''],
-      ['observations.csv', 'treatment_code', 'Code assigned to treatment e.g. T1', ''],
-      ['observations.csv', 'treatment_name', 'Human-readable treatment description', ''],
-      ['observations.csv', 'assessment_name', 'Name of assessment variable', ''],
-      ['observations.csv', 'assessment_type', 'Category of assessment e.g. visual rating', ''],
+      [
+        'observations.csv',
+        'plot_position',
+        'Column position within replication',
+        ''
+      ],
+      [
+        'observations.csv',
+        'treatment_code',
+        'Code assigned to treatment e.g. T1',
+        ''
+      ],
+      [
+        'observations.csv',
+        'treatment_name',
+        'Human-readable treatment description',
+        ''
+      ],
+      [
+        'observations.csv',
+        'assessment_name',
+        'Name of assessment variable',
+        ''
+      ],
+      [
+        'observations.csv',
+        'assessment_type',
+        'Category of assessment e.g. visual rating',
+        ''
+      ],
       ['observations.csv', 'value', 'Recorded rating value', 'assessment unit'],
       ['observations.csv', 'unit', 'Unit associated with the value', ''],
-      ['observations.csv', 'rater_name', 'Name of person who recorded the rating', ''],
-      ['observations.csv', 'days_after_seeding', 'Days elapsed since seeding event', 'days'],
-      ['observations.csv', 'days_after_first_application', 'Days elapsed since first application event', 'days'],
-      ['observations.csv', 'export_timestamp', 'UTC timestamp when export was generated', 'ISO 8601'],
+      [
+        'observations.csv',
+        'rater_name',
+        'Name of person who recorded the rating',
+        ''
+      ],
+      [
+        'observations.csv',
+        'days_after_seeding',
+        'Days elapsed since seeding event',
+        'days'
+      ],
+      [
+        'observations.csv',
+        'days_after_first_application',
+        'Days elapsed since first application event',
+        'days'
+      ],
+      [
+        'observations.csv',
+        'export_timestamp',
+        'UTC timestamp when export was generated',
+        'ISO 8601'
+      ],
       // treatments.csv
       ['treatments.csv', 'treatment_code', 'Code assigned to treatment', ''],
       ['treatments.csv', 'treatment_name', 'Human-readable treatment name', ''],
-      ['treatments.csv', 'component_name', 'Name of treatment component or product', ''],
-      ['treatments.csv', 'active_ingredient', 'Active ingredient if specified', ''],
+      [
+        'treatments.csv',
+        'component_name',
+        'Name of treatment component or product',
+        ''
+      ],
+      [
+        'treatments.csv',
+        'active_ingredient',
+        'Active ingredient if specified',
+        ''
+      ],
       ['treatments.csv', 'rate', 'Application rate of component', ''],
       ['treatments.csv', 'rate_unit', 'Unit for component rate', ''],
       ['treatments.csv', 'formulation', 'Formulation type if specified', ''],
-      ['treatments.csv', 'export_timestamp', 'UTC timestamp when export was generated', 'ISO 8601'],
+      [
+        'treatments.csv',
+        'export_timestamp',
+        'UTC timestamp when export was generated',
+        'ISO 8601'
+      ],
       // plot_assignments.csv
       ['plot_assignments.csv', 'trial_id', 'Trial database identifier', ''],
       ['plot_assignments.csv', 'plot_id', 'Plot database identifier', ''],
       ['plot_assignments.csv', 'plot_label', 'Display label of plot', ''],
       ['plot_assignments.csv', 'rep', 'Replication number', ''],
-      ['plot_assignments.csv', 'column', 'Column position within replication', ''],
+      [
+        'plot_assignments.csv',
+        'column',
+        'Column position within replication',
+        ''
+      ],
       ['plot_assignments.csv', 'treatment_code', 'Assigned treatment code', ''],
       ['plot_assignments.csv', 'treatment_name', 'Assigned treatment name', ''],
       ['plot_assignments.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
       // applications.csv
       ['applications.csv', 'date', 'Date of application event', 'YYYY-MM-DD'],
-      ['applications.csv', 'product_name', 'Product or active ingredient applied', ''],
+      [
+        'applications.csv',
+        'product_name',
+        'Product or active ingredient applied',
+        ''
+      ],
       ['applications.csv', 'rate', 'Application rate', ''],
       ['applications.csv', 'rate_unit', 'Unit for application rate', ''],
       ['applications.csv', 'water_volume_lha', 'Carrier water volume', 'L/ha'],
-      ['applications.csv', 'growth_stage', 'Crop growth stage at application e.g. BBCH code', ''],
-      ['applications.csv', 'operator_name', 'Person who performed application', ''],
+      [
+        'applications.csv',
+        'growth_stage',
+        'Crop growth stage at application e.g. BBCH code',
+        ''
+      ],
+      [
+        'applications.csv',
+        'operator_name',
+        'Person who performed application',
+        ''
+      ],
       ['applications.csv', 'equipment', 'Equipment used', ''],
-      ['applications.csv', 'wind_speed', 'Wind speed at time of application', ''],
-      ['applications.csv', 'wind_direction', 'Wind direction at time of application', ''],
-      ['applications.csv', 'temperature_c', 'Air temperature at application', '°C'],
-      ['applications.csv', 'humidity_pct', 'Relative humidity at application', '%'],
+      [
+        'applications.csv',
+        'wind_speed',
+        'Wind speed at time of application',
+        ''
+      ],
+      [
+        'applications.csv',
+        'wind_direction',
+        'Wind direction at time of application',
+        ''
+      ],
+      [
+        'applications.csv',
+        'temperature_c',
+        'Air temperature at application',
+        '°C'
+      ],
+      [
+        'applications.csv',
+        'humidity_pct',
+        'Relative humidity at application',
+        '%'
+      ],
       ['applications.csv', 'notes', 'Operator notes', ''],
-      ['applications.csv', 'days_after_seeding', 'Days elapsed since seeding', 'days'],
+      [
+        'applications.csv',
+        'days_after_seeding',
+        'Days elapsed since seeding',
+        'days'
+      ],
       ['applications.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
       // seeding.csv
-      ['seeding.csv', 'seeding_date', 'Date of seeding operation', 'YYYY-MM-DD'],
+      [
+        'seeding.csv',
+        'seeding_date',
+        'Date of seeding operation',
+        'YYYY-MM-DD'
+      ],
       ['seeding.csv', 'operator_name', 'Person who performed seeding', ''],
       ['seeding.csv', 'seed_lot_number', 'Seed lot or batch identifier', ''],
       ['seeding.csv', 'seeding_rate', 'Seeding rate used', ''],
@@ -269,9 +386,19 @@ class ExportTrialUseCase {
       ['seeding.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
       // sessions.csv
       ['sessions.csv', 'session_name', 'Name or label of rating session', ''],
-      ['sessions.csv', 'session_date', 'Date session was conducted', 'YYYY-MM-DD'],
+      [
+        'sessions.csv',
+        'session_date',
+        'Date session was conducted',
+        'YYYY-MM-DD'
+      ],
       ['sessions.csv', 'status', 'Session status e.g. active closed', ''],
-      ['sessions.csv', 'plot_count_rated', 'Number of plots with at least one rating', ''],
+      [
+        'sessions.csv',
+        'plot_count_rated',
+        'Number of plots with at least one rating',
+        ''
+      ],
       ['sessions.csv', 'rater_name', 'Person who conducted session', ''],
       ['sessions.csv', 'notes', 'Session notes', ''],
       ['sessions.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
@@ -310,28 +437,31 @@ class ExportTrialUseCase {
     final trialPk = trial.id;
     final rows = <List<String>>[];
     for (final session in sessions) {
-      final sessionAssessments = await _sessionRepository.getSessionAssessments(session.id);
+      final sessionAssessments =
+          await _sessionRepository.getSessionAssessments(session.id);
       final assessmentMap = {for (final a in sessionAssessments) a.id: a};
-      final ratings = await _ratingRepository.getCurrentRatingsForSession(session.id);
+      final ratings =
+          await _ratingRepository.getCurrentRatingsForSession(session.id);
       for (final r in ratings) {
         final plot = plotMap[r.plotPk];
         final assignment = plot != null ? assignmentByPlot[plot.id] : null;
         final treatmentId = assignment?.treatmentId ?? plot?.treatmentId;
-        final treatment = treatmentId != null ? treatmentMap[treatmentId] : null;
+        final treatment =
+            treatmentId != null ? treatmentMap[treatmentId] : null;
         final assessment = assessmentMap[r.assessmentId];
 
         final sessionDate = _cell(session.sessionDateLocal);
         final plotId = plot != null ? _cell(plot.id) : '';
         final plotLabel = _cell(plot?.plotId);
         final rep = _cell(assignment?.replication ?? plot?.rep);
-        final plotPosition = _cell(plot?.column ?? plot?.plotSortIndex ?? assignment?.position);
+        final plotPosition =
+            _cell(plot?.column ?? plot?.plotSortIndex ?? assignment?.position);
         final treatmentCode = _cell(treatment?.code);
         final treatmentName = _cell(treatment?.name);
         final assessmentName = _cell(assessment?.name);
         final assessmentType = _cell(assessment?.dataType);
-        final value = r.numericValue != null
-            ? _cell(r.numericValue)
-            : _cell(r.textValue);
+        final value =
+            r.numericValue != null ? _cell(r.numericValue) : _cell(r.textValue);
         final unit = _cell(assessment?.unit);
         final raterName = _cell(r.raterName);
 
@@ -375,7 +505,8 @@ class ExportTrialUseCase {
   ) async {
     final rows = <List<String>>[];
     for (final t in treatments) {
-      final components = await _treatmentRepository.getComponentsForTreatment(t.id);
+      final components =
+          await _treatmentRepository.getComponentsForTreatment(t.id);
       if (components.isEmpty) {
         rows.add([
           _cell(t.code),

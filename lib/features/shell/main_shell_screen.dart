@@ -21,9 +21,14 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   static const int _workLogTabIndex = 1;
 
   static const _tabs = [
-    _NavItem(label: 'Home', icon: Icons.home_outlined, selectedIcon: Icons.home),
-    _NavItem(label: 'Work Log', icon: Icons.work_history_outlined, selectedIcon: Icons.work_history),
-    _NavItem(label: 'More', icon: Icons.more_horiz, selectedIcon: Icons.more_horiz),
+    _NavItem(
+        label: 'Home', icon: Icons.home_outlined, selectedIcon: Icons.home),
+    _NavItem(
+        label: 'Work Log',
+        icon: Icons.work_history_outlined,
+        selectedIcon: Icons.work_history),
+    _NavItem(
+        label: 'More', icon: Icons.more_horiz, selectedIcon: Icons.more_horiz),
   ];
 
   @override
@@ -58,12 +63,14 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                 return InkWell(
                   onTap: () {
                     if (i == _workLogTabIndex) {
-                      ref.invalidate(workLogSessionsProvider(workLogTodayDateLocal()));
+                      ref.invalidate(
+                          workLogSessionsProvider(workLogTodayDateLocal()));
                       ref.invalidate(workLogDatesProvider);
                     }
                     setState(() => _currentIndex = i);
                   },
-                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusSmall),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppDesignTokens.spacing16,
@@ -84,7 +91,8 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                           item.label,
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight:
+                                selected ? FontWeight.w600 : FontWeight.w500,
                             color: selected
                                 ? AppDesignTokens.primary
                                 : AppDesignTokens.secondaryText,

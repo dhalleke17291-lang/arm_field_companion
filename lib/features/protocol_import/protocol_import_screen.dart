@@ -22,7 +22,8 @@ class ProtocolImportScreen extends ConsumerStatefulWidget {
   const ProtocolImportScreen({super.key, this.trial});
 
   @override
-  ConsumerState<ProtocolImportScreen> createState() => _ProtocolImportScreenState();
+  ConsumerState<ProtocolImportScreen> createState() =>
+      _ProtocolImportScreenState();
 }
 
 class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
@@ -38,7 +39,9 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: GradientScreenHeader(
-        title: widget.trial == null ? 'Import Protocol (New Trial)' : 'Import Protocol (Add to Trial)',
+        title: widget.trial == null
+            ? 'Import Protocol (New Trial)'
+            : 'Import Protocol (Add to Trial)',
         titleFontSize: 18,
       ),
       body: SingleChildScrollView(
@@ -55,7 +58,8 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.science, color: Theme.of(context).colorScheme.primary),
+                    Icon(Icons.science,
+                        color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     Text(
                       widget.trial!.name,
@@ -77,7 +81,8 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
                 onPressed: _isLoading ? null : _pickFile,
                 icon: const Icon(Icons.upload_file),
                 label: Text(_fileName ?? 'Select Protocol CSV'),
-                style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 52)),
+                style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 52)),
               ),
             ),
             if (_savedCopyPath != null) ...[
@@ -100,7 +105,8 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
                   },
                   icon: const Icon(Icons.description_outlined),
                   label: const Text('Open saved copy (read-only)'),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 52)),
+                  style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 52)),
                 ),
               ),
             ],
@@ -111,14 +117,14 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: _isLoading || !_review!.canProceed
-                      ? null
-                      : _runImport,
+                  onPressed:
+                      _isLoading || !_review!.canProceed ? null : _runImport,
                   icon: _isLoading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.download_done),
                   label: Text(
@@ -128,7 +134,8 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
                             ? 'Approve and Import'
                             : 'Fix errors to enable import',
                   ),
-                  style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 52)),
+                  style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 52)),
                 ),
               ),
             ],
@@ -156,7 +163,8 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
               const SizedBox(width: 6),
               Text(
                 'Protocol CSV format',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade700),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.blue.shade700),
               ),
             ],
           ),
@@ -192,15 +200,19 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
           Row(
             children: [
               _chip('Matched', r.matchedCount, Colors.green),
-              if (r.autoHandled.isNotEmpty) _chip('Auto-handled', r.autoHandled.length, Colors.orange),
-              if (r.needsReview.isNotEmpty) _chip('Needs review', r.needsReview.length, Colors.amber),
-              if (r.mustFix.isNotEmpty) _chip('Must fix', r.mustFix.length, Colors.red),
+              if (r.autoHandled.isNotEmpty)
+                _chip('Auto-handled', r.autoHandled.length, Colors.orange),
+              if (r.needsReview.isNotEmpty)
+                _chip('Needs review', r.needsReview.length, Colors.amber),
+              if (r.mustFix.isNotEmpty)
+                _chip('Must fix', r.mustFix.length, Colors.red),
             ],
           ),
           if (r.mustFix.isNotEmpty)
             ...r.mustFix.take(3).map((e) => Padding(
                   padding: const EdgeInsets.only(left: 8, top: 2),
-                  child: Text('• $e', style: const TextStyle(fontSize: 11, color: Colors.red)),
+                  child: Text('• $e',
+                      style: const TextStyle(fontSize: 11, color: Colors.red)),
                 )),
         ],
       ),
@@ -213,7 +225,10 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 4),
           Text('$label: $n', style: const TextStyle(fontSize: 12)),
         ],
@@ -235,19 +250,25 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.fact_check_outlined, color: Colors.blue.shade700, size: 20),
+              Icon(Icons.fact_check_outlined,
+                  color: Colors.blue.shade700, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Import Review',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue.shade700),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blue.shade700),
               ),
             ],
           ),
           const SizedBox(height: 12),
           _buildSectionReview('Trial', r.trialSection, Colors.blue.shade800),
-          _buildSectionReview('Treatments', r.treatmentSection, Colors.blue.shade800),
+          _buildSectionReview(
+              'Treatments', r.treatmentSection, Colors.blue.shade800),
           _buildSectionReview('Plots', r.plotSection, Colors.blue.shade800),
-          _buildSectionReview('Assignments', r.assignmentSection, Colors.blue.shade800),
+          _buildSectionReview(
+              'Assignments', r.assignmentSection, Colors.blue.shade800),
         ],
       ),
     );
@@ -261,18 +282,23 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
       decoration: BoxDecoration(
         color: isSuccess ? Colors.green.shade50 : Colors.red.shade50,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isSuccess ? Colors.green.shade300 : Colors.red.shade300),
+        border: Border.all(
+            color: isSuccess ? Colors.green.shade300 : Colors.red.shade300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(isSuccess ? Icons.check_circle : Icons.error, color: isSuccess ? Colors.green : Colors.red),
+              Icon(isSuccess ? Icons.check_circle : Icons.error,
+                  color: isSuccess ? Colors.green : Colors.red),
               const SizedBox(width: 8),
               Text(
                 isSuccess ? 'Import successful' : 'Import failed',
-                style: TextStyle(fontWeight: FontWeight.bold, color: isSuccess ? Colors.green : Colors.red, fontSize: 16),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isSuccess ? Colors.green : Colors.red,
+                    fontSize: 16),
               ),
             ],
           ),
@@ -284,7 +310,8 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
           ],
           if (!isSuccess) ...[
             const SizedBox(height: 8),
-            Text(result.errorMessage ?? 'Unknown error', style: const TextStyle(color: Colors.red)),
+            Text(result.errorMessage ?? 'Unknown error',
+                style: const TextStyle(color: Colors.red)),
           ],
         ],
       ),
@@ -318,7 +345,8 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
         }
         final ts = DateTime.now().millisecondsSinceEpoch;
         final safeName = file.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-        final savedPath = '${importsDir.path}/trial_${widget.trial?.id ?? 'new'}_${ts}_$safeName';
+        final savedPath =
+            '${importsDir.path}/trial_${widget.trial?.id ?? 'new'}_${ts}_$safeName';
         await File(originalPath).copy(savedPath);
         if (mounted) setState(() => _savedCopyPath = savedPath);
       } catch (_) {
@@ -346,7 +374,9 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error reading file: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Error reading file: $e'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -355,21 +385,25 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
   void _runAnalyze() {
     if (_rows == null) return;
     final useCase = ref.read(protocolImportUseCaseProvider);
-    final review = useCase.analyzeProtocolFile(_rows!, existingTrialId: widget.trial?.id);
+    final review =
+        useCase.analyzeProtocolFile(_rows!, existingTrialId: widget.trial?.id);
     setState(() => _review = review);
   }
 
   Future<void> _runImport() async {
     if (_review == null || !_review!.canProceed) return;
     final useCase = ref.read(protocolImportUseCaseProvider);
-    final locked = widget.trial != null && isProtocolLocked(widget.trial!.status);
+    final locked =
+        widget.trial != null && isProtocolLocked(widget.trial!.status);
 
     setState(() => _isLoading = true);
     final result = await useCase.execute(
       review: _review!,
       existingTrialId: widget.trial?.id,
       isProtocolLocked: locked,
-      protocolLockMessage: locked && widget.trial != null ? getProtocolLockMessage(widget.trial!.status) : null,
+      protocolLockMessage: locked && widget.trial != null
+          ? getProtocolLockMessage(widget.trial!.status)
+          : null,
     );
     if (!mounted) return;
     setState(() {
@@ -381,7 +415,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
         _review = null;
       }
     });
-    
+
     if (result.success) {
       final db = ref.read(databaseProvider);
       final trialId = widget.trial?.id ?? result.trialId;
@@ -393,7 +427,8 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
                   fileName: _fileName ?? 'protocol.csv',
                   savedFilePath: drift.Value(_savedCopyPath),
                   status: 'SUCCESS',
-                  rowsImported: drift.Value(result.treatmentsImported + result.plotsImported),
+                  rowsImported: drift.Value(
+                      result.treatmentsImported + result.plotsImported),
                   rowsSkipped: const drift.Value(0),
                   warnings: const drift.Value(null),
                 ),
@@ -404,7 +439,10 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
       }
     }
 
-if (result.success && result.trialId != null && widget.trial == null && mounted) {
+    if (result.success &&
+        result.trialId != null &&
+        widget.trial == null &&
+        mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Trial created. ID: ${result.trialId}')),
       );

@@ -21,7 +21,8 @@ class RatingOrderSheetContent extends StatefulWidget {
   final VoidCallback onSaved;
 
   @override
-  State<RatingOrderSheetContent> createState() => _RatingOrderSheetContentState();
+  State<RatingOrderSheetContent> createState() =>
+      _RatingOrderSheetContentState();
 }
 
 class _RatingOrderSheetContentState extends State<RatingOrderSheetContent> {

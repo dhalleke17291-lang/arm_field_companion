@@ -26,7 +26,9 @@ class IntegrityCheckRepository {
 
     // Plots with no treatment assigned (Assignment-first, then Plot fallback)
     final assignmentRows = await _db.select(_db.assignments).get();
-    final plotIdToTreatmentId = {for (var a in assignmentRows) a.plotId: a.treatmentId};
+    final plotIdToTreatmentId = {
+      for (var a in assignmentRows) a.plotId: a.treatmentId
+    };
     final allPlots = await _db.select(_db.plots).get();
     final plotsWithoutTreatment = allPlots
         .where((p) => (plotIdToTreatmentId[p.id] ?? p.treatmentId) == null)
@@ -103,7 +105,8 @@ class IntegrityCheckRepository {
         code: 'ratings_missing_provenance',
         summary: 'Ratings without app version (legacy or pre-migration)',
         count: ratingsNoProvenance.length,
-        detail: 'Records created before provenance capture; no action required.',
+        detail:
+            'Records created before provenance capture; no action required.',
         severity: IntegritySeverity.informational,
       ));
     }

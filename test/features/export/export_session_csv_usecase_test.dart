@@ -59,7 +59,8 @@ void main() {
   });
 
   group('ExportSessionCsvUsecase', () {
-    test('FAILURE: rejects export when session is open and requireSessionClosed is true',
+    test(
+        'FAILURE: rejects export when session is open and requireSessionClosed is true',
         () async {
       final result = await useCase.exportSessionToCsv(
         sessionId: 1,
@@ -74,7 +75,8 @@ void main() {
       expect(result.errorMessage, contains('closed'));
     });
 
-    test('SUCCESS: allows export when session is open and requireSessionClosed is false',
+    test(
+        'SUCCESS: allows export when session is open and requireSessionClosed is false',
         () async {
       mockRepo.rows = [
         {'plot_id': '001', 'value': '5.0'},

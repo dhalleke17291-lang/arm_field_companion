@@ -6,8 +6,8 @@ import 'domain/derived_snapshot.dart';
 
 /// Builds a [DerivedSnapshot] for a session (rated count, total plots, progress).
 /// [calcVersion] is derived from session and counts so cache can invalidate when data changes.
-final derivedSnapshotForSessionProvider =
-    FutureProvider.autoDispose.family<DerivedSnapshot?, int>((ref, sessionId) async {
+final derivedSnapshotForSessionProvider = FutureProvider.autoDispose
+    .family<DerivedSnapshot?, int>((ref, sessionId) async {
   final sessionRepo = ref.read(sessionRepositoryProvider);
   final plotRepo = ref.read(plotRepositoryProvider);
   final ratingRepo = ref.read(ratingRepositoryProvider);
@@ -21,7 +21,8 @@ final derivedSnapshotForSessionProvider =
   final ratedPlotPks = ratings.map((r) => r.plotPk).toSet();
   final ratedPlotCount = ratedPlotPks.length;
 
-  final progressFraction = sessionProgressFraction(ratedPlotCount, totalPlotCount);
+  final progressFraction =
+      sessionProgressFraction(ratedPlotCount, totalPlotCount);
   final calcVersion = sessionId.hashCode +
       totalPlotCount.hashCode +
       ratedPlotCount.hashCode +

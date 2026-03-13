@@ -26,7 +26,8 @@ class SessionRepository {
   }
 
   /// Sessions for a given local date (yyyy-MM-dd). Optionally filter by createdByUserId.
-  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) {
+  Future<List<Session>> getSessionsForDate(String dateLocal,
+      {int? createdByUserId}) {
     var query = _db.select(_db.sessions)
       ..where((s) {
         var pred = s.sessionDateLocal.equals(dateLocal);
@@ -115,7 +116,10 @@ class SessionRepository {
   Future<List<Assessment>> getSessionAssessments(int sessionId) async {
     final sessionAssessmentRows = await (_db.select(_db.sessionAssessments)
           ..where((sa) => sa.sessionId.equals(sessionId))
-          ..orderBy([(sa) => OrderingTerm.asc(sa.sortOrder), (sa) => OrderingTerm.asc(sa.id)]))
+          ..orderBy([
+            (sa) => OrderingTerm.asc(sa.sortOrder),
+            (sa) => OrderingTerm.asc(sa.id)
+          ]))
         .get();
 
     final assessmentIds =

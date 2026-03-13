@@ -23,7 +23,8 @@ class EnrichedAuditEvent {
     final parts = <String>[];
     if (trialName != null && trialName!.isNotEmpty) parts.add(trialName!);
     if (sessionName != null && sessionName!.isNotEmpty) parts.add(sessionName!);
-    if (plotLabel != null && plotLabel!.isNotEmpty) parts.add('Plot $plotLabel');
+    if (plotLabel != null && plotLabel!.isNotEmpty)
+      parts.add('Plot $plotLabel');
     if (parts.isEmpty) {
       if (event.trialId != null) parts.add('Trial ${event.trialId}');
       if (event.sessionId != null) parts.add('Session ${event.sessionId}');
@@ -75,7 +76,8 @@ Future<List<EnrichedAuditEvent>> enrichAuditEvents(
 
   return events.map((e) {
     final trialName = e.trialId != null ? trialById[e.trialId!]?.name : null;
-    final sessionName = e.sessionId != null ? sessionById[e.sessionId!]?.name : null;
+    final sessionName =
+        e.sessionId != null ? sessionById[e.sessionId!]?.name : null;
     String? plotLabel;
     if (e.trialId != null && e.plotPk != null) {
       plotLabel = plotLabelByTrialAndPk[e.trialId!]?[e.plotPk!];

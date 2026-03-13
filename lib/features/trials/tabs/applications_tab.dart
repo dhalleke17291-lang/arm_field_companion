@@ -14,17 +14,25 @@ class ApplicationsTab extends ConsumerWidget {
 
   final Trial trial;
 
-  static const List<String> _rateUnits = ['L/ha', 'kg/ha', 'g/ha', 'mL/ha', 'oz/ac'];
+  static const List<String> _rateUnits = [
+    'L/ha',
+    'kg/ha',
+    'g/ha',
+    'mL/ha',
+    'oz/ac'
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final applicationsAsync = ref.watch(trialApplicationsForTrialProvider(trial.id));
+    final applicationsAsync =
+        ref.watch(trialApplicationsForTrialProvider(trial.id));
     return applicationsAsync.when(
       loading: () => const AppLoadingView(),
       error: (e, st) => AppErrorView(
         error: e,
         stackTrace: st,
-        onRetry: () => ref.invalidate(trialApplicationsForTrialProvider(trial.id)),
+        onRetry: () =>
+            ref.invalidate(trialApplicationsForTrialProvider(trial.id)),
       ),
       data: (list) => list.isEmpty
           ? _buildEmpty(context, ref)
@@ -36,7 +44,8 @@ class ApplicationsTab extends ConsumerWidget {
     return AppEmptyState(
       icon: Icons.science,
       title: 'No Applications Yet',
-      subtitle: 'Record spray, granular and other application events for this trial.',
+      subtitle:
+          'Record spray, granular and other application events for this trial.',
       action: FilledButton.icon(
         onPressed: () => _showApplicationSheet(context, ref, null),
         icon: const Icon(Icons.add),
@@ -51,10 +60,10 @@ class ApplicationsTab extends ConsumerWidget {
     TrialApplicationEvent e,
   ) {
     final dateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
-    final productLabel = e.productName?.trim().isNotEmpty == true
-        ? e.productName!
-        : null;
-    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
+    final productLabel =
+        e.productName?.trim().isNotEmpty == true ? e.productName! : null;
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
     final treatment = e.treatmentId != null
         ? treatments.where((t) => t.id == e.treatmentId).firstOrNull
         : null;
@@ -99,7 +108,8 @@ class ApplicationsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildList(BuildContext context, WidgetRef ref, List<TrialApplicationEvent> list) {
+  Widget _buildList(
+      BuildContext context, WidgetRef ref, List<TrialApplicationEvent> list) {
     return Stack(
       children: [
         ListView.builder(
@@ -130,7 +140,8 @@ class ApplicationsTab extends ConsumerWidget {
                         child: const Text('Cancel'),
                       ),
                       FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                        style:
+                            FilledButton.styleFrom(backgroundColor: Colors.red),
                         onPressed: () => Navigator.pop(ctx, true),
                         child: const Text('Delete'),
                       ),
@@ -165,13 +176,15 @@ class ApplicationsTab extends ConsumerWidget {
     TrialApplicationEvent? existing,
   ) async {
     final repo = ref.read(applicationRepositoryProvider);
-    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
 
     final dateController = ValueNotifier<DateTime>(
       existing?.applicationDate ?? DateTime.now(),
     );
     final treatmentIdController = ValueNotifier<int?>(existing?.treatmentId);
-    final productController = TextEditingController(text: existing?.productName ?? '');
+    final productController =
+        TextEditingController(text: existing?.productName ?? '');
     final rateController = TextEditingController(
       text: existing?.rate != null ? existing!.rate.toString() : '',
     );
@@ -179,17 +192,23 @@ class ApplicationsTab extends ConsumerWidget {
       existing?.rateUnit ?? (existing == null ? _rateUnits.first : null),
     );
     final waterVolumeController = TextEditingController(
-      text: existing?.waterVolume != null ? existing!.waterVolume.toString() : '',
+      text:
+          existing?.waterVolume != null ? existing!.waterVolume.toString() : '',
     );
-    final growthStageController = TextEditingController(text: existing?.growthStageCode ?? '');
-    final operatorController = TextEditingController(text: existing?.operatorName ?? '');
-    final equipmentController = TextEditingController(text: existing?.equipmentUsed ?? '');
+    final growthStageController =
+        TextEditingController(text: existing?.growthStageCode ?? '');
+    final operatorController =
+        TextEditingController(text: existing?.operatorName ?? '');
+    final equipmentController =
+        TextEditingController(text: existing?.equipmentUsed ?? '');
     final windSpeedController = TextEditingController(
       text: existing?.windSpeed != null ? existing!.windSpeed.toString() : '',
     );
-    final windDirectionController = TextEditingController(text: existing?.windDirection ?? '');
+    final windDirectionController =
+        TextEditingController(text: existing?.windDirection ?? '');
     final temperatureController = TextEditingController(
-      text: existing?.temperature != null ? existing!.temperature.toString() : '',
+      text:
+          existing?.temperature != null ? existing!.temperature.toString() : '',
     );
     final humidityController = TextEditingController(
       text: existing?.humidity != null ? existing!.humidity.toString() : '',
@@ -281,7 +300,8 @@ class ApplicationsTab extends ConsumerWidget {
                           flex: 2,
                           child: TextField(
                             controller: rateController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             decoration: const InputDecoration(
                               labelText: 'Rate',
                               border: OutlineInputBorder(),
@@ -297,7 +317,8 @@ class ApplicationsTab extends ConsumerWidget {
                               border: OutlineInputBorder(),
                             ),
                             items: _rateUnits
-                                .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                                .map((u) =>
+                                    DropdownMenuItem(value: u, child: Text(u)))
                                 .toList(),
                             onChanged: (v) {
                               rateUnitController.value = v;
@@ -310,7 +331,8 @@ class ApplicationsTab extends ConsumerWidget {
                     const SizedBox(height: 12),
                     TextField(
                       controller: waterVolumeController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Water Volume (L/ha)',
                         border: OutlineInputBorder(),
@@ -351,7 +373,8 @@ class ApplicationsTab extends ConsumerWidget {
                         Expanded(
                           child: TextField(
                             controller: windSpeedController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             decoration: const InputDecoration(
                               labelText: 'Wind Speed',
                               border: OutlineInputBorder(),
@@ -376,7 +399,8 @@ class ApplicationsTab extends ConsumerWidget {
                         Expanded(
                           child: TextField(
                             controller: temperatureController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             decoration: const InputDecoration(
                               labelText: 'Temperature (°C)',
                               border: OutlineInputBorder(),
@@ -387,7 +411,8 @@ class ApplicationsTab extends ConsumerWidget {
                         Expanded(
                           child: TextField(
                             controller: humidityController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             decoration: const InputDecoration(
                               labelText: 'Humidity (%)',
                               border: OutlineInputBorder(),
@@ -451,7 +476,8 @@ class ApplicationsTab extends ConsumerWidget {
                         FilledButton(
                           onPressed: () async {
                             final date = dateController.value;
-                            final rate = double.tryParse(rateController.text.trim());
+                            final rate =
+                                double.tryParse(rateController.text.trim());
                             final waterVolume = double.tryParse(
                               waterVolumeController.text.trim(),
                             );
@@ -469,7 +495,8 @@ class ApplicationsTab extends ConsumerWidget {
                                 TrialApplicationEventsCompanion.insert(
                                   trialId: trial.id,
                                   applicationDate: date,
-                                  treatmentId: drift.Value(treatmentIdController.value),
+                                  treatmentId:
+                                      drift.Value(treatmentIdController.value),
                                   productName: drift.Value(
                                     productController.text.trim().isEmpty
                                         ? null
@@ -477,7 +504,8 @@ class ApplicationsTab extends ConsumerWidget {
                                   ),
                                   rate: drift.Value(rate),
                                   rateUnit: drift.Value(
-                                    rateUnitController.value?.trim().isEmpty == true
+                                    rateUnitController.value?.trim().isEmpty ==
+                                            true
                                         ? null
                                         : rateUnitController.value,
                                   ),
@@ -516,7 +544,8 @@ class ApplicationsTab extends ConsumerWidget {
                               await repo.updateApplication(
                                 existing.id,
                                 TrialApplicationEventsCompanion(
-                                  treatmentId: drift.Value(treatmentIdController.value),
+                                  treatmentId:
+                                      drift.Value(treatmentIdController.value),
                                   productName: drift.Value(
                                     productController.text.trim().isEmpty
                                         ? null
@@ -524,7 +553,8 @@ class ApplicationsTab extends ConsumerWidget {
                                   ),
                                   rate: drift.Value(rate),
                                   rateUnit: drift.Value(
-                                    rateUnitController.value?.trim().isEmpty == true
+                                    rateUnitController.value?.trim().isEmpty ==
+                                            true
                                         ? null
                                         : rateUnitController.value,
                                   ),

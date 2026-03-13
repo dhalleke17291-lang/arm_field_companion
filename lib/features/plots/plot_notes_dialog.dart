@@ -32,7 +32,8 @@ Future<void> showPlotNotesDialog(
                     label: Text(label),
                     onPressed: () {
                       final before = controller.text.trim();
-                      controller.text = before.isEmpty ? label : '$before, $label';
+                      controller.text =
+                          before.isEmpty ? label : '$before, $label';
                     },
                   );
                 }).toList(),

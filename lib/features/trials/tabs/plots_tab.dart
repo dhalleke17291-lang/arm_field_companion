@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -19,7 +21,8 @@ const double _kGridMinScale = 0.15;
 const double _kGridMaxScale = 5.0;
 const double _kGridZoomFactor = 1.25;
 
-void _plotGridZoom(TransformationController controller, {required bool zoomIn}) {
+void _plotGridZoom(TransformationController controller,
+    {required bool zoomIn}) {
   final m = controller.value;
   final scale = m.entry(0, 0).abs();
   final newScale = zoomIn
@@ -51,7 +54,8 @@ Future<void> showAssignTreatmentDialogForTrial({
     return;
   }
 
-  final assignmentsList = ref.read(assignmentsForTrialProvider(trial.id)).value ?? [];
+  final assignmentsList =
+      ref.read(assignmentsForTrialProvider(trial.id)).value ?? [];
   final a = assignmentsList.where((x) => x.plotId == plot.id).firstOrNull;
   int? selectedId = a?.treatmentId ?? plot.treatmentId;
   final displayNum = getDisplayPlotLabel(plot, plots);
@@ -135,7 +139,8 @@ class _AddTestPlotsDialogState extends State<_AddTestPlotsDialog> {
   }
 
   int get _reps => (int.tryParse(_repsController.text) ?? 6).clamp(1, 99);
-  int get _plotsPerRep => (int.tryParse(_plotsPerRepController.text) ?? 8).clamp(1, 99);
+  int get _plotsPerRep =>
+      (int.tryParse(_plotsPerRepController.text) ?? 8).clamp(1, 99);
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +153,8 @@ class _AddTestPlotsDialogState extends State<_AddTestPlotsDialog> {
           children: [
             const Text(
               'Create plots by reps and plots per rep (e.g. 6 reps × 8 plots = 48).',
-              style: TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
+              style:
+                  TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -190,14 +196,14 @@ class _AddTestPlotsDialogState extends State<_AddTestPlotsDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, (reps: _reps, plotsPerRep: _plotsPerRep)),
+          onPressed: () =>
+              Navigator.pop(context, (reps: _reps, plotsPerRep: _plotsPerRep)),
           child: const Text('Add Plots'),
         ),
       ],
     );
   }
 }
-
 
 class PlotsTab extends ConsumerStatefulWidget {
   final Trial trial;
@@ -219,17 +225,19 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     final assignmentsAsync = ref.watch(assignmentsForTrialProvider(trial.id));
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
     final sessionCount = sessionsAsync.value?.length ?? 0;
-    final applicationsList = ref.watch(trialApplicationsForTrialProvider(trial.id)).value ?? [];
+    final applicationsList =
+        ref.watch(trialApplicationsForTrialProvider(trial.id)).value ?? [];
     final applicationCount = applicationsList.length;
-    final lastApplicationDate = applicationsList.isEmpty
-        ? null
-        : applicationsList.last.applicationDate;
+    final lastApplicationDate =
+        applicationsList.isEmpty ? null : applicationsList.last.applicationDate;
     final treatmentComponentCount = ref
-        .watch(treatmentComponentsCountForTrialProvider(trial.id))
-        .valueOrNull ?? 0;
+            .watch(treatmentComponentsCountForTrialProvider(trial.id))
+            .valueOrNull ??
+        0;
     final ratedPlotsCount =
         ref.watch(ratedPlotsCountForTrialProvider(trial.id)).valueOrNull ?? 0;
-    final seedingEvent = ref.watch(seedingEventForTrialProvider(trial.id)).valueOrNull;
+    final seedingEvent =
+        ref.watch(seedingEventForTrialProvider(trial.id)).valueOrNull;
     final seedingDate = seedingEvent?.seedingDate;
     return plotsAsync.when(
       loading: () => const AppLoadingView(),
@@ -262,8 +270,11 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
         final treatments = treatmentsAsync.value ?? [];
         final assignmentsList = assignmentsAsync.value ?? [];
         final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
-        final assignedCount = plots.where((p) =>
-            (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) != null).length;
+        final assignedCount = plots
+            .where((p) =>
+                (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) !=
+                null)
+            .length;
         final unassignedCount = plots.length - assignedCount;
         final blocks = buildRepBasedLayout(plots);
         int rowCount = 0;
@@ -320,8 +331,10 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
       ),
       child: SegmentedButton<bool>(
         segments: const [
-          ButtonSegment(value: false, label: Text('List'), icon: Icon(Icons.list)),
-          ButtonSegment(value: true, label: Text('Matrix'), icon: Icon(Icons.grid_on)),
+          ButtonSegment(
+              value: false, label: Text('List'), icon: Icon(Icons.list)),
+          ButtonSegment(
+              value: true, label: Text('Matrix'), icon: Icon(Icons.grid_on)),
         ],
         selected: {_showMatrix},
         onSelectionChanged: (Set<bool> selected) {
@@ -422,7 +435,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                       ),
                     ),
                     SizedBox(width: AppDesignTokens.spacing8),
-                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
+                    Icon(Icons.arrow_forward_ios,
+                        size: 14, color: Colors.white),
                   ],
                 ),
               ),
@@ -461,9 +475,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     );
   }
 
-  Widget _applicationsSummaryRow(BuildContext context, Trial trial, int applicationCount) {
-    final isActiveOrClosed = trial.status == 'active' || trial.status == 'closed';
-    final showWarning = isActiveOrClosed && applicationCount == 0;
+  Widget _applicationsSummaryRow(
+      BuildContext context, Trial trial, int applicationCount) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
       child: Row(
@@ -478,37 +491,21 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             ),
           ),
           const SizedBox(width: AppDesignTokens.spacing16),
-          if (showWarning)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.warning_amber_rounded, size: 16, color: AppDesignTokens.warningFg),
-                const SizedBox(width: 4),
-                Text(
-                  '$applicationCount',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppDesignTokens.warningFg,
-                  ),
-                ),
-              ],
-            )
-          else
-            Text(
-              '$applicationCount',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppDesignTokens.primaryText,
-              ),
+          Text(
+            '$applicationCount',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.primaryText,
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _lastApplicationSummaryRow(BuildContext context, DateTime? lastApplicationDate) {
+  Widget _lastApplicationSummaryRow(
+      BuildContext context, DateTime? lastApplicationDate) {
     final value = lastApplicationDate != null
         ? DateFormat('MMM d, yyyy').format(lastApplicationDate)
         : 'None';
@@ -585,8 +582,10 @@ class _AssignmentMatrix extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assignmentsList = ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
-    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
+    final assignmentsList =
+        ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     final treatmentById = {for (var t in treatments) t.id: t};
 
@@ -705,7 +704,8 @@ class _AssignmentMatrixLegend extends StatelessWidget {
               ),
             )
           else
-            ...treatments.map((t) => _TreatmentLegendRow(code: t.code, name: t.name)),
+            ...treatments
+                .map((t) => _TreatmentLegendRow(code: t.code, name: t.name)),
         ],
       ),
     );
@@ -862,7 +862,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   ApplicationEvent? _selectedAppEvent;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
-  final TransformationController _gridTransformController = TransformationController();
+  final TransformationController _gridTransformController =
+      TransformationController();
   final GlobalKey _plotViewportKey = GlobalKey();
   final GlobalKey _gridContentKey = GlobalKey();
   bool _gridCenterScheduled = false;
@@ -875,11 +876,13 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
 
   void _centerGridOnFirstFrame(BuildContext context, List<Plot> plots) {
     if (!mounted) return;
-    final viewportBox = _plotViewportKey.currentContext?.findRenderObject() as RenderBox?;
+    final viewportBox =
+        _plotViewportKey.currentContext?.findRenderObject() as RenderBox?;
     if (viewportBox == null || !viewportBox.hasSize) return;
     final viewportWidth = viewportBox.size.width;
     final viewportHeight = viewportBox.size.height;
-    final gridBox = _gridContentKey.currentContext?.findRenderObject() as RenderBox?;
+    final gridBox =
+        _gridContentKey.currentContext?.findRenderObject() as RenderBox?;
     double gridWidth;
     double gridHeight;
     if (gridBox != null && gridBox.hasSize) {
@@ -955,9 +958,12 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
 
   Widget _buildPlotDetailsContent(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
-    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-    final assignmentsLocked = isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final sessions =
+        ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsLocked =
+        isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
     const double maxTopSectionHeight = 320;
     final topSection = Column(
       mainAxisSize: MainAxisSize.min,
@@ -982,7 +988,9 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         if (_showLayoutView)
           Expanded(
             child: _layoutLayer == _LayoutLayer.ratings
-                ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: AppDesignTokens.secondaryText)))
+                ? const Center(
+                    child: Text('Ratings overlay coming soon',
+                        style: TextStyle(color: AppDesignTokens.secondaryText)))
                 : LayoutBuilder(
                     builder: (context, constraints) {
                       if (!_gridCenterScheduled) {
@@ -992,17 +1000,20 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                         });
                       }
                       final size = MediaQuery.sizeOf(context);
-                      final viewportWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                      final viewportWidth = constraints.maxWidth.isFinite &&
+                              constraints.maxWidth > 0
                           ? constraints.maxWidth
                           : size.width;
-                      final viewportHeight = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+                      final viewportHeight = constraints.maxHeight.isFinite &&
+                              constraints.maxHeight > 0
                           ? constraints.maxHeight
                           : size.height;
                       final blocks = buildRepBasedLayout(plots);
                       int columnCount = 0;
                       for (final block in blocks) {
                         for (final row in block.repRows) {
-                          if (row.plots.length > columnCount) columnCount = row.plots.length;
+                          if (row.plots.length > columnCount)
+                            columnCount = row.plots.length;
                         }
                       }
                       const double repLabelW = 52.0;
@@ -1011,17 +1022,39 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                       const double gridHorizontalPadding = 24.0;
                       const double gridWidthBuffer = 8.0;
                       final double rowContentWidth = columnCount > 0
-                          ? repLabelW + tileSpace + columnCount * cellW + (columnCount - 1) * tileSpace
+                          ? repLabelW +
+                              tileSpace +
+                              columnCount * cellW +
+                              (columnCount - 1) * tileSpace
                           : viewportWidth;
-                      final double totalGridWidth = rowContentWidth + gridHorizontalPadding + gridWidthBuffer;
-                      final double gridContentWidth = totalGridWidth > viewportWidth ? totalGridWidth : viewportWidth;
-                      final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
-                      final plotIdToTreatmentIdMap = {for (var a in assignmentsList) a.plotId: a.treatmentId};
-                      final applicationsList = ref.watch(trialApplicationsForTrialProvider(widget.trial.id)).value ?? [];
-                      final treatmentIdsWithApp = applicationsList.map((e) => e.treatmentId).whereType<int>().toSet();
+                      final double totalGridWidth = rowContentWidth +
+                          gridHorizontalPadding +
+                          gridWidthBuffer;
+                      final double gridContentWidth =
+                          totalGridWidth > viewportWidth
+                              ? totalGridWidth
+                              : viewportWidth;
+                      final assignmentsList = ref
+                              .watch(
+                                  assignmentsForTrialProvider(widget.trial.id))
+                              .value ??
+                          [];
+                      final plotIdToTreatmentIdMap = {
+                        for (var a in assignmentsList) a.plotId: a.treatmentId
+                      };
+                      final applicationsList = ref
+                              .watch(trialApplicationsForTrialProvider(
+                                  widget.trial.id))
+                              .value ??
+                          [];
+                      final treatmentIdsWithApp = applicationsList
+                          .map((e) => e.treatmentId)
+                          .whereType<int>()
+                          .toSet();
                       final plotPksWithTrialApplication = <int>{};
                       for (final p in plots) {
-                        final tid = plotIdToTreatmentIdMap[p.id] ?? p.treatmentId;
+                        final tid =
+                            plotIdToTreatmentIdMap[p.id] ?? p.treatmentId;
                         if (tid != null && treatmentIdsWithApp.contains(tid)) {
                           plotPksWithTrialApplication.add(p.id);
                         }
@@ -1034,7 +1067,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                               width: viewportWidth,
                               height: viewportHeight,
                               child: InteractiveViewer(
-                                transformationController: _gridTransformController,
+                                transformationController:
+                                    _gridTransformController,
                                 boundaryMargin: EdgeInsets.zero,
                                 constrained: false,
                                 minScale: _kGridMinScale,
@@ -1050,11 +1084,14 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                                     trial: widget.trial,
                                     layer: _layoutLayer,
                                     appPlotRecords: _appPlotRecords,
-                                    plotPksWithTrialApplication: plotPksWithTrialApplication,
+                                    plotPksWithTrialApplication:
+                                        plotPksWithTrialApplication,
                                     plotIdToTreatmentId: plotIdToTreatmentIdMap,
                                     onLongPressPlot: assignmentsLocked
                                         ? null
-                                        : (plot) => _showAssignTreatmentDialogForDetails(context, ref, plot, plots),
+                                        : (plot) =>
+                                            _showAssignTreatmentDialogForDetails(
+                                                context, ref, plot, plots),
                                   ),
                                 ),
                               ),
@@ -1064,7 +1101,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                               bottom: AppDesignTokens.spacing12,
                               child: Material(
                                 elevation: 2,
-                                borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                                borderRadius: BorderRadius.circular(
+                                    AppDesignTokens.radiusSmall),
                                 color: AppDesignTokens.cardSurface,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -1090,7 +1128,9 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                   ),
           )
         else
-          Expanded(child: _buildPlotsListBodyForDetails(context, ref, plots, assignmentsLocked)),
+          Expanded(
+              child: _buildPlotsListBodyForDetails(
+                  context, ref, plots, assignmentsLocked)),
       ],
     );
   }
@@ -1104,9 +1144,18 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           visualDensity: VisualDensity.compact,
         ),
         segments: const [
-          ButtonSegment(value: _LayoutLayer.treatments, label: Text('Treats'), icon: Icon(Icons.science, size: 14)),
-          ButtonSegment(value: _LayoutLayer.applications, label: Text('Apps'), icon: Icon(Icons.water_drop, size: 14)),
-          ButtonSegment(value: _LayoutLayer.ratings, label: Text('Ratings'), icon: Icon(Icons.bar_chart, size: 14)),
+          ButtonSegment(
+              value: _LayoutLayer.treatments,
+              label: Text('Treats'),
+              icon: Icon(Icons.science, size: 14)),
+          ButtonSegment(
+              value: _LayoutLayer.applications,
+              label: Text('Apps'),
+              icon: Icon(Icons.water_drop, size: 14)),
+          ButtonSegment(
+              value: _LayoutLayer.ratings,
+              label: Text('Ratings'),
+              icon: Icon(Icons.bar_chart, size: 14)),
         ],
         selected: {_layoutLayer},
         onSelectionChanged: (val) => setState(() => _layoutLayer = val.first),
@@ -1115,7 +1164,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   }
 
   Widget _buildAppEventSelectorForDetails(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(applicationsForTrialProvider(widget.trial.id));
+    final eventsAsync =
+        ref.watch(applicationsForTrialProvider(widget.trial.id));
     return eventsAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (e, _) => const SizedBox.shrink(),
@@ -1123,14 +1173,18 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         if (events.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No application events recorded yet', style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 13)),
+            child: Text('No application events recorded yet',
+                style: TextStyle(
+                    color: AppDesignTokens.secondaryText, fontSize: 13)),
           );
         }
         final completed = events.where((e) => e.status == 'completed').toList();
         if (completed.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No completed application events yet', style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 13)),
+            child: Text('No completed application events yet',
+                style: TextStyle(
+                    color: AppDesignTokens.secondaryText, fontSize: 13)),
           );
         }
         return Padding(
@@ -1143,22 +1197,34 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Select Application Event',
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   initialValue: _selectedAppEvent == null
                       ? null
-                      : completed.where((e) => e.id == _selectedAppEvent!.id).firstOrNull ?? completed.first,
-                  items: completed.map((e) => DropdownMenuItem<ApplicationEvent>(
-                    value: e,
-                    child: Text('A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
-                  )).toList(),
-                  onChanged: (e) { if (e != null) _loadAppRecords(e); },
+                      : completed
+                              .where((e) => e.id == _selectedAppEvent!.id)
+                              .firstOrNull ??
+                          completed.first,
+                  items: completed
+                      .map((e) => DropdownMenuItem<ApplicationEvent>(
+                            value: e,
+                            child: Text(
+                                'A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
+                          ))
+                      .toList(),
+                  onChanged: (e) {
+                    if (e != null) _loadAppRecords(e);
+                  },
                 ),
               ),
               if (_loadingAppRecords)
                 const Padding(
                   padding: EdgeInsets.only(left: 8),
-                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
             ],
           ),
@@ -1167,16 +1233,23 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
-  Widget _buildListLayoutToggleForDetails(BuildContext context, WidgetRef ref, List<Plot> plots) {
+  Widget _buildListLayoutToggleForDetails(
+      BuildContext context, WidgetRef ref, List<Plot> plots) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: AppDesignTokens.spacing8),
       child: Row(
         children: [
           Expanded(
             child: SegmentedButton<bool>(
               segments: const [
-                ButtonSegment(value: false, label: Text('List'), icon: Icon(Icons.list)),
-                ButtonSegment(value: true, label: Text('Layout'), icon: Icon(Icons.grid_on)),
+                ButtonSegment(
+                    value: false, label: Text('List'), icon: Icon(Icons.list)),
+                ButtonSegment(
+                    value: true,
+                    label: Text('Layout'),
+                    icon: Icon(Icons.grid_on)),
               ],
               selected: {_showLayoutView},
               onSelectionChanged: (Set<bool> selected) {
@@ -1207,14 +1280,19 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
-  Widget _buildPlotsHeaderForDetails(
-      BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
-    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-    final message = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
-    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+  Widget _buildPlotsHeaderForDetails(BuildContext context, WidgetRef ref,
+      List<Plot> plots, bool assignmentsLocked) {
+    final sessions =
+        ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final message =
+        getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
+    final assignmentsList =
+        ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
-    final assignedCount = plots.where((p) =>
-        (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) != null).length;
+    final assignedCount = plots
+        .where((p) =>
+            (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) != null)
+        .length;
     final unassignedCount = plots.length - assignedCount;
     final summaryLine = plots.isEmpty
         ? 'No plots'
@@ -1222,7 +1300,9 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             ? 'All $assignedCount assigned'
             : '$assignedCount assigned · $unassignedCount unassigned';
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+      margin: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: AppDesignTokens.spacing8),
       padding: const EdgeInsets.all(AppDesignTokens.spacing16),
       decoration: BoxDecoration(
         color: AppDesignTokens.cardSurface,
@@ -1251,9 +1331,11 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                     padding: const EdgeInsets.all(AppDesignTokens.spacing8),
                     decoration: BoxDecoration(
                       color: AppDesignTokens.sectionHeaderBg,
-                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusXSmall),
                     ),
-                    child: const Icon(Icons.grid_on, size: 20, color: AppDesignTokens.primary),
+                    child: const Icon(Icons.grid_on,
+                        size: 20, color: AppDesignTokens.primary),
                   ),
                   const SizedBox(width: AppDesignTokens.spacing12),
                   Text(
@@ -1271,12 +1353,15 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: assignmentsLocked ? AppDesignTokens.secondaryText : AppDesignTokens.primary,
+                        color: assignmentsLocked
+                            ? AppDesignTokens.secondaryText
+                            : AppDesignTokens.primary,
                         width: 1,
                       ),
                     ),
@@ -1284,9 +1369,13 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          assignmentsLocked ? Icons.lock_outlined : Icons.lock_open_outlined,
+                          assignmentsLocked
+                              ? Icons.lock_outlined
+                              : Icons.lock_open_outlined,
                           size: 14,
-                          color: assignmentsLocked ? AppDesignTokens.secondaryText : AppDesignTokens.primary,
+                          color: assignmentsLocked
+                              ? AppDesignTokens.secondaryText
+                              : AppDesignTokens.primary,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -1294,7 +1383,9 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: assignmentsLocked ? AppDesignTokens.secondaryText : AppDesignTokens.primary,
+                            color: assignmentsLocked
+                                ? AppDesignTokens.secondaryText
+                                : AppDesignTokens.primary,
                           ),
                         ),
                       ],
@@ -1302,25 +1393,38 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                   ),
                   const SizedBox(width: 8),
                   Tooltip(
-                    message: assignmentsLocked ? message : 'Assign treatments to multiple plots',
+                    message: assignmentsLocked
+                        ? message
+                        : 'Assign treatments to multiple plots',
                     child: OutlinedButton.icon(
-                      onPressed: assignmentsLocked ? null : () => _showBulkAssignDialogForDetails(context, ref, plots),
+                      onPressed: assignmentsLocked
+                          ? null
+                          : () => _showBulkAssignSheet(
+                              context, ref, widget.trial, plots),
                       icon: Icon(
                         Icons.grid_view,
                         size: 18,
-                        color: assignmentsLocked ? AppDesignTokens.iconSubtle : AppDesignTokens.primary,
+                        color: assignmentsLocked
+                            ? AppDesignTokens.iconSubtle
+                            : AppDesignTokens.primary,
                       ),
                       label: const Text('Bulk Assign'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: assignmentsLocked ? AppDesignTokens.secondaryText : AppDesignTokens.primary,
+                        foregroundColor: assignmentsLocked
+                            ? AppDesignTokens.secondaryText
+                            : AppDesignTokens.primary,
                         side: BorderSide(
-                          color: assignmentsLocked ? AppDesignTokens.iconSubtle : AppDesignTokens.primary,
+                          color: assignmentsLocked
+                              ? AppDesignTokens.iconSubtle
+                              : AppDesignTokens.primary,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        textStyle: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -1353,25 +1457,33 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
-  Widget _buildPlotsListBodyForDetails(
-      BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
-    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-    final assignmentsLockMessage = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
-    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+  Widget _buildPlotsListBodyForDetails(BuildContext context, WidgetRef ref,
+      List<Plot> plots, bool assignmentsLocked) {
+    final sessions =
+        ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsLockMessage =
+        getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
-    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsList =
+        ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     return ListView.builder(
       itemCount: plots.length,
       itemBuilder: (context, index) {
         final plot = plots[index];
         final assignment = assignmentByPlotId[plot.id];
-        final effectiveTreatmentId = assignment?.treatmentId ?? plot.treatmentId;
-        final effectiveSource = assignment?.assignmentSource ?? plot.assignmentSource;
+        final effectiveTreatmentId =
+            assignment?.treatmentId ?? plot.treatmentId;
+        final effectiveSource =
+            assignment?.assignmentSource ?? plot.assignmentSource;
         final displayNum = getDisplayPlotLabel(plot, plots);
-        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap, treatmentIdOverride: effectiveTreatmentId);
+        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap,
+            treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
-            treatmentId: effectiveTreatmentId, assignmentSource: effectiveSource);
+            treatmentId: effectiveTreatmentId,
+            assignmentSource: effectiveSource);
         return Container(
           margin: const EdgeInsets.only(
             left: AppDesignTokens.spacing16,
@@ -1401,10 +1513,12 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
               height: 40,
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
+                  horizontal: AppDesignTokens.spacing8,
+                  vertical: AppDesignTokens.spacing4),
               decoration: BoxDecoration(
                 color: AppDesignTokens.primary,
-                borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusXSmall),
               ),
               child: Text(
                 displayNum,
@@ -1431,7 +1545,9 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                         color: effectiveTreatmentId != null
                             ? AppDesignTokens.primary
                             : AppDesignTokens.secondaryText,
-                        fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: effectiveTreatmentId != null
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                     ),
                   ),
@@ -1480,113 +1596,368 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
-  Future<void> _showBulkAssignDialogForDetails(
-      BuildContext context, WidgetRef ref, List<Plot> plots) async {
+  void _showBulkAssignSheet(
+      BuildContext context, WidgetRef ref, Trial trial, List<Plot> plots) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _BulkAssignSheet(trial: trial, plots: plots),
+    );
+  }
+}
+
+/// Bottom sheet: Mode 1 — RCBD randomisation; Mode 2 — Manual multi-select.
+class _BulkAssignSheet extends ConsumerStatefulWidget {
+  const _BulkAssignSheet({required this.trial, required this.plots});
+
+  final Trial trial;
+  final List<Plot> plots;
+
+  @override
+  ConsumerState<_BulkAssignSheet> createState() => _BulkAssignSheetState();
+}
+
+class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
+  bool _showManualSelect = false;
+  String? _rcbdError;
+  final Set<int> _selectedPlotIds = {};
+  int? _selectedTreatmentId;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showManualSelect) {
+      return _buildManualSelectContent(context);
+    }
+    return _buildModeChoiceContent(context);
+  }
+
+  Widget _buildModeChoiceContent(BuildContext context) {
     final treatments =
         ref.read(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-    if (treatments.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('No treatments defined yet. Add treatments first.')),
-      );
-      return;
-    }
-    final assignmentsList = ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
-    final Map<int, int?> assignments = {
-      for (final p in plots) p.id: assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId,
-    };
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Bulk Assign Treatments'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: plots.length,
-              itemBuilder: (context, i) {
-                final plot = plots[i];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.35,
+      minChildSize: 0.25,
+      maxChildSize: 0.6,
+      expand: false,
+      builder: (context, scrollController) {
+        return Padding(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          child: ListView(
+            controller: scrollController,
+            shrinkWrap: true,
+            children: [
+              Text(
+                'Bulk Assign',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              if (_rcbdError != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(getDisplayPlotLabel(plot, plots),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: Colors.white)),
-                      ),
+                      Icon(Icons.error_outline,
+                          color: Theme.of(context).colorScheme.error, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: DropdownButtonFormField<int?>(
-                          isDense: true,
-                          initialValue: assignments[plot.id],
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 8),
+                        child: Text(
+                          _rcbdError!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
                           ),
-                          items: [
-                            const DropdownMenuItem(
-                                value: null, child: Text('—')),
-                            ...treatments.map((t) => DropdownMenuItem(
-                                  value: t.id,
-                                  child: Text('${t.code} ${t.name}',
-                                      overflow: TextOverflow.ellipsis),
-                                )),
-                          ],
-                          onChanged: (v) =>
-                              setDialogState(() => assignments[plot.id] = v),
                         ),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => _runRcbdRandomisation(context, treatments),
+                icon: const Icon(Icons.shuffle, size: 20),
+                label: const Text('Randomise assignments'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _showManualSelect = true;
+                    _rcbdError = null;
+                  });
+                },
+                icon: const Icon(Icons.checklist_rtl, size: 20),
+                label: const Text('Select plots manually'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final useCase = ref.read(updatePlotAssignmentUseCaseProvider);
-                final plotPkToTreatmentId = {
-                  for (final plot in plots) plot.id: assignments[plot.id]
-                };
-                final result = await useCase.updateBulk(
-                  trial: widget.trial,
-                  plotPkToTreatmentId: plotPkToTreatmentId,
-                );
-                if (!ctx.mounted) return;
-                if (!result.success) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(
-                      content: Text(result.errorMessage ?? 'Update failed'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(ctx);
-              },
-              child: const Text('Save All'),
-            ),
-          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _runRcbdRandomisation(
+      BuildContext context, List<Treatment> treatments) async {
+    if (treatments.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('No treatments defined yet. Add treatments first.')),
+      );
+      return;
+    }
+    final blocks = buildRepBasedLayout(widget.plots);
+    if (blocks.isEmpty) return;
+    int? plotsPerRep;
+    for (final block in blocks) {
+      for (final repRow in block.repRows) {
+        final n = repRow.plots.length;
+        if (plotsPerRep != null && n != plotsPerRep) {
+          setState(() {
+            _rcbdError =
+                'Plot count per rep must be equal across all reps for RCBD randomisation.';
+          });
+          return;
+        }
+        plotsPerRep = n;
+      }
+    }
+    if (plotsPerRep == null || plotsPerRep != treatments.length) {
+      setState(() {
+        _rcbdError =
+            'Plot count per rep must equal treatment count for RCBD randomisation. Currently $plotsPerRep plots per rep, ${treatments.length} treatments.';
+      });
+      return;
+    }
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Overwrite assignments?'),
+        content: const Text(
+          'This will overwrite all existing assignments. Continue?',
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirm'),
+          ),
+        ],
       ),
+    );
+    if (confirm != true || !context.mounted) return;
+    final treatmentIds = treatments.map((t) => t.id).toList();
+    final plotPkToTreatmentId = <int, int?>{};
+    for (final block in blocks) {
+      for (final repRow in block.repRows) {
+        final shuffled = List<int>.from(treatmentIds)
+          ..shuffle(Random(repRow.repNumber + widget.trial.id));
+        for (var i = 0; i < repRow.plots.length; i++) {
+          plotPkToTreatmentId[repRow.plots[i].id] = shuffled[i];
+        }
+      }
+    }
+    final useCase = ref.read(updatePlotAssignmentUseCaseProvider);
+    final result = await useCase.updateBulk(
+      trial: widget.trial,
+      plotPkToTreatmentId: plotPkToTreatmentId,
+    );
+    if (!context.mounted) return;
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Update failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    ref.invalidate(trialReadinessProvider(widget.trial.id));
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Assignments randomised (RCBD)')),
+    );
+  }
+
+  Widget _buildManualSelectContent(BuildContext context) {
+    final treatments =
+        ref.read(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsList =
+        ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+    final treatmentMap = {for (final t in treatments) t.id: t};
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return Padding(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      setState(() {
+                        _showManualSelect = false;
+                        _selectedPlotIds.clear();
+                        _selectedTreatmentId = null;
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Select plots manually',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: widget.plots.length,
+                  itemBuilder: (context, index) {
+                    final plot = widget.plots[index];
+                    final assignment = assignmentByPlotId[plot.id];
+                    final currentId =
+                        assignment?.treatmentId ?? plot.treatmentId;
+                    final currentCode = currentId != null
+                        ? (treatmentMap[currentId]?.code ?? '—')
+                        : '—';
+                    final selected = _selectedPlotIds.contains(plot.id);
+                    return CheckboxListTile(
+                      value: selected,
+                      onChanged: (v) {
+                        setState(() {
+                          if (v == true) {
+                            _selectedPlotIds.add(plot.id);
+                          } else {
+                            _selectedPlotIds.remove(plot.id);
+                          }
+                        });
+                      },
+                      title: Text(
+                        getDisplayPlotLabel(plot, widget.plots),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        currentCode,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<int?>(
+                      key: ValueKey<int?>(_selectedTreatmentId),
+                      initialValue: _selectedTreatmentId,
+                      decoration: const InputDecoration(
+                        labelText: 'Assign to selected',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                            value: null, child: Text('—')),
+                        ...treatments.map((t) => DropdownMenuItem<int?>(
+                              value: t.id,
+                              child: Text('${t.code} — ${t.name}',
+                                  overflow: TextOverflow.ellipsis),
+                            )),
+                      ],
+                      onChanged: (v) {
+                        setState(() => _selectedTreatmentId = v);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton(
+                    onPressed: () => _applyManualSelection(
+                        context, treatments, treatmentMap),
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _applyManualSelection(
+    BuildContext context,
+    List<Treatment> treatments,
+    Map<int, Treatment> treatmentMap,
+  ) async {
+    if (_selectedPlotIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select at least one plot')),
+      );
+      return;
+    }
+    if (_selectedTreatmentId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a treatment')),
+      );
+      return;
+    }
+    final plotPkToTreatmentId = {
+      for (final id in _selectedPlotIds) id: _selectedTreatmentId
+    };
+    final useCase = ref.read(updatePlotAssignmentUseCaseProvider);
+    final result = await useCase.updateBulk(
+      trial: widget.trial,
+      plotPkToTreatmentId: plotPkToTreatmentId,
+    );
+    if (!context.mounted) return;
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Update failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final code = treatmentMap[_selectedTreatmentId]?.code ?? '?';
+    ref.invalidate(trialReadinessProvider(widget.trial.id));
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text('${_selectedPlotIds.length} plots assigned to $code')),
     );
   }
 }
@@ -1618,6 +1989,7 @@ class _PlotLayoutGrid extends StatelessWidget {
   final Trial trial;
   final _LayoutLayer layer;
   final List<ApplicationPlotRecord> appPlotRecords;
+
   /// For Applications layer v1: plot ids whose assigned treatment has at least one application event.
   final Set<int>? plotPksWithTrialApplication;
   final Map<int, int?>? plotIdToTreatmentId;
@@ -1658,14 +2030,17 @@ class _PlotLayoutGrid extends StatelessWidget {
       if (plotPksWithTrialApplication != null) {
         final effectiveTid = plotIdToTreatmentId?[plot.id] ?? plot.treatmentId;
         if (effectiveTid == null) return AppDesignTokens.unassignedColor;
-        if (plotPksWithTrialApplication!.contains(plot.id)) return AppDesignTokens.appliedColor;
-        final treatmentIndex = treatments.indexWhere((t) => t.id == effectiveTid);
+        if (plotPksWithTrialApplication!.contains(plot.id))
+          return AppDesignTokens.appliedColor;
+        final treatmentIndex =
+            treatments.indexWhere((t) => t.id == effectiveTid);
         return treatmentIndex >= 0
             ? AppDesignTokens.treatmentPalette[
                 treatmentIndex % AppDesignTokens.treatmentPalette.length]
             : AppDesignTokens.unassignedColor;
       }
-      final record = appPlotRecords.where((r) => r.plotPk == plot.id).firstOrNull;
+      final record =
+          appPlotRecords.where((r) => r.plotPk == plot.id).firstOrNull;
       if (record == null) return AppDesignTokens.noRecordColor;
       if (record.status == 'applied') return AppDesignTokens.appliedColor;
       if (record.status == 'skipped') return AppDesignTokens.skippedColor;
@@ -1700,13 +2075,15 @@ class _PlotLayoutGrid extends StatelessWidget {
                   children: plotPksWithTrialApplication != null
                       ? [
                           _legendChip(AppDesignTokens.appliedColor, 'Applied'),
-                          _legendChip(AppDesignTokens.unassignedColor, 'Unassigned'),
+                          _legendChip(
+                              AppDesignTokens.unassignedColor, 'Unassigned'),
                         ]
                       : [
                           _legendChip(AppDesignTokens.appliedColor, 'Applied'),
                           _legendChip(AppDesignTokens.skippedColor, 'Skipped'),
                           _legendChip(AppDesignTokens.missedColor, 'Missed'),
-                          _legendChip(AppDesignTokens.noRecordColor, 'No record'),
+                          _legendChip(
+                              AppDesignTokens.noRecordColor, 'No record'),
                         ],
                 )
               : Wrap(
@@ -1716,7 +2093,8 @@ class _PlotLayoutGrid extends StatelessWidget {
                     ...treatments.asMap().entries.map((entry) {
                       final color = AppDesignTokens.treatmentPalette[
                           entry.key % AppDesignTokens.treatmentPalette.length];
-                      return _legendChip(color, '${entry.value.code} ${entry.value.name}');
+                      return _legendChip(
+                          color, '${entry.value.code} ${entry.value.name}');
                     }),
                     _legendChip(AppDesignTokens.unassignedColor, 'Unassigned'),
                   ],
@@ -1738,12 +2116,15 @@ class _PlotLayoutGrid extends StatelessWidget {
   // ignore: unused_field - kept for consistency with fixed 56px cell size
   static const double _maxCellSize = 56.0;
 
-  Widget _buildRepBasedGrid(BuildContext context, Map<int, Treatment> treatmentMap) {
+  Widget _buildRepBasedGrid(
+      BuildContext context, Map<int, Treatment> treatmentMap) {
     final blocks = buildRepBasedLayout(plots);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final hasBoundedHeight = constraints.maxHeight.isFinite && constraints.maxHeight > 0;
-        final contentHeight = hasBoundedHeight ? constraints.maxHeight - 16 : null;
+        final hasBoundedHeight =
+            constraints.maxHeight.isFinite && constraints.maxHeight > 0;
+        final contentHeight =
+            hasBoundedHeight ? constraints.maxHeight - 16 : null;
         final column = Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1758,83 +2139,92 @@ class _PlotLayoutGrid extends StatelessWidget {
                 ),
               ),
             ...blocks.expand((block) {
-                final blockHeader = blocks.length > 1
-                    ? [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 4),
+              final blockHeader = blocks.length > 1
+                  ? [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 4),
+                        child: Text(
+                          'Block ${block.blockIndex}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ]
+                  : <Widget>[];
+              final repRows = block.repRows.map((repRow) {
+                const cellSize = _minCellSize;
+                const rowHeight = _minCellSize + 2;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: _tileSpacing),
+                  child: SizedBox(
+                    height: rowHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: _repLabelWidth,
                           child: Text(
-                            'Block ${block.blockIndex}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: Theme.of(context).colorScheme.primary,
+                            'Rep ${repRow.repNumber}',
+                            style: const TextStyle(
+                              color: AppDesignTokens.secondaryText,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: _tileSpacing),
+                        Expanded(
+                          child: ClipRect(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  for (var i = 0;
+                                      i < repRow.plots.length;
+                                      i++) ...[
+                                    if (i > 0)
+                                      const SizedBox(width: _tileSpacing),
+                                    SizedBox(
+                                      width: cellSize,
+                                      height: cellSize,
+                                      child: _PlotGridTile(
+                                        plot: repRow.plots[i],
+                                        treatmentMap: treatmentMap,
+                                        treatments: treatments,
+                                        trial: trial,
+                                        tileColor:
+                                            _tileColorFor(repRow.plots[i]),
+                                        treatmentIdOverride:
+                                            plotIdToTreatmentId?[
+                                                    repRow.plots[i].id] ??
+                                                repRow.plots[i].treatmentId,
+                                        displayLabel: getDisplayPlotLabel(
+                                            repRow.plots[i], plots),
+                                        onLongPress: onLongPressPlot != null
+                                            ? () => onLongPressPlot!(
+                                                repRow.plots[i])
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ]
-                    : <Widget>[];
-                final repRows = block.repRows.map((repRow) {
-                  const cellSize = _minCellSize;
-                  const rowHeight = _minCellSize + 2;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: _tileSpacing),
-                    child: SizedBox(
-                      height: rowHeight,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: _repLabelWidth,
-                            child: Text(
-                              'Rep ${repRow.repNumber}',
-                              style: const TextStyle(
-                                color: AppDesignTokens.secondaryText,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: _tileSpacing),
-                          Expanded(
-                            child: ClipRect(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    for (var i = 0; i < repRow.plots.length; i++) ...[
-                                      if (i > 0) const SizedBox(width: _tileSpacing),
-                                      SizedBox(
-                                        width: cellSize,
-                                        height: cellSize,
-                                        child: _PlotGridTile(
-                                          plot: repRow.plots[i],
-                                          treatmentMap: treatmentMap,
-                                          treatments: treatments,
-                                          trial: trial,
-                                          tileColor: _tileColorFor(repRow.plots[i]),
-                                          treatmentIdOverride: plotIdToTreatmentId?[repRow.plots[i].id] ?? repRow.plots[i].treatmentId,
-                                          displayLabel: getDisplayPlotLabel(repRow.plots[i], plots),
-                                          onLongPress: onLongPressPlot != null
-                                              ? () => onLongPressPlot!(repRow.plots[i])
-                                              : null,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                  );
-                });
-                return [...blockHeader, ...repRows];
-              }),
+                  ),
+                );
+              });
+              return [...blockHeader, ...repRows];
+            }),
           ],
         );
         return Padding(
@@ -1950,7 +2340,6 @@ class _PlotGridTile extends StatelessWidget {
   }
 }
 
-
 /// Full-screen page for Plots list or layout (opened from List/Layout toggle button).
 class _PlotsFullScreenPage extends ConsumerStatefulWidget {
   final Trial trial;
@@ -1968,7 +2357,8 @@ class _PlotsFullScreenPage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_PlotsFullScreenPage> createState() => _PlotsFullScreenPageState();
+  ConsumerState<_PlotsFullScreenPage> createState() =>
+      _PlotsFullScreenPageState();
 }
 
 class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
@@ -1976,7 +2366,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   ApplicationEvent? _selectedAppEvent;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
-  final TransformationController _gridTransformController = TransformationController();
+  final TransformationController _gridTransformController =
+      TransformationController();
   final GlobalKey _plotViewportKey = GlobalKey();
   final GlobalKey _gridContentKey = GlobalKey();
   bool _gridCenterScheduled = false;
@@ -1997,11 +2388,13 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
 
   void _centerGridOnFirstFrame(BuildContext context, List<Plot> plots) {
     if (!mounted) return;
-    final viewportBox = _plotViewportKey.currentContext?.findRenderObject() as RenderBox?;
+    final viewportBox =
+        _plotViewportKey.currentContext?.findRenderObject() as RenderBox?;
     if (viewportBox == null || !viewportBox.hasSize) return;
     final viewportWidth = viewportBox.size.width;
     final viewportHeight = viewportBox.size.height;
-    final gridBox = _gridContentKey.currentContext?.findRenderObject() as RenderBox?;
+    final gridBox =
+        _gridContentKey.currentContext?.findRenderObject() as RenderBox?;
     double gridWidth;
     double gridHeight;
     if (gridBox != null && gridBox.hasSize) {
@@ -2068,13 +2461,19 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           if (plots.isEmpty) {
             return const Center(child: Text('No plots'));
           }
-          final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-          final assignmentsLocked = isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
+          final sessions =
+              ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+          final assignmentsLocked =
+              isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
           if (!widget.isLayoutView) {
             return _buildListBody(context, ref, plots, assignmentsLocked);
           }
-          final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-          final assignments = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+          final treatments =
+              ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ??
+                  [];
+          final assignments =
+              ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ??
+                  [];
           final Map<int, int?> plotIdToTreatmentId = {
             for (final a in assignments) a.plotId: a.treatmentId
           };
@@ -2083,19 +2482,30 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: SegmentedButton<_LayoutLayer>(
                   style: const ButtonStyle(
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.compact,
                   ),
                   segments: const [
-                    ButtonSegment(value: _LayoutLayer.treatments, label: Text('Treats'), icon: Icon(Icons.science, size: 14)),
-                    ButtonSegment(value: _LayoutLayer.applications, label: Text('Apps'), icon: Icon(Icons.water_drop, size: 14)),
-                    ButtonSegment(value: _LayoutLayer.ratings, label: Text('Ratings'), icon: Icon(Icons.bar_chart, size: 14)),
+                    ButtonSegment(
+                        value: _LayoutLayer.treatments,
+                        label: Text('Treats'),
+                        icon: Icon(Icons.science, size: 14)),
+                    ButtonSegment(
+                        value: _LayoutLayer.applications,
+                        label: Text('Apps'),
+                        icon: Icon(Icons.water_drop, size: 14)),
+                    ButtonSegment(
+                        value: _LayoutLayer.ratings,
+                        label: Text('Ratings'),
+                        icon: Icon(Icons.bar_chart, size: 14)),
                   ],
                   selected: {_layoutLayer},
-                  onSelectionChanged: (val) => setState(() => _layoutLayer = val.first),
+                  onSelectionChanged: (val) =>
+                      setState(() => _layoutLayer = val.first),
                 ),
               ),
               if (_layoutLayer == _LayoutLayer.applications)
@@ -2112,7 +2522,10 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               ),
               Expanded(
                 child: _layoutLayer == _LayoutLayer.ratings
-                    ? const Center(child: Text('Ratings overlay coming soon', style: TextStyle(color: AppDesignTokens.secondaryText)))
+                    ? const Center(
+                        child: Text('Ratings overlay coming soon',
+                            style: TextStyle(
+                                color: AppDesignTokens.secondaryText)))
                     : LayoutBuilder(
                         builder: (context, constraints) {
                           if (!_gridCenterScheduled) {
@@ -2122,35 +2535,58 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                             });
                           }
                           final size = MediaQuery.sizeOf(context);
-                          final viewportWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                          final viewportWidth = constraints.maxWidth.isFinite &&
+                                  constraints.maxWidth > 0
                               ? constraints.maxWidth
                               : size.width;
-                          final viewportHeight = constraints.maxHeight.isFinite && constraints.maxHeight > 0
-                              ? constraints.maxHeight
-                              : size.height;
+                          final viewportHeight =
+                              constraints.maxHeight.isFinite &&
+                                      constraints.maxHeight > 0
+                                  ? constraints.maxHeight
+                                  : size.height;
                           final blocks = buildRepBasedLayout(plots);
                           int columnCount = 0;
                           for (final block in blocks) {
                             for (final row in block.repRows) {
-                              if (row.plots.length > columnCount) columnCount = row.plots.length;
+                              if (row.plots.length > columnCount)
+                                columnCount = row.plots.length;
                             }
                           }
                           const double repLabelW = 52.0;
                           const double tileSpace = 6.0;
                           const double cellW = 56.0;
-                          const double gridHorizontalPadding = 24.0; // 12 + 12 from Padding in _buildRepBasedGrid
-                          const double gridWidthBuffer = 8.0; // avoid last column clipping from rounding
+                          const double gridHorizontalPadding =
+                              24.0; // 12 + 12 from Padding in _buildRepBasedGrid
+                          const double gridWidthBuffer =
+                              8.0; // avoid last column clipping from rounding
                           final double rowContentWidth = columnCount > 0
-                              ? repLabelW + tileSpace + columnCount * cellW + (columnCount - 1) * tileSpace
+                              ? repLabelW +
+                                  tileSpace +
+                                  columnCount * cellW +
+                                  (columnCount - 1) * tileSpace
                               : viewportWidth;
-                          final double totalGridWidth = rowContentWidth + gridHorizontalPadding + gridWidthBuffer;
-                          final double gridContentWidth = totalGridWidth > viewportWidth ? totalGridWidth : viewportWidth;
-                          final applicationsList = ref.watch(trialApplicationsForTrialProvider(widget.trial.id)).value ?? [];
-                          final treatmentIdsWithApp = applicationsList.map((e) => e.treatmentId).whereType<int>().toSet();
+                          final double totalGridWidth = rowContentWidth +
+                              gridHorizontalPadding +
+                              gridWidthBuffer;
+                          final double gridContentWidth =
+                              totalGridWidth > viewportWidth
+                                  ? totalGridWidth
+                                  : viewportWidth;
+                          final applicationsList = ref
+                                  .watch(trialApplicationsForTrialProvider(
+                                      widget.trial.id))
+                                  .value ??
+                              [];
+                          final treatmentIdsWithApp = applicationsList
+                              .map((e) => e.treatmentId)
+                              .whereType<int>()
+                              .toSet();
                           final plotPksWithTrialApplication = <int>{};
                           for (final p in plots) {
-                            final tid = plotIdToTreatmentId[p.id] ?? p.treatmentId;
-                            if (tid != null && treatmentIdsWithApp.contains(tid)) {
+                            final tid =
+                                plotIdToTreatmentId[p.id] ?? p.treatmentId;
+                            if (tid != null &&
+                                treatmentIdsWithApp.contains(tid)) {
                               plotPksWithTrialApplication.add(p.id);
                             }
                           }
@@ -2162,7 +2598,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                   width: viewportWidth,
                                   height: viewportHeight,
                                   child: InteractiveViewer(
-                                    transformationController: _gridTransformController,
+                                    transformationController:
+                                        _gridTransformController,
                                     boundaryMargin: EdgeInsets.zero,
                                     constrained: false,
                                     minScale: _kGridMinScale,
@@ -2178,11 +2615,14 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                         trial: widget.trial,
                                         layer: _layoutLayer,
                                         appPlotRecords: _appPlotRecords,
-                                        plotPksWithTrialApplication: plotPksWithTrialApplication,
-                                        plotIdToTreatmentId: plotIdToTreatmentId,
+                                        plotPksWithTrialApplication:
+                                            plotPksWithTrialApplication,
+                                        plotIdToTreatmentId:
+                                            plotIdToTreatmentId,
                                         onLongPressPlot: assignmentsLocked
                                             ? null
-                                            : (plot) => _showAssignDialog(context, ref, plot, plots),
+                                            : (plot) => _showAssignDialog(
+                                                context, ref, plot, plots),
                                       ),
                                     ),
                                   ),
@@ -2192,7 +2632,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                   bottom: AppDesignTokens.spacing12,
                                   child: Material(
                                     elevation: 2,
-                                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppDesignTokens.radiusSmall),
                                     color: AppDesignTokens.cardSurface,
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -2225,7 +2666,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   }
 
   Widget _buildAppEventSelector(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(applicationsForTrialProvider(widget.trial.id));
+    final eventsAsync =
+        ref.watch(applicationsForTrialProvider(widget.trial.id));
     return eventsAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (e, _) => const SizedBox.shrink(),
@@ -2234,7 +2676,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         if (completed.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No completed application events yet', style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 13)),
+            child: Text('No completed application events yet',
+                style: TextStyle(
+                    color: AppDesignTokens.secondaryText, fontSize: 13)),
           );
         }
         return Padding(
@@ -2247,22 +2691,34 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   decoration: const InputDecoration(
                     labelText: 'Select Application Event',
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   initialValue: _selectedAppEvent == null
                       ? null
-                      : completed.where((e) => e.id == _selectedAppEvent!.id).firstOrNull ?? completed.first,
-                  items: completed.map((e) => DropdownMenuItem<ApplicationEvent>(
-                    value: e,
-                    child: Text('A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
-                  )).toList(),
-                  onChanged: (e) { if (e != null) _loadAppRecords(e); },
+                      : completed
+                              .where((e) => e.id == _selectedAppEvent!.id)
+                              .firstOrNull ??
+                          completed.first,
+                  items: completed
+                      .map((e) => DropdownMenuItem<ApplicationEvent>(
+                            value: e,
+                            child: Text(
+                                'A${e.applicationNumber} — ${e.timingLabel ?? e.method}'),
+                          ))
+                      .toList(),
+                  onChanged: (e) {
+                    if (e != null) _loadAppRecords(e);
+                  },
                 ),
               ),
               if (_loadingAppRecords)
                 const Padding(
                   padding: EdgeInsets.only(left: 8),
-                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
             ],
           ),
@@ -2271,12 +2727,17 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     );
   }
 
-  Widget _buildListBody(BuildContext context, WidgetRef ref, List<Plot> plots, bool assignmentsLocked) {
-    final sessions = ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-    final assignmentsLockMessage = getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
-    final treatments = ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+  Widget _buildListBody(BuildContext context, WidgetRef ref, List<Plot> plots,
+      bool assignmentsLocked) {
+    final sessions =
+        ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsLockMessage =
+        getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
-    final assignmentsList = ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentsList =
+        ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -2284,12 +2745,16 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
       itemBuilder: (context, index) {
         final plot = plots[index];
         final assignment = assignmentByPlotId[plot.id];
-        final effectiveTreatmentId = assignment?.treatmentId ?? plot.treatmentId;
-        final effectiveSource = assignment?.assignmentSource ?? plot.assignmentSource;
+        final effectiveTreatmentId =
+            assignment?.treatmentId ?? plot.treatmentId;
+        final effectiveSource =
+            assignment?.assignmentSource ?? plot.assignmentSource;
         final displayNum = getDisplayPlotLabel(plot, plots);
-        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap, treatmentIdOverride: effectiveTreatmentId);
+        final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap,
+            treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
-            treatmentId: effectiveTreatmentId, assignmentSource: effectiveSource);
+            treatmentId: effectiveTreatmentId,
+            assignmentSource: effectiveSource);
         return AppCard(
           margin: const EdgeInsets.only(left: 16, right: 16, top: 6, bottom: 6),
           child: ListTile(
@@ -2302,10 +2767,14 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               ),
               child: Text(
                 displayNum,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.white),
               ),
             ),
-            title: Text('Plot $displayNum', style: const TextStyle(fontWeight: FontWeight.w600)),
+            title: Text('Plot $displayNum',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Row(
               children: [
                 Expanded(
@@ -2316,22 +2785,30 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                       color: effectiveTreatmentId != null
                           ? Theme.of(context).colorScheme.primary
                           : AppDesignTokens.secondaryText,
-                      fontWeight: effectiveTreatmentId != null ? FontWeight.w600 : null,
+                      fontWeight:
+                          effectiveTreatmentId != null ? FontWeight.w600 : null,
                     ),
                   ),
                 ),
                 if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
-                  Text(sourceLabel, style: const TextStyle(fontSize: 10, color: AppDesignTokens.secondaryText, fontStyle: FontStyle.italic)),
+                  Text(sourceLabel,
+                      style: const TextStyle(
+                          fontSize: 10,
+                          color: AppDesignTokens.secondaryText,
+                          fontStyle: FontStyle.italic)),
               ],
             ),
             trailing: const Icon(Icons.chevron_right, size: 18),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => PlotDetailScreen(trial: widget.trial, plot: plot)),
+              MaterialPageRoute(
+                  builder: (_) =>
+                      PlotDetailScreen(trial: widget.trial, plot: plot)),
             ),
             onLongPress: () {
               if (assignmentsLocked) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(assignmentsLockMessage)));
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(assignmentsLockMessage)));
                 return;
               }
               _showAssignDialog(context, ref, plot, plots);
@@ -2342,7 +2819,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     );
   }
 
-  Future<void> _showAssignDialog(BuildContext context, WidgetRef ref, Plot plot, List<Plot> plots) async {
+  Future<void> _showAssignDialog(
+      BuildContext context, WidgetRef ref, Plot plot, List<Plot> plots) async {
     return showAssignTreatmentDialogForTrial(
       trial: widget.trial,
       context: context,

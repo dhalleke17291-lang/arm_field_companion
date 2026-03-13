@@ -10,16 +10,14 @@ class AssignmentRepository {
 
   /// Returns the assignment for a plot (by plot pk). One assignment per plot per trial.
   Future<Assignment?> getForPlot(int plotPk) async {
-    return (_db.select(_db.assignments)
-          ..where((a) => a.plotId.equals(plotPk)))
+    return (_db.select(_db.assignments)..where((a) => a.plotId.equals(plotPk)))
         .getSingleOrNull();
   }
 
   /// Returns the assignment for a (trial, plot) pair.
   Future<Assignment?> getForTrialAndPlot(int trialId, int plotPk) async {
     return (_db.select(_db.assignments)
-          ..where((a) =>
-              a.trialId.equals(trialId) & a.plotId.equals(plotPk)))
+          ..where((a) => a.trialId.equals(trialId) & a.plotId.equals(plotPk)))
         .getSingleOrNull();
   }
 
@@ -58,8 +56,7 @@ class AssignmentRepository {
     final now = DateTime.now().toUtc();
     if (existing != null) {
       await (_db.update(_db.assignments)
-            ..where((a) =>
-                a.trialId.equals(trialId) & a.plotId.equals(plotId)))
+            ..where((a) => a.trialId.equals(trialId) & a.plotId.equals(plotId)))
           .write(AssignmentsCompanion(
         treatmentId: Value(treatmentId),
         replication: Value(replication),
@@ -77,35 +74,35 @@ class AssignmentRepository {
       ));
     } else {
       await _db.into(_db.assignments).insert(AssignmentsCompanion.insert(
-        trialId: trialId,
-        plotId: plotId,
-        treatmentId: Value(treatmentId),
-        replication: Value(replication),
-        block: Value(block),
-        range: Value(range),
-        column: Value(column),
-        position: Value(position),
-        isCheck: Value(isCheck),
-        isControl: Value(isControl),
-        assignmentSource: Value(assignmentSource),
-        assignedAt: Value(assignedAt ?? now),
-        assignedBy: Value(assignedBy),
-        notes: Value(notes),
-      ));
+            trialId: trialId,
+            plotId: plotId,
+            treatmentId: Value(treatmentId),
+            replication: Value(replication),
+            block: Value(block),
+            range: Value(range),
+            column: Value(column),
+            position: Value(position),
+            isCheck: Value(isCheck),
+            isControl: Value(isControl),
+            assignmentSource: Value(assignmentSource),
+            assignedAt: Value(assignedAt ?? now),
+            assignedBy: Value(assignedBy),
+            notes: Value(notes),
+          ));
     }
     // Audit trail
     await _db.into(_db.auditEvents).insert(
-      AuditEventsCompanion.insert(
-        trialId: Value(trialId),
-        plotPk: Value(plotId),
-        eventType: 'TREATMENT_ASSIGNED',
-        description: treatmentId != null
-            ? 'Treatment $treatmentId assigned to plot $plotId'
-            : 'Treatment unassigned from plot $plotId',
-        performedBy: Value(assignmentSource),
-        performedByUserId: Value(assignedBy),
-      ),
-    );
+          AuditEventsCompanion.insert(
+            trialId: Value(trialId),
+            plotPk: Value(plotId),
+            eventType: 'TREATMENT_ASSIGNED',
+            description: treatmentId != null
+                ? 'Treatment $treatmentId assigned to plot $plotId'
+                : 'Treatment unassigned from plot $plotId',
+            performedBy: Value(assignmentSource),
+            performedByUserId: Value(assignedBy),
+          ),
+        );
   }
 
   /// Bulk upsert: one assignment per plot.
@@ -130,13 +127,13 @@ class AssignmentRepository {
 
     // Summary audit event for bulk operation
     await _db.into(_db.auditEvents).insert(
-      AuditEventsCompanion.insert(
-        trialId: Value(trialId),
-        eventType: 'TREATMENT_ASSIGNED_BULK',
-        description:
-            'Bulk assignment: ${plotPkToTreatmentId.length} plots updated',
-        performedBy: Value(assignmentSource),
-      ),
-    );
+          AuditEventsCompanion.insert(
+            trialId: Value(trialId),
+            eventType: 'TREATMENT_ASSIGNED_BULK',
+            description:
+                'Bulk assignment: ${plotPkToTreatmentId.length} plots updated',
+            performedBy: Value(assignmentSource),
+          ),
+        );
   }
 }

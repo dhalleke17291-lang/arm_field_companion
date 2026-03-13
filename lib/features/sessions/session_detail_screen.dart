@@ -28,7 +28,8 @@ class SessionDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SessionDetailScreen> createState() => _SessionDetailScreenState();
+  ConsumerState<SessionDetailScreen> createState() =>
+      _SessionDetailScreenState();
 }
 
 class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
@@ -41,9 +42,13 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
-    final treatments = ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
-    final assignments = ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
-    final plotIdToTreatmentId = {for (var a in assignments) a.plotId: a.treatmentId};
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
+    final assignments =
+        ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
+    final plotIdToTreatmentId = {
+      for (var a in assignments) a.plotId: a.treatmentId
+    };
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
@@ -61,20 +66,42 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'csv', child: Text('Export to CSV')),
-              const PopupMenuItem(value: 'arm_xml', child: Text('Export as ARM XML')),
+              const PopupMenuItem(
+                  value: 'arm_xml', child: Text('Export as ARM XML')),
             ],
           ),
         ],
       ),
       body: plotsAsync.when(
         loading: () => const AppLoadingView(),
-        error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () { ref.invalidate(plotsForTrialProvider(widget.trial.id)); ref.invalidate(sessionRatingsProvider(widget.session.id)); ref.invalidate(sessionAssessmentsProvider(widget.session.id)); }),
+        error: (e, st) => AppErrorView(
+            error: e,
+            stackTrace: st,
+            onRetry: () {
+              ref.invalidate(plotsForTrialProvider(widget.trial.id));
+              ref.invalidate(sessionRatingsProvider(widget.session.id));
+              ref.invalidate(sessionAssessmentsProvider(widget.session.id));
+            }),
         data: (plots) => ratingsAsync.when(
           loading: () => const AppLoadingView(),
-          error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () { ref.invalidate(plotsForTrialProvider(widget.trial.id)); ref.invalidate(sessionRatingsProvider(widget.session.id)); ref.invalidate(sessionAssessmentsProvider(widget.session.id)); }),
+          error: (e, st) => AppErrorView(
+              error: e,
+              stackTrace: st,
+              onRetry: () {
+                ref.invalidate(plotsForTrialProvider(widget.trial.id));
+                ref.invalidate(sessionRatingsProvider(widget.session.id));
+                ref.invalidate(sessionAssessmentsProvider(widget.session.id));
+              }),
           data: (ratings) => assessmentsAsync.when(
             loading: () => const AppLoadingView(),
-            error: (e, st) => AppErrorView(error: e, stackTrace: st, onRetry: () { ref.invalidate(plotsForTrialProvider(widget.trial.id)); ref.invalidate(sessionRatingsProvider(widget.session.id)); ref.invalidate(sessionAssessmentsProvider(widget.session.id)); }),
+            error: (e, st) => AppErrorView(
+                error: e,
+                stackTrace: st,
+                onRetry: () {
+                  ref.invalidate(plotsForTrialProvider(widget.trial.id));
+                  ref.invalidate(sessionRatingsProvider(widget.session.id));
+                  ref.invalidate(sessionAssessmentsProvider(widget.session.id));
+                }),
             data: (assessments) => Column(
               children: [
                 _SessionDockBar(
@@ -88,10 +115,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   child: IndexedStack(
                     index: _selectedTabIndex,
                     children: [
-                      _buildContent(context, ref, session, plots, ratings, assessments,
-                          treatments, plotIdToTreatmentId),
-                      _buildRateTab(context, ref, trial, session, plots,
-                          assessments),
+                      _buildContent(context, ref, session, plots, ratings,
+                          assessments, treatments, plotIdToTreatmentId),
+                      _buildRateTab(
+                          context, ref, trial, session, plots, assessments),
                     ],
                   ),
                 ),
@@ -195,7 +222,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 final box = context.findRenderObject() as RenderBox?;
                 await Share.shareXFiles(
                   files,
-                  subject: '${widget.trial.name} - ${widget.session.name} Export',
+                  subject:
+                      '${widget.trial.name} - ${widget.session.name} Export',
                   sharePositionOrigin: box == null
                       ? const Rect.fromLTWH(0, 0, 100, 100)
                       : box.localToGlobal(Offset.zero) & box.size,
@@ -267,9 +295,11 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             children: [
               const Text('Session exported as ARM-style XML.'),
               const SizedBox(height: 8),
-              const Text('Saved to:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Saved to:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              SelectableText(result.filePath!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              SelectableText(result.filePath!,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           ),
           actions: [
@@ -283,7 +313,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 final box = context.findRenderObject() as RenderBox?;
                 await Share.shareXFiles(
                   [XFile(result.filePath!)],
-                  subject: '${widget.trial.name} - ${widget.session.name} ARM Export',
+                  subject:
+                      '${widget.trial.name} - ${widget.session.name} ARM Export',
                   sharePositionOrigin: box == null
                       ? const Rect.fromLTWH(0, 0, 100, 100)
                       : box.localToGlobal(Offset.zero) & box.size,
@@ -299,7 +330,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ARM XML export failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('ARM XML export failed: $e'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -338,7 +371,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             _SessionProgressFromDerived(sessionId: session.id),
             const SizedBox(height: 8),
             TextButton.icon(
-              onPressed: () => _showRatingOrderSheet(context, ref, session, assessments),
+              onPressed: () =>
+                  _showRatingOrderSheet(context, ref, session, assessments),
               icon: const Icon(Icons.swap_vert, size: 18),
               label: const Text('Set rating order'),
             ),
@@ -353,7 +387,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => _startOrContinueRating(context, ref, trial, session),
+              onPressed: () =>
+                  _startOrContinueRating(context, ref, trial, session),
               icon: const Icon(Icons.play_arrow),
               label: const Text('Start Rating'),
               style: ElevatedButton.styleFrom(
@@ -541,16 +576,20 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final scheme = Theme.of(context).colorScheme;
     final ratedCount = ratings.map((r) => r.plotPk).toSet().length;
     final treatmentMap = {for (final t in treatments) t.id: t};
-    final flaggedIds = ref.watch(flaggedPlotIdsForSessionProvider(session.id)).valueOrNull ?? <int>{};
+    final flaggedIds =
+        ref.watch(flaggedPlotIdsForSessionProvider(session.id)).valueOrNull ??
+            <int>{};
     return Column(
       children: [
         // Section header (same as Trial Plots tab)
         Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing8),
+              horizontal: AppDesignTokens.spacing16,
+              vertical: AppDesignTokens.spacing8),
           decoration: const BoxDecoration(
             color: AppDesignTokens.sectionHeaderBg,
-            border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+            border:
+                Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
           ),
           child: Row(
             children: [
@@ -566,7 +605,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDesignTokens.spacing8,
+                    vertical: AppDesignTokens.spacing4),
                 decoration: BoxDecoration(
                   color: AppDesignTokens.successBg,
                   borderRadius: BorderRadius.circular(20),
@@ -598,7 +639,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             height: 44,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppDesignTokens.spacing8,
+                  vertical: AppDesignTokens.spacing8),
               itemCount: assessments.length,
               itemBuilder: (context, index) => Padding(
                 padding: const EdgeInsets.only(right: AppDesignTokens.spacing8),
@@ -620,13 +663,16 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   ratings.where((r) => r.plotPk == plot.id).toList();
               final displayNum = getDisplayPlotLabel(plot, plots);
               final treatmentLabel = getTreatmentDisplayLabel(
-                  plot, treatmentMap, treatmentIdOverride: plotIdToTreatmentId[plot.id]);
+                  plot, treatmentMap,
+                  treatmentIdOverride: plotIdToTreatmentId[plot.id]);
 
-              final hasIssues = plotRatings.any((r) => r.resultStatus != 'RECORDED');
+              final hasIssues =
+                  plotRatings.any((r) => r.resultStatus != 'RECORDED');
               final isFlagged = flaggedIds.contains(plot.id);
               return Container(
                 margin: const EdgeInsets.symmetric(
-                    horizontal: AppDesignTokens.spacing16, vertical: AppDesignTokens.spacing4),
+                    horizontal: AppDesignTokens.spacing16,
+                    vertical: AppDesignTokens.spacing4),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius:
@@ -642,7 +688,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 clipBehavior: Clip.antiAlias,
                 child: ExpansionTile(
                   leading: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppDesignTokens.spacing8,
+                        vertical: AppDesignTokens.spacing8),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2D5A40),
                       borderRadius: BorderRadius.circular(6),
@@ -667,20 +715,28 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                           children: [
                             if (isFlagged)
                               const Padding(
-                                padding: EdgeInsets.only(right: AppDesignTokens.spacing8),
-                                child: Icon(Icons.flag, color: Colors.amber, size: 22),
+                                padding: EdgeInsets.only(
+                                    right: AppDesignTokens.spacing8),
+                                child: Icon(Icons.flag,
+                                    color: Colors.amber, size: 22),
                               ),
                             if (hasIssues)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing8, vertical: AppDesignTokens.spacing4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppDesignTokens.spacing8,
+                                    vertical: AppDesignTokens.spacing4),
                                 decoration: BoxDecoration(
                                   color: scheme.tertiaryContainer,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: scheme.outlineVariant),
+                                  border:
+                                      Border.all(color: scheme.outlineVariant),
                                 ),
                                 child: Text(
                                   'Missing / issues',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.onTertiaryContainer),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: scheme.onTertiaryContainer),
                                 ),
                               ),
                           ],
@@ -735,90 +791,101 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         .where((r) => r.resultStatus != 'RECORDED')
         .map((r) => r.plotPk)
         .toSet();
-    if (flaggedIds.isEmpty && issuePlotIds.isEmpty) return const SizedBox.shrink();
+    if (flaggedIds.isEmpty && issuePlotIds.isEmpty)
+      return const SizedBox.shrink();
 
     final flaggedPlots = plots.where((p) => flaggedIds.contains(p.id)).toList();
     final issuePlots = plots.where((p) => issuePlotIds.contains(p.id)).toList();
-    final flaggedLabels = flaggedPlots.map((p) => getDisplayPlotLabel(p, plots)).toList();
-    final issueLabels = issuePlots.map((p) => getDisplayPlotLabel(p, plots)).toList();
+    final flaggedLabels =
+        flaggedPlots.map((p) => getDisplayPlotLabel(p, plots)).toList();
+    final issueLabels =
+        issuePlots.map((p) => getDisplayPlotLabel(p, plots)).toList();
     final scheme = Theme.of(context).colorScheme;
 
     return Semantics(
-      label: 'Plots with issues: ${flaggedLabels.length} flagged, ${issueLabels.length} with reading issues',
+      label:
+          'Plots with issues: ${flaggedLabels.length} flagged, ${issueLabels.length} with reading issues',
       child: Container(
-        margin: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, AppDesignTokens.spacing8, AppDesignTokens.spacing16, 0),
+        margin: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16,
+            AppDesignTokens.spacing8, AppDesignTokens.spacing16, 0),
         padding: const EdgeInsets.all(AppDesignTokens.spacing12),
         decoration: BoxDecoration(
           color: scheme.tertiaryContainer,
           borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           border: Border.all(color: scheme.outlineVariant),
         ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, size: 18, color: scheme.onTertiaryContainer),
-              const SizedBox(width: AppDesignTokens.spacing8),
-              Text(
-                'Plots with issues',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onTertiaryContainer,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    size: 18, color: scheme.onTertiaryContainer),
+                const SizedBox(width: AppDesignTokens.spacing8),
+                Text(
+                  'Plots with issues',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onTertiaryContainer,
+                  ),
                 ),
+              ],
+            ),
+            if (flaggedLabels.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 100,
+                    child: Text(
+                      'Flagged:',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onTertiaryContainer),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      flaggedLabels.join(', '),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-          if (flaggedLabels.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 100,
-                  child: Text(
-                    'Flagged:',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onTertiaryContainer),
+            if (issueLabels.isNotEmpty) ...[
+              const SizedBox(height: AppDesignTokens.spacing8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 100,
+                    child: Text(
+                      'Reading issues:',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onTertiaryContainer),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: Text(
-                    flaggedLabels.join(', '),
-                    style: const TextStyle(fontSize: 12),
+                  Expanded(
+                    child: Text(
+                      issueLabels.join(', '),
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ],
-          if (issueLabels.isNotEmpty) ...[
-            const SizedBox(height: AppDesignTokens.spacing8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 100,
-                  child: Text(
-                    'Reading issues:',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onTertiaryContainer),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    issueLabels.join(', '),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
+        ),
       ),
     );
   }
-
 }
 
 /// Dock-style tab bar for session detail (same look as trial's Plots / Sessions dock).
@@ -844,13 +911,16 @@ class _SessionDockBar extends StatelessWidget {
     return Container(
       height: 110,
       width: double.infinity,
-      padding: const EdgeInsets.only(top: AppDesignTokens.spacing8, bottom: AppDesignTokens.spacing8),
+      padding: const EdgeInsets.only(
+          top: AppDesignTokens.spacing8, bottom: AppDesignTokens.spacing8),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16),
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing16),
         physics: const BouncingScrollPhysics(),
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppDesignTokens.spacing12),
+        separatorBuilder: (_, __) =>
+            const SizedBox(width: AppDesignTokens.spacing12),
         itemBuilder: (context, index) {
           final item = items[index];
           final isSelected = selectedIndex == item.$1;
@@ -875,7 +945,8 @@ class _SessionProgressFromDerived extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final snapshotAsync = ref.watch(derivedSnapshotForSessionProvider(sessionId));
+    final snapshotAsync =
+        ref.watch(derivedSnapshotForSessionProvider(sessionId));
     return snapshotAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
@@ -926,7 +997,9 @@ class _SessionDockTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing12, vertical: AppDesignTokens.spacing8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing12,
+              vertical: AppDesignTokens.spacing8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -934,9 +1007,8 @@ class _SessionDockTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppDesignTokens.spacing8),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? scheme.primaryContainer
-                      : Colors.transparent,
+                  color:
+                      selected ? scheme.primaryContainer : Colors.transparent,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

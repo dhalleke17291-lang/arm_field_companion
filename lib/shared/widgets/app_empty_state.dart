@@ -23,7 +23,8 @@ class AppEmptyState extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing24),
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

@@ -16,7 +16,8 @@ class UpdateTreatmentUseCase {
     String? description,
   }) async {
     if (isProtocolLocked(trial.status)) {
-      return UpdateTreatmentResult.failure(getProtocolLockMessage(trial.status));
+      return UpdateTreatmentResult.failure(
+          getProtocolLockMessage(trial.status));
     }
     final trimmedCode = code.trim();
     final trimmedName = name.trim();

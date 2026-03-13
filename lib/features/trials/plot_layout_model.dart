@@ -63,11 +63,14 @@ List<LayoutBlock> buildRepBasedLayout(
 
   final blocks = <LayoutBlock>[];
   for (var i = 0; i < repRows.length; i += repsPerBlock) {
-    final chunk = repRows.sublist(i, (i + repsPerBlock).clamp(0, repRows.length));
+    final chunk =
+        repRows.sublist(i, (i + repsPerBlock).clamp(0, repRows.length));
     if (chunk.isEmpty) continue;
     blocks.add(LayoutBlock(blockIndex: blocks.length + 1, repRows: chunk));
   }
-  return blocks.isEmpty ? [LayoutBlock(blockIndex: 1, repRows: repRows)] : blocks;
+  return blocks.isEmpty
+      ? [LayoutBlock(blockIndex: 1, repRows: repRows)]
+      : blocks;
 }
 
 /// Layout display number for a plot in a rep row: repNumber * 100 + position (1-based).
@@ -97,7 +100,8 @@ List<String> checkPlotLayoutConsistency(List<Plot> plots) {
     final sortIndices = list.map((p) => p.plotSortIndex ?? p.id).toList();
     final duplicates = sortIndices.length - sortIndices.toSet().length;
     if (duplicates > 0) {
-      issues.add('Rep $rep: duplicate plotSortIndex or order (${duplicates + 1} plots share position)');
+      issues.add(
+          'Rep $rep: duplicate plotSortIndex or order (${duplicates + 1} plots share position)');
     }
   }
 
@@ -131,8 +135,8 @@ class PlotLayoutDiagnostics {
     required this.duplicatePositionInRep,
     required this.unassignedPlotLabels,
   }) : hasIssues = noRep.isNotEmpty ||
-        duplicatePositionInRep.isNotEmpty ||
-        unassignedPlotLabels.isNotEmpty;
+            duplicatePositionInRep.isNotEmpty ||
+            unassignedPlotLabels.isNotEmpty;
 }
 
 /// [plotIdToEffectiveTreatmentId] optional: when provided, unassigned is based on

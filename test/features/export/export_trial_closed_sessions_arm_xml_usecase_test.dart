@@ -37,7 +37,8 @@ class _MockSessionRepository implements SessionRepository {
   }
 
   @override
-  Future<List<Session>> getSessionsForDate(String dateLocal, {int? createdByUserId}) async =>
+  Future<List<Session>> getSessionsForDate(String dateLocal,
+          {int? createdByUserId}) async =>
       [];
 
   @override

@@ -51,59 +51,93 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppDesignTokens.spacing16),
           treatmentsAsync.when(
-            loading: () => const _Section(title: 'Treatments', child: AppLoadingView()),
-            error: (e, _) => _Section(title: 'Treatments', child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
+            loading: () =>
+                const _Section(title: 'Treatments', child: AppLoadingView()),
+            error: (e, _) => _Section(
+                title: 'Treatments',
+                child: Text('Error: $e',
+                    style: const TextStyle(color: Colors.red))),
             data: (list) => _Section(
               title: 'Treatments (${list.length})',
               child: list.isEmpty
-                  ? const Text('None', style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 14))
+                  ? const Text('None',
+                      style: TextStyle(
+                          color: AppDesignTokens.secondaryText, fontSize: 14))
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: list.map((t) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text('${t.code} — ${t.name}', style: const TextStyle(fontSize: 14, color: AppDesignTokens.primaryText)),
-                      )).toList(),
+                      children: list
+                          .map((t) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Text('${t.code} — ${t.name}',
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppDesignTokens.primaryText)),
+                              ))
+                          .toList(),
                     ),
             ),
           ),
           const SizedBox(height: AppDesignTokens.spacing16),
           assessmentsAsync.when(
-            loading: () => const _Section(title: 'Assessments', child: AppLoadingView()),
-            error: (e, _) => _Section(title: 'Assessments', child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
+            loading: () =>
+                const _Section(title: 'Assessments', child: AppLoadingView()),
+            error: (e, _) => _Section(
+                title: 'Assessments',
+                child: Text('Error: $e',
+                    style: const TextStyle(color: Colors.red))),
             data: (list) => _Section(
               title: 'Assessments (${list.length})',
               child: list.isEmpty
-                  ? const Text('None', style: TextStyle(color: AppDesignTokens.secondaryText, fontSize: 14))
+                  ? const Text('None',
+                      style: TextStyle(
+                          color: AppDesignTokens.secondaryText, fontSize: 14))
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: list.map((a) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(a.name, style: const TextStyle(fontSize: 14, color: AppDesignTokens.primaryText)),
-                      )).toList(),
+                      children: list
+                          .map((a) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Text(a.name,
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppDesignTokens.primaryText)),
+                              ))
+                          .toList(),
                     ),
             ),
           ),
           const SizedBox(height: AppDesignTokens.spacing16),
           plotsAsync.when(
-            loading: () => const _Section(title: 'Plots', child: AppLoadingView()),
-            error: (e, _) => _Section(title: 'Plots', child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
+            loading: () =>
+                const _Section(title: 'Plots', child: AppLoadingView()),
+            error: (e, _) => _Section(
+                title: 'Plots',
+                child: Text('Error: $e',
+                    style: const TextStyle(color: Colors.red))),
             data: (plots) {
               final assignments = assignmentsAsync.valueOrNull;
               final assignmentByPlot = assignments != null
                   ? {for (var a in assignments) a.plotId: a.treatmentId}
                   : <int, int?>{};
               final assignedCount = assignments != null
-                  ? plots.where((p) => (assignmentByPlot[p.id] ?? p.treatmentId) != null).length
+                  ? plots
+                      .where((p) =>
+                          (assignmentByPlot[p.id] ?? p.treatmentId) != null)
+                      .length
                   : null;
               return _Section(
                 title: 'Plots',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${plots.length} plots', style: const TextStyle(fontSize: 14, color: AppDesignTokens.primaryText)),
+                    Text('${plots.length} plots',
+                        style: const TextStyle(
+                            fontSize: 14, color: AppDesignTokens.primaryText)),
                     if (assignedCount != null) ...[
                       const SizedBox(height: 4),
-                      Text('$assignedCount assigned', style: const TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText)),
+                      Text('$assignedCount assigned',
+                          style: const TextStyle(
+                              fontSize: 13,
+                              color: AppDesignTokens.secondaryText)),
                     ],
                   ],
                 ),
@@ -167,9 +201,14 @@ class _Row extends StatelessWidget {
         children: [
           SizedBox(
             width: 80,
-            child: Text(label, style: const TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText)),
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 13, color: AppDesignTokens.secondaryText)),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14, color: AppDesignTokens.primaryText))),
+          Expanded(
+              child: Text(value,
+                  style: const TextStyle(
+                      fontSize: 14, color: AppDesignTokens.primaryText))),
         ],
       ),
     );

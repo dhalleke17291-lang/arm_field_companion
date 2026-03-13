@@ -22,41 +22,58 @@ class AppDesignTokens {
 
   /// Divider and light borders.
   static const Color divider = Color(0xFFE5E7EB);
+
   /// Primary text — near black for titles and strong labels.
   static const Color primaryText = Color(0xFF111827);
+
   /// Chevron and subtle icon color.
   static const Color iconSubtle = Color(0xFFD1D5DB);
+
   /// Empty state / no-content badge background.
   static const Color emptyBadgeBg = Color(0xFFF3F4F6);
+
   /// Empty state / no-content badge foreground.
   static const Color emptyBadgeFg = Color(0xFF9CA3AF);
 
   /// Crisp border — slightly cooler than divider, for card edges.
   static const Color borderCrisp = Color(0xFFEAECF0);
+
   /// Section header background.
   static const Color sectionHeaderBg = Color(0xFFEFF2EE);
+
   /// Success green background (pills, badges).
   static const Color successBg = Color(0xFFD1FAE5);
+
   /// Success green foreground.
   static const Color successFg = Color(0xFF047857);
+
   /// Warning/issue badge background.
   static const Color warningBg = Color(0xFFFFEDD5);
+
   /// Warning/issue badge foreground.
   static const Color warningFg = Color(0xFF9A3412);
+
   /// Warning/issue badge border.
   static const Color warningBorder = Color(0xFFFED7AA);
+
   /// Flag indicator color.
   static const Color flagColor = Color(0xFFF59E0B);
+
   /// Application status — applied.
   static const Color appliedColor = Color(0xFF16A34A);
+
   /// Application status — skipped.
   static const Color skippedColor = Color(0xFFEA580C);
+
   /// Application status — missed.
   static const Color missedColor = Color(0xFFDC2626);
+
   /// Application status — no record / unassigned grid tile.
   static const Color noRecordColor = Color(0xFFD1D5DB);
+
   /// Unassigned plot tile in grid.
   static const Color unassignedColor = Color(0xFF9CA3AF);
+
   /// Treatment palette for bird's-eye grid — cycles by index.
   static const List<Color> treatmentPalette = [
     Color(0xFF2D5A40),
@@ -66,22 +83,31 @@ class AppDesignTokens {
     Color(0xFFDC2626),
     Color(0xFF0F766E),
   ];
+
   /// Open session badge background.
   static const Color openSessionBg = Color(0xFF16A34A);
+
   /// Open session indicator background (light).
   static const Color openSessionBgLight = Color(0xFFDCFCE7);
+
   /// Secondary brand green (gradient, hover states).
   static const Color primaryLight = Color(0xFF3D7A57);
+
   /// Partial completion badge background.
   static const Color partialBg = Color(0xFFFEF3C7);
+
   /// Partial completion badge foreground.
   static const Color partialFg = Color(0xFF92400E);
+
   /// Planned/pending badge background.
   static const Color plannedBg = Color(0xFFFFF7ED);
+
   /// Planned/pending badge foreground.
   static const Color plannedFg = Color(0xFFEA580C);
+
   /// Bottom sheet drag handle color.
   static const Color dragHandle = Color(0xFFE5E7EB);
+
   /// Primary tint background (icon containers, hover).
   static const Color primaryTint = Color(0x1A2D5A40);
 
@@ -99,6 +125,7 @@ class AppDesignTokens {
 
   /// Extra small elements (icon containers, tight badges).
   static const double radiusXSmall = 8;
+
   /// Small elements (chips, inputs).
   static const double radiusSmall = 10;
 
@@ -113,10 +140,13 @@ class AppDesignTokens {
   static const List<BoxShadow> cardShadowRating = [
     BoxShadow(color: shadowLight, blurRadius: 4, offset: Offset(0, 2)),
   ];
+
   /// Slightly stronger shadow (e.g. bottom bar).
   static const Color shadowMedium = Color(0x0F000000);
+
   /// Strong primary tint (e.g. quick button selected glow).
   static const Color primaryTintStrong = Color(0x402D5A40);
+
   /// Very light shadow (e.g. quick button unselected).
   static const Color shadowVeryLight = Color(0x0D000000);
 

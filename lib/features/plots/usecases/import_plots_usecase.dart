@@ -28,7 +28,9 @@ class ImportReviewResult {
   });
 
   bool get canProceed =>
-      mustFixErrors.isEmpty && normalizedRows != null && normalizedRows!.isNotEmpty;
+      mustFixErrors.isEmpty &&
+      normalizedRows != null &&
+      normalizedRows!.isNotEmpty;
 }
 
 class ImportPlotsUseCase {
@@ -67,13 +69,15 @@ class ImportPlotsUseCase {
       final canonical = _plotIdAliases[h];
       if (canonical != null) {
         if (plotIdHeader != null) {
-          needsReview.add("Multiple columns may map to plot_id: '$plotIdHeader' and '$h'. Confirm which to use.");
+          needsReview.add(
+              "Multiple columns may map to plot_id: '$plotIdHeader' and '$h'. Confirm which to use.");
         }
         plotIdHeader ??= h;
       }
     }
     if (plotIdHeader == null) {
-      mustFix.add("Required column 'plot_id' (or alias: Plot, plot) missing from CSV");
+      mustFix.add(
+          "Required column 'plot_id' (or alias: Plot, plot) missing from CSV");
       return ImportReviewResult(
         matchedSuccessfullyCount: 0,
         mustFixErrors: mustFix,
@@ -129,7 +133,8 @@ class ImportPlotsUseCase {
       autoHandledMessages: autoHandled,
       needsUserReviewItems: needsReview,
       mustFixErrors: mustFix,
-      normalizedRows: mustFix.isEmpty && matchedCount > 0 ? normalizedRows : null,
+      normalizedRows:
+          mustFix.isEmpty && matchedCount > 0 ? normalizedRows : null,
     );
   }
 

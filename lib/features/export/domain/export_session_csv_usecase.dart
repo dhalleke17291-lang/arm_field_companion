@@ -10,6 +10,7 @@ import '../data/export_repository.dart';
 class ExportResult {
   final bool success;
   final String? filePath;
+
   /// Path to session audit events CSV when available.
   final String? auditFilePath;
   final int rowCount;
@@ -76,18 +77,21 @@ class ExportSessionCsvUsecase {
       final rows = await repo.buildSessionExportRows(sessionId: sessionId);
       final exportTimestampUtc = DateTime.now().toUtc().toIso8601String();
 
-      final enriched = rows.map((m) => <String, Object?>{
-            'trial_id': trialId,
-            'session_id': sessionId,
-            'trial_name': trialName,
-            'session_name': sessionName,
-            'session_date_local': sessionDateLocal,
-            'session_rater_name': sessionRaterName,
-            'export_timestamp_utc': exportTimestampUtc,
-            'app_version': kAppVersion,
-            ...m,
-            if (exportedByDisplayName != null) 'exported_by': exportedByDisplayName,
-          }).toList();
+      final enriched = rows
+          .map((m) => <String, Object?>{
+                'trial_id': trialId,
+                'session_id': sessionId,
+                'trial_name': trialName,
+                'session_name': sessionName,
+                'session_date_local': sessionDateLocal,
+                'session_rater_name': sessionRaterName,
+                'export_timestamp_utc': exportTimestampUtc,
+                'app_version': kAppVersion,
+                ...m,
+                if (exportedByDisplayName != null)
+                  'exported_by': exportedByDisplayName,
+              })
+          .toList();
 
       final baseHeaders = <String>[
         'trial_id',
@@ -121,7 +125,8 @@ class ExportSessionCsvUsecase {
       );
 
       String? auditPath;
-      final auditRows = await repo.buildSessionAuditExportRows(sessionId: sessionId);
+      final auditRows =
+          await repo.buildSessionAuditExportRows(sessionId: sessionId);
       if (auditRows.isNotEmpty) {
         final auditHeaders = auditRows.first.keys.toList();
         final auditData = <List<dynamic>>[
@@ -145,15 +150,15 @@ class ExportSessionCsvUsecase {
       try {
         final auditDb = repo.db;
         await auditDb.into(auditDb.auditEvents).insert(
-          AuditEventsCompanion.insert(
-            trialId: Value(trialId),
-            sessionId: Value(sessionId),
-            eventType: 'EXPORT_TRIGGERED',
-            description:
-                'Session \$sessionId exported — \${rows.length} rows — by \${exportedByDisplayName ?? "unknown"}',
-            performedBy: Value(exportedByDisplayName),
-          ),
-        );
+              AuditEventsCompanion.insert(
+                trialId: Value(trialId),
+                sessionId: Value(sessionId),
+                eventType: 'EXPORT_TRIGGERED',
+                description:
+                    'Session \$sessionId exported — \${rows.length} rows — by \${exportedByDisplayName ?? "unknown"}',
+                performedBy: Value(exportedByDisplayName),
+              ),
+            );
       } catch (_) {
         // Audit failure must never block export
       }
@@ -183,7 +188,7 @@ class ExportSessionCsvUsecase {
     final safeSession = _safeFilePart(sessionName);
 
     final file = File(
-        '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_$sessionId.csv',
+      '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_$sessionId.csv',
     );
 
     await file.writeAsString(csv, flush: true);

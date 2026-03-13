@@ -56,8 +56,7 @@ class PhotoRepository {
             ),
           );
 
-      return await (_db.select(_db.photos)
-            ..where((p) => p.id.equals(photoId)))
+      return await (_db.select(_db.photos)..where((p) => p.id.equals(photoId)))
           .getSingle();
     });
   }
@@ -95,8 +94,7 @@ class PhotoRepository {
           await tempFile.delete();
         }
       }
-      await (_db.delete(_db.photos)..where((p) => p.id.equals(photo.id)))
-          .go();
+      await (_db.delete(_db.photos)..where((p) => p.id.equals(photo.id))).go();
     }
   }
 

@@ -6,7 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/session_lock.dart';
 
 /// SaveRatingUseCase — centerpiece of Ag-Quest Field Companion
-/// 
+///
 /// Enforces all spec invariants:
 /// 1. numericValue must be NULL if resultStatus != RECORDED
 /// 2. Version chain — immutable records, new record per change
@@ -15,7 +15,7 @@ import '../../../core/session_lock.dart';
 
 class SaveRatingUseCase {
   final RatingRepository _ratingRepository;
-  
+
   // Debounce protection — spec section 21
   bool _isProcessing = false;
 

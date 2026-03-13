@@ -61,12 +61,15 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
   }
 
   Future<void> _copyAllErrors(DiagnosticsStore store) async {
-    final report = store.recentErrors.map((e) => e.toCopyableReport()).join('\n---\n');
+    final report =
+        store.recentErrors.map((e) => e.toCopyableReport()).join('\n---\n');
     if (report.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: report));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Copied ${store.recentErrors.length} error(s) to clipboard')),
+        SnackBar(
+            content: Text(
+                'Copied ${store.recentErrors.length} error(s) to clipboard')),
       );
     }
   }
@@ -77,21 +80,25 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
     buffer.writeln('App: $kAppVersion');
     buffer.writeln('Date: ${DateTime.now().toIso8601String()}');
     buffer.writeln('');
-    buffer.writeln('Integrity: ${_integrityIssues == null ? "Not run" : _integrityIssues!.isEmpty ? "OK" : "${_integrityIssues!.length} issue(s)"}');
+    buffer.writeln(
+        'Integrity: ${_integrityIssues == null ? "Not run" : _integrityIssues!.isEmpty ? "OK" : "${_integrityIssues!.length} issue(s)"}');
     if (_integrityIssues != null && _integrityIssues!.isNotEmpty) {
       for (final i in _integrityIssues!) {
-        buffer.writeln('  - ${i.summary}: ${i.count}${i.detail != null ? " (${i.detail})" : ""}');
+        buffer.writeln(
+            '  - ${i.summary}: ${i.count}${i.detail != null ? " (${i.detail})" : ""}');
       }
     }
     buffer.writeln('');
     buffer.writeln('Recent errors: ${store.recentErrors.length}');
     if (store.recentErrors.isNotEmpty) {
-      buffer.writeln(store.recentErrors.map((e) => e.toCopyableReport()).join('\n---\n'));
+      buffer.writeln(
+          store.recentErrors.map((e) => e.toCopyableReport()).join('\n---\n'));
     }
     try {
       await Share.share(
         buffer.toString(),
-        subject: 'Diagnostics report ${DateTime.now().toIso8601String().substring(0, 10)}',
+        subject:
+            'Diagnostics report ${DateTime.now().toIso8601String().substring(0, 10)}',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -101,7 +108,8 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Export failed: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -356,7 +364,8 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                       '${e.timestamp.toIso8601String().substring(0, 19)}${e.code != null ? ' · ${e.code}' : ''}',
                       style: TextStyle(
                         fontSize: 11,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     trailing: IconButton(
@@ -392,7 +401,8 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.health_and_safety_outlined),
-            label: Text(_integrityLoading ? 'Running...' : 'Run integrity checks'),
+            label:
+                Text(_integrityLoading ? 'Running...' : 'Run integrity checks'),
           ),
           if (_integrityIssues != null) ...[
             const SizedBox(height: 12),
@@ -402,7 +412,8 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, color: theme.colorScheme.primary),
+                      Icon(Icons.check_circle,
+                          color: theme.colorScheme.primary),
                       const SizedBox(width: 12),
                       Text(
                         'No issues found.',
@@ -450,7 +461,8 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                             Text(
                               issue.detail!,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -634,7 +646,10 @@ class _DerivedDataSection extends ConsumerWidget {
           Text(
             'Read-only session progress from the derived layer. Shown for last continued session.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
                 ),
           ),
           const SizedBox(height: 12),
@@ -653,11 +668,17 @@ class _DerivedDataSection extends ConsumerWidget {
                 return Text(
                   'No recent session. Continue a session from home to see derived progress here.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.7),
                       ),
                 );
               }
-              return _DerivedSnapshotContent(trialName: ctx.trial.name, sessionName: ctx.session.name, sessionId: ctx.session.id);
+              return _DerivedSnapshotContent(
+                  trialName: ctx.trial.name,
+                  sessionName: ctx.session.name,
+                  sessionId: ctx.session.id);
             },
           ),
         ],
@@ -679,7 +700,8 @@ class _DerivedSnapshotContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final snapshotAsync = ref.watch(derivedSnapshotForSessionProvider(sessionId));
+    final snapshotAsync =
+        ref.watch(derivedSnapshotForSessionProvider(sessionId));
     return snapshotAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
@@ -714,9 +736,12 @@ class _DerivedSnapshotContent extends ConsumerWidget {
             Text(
               'calcVersion: ${snapshot.calcVersion}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ],
         );

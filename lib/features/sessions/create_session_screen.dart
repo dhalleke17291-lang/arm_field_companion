@@ -58,7 +58,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   @override
   Widget build(BuildContext context) {
     final legacyAsync = ref.watch(assessmentsForTrialProvider(widget.trial.id));
-    final trialAsync = ref.watch(trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id));
+    final trialAsync = ref.watch(
+        trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
@@ -76,7 +77,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     );
   }
 
-  Widget _buildForm(BuildContext context, List<Assessment> legacy, List<(TrialAssessment, AssessmentDefinition)> trialPairs) {
+  Widget _buildForm(BuildContext context, List<Assessment> legacy,
+      List<(TrialAssessment, AssessmentDefinition)> trialPairs) {
     final assessments = legacy;
     final hasTrial = trialPairs.isNotEmpty;
     final combinedEmpty = assessments.isEmpty && !hasTrial;
@@ -139,8 +141,10 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
               const Text('Assessments to Rate',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               const Spacer(),
-              if (_selectedLegacyAssessmentIds.isNotEmpty || _selectedTrialAssessmentIds.isNotEmpty)
-                Text('${_selectedLegacyAssessmentIds.length + _selectedTrialAssessmentIds.length} selected',
+              if (_selectedLegacyAssessmentIds.isNotEmpty ||
+                  _selectedTrialAssessmentIds.isNotEmpty)
+                Text(
+                    '${_selectedLegacyAssessmentIds.length + _selectedTrialAssessmentIds.length} selected',
                     style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600)),
@@ -176,7 +180,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
               : Column(
                   children: [
                     ...assessments.map((assessment) {
-                      final isSelected = _selectedLegacyAssessmentIds.contains(assessment.id);
+                      final isSelected =
+                          _selectedLegacyAssessmentIds.contains(assessment.id);
                       return CheckboxListTile(
                         value: isSelected,
                         onChanged: (val) {
@@ -184,27 +189,36 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                             if (val == true) {
                               _selectedLegacyAssessmentIds.add(assessment.id);
                             } else {
-                              _selectedLegacyAssessmentIds.remove(assessment.id);
+                              _selectedLegacyAssessmentIds
+                                  .remove(assessment.id);
                             }
-                            
                           });
                         },
-                        title: Text(assessment.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        title: Text(assessment.name,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
                         subtitle: assessment.unit != null
-                            ? Text('${assessment.unit}${assessment.minValue != null ? " • ${assessment.minValue}–${assessment.maxValue}" : ""}')
+                            ? Text(
+                                '${assessment.unit}${assessment.minValue != null ? " • ${assessment.minValue}–${assessment.maxValue}" : ""}')
                             : null,
                         secondary: CircleAvatar(
-                          backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade200,
-                          child: Icon(Icons.analytics, color: isSelected ? Colors.white : Colors.grey, size: 20),
+                          backgroundColor: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade200,
+                          child: Icon(Icons.analytics,
+                              color: isSelected ? Colors.white : Colors.grey,
+                              size: 20),
                         ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       );
                     }),
                     ...trialPairs.map((pair) {
                       final ta = pair.$1;
                       final def = pair.$2;
                       final displayName = ta.displayNameOverride ?? def.name;
-                      final isSelected = _selectedTrialAssessmentIds.contains(ta.id);
+                      final isSelected =
+                          _selectedTrialAssessmentIds.contains(ta.id);
                       return CheckboxListTile(
                         value: isSelected,
                         onChanged: (val) {
@@ -216,15 +230,23 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                             }
                           });
                         },
-                        title: Text(displayName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        title: Text(displayName,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
                         subtitle: def.unit != null
-                            ? Text('${def.unit}${def.scaleMin != null && def.scaleMax != null ? " • ${def.scaleMin}–${def.scaleMax}" : ""}')
+                            ? Text(
+                                '${def.unit}${def.scaleMin != null && def.scaleMax != null ? " • ${def.scaleMin}–${def.scaleMax}" : ""}')
                             : null,
                         secondary: CircleAvatar(
-                          backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade200,
-                          child: Icon(Icons.analytics, color: isSelected ? Colors.white : Colors.grey, size: 20),
+                          backgroundColor: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade200,
+                          child: Icon(Icons.analytics,
+                              color: isSelected ? Colors.white : Colors.grey,
+                              size: 20),
                         ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       );
                     }),
                   ],
@@ -297,7 +319,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       if (proceed != true) return;
     }
 
-    if (_selectedLegacyAssessmentIds.isEmpty && _selectedTrialAssessmentIds.isEmpty) {
+    if (_selectedLegacyAssessmentIds.isEmpty &&
+        _selectedTrialAssessmentIds.isEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -320,11 +343,15 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
         : _raterController.text.trim();
 
     final trialRepo = ref.read(trialAssessmentRepositoryProvider);
-    final resolvedTrialIds = await trialRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
+    final resolvedTrialIds =
+        await trialRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
       widget.trial.id,
       _selectedTrialAssessmentIds.toList(),
     );
-    final assessmentIds = [..._selectedLegacyAssessmentIds, ...resolvedTrialIds];
+    final assessmentIds = [
+      ..._selectedLegacyAssessmentIds,
+      ...resolvedTrialIds
+    ];
 
     final useCase = ref.read(createSessionUseCaseProvider);
     final result = await useCase.execute(CreateSessionInput(

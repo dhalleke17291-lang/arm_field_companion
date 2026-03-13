@@ -20,7 +20,8 @@ class AssessmentsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final libraryAsync = ref.watch(trialAssessmentsWithDefinitionsForTrialProvider(trial.id));
+    final libraryAsync =
+        ref.watch(trialAssessmentsWithDefinitionsForTrialProvider(trial.id));
     final legacyAsync = ref.watch(assessmentsForTrialProvider(trial.id));
 
     if (libraryAsync.isLoading && legacyAsync.isLoading) {
@@ -31,7 +32,8 @@ class AssessmentsTab extends ConsumerWidget {
       error: (e, st) => AppErrorView(
         error: e,
         stackTrace: st,
-        onRetry: () => ref.invalidate(trialAssessmentsWithDefinitionsForTrialProvider(trial.id)),
+        onRetry: () => ref.invalidate(
+            trialAssessmentsWithDefinitionsForTrialProvider(trial.id)),
       ),
       data: (libraryList) => legacyAsync.when(
         loading: () => const AppLoadingView(),
@@ -40,7 +42,8 @@ class AssessmentsTab extends ConsumerWidget {
           stackTrace: st,
           onRetry: () => ref.invalidate(assessmentsForTrialProvider(trial.id)),
         ),
-        data: (legacyList) => _buildAssessmentsContent(context, ref, libraryList, legacyList),
+        data: (legacyList) =>
+            _buildAssessmentsContent(context, ref, libraryList, legacyList),
       ),
     );
   }
@@ -55,7 +58,8 @@ class AssessmentsTab extends ConsumerWidget {
     final total = libraryList.length + legacyList.length;
     if (total == 0) {
       final button = FilledButton(
-        onPressed: locked ? null : () => _showAddAssessmentOptions(context, ref),
+        onPressed:
+            locked ? null : () => _showAddAssessmentOptions(context, ref),
         child: const Text('Add Assessment'),
       );
       return AppEmptyState(
@@ -65,7 +69,8 @@ class AssessmentsTab extends ConsumerWidget {
             ? getProtocolLockMessage(trial.status)
             : 'Add from library or create a custom assessment.',
         action: locked && getProtocolLockMessage(trial.status).isNotEmpty
-            ? Tooltip(message: getProtocolLockMessage(trial.status), child: button)
+            ? Tooltip(
+                message: getProtocolLockMessage(trial.status), child: button)
             : button,
       );
     }
@@ -80,7 +85,8 @@ class AssessmentsTab extends ConsumerWidget {
           ),
           decoration: const BoxDecoration(
             color: AppDesignTokens.sectionHeaderBg,
-            border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+            border:
+                Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
           ),
           child: Row(
             children: [
@@ -101,10 +107,14 @@ class AssessmentsTab extends ConsumerWidget {
               ProtocolLockChip(isLocked: locked, status: trial.status),
               const SizedBox(width: 8),
               Tooltip(
-                message: locked ? getProtocolLockMessage(trial.status) : 'Add assessment',
+                message: locked
+                    ? getProtocolLockMessage(trial.status)
+                    : 'Add assessment',
                 child: IconButton(
                   icon: const Icon(Icons.add),
-                  onPressed: locked ? null : () => _showAddAssessmentOptions(context, ref),
+                  onPressed: locked
+                      ? null
+                      : () => _showAddAssessmentOptions(context, ref),
                 ),
               ),
             ],
@@ -132,10 +142,12 @@ class AssessmentsTab extends ConsumerWidget {
                   final def = pair.$2;
                   final name = ta.displayNameOverride ?? def.name;
                   return Container(
-                    margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                    margin:
+                        const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
                     decoration: BoxDecoration(
                       color: AppDesignTokens.cardSurface,
-                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusCard),
                       border: Border.all(color: AppDesignTokens.borderCrisp),
                       boxShadow: const [
                         BoxShadow(
@@ -155,8 +167,8 @@ class AssessmentsTab extends ConsumerWidget {
                         padding: const EdgeInsets.all(AppDesignTokens.spacing8),
                         decoration: BoxDecoration(
                           color: AppDesignTokens.sectionHeaderBg,
-                          borderRadius:
-                              BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                          borderRadius: BorderRadius.circular(
+                              AppDesignTokens.radiusXSmall),
                         ),
                         child: const Icon(Icons.analytics_outlined,
                             size: 20, color: AppDesignTokens.primary),
@@ -199,7 +211,8 @@ class AssessmentsTab extends ConsumerWidget {
                   ),
                 ),
                 ...legacyList.map((assessment) => Container(
-                      margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                      margin: const EdgeInsets.only(
+                          bottom: AppDesignTokens.spacing8),
                       decoration: BoxDecoration(
                         color: AppDesignTokens.cardSurface,
                         borderRadius:
@@ -220,7 +233,8 @@ class AssessmentsTab extends ConsumerWidget {
                           vertical: AppDesignTokens.spacing8,
                         ),
                         leading: Container(
-                          padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+                          padding:
+                              const EdgeInsets.all(AppDesignTokens.spacing8),
                           decoration: BoxDecoration(
                             color: AppDesignTokens.sectionHeaderBg,
                             borderRadius: BorderRadius.circular(
@@ -279,14 +293,16 @@ class AssessmentsTab extends ConsumerWidget {
               Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
+                margin:
+                    const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
                 decoration: BoxDecoration(
                   color: AppDesignTokens.dragHandle,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const Padding(
-                padding: EdgeInsets.only(left: 20, bottom: AppDesignTokens.spacing8),
+                padding:
+                    EdgeInsets.only(left: 20, bottom: AppDesignTokens.spacing8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -365,7 +381,8 @@ class AssessmentsTab extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddAssessmentDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showAddAssessmentDialog(
+      BuildContext context, WidgetRef ref) async {
     final nameController = TextEditingController();
     final unitController = TextEditingController();
     final minController = TextEditingController();
@@ -440,8 +457,10 @@ class AssessmentsTab extends ConsumerWidget {
                       unit: drift.Value(unitController.text.isEmpty
                           ? null
                           : unitController.text),
-                      minValue: drift.Value(double.tryParse(minController.text)),
-                      maxValue: drift.Value(double.tryParse(maxController.text)),
+                      minValue:
+                          drift.Value(double.tryParse(minController.text)),
+                      maxValue:
+                          drift.Value(double.tryParse(maxController.text)),
                     ),
                   );
 

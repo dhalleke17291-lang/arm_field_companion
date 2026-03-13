@@ -86,13 +86,15 @@ class TodayActivityRepository {
     }
     for (final entry in bySession.entries) {
       final session = await _db.getSessionById(entry.key);
-      final trial = session != null ? await _db.getTrialById(session.trialId) : null;
+      final trial =
+          session != null ? await _db.getTrialById(session.trialId) : null;
       final plotPks = entry.value.map((r) => r.plotPk).toSet().length;
       events.add(RatingsBatchEvent(
         at: entry.value.first.createdAt,
         count: plotPks,
         sessionName: session?.name ?? 'Session ${entry.key}',
-        trialName: trial?.name ?? (session != null ? 'Trial ${session.trialId}' : ''),
+        trialName:
+            trial?.name ?? (session != null ? 'Trial ${session.trialId}' : ''),
       ));
     }
 
@@ -108,12 +110,14 @@ class TodayActivityRepository {
     }
     for (final entry in flagsBySession.entries) {
       final session = await _db.getSessionById(entry.key);
-      final trial = session != null ? await _db.getTrialById(session.trialId) : null;
+      final trial =
+          session != null ? await _db.getTrialById(session.trialId) : null;
       events.add(FlagsBatchEvent(
         at: entry.value.first.createdAt,
         count: entry.value.length,
         sessionName: session?.name ?? 'Session ${entry.key}',
-        trialName: trial?.name ?? (session != null ? 'Trial ${session.trialId}' : ''),
+        trialName:
+            trial?.name ?? (session != null ? 'Trial ${session.trialId}' : ''),
       ));
     }
 
@@ -129,12 +133,14 @@ class TodayActivityRepository {
     }
     for (final entry in photosBySession.entries) {
       final session = await _db.getSessionById(entry.key);
-      final trial = session != null ? await _db.getTrialById(session.trialId) : null;
+      final trial =
+          session != null ? await _db.getTrialById(session.trialId) : null;
       events.add(PhotosBatchEvent(
         at: entry.value.first.createdAt,
         count: entry.value.length,
         sessionName: session?.name ?? 'Session ${entry.key}',
-        trialName: trial?.name ?? (session != null ? 'Trial ${session.trialId}' : ''),
+        trialName:
+            trial?.name ?? (session != null ? 'Trial ${session.trialId}' : ''),
       ));
     }
 

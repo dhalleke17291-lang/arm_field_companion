@@ -86,7 +86,8 @@ bool isAssignmentsLocked(String? status, bool hasSessions) {
 /// Message when an assignment action is blocked.
 String getAssignmentsLockMessage(String? status, bool hasSessions) {
   if (isProtocolLocked(status)) return getProtocolLockMessage(status);
-  if (hasSessions) return 'Assignments are fixed because this trial has session data.';
+  if (hasSessions)
+    return 'Assignments are fixed because this trial has session data.';
   return '';
 }
 

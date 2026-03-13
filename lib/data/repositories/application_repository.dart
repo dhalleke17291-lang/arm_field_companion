@@ -27,7 +27,8 @@ class ApplicationRepository {
     return _db.into(_db.trialApplicationEvents).insert(companion);
   }
 
-  Future<void> updateApplication(String id, TrialApplicationEventsCompanion companion) {
+  Future<void> updateApplication(
+      String id, TrialApplicationEventsCompanion companion) {
     return (_db.update(_db.trialApplicationEvents)
           ..where((e) => e.id.equals(id)))
         .write(companion);
@@ -114,10 +115,11 @@ class ApplicationRepository {
   Future<int> getNextApplicationNumber(int trialId) async {
     final events = await getEventsForTrial(trialId);
     if (events.isEmpty) return 1;
-    return events.map((e) => e.applicationNumber).reduce(
-            (a, b) => a > b ? a : b) + 1;
+    return events
+            .map((e) => e.applicationNumber)
+            .reduce((a, b) => a > b ? a : b) +
+        1;
   }
-
 
   Future<void> markCompleted({
     required int eventId,
@@ -130,11 +132,11 @@ class ApplicationRepository {
       await (_db.update(_db.applicationEvents)
             ..where((e) => e.id.equals(eventId)))
           .write(ApplicationEventsCompanion(
-            status: const Value('completed'),
-            completedAt: Value(DateTime.now()),
-            completedBy: Value(completedBy.isEmpty ? null : completedBy),
-            partialFlag: Value(!coversEntireTrial),
-          ));
+        status: const Value('completed'),
+        completedAt: Value(DateTime.now()),
+        completedBy: Value(completedBy.isEmpty ? null : completedBy),
+        partialFlag: Value(!coversEntireTrial),
+      ));
 
       List<int> plotPks;
       if (coversEntireTrial) {
@@ -167,15 +169,15 @@ class ApplicationRepository {
     return (_db.update(_db.applicationEvents)
           ..where((e) => e.id.equals(event.id)))
         .write(ApplicationEventsCompanion(
-          timingLabel: Value(event.timingLabel),
-          method: Value(event.method),
-          applicationDate: Value(event.applicationDate),
-          growthStage: Value(event.growthStage),
-          operatorName: Value(event.operatorName),
-          equipment: Value(event.equipment),
-          weather: Value(event.weather),
-          notes: Value(event.notes),
-        ));
+      timingLabel: Value(event.timingLabel),
+      method: Value(event.method),
+      applicationDate: Value(event.applicationDate),
+      growthStage: Value(event.growthStage),
+      operatorName: Value(event.operatorName),
+      equipment: Value(event.equipment),
+      weather: Value(event.weather),
+      notes: Value(event.notes),
+    ));
   }
 
   Future<void> deleteEvent(int eventId) async {

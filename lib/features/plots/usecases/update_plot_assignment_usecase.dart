@@ -9,7 +9,8 @@ class UpdatePlotAssignmentUseCase {
   final AssignmentRepository _assignmentRepository;
   final SessionRepository _sessionRepository;
 
-  UpdatePlotAssignmentUseCase(this._assignmentRepository, this._sessionRepository);
+  UpdatePlotAssignmentUseCase(
+      this._assignmentRepository, this._sessionRepository);
 
   /// Update a single plot's treatment assignment (manual).
   /// Sets assignmentSource = manual, assignmentUpdatedAt = now.

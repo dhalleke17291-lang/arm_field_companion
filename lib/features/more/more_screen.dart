@@ -53,7 +53,9 @@ class MoreScreen extends ConsumerWidget {
                 context,
                 icon: Icons.person_outline_rounded,
                 title: 'Change User',
-                subtitle: user != null ? 'Signed in as ${user.displayName}' : 'Select or add a user',
+                subtitle: user != null
+                    ? 'Signed in as ${user.displayName}'
+                    : 'Select or add a user',
                 onTap: () => _openUserSelection(context),
               ),
             ),
@@ -114,7 +116,8 @@ class MoreScreen extends ConsumerWidget {
                 height: 44,
                 decoration: BoxDecoration(
                   color: AppDesignTokens.primaryTint,
-                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusSmall),
                 ),
                 child: Icon(icon, size: 24, color: AppDesignTokens.primary),
               ),
@@ -154,5 +157,4 @@ class MoreScreen extends ConsumerWidget {
       ),
     );
   }
-
 }

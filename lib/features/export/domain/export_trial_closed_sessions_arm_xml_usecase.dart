@@ -14,7 +14,8 @@ class ExportTrialClosedSessionsArmXmlUsecase {
   final ExportSessionArmXmlUsecase _exportSession;
   final SessionRepository _sessionRepo;
 
-  ExportTrialClosedSessionsArmXmlUsecase(this._exportSession, this._sessionRepo);
+  ExportTrialClosedSessionsArmXmlUsecase(
+      this._exportSession, this._sessionRepo);
 
   Future<BatchExportResult> execute({
     required int trialId,
@@ -23,8 +24,7 @@ class ExportTrialClosedSessionsArmXmlUsecase {
   }) async {
     try {
       final sessions = await _sessionRepo.getSessionsForTrial(trialId);
-      final closed =
-          sessions.where((s) => s.endedAt != null).toList();
+      final closed = sessions.where((s) => s.endedAt != null).toList();
       if (closed.isEmpty) {
         return BatchExportResult.failure(
             'No closed sessions to export. Close sessions first.');
@@ -43,8 +43,8 @@ class ExportTrialClosedSessionsArmXmlUsecase {
           isSessionClosed: true,
         );
         if (!result.success) {
-          return BatchExportResult.failure(
-              result.errorMessage ?? 'Export failed for session "${session.name}"');
+          return BatchExportResult.failure(result.errorMessage ??
+              'Export failed for session "${session.name}"');
         }
         if (result.filePath != null) xmlPaths.add(result.filePath!);
       }
@@ -68,9 +68,8 @@ class ExportTrialClosedSessionsArmXmlUsecase {
       }
 
       final dir = await getApplicationDocumentsDirectory();
-      final safeName = trialName
-          .trim()
-          .replaceAll(RegExp(r'[\\/:*?"<>|\s]'), '_');
+      final safeName =
+          trialName.trim().replaceAll(RegExp(r'[\\/:*?"<>|\s]'), '_');
       final zipPath =
           '${dir.path}/AFC_trial_${safeName}_arm_xml_${DateTime.now().millisecondsSinceEpoch}.zip';
       final zipFile = File(zipPath);

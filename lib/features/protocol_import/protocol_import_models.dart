@@ -37,8 +37,10 @@ class ProtocolImportReviewResult {
 
   /// Normalized trial row (single), or null if missing/invalid.
   final Map<String, dynamic>? normalizedTrial;
+
   /// Normalized treatment rows (code, name, description).
   final List<Map<String, dynamic>> normalizedTreatments;
+
   /// Normalized plot rows (plot_id, rep, row, column, plot_sort_index, treatment_code).
   final List<Map<String, dynamic>> normalizedPlots;
 
@@ -57,7 +59,9 @@ class ProtocolImportReviewResult {
       treatmentSection.canProceed &&
       plotSection.canProceed &&
       assignmentSection.canProceed &&
-      (normalizedTrial != null || normalizedTreatments.isNotEmpty || normalizedPlots.isNotEmpty);
+      (normalizedTrial != null ||
+          normalizedTreatments.isNotEmpty ||
+          normalizedPlots.isNotEmpty);
 }
 
 /// Result of executing protocol import.

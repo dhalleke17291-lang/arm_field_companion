@@ -22,7 +22,8 @@ class ExportRepository {
     final query = db.select(rr).join([
       drift.innerJoin(p, p.id.equalsExp(rr.plotPk)),
       drift.innerJoin(a, a.id.equalsExp(rr.assessmentId)),
-      drift.leftOuterJoin(asg, asg.plotId.equalsExp(p.id) & asg.trialId.equalsExp(p.trialId)),
+      drift.leftOuterJoin(
+          asg, asg.plotId.equalsExp(p.id) & asg.trialId.equalsExp(p.trialId)),
       drift.leftOuterJoin(t, t.id.equalsExp(asg.treatmentId)),
     ])
       ..where(rr.sessionId.equals(sessionId) & rr.isCurrent.equals(true))
@@ -48,8 +49,10 @@ class ExportRepository {
       final treatment = row.readTableOrNull(t);
       final correction = corrections[rating.id];
 
-      final effectiveStatus = correction?.newResultStatus ?? rating.resultStatus;
-      final effectiveNumeric = correction?.newNumericValue ?? rating.numericValue;
+      final effectiveStatus =
+          correction?.newResultStatus ?? rating.resultStatus;
+      final effectiveNumeric =
+          correction?.newNumericValue ?? rating.numericValue;
       final effectiveText = correction?.newTextValue ?? rating.textValue;
 
       final map = <String, Object?>{
@@ -60,8 +63,12 @@ class ExportRepository {
         'treatment_id': assignment?.treatmentId ?? plot.treatmentId,
         'treatment_code': treatment?.code,
         'treatment_name': treatment?.name,
-        'assignment_source': assignment?.assignmentSource ?? plot.assignmentSource,
-        'assignment_updated_at_utc': (assignment?.assignedAt ?? plot.assignmentUpdatedAt)?.toUtc().toIso8601String(),
+        'assignment_source':
+            assignment?.assignmentSource ?? plot.assignmentSource,
+        'assignment_updated_at_utc':
+            (assignment?.assignedAt ?? plot.assignmentUpdatedAt)
+                ?.toUtc()
+                .toIso8601String(),
         'row': plot.row,
         'column': plot.column,
         'plot_sort_index': plot.plotSortIndex,
@@ -107,7 +114,8 @@ class ExportRepository {
         map['original_result_status'] = rating.resultStatus;
         map['correction_reason'] = correction.reason;
         map['corrected_by_user_id'] = correction.correctedByUserId;
-        map['corrected_at_utc'] = correction.correctedAt.toUtc().toIso8601String();
+        map['corrected_at_utc'] =
+            correction.correctedAt.toUtc().toIso8601String();
       }
 
       return map;
@@ -137,16 +145,18 @@ class ExportRepository {
           ..where((e) => e.sessionId.equals(sessionId))
           ..orderBy([(e) => drift.OrderingTerm.asc(e.createdAt)]))
         .get();
-    return rows.map((e) => <String, Object?>{
-          'trial_id': e.trialId,
-          'session_id': e.sessionId,
-          'audit_id': e.id,
-          'event_type': e.eventType,
-          'description': e.description,
-          'performed_by': e.performedBy,
-          'performed_by_user_id': e.performedByUserId,
-          'created_at_utc': e.createdAt.toUtc().toIso8601String(),
-          'metadata': e.metadata,
-        }).toList();
+    return rows
+        .map((e) => <String, Object?>{
+              'trial_id': e.trialId,
+              'session_id': e.sessionId,
+              'audit_id': e.id,
+              'event_type': e.eventType,
+              'description': e.description,
+              'performed_by': e.performedBy,
+              'performed_by_user_id': e.performedByUserId,
+              'created_at_utc': e.createdAt.toUtc().toIso8601String(),
+              'metadata': e.metadata,
+            })
+        .toList();
   }
 }

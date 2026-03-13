@@ -113,8 +113,8 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
               const SizedBox(height: 20),
               Text(
                 'Preview — first 5 rows of ${_previewRows!.length} total',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 14),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 8),
               _buildPreviewTable(),
@@ -174,15 +174,13 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
         columns: columns
             .map((col) => DataColumn(
                   label: Text(col,
-                      style:
-                          const TextStyle(fontWeight: FontWeight.bold)),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ))
             .toList(),
         rows: preview
             .map((row) => DataRow(
                   cells: columns
-                      .map((col) =>
-                          DataCell(Text(row[col]?.toString() ?? '')))
+                      .map((col) => DataCell(Text(row[col]?.toString() ?? '')))
                       .toList(),
                 ))
             .toList(),
@@ -215,20 +213,23 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          _reviewChip('Matched successfully', r.matchedSuccessfullyCount, Colors.green),
+          _reviewChip(
+              'Matched successfully', r.matchedSuccessfullyCount, Colors.green),
           if (r.autoHandledMessages.isNotEmpty)
-            _reviewChip('Auto-handled', r.autoHandledMessages.length, Colors.orange),
+            _reviewChip(
+                'Auto-handled', r.autoHandledMessages.length, Colors.orange),
           if (r.needsUserReviewItems.isNotEmpty)
-            _reviewChip('Needs user review', r.needsUserReviewItems.length, Colors.amber),
+            _reviewChip('Needs user review', r.needsUserReviewItems.length,
+                Colors.amber),
           if (r.mustFixErrors.isNotEmpty)
-            _reviewChip('Must fix before import', r.mustFixErrors.length, Colors.red),
+            _reviewChip(
+                'Must fix before import', r.mustFixErrors.length, Colors.red),
           if (r.mustFixErrors.isNotEmpty) ...[
             const SizedBox(height: 8),
             ...r.mustFixErrors.map((e) => Padding(
                   padding: const EdgeInsets.only(left: 8, top: 2),
                   child: Text('• $e',
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.red)),
+                      style: const TextStyle(fontSize: 12, color: Colors.red)),
                 )),
           ],
           if (r.autoHandledMessages.isNotEmpty && r.mustFixErrors.isEmpty) ...[
@@ -249,8 +250,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
                   padding: const EdgeInsets.only(left: 8, top: 1),
                   child: Text('• $e',
                       style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.amber.shade900)),
+                          fontSize: 11, color: Colors.amber.shade900)),
                 )),
           ],
         ],
@@ -273,7 +273,8 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
           ),
           const SizedBox(width: 8),
           Text('$label: $count',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -289,9 +290,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
         color: isSuccess ? Colors.green.shade50 : Colors.red.shade50,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-            color: isSuccess
-                ? Colors.green.shade300
-                : Colors.red.shade300),
+            color: isSuccess ? Colors.green.shade300 : Colors.red.shade300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,9 +303,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                isSuccess
-                    ? 'Import Successful'
-                    : 'Import Failed',
+                isSuccess ? 'Import Successful' : 'Import Failed',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: isSuccess ? Colors.green : Colors.red,
@@ -349,11 +346,11 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
     final file = result.files.first;
     if (file.path == null) return;
 
-      setState(() {
-        _fileName = file.name;
-        _lastResult = null;
-        _reviewResult = null;
-      });
+    setState(() {
+      _fileName = file.name;
+      _lastResult = null;
+      _reviewResult = null;
+    });
 
     try {
       final content = await File(file.path!).readAsString();
@@ -407,8 +404,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
     final normalizedRows = _reviewResult!.normalizedRows!;
     if (isProtocolLocked(widget.trial.status)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(getProtocolLockMessage(widget.trial.status))),
+        SnackBar(content: Text(getProtocolLockMessage(widget.trial.status))),
       );
       return;
     }

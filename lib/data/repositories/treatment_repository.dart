@@ -43,8 +43,7 @@ class TreatmentRepository {
     return getTreatmentById(plot.treatmentId!);
   }
 
-  Future<List<TreatmentComponent>> getComponentsForTreatment(
-      int treatmentId) {
+  Future<List<TreatmentComponent>> getComponentsForTreatment(int treatmentId) {
     return (_db.select(_db.treatmentComponents)
           ..where((c) => c.treatmentId.equals(treatmentId))
           ..orderBy([(c) => OrderingTerm.asc(c.sortOrder)]))
@@ -74,12 +73,13 @@ class TreatmentRepository {
     String? description,
   }) async {
     await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
-          TreatmentsCompanion(
-            code: code != null ? Value(code) : const Value.absent(),
-            name: name != null ? Value(name) : const Value.absent(),
-            description: description != null ? Value(description) : const Value.absent(),
-          ),
-        );
+      TreatmentsCompanion(
+        code: code != null ? Value(code) : const Value.absent(),
+        name: name != null ? Value(name) : const Value.absent(),
+        description:
+            description != null ? Value(description) : const Value.absent(),
+      ),
+    );
   }
 
   /// Deletes treatment and its components; clears plot/assignment references.
@@ -120,7 +120,7 @@ class TreatmentRepository {
 
   Future<void> deleteComponent(int componentId) async {
     await (_db.delete(_db.treatmentComponents)
-      ..where((c) => c.id.equals(componentId)))
+          ..where((c) => c.id.equals(componentId)))
         .go();
   }
 }

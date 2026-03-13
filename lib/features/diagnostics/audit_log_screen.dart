@@ -110,7 +110,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     buffer.writeln('Rows: ${events.length}');
     buffer.writeln('');
 
-    buffer.writeln('created_at,event_type,trial_id,session_id,plot_pk,performed_by,description');
+    buffer.writeln(
+        'created_at,event_type,trial_id,session_id,plot_pk,performed_by,description');
     for (final e in events) {
       buffer.writeln(_csvRow([
         e.createdAt.toIso8601String(),
@@ -126,7 +127,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     try {
       await Share.share(
         buffer.toString(),
-        subject: 'Audit log ${DateTime.now().toIso8601String().substring(0, 10)}',
+        subject:
+            'Audit log ${DateTime.now().toIso8601String().substring(0, 10)}',
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -135,7 +137,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Export failed: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -158,7 +161,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     required int? plotPk,
     required String? plotLabel,
   }) {
-    if (plotPk == null || plotLabel == null || plotLabel.isEmpty) return description;
+    if (plotPk == null || plotLabel == null || plotLabel.isEmpty)
+      return description;
     // Replace "plot 40" / "plot 40" patterns so UI shows "plot 101" instead of raw ID.
     final pattern = RegExp('plot\\s+$plotPk\\b', caseSensitive: false);
     return description.replaceAll(pattern, 'plot $plotLabel');
@@ -166,7 +170,20 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
 
   /// Format time for list: "11 Mar 2026, 11:10 PM".
   static String _formatDateTime(DateTime at) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     final hour = at.hour == 0 ? 12 : (at.hour > 12 ? at.hour - 12 : at.hour);
     final ampm = at.hour < 12 ? 'AM' : 'PM';
     final min = at.minute.toString().padLeft(2, '0');
@@ -191,7 +208,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
       builder: (context, snapshot) {
         final events = snapshot.data ?? const <AuditEvent>[];
 
-        if (snapshot.connectionState == ConnectionState.waiting && events.isEmpty) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            events.isEmpty) {
           return const Scaffold(
             backgroundColor: AppDesignTokens.backgroundSurface,
             appBar: GradientScreenHeader(title: 'Audit log'),
@@ -231,7 +249,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                     .toList(),
               ),
               IconButton(
-                icon: const Icon(Icons.file_download_outlined, color: Colors.white),
+                icon: const Icon(Icons.file_download_outlined,
+                    color: Colors.white),
                 tooltip: 'Export audit log',
                 onPressed: () => _export(context, events),
               ),
@@ -254,7 +273,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
               return ListView.separated(
                 padding: const EdgeInsets.all(AppDesignTokens.spacing16),
                 itemCount: sorted.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppDesignTokens.spacing12),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppDesignTokens.spacing12),
                 itemBuilder: (context, i) {
                   final item = sorted[i];
                   final e = item.event;
@@ -269,7 +289,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                     padding: const EdgeInsets.all(AppDesignTokens.spacing16),
                     decoration: BoxDecoration(
                       color: AppDesignTokens.cardSurface,
-                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusCard),
                       border: Border.all(color: AppDesignTokens.borderCrisp),
                       boxShadow: const [
                         BoxShadow(
@@ -290,7 +311,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                               height: 36,
                               decoration: BoxDecoration(
                                 color: AppDesignTokens.primaryTint,
-                                borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                                borderRadius: BorderRadius.circular(
+                                    AppDesignTokens.radiusXSmall),
                               ),
                               child: const Icon(
                                 Icons.history_outlined,
@@ -312,7 +334,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                                       letterSpacing: 0.2,
                                     ),
                                   ),
-                                  if (e.performedBy != null && e.performedBy!.isNotEmpty) ...[
+                                  if (e.performedBy != null &&
+                                      e.performedBy!.isNotEmpty) ...[
                                     const SizedBox(height: 2),
                                     Text(
                                       e.performedBy!,
@@ -348,7 +371,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: AppDesignTokens.sectionHeaderBg,
-                              borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                              borderRadius: BorderRadius.circular(
+                                  AppDesignTokens.radiusXSmall),
                             ),
                             child: Text(
                               contextLine,

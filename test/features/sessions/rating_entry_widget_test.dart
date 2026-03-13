@@ -77,7 +77,8 @@ void main() {
   });
 
   group('Continue Session (trial list)', () {
-    testWidgets('tapping Continue Session runs use case and navigates to RatingScreen',
+    testWidgets(
+        'tapping Continue Session runs use case and navigates to RatingScreen',
         (WidgetTester tester) async {
       fakeUseCase.result = StartOrContinueRatingResult.success(
         trial: trial,
@@ -114,7 +115,8 @@ void main() {
   });
 
   group('Quick Rate (trial list, no open session)', () {
-    testWidgets('tapping Quick Rate creates session and navigates to RatingScreen',
+    testWidgets(
+        'tapping Quick Rate creates session and navigates to RatingScreen',
         (WidgetTester tester) async {
       fakeUseCase.result = StartOrContinueRatingResult.success(
         trial: trial,
@@ -136,8 +138,8 @@ void main() {
           overrides: [
             trialsStreamProvider.overrideWith((ref) => Stream.value([trial])),
             openSessionProvider(1).overrideWith((ref) => Stream.value(null)),
-            assessmentsForTrialProvider(1).overrideWith((ref) =>
-                Stream.value(assessments)),
+            assessmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value(assessments)),
             sessionRepositoryProvider.overrideWithValue(fakeSessionRepo),
             startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
           ],
@@ -176,10 +178,14 @@ void main() {
           overrides: [
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
             sessionRatingsProvider(10).overrideWith((ref) => Future.value([])),
-            sessionAssessmentsProvider(10).overrideWith((ref) => Future.value(assessments)),
-            treatmentsForTrialProvider(1).overrideWith((ref) => Stream.value([])),
-            assignmentsForTrialProvider(1).overrideWith((ref) => Stream.value([])),
-            flaggedPlotIdsForSessionProvider(10).overrideWith((ref) => Stream.value({})),
+            sessionAssessmentsProvider(10)
+                .overrideWith((ref) => Future.value(assessments)),
+            treatmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value([])),
+            assignmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value([])),
+            flaggedPlotIdsForSessionProvider(10)
+                .overrideWith((ref) => Stream.value({})),
             startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
           ],
           child: MaterialApp(
@@ -202,18 +208,24 @@ void main() {
       expect(find.byType(RatingScreen), findsOneWidget);
     });
 
-    testWidgets('Start Rating failure: error dialog shown', (WidgetTester tester) async {
-      fakeUseCase.result = StartOrContinueRatingResult.failure('No plots in trial.');
+    testWidgets('Start Rating failure: error dialog shown',
+        (WidgetTester tester) async {
+      fakeUseCase.result =
+          StartOrContinueRatingResult.failure('No plots in trial.');
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
             sessionRatingsProvider(10).overrideWith((ref) => Future.value([])),
-            sessionAssessmentsProvider(10).overrideWith((ref) => Future.value(assessments)),
-            treatmentsForTrialProvider(1).overrideWith((ref) => Stream.value([])),
-            assignmentsForTrialProvider(1).overrideWith((ref) => Stream.value([])),
-            flaggedPlotIdsForSessionProvider(10).overrideWith((ref) => Stream.value({})),
+            sessionAssessmentsProvider(10)
+                .overrideWith((ref) => Future.value(assessments)),
+            treatmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value([])),
+            assignmentsForTrialProvider(1)
+                .overrideWith((ref) => Stream.value([])),
+            flaggedPlotIdsForSessionProvider(10)
+                .overrideWith((ref) => Stream.value({})),
             startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
           ],
           child: MaterialApp(

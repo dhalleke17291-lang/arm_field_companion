@@ -47,8 +47,7 @@ class VoidRatingResult {
 
   const VoidRatingResult._({required this.success, this.errorMessage});
 
-  factory VoidRatingResult.success() =>
-      const VoidRatingResult._(success: true);
+  factory VoidRatingResult.success() => const VoidRatingResult._(success: true);
 
   factory VoidRatingResult.failure(String message) =>
       VoidRatingResult._(success: false, errorMessage: message);

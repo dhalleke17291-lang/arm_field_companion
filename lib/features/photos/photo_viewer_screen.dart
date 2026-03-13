@@ -32,7 +32,8 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
     super.dispose();
   }
 
-  String _fileName(String path) => path.split('/').isNotEmpty ? path.split('/').last : path;
+  String _fileName(String path) =>
+      path.split('/').isNotEmpty ? path.split('/').last : path;
 
   void _showPathDialog(Photo p) {
     showDialog(
@@ -41,7 +42,9 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
         title: const Text('Photo file'),
         content: SelectableText(p.filePath),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close')),
         ],
       ),
     );

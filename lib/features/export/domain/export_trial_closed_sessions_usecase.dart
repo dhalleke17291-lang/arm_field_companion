@@ -25,7 +25,8 @@ class BatchExportResult {
     required String filePath,
     required int sessionCount,
   }) =>
-      BatchExportResult._(success: true, filePath: filePath, sessionCount: sessionCount);
+      BatchExportResult._(
+          success: true, filePath: filePath, sessionCount: sessionCount);
 
   factory BatchExportResult.failure(String message) =>
       BatchExportResult._(success: false, errorMessage: message);
@@ -45,8 +46,7 @@ class ExportTrialClosedSessionsUsecase {
   }) async {
     try {
       final sessions = await _sessionRepo.getSessionsForTrial(trialId);
-      final closed =
-          sessions.where((s) => s.endedAt != null).toList();
+      final closed = sessions.where((s) => s.endedAt != null).toList();
       if (closed.isEmpty) {
         return BatchExportResult.failure(
             'No closed sessions to export. Close sessions first.');
@@ -65,8 +65,8 @@ class ExportTrialClosedSessionsUsecase {
           isSessionClosed: true,
         );
         if (!result.success) {
-          return BatchExportResult.failure(
-              result.errorMessage ?? 'Export failed for session "${session.name}"');
+          return BatchExportResult.failure(result.errorMessage ??
+              'Export failed for session "${session.name}"');
         }
         if (result.filePath != null) csvPaths.add(result.filePath!);
         if (result.auditFilePath != null) csvPaths.add(result.auditFilePath!);
@@ -91,9 +91,8 @@ class ExportTrialClosedSessionsUsecase {
       }
 
       final dir = await getApplicationDocumentsDirectory();
-      final safeName = trialName
-          .trim()
-          .replaceAll(RegExp(r'[\\/:*?"<>|\s]'), '_');
+      final safeName =
+          trialName.trim().replaceAll(RegExp(r'[\\/:*?"<>|\s]'), '_');
       final zipPath =
           '${dir.path}/AFC_trial_${safeName}_closed_${DateTime.now().millisecondsSinceEpoch}.zip';
       final zipFile = File(zipPath);

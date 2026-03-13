@@ -13,8 +13,7 @@ class Users extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get displayName => text().withLength(min: 1, max: 255)();
   TextColumn get initials => text().nullable()();
-  TextColumn get roleKey =>
-      text().withDefault(const Constant('technician'))();
+  TextColumn get roleKey => text().withDefault(const Constant('technician'))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
@@ -27,10 +26,13 @@ class Trials extends Table {
   TextColumn get location => text().nullable()();
   TextColumn get season => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('active'))();
+
   /// Plot dimensions (e.g. "10 m × 2 m"). Trial-level default.
   TextColumn get plotDimensions => text().nullable()();
+
   /// Number of rows per plot. Trial-level default.
   IntColumn get plotRows => integer().nullable()();
+
   /// Spacing between plots (e.g. "0.5 m"). Trial-level default.
   TextColumn get plotSpacing => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -92,12 +94,16 @@ class AssessmentDefinitions extends Table {
 class TrialAssessments extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
-  IntColumn get assessmentDefinitionId => integer().references(AssessmentDefinitions, #id)();
+  IntColumn get assessmentDefinitionId =>
+      integer().references(AssessmentDefinitions, #id)();
   TextColumn get displayNameOverride => text().nullable()();
   BoolColumn get required => boolean().withDefault(const Constant(false))();
-  BoolColumn get selectedFromProtocol => boolean().withDefault(const Constant(false))();
-  BoolColumn get selectedManually => boolean().withDefault(const Constant(true))();
-  BoolColumn get defaultInSessions => boolean().withDefault(const Constant(true))();
+  BoolColumn get selectedFromProtocol =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get selectedManually =>
+      boolean().withDefault(const Constant(true))();
+  BoolColumn get defaultInSessions =>
+      boolean().withDefault(const Constant(true))();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   TextColumn get timingMode => text().nullable()();
   IntColumn get daysAfterPlanting => integer().nullable()();
@@ -106,7 +112,8 @@ class TrialAssessments extends Table {
   TextColumn get methodOverride => text().nullable()();
   TextColumn get instructionOverride => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
-  IntColumn get legacyAssessmentId => integer().references(Assessments, #id).nullable()();
+  IntColumn get legacyAssessmentId =>
+      integer().references(Assessments, #id).nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -124,6 +131,7 @@ class Plots extends Table {
   IntColumn get fieldRow => integer().nullable()();
   IntColumn get fieldColumn => integer().nullable()();
   TextColumn get notes => text().nullable()();
+
   /// Assignment provenance: 'imported' | 'manual' | null (unknown).
   TextColumn get assignmentSource => text().nullable()();
   DateTimeColumn get assignmentUpdatedAt => dateTime().nullable()();
@@ -169,7 +177,9 @@ class SessionAssessments extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get sessionId => integer().references(Sessions, #id)();
   IntColumn get assessmentId => integer().references(Assessments, #id)();
-  IntColumn get trialAssessmentId => integer().references(TrialAssessments, #id).nullable()();
+  IntColumn get trialAssessmentId =>
+      integer().references(TrialAssessments, #id).nullable()();
+
   /// User-defined order for rating flow (0, 1, 2, …). Same sequence applies to every plot.
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
@@ -179,7 +189,8 @@ class RatingRecords extends Table {
   IntColumn get trialId => integer().references(Trials, #id)();
   IntColumn get plotPk => integer().references(Plots, #id)();
   IntColumn get assessmentId => integer().references(Assessments, #id)();
-  IntColumn get trialAssessmentId => integer().references(TrialAssessments, #id).nullable()();
+  IntColumn get trialAssessmentId =>
+      integer().references(TrialAssessments, #id).nullable()();
   IntColumn get sessionId => integer().references(Sessions, #id)();
   IntColumn get subUnitId => integer().nullable()();
   TextColumn get resultStatus =>
@@ -208,8 +219,10 @@ class RatingCorrections extends Table {
   TextColumn get oldResultStatus => text()();
   TextColumn get newResultStatus => text()();
   TextColumn get reason => text()();
-  IntColumn get correctedByUserId => integer().references(Users, #id).nullable()();
-  DateTimeColumn get correctedAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get correctedByUserId =>
+      integer().references(Users, #id).nullable()();
+  DateTimeColumn get correctedAt =>
+      dateTime().withDefault(currentDateAndTime)();
   IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
   IntColumn get plotPk => integer().references(Plots, #id).nullable()();
 }
@@ -297,7 +310,6 @@ class SeedingFieldValues extends Table {
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
 
-
 class ApplicationSlots extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
@@ -314,7 +326,8 @@ class ApplicationEvents extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
   IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
-  IntColumn get applicationSlotId => integer().references(ApplicationSlots, #id).nullable()();
+  IntColumn get applicationSlotId =>
+      integer().references(ApplicationSlots, #id).nullable()();
   IntColumn get applicationNumber => integer().withDefault(const Constant(1))();
   TextColumn get timingLabel => text().nullable()();
   TextColumn get method => text().withDefault(const Constant('spray'))();
@@ -391,7 +404,8 @@ class SeedingEvents extends Table {
 class TrialApplicationEvents extends Table {
   TextColumn get id => text().clientDefault(() => const Uuid().v4())();
   IntColumn get trialId => integer().references(Trials, #id)();
-  IntColumn get treatmentId => integer().references(Treatments, #id).nullable()();
+  IntColumn get treatmentId =>
+      integer().references(Treatments, #id).nullable()();
   DateTimeColumn get applicationDate => dateTime()();
   TextColumn get growthStageCode => text().nullable()();
   TextColumn get operatorName => text().nullable()();
@@ -502,7 +516,8 @@ class AppDatabase extends _$AppDatabase {
           if (from < 11) {
             await m.createTable(assessmentDefinitions);
             await m.createTable(trialAssessments);
-            await m.addColumn(sessionAssessments, sessionAssessments.trialAssessmentId);
+            await m.addColumn(
+                sessionAssessments, sessionAssessments.trialAssessmentId);
             await m.addColumn(ratingRecords, ratingRecords.trialAssessmentId);
             await _seedAssessmentDefinitions();
           }
@@ -559,12 +574,36 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _seedAssessmentDefinitions() async {
     const rows = [
       ['CROP_INJURY', 'Crop injury', 'crop_injury', 'numeric', '%', 0.0, 100.0],
-      ['DISEASE_SEV', 'Disease severity', 'disease', 'numeric', '%', 0.0, 100.0],
+      [
+        'DISEASE_SEV',
+        'Disease severity',
+        'disease',
+        'numeric',
+        '%',
+        0.0,
+        100.0
+      ],
       ['WEED_COVER', 'Weed cover', 'weed', 'numeric', '%', 0.0, 100.0],
       ['PLANT_HEIGHT', 'Plant height', 'growth', 'numeric', 'cm', 0.0, 9999.0],
-      ['STAND_COUNT', 'Stand count', 'growth', 'numeric', 'plants/plot', 0.0, 99999.0],
+      [
+        'STAND_COUNT',
+        'Stand count',
+        'growth',
+        'numeric',
+        'plants/plot',
+        0.0,
+        99999.0
+      ],
       ['YIELD', 'Yield', 'yield', 'numeric', 'kg/ha', 0.0, 99999.0],
-      ['PHENOLOGY_BBCH', 'Growth stage (BBCH)', 'phenology', 'numeric', null, 0.0, 99.0],
+      [
+        'PHENOLOGY_BBCH',
+        'Growth stage (BBCH)',
+        'phenology',
+        'numeric',
+        null,
+        0.0,
+        99.0
+      ],
       ['QUALITY_GRADE', 'Quality grade', 'quality', 'numeric', null, 1.0, 9.0],
       ['NOTES', 'Notes / observation', 'custom', 'text', null, null, null],
     ];
@@ -577,7 +616,7 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-    Future<void> _createIndexes() async {
+  Future<void> _createIndexes() async {
     await customStatement('''
       CREATE UNIQUE INDEX IF NOT EXISTS idx_rating_current
       ON rating_records(trial_id, plot_pk, assessment_id, session_id, sub_unit_id)

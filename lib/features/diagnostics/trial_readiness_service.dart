@@ -1,43 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import 'trial_readiness.dart';
 
-enum DiagnosticSeverity { pass, warning, error }
-
-class DiagnosticCheck {
-  const DiagnosticCheck({
-    required this.label,
-    this.detail,
-    required this.severity,
-  });
-
-  final String label;
-  final String? detail;
-  final DiagnosticSeverity severity;
-}
-
-class TrialReadinessResult {
-  const TrialReadinessResult({required this.checks});
-
-  final List<DiagnosticCheck> checks;
-
-  bool get isExportBlocked =>
-      checks.any((c) => c.severity == DiagnosticSeverity.error);
-  bool get hasWarnings =>
-      checks.any((c) => c.severity == DiagnosticSeverity.warning);
-  int get passCount =>
-      checks.where((c) => c.severity == DiagnosticSeverity.pass).length;
-  int get warningCount =>
-      checks.where((c) => c.severity == DiagnosticSeverity.warning).length;
-  int get errorCount =>
-      checks.where((c) => c.severity == DiagnosticSeverity.error).length;
-}
-
-/// Runs trial readiness checks using existing repositories. No schema changes.
-class TrialDiagnosticsService {
-  Future<TrialReadinessResult> runChecks(String trialId, Ref ref) async {
+/// Runs trial readiness checks using existing providers only. No new queries.
+class TrialReadinessService {
+  Future<TrialReadinessReport> runChecks(String trialId, Ref ref) async {
     final trialPk = int.parse(trialId);
-    final checks = <DiagnosticCheck>[];
+    final checks = <TrialReadinessCheck>[];
 
     final trialRepo = ref.read(trialRepositoryProvider);
     final plotRepo = ref.read(plotRepositoryProvider);
@@ -50,50 +20,57 @@ class TrialDiagnosticsService {
 
     final trial = await trialRepo.getTrialById(trialPk);
     if (trial == null) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'trial_not_found',
         label: 'Trial not found',
-        severity: DiagnosticSeverity.error,
+        severity: TrialCheckSeverity.blocker,
       ));
-      return TrialReadinessResult(checks: checks);
+      return TrialReadinessReport(checks: checks);
     }
 
     final plots = await plotRepo.getPlotsForTrial(trialPk);
     if (plots.isEmpty) {
-      checks.add(const DiagnosticCheck(
-        label: 'No plots — cannot export',
-        severity: DiagnosticSeverity.error,
+      checks.add(const TrialReadinessCheck(
+        code: 'no_plots',
+        label: 'No plots defined',
+        severity: TrialCheckSeverity.blocker,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'plots_ok',
         label: 'Plots defined',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
     final treatments = await treatmentRepo.getTreatmentsForTrial(trialPk);
     if (treatments.isEmpty) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'no_treatments',
         label: 'No treatments defined',
-        severity: DiagnosticSeverity.error,
+        severity: TrialCheckSeverity.blocker,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'treatments_ok',
         label: 'Treatments defined',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
     final assessments =
         await ref.read(assessmentsForTrialProvider(trialPk).future);
     if (assessments.isEmpty) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'no_assessments',
         label: 'No assessments defined',
-        severity: DiagnosticSeverity.error,
+        severity: TrialCheckSeverity.blocker,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'assessments_ok',
         label: 'Assessments defined',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
@@ -101,27 +78,31 @@ class TrialDiagnosticsService {
     final hasAnyAssignment =
         assignments.isNotEmpty && assignments.any((a) => a.treatmentId != null);
     if (!hasAnyAssignment) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'no_assignments',
         label: 'No plots have treatment assignments',
-        severity: DiagnosticSeverity.error,
+        severity: TrialCheckSeverity.blocker,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'assignments_ok',
         label: 'Plot assignments present',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
     final sessions = await sessionRepo.getSessionsForTrial(trialPk);
     if (sessions.isEmpty) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'no_sessions',
         label: 'No rating sessions recorded',
-        severity: DiagnosticSeverity.error,
+        severity: TrialCheckSeverity.blocker,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'sessions_ok',
         label: 'Sessions exist',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
@@ -131,40 +112,46 @@ class TrialDiagnosticsService {
           (await ratingRepo.getCurrentRatingsForSession(session.id)).length;
     }
     if (totalRatings == 0) {
-      checks.add(const DiagnosticCheck(
-        label: 'No ratings recorded in any session',
-        severity: DiagnosticSeverity.error,
+      checks.add(const TrialReadinessCheck(
+        code: 'no_ratings',
+        label: 'No ratings recorded',
+        severity: TrialCheckSeverity.blocker,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'ratings_ok',
         label: 'Ratings recorded',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
     final seeding = await seedingRepo.getSeedingEventForTrial(trialPk);
     if (seeding == null) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'no_seeding',
         label: 'Seeding event not recorded',
-        severity: DiagnosticSeverity.warning,
+        severity: TrialCheckSeverity.warning,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'seeding_ok',
         label: 'Seeding event recorded',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
     final applications = await applicationRepo.getApplicationsForTrial(trialPk);
     if (applications.isEmpty) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'no_applications',
         label: 'No application events recorded',
-        severity: DiagnosticSeverity.warning,
+        severity: TrialCheckSeverity.warning,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'applications_ok',
         label: 'Application events recorded',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
@@ -174,17 +161,21 @@ class TrialDiagnosticsService {
             .map((e) => e.applicationDate)
             .reduce((a, b) => a.isBefore(b) ? a : b);
     if (firstAppDate != null) {
-      final sessionBeforeFirst =
+      final sessionsBeforeFirst =
           sessions.where((s) => s.startedAt.isBefore(firstAppDate)).toList();
-      if (sessionBeforeFirst.isNotEmpty) {
-        checks.add(const DiagnosticCheck(
-          label: 'Session recorded before first application — check dates',
-          severity: DiagnosticSeverity.warning,
+      if (sessionsBeforeFirst.isNotEmpty) {
+        final names = sessionsBeforeFirst.map((s) => s.name).join(', ');
+        checks.add(TrialReadinessCheck(
+          code: 'session_before_application',
+          label: 'Session recorded before first application',
+          detail: names,
+          severity: TrialCheckSeverity.warning,
         ));
       } else {
-        checks.add(const DiagnosticCheck(
+        checks.add(const TrialReadinessCheck(
+          code: 'sessions_after_app_ok',
           label: 'All sessions after first application',
-          severity: DiagnosticSeverity.pass,
+          severity: TrialCheckSeverity.pass,
         ));
       }
     }
@@ -193,14 +184,16 @@ class TrialDiagnosticsService {
         await ref.read(ratedPlotsCountForTrialProvider(trialPk).future);
     final unratedCount = plots.length - ratedCount;
     if (unratedCount > 0) {
-      checks.add(DiagnosticCheck(
+      checks.add(TrialReadinessCheck(
+        code: 'unrated_plots',
         label: '$unratedCount plots have no ratings',
-        severity: DiagnosticSeverity.warning,
+        severity: TrialCheckSeverity.warning,
       ));
     } else if (plots.isNotEmpty) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'all_rated_ok',
         label: 'All plots rated',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
@@ -213,14 +206,16 @@ class TrialDiagnosticsService {
       }
     }
     if (anyTreatmentNoComponents) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'missing_components',
         label: 'One or more treatments have no components',
-        severity: DiagnosticSeverity.warning,
+        severity: TrialCheckSeverity.warning,
       ));
     } else {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'components_ok',
         label: 'All treatments have components',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
@@ -245,15 +240,17 @@ class TrialDiagnosticsService {
         .toList();
     if (unusedAssessments.isNotEmpty) {
       for (final name in unusedAssessments) {
-        checks.add(DiagnosticCheck(
+        checks.add(TrialReadinessCheck(
+          code: 'unused_assessment',
           label: 'Assessment defined but never used: $name',
-          severity: DiagnosticSeverity.warning,
+          severity: TrialCheckSeverity.warning,
         ));
       }
     } else if (assessmentIdsInSessions.isNotEmpty) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'assessments_used_ok',
         label: 'All assessments used',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
@@ -263,17 +260,19 @@ class TrialDiagnosticsService {
       return noProduct || noRate;
     });
     if (anyAppIncomplete) {
-      checks.add(const DiagnosticCheck(
-        label: 'Application event has incomplete product details',
-        severity: DiagnosticSeverity.warning,
+      checks.add(const TrialReadinessCheck(
+        code: 'incomplete_application',
+        label: 'Application event has incomplete details',
+        severity: TrialCheckSeverity.warning,
       ));
     } else if (applications.isNotEmpty) {
-      checks.add(const DiagnosticCheck(
+      checks.add(const TrialReadinessCheck(
+        code: 'applications_complete_ok',
         label: 'All application events complete',
-        severity: DiagnosticSeverity.pass,
+        severity: TrialCheckSeverity.pass,
       ));
     }
 
-    return TrialReadinessResult(checks: checks);
+    return TrialReadinessReport(checks: checks);
   }
 }
