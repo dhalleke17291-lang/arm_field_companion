@@ -27,6 +27,7 @@ flutter test integration_test/ -d emulator-5554
 echo "==> Android build check"
 flutter build apk --debug
 
+# Requires iOS 18.4 simulator runtime installed via Xcode → Settings → Platforms
 echo "==> iOS simulator build check"
 flutter build ios --simulator
 
