@@ -34,6 +34,7 @@ import '../features/export/export_trial_usecase.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
+import '../features/diagnostics/trial_diagnostics.dart';
 import '../features/today/domain/activity_event.dart';
 import '../features/today/today_activity_repository.dart';
 import 'current_user.dart';
@@ -405,6 +406,12 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     ratingRepository: ref.watch(ratingRepositoryProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
   );
+});
+
+/// Trial readiness checks for pre-export diagnostics. AutoDispose, family by trialId.
+final trialDiagnosticsProvider =
+    FutureProvider.autoDispose.family<TrialReadinessResult, int>((ref, trialId) {
+  return TrialDiagnosticsService().runChecks(trialId.toString(), ref);
 });
 
 /// Latest protocol import event for a trial (for opening saved CSV reference).

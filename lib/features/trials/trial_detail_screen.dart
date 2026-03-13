@@ -15,6 +15,7 @@ import '../plots/plot_queue_screen.dart';
 import 'full_protocol_details_screen.dart';
 import '../../core/providers.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../diagnostics/trial_diagnostics.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import 'tabs/assessments_tab.dart';
@@ -193,6 +194,21 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     }
   }
 
+  void _showExportReadinessSheet(BuildContext context, WidgetRef ref, Trial trial) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _ExportReadinessSheet(
+        trial: trial,
+        onExport: () {
+          Navigator.pop(ctx);
+          _runExport(context, ref, trial);
+        },
+        onCancel: () => Navigator.pop(ctx),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final trialAsync = ref.watch(trialProvider(widget.trial.id));
@@ -302,7 +318,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                               icon: const Icon(Icons.ios_share_outlined, color: Colors.white, size: 22),
                               onPressed: _isExporting
                                   ? null
-                                  : () => _runExport(context, ref, currentTrial),
+                                  : () => _showExportReadinessSheet(context, ref, currentTrial),
                               tooltip: 'Export trial (CSV bundle)',
                             ),
                           ],
@@ -1344,5 +1360,240 @@ class SessionsView extends ConsumerWidget {
         backgroundColor: result.success ? Colors.green : Colors.red,
       ));
     }
+  }
+}
+
+class _ExportReadinessSheet extends ConsumerWidget {
+  const _ExportReadinessSheet({
+    required this.trial,
+    required this.onExport,
+    required this.onCancel,
+  });
+
+  final Trial trial;
+  final VoidCallback onExport;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(trialDiagnosticsProvider(trial.id));
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return async.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Check failed: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                const SizedBox(height: 16),
+                TextButton(onPressed: onCancel, child: const Text('Close')),
+              ],
+            ),
+          ),
+          data: (result) => _ReadinessContent(
+            result: result,
+            onExport: onExport,
+            onCancel: onCancel,
+            scrollController: scrollController,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ReadinessContent extends StatelessWidget {
+  const _ReadinessContent({
+    required this.result,
+    required this.onExport,
+    required this.onCancel,
+    required this.scrollController,
+  });
+
+  final TrialReadinessResult result;
+  final VoidCallback onExport;
+  final VoidCallback onCancel;
+  final ScrollController scrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final hasErrors = result.errorCount > 0;
+    final hasWarnings = result.warningCount > 0;
+
+    String summaryText;
+    IconData summaryIcon;
+    if (hasErrors) {
+      summaryText = 'Not ready to export';
+      summaryIcon = Icons.error_outline;
+    } else if (hasWarnings) {
+      summaryText = 'Ready with warnings';
+      summaryIcon = Icons.warning_amber_outlined;
+    } else {
+      summaryText = 'Ready to export';
+      summaryIcon = Icons.check_circle_outline;
+    }
+
+    final summaryColor = hasErrors
+        ? scheme.error
+        : hasWarnings
+            ? Colors.amber.shade700
+            : AppDesignTokens.successFg;
+
+    final errors = result.checks.where((c) => c.severity == DiagnosticSeverity.error).toList();
+    final warnings = result.checks.where((c) => c.severity == DiagnosticSeverity.warning).toList();
+    final passes = result.checks.where((c) => c.severity == DiagnosticSeverity.pass).toList();
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: 24 + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Trial readiness check',
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(summaryIcon, color: summaryColor, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  summaryText,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: summaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${result.passCount} checks passed · ${result.warningCount} warnings · ${result.errorCount} errors',
+            style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView(
+              controller: scrollController,
+              shrinkWrap: true,
+              children: [
+                ...errors.map((c) => _CheckRow(check: c, severity: DiagnosticSeverity.error)),
+                ...warnings.map((c) => _CheckRow(check: c, severity: DiagnosticSeverity.warning)),
+                ...passes.map((c) => _CheckRow(check: c, severity: DiagnosticSeverity.pass)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (hasErrors) ...[
+            Text(
+              'Resolve errors before exporting.',
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(onPressed: onCancel, child: const Text('Close')),
+          ] else if (hasWarnings) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onExport,
+                    child: const Text('Export anyway'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.tonal(
+                    onPressed: onCancel,
+                    child: const Text('Cancel'),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            FilledButton(
+              onPressed: onExport,
+              child: const Text('Export'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CheckRow extends StatelessWidget {
+  const _CheckRow({required this.check, required this.severity});
+
+  final DiagnosticCheck check;
+  final DiagnosticSeverity severity;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    IconData icon;
+    Color color;
+    switch (severity) {
+      case DiagnosticSeverity.error:
+        icon = Icons.close;
+        color = scheme.error;
+        break;
+      case DiagnosticSeverity.warning:
+        icon = Icons.warning_amber_outlined;
+        color = Colors.amber.shade700;
+        break;
+      case DiagnosticSeverity.pass:
+        icon = Icons.check;
+        color = AppDesignTokens.successFg;
+        break;
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  check.label,
+                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                ),
+                if (check.detail != null && check.detail!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    check.detail!,
+                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
