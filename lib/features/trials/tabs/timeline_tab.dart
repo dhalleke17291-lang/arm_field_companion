@@ -1,0 +1,365 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/database/app_database.dart';
+import '../../../core/design/app_design_tokens.dart';
+import '../../../core/providers.dart';
+import '../../../shared/widgets/app_empty_state.dart';
+
+enum _TimelineEventType { seeding, application, session }
+
+class _TrialTimelineEvent {
+  const _TrialTimelineEvent({
+    required this.date,
+    required this.type,
+    required this.title,
+    this.subtitle,
+    this.timingText,
+    this.beforeFirstApplication = false,
+  });
+
+  final DateTime date;
+  final _TimelineEventType type;
+  final String title;
+  final String? subtitle;
+  final String? timingText;
+  final bool beforeFirstApplication;
+}
+
+/// Date group: header + events on a continuous vertical rail.
+class _TimelineDateGroup {
+  const _TimelineDateGroup({required this.date, required this.events});
+
+  final DateTime date;
+  final List<_TrialTimelineEvent> events;
+}
+
+/// Read-only trial timeline: date-grouped seeding, applications, sessions.
+/// No schema, repository, or provider changes — derived from existing providers.
+class TimelineTab extends ConsumerWidget {
+  const TimelineTab({super.key, required this.trial});
+
+  final Trial trial;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final seedingAsync = ref.watch(seedingEventForTrialProvider(trial.id));
+    final applicationsAsync = ref.watch(trialApplicationsForTrialProvider(trial.id));
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
+
+    return seedingAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, st) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          child: Text(
+            'Failed to load timeline: $e',
+            style: const TextStyle(color: AppDesignTokens.secondaryText),
+          ),
+        ),
+      ),
+      data: (seedingEvent) {
+        final applications = applicationsAsync.valueOrNull ?? [];
+        final sessions = sessionsAsync.valueOrNull ?? [];
+        final seedingDate = seedingEvent?.seedingDate;
+
+        final DateTime? firstApplicationDate = applications.isEmpty
+            ? null
+            : applications
+                .map((a) => a.applicationDate)
+                .reduce((a, b) => a.isBefore(b) ? a : b);
+
+        final events = <_TrialTimelineEvent>[];
+
+        if (seedingEvent != null) {
+          events.add(_TrialTimelineEvent(
+            date: seedingEvent.seedingDate,
+            type: _TimelineEventType.seeding,
+            title: 'Seeding',
+            subtitle: seedingEvent.operatorName?.trim().isNotEmpty == true
+                ? seedingEvent.operatorName
+                : null,
+            timingText: 'Day 0',
+          ));
+        }
+
+        for (final app in applications) {
+          final days = seedingDate != null
+              ? app.applicationDate.difference(seedingDate).inDays
+              : null;
+          final timingText = days != null ? '$days days after seeding' : null;
+          final productLabel = app.productName?.trim().isNotEmpty == true
+              ? app.productName!
+              : 'Application';
+          final ratePart = (app.rate != null && app.rateUnit != null)
+              ? '${app.rate} ${app.rateUnit}'
+              : null;
+          events.add(_TrialTimelineEvent(
+            date: app.applicationDate,
+            type: _TimelineEventType.application,
+            title: productLabel,
+            subtitle: ratePart,
+            timingText: timingText,
+          ));
+        }
+
+        for (final session in sessions) {
+          final days = seedingDate != null
+              ? session.startedAt.difference(seedingDate).inDays
+              : null;
+          final timingText = days != null ? '$days days after seeding' : null;
+          final beforeFirst = firstApplicationDate != null &&
+              !session.startedAt.isAfter(firstApplicationDate) &&
+              session.startedAt.isBefore(firstApplicationDate);
+          events.add(_TrialTimelineEvent(
+            date: session.startedAt,
+            type: _TimelineEventType.session,
+            title: 'Rating session',
+            subtitle: session.name,
+            timingText: timingText,
+            beforeFirstApplication: beforeFirst,
+          ));
+        }
+
+        events.sort((a, b) => a.date.compareTo(b.date));
+
+        if (events.isEmpty) {
+          return const AppEmptyState(
+            icon: Icons.timeline,
+            title: 'No events recorded yet',
+            subtitle: 'Seeding, applications, and rating sessions will appear here.',
+          );
+        }
+
+        // Group by local calendar date — key is (year, month, day), never raw timestamp equality
+        final groups = <_TimelineDateGroup>[];
+        List<_TrialTimelineEvent>? currentList;
+        DateTime? currentDay;
+
+        for (final e in events) {
+          final day = DateTime(e.date.year, e.date.month, e.date.day);
+          if (currentDay == null || day != currentDay) {
+            currentDay = day;
+            currentList = [];
+            groups.add(_TimelineDateGroup(date: day, events: currentList));
+          }
+          currentList!.add(e);
+        }
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing12,
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing24,
+          ),
+          children: [
+            for (final group in groups) _TimelineDateGroupSection(group: group),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// One date group: bold date header + vertical rail with event rows.
+class _TimelineDateGroupSection extends StatelessWidget {
+  const _TimelineDateGroupSection({required this.group});
+
+  final _TimelineDateGroup group;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dateHeader = DateFormat('MMM d, yyyy').format(group.date);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            dateHeader,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppDesignTokens.spacing8),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < group.events.length; i++)
+                _TimelineEventRow(
+                  event: group.events[i],
+                  isFirst: i == 0,
+                  isLast: i == group.events.length - 1,
+                  railColor: scheme.outlineVariant,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One event row: 2px rail segment + filled circle (color by type) + content (title, subtitle, timing, warning).
+class _TimelineEventRow extends StatelessWidget {
+  const _TimelineEventRow({
+    required this.event,
+    required this.isFirst,
+    required this.isLast,
+    required this.railColor,
+  });
+
+  final _TrialTimelineEvent event;
+  final bool isFirst;
+  final bool isLast;
+  final Color railColor;
+
+  static const double _railWidth = 2.0;
+  static const double _circleSize = 12.0;
+  static const double _segmentHeight = 16.0;
+
+  IconData get _icon {
+    switch (event.type) {
+      case _TimelineEventType.seeding:
+        return Icons.grass;
+      case _TimelineEventType.application:
+        return Icons.water_drop_outlined;
+      case _TimelineEventType.session:
+        return Icons.assignment_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final circleColor = switch (event.type) {
+      _TimelineEventType.seeding => scheme.primary,
+      _TimelineEventType.application => scheme.secondary,
+      _TimelineEventType.session => scheme.tertiary,
+    };
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 32,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isFirst)
+                Container(
+                  width: _railWidth,
+                  height: _segmentHeight,
+                  margin: const EdgeInsets.only(left: 14),
+                  color: railColor,
+                ),
+              Center(
+                child: Container(
+                  width: _circleSize,
+                  height: _circleSize,
+                  decoration: BoxDecoration(
+                    color: circleColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              if (!isLast)
+                Container(
+                  width: _railWidth,
+                  height: _segmentHeight,
+                  margin: const EdgeInsets.only(left: 14),
+                  color: railColor,
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppDesignTokens.spacing12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: scheme.outlineVariant),
+                      ),
+                      child: Icon(_icon, size: 18, color: scheme.onSurface),
+                    ),
+                    const SizedBox(width: AppDesignTokens.spacing12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            event.title,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                          if (event.subtitle != null &&
+                              event.subtitle!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              event.subtitle!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          if (event.timingText != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              event.timingText!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: scheme.onSurfaceVariant
+                                    .withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                          if (event.beforeFirstApplication) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Before first application',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: scheme.error,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

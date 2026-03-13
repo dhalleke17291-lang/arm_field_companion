@@ -21,6 +21,7 @@ import 'tabs/treatments_tab.dart';
 import 'tabs/seeding_tab.dart';
 import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
+import 'tabs/timeline_tab.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -37,7 +38,7 @@ class TrialDetailScreen extends ConsumerStatefulWidget {
 class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   int _selectedTabIndex = 0;
   int _previousTabIndex = 0;
-  static const int _sessionsIndex = 6;
+  static const int _sessionsIndex = 7;
 
   static const Duration _hubHintDelay = Duration(milliseconds: 600);
   static const Duration _hubHintScrollDuration = Duration(milliseconds: 450);
@@ -272,6 +273,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 AssessmentsTab(trial: currentTrial),
                 TreatmentsTab(trial: currentTrial),
                 PhotosTab(trial: currentTrial),
+                TimelineTab(trial: currentTrial),
                 SessionsView(
                   trial: currentTrial,
                   onBack: () =>
@@ -647,6 +649,7 @@ class _TrialModuleHub extends StatelessWidget {
       (3, Icons.assessment, 'Assessments'),
       (4, Icons.science_outlined, 'Treatments'),
       (5, Icons.photo_library, 'Photos'),
+      (6, Icons.timeline_outlined, 'Timeline'),
     ];
 
     final listView = ListView.separated(
