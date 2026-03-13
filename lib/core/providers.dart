@@ -30,6 +30,7 @@ import '../features/export/domain/export_session_csv_usecase.dart';
 import '../features/export/domain/export_session_arm_xml_usecase.dart';
 import '../features/export/domain/export_trial_closed_sessions_usecase.dart';
 import '../features/export/domain/export_trial_closed_sessions_arm_xml_usecase.dart';
+import '../features/export/export_trial_usecase.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
@@ -393,6 +394,18 @@ final exportTrialClosedSessionsArmXmlUsecaseProvider =
   );
 });
 
+final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
+  return ExportTrialUseCase(
+    trialRepository: ref.watch(trialRepositoryProvider),
+    plotRepository: ref.watch(plotRepositoryProvider),
+    treatmentRepository: ref.watch(treatmentRepositoryProvider),
+    applicationRepository: ref.watch(applicationRepositoryProvider),
+    seedingRepository: ref.watch(seedingRepositoryProvider),
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+  );
+});
 
 /// Latest protocol import event for a trial (for opening saved CSV reference).
 final latestImportEventForTrialProvider =

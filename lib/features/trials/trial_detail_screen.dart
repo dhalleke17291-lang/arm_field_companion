@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
@@ -49,6 +51,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   bool _programmaticScroll = false;
   bool _hintCancelled = false;
   Timer? _hintSchedule;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -126,6 +129,61 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     super.dispose();
   }
 
+  Future<void> _runExport(BuildContext context, WidgetRef ref, Trial trial) async {
+    setState(() => _isExporting = true);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exporting...')),
+      );
+    }
+    try {
+      final useCase = ref.read(exportTrialUseCaseProvider);
+      final bundle = await useCase.execute(trial.id.toString());
+      final dir = await getTemporaryDirectory();
+      final base = '${trial.name.replaceAll(RegExp(r'[^\w\s-]'), '_')}_export';
+      final files = <XFile>[];
+      final names = ['observations', 'treatments', 'plot_assignments', 'applications', 'seeding', 'sessions'];
+      final contents = [
+        bundle.observationsCsv,
+        bundle.treatmentsCsv,
+        bundle.plotAssignmentsCsv,
+        bundle.applicationsCsv,
+        bundle.seedingCsv,
+        bundle.sessionsCsv,
+      ];
+      for (var i = 0; i < names.length; i++) {
+        final path = '${dir.path}/${base}_${names[i]}.csv';
+        await File(path).writeAsString(contents[i]);
+        files.add(XFile(path));
+      }
+      if (!context.mounted) return;
+      final box = context.findRenderObject() as RenderBox?;
+      await Share.shareXFiles(
+        files,
+        text: '${trial.name} – trial export (${files.length} CSV files)',
+        sharePositionOrigin: box == null
+            ? const Rect.fromLTWH(0, 0, 100, 100)
+            : box.localToGlobal(Offset.zero) & box.size,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export ready to share')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final trialAsync = ref.watch(trialProvider(widget.trial.id));
@@ -136,9 +194,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
-      body: Column(
+      body: Stack(
         children: [
-          ConstrainedBox(
+          Column(
+            children: [
+              ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxHeaderHeight),
             child: SingleChildScrollView(
               child: Column(
@@ -229,6 +289,13 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                               ),
                               tooltip: 'View full protocol',
                             ),
+                            IconButton(
+                              icon: const Icon(Icons.upload_outlined, color: Colors.white, size: 22),
+                              onPressed: _isExporting
+                                  ? null
+                                  : () => _runExport(context, ref, currentTrial),
+                              tooltip: 'Export trial (CSV bundle)',
+                            ),
                           ],
                         ),
                       ),
@@ -263,25 +330,34 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               ),
             ),
           ),
-          Expanded(
-            child: IndexedStack(
-              index: _selectedTabIndex,
-              children: [
-                PlotsTab(trial: currentTrial),
-                SeedingTab(trial: currentTrial),
-                ApplicationsTab(trial: currentTrial),
-                AssessmentsTab(trial: currentTrial),
-                TreatmentsTab(trial: currentTrial),
-                PhotosTab(trial: currentTrial),
-                TimelineTab(trial: currentTrial),
-                SessionsView(
-                  trial: currentTrial,
-                  onBack: () =>
-                      setState(() => _selectedTabIndex = _previousTabIndex),
+              Expanded(
+                child: IndexedStack(
+                  index: _selectedTabIndex,
+                  children: [
+                    PlotsTab(trial: currentTrial),
+                    SeedingTab(trial: currentTrial),
+                    ApplicationsTab(trial: currentTrial),
+                    AssessmentsTab(trial: currentTrial),
+                    TreatmentsTab(trial: currentTrial),
+                    PhotosTab(trial: currentTrial),
+                    TimelineTab(trial: currentTrial),
+                    SessionsView(
+                      trial: currentTrial,
+                      onBack: () =>
+                          setState(() => _selectedTabIndex = _previousTabIndex),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          if (_isExporting)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black26,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
         ],
       ),
     );
