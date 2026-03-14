@@ -205,10 +205,59 @@ class _AddTestPlotsDialogState extends State<_AddTestPlotsDialog> {
   }
 }
 
-class PlotsTab extends ConsumerStatefulWidget {
+/// Pinned bar for navigating to plot details. Used as Scaffold.bottomNavigationBar when Plots tab uses unified scroll.
+class PlotDetailsBar extends StatelessWidget {
+  const PlotDetailsBar({super.key, required this.trial});
+
   final Trial trial;
 
-  const PlotsTab({super.key, required this.trial});
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Material(
+        color: AppDesignTokens.primary,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => _PlotDetailsScreen(trial: trial),
+              ),
+            );
+          },
+          child: const Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing16,
+              vertical: AppDesignTokens.spacing12,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Plot Details',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: AppDesignTokens.spacing8),
+                Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PlotsTab extends ConsumerStatefulWidget {
+  const PlotsTab({super.key, required this.trial, this.embeddedInScroll = false});
+
+  final Trial trial;
+  final bool embeddedInScroll;
 
   @override
   ConsumerState<PlotsTab> createState() => _PlotsTabState();
@@ -228,8 +277,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     final applicationsList =
         ref.watch(trialApplicationsForTrialProvider(trial.id)).value ?? [];
     final applicationCount = applicationsList.length;
-    final lastApplicationDate =
-        applicationsList.isEmpty ? null : applicationsList.last.applicationDate;
+    final lastApplication = applicationsList.isEmpty
+        ? null
+        : applicationsList.last;
     final treatmentComponentCount = ref
             .watch(treatmentComponentsCountForTrialProvider(trial.id))
             .valueOrNull ??
@@ -248,6 +298,33 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
       ),
       data: (plots) {
         if (plots.isEmpty) {
+          if (widget.embeddedInScroll) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildListMatrixToggle(context),
+                _buildPlotsSummaryRowsOnly(
+                  context,
+                  ref,
+                  trial,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  treatmentsAsync.value?.length ?? 0,
+                  treatmentComponentCount,
+                  ratedPlotsCount,
+                  sessionCount,
+                  applicationCount,
+                  lastApplication,
+                  seedingDate,
+                ),
+              ],
+            );
+          }
           return _buildPlotsSummaryWithBar(
             context,
             ref,
@@ -263,7 +340,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             ratedPlotsCount,
             sessionCount,
             applicationCount,
-            lastApplicationDate,
+            lastApplication,
             seedingDate,
           );
         }
@@ -289,6 +366,39 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             }
           }
         }
+        if (widget.embeddedInScroll) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildListMatrixToggle(context),
+              _showMatrix
+                  ? _AssignmentMatrix(
+                      trial: trial,
+                      plots: plots,
+                      shrinkWrap: true,
+                    )
+                  : _buildPlotsSummaryRowsOnly(
+                      context,
+                      ref,
+                      trial,
+                      plots.length,
+                      rowCount,
+                      columnCount,
+                      repNumbers.length,
+                      assignedCount,
+                      unassignedCount,
+                      treatments.length,
+                      treatmentComponentCount,
+                      ratedPlotsCount,
+                      sessionCount,
+                      applicationCount,
+                      lastApplication,
+                      seedingDate,
+                    ),
+            ],
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -311,7 +421,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                       ratedPlotsCount,
                       sessionCount,
                       applicationCount,
-                      lastApplicationDate,
+                      lastApplication,
                       seedingDate,
                     ),
             ),
@@ -351,6 +461,66 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     );
   }
 
+  /// Summary rows only (no scroll wrapper, no bottom bar). For use inside a parent scroll.
+  Widget _buildPlotsSummaryRowsOnly(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+    int totalPlots,
+    int rowCount,
+    int columnCount,
+    int replicateCount,
+    int assignedCount,
+    int unassignedCount,
+    int treatmentCount,
+    int treatmentComponentCount,
+    int ratedPlotsCount,
+    int sessionCount,
+    int applicationCount,
+    TrialApplicationEvent? lastApplication,
+    DateTime? seedingDate,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Trial Summary',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          if (trial.sponsor != null ||
+              trial.protocolNumber != null ||
+              trial.investigatorName != null) ...[
+            const SizedBox(height: 8),
+            _buildProtocolHeader(context, trial),
+            const SizedBox(height: 8),
+          ],
+          const SizedBox(height: AppDesignTokens.spacing12),
+          _summaryRow('Total plots', '$totalPlots'),
+          _summaryRow('Ranges', '$rowCount'),
+          _summaryRow('Columns', '$columnCount'),
+          _summaryRow('Replicates', '$replicateCount'),
+          _summaryRow('Assigned plots', '$assignedCount'),
+          _summaryRow('Unassigned plots', '$unassignedCount'),
+          _summaryRow('Treatments', '$treatmentCount'),
+          _summaryRow('Treatment components', '$treatmentComponentCount'),
+          _summaryRow('Rated plots', '$ratedPlotsCount of $totalPlots'),
+          _summaryRow('Sessions', '$sessionCount'),
+          _applicationsSummaryRow(context, trial, applicationCount),
+          _lastApplicationSummaryRow(context, lastApplication),
+          _seedingDateSummaryRow(seedingDate),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPlotsSummaryWithBar(
     BuildContext context,
     WidgetRef ref,
@@ -366,7 +536,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     int ratedPlotsCount,
     int sessionCount,
     int applicationCount,
-    DateTime? lastApplicationDate,
+    TrialApplicationEvent? lastApplication,
     DateTime? seedingDate,
   ) {
     return Column(
@@ -387,6 +557,13 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
+                if (trial.sponsor != null ||
+                    trial.protocolNumber != null ||
+                    trial.investigatorName != null) ...[
+                  const SizedBox(height: 8),
+                  _buildProtocolHeader(context, trial),
+                  const SizedBox(height: 8),
+                ],
                 const SizedBox(height: AppDesignTokens.spacing12),
                 _summaryRow('Total plots', '$totalPlots'),
                 _summaryRow('Ranges', '$rowCount'),
@@ -399,7 +576,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 _summaryRow('Rated plots', '$ratedPlotsCount of $totalPlots'),
                 _summaryRow('Sessions', '$sessionCount'),
                 _applicationsSummaryRow(context, trial, applicationCount),
-                _lastApplicationSummaryRow(context, lastApplicationDate),
+                _lastApplicationSummaryRow(context, lastApplication),
                 _seedingDateSummaryRow(seedingDate),
               ],
             ),
@@ -444,6 +621,47 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildProtocolHeader(BuildContext context, Trial trial) {
+    final lines = <String>[];
+    if (trial.sponsor != null && trial.sponsor!.trim().isNotEmpty) {
+      lines.add('Sponsor: ${trial.sponsor!.trim()}');
+    }
+    if (trial.protocolNumber != null &&
+        trial.protocolNumber!.trim().isNotEmpty) {
+      lines.add('Protocol: ${trial.protocolNumber!.trim()}');
+    }
+    if (trial.investigatorName != null &&
+        trial.investigatorName!.trim().isNotEmpty) {
+      lines.add('Investigator: ${trial.investigatorName!.trim()}');
+    }
+    if (lines.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing12,
+          vertical: AppDesignTokens.spacing8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: lines
+            .map((line) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    line,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ))
+            .toList(),
+      ),
     );
   }
 
@@ -505,10 +723,15 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
   }
 
   Widget _lastApplicationSummaryRow(
-      BuildContext context, DateTime? lastApplicationDate) {
-    final value = lastApplicationDate != null
-        ? DateFormat('MMM d, yyyy').format(lastApplicationDate)
-        : 'None';
+      BuildContext context, TrialApplicationEvent? lastApplication) {
+    String value = 'None';
+    if (lastApplication != null) {
+      value = DateFormat('MMM d, yyyy').format(lastApplication.applicationDate);
+      if (lastApplication.applicationMethod != null &&
+          lastApplication.applicationMethod!.trim().isNotEmpty) {
+        value = '$value · ${lastApplication.applicationMethod!.trim()}';
+      }
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
       child: Row(
@@ -523,14 +746,17 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             ),
           ),
           const SizedBox(width: AppDesignTokens.spacing16),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: lastApplicationDate != null
-                  ? AppDesignTokens.primaryText
-                  : AppDesignTokens.secondaryText,
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: lastApplication != null
+                    ? AppDesignTokens.primaryText
+                    : AppDesignTokens.secondaryText,
+              ),
+              textAlign: TextAlign.end,
             ),
           ),
         ],
@@ -574,11 +800,18 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
 }
 
 /// Assignment matrix: plots grouped by rep, each cell shows plot label + treatment code; tap to assign.
+/// When [shrinkWrap] is true, the matrix is used inside an unbounded scroll (e.g. trial detail Plots tab);
+/// it must not use [Expanded] and instead uses [ListView] with [shrinkWrap: true].
 class _AssignmentMatrix extends ConsumerWidget {
-  const _AssignmentMatrix({required this.trial, required this.plots});
+  const _AssignmentMatrix({
+    required this.trial,
+    required this.plots,
+    this.shrinkWrap = false,
+  });
 
   final Trial trial;
   final List<Plot> plots;
+  final bool shrinkWrap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -602,58 +835,71 @@ class _AssignmentMatrix extends ConsumerWidget {
     }
 
     final blocks = buildRepBasedLayout(plots);
+    final listContent = ListView(
+      shrinkWrap: shrinkWrap,
+      physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing4,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing12,
+      ),
+      children: [
+        for (final block in blocks)
+          for (final repRow in block.repRows) ...[
+            Padding(
+              padding: const EdgeInsets.only(
+                top: AppDesignTokens.spacing12,
+                bottom: AppDesignTokens.spacing8,
+              ),
+              child: Text(
+                'Rep ${repRow.repNumber}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Wrap(
+              spacing: AppDesignTokens.spacing8,
+              runSpacing: AppDesignTokens.spacing8,
+              children: repRow.plots.map((plot) {
+                final a = assignmentByPlotId[plot.id];
+                final tid = a?.treatmentId ?? plot.treatmentId;
+                final treatment = tid != null ? treatmentById[tid] : null;
+                final code = treatment?.code ?? '—';
+                final treatmentIndex = tid != null
+                    ? treatments.indexWhere((t) => t.id == tid)
+                    : null;
+                return _AssignmentMatrixCell(
+                  plot: plot,
+                  treatmentCode: code,
+                  treatmentIndex: treatmentIndex,
+                  trial: trial,
+                  plots: plots,
+                );
+              }).toList(),
+            ),
+          ],
+      ],
+    );
+
+    if (shrinkWrap) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          listContent,
+          _AssignmentMatrixLegend(treatments: treatments),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppDesignTokens.spacing16,
-              AppDesignTokens.spacing4,
-              AppDesignTokens.spacing16,
-              AppDesignTokens.spacing12,
-            ),
-            children: [
-              for (final block in blocks)
-                for (final repRow in block.repRows) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      top: AppDesignTokens.spacing12,
-                      bottom: AppDesignTokens.spacing8,
-                    ),
-                    child: Text(
-                      'Rep ${repRow.repNumber}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  Wrap(
-                    spacing: AppDesignTokens.spacing8,
-                    runSpacing: AppDesignTokens.spacing8,
-                    children: repRow.plots.map((plot) {
-                      final a = assignmentByPlotId[plot.id];
-                      final tid = a?.treatmentId ?? plot.treatmentId;
-                      final treatment = tid != null ? treatmentById[tid] : null;
-                      final code = treatment?.code ?? '—';
-                      final treatmentIndex = tid != null
-                          ? treatments.indexWhere((t) => t.id == tid)
-                          : null;
-                      return _AssignmentMatrixCell(
-                        plot: plot,
-                        treatmentCode: code,
-                        treatmentIndex: treatmentIndex,
-                        trial: trial,
-                        plots: plots,
-                      );
-                    }).toList(),
-                  ),
-                ],
-            ],
-          ),
-        ),
+        Expanded(child: listContent),
         _AssignmentMatrixLegend(treatments: treatments),
       ],
     );
@@ -1012,8 +1258,9 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                       int columnCount = 0;
                       for (final block in blocks) {
                         for (final row in block.repRows) {
-                          if (row.plots.length > columnCount)
+                          if (row.plots.length > columnCount) {
                             columnCount = row.plots.length;
+                          }
                         }
                       }
                       const double repLabelW = 52.0;
@@ -2030,8 +2277,9 @@ class _PlotLayoutGrid extends StatelessWidget {
       if (plotPksWithTrialApplication != null) {
         final effectiveTid = plotIdToTreatmentId?[plot.id] ?? plot.treatmentId;
         if (effectiveTid == null) return AppDesignTokens.unassignedColor;
-        if (plotPksWithTrialApplication!.contains(plot.id))
+        if (plotPksWithTrialApplication!.contains(plot.id)) {
           return AppDesignTokens.appliedColor;
+        }
         final treatmentIndex =
             treatments.indexWhere((t) => t.id == effectiveTid);
         return treatmentIndex >= 0
@@ -2548,8 +2796,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                           int columnCount = 0;
                           for (final block in blocks) {
                             for (final row in block.repRows) {
-                              if (row.plots.length > columnCount)
+                              if (row.plots.length > columnCount) {
                                 columnCount = row.plots.length;
+                              }
                             }
                           }
                           const double repLabelW = 52.0;

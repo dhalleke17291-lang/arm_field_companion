@@ -74,25 +74,25 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppDesignTokens.spacing16,
-                      vertical: AppDesignTokens.spacing8,
+                      vertical: AppDesignTokens.spacing12,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           selected ? item.selectedIcon : item.icon,
-                          size: 24,
+                          size: 26,
                           color: selected
                               ? AppDesignTokens.primary
                               : AppDesignTokens.iconSubtle,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           item.label,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight:
-                                selected ? FontWeight.w600 : FontWeight.w500,
+                                selected ? FontWeight.w700 : FontWeight.w500,
                             color: selected
                                 ? AppDesignTokens.primary
                                 : AppDesignTokens.secondaryText,

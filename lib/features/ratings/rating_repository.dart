@@ -58,6 +58,9 @@ class RatingRepository {
     String? createdDeviceInfo,
     double? capturedLatitude,
     double? capturedLongitude,
+    String? ratingTime,
+    String? ratingMethod,
+    String? confidence,
   }) async {
     if (isSessionClosed) throw SessionClosedException();
 
@@ -84,7 +87,7 @@ class RatingRepository {
             .write(const RatingRecordsCompanion(isCurrent: Value(false)));
       }
 
-      // Insert new current record (with optional provenance)
+      // Insert new current record (with optional provenance and rating metadata)
       final newId = await _db.into(_db.ratingRecords).insert(
             RatingRecordsCompanion.insert(
               trialId: trialId,
@@ -102,6 +105,9 @@ class RatingRepository {
               createdDeviceInfo: Value(createdDeviceInfo),
               capturedLatitude: Value(capturedLatitude),
               capturedLongitude: Value(capturedLongitude),
+              ratingTime: Value(ratingTime),
+              ratingMethod: Value(ratingMethod),
+              confidence: Value(confidence),
             ),
           );
 
@@ -201,6 +207,65 @@ class RatingRepository {
             raterName: Value(raterName),
           ),
         );
+  }
+
+  /// Get a single rating by id (for edit/amendment flow).
+  Future<RatingRecord?> getRatingById(int id) {
+    return (_db.select(_db.ratingRecords)..where((r) => r.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  /// Update an existing rating (edit flow). Applies amendment logic: if the
+  /// stored value is changed and there was an existing value, sets amended=true,
+  /// amended_at=now(), and preserves original_value only if currently null.
+  Future<RatingRecord> updateRating({
+    required int ratingId,
+    double? numericValue,
+    String? textValue,
+    String? resultStatus,
+    String? amendmentReason,
+    String? amendedBy,
+    String? confidence,
+  }) async {
+    final existing = await getRatingById(ratingId);
+    if (existing == null) throw RatingIntegrityException('Rating not found: $ratingId');
+
+    final newNum = numericValue ?? existing.numericValue;
+    final newText = textValue ?? existing.textValue;
+    final newStatus = resultStatus ?? existing.resultStatus;
+
+    final existingValueStr = existing.numericValue?.toString() ?? existing.textValue ?? '';
+    final newValueStr = newNum?.toString() ?? newText ?? '';
+    final valueChanged = existingValueStr != newValueStr && existingValueStr.isNotEmpty;
+
+    bool amended = existing.amended;
+    DateTime? amendedAt = existing.amendedAt;
+    String? originalValue = existing.originalValue;
+
+    if (valueChanged) {
+      amended = true;
+      amendedAt = DateTime.now().toUtc();
+      if (originalValue == null || originalValue.isEmpty) {
+        originalValue = existingValueStr;
+      }
+    }
+
+    await (_db.update(_db.ratingRecords)..where((r) => r.id.equals(ratingId)))
+        .write(
+      RatingRecordsCompanion(
+        numericValue: Value(newNum),
+        textValue: Value(newText),
+        resultStatus: Value(newStatus),
+        amended: Value(amended),
+        amendedAt: Value(amendedAt),
+        originalValue: Value(originalValue),
+        amendmentReason: amendmentReason != null ? Value(amendmentReason) : const Value.absent(),
+        amendedBy: amendedBy != null ? Value(amendedBy) : const Value.absent(),
+        confidence: confidence != null ? Value(confidence) : const Value.absent(),
+      ),
+    );
+
+    return (await getRatingById(ratingId))!;
   }
 
   // Get all current ratings for a session

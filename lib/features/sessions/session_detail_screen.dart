@@ -791,8 +791,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         .where((r) => r.resultStatus != 'RECORDED')
         .map((r) => r.plotPk)
         .toSet();
-    if (flaggedIds.isEmpty && issuePlotIds.isEmpty)
+    if (flaggedIds.isEmpty && issuePlotIds.isEmpty) {
       return const SizedBox.shrink();
+    }
 
     final flaggedPlots = plots.where((p) => flaggedIds.contains(p.id)).toList();
     final issuePlots = plots.where((p) => issuePlotIds.contains(p.id)).toList();

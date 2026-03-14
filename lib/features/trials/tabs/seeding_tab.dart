@@ -10,6 +10,36 @@ import '../../../shared/widgets/app_empty_state.dart';
 
 const List<String> _kSeedingRateUnits = ['seeds/m²', 'kg/ha', 'lbs/ac'];
 
+const List<String> _kPlantingMethods = [
+  'Direct seeded',
+  'Transplanted',
+  'Broadcast',
+  'Dibbled',
+  'Other',
+];
+
+Widget _sectionHeader(String title) {
+  return Padding(
+    padding: const EdgeInsets.only(
+        top: AppDesignTokens.spacing16, bottom: AppDesignTokens.spacing8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Divider(height: 1),
+      ],
+    ),
+  );
+}
+
 /// Seeding tab for a trial. Use as tab content or full-screen body:
 /// [body: SeedingTab(trial: trial)].
 class SeedingTab extends ConsumerWidget {
@@ -50,6 +80,8 @@ class SeedingTab extends ConsumerWidget {
           child: _SeedingEventSummaryCard(
             event: event,
             onEdit: () => _openSeedingEventSheet(context, ref, event),
+            onRecordEmergence: () =>
+                _openEmergenceSheet(context, ref, event),
           ),
         );
       },
@@ -83,97 +115,162 @@ class SeedingTab extends ConsumerWidget {
       ),
     );
   }
+
+  void _openEmergenceSheet(
+      BuildContext context, WidgetRef ref, SeedingEvent event) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppDesignTokens.cardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppDesignTokens.radiusLarge)),
+      ),
+      builder: (sheetContext) => _EmergenceOnlySheet(
+        trial: trial,
+        existing: event,
+        onSaved: () {
+          ref.invalidate(seedingEventForTrialProvider(trial.id));
+          if (context.mounted) Navigator.pop(sheetContext);
+        },
+      ),
+    );
+  }
 }
 
 class _SeedingEventSummaryCard extends StatelessWidget {
   final SeedingEvent event;
   final VoidCallback onEdit;
+  final VoidCallback? onRecordEmergence;
 
-  const _SeedingEventSummaryCard({required this.event, required this.onEdit});
+  const _SeedingEventSummaryCard({
+    required this.event,
+    required this.onEdit,
+    this.onRecordEmergence,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dateText = event.seedingDate.toLocal().toString().split(' ')[0];
+    final hasEmergence =
+        event.emergenceDate != null || event.emergencePct != null;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppDesignTokens.cardSurface,
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-        border: Border.all(color: AppDesignTokens.borderCrisp),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppDesignTokens.spacing8),
-                  decoration: BoxDecoration(
-                    color: AppDesignTokens.sectionHeaderBg,
-                    borderRadius:
-                        BorderRadius.circular(AppDesignTokens.radiusXSmall),
-                  ),
-                  child: const Icon(Icons.agriculture,
-                      size: 20, color: AppDesignTokens.primary),
-                ),
-                const SizedBox(width: AppDesignTokens.spacing12),
-                Expanded(
-                  child: Text(
-                    'Seeding $dateText',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        color: AppDesignTokens.primaryText),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: onEdit,
-                  color: AppDesignTokens.primary,
-                ),
-              ],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+            boxShadow: const [
+              BoxShadow(
+                  color: Color(0x08000000),
+                  blurRadius: 4,
+                  offset: Offset(0, 2)),
+            ],
           ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (event.operatorName != null &&
-                    event.operatorName!.trim().isNotEmpty)
-                  _summaryRow('Operator', event.operatorName!),
-                if (event.seedLotNumber != null &&
-                    event.seedLotNumber!.trim().isNotEmpty)
-                  _summaryRow('Seed lot', event.seedLotNumber!),
-                if (event.seedingRate != null)
-                  _summaryRow(
-                      'Rate',
-                      '${event.seedingRate} ${event.seedingRateUnit ?? ''}'
-                          .trim()),
-                if (event.seedingDepth != null)
-                  _summaryRow('Seeding depth', '${event.seedingDepth} cm'),
-                if (event.rowSpacing != null)
-                  _summaryRow('Row spacing', '${event.rowSpacing} cm'),
-                if (event.equipmentUsed != null &&
-                    event.equipmentUsed!.trim().isNotEmpty)
-                  _summaryRow('Equipment', event.equipmentUsed!),
-                if (event.notes != null && event.notes!.trim().isNotEmpty)
-                  _summaryRow('Notes', event.notes!),
-              ],
-            ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+                      decoration: BoxDecoration(
+                        color: AppDesignTokens.sectionHeaderBg,
+                        borderRadius: BorderRadius.circular(
+                            AppDesignTokens.radiusXSmall),
+                      ),
+                      child: const Icon(Icons.agriculture,
+                          size: 20, color: AppDesignTokens.primary),
+                    ),
+                    const SizedBox(width: AppDesignTokens.spacing12),
+                    Expanded(
+                      child: Text(
+                        'Seeding $dateText',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: AppDesignTokens.primaryText),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: onEdit,
+                      color: AppDesignTokens.primary,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _sectionHeader('Seed details'),
+                    if (dateText.isNotEmpty) _summaryRow('Date', dateText),
+                    if (event.plantingMethod != null &&
+                        event.plantingMethod!.trim().isNotEmpty)
+                      _summaryRow('Planting method', event.plantingMethod!),
+                    if (event.variety != null &&
+                        event.variety!.trim().isNotEmpty)
+                      _summaryRow('Variety', event.variety!),
+                    if (event.seedLotNumber != null &&
+                        event.seedLotNumber!.trim().isNotEmpty)
+                      _summaryRow('Seed lot', event.seedLotNumber!),
+                    if (event.seedTreatment != null &&
+                        event.seedTreatment!.trim().isNotEmpty)
+                      _summaryRow('Seed treatment', event.seedTreatment!),
+                    if (event.germinationPct != null)
+                      _summaryRow(
+                          'Germination', '${event.germinationPct}%'),
+                    _sectionHeader('Operation details'),
+                    if (event.seedingRate != null)
+                      _summaryRow(
+                          'Rate',
+                          '${event.seedingRate} ${event.seedingRateUnit ?? ''}'
+                              .trim()),
+                    if (event.seedingDepth != null)
+                      _summaryRow(
+                          'Seeding depth', '${event.seedingDepth} cm'),
+                    if (event.rowSpacing != null)
+                      _summaryRow('Row spacing', '${event.rowSpacing} cm'),
+                    if (event.equipmentUsed != null &&
+                        event.equipmentUsed!.trim().isNotEmpty)
+                      _summaryRow('Equipment', event.equipmentUsed!),
+                    if (event.operatorName != null &&
+                        event.operatorName!.trim().isNotEmpty)
+                      _summaryRow('Operator', event.operatorName!),
+                    if (event.notes != null &&
+                        event.notes!.trim().isNotEmpty)
+                      _summaryRow('Notes', event.notes!),
+                    if (onRecordEmergence != null) ...[
+                      const SizedBox(height: AppDesignTokens.spacing12),
+                      OutlinedButton.icon(
+                        onPressed: onRecordEmergence,
+                        icon: const Icon(Icons.grass, size: 18),
+                        label: const Text('Record emergence'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
+        ),
+        if (hasEmergence) ...[
+          const SizedBox(height: AppDesignTokens.spacing12),
+          _EstablishmentCard(event: event),
         ],
-      ),
+      ],
     );
   }
 
@@ -206,6 +303,242 @@ class _SeedingEventSummaryCard extends StatelessWidget {
   }
 }
 
+class _EstablishmentCard extends StatelessWidget {
+  const _EstablishmentCard({required this.event});
+
+  final SeedingEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x08000000),
+              blurRadius: 4,
+              offset: Offset(0, 2)),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Establishment',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            if (event.emergenceDate != null)
+              _EstablishmentCard._row(
+                  'Emergence date',
+                  event.emergenceDate!
+                      .toLocal()
+                      .toString()
+                      .split(' ')[0]),
+            if (event.emergencePct != null)
+              _EstablishmentCard._row(
+                  'Emergence %', '${event.emergencePct}%'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _row(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                  fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                  fontSize: 13, color: AppDesignTokens.primaryText),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Minimal bottom sheet for quick entry of emergence date and % only.
+class _EmergenceOnlySheet extends ConsumerStatefulWidget {
+  final Trial trial;
+  final SeedingEvent existing;
+  final VoidCallback onSaved;
+
+  const _EmergenceOnlySheet({
+    required this.trial,
+    required this.existing,
+    required this.onSaved,
+  });
+
+  @override
+  ConsumerState<_EmergenceOnlySheet> createState() => _EmergenceOnlySheetState();
+}
+
+class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
+  DateTime? _emergenceDate;
+  final TextEditingController _emergencePctController =
+      TextEditingController();
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emergenceDate = widget.existing.emergenceDate?.toLocal();
+    _emergencePctController.text = widget.existing.emergencePct != null
+        ? widget.existing.emergencePct.toString()
+        : '';
+  }
+
+  @override
+  void dispose() {
+    _emergencePctController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _emergenceDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && mounted) {
+      setState(() => _emergenceDate = picked);
+    }
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    final pctText = _emergencePctController.text.trim();
+    final emergencePct = pctText.isEmpty
+        ? null
+        : double.tryParse(pctText);
+
+    setState(() => _saving = true);
+    try {
+      final companion = widget.existing.toCompanion(false).copyWith(
+            emergenceDate: _emergenceDate != null
+                ? drift.Value(_emergenceDate!)
+                : const drift.Value.absent(),
+            emergencePct: emergencePct != null
+                ? drift.Value(emergencePct)
+                : const drift.Value.absent(),
+          );
+      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(companion);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Emergence recorded')),
+        );
+        widget.onSaved();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Failed to save: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
+              decoration: BoxDecoration(
+                color: AppDesignTokens.dragHandle,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text(
+              'Record emergence',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesignTokens.primaryText),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Emergence date',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText)),
+              subtitle: Text(
+                _emergenceDate == null
+                    ? 'Tap to select'
+                    : _emergenceDate!.toLocal().toString().split(' ')[0],
+                style: const TextStyle(
+                    color: AppDesignTokens.primary,
+                    fontWeight: FontWeight.w500),
+              ),
+              trailing: const Icon(Icons.calendar_today_outlined,
+                  color: AppDesignTokens.primary, size: 20),
+              onTap: _pickDate,
+            ),
+            const SizedBox(height: AppDesignTokens.spacing12),
+            TextField(
+              controller: _emergencePctController,
+              decoration: const InputDecoration(
+                labelText: 'Emergence % (optional)',
+                suffixText: '%',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing24),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              child: Text(_saving ? 'Saving…' : 'Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SeedingEventFormSheet extends ConsumerStatefulWidget {
   final Trial trial;
   final SeedingEvent? existing;
@@ -233,8 +566,14 @@ class _SeedingEventFormSheetState
   late final TextEditingController _rowSpacingController;
   late final TextEditingController _equipmentController;
   late final TextEditingController _notesController;
+  late final TextEditingController _varietyController;
+  late final TextEditingController _seedTreatmentController;
+  late final TextEditingController _germinationPctController;
+  late final TextEditingController _emergencePctController;
   DateTime _seedingDate = DateTime.now();
   String? _rateUnit;
+  String? _plantingMethod;
+  DateTime? _emergenceDate;
   bool _saving = false;
 
   @override
@@ -243,6 +582,8 @@ class _SeedingEventFormSheetState
     final e = widget.existing;
     _seedingDate = e?.seedingDate.toLocal() ?? DateTime.now();
     _rateUnit = e?.seedingRateUnit;
+    _plantingMethod = e?.plantingMethod;
+    _emergenceDate = e?.emergenceDate?.toLocal();
     _operatorController = TextEditingController(text: e?.operatorName ?? '');
     _seedLotController = TextEditingController(text: e?.seedLotNumber ?? '');
     _rateController = TextEditingController(
@@ -253,6 +594,13 @@ class _SeedingEventFormSheetState
         text: e?.rowSpacing != null ? e!.rowSpacing.toString() : '');
     _equipmentController = TextEditingController(text: e?.equipmentUsed ?? '');
     _notesController = TextEditingController(text: e?.notes ?? '');
+    _varietyController = TextEditingController(text: e?.variety ?? '');
+    _seedTreatmentController =
+        TextEditingController(text: e?.seedTreatment ?? '');
+    _germinationPctController = TextEditingController(
+        text: e?.germinationPct != null ? e!.germinationPct.toString() : '');
+    _emergencePctController = TextEditingController(
+        text: e?.emergencePct != null ? e!.emergencePct.toString() : '');
   }
 
   @override
@@ -264,6 +612,10 @@ class _SeedingEventFormSheetState
     _rowSpacingController.dispose();
     _equipmentController.dispose();
     _notesController.dispose();
+    _varietyController.dispose();
+    _seedTreatmentController.dispose();
+    _germinationPctController.dispose();
+    _emergencePctController.dispose();
     super.dispose();
   }
 
@@ -277,63 +629,76 @@ class _SeedingEventFormSheetState
     if (picked != null && mounted) setState(() => _seedingDate = picked);
   }
 
-  Future<void> _save() async {
-    final rate = _rateController.text.trim().isEmpty
-        ? null
-        : double.tryParse(_rateController.text.trim());
-    final depth = _depthController.text.trim().isEmpty
-        ? null
-        : double.tryParse(_depthController.text.trim());
-    final rowSpacing = _rowSpacingController.text.trim().isEmpty
-        ? null
-        : double.tryParse(_rowSpacingController.text.trim());
+  Future<void> _pickEmergenceDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _emergenceDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && mounted) setState(() => _emergenceDate = picked);
+  }
 
-    final companion = widget.existing == null
+  String? _trimOrNull(TextEditingController c) {
+    final t = c.text.trim();
+    return t.isEmpty ? null : t;
+  }
+
+  double? _parseDouble(TextEditingController c) {
+    final t = c.text.trim();
+    if (t.isEmpty) return null;
+    return double.tryParse(t);
+  }
+
+  Future<void> _save() async {
+    final rate = _parseDouble(_rateController);
+    final depth = _parseDouble(_depthController);
+    final rowSpacing = _parseDouble(_rowSpacingController);
+    final germinationPct = _parseDouble(_germinationPctController);
+    final emergencePct = _parseDouble(_emergencePctController);
+
+    final baseCompanion = widget.existing == null
         ? SeedingEventsCompanion.insert(
             trialId: widget.trial.id,
             seedingDate: _seedingDate,
-            operatorName: drift.Value(_operatorController.text.trim().isEmpty
-                ? null
-                : _operatorController.text.trim()),
-            seedLotNumber: drift.Value(_seedLotController.text.trim().isEmpty
-                ? null
-                : _seedLotController.text.trim()),
+            operatorName: drift.Value(_trimOrNull(_operatorController)),
+            seedLotNumber: drift.Value(_trimOrNull(_seedLotController)),
             seedingRate: drift.Value(rate),
             seedingRateUnit: drift.Value(_rateUnit),
             seedingDepth: drift.Value(depth),
             rowSpacing: drift.Value(rowSpacing),
-            equipmentUsed: drift.Value(_equipmentController.text.trim().isEmpty
-                ? null
-                : _equipmentController.text.trim()),
-            notes: drift.Value(_notesController.text.trim().isEmpty
-                ? null
-                : _notesController.text.trim()),
+            equipmentUsed: drift.Value(_trimOrNull(_equipmentController)),
+            notes: drift.Value(_trimOrNull(_notesController)),
+            variety: drift.Value(_trimOrNull(_varietyController)),
+            seedTreatment: drift.Value(_trimOrNull(_seedTreatmentController)),
+            germinationPct: drift.Value(germinationPct),
+            emergenceDate: drift.Value(_emergenceDate),
+            emergencePct: drift.Value(emergencePct),
+            plantingMethod: drift.Value(_plantingMethod),
           )
         : SeedingEventsCompanion(
             id: drift.Value(widget.existing!.id),
             trialId: drift.Value(widget.trial.id),
             seedingDate: drift.Value(_seedingDate),
-            operatorName: drift.Value(_operatorController.text.trim().isEmpty
-                ? null
-                : _operatorController.text.trim()),
-            seedLotNumber: drift.Value(_seedLotController.text.trim().isEmpty
-                ? null
-                : _seedLotController.text.trim()),
+            operatorName: drift.Value(_trimOrNull(_operatorController)),
+            seedLotNumber: drift.Value(_trimOrNull(_seedLotController)),
             seedingRate: drift.Value(rate),
             seedingRateUnit: drift.Value(_rateUnit),
             seedingDepth: drift.Value(depth),
             rowSpacing: drift.Value(rowSpacing),
-            equipmentUsed: drift.Value(_equipmentController.text.trim().isEmpty
-                ? null
-                : _equipmentController.text.trim()),
-            notes: drift.Value(_notesController.text.trim().isEmpty
-                ? null
-                : _notesController.text.trim()),
+            equipmentUsed: drift.Value(_trimOrNull(_equipmentController)),
+            notes: drift.Value(_trimOrNull(_notesController)),
+            variety: drift.Value(_trimOrNull(_varietyController)),
+            seedTreatment: drift.Value(_trimOrNull(_seedTreatmentController)),
+            germinationPct: drift.Value(germinationPct),
+            emergenceDate: drift.Value(_emergenceDate),
+            emergencePct: drift.Value(emergencePct),
+            plantingMethod: drift.Value(_plantingMethod),
           );
 
     setState(() => _saving = true);
     try {
-      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(companion);
+      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(baseCompanion);
       if (mounted) widget.onSaved();
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -378,9 +743,10 @@ class _SeedingEventFormSheetState
               padding: const EdgeInsets.symmetric(
                   horizontal: AppDesignTokens.spacing16),
               children: [
+                _sectionHeader('Seed details'),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Date',
+                  title: const Text('Seeding date',
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: AppDesignTokens.primaryText)),
@@ -395,10 +761,28 @@ class _SeedingEventFormSheetState
                   onTap: _pickDate,
                 ),
                 const SizedBox(height: AppDesignTokens.spacing8),
-                TextField(
-                  controller: _operatorController,
+                DropdownButtonFormField<String?>(
+                  key: ValueKey<String?>(_plantingMethod),
+                  initialValue: _plantingMethod,
                   decoration: const InputDecoration(
-                    labelText: 'Operator name (optional)',
+                    labelText: 'Planting method',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                        value: null, child: Text('—')),
+                    ..._kPlantingMethods.map(
+                      (s) => DropdownMenuItem<String?>(value: s, child: Text(s)),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _plantingMethod = v),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _varietyController,
+                  decoration: const InputDecoration(
+                    labelText: 'Variety / cultivar (optional)',
+                    hintText: 'e.g. AAC Brandon, Pioneer P9623',
                     border: OutlineInputBorder(),
                   ),
                   textCapitalization: TextCapitalization.words,
@@ -412,6 +796,27 @@ class _SeedingEventFormSheetState
                   ),
                 ),
                 const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _seedTreatmentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Seed treatment (optional)',
+                    hintText: 'e.g. Vibrance 500 FS',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _germinationPctController,
+                  decoration: const InputDecoration(
+                    labelText: 'Germination % (optional)',
+                    suffixText: '%',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
+                _sectionHeader('Operation details'),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -430,8 +835,8 @@ class _SeedingEventFormSheetState
                     const SizedBox(width: AppDesignTokens.spacing8),
                     Expanded(
                       child: DropdownButtonFormField<String?>(
-                        // ignore: deprecated_member_use
-                        value: _rateUnit,
+                        key: ValueKey<String?>(_rateUnit),
+                        initialValue: _rateUnit,
                         decoration: const InputDecoration(
                           labelText: 'Unit',
                           border: OutlineInputBorder(),
@@ -477,6 +882,48 @@ class _SeedingEventFormSheetState
                     border: OutlineInputBorder(),
                   ),
                   textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: AppDesignTokens.spacing12),
+                TextField(
+                  controller: _operatorController,
+                  decoration: const InputDecoration(
+                    labelText: 'Operator name (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                _sectionHeader('Establishment (fill after emergence)'),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Emergence date (optional)',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.primaryText)),
+                  subtitle: Text(
+                    _emergenceDate == null
+                        ? 'Tap to select'
+                        : _emergenceDate!
+                            .toLocal()
+                            .toString()
+                            .split(' ')[0],
+                    style: const TextStyle(
+                        color: AppDesignTokens.primary,
+                        fontWeight: FontWeight.w500),
+                  ),
+                  trailing: const Icon(Icons.calendar_today_outlined,
+                      color: AppDesignTokens.primary, size: 20),
+                  onTap: _pickEmergenceDate,
+                ),
+                const SizedBox(height: AppDesignTokens.spacing8),
+                TextField(
+                  controller: _emergencePctController,
+                  decoration: const InputDecoration(
+                    labelText: 'Emergence % (optional)',
+                    suffixText: '%',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: AppDesignTokens.spacing12),
                 TextField(

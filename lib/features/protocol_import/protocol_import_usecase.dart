@@ -85,12 +85,14 @@ class ProtocolImportUseCase {
   String? _detectSectionColumn(Map<String, dynamic> firstRow) {
     final keys =
         firstRow.keys.map((k) => k.toString().trim().toLowerCase()).toList();
-    if (keys.contains('section'))
+    if (keys.contains('section')) {
       return firstRow.keys
           .firstWhere((k) => k.toString().trim().toLowerCase() == 'section');
-    if (keys.contains('type'))
+    }
+    if (keys.contains('type')) {
       return firstRow.keys
           .firstWhere((k) => k.toString().trim().toLowerCase() == 'type');
+    }
     return null;
   }
 
@@ -102,8 +104,9 @@ class ProtocolImportUseCase {
     final mustFix = <String>[];
     final autoHandled = <String>[];
     if (existingTrialId != null) {
-      if (rows.isNotEmpty)
+      if (rows.isNotEmpty) {
         autoHandled.add('TRIAL section ignored (adding to existing trial)');
+      }
       return (
         sectionReview: SectionReview(matchedCount: 0, autoHandled: autoHandled),
         normalized: null

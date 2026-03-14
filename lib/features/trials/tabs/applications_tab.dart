@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import 'application_sheet_content.dart';
 
 /// Applications tab for trial detail: list and add/edit application events.
 class ApplicationsTab extends ConsumerWidget {
@@ -19,7 +19,36 @@ class ApplicationsTab extends ConsumerWidget {
     'kg/ha',
     'g/ha',
     'mL/ha',
-    'oz/ac'
+    'oz/ac',
+  ];
+
+  static const List<String> _applicationMethods = [
+    'Ground sprayer',
+    'Aerial',
+    'Chemigation',
+    'Hand application',
+    'Granular spreader',
+    'Other',
+  ];
+
+  static const List<String> _nozzleTypes = [
+    'Flat fan',
+    'Hollow cone',
+    'Flood',
+    'Air induction',
+    'Rotary atomiser',
+    'Other',
+  ];
+  static const List<String> _pressureUnits = ['PSI', 'kPa', 'bar'];
+  static const List<String> _speedUnits = ['km/h', 'mph'];
+  static const List<String> _waterVolumeUnits = ['L/ha', 'gal/ac'];
+  static const List<String> _adjuvantRateUnits = ['L/ha', 'mL/100L', '% v/v'];
+  static const List<String> _treatedAreaUnits = ['ha', 'ac', 'm²'];
+  static const List<String> _soilMoistureOptions = [
+    'Dry',
+    'Moist',
+    'Wet',
+    'Waterlogged',
   ];
 
   @override
@@ -60,8 +89,19 @@ class ApplicationsTab extends ConsumerWidget {
     TrialApplicationEvent e,
   ) {
     final dateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
+    final timeStr = e.applicationTime?.trim().isNotEmpty == true
+        ? e.applicationTime!
+        : null;
+    final dateTimeLabel =
+        timeStr != null ? '$dateStr $timeStr' : dateStr;
     final productLabel =
         e.productName?.trim().isNotEmpty == true ? e.productName! : null;
+    final rateUnitLabel = (e.rate != null && e.rateUnit != null)
+        ? '${e.rate} ${e.rateUnit}'
+        : null;
+    final methodLabel = e.applicationMethod?.trim().isNotEmpty == true
+        ? e.applicationMethod!
+        : null;
     final treatments =
         ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
     final treatment = e.treatmentId != null
@@ -71,7 +111,7 @@ class ApplicationsTab extends ConsumerWidget {
     return Card(
       child: ListTile(
         title: Text(
-          dateStr,
+          dateTimeLabel,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
@@ -86,20 +126,32 @@ class ApplicationsTab extends ConsumerWidget {
                     : Theme.of(context).textTheme.bodySmall?.color,
               ),
             ),
-            if (e.rate != null && e.rateUnit != null)
+            if (rateUnitLabel != null)
               Text(
-                '${e.rate} ${e.rateUnit}',
+                rateUnitLabel,
                 style: const TextStyle(fontSize: 13),
               ),
-            if (treatment != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Chip(
-                  label: Text(treatment.code),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                if (methodLabel != null)
+                  Chip(
+                    label: Text(
+                      methodLabel,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                if (treatment != null)
+                  Chip(
+                    label: Text(treatment.code),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+              ],
+            ),
           ],
         ),
         trailing: const Icon(Icons.chevron_right, size: 18),
@@ -175,46 +227,6 @@ class ApplicationsTab extends ConsumerWidget {
     WidgetRef ref,
     TrialApplicationEvent? existing,
   ) async {
-    final repo = ref.read(applicationRepositoryProvider);
-    final treatments =
-        ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
-
-    final dateController = ValueNotifier<DateTime>(
-      existing?.applicationDate ?? DateTime.now(),
-    );
-    final treatmentIdController = ValueNotifier<int?>(existing?.treatmentId);
-    final productController =
-        TextEditingController(text: existing?.productName ?? '');
-    final rateController = TextEditingController(
-      text: existing?.rate != null ? existing!.rate.toString() : '',
-    );
-    final rateUnitController = ValueNotifier<String?>(
-      existing?.rateUnit ?? (existing == null ? _rateUnits.first : null),
-    );
-    final waterVolumeController = TextEditingController(
-      text:
-          existing?.waterVolume != null ? existing!.waterVolume.toString() : '',
-    );
-    final growthStageController =
-        TextEditingController(text: existing?.growthStageCode ?? '');
-    final operatorController =
-        TextEditingController(text: existing?.operatorName ?? '');
-    final equipmentController =
-        TextEditingController(text: existing?.equipmentUsed ?? '');
-    final windSpeedController = TextEditingController(
-      text: existing?.windSpeed != null ? existing!.windSpeed.toString() : '',
-    );
-    final windDirectionController =
-        TextEditingController(text: existing?.windDirection ?? '');
-    final temperatureController = TextEditingController(
-      text:
-          existing?.temperature != null ? existing!.temperature.toString() : '',
-    );
-    final humidityController = TextEditingController(
-      text: existing?.humidity != null ? existing!.humidity.toString() : '',
-    );
-    final notesController = TextEditingController(text: existing?.notes ?? '');
-
     if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
@@ -223,386 +235,41 @@ class ApplicationsTab extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) {
-          final selectedDate = dateController.value;
-          final selectedTreatmentId = treatmentIdController.value;
-          final selectedRateUnit = rateUnitController.value ?? _rateUnits.first;
-          final dateLabel = DateFormat('MMM d, yyyy').format(selectedDate);
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            ),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      existing == null ? 'Add Application' : 'Edit Application',
-                      style: Theme.of(ctx).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: ctx,
-                          initialDate: selectedDate,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          dateController.value = picked;
-                          setState(() {});
-                        }
-                      },
-                      icon: const Icon(Icons.calendar_today),
-                      label: Text('Date: $dateLabel'),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<int?>(
-                      initialValue: selectedTreatmentId,
-                      decoration: const InputDecoration(
-                        labelText: 'Treatment',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: [
-                        const DropdownMenuItem<int?>(
-                          value: null,
-                          child: Text('None'),
-                        ),
-                        ...treatments.map(
-                          (t) => DropdownMenuItem<int?>(
-                            value: t.id,
-                            child: Text(t.code),
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        treatmentIdController.value = v;
-                        setState(() {});
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: productController,
-                      decoration: const InputDecoration(
-                        labelText: 'Product Name',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: TextField(
-                            controller: rateController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration: const InputDecoration(
-                              labelText: 'Rate',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: selectedRateUnit,
-                            decoration: const InputDecoration(
-                              labelText: 'Unit',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: _rateUnits
-                                .map((u) =>
-                                    DropdownMenuItem(value: u, child: Text(u)))
-                                .toList(),
-                            onChanged: (v) {
-                              rateUnitController.value = v;
-                              setState(() {});
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: waterVolumeController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Water Volume (L/ha)',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: growthStageController,
-                      decoration: const InputDecoration(
-                        labelText: 'Growth Stage / BBCH',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: operatorController,
-                      decoration: const InputDecoration(
-                        labelText: 'Operator',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: equipmentController,
-                      decoration: const InputDecoration(
-                        labelText: 'Equipment',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Weather',
-                      style: Theme.of(ctx).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: windSpeedController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration: const InputDecoration(
-                              labelText: 'Wind Speed',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: windDirectionController,
-                            decoration: const InputDecoration(
-                              labelText: 'Wind Direction',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: temperatureController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration: const InputDecoration(
-                              labelText: 'Temperature (°C)',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: humidityController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration: const InputDecoration(
-                              labelText: 'Humidity (%)',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: notesController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        if (existing != null) ...[
-                          TextButton(
-                            onPressed: () async {
-                              final confirm = await showDialog<bool>(
-                                context: ctx,
-                                builder: (d) => AlertDialog(
-                                  title: const Text('Delete Application?'),
-                                  content: const Text(
-                                    'This application will be permanently deleted.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(d, false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    FilledButton(
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                      ),
-                                      onPressed: () => Navigator.pop(d, true),
-                                      child: const Text('Delete'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (confirm == true && ctx.mounted) {
-                                await repo.deleteApplication(existing.id);
-                                if (ctx.mounted) Navigator.pop(ctx);
-                              }
-                            },
-                            child: const Text('Delete'),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: () async {
-                            final date = dateController.value;
-                            final rate =
-                                double.tryParse(rateController.text.trim());
-                            final waterVolume = double.tryParse(
-                              waterVolumeController.text.trim(),
-                            );
-                            final windSpeed = double.tryParse(
-                              windSpeedController.text.trim(),
-                            );
-                            final temperature = double.tryParse(
-                              temperatureController.text.trim(),
-                            );
-                            final humidity = double.tryParse(
-                              humidityController.text.trim(),
-                            );
-                            if (existing == null) {
-                              await repo.createApplication(
-                                TrialApplicationEventsCompanion.insert(
-                                  trialId: trial.id,
-                                  applicationDate: date,
-                                  treatmentId:
-                                      drift.Value(treatmentIdController.value),
-                                  productName: drift.Value(
-                                    productController.text.trim().isEmpty
-                                        ? null
-                                        : productController.text.trim(),
-                                  ),
-                                  rate: drift.Value(rate),
-                                  rateUnit: drift.Value(
-                                    rateUnitController.value?.trim().isEmpty ==
-                                            true
-                                        ? null
-                                        : rateUnitController.value,
-                                  ),
-                                  waterVolume: drift.Value(waterVolume),
-                                  growthStageCode: drift.Value(
-                                    growthStageController.text.trim().isEmpty
-                                        ? null
-                                        : growthStageController.text.trim(),
-                                  ),
-                                  operatorName: drift.Value(
-                                    operatorController.text.trim().isEmpty
-                                        ? null
-                                        : operatorController.text.trim(),
-                                  ),
-                                  equipmentUsed: drift.Value(
-                                    equipmentController.text.trim().isEmpty
-                                        ? null
-                                        : equipmentController.text.trim(),
-                                  ),
-                                  windSpeed: drift.Value(windSpeed),
-                                  windDirection: drift.Value(
-                                    windDirectionController.text.trim().isEmpty
-                                        ? null
-                                        : windDirectionController.text.trim(),
-                                  ),
-                                  temperature: drift.Value(temperature),
-                                  humidity: drift.Value(humidity),
-                                  notes: drift.Value(
-                                    notesController.text.trim().isEmpty
-                                        ? null
-                                        : notesController.text.trim(),
-                                  ),
-                                ),
-                              );
-                            } else {
-                              await repo.updateApplication(
-                                existing.id,
-                                TrialApplicationEventsCompanion(
-                                  treatmentId:
-                                      drift.Value(treatmentIdController.value),
-                                  productName: drift.Value(
-                                    productController.text.trim().isEmpty
-                                        ? null
-                                        : productController.text.trim(),
-                                  ),
-                                  rate: drift.Value(rate),
-                                  rateUnit: drift.Value(
-                                    rateUnitController.value?.trim().isEmpty ==
-                                            true
-                                        ? null
-                                        : rateUnitController.value,
-                                  ),
-                                  waterVolume: drift.Value(waterVolume),
-                                  growthStageCode: drift.Value(
-                                    growthStageController.text.trim().isEmpty
-                                        ? null
-                                        : growthStageController.text.trim(),
-                                  ),
-                                  operatorName: drift.Value(
-                                    operatorController.text.trim().isEmpty
-                                        ? null
-                                        : operatorController.text.trim(),
-                                  ),
-                                  equipmentUsed: drift.Value(
-                                    equipmentController.text.trim().isEmpty
-                                        ? null
-                                        : equipmentController.text.trim(),
-                                  ),
-                                  windSpeed: drift.Value(windSpeed),
-                                  windDirection: drift.Value(
-                                    windDirectionController.text.trim().isEmpty
-                                        ? null
-                                        : windDirectionController.text.trim(),
-                                  ),
-                                  temperature: drift.Value(temperature),
-                                  humidity: drift.Value(humidity),
-                                  notes: drift.Value(
-                                    notesController.text.trim().isEmpty
-                                        ? null
-                                        : notesController.text.trim(),
-                                  ),
-                                  applicationDate: drift.Value(date),
-                                ),
-                              );
-                            }
-                            if (ctx.mounted) Navigator.pop(ctx);
-                          },
-                          child: const Text('Save'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) => ApplicationSheetContent(
+            trial: trial,
+            existing: existing,
+            scrollController: scrollController,
+            rateUnits: _rateUnits,
+            applicationMethods: _applicationMethods,
+            nozzleTypes: _nozzleTypes,
+            pressureUnits: _pressureUnits,
+            speedUnits: _speedUnits,
+            waterVolumeUnits: _waterVolumeUnits,
+            adjuvantRateUnits: _adjuvantRateUnits,
+            treatedAreaUnits: _treatedAreaUnits,
+            soilMoistureOptions: _soilMoistureOptions,
+            onSaved: () {
+              ref.invalidate(trialApplicationsForTrialProvider(trial.id));
+              if (context.mounted) Navigator.pop(ctx);
+            },
+            onDelete: existing != null
+                ? () async {
+                    final repo = ref.read(applicationRepositoryProvider);
+                    await repo.deleteApplication(existing.id);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  }
+                : null,
+          ),
+        ),
       ),
     );
   }

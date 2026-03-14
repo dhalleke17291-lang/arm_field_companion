@@ -24,14 +24,76 @@ class ApplicationRepository {
   }
 
   Future<void> createApplication(TrialApplicationEventsCompanion companion) {
-    return _db.into(_db.trialApplicationEvents).insert(companion);
+    final full = _withNewFields(companion);
+    return _db.into(_db.trialApplicationEvents).insert(full);
   }
 
   Future<void> updateApplication(
       String id, TrialApplicationEventsCompanion companion) {
+    final full = _withNewFields(companion);
     return (_db.update(_db.trialApplicationEvents)
           ..where((e) => e.id.equals(id)))
-        .write(companion);
+        .write(full);
+  }
+
+  TrialApplicationEventsCompanion _withNewFields(
+      TrialApplicationEventsCompanion c) {
+    return c.copyWith(
+      applicationTime: c.applicationTime.present
+          ? Value(c.applicationTime.value)
+          : const Value.absent(),
+      applicationMethod: c.applicationMethod.present
+          ? Value(c.applicationMethod.value)
+          : const Value.absent(),
+      nozzleType: c.nozzleType.present
+          ? Value(c.nozzleType.value)
+          : const Value.absent(),
+      nozzleSpacingCm: c.nozzleSpacingCm.present
+          ? Value(c.nozzleSpacingCm.value)
+          : const Value.absent(),
+      operatingPressure: c.operatingPressure.present
+          ? Value(c.operatingPressure.value)
+          : const Value.absent(),
+      pressureUnit: c.pressureUnit.present
+          ? Value(c.pressureUnit.value)
+          : const Value.absent(),
+      groundSpeed: c.groundSpeed.present
+          ? Value(c.groundSpeed.value)
+          : const Value.absent(),
+      speedUnit: c.speedUnit.present
+          ? Value(c.speedUnit.value)
+          : const Value.absent(),
+      adjuvantName: c.adjuvantName.present
+          ? Value(c.adjuvantName.value)
+          : const Value.absent(),
+      adjuvantRate: c.adjuvantRate.present
+          ? Value(c.adjuvantRate.value)
+          : const Value.absent(),
+      adjuvantRateUnit: c.adjuvantRateUnit.present
+          ? Value(c.adjuvantRateUnit.value)
+          : const Value.absent(),
+      spraySolutionPh: c.spraySolutionPh.present
+          ? Value(c.spraySolutionPh.value)
+          : const Value.absent(),
+      waterVolumeUnit: c.waterVolumeUnit.present
+          ? Value(c.waterVolumeUnit.value)
+          : const Value.absent(),
+      cloudCoverPct: c.cloudCoverPct.present
+          ? Value(c.cloudCoverPct.value)
+          : const Value.absent(),
+      soilMoisture: c.soilMoisture.present
+          ? Value(c.soilMoisture.value)
+          : const Value.absent(),
+      treatedArea: c.treatedArea.present
+          ? Value(c.treatedArea.value)
+          : const Value.absent(),
+      treatedAreaUnit: c.treatedAreaUnit.present
+          ? Value(c.treatedAreaUnit.value)
+          : const Value.absent(),
+      plotsTreated: c.plotsTreated.present
+          ? Value(c.plotsTreated.value)
+          : const Value.absent(),
+    );
   }
 
   Future<void> deleteApplication(String id) {

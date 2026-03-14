@@ -444,6 +444,156 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   late final GeneratedColumn<String> plotSpacing = GeneratedColumn<String>(
       'plot_spacing', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sponsorMeta =
+      const VerificationMeta('sponsor');
+  @override
+  late final GeneratedColumn<String> sponsor = GeneratedColumn<String>(
+      'sponsor', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _protocolNumberMeta =
+      const VerificationMeta('protocolNumber');
+  @override
+  late final GeneratedColumn<String> protocolNumber = GeneratedColumn<String>(
+      'protocol_number', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _investigatorNameMeta =
+      const VerificationMeta('investigatorName');
+  @override
+  late final GeneratedColumn<String> investigatorName = GeneratedColumn<String>(
+      'investigator_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cooperatorNameMeta =
+      const VerificationMeta('cooperatorName');
+  @override
+  late final GeneratedColumn<String> cooperatorName = GeneratedColumn<String>(
+      'cooperator_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _siteIdMeta = const VerificationMeta('siteId');
+  @override
+  late final GeneratedColumn<String> siteId = GeneratedColumn<String>(
+      'site_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _fieldNameMeta =
+      const VerificationMeta('fieldName');
+  @override
+  late final GeneratedColumn<String> fieldName = GeneratedColumn<String>(
+      'field_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _countyMeta = const VerificationMeta('county');
+  @override
+  late final GeneratedColumn<String> county = GeneratedColumn<String>(
+      'county', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _stateProvinceMeta =
+      const VerificationMeta('stateProvince');
+  @override
+  late final GeneratedColumn<String> stateProvince = GeneratedColumn<String>(
+      'state_province', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _countryMeta =
+      const VerificationMeta('country');
+  @override
+  late final GeneratedColumn<String> country = GeneratedColumn<String>(
+      'country', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _latitudeMeta =
+      const VerificationMeta('latitude');
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+      'latitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _longitudeMeta =
+      const VerificationMeta('longitude');
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+      'longitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _elevationMMeta =
+      const VerificationMeta('elevationM');
+  @override
+  late final GeneratedColumn<double> elevationM = GeneratedColumn<double>(
+      'elevation_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _experimentalDesignMeta =
+      const VerificationMeta('experimentalDesign');
+  @override
+  late final GeneratedColumn<String> experimentalDesign =
+      GeneratedColumn<String>('experimental_design', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _plotLengthMMeta =
+      const VerificationMeta('plotLengthM');
+  @override
+  late final GeneratedColumn<double> plotLengthM = GeneratedColumn<double>(
+      'plot_length_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _plotWidthMMeta =
+      const VerificationMeta('plotWidthM');
+  @override
+  late final GeneratedColumn<double> plotWidthM = GeneratedColumn<double>(
+      'plot_width_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _alleyLengthMMeta =
+      const VerificationMeta('alleyLengthM');
+  @override
+  late final GeneratedColumn<double> alleyLengthM = GeneratedColumn<double>(
+      'alley_length_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _previousCropMeta =
+      const VerificationMeta('previousCrop');
+  @override
+  late final GeneratedColumn<String> previousCrop = GeneratedColumn<String>(
+      'previous_crop', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tillageMeta =
+      const VerificationMeta('tillage');
+  @override
+  late final GeneratedColumn<String> tillage = GeneratedColumn<String>(
+      'tillage', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _irrigatedMeta =
+      const VerificationMeta('irrigated');
+  @override
+  late final GeneratedColumn<bool> irrigated = GeneratedColumn<bool>(
+      'irrigated', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("irrigated" IN (0, 1))'));
+  static const VerificationMeta _soilSeriesMeta =
+      const VerificationMeta('soilSeries');
+  @override
+  late final GeneratedColumn<String> soilSeries = GeneratedColumn<String>(
+      'soil_series', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _soilTextureMeta =
+      const VerificationMeta('soilTexture');
+  @override
+  late final GeneratedColumn<String> soilTexture = GeneratedColumn<String>(
+      'soil_texture', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _organicMatterPctMeta =
+      const VerificationMeta('organicMatterPct');
+  @override
+  late final GeneratedColumn<double> organicMatterPct = GeneratedColumn<double>(
+      'organic_matter_pct', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _soilPhMeta = const VerificationMeta('soilPh');
+  @override
+  late final GeneratedColumn<double> soilPh = GeneratedColumn<double>(
+      'soil_ph', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _harvestDateMeta =
+      const VerificationMeta('harvestDate');
+  @override
+  late final GeneratedColumn<DateTime> harvestDate = GeneratedColumn<DateTime>(
+      'harvest_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _studyTypeMeta =
+      const VerificationMeta('studyType');
+  @override
+  late final GeneratedColumn<String> studyType = GeneratedColumn<String>(
+      'study_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -471,6 +621,31 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         plotDimensions,
         plotRows,
         plotSpacing,
+        sponsor,
+        protocolNumber,
+        investigatorName,
+        cooperatorName,
+        siteId,
+        fieldName,
+        county,
+        stateProvince,
+        country,
+        latitude,
+        longitude,
+        elevationM,
+        experimentalDesign,
+        plotLengthM,
+        plotWidthM,
+        alleyLengthM,
+        previousCrop,
+        tillage,
+        irrigated,
+        soilSeries,
+        soilTexture,
+        organicMatterPct,
+        soilPh,
+        harvestDate,
+        studyType,
         createdAt,
         updatedAt
       ];
@@ -525,6 +700,134 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           plotSpacing.isAcceptableOrUnknown(
               data['plot_spacing']!, _plotSpacingMeta));
     }
+    if (data.containsKey('sponsor')) {
+      context.handle(_sponsorMeta,
+          sponsor.isAcceptableOrUnknown(data['sponsor']!, _sponsorMeta));
+    }
+    if (data.containsKey('protocol_number')) {
+      context.handle(
+          _protocolNumberMeta,
+          protocolNumber.isAcceptableOrUnknown(
+              data['protocol_number']!, _protocolNumberMeta));
+    }
+    if (data.containsKey('investigator_name')) {
+      context.handle(
+          _investigatorNameMeta,
+          investigatorName.isAcceptableOrUnknown(
+              data['investigator_name']!, _investigatorNameMeta));
+    }
+    if (data.containsKey('cooperator_name')) {
+      context.handle(
+          _cooperatorNameMeta,
+          cooperatorName.isAcceptableOrUnknown(
+              data['cooperator_name']!, _cooperatorNameMeta));
+    }
+    if (data.containsKey('site_id')) {
+      context.handle(_siteIdMeta,
+          siteId.isAcceptableOrUnknown(data['site_id']!, _siteIdMeta));
+    }
+    if (data.containsKey('field_name')) {
+      context.handle(_fieldNameMeta,
+          fieldName.isAcceptableOrUnknown(data['field_name']!, _fieldNameMeta));
+    }
+    if (data.containsKey('county')) {
+      context.handle(_countyMeta,
+          county.isAcceptableOrUnknown(data['county']!, _countyMeta));
+    }
+    if (data.containsKey('state_province')) {
+      context.handle(
+          _stateProvinceMeta,
+          stateProvince.isAcceptableOrUnknown(
+              data['state_province']!, _stateProvinceMeta));
+    }
+    if (data.containsKey('country')) {
+      context.handle(_countryMeta,
+          country.isAcceptableOrUnknown(data['country']!, _countryMeta));
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(_latitudeMeta,
+          latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta));
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(_longitudeMeta,
+          longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta));
+    }
+    if (data.containsKey('elevation_m')) {
+      context.handle(
+          _elevationMMeta,
+          elevationM.isAcceptableOrUnknown(
+              data['elevation_m']!, _elevationMMeta));
+    }
+    if (data.containsKey('experimental_design')) {
+      context.handle(
+          _experimentalDesignMeta,
+          experimentalDesign.isAcceptableOrUnknown(
+              data['experimental_design']!, _experimentalDesignMeta));
+    }
+    if (data.containsKey('plot_length_m')) {
+      context.handle(
+          _plotLengthMMeta,
+          plotLengthM.isAcceptableOrUnknown(
+              data['plot_length_m']!, _plotLengthMMeta));
+    }
+    if (data.containsKey('plot_width_m')) {
+      context.handle(
+          _plotWidthMMeta,
+          plotWidthM.isAcceptableOrUnknown(
+              data['plot_width_m']!, _plotWidthMMeta));
+    }
+    if (data.containsKey('alley_length_m')) {
+      context.handle(
+          _alleyLengthMMeta,
+          alleyLengthM.isAcceptableOrUnknown(
+              data['alley_length_m']!, _alleyLengthMMeta));
+    }
+    if (data.containsKey('previous_crop')) {
+      context.handle(
+          _previousCropMeta,
+          previousCrop.isAcceptableOrUnknown(
+              data['previous_crop']!, _previousCropMeta));
+    }
+    if (data.containsKey('tillage')) {
+      context.handle(_tillageMeta,
+          tillage.isAcceptableOrUnknown(data['tillage']!, _tillageMeta));
+    }
+    if (data.containsKey('irrigated')) {
+      context.handle(_irrigatedMeta,
+          irrigated.isAcceptableOrUnknown(data['irrigated']!, _irrigatedMeta));
+    }
+    if (data.containsKey('soil_series')) {
+      context.handle(
+          _soilSeriesMeta,
+          soilSeries.isAcceptableOrUnknown(
+              data['soil_series']!, _soilSeriesMeta));
+    }
+    if (data.containsKey('soil_texture')) {
+      context.handle(
+          _soilTextureMeta,
+          soilTexture.isAcceptableOrUnknown(
+              data['soil_texture']!, _soilTextureMeta));
+    }
+    if (data.containsKey('organic_matter_pct')) {
+      context.handle(
+          _organicMatterPctMeta,
+          organicMatterPct.isAcceptableOrUnknown(
+              data['organic_matter_pct']!, _organicMatterPctMeta));
+    }
+    if (data.containsKey('soil_ph')) {
+      context.handle(_soilPhMeta,
+          soilPh.isAcceptableOrUnknown(data['soil_ph']!, _soilPhMeta));
+    }
+    if (data.containsKey('harvest_date')) {
+      context.handle(
+          _harvestDateMeta,
+          harvestDate.isAcceptableOrUnknown(
+              data['harvest_date']!, _harvestDateMeta));
+    }
+    if (data.containsKey('study_type')) {
+      context.handle(_studyTypeMeta,
+          studyType.isAcceptableOrUnknown(data['study_type']!, _studyTypeMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -560,6 +863,56 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.int, data['${effectivePrefix}plot_rows']),
       plotSpacing: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}plot_spacing']),
+      sponsor: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sponsor']),
+      protocolNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}protocol_number']),
+      investigatorName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}investigator_name']),
+      cooperatorName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cooperator_name']),
+      siteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}site_id']),
+      fieldName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}field_name']),
+      county: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}county']),
+      stateProvince: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}state_province']),
+      country: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}country']),
+      latitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}latitude']),
+      longitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}longitude']),
+      elevationM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}elevation_m']),
+      experimentalDesign: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}experimental_design']),
+      plotLengthM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}plot_length_m']),
+      plotWidthM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}plot_width_m']),
+      alleyLengthM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}alley_length_m']),
+      previousCrop: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}previous_crop']),
+      tillage: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tillage']),
+      irrigated: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}irrigated']),
+      soilSeries: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_series']),
+      soilTexture: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_texture']),
+      organicMatterPct: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}organic_matter_pct']),
+      soilPh: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}soil_ph']),
+      harvestDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}harvest_date']),
+      studyType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}study_type']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -589,6 +942,31 @@ class Trial extends DataClass implements Insertable<Trial> {
 
   /// Spacing between plots (e.g. "0.5 m"). Trial-level default.
   final String? plotSpacing;
+  final String? sponsor;
+  final String? protocolNumber;
+  final String? investigatorName;
+  final String? cooperatorName;
+  final String? siteId;
+  final String? fieldName;
+  final String? county;
+  final String? stateProvince;
+  final String? country;
+  final double? latitude;
+  final double? longitude;
+  final double? elevationM;
+  final String? experimentalDesign;
+  final double? plotLengthM;
+  final double? plotWidthM;
+  final double? alleyLengthM;
+  final String? previousCrop;
+  final String? tillage;
+  final bool? irrigated;
+  final String? soilSeries;
+  final String? soilTexture;
+  final double? organicMatterPct;
+  final double? soilPh;
+  final DateTime? harvestDate;
+  final String? studyType;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Trial(
@@ -601,6 +979,31 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.plotDimensions,
       this.plotRows,
       this.plotSpacing,
+      this.sponsor,
+      this.protocolNumber,
+      this.investigatorName,
+      this.cooperatorName,
+      this.siteId,
+      this.fieldName,
+      this.county,
+      this.stateProvince,
+      this.country,
+      this.latitude,
+      this.longitude,
+      this.elevationM,
+      this.experimentalDesign,
+      this.plotLengthM,
+      this.plotWidthM,
+      this.alleyLengthM,
+      this.previousCrop,
+      this.tillage,
+      this.irrigated,
+      this.soilSeries,
+      this.soilTexture,
+      this.organicMatterPct,
+      this.soilPh,
+      this.harvestDate,
+      this.studyType,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -627,6 +1030,81 @@ class Trial extends DataClass implements Insertable<Trial> {
     if (!nullToAbsent || plotSpacing != null) {
       map['plot_spacing'] = Variable<String>(plotSpacing);
     }
+    if (!nullToAbsent || sponsor != null) {
+      map['sponsor'] = Variable<String>(sponsor);
+    }
+    if (!nullToAbsent || protocolNumber != null) {
+      map['protocol_number'] = Variable<String>(protocolNumber);
+    }
+    if (!nullToAbsent || investigatorName != null) {
+      map['investigator_name'] = Variable<String>(investigatorName);
+    }
+    if (!nullToAbsent || cooperatorName != null) {
+      map['cooperator_name'] = Variable<String>(cooperatorName);
+    }
+    if (!nullToAbsent || siteId != null) {
+      map['site_id'] = Variable<String>(siteId);
+    }
+    if (!nullToAbsent || fieldName != null) {
+      map['field_name'] = Variable<String>(fieldName);
+    }
+    if (!nullToAbsent || county != null) {
+      map['county'] = Variable<String>(county);
+    }
+    if (!nullToAbsent || stateProvince != null) {
+      map['state_province'] = Variable<String>(stateProvince);
+    }
+    if (!nullToAbsent || country != null) {
+      map['country'] = Variable<String>(country);
+    }
+    if (!nullToAbsent || latitude != null) {
+      map['latitude'] = Variable<double>(latitude);
+    }
+    if (!nullToAbsent || longitude != null) {
+      map['longitude'] = Variable<double>(longitude);
+    }
+    if (!nullToAbsent || elevationM != null) {
+      map['elevation_m'] = Variable<double>(elevationM);
+    }
+    if (!nullToAbsent || experimentalDesign != null) {
+      map['experimental_design'] = Variable<String>(experimentalDesign);
+    }
+    if (!nullToAbsent || plotLengthM != null) {
+      map['plot_length_m'] = Variable<double>(plotLengthM);
+    }
+    if (!nullToAbsent || plotWidthM != null) {
+      map['plot_width_m'] = Variable<double>(plotWidthM);
+    }
+    if (!nullToAbsent || alleyLengthM != null) {
+      map['alley_length_m'] = Variable<double>(alleyLengthM);
+    }
+    if (!nullToAbsent || previousCrop != null) {
+      map['previous_crop'] = Variable<String>(previousCrop);
+    }
+    if (!nullToAbsent || tillage != null) {
+      map['tillage'] = Variable<String>(tillage);
+    }
+    if (!nullToAbsent || irrigated != null) {
+      map['irrigated'] = Variable<bool>(irrigated);
+    }
+    if (!nullToAbsent || soilSeries != null) {
+      map['soil_series'] = Variable<String>(soilSeries);
+    }
+    if (!nullToAbsent || soilTexture != null) {
+      map['soil_texture'] = Variable<String>(soilTexture);
+    }
+    if (!nullToAbsent || organicMatterPct != null) {
+      map['organic_matter_pct'] = Variable<double>(organicMatterPct);
+    }
+    if (!nullToAbsent || soilPh != null) {
+      map['soil_ph'] = Variable<double>(soilPh);
+    }
+    if (!nullToAbsent || harvestDate != null) {
+      map['harvest_date'] = Variable<DateTime>(harvestDate);
+    }
+    if (!nullToAbsent || studyType != null) {
+      map['study_type'] = Variable<String>(studyType);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -652,6 +1130,78 @@ class Trial extends DataClass implements Insertable<Trial> {
       plotSpacing: plotSpacing == null && nullToAbsent
           ? const Value.absent()
           : Value(plotSpacing),
+      sponsor: sponsor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sponsor),
+      protocolNumber: protocolNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(protocolNumber),
+      investigatorName: investigatorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(investigatorName),
+      cooperatorName: cooperatorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cooperatorName),
+      siteId:
+          siteId == null && nullToAbsent ? const Value.absent() : Value(siteId),
+      fieldName: fieldName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldName),
+      county:
+          county == null && nullToAbsent ? const Value.absent() : Value(county),
+      stateProvince: stateProvince == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stateProvince),
+      country: country == null && nullToAbsent
+          ? const Value.absent()
+          : Value(country),
+      latitude: latitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latitude),
+      longitude: longitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(longitude),
+      elevationM: elevationM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(elevationM),
+      experimentalDesign: experimentalDesign == null && nullToAbsent
+          ? const Value.absent()
+          : Value(experimentalDesign),
+      plotLengthM: plotLengthM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotLengthM),
+      plotWidthM: plotWidthM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotWidthM),
+      alleyLengthM: alleyLengthM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alleyLengthM),
+      previousCrop: previousCrop == null && nullToAbsent
+          ? const Value.absent()
+          : Value(previousCrop),
+      tillage: tillage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tillage),
+      irrigated: irrigated == null && nullToAbsent
+          ? const Value.absent()
+          : Value(irrigated),
+      soilSeries: soilSeries == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilSeries),
+      soilTexture: soilTexture == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilTexture),
+      organicMatterPct: organicMatterPct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(organicMatterPct),
+      soilPh:
+          soilPh == null && nullToAbsent ? const Value.absent() : Value(soilPh),
+      harvestDate: harvestDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(harvestDate),
+      studyType: studyType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(studyType),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -670,6 +1220,32 @@ class Trial extends DataClass implements Insertable<Trial> {
       plotDimensions: serializer.fromJson<String?>(json['plotDimensions']),
       plotRows: serializer.fromJson<int?>(json['plotRows']),
       plotSpacing: serializer.fromJson<String?>(json['plotSpacing']),
+      sponsor: serializer.fromJson<String?>(json['sponsor']),
+      protocolNumber: serializer.fromJson<String?>(json['protocolNumber']),
+      investigatorName: serializer.fromJson<String?>(json['investigatorName']),
+      cooperatorName: serializer.fromJson<String?>(json['cooperatorName']),
+      siteId: serializer.fromJson<String?>(json['siteId']),
+      fieldName: serializer.fromJson<String?>(json['fieldName']),
+      county: serializer.fromJson<String?>(json['county']),
+      stateProvince: serializer.fromJson<String?>(json['stateProvince']),
+      country: serializer.fromJson<String?>(json['country']),
+      latitude: serializer.fromJson<double?>(json['latitude']),
+      longitude: serializer.fromJson<double?>(json['longitude']),
+      elevationM: serializer.fromJson<double?>(json['elevationM']),
+      experimentalDesign:
+          serializer.fromJson<String?>(json['experimentalDesign']),
+      plotLengthM: serializer.fromJson<double?>(json['plotLengthM']),
+      plotWidthM: serializer.fromJson<double?>(json['plotWidthM']),
+      alleyLengthM: serializer.fromJson<double?>(json['alleyLengthM']),
+      previousCrop: serializer.fromJson<String?>(json['previousCrop']),
+      tillage: serializer.fromJson<String?>(json['tillage']),
+      irrigated: serializer.fromJson<bool?>(json['irrigated']),
+      soilSeries: serializer.fromJson<String?>(json['soilSeries']),
+      soilTexture: serializer.fromJson<String?>(json['soilTexture']),
+      organicMatterPct: serializer.fromJson<double?>(json['organicMatterPct']),
+      soilPh: serializer.fromJson<double?>(json['soilPh']),
+      harvestDate: serializer.fromJson<DateTime?>(json['harvestDate']),
+      studyType: serializer.fromJson<String?>(json['studyType']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -687,6 +1263,31 @@ class Trial extends DataClass implements Insertable<Trial> {
       'plotDimensions': serializer.toJson<String?>(plotDimensions),
       'plotRows': serializer.toJson<int?>(plotRows),
       'plotSpacing': serializer.toJson<String?>(plotSpacing),
+      'sponsor': serializer.toJson<String?>(sponsor),
+      'protocolNumber': serializer.toJson<String?>(protocolNumber),
+      'investigatorName': serializer.toJson<String?>(investigatorName),
+      'cooperatorName': serializer.toJson<String?>(cooperatorName),
+      'siteId': serializer.toJson<String?>(siteId),
+      'fieldName': serializer.toJson<String?>(fieldName),
+      'county': serializer.toJson<String?>(county),
+      'stateProvince': serializer.toJson<String?>(stateProvince),
+      'country': serializer.toJson<String?>(country),
+      'latitude': serializer.toJson<double?>(latitude),
+      'longitude': serializer.toJson<double?>(longitude),
+      'elevationM': serializer.toJson<double?>(elevationM),
+      'experimentalDesign': serializer.toJson<String?>(experimentalDesign),
+      'plotLengthM': serializer.toJson<double?>(plotLengthM),
+      'plotWidthM': serializer.toJson<double?>(plotWidthM),
+      'alleyLengthM': serializer.toJson<double?>(alleyLengthM),
+      'previousCrop': serializer.toJson<String?>(previousCrop),
+      'tillage': serializer.toJson<String?>(tillage),
+      'irrigated': serializer.toJson<bool?>(irrigated),
+      'soilSeries': serializer.toJson<String?>(soilSeries),
+      'soilTexture': serializer.toJson<String?>(soilTexture),
+      'organicMatterPct': serializer.toJson<double?>(organicMatterPct),
+      'soilPh': serializer.toJson<double?>(soilPh),
+      'harvestDate': serializer.toJson<DateTime?>(harvestDate),
+      'studyType': serializer.toJson<String?>(studyType),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -702,6 +1303,31 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<String?> plotDimensions = const Value.absent(),
           Value<int?> plotRows = const Value.absent(),
           Value<String?> plotSpacing = const Value.absent(),
+          Value<String?> sponsor = const Value.absent(),
+          Value<String?> protocolNumber = const Value.absent(),
+          Value<String?> investigatorName = const Value.absent(),
+          Value<String?> cooperatorName = const Value.absent(),
+          Value<String?> siteId = const Value.absent(),
+          Value<String?> fieldName = const Value.absent(),
+          Value<String?> county = const Value.absent(),
+          Value<String?> stateProvince = const Value.absent(),
+          Value<String?> country = const Value.absent(),
+          Value<double?> latitude = const Value.absent(),
+          Value<double?> longitude = const Value.absent(),
+          Value<double?> elevationM = const Value.absent(),
+          Value<String?> experimentalDesign = const Value.absent(),
+          Value<double?> plotLengthM = const Value.absent(),
+          Value<double?> plotWidthM = const Value.absent(),
+          Value<double?> alleyLengthM = const Value.absent(),
+          Value<String?> previousCrop = const Value.absent(),
+          Value<String?> tillage = const Value.absent(),
+          Value<bool?> irrigated = const Value.absent(),
+          Value<String?> soilSeries = const Value.absent(),
+          Value<String?> soilTexture = const Value.absent(),
+          Value<double?> organicMatterPct = const Value.absent(),
+          Value<double?> soilPh = const Value.absent(),
+          Value<DateTime?> harvestDate = const Value.absent(),
+          Value<String?> studyType = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       Trial(
@@ -715,6 +1341,42 @@ class Trial extends DataClass implements Insertable<Trial> {
             plotDimensions.present ? plotDimensions.value : this.plotDimensions,
         plotRows: plotRows.present ? plotRows.value : this.plotRows,
         plotSpacing: plotSpacing.present ? plotSpacing.value : this.plotSpacing,
+        sponsor: sponsor.present ? sponsor.value : this.sponsor,
+        protocolNumber:
+            protocolNumber.present ? protocolNumber.value : this.protocolNumber,
+        investigatorName: investigatorName.present
+            ? investigatorName.value
+            : this.investigatorName,
+        cooperatorName:
+            cooperatorName.present ? cooperatorName.value : this.cooperatorName,
+        siteId: siteId.present ? siteId.value : this.siteId,
+        fieldName: fieldName.present ? fieldName.value : this.fieldName,
+        county: county.present ? county.value : this.county,
+        stateProvince:
+            stateProvince.present ? stateProvince.value : this.stateProvince,
+        country: country.present ? country.value : this.country,
+        latitude: latitude.present ? latitude.value : this.latitude,
+        longitude: longitude.present ? longitude.value : this.longitude,
+        elevationM: elevationM.present ? elevationM.value : this.elevationM,
+        experimentalDesign: experimentalDesign.present
+            ? experimentalDesign.value
+            : this.experimentalDesign,
+        plotLengthM: plotLengthM.present ? plotLengthM.value : this.plotLengthM,
+        plotWidthM: plotWidthM.present ? plotWidthM.value : this.plotWidthM,
+        alleyLengthM:
+            alleyLengthM.present ? alleyLengthM.value : this.alleyLengthM,
+        previousCrop:
+            previousCrop.present ? previousCrop.value : this.previousCrop,
+        tillage: tillage.present ? tillage.value : this.tillage,
+        irrigated: irrigated.present ? irrigated.value : this.irrigated,
+        soilSeries: soilSeries.present ? soilSeries.value : this.soilSeries,
+        soilTexture: soilTexture.present ? soilTexture.value : this.soilTexture,
+        organicMatterPct: organicMatterPct.present
+            ? organicMatterPct.value
+            : this.organicMatterPct,
+        soilPh: soilPh.present ? soilPh.value : this.soilPh,
+        harvestDate: harvestDate.present ? harvestDate.value : this.harvestDate,
+        studyType: studyType.present ? studyType.value : this.studyType,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -732,6 +1394,53 @@ class Trial extends DataClass implements Insertable<Trial> {
       plotRows: data.plotRows.present ? data.plotRows.value : this.plotRows,
       plotSpacing:
           data.plotSpacing.present ? data.plotSpacing.value : this.plotSpacing,
+      sponsor: data.sponsor.present ? data.sponsor.value : this.sponsor,
+      protocolNumber: data.protocolNumber.present
+          ? data.protocolNumber.value
+          : this.protocolNumber,
+      investigatorName: data.investigatorName.present
+          ? data.investigatorName.value
+          : this.investigatorName,
+      cooperatorName: data.cooperatorName.present
+          ? data.cooperatorName.value
+          : this.cooperatorName,
+      siteId: data.siteId.present ? data.siteId.value : this.siteId,
+      fieldName: data.fieldName.present ? data.fieldName.value : this.fieldName,
+      county: data.county.present ? data.county.value : this.county,
+      stateProvince: data.stateProvince.present
+          ? data.stateProvince.value
+          : this.stateProvince,
+      country: data.country.present ? data.country.value : this.country,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      elevationM:
+          data.elevationM.present ? data.elevationM.value : this.elevationM,
+      experimentalDesign: data.experimentalDesign.present
+          ? data.experimentalDesign.value
+          : this.experimentalDesign,
+      plotLengthM:
+          data.plotLengthM.present ? data.plotLengthM.value : this.plotLengthM,
+      plotWidthM:
+          data.plotWidthM.present ? data.plotWidthM.value : this.plotWidthM,
+      alleyLengthM: data.alleyLengthM.present
+          ? data.alleyLengthM.value
+          : this.alleyLengthM,
+      previousCrop: data.previousCrop.present
+          ? data.previousCrop.value
+          : this.previousCrop,
+      tillage: data.tillage.present ? data.tillage.value : this.tillage,
+      irrigated: data.irrigated.present ? data.irrigated.value : this.irrigated,
+      soilSeries:
+          data.soilSeries.present ? data.soilSeries.value : this.soilSeries,
+      soilTexture:
+          data.soilTexture.present ? data.soilTexture.value : this.soilTexture,
+      organicMatterPct: data.organicMatterPct.present
+          ? data.organicMatterPct.value
+          : this.organicMatterPct,
+      soilPh: data.soilPh.present ? data.soilPh.value : this.soilPh,
+      harvestDate:
+          data.harvestDate.present ? data.harvestDate.value : this.harvestDate,
+      studyType: data.studyType.present ? data.studyType.value : this.studyType,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -749,6 +1458,31 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('plotDimensions: $plotDimensions, ')
           ..write('plotRows: $plotRows, ')
           ..write('plotSpacing: $plotSpacing, ')
+          ..write('sponsor: $sponsor, ')
+          ..write('protocolNumber: $protocolNumber, ')
+          ..write('investigatorName: $investigatorName, ')
+          ..write('cooperatorName: $cooperatorName, ')
+          ..write('siteId: $siteId, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('county: $county, ')
+          ..write('stateProvince: $stateProvince, ')
+          ..write('country: $country, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('elevationM: $elevationM, ')
+          ..write('experimentalDesign: $experimentalDesign, ')
+          ..write('plotLengthM: $plotLengthM, ')
+          ..write('plotWidthM: $plotWidthM, ')
+          ..write('alleyLengthM: $alleyLengthM, ')
+          ..write('previousCrop: $previousCrop, ')
+          ..write('tillage: $tillage, ')
+          ..write('irrigated: $irrigated, ')
+          ..write('soilSeries: $soilSeries, ')
+          ..write('soilTexture: $soilTexture, ')
+          ..write('organicMatterPct: $organicMatterPct, ')
+          ..write('soilPh: $soilPh, ')
+          ..write('harvestDate: $harvestDate, ')
+          ..write('studyType: $studyType, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -756,8 +1490,44 @@ class Trial extends DataClass implements Insertable<Trial> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, crop, location, season, status,
-      plotDimensions, plotRows, plotSpacing, createdAt, updatedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        name,
+        crop,
+        location,
+        season,
+        status,
+        plotDimensions,
+        plotRows,
+        plotSpacing,
+        sponsor,
+        protocolNumber,
+        investigatorName,
+        cooperatorName,
+        siteId,
+        fieldName,
+        county,
+        stateProvince,
+        country,
+        latitude,
+        longitude,
+        elevationM,
+        experimentalDesign,
+        plotLengthM,
+        plotWidthM,
+        alleyLengthM,
+        previousCrop,
+        tillage,
+        irrigated,
+        soilSeries,
+        soilTexture,
+        organicMatterPct,
+        soilPh,
+        harvestDate,
+        studyType,
+        createdAt,
+        updatedAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -771,6 +1541,31 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.plotDimensions == this.plotDimensions &&
           other.plotRows == this.plotRows &&
           other.plotSpacing == this.plotSpacing &&
+          other.sponsor == this.sponsor &&
+          other.protocolNumber == this.protocolNumber &&
+          other.investigatorName == this.investigatorName &&
+          other.cooperatorName == this.cooperatorName &&
+          other.siteId == this.siteId &&
+          other.fieldName == this.fieldName &&
+          other.county == this.county &&
+          other.stateProvince == this.stateProvince &&
+          other.country == this.country &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
+          other.elevationM == this.elevationM &&
+          other.experimentalDesign == this.experimentalDesign &&
+          other.plotLengthM == this.plotLengthM &&
+          other.plotWidthM == this.plotWidthM &&
+          other.alleyLengthM == this.alleyLengthM &&
+          other.previousCrop == this.previousCrop &&
+          other.tillage == this.tillage &&
+          other.irrigated == this.irrigated &&
+          other.soilSeries == this.soilSeries &&
+          other.soilTexture == this.soilTexture &&
+          other.organicMatterPct == this.organicMatterPct &&
+          other.soilPh == this.soilPh &&
+          other.harvestDate == this.harvestDate &&
+          other.studyType == this.studyType &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -785,6 +1580,31 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<String?> plotDimensions;
   final Value<int?> plotRows;
   final Value<String?> plotSpacing;
+  final Value<String?> sponsor;
+  final Value<String?> protocolNumber;
+  final Value<String?> investigatorName;
+  final Value<String?> cooperatorName;
+  final Value<String?> siteId;
+  final Value<String?> fieldName;
+  final Value<String?> county;
+  final Value<String?> stateProvince;
+  final Value<String?> country;
+  final Value<double?> latitude;
+  final Value<double?> longitude;
+  final Value<double?> elevationM;
+  final Value<String?> experimentalDesign;
+  final Value<double?> plotLengthM;
+  final Value<double?> plotWidthM;
+  final Value<double?> alleyLengthM;
+  final Value<String?> previousCrop;
+  final Value<String?> tillage;
+  final Value<bool?> irrigated;
+  final Value<String?> soilSeries;
+  final Value<String?> soilTexture;
+  final Value<double?> organicMatterPct;
+  final Value<double?> soilPh;
+  final Value<DateTime?> harvestDate;
+  final Value<String?> studyType;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const TrialsCompanion({
@@ -797,6 +1617,31 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.plotDimensions = const Value.absent(),
     this.plotRows = const Value.absent(),
     this.plotSpacing = const Value.absent(),
+    this.sponsor = const Value.absent(),
+    this.protocolNumber = const Value.absent(),
+    this.investigatorName = const Value.absent(),
+    this.cooperatorName = const Value.absent(),
+    this.siteId = const Value.absent(),
+    this.fieldName = const Value.absent(),
+    this.county = const Value.absent(),
+    this.stateProvince = const Value.absent(),
+    this.country = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.elevationM = const Value.absent(),
+    this.experimentalDesign = const Value.absent(),
+    this.plotLengthM = const Value.absent(),
+    this.plotWidthM = const Value.absent(),
+    this.alleyLengthM = const Value.absent(),
+    this.previousCrop = const Value.absent(),
+    this.tillage = const Value.absent(),
+    this.irrigated = const Value.absent(),
+    this.soilSeries = const Value.absent(),
+    this.soilTexture = const Value.absent(),
+    this.organicMatterPct = const Value.absent(),
+    this.soilPh = const Value.absent(),
+    this.harvestDate = const Value.absent(),
+    this.studyType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -810,6 +1655,31 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.plotDimensions = const Value.absent(),
     this.plotRows = const Value.absent(),
     this.plotSpacing = const Value.absent(),
+    this.sponsor = const Value.absent(),
+    this.protocolNumber = const Value.absent(),
+    this.investigatorName = const Value.absent(),
+    this.cooperatorName = const Value.absent(),
+    this.siteId = const Value.absent(),
+    this.fieldName = const Value.absent(),
+    this.county = const Value.absent(),
+    this.stateProvince = const Value.absent(),
+    this.country = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.elevationM = const Value.absent(),
+    this.experimentalDesign = const Value.absent(),
+    this.plotLengthM = const Value.absent(),
+    this.plotWidthM = const Value.absent(),
+    this.alleyLengthM = const Value.absent(),
+    this.previousCrop = const Value.absent(),
+    this.tillage = const Value.absent(),
+    this.irrigated = const Value.absent(),
+    this.soilSeries = const Value.absent(),
+    this.soilTexture = const Value.absent(),
+    this.organicMatterPct = const Value.absent(),
+    this.soilPh = const Value.absent(),
+    this.harvestDate = const Value.absent(),
+    this.studyType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : name = Value(name);
@@ -823,6 +1693,31 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<String>? plotDimensions,
     Expression<int>? plotRows,
     Expression<String>? plotSpacing,
+    Expression<String>? sponsor,
+    Expression<String>? protocolNumber,
+    Expression<String>? investigatorName,
+    Expression<String>? cooperatorName,
+    Expression<String>? siteId,
+    Expression<String>? fieldName,
+    Expression<String>? county,
+    Expression<String>? stateProvince,
+    Expression<String>? country,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
+    Expression<double>? elevationM,
+    Expression<String>? experimentalDesign,
+    Expression<double>? plotLengthM,
+    Expression<double>? plotWidthM,
+    Expression<double>? alleyLengthM,
+    Expression<String>? previousCrop,
+    Expression<String>? tillage,
+    Expression<bool>? irrigated,
+    Expression<String>? soilSeries,
+    Expression<String>? soilTexture,
+    Expression<double>? organicMatterPct,
+    Expression<double>? soilPh,
+    Expression<DateTime>? harvestDate,
+    Expression<String>? studyType,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -836,6 +1731,31 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (plotDimensions != null) 'plot_dimensions': plotDimensions,
       if (plotRows != null) 'plot_rows': plotRows,
       if (plotSpacing != null) 'plot_spacing': plotSpacing,
+      if (sponsor != null) 'sponsor': sponsor,
+      if (protocolNumber != null) 'protocol_number': protocolNumber,
+      if (investigatorName != null) 'investigator_name': investigatorName,
+      if (cooperatorName != null) 'cooperator_name': cooperatorName,
+      if (siteId != null) 'site_id': siteId,
+      if (fieldName != null) 'field_name': fieldName,
+      if (county != null) 'county': county,
+      if (stateProvince != null) 'state_province': stateProvince,
+      if (country != null) 'country': country,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (elevationM != null) 'elevation_m': elevationM,
+      if (experimentalDesign != null) 'experimental_design': experimentalDesign,
+      if (plotLengthM != null) 'plot_length_m': plotLengthM,
+      if (plotWidthM != null) 'plot_width_m': plotWidthM,
+      if (alleyLengthM != null) 'alley_length_m': alleyLengthM,
+      if (previousCrop != null) 'previous_crop': previousCrop,
+      if (tillage != null) 'tillage': tillage,
+      if (irrigated != null) 'irrigated': irrigated,
+      if (soilSeries != null) 'soil_series': soilSeries,
+      if (soilTexture != null) 'soil_texture': soilTexture,
+      if (organicMatterPct != null) 'organic_matter_pct': organicMatterPct,
+      if (soilPh != null) 'soil_ph': soilPh,
+      if (harvestDate != null) 'harvest_date': harvestDate,
+      if (studyType != null) 'study_type': studyType,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -851,6 +1771,31 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<String?>? plotDimensions,
       Value<int?>? plotRows,
       Value<String?>? plotSpacing,
+      Value<String?>? sponsor,
+      Value<String?>? protocolNumber,
+      Value<String?>? investigatorName,
+      Value<String?>? cooperatorName,
+      Value<String?>? siteId,
+      Value<String?>? fieldName,
+      Value<String?>? county,
+      Value<String?>? stateProvince,
+      Value<String?>? country,
+      Value<double?>? latitude,
+      Value<double?>? longitude,
+      Value<double?>? elevationM,
+      Value<String?>? experimentalDesign,
+      Value<double?>? plotLengthM,
+      Value<double?>? plotWidthM,
+      Value<double?>? alleyLengthM,
+      Value<String?>? previousCrop,
+      Value<String?>? tillage,
+      Value<bool?>? irrigated,
+      Value<String?>? soilSeries,
+      Value<String?>? soilTexture,
+      Value<double?>? organicMatterPct,
+      Value<double?>? soilPh,
+      Value<DateTime?>? harvestDate,
+      Value<String?>? studyType,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt}) {
     return TrialsCompanion(
@@ -863,6 +1808,31 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       plotDimensions: plotDimensions ?? this.plotDimensions,
       plotRows: plotRows ?? this.plotRows,
       plotSpacing: plotSpacing ?? this.plotSpacing,
+      sponsor: sponsor ?? this.sponsor,
+      protocolNumber: protocolNumber ?? this.protocolNumber,
+      investigatorName: investigatorName ?? this.investigatorName,
+      cooperatorName: cooperatorName ?? this.cooperatorName,
+      siteId: siteId ?? this.siteId,
+      fieldName: fieldName ?? this.fieldName,
+      county: county ?? this.county,
+      stateProvince: stateProvince ?? this.stateProvince,
+      country: country ?? this.country,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      elevationM: elevationM ?? this.elevationM,
+      experimentalDesign: experimentalDesign ?? this.experimentalDesign,
+      plotLengthM: plotLengthM ?? this.plotLengthM,
+      plotWidthM: plotWidthM ?? this.plotWidthM,
+      alleyLengthM: alleyLengthM ?? this.alleyLengthM,
+      previousCrop: previousCrop ?? this.previousCrop,
+      tillage: tillage ?? this.tillage,
+      irrigated: irrigated ?? this.irrigated,
+      soilSeries: soilSeries ?? this.soilSeries,
+      soilTexture: soilTexture ?? this.soilTexture,
+      organicMatterPct: organicMatterPct ?? this.organicMatterPct,
+      soilPh: soilPh ?? this.soilPh,
+      harvestDate: harvestDate ?? this.harvestDate,
+      studyType: studyType ?? this.studyType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -898,6 +1868,81 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (plotSpacing.present) {
       map['plot_spacing'] = Variable<String>(plotSpacing.value);
     }
+    if (sponsor.present) {
+      map['sponsor'] = Variable<String>(sponsor.value);
+    }
+    if (protocolNumber.present) {
+      map['protocol_number'] = Variable<String>(protocolNumber.value);
+    }
+    if (investigatorName.present) {
+      map['investigator_name'] = Variable<String>(investigatorName.value);
+    }
+    if (cooperatorName.present) {
+      map['cooperator_name'] = Variable<String>(cooperatorName.value);
+    }
+    if (siteId.present) {
+      map['site_id'] = Variable<String>(siteId.value);
+    }
+    if (fieldName.present) {
+      map['field_name'] = Variable<String>(fieldName.value);
+    }
+    if (county.present) {
+      map['county'] = Variable<String>(county.value);
+    }
+    if (stateProvince.present) {
+      map['state_province'] = Variable<String>(stateProvince.value);
+    }
+    if (country.present) {
+      map['country'] = Variable<String>(country.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
+    if (elevationM.present) {
+      map['elevation_m'] = Variable<double>(elevationM.value);
+    }
+    if (experimentalDesign.present) {
+      map['experimental_design'] = Variable<String>(experimentalDesign.value);
+    }
+    if (plotLengthM.present) {
+      map['plot_length_m'] = Variable<double>(plotLengthM.value);
+    }
+    if (plotWidthM.present) {
+      map['plot_width_m'] = Variable<double>(plotWidthM.value);
+    }
+    if (alleyLengthM.present) {
+      map['alley_length_m'] = Variable<double>(alleyLengthM.value);
+    }
+    if (previousCrop.present) {
+      map['previous_crop'] = Variable<String>(previousCrop.value);
+    }
+    if (tillage.present) {
+      map['tillage'] = Variable<String>(tillage.value);
+    }
+    if (irrigated.present) {
+      map['irrigated'] = Variable<bool>(irrigated.value);
+    }
+    if (soilSeries.present) {
+      map['soil_series'] = Variable<String>(soilSeries.value);
+    }
+    if (soilTexture.present) {
+      map['soil_texture'] = Variable<String>(soilTexture.value);
+    }
+    if (organicMatterPct.present) {
+      map['organic_matter_pct'] = Variable<double>(organicMatterPct.value);
+    }
+    if (soilPh.present) {
+      map['soil_ph'] = Variable<double>(soilPh.value);
+    }
+    if (harvestDate.present) {
+      map['harvest_date'] = Variable<DateTime>(harvestDate.value);
+    }
+    if (studyType.present) {
+      map['study_type'] = Variable<String>(studyType.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -919,6 +1964,31 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('plotDimensions: $plotDimensions, ')
           ..write('plotRows: $plotRows, ')
           ..write('plotSpacing: $plotSpacing, ')
+          ..write('sponsor: $sponsor, ')
+          ..write('protocolNumber: $protocolNumber, ')
+          ..write('investigatorName: $investigatorName, ')
+          ..write('cooperatorName: $cooperatorName, ')
+          ..write('siteId: $siteId, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('county: $county, ')
+          ..write('stateProvince: $stateProvince, ')
+          ..write('country: $country, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('elevationM: $elevationM, ')
+          ..write('experimentalDesign: $experimentalDesign, ')
+          ..write('plotLengthM: $plotLengthM, ')
+          ..write('plotWidthM: $plotWidthM, ')
+          ..write('alleyLengthM: $alleyLengthM, ')
+          ..write('previousCrop: $previousCrop, ')
+          ..write('tillage: $tillage, ')
+          ..write('irrigated: $irrigated, ')
+          ..write('soilSeries: $soilSeries, ')
+          ..write('soilTexture: $soilTexture, ')
+          ..write('organicMatterPct: $organicMatterPct, ')
+          ..write('soilPh: $soilPh, ')
+          ..write('harvestDate: $harvestDate, ')
+          ..write('studyType: $studyType, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -972,8 +2042,35 @@ class $TreatmentsTable extends Treatments
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
       'description', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _treatmentTypeMeta =
+      const VerificationMeta('treatmentType');
   @override
-  List<GeneratedColumn> get $columns => [id, trialId, code, name, description];
+  late final GeneratedColumn<String> treatmentType = GeneratedColumn<String>(
+      'treatment_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _timingCodeMeta =
+      const VerificationMeta('timingCode');
+  @override
+  late final GeneratedColumn<String> timingCode = GeneratedColumn<String>(
+      'timing_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _eppoCodeMeta =
+      const VerificationMeta('eppoCode');
+  @override
+  late final GeneratedColumn<String> eppoCode = GeneratedColumn<String>(
+      'eppo_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        code,
+        name,
+        description,
+        treatmentType,
+        timingCode,
+        eppoCode
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1011,6 +2108,22 @@ class $TreatmentsTable extends Treatments
           description.isAcceptableOrUnknown(
               data['description']!, _descriptionMeta));
     }
+    if (data.containsKey('treatment_type')) {
+      context.handle(
+          _treatmentTypeMeta,
+          treatmentType.isAcceptableOrUnknown(
+              data['treatment_type']!, _treatmentTypeMeta));
+    }
+    if (data.containsKey('timing_code')) {
+      context.handle(
+          _timingCodeMeta,
+          timingCode.isAcceptableOrUnknown(
+              data['timing_code']!, _timingCodeMeta));
+    }
+    if (data.containsKey('eppo_code')) {
+      context.handle(_eppoCodeMeta,
+          eppoCode.isAcceptableOrUnknown(data['eppo_code']!, _eppoCodeMeta));
+    }
     return context;
   }
 
@@ -1030,6 +2143,12 @@ class $TreatmentsTable extends Treatments
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       description: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      treatmentType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}treatment_type']),
+      timingCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}timing_code']),
+      eppoCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}eppo_code']),
     );
   }
 
@@ -1045,12 +2164,18 @@ class Treatment extends DataClass implements Insertable<Treatment> {
   final String code;
   final String name;
   final String? description;
+  final String? treatmentType;
+  final String? timingCode;
+  final String? eppoCode;
   const Treatment(
       {required this.id,
       required this.trialId,
       required this.code,
       required this.name,
-      this.description});
+      this.description,
+      this.treatmentType,
+      this.timingCode,
+      this.eppoCode});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1060,6 +2185,15 @@ class Treatment extends DataClass implements Insertable<Treatment> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || treatmentType != null) {
+      map['treatment_type'] = Variable<String>(treatmentType);
+    }
+    if (!nullToAbsent || timingCode != null) {
+      map['timing_code'] = Variable<String>(timingCode);
+    }
+    if (!nullToAbsent || eppoCode != null) {
+      map['eppo_code'] = Variable<String>(eppoCode);
     }
     return map;
   }
@@ -1073,6 +2207,15 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
+      treatmentType: treatmentType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(treatmentType),
+      timingCode: timingCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timingCode),
+      eppoCode: eppoCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eppoCode),
     );
   }
 
@@ -1085,6 +2228,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       code: serializer.fromJson<String>(json['code']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
+      treatmentType: serializer.fromJson<String?>(json['treatmentType']),
+      timingCode: serializer.fromJson<String?>(json['timingCode']),
+      eppoCode: serializer.fromJson<String?>(json['eppoCode']),
     );
   }
   @override
@@ -1096,6 +2242,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       'code': serializer.toJson<String>(code),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
+      'treatmentType': serializer.toJson<String?>(treatmentType),
+      'timingCode': serializer.toJson<String?>(timingCode),
+      'eppoCode': serializer.toJson<String?>(eppoCode),
     };
   }
 
@@ -1104,13 +2253,20 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           int? trialId,
           String? code,
           String? name,
-          Value<String?> description = const Value.absent()}) =>
+          Value<String?> description = const Value.absent(),
+          Value<String?> treatmentType = const Value.absent(),
+          Value<String?> timingCode = const Value.absent(),
+          Value<String?> eppoCode = const Value.absent()}) =>
       Treatment(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
         code: code ?? this.code,
         name: name ?? this.name,
         description: description.present ? description.value : this.description,
+        treatmentType:
+            treatmentType.present ? treatmentType.value : this.treatmentType,
+        timingCode: timingCode.present ? timingCode.value : this.timingCode,
+        eppoCode: eppoCode.present ? eppoCode.value : this.eppoCode,
       );
   Treatment copyWithCompanion(TreatmentsCompanion data) {
     return Treatment(
@@ -1120,6 +2276,12 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       name: data.name.present ? data.name.value : this.name,
       description:
           data.description.present ? data.description.value : this.description,
+      treatmentType: data.treatmentType.present
+          ? data.treatmentType.value
+          : this.treatmentType,
+      timingCode:
+          data.timingCode.present ? data.timingCode.value : this.timingCode,
+      eppoCode: data.eppoCode.present ? data.eppoCode.value : this.eppoCode,
     );
   }
 
@@ -1130,13 +2292,17 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           ..write('trialId: $trialId, ')
           ..write('code: $code, ')
           ..write('name: $name, ')
-          ..write('description: $description')
+          ..write('description: $description, ')
+          ..write('treatmentType: $treatmentType, ')
+          ..write('timingCode: $timingCode, ')
+          ..write('eppoCode: $eppoCode')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, trialId, code, name, description);
+  int get hashCode => Object.hash(id, trialId, code, name, description,
+      treatmentType, timingCode, eppoCode);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1145,7 +2311,10 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           other.trialId == this.trialId &&
           other.code == this.code &&
           other.name == this.name &&
-          other.description == this.description);
+          other.description == this.description &&
+          other.treatmentType == this.treatmentType &&
+          other.timingCode == this.timingCode &&
+          other.eppoCode == this.eppoCode);
 }
 
 class TreatmentsCompanion extends UpdateCompanion<Treatment> {
@@ -1154,12 +2323,18 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
   final Value<String> code;
   final Value<String> name;
   final Value<String?> description;
+  final Value<String?> treatmentType;
+  final Value<String?> timingCode;
+  final Value<String?> eppoCode;
   const TreatmentsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
     this.code = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
+    this.treatmentType = const Value.absent(),
+    this.timingCode = const Value.absent(),
+    this.eppoCode = const Value.absent(),
   });
   TreatmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -1167,6 +2342,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     required String code,
     required String name,
     this.description = const Value.absent(),
+    this.treatmentType = const Value.absent(),
+    this.timingCode = const Value.absent(),
+    this.eppoCode = const Value.absent(),
   })  : trialId = Value(trialId),
         code = Value(code),
         name = Value(name);
@@ -1176,6 +2354,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     Expression<String>? code,
     Expression<String>? name,
     Expression<String>? description,
+    Expression<String>? treatmentType,
+    Expression<String>? timingCode,
+    Expression<String>? eppoCode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1183,6 +2364,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
       if (code != null) 'code': code,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
+      if (treatmentType != null) 'treatment_type': treatmentType,
+      if (timingCode != null) 'timing_code': timingCode,
+      if (eppoCode != null) 'eppo_code': eppoCode,
     });
   }
 
@@ -1191,13 +2375,19 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
       Value<int>? trialId,
       Value<String>? code,
       Value<String>? name,
-      Value<String?>? description}) {
+      Value<String?>? description,
+      Value<String?>? treatmentType,
+      Value<String?>? timingCode,
+      Value<String?>? eppoCode}) {
     return TreatmentsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
       code: code ?? this.code,
       name: name ?? this.name,
       description: description ?? this.description,
+      treatmentType: treatmentType ?? this.treatmentType,
+      timingCode: timingCode ?? this.timingCode,
+      eppoCode: eppoCode ?? this.eppoCode,
     );
   }
 
@@ -1219,6 +2409,15 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
+    if (treatmentType.present) {
+      map['treatment_type'] = Variable<String>(treatmentType.value);
+    }
+    if (timingCode.present) {
+      map['timing_code'] = Variable<String>(timingCode.value);
+    }
+    if (eppoCode.present) {
+      map['eppo_code'] = Variable<String>(eppoCode.value);
+    }
     return map;
   }
 
@@ -1229,7 +2428,10 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
           ..write('trialId: $trialId, ')
           ..write('code: $code, ')
           ..write('name: $name, ')
-          ..write('description: $description')
+          ..write('description: $description, ')
+          ..write('treatmentType: $treatmentType, ')
+          ..write('timingCode: $timingCode, ')
+          ..write('eppoCode: $eppoCode')
           ..write(')'))
         .toString();
   }
@@ -1307,6 +2509,36 @@ class $TreatmentComponentsTable extends TreatmentComponents
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _activeIngredientPctMeta =
+      const VerificationMeta('activeIngredientPct');
+  @override
+  late final GeneratedColumn<double> activeIngredientPct =
+      GeneratedColumn<double>('active_ingredient_pct', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _formulationTypeMeta =
+      const VerificationMeta('formulationType');
+  @override
+  late final GeneratedColumn<String> formulationType = GeneratedColumn<String>(
+      'formulation_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _manufacturerMeta =
+      const VerificationMeta('manufacturer');
+  @override
+  late final GeneratedColumn<String> manufacturer = GeneratedColumn<String>(
+      'manufacturer', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _registrationNumberMeta =
+      const VerificationMeta('registrationNumber');
+  @override
+  late final GeneratedColumn<String> registrationNumber =
+      GeneratedColumn<String>('registration_number', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _eppoCodeMeta =
+      const VerificationMeta('eppoCode');
+  @override
+  late final GeneratedColumn<String> eppoCode = GeneratedColumn<String>(
+      'eppo_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1317,7 +2549,12 @@ class $TreatmentComponentsTable extends TreatmentComponents
         rateUnit,
         applicationTiming,
         notes,
-        sortOrder
+        sortOrder,
+        activeIngredientPct,
+        formulationType,
+        manufacturer,
+        registrationNumber,
+        eppoCode
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1376,6 +2613,34 @@ class $TreatmentComponentsTable extends TreatmentComponents
       context.handle(_sortOrderMeta,
           sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
     }
+    if (data.containsKey('active_ingredient_pct')) {
+      context.handle(
+          _activeIngredientPctMeta,
+          activeIngredientPct.isAcceptableOrUnknown(
+              data['active_ingredient_pct']!, _activeIngredientPctMeta));
+    }
+    if (data.containsKey('formulation_type')) {
+      context.handle(
+          _formulationTypeMeta,
+          formulationType.isAcceptableOrUnknown(
+              data['formulation_type']!, _formulationTypeMeta));
+    }
+    if (data.containsKey('manufacturer')) {
+      context.handle(
+          _manufacturerMeta,
+          manufacturer.isAcceptableOrUnknown(
+              data['manufacturer']!, _manufacturerMeta));
+    }
+    if (data.containsKey('registration_number')) {
+      context.handle(
+          _registrationNumberMeta,
+          registrationNumber.isAcceptableOrUnknown(
+              data['registration_number']!, _registrationNumberMeta));
+    }
+    if (data.containsKey('eppo_code')) {
+      context.handle(_eppoCodeMeta,
+          eppoCode.isAcceptableOrUnknown(data['eppo_code']!, _eppoCodeMeta));
+    }
     return context;
   }
 
@@ -1403,6 +2668,16 @@ class $TreatmentComponentsTable extends TreatmentComponents
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       sortOrder: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
+      activeIngredientPct: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}active_ingredient_pct']),
+      formulationType: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}formulation_type']),
+      manufacturer: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}manufacturer']),
+      registrationNumber: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}registration_number']),
+      eppoCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}eppo_code']),
     );
   }
 
@@ -1423,6 +2698,11 @@ class TreatmentComponent extends DataClass
   final String? applicationTiming;
   final String? notes;
   final int sortOrder;
+  final double? activeIngredientPct;
+  final String? formulationType;
+  final String? manufacturer;
+  final String? registrationNumber;
+  final String? eppoCode;
   const TreatmentComponent(
       {required this.id,
       required this.treatmentId,
@@ -1432,7 +2712,12 @@ class TreatmentComponent extends DataClass
       this.rateUnit,
       this.applicationTiming,
       this.notes,
-      required this.sortOrder});
+      required this.sortOrder,
+      this.activeIngredientPct,
+      this.formulationType,
+      this.manufacturer,
+      this.registrationNumber,
+      this.eppoCode});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1453,6 +2738,21 @@ class TreatmentComponent extends DataClass
       map['notes'] = Variable<String>(notes);
     }
     map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || activeIngredientPct != null) {
+      map['active_ingredient_pct'] = Variable<double>(activeIngredientPct);
+    }
+    if (!nullToAbsent || formulationType != null) {
+      map['formulation_type'] = Variable<String>(formulationType);
+    }
+    if (!nullToAbsent || manufacturer != null) {
+      map['manufacturer'] = Variable<String>(manufacturer);
+    }
+    if (!nullToAbsent || registrationNumber != null) {
+      map['registration_number'] = Variable<String>(registrationNumber);
+    }
+    if (!nullToAbsent || eppoCode != null) {
+      map['eppo_code'] = Variable<String>(eppoCode);
+    }
     return map;
   }
 
@@ -1472,6 +2772,21 @@ class TreatmentComponent extends DataClass
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       sortOrder: Value(sortOrder),
+      activeIngredientPct: activeIngredientPct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(activeIngredientPct),
+      formulationType: formulationType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formulationType),
+      manufacturer: manufacturer == null && nullToAbsent
+          ? const Value.absent()
+          : Value(manufacturer),
+      registrationNumber: registrationNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(registrationNumber),
+      eppoCode: eppoCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eppoCode),
     );
   }
 
@@ -1489,6 +2804,13 @@ class TreatmentComponent extends DataClass
           serializer.fromJson<String?>(json['applicationTiming']),
       notes: serializer.fromJson<String?>(json['notes']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      activeIngredientPct:
+          serializer.fromJson<double?>(json['activeIngredientPct']),
+      formulationType: serializer.fromJson<String?>(json['formulationType']),
+      manufacturer: serializer.fromJson<String?>(json['manufacturer']),
+      registrationNumber:
+          serializer.fromJson<String?>(json['registrationNumber']),
+      eppoCode: serializer.fromJson<String?>(json['eppoCode']),
     );
   }
   @override
@@ -1504,6 +2826,11 @@ class TreatmentComponent extends DataClass
       'applicationTiming': serializer.toJson<String?>(applicationTiming),
       'notes': serializer.toJson<String?>(notes),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'activeIngredientPct': serializer.toJson<double?>(activeIngredientPct),
+      'formulationType': serializer.toJson<String?>(formulationType),
+      'manufacturer': serializer.toJson<String?>(manufacturer),
+      'registrationNumber': serializer.toJson<String?>(registrationNumber),
+      'eppoCode': serializer.toJson<String?>(eppoCode),
     };
   }
 
@@ -1516,7 +2843,12 @@ class TreatmentComponent extends DataClass
           Value<String?> rateUnit = const Value.absent(),
           Value<String?> applicationTiming = const Value.absent(),
           Value<String?> notes = const Value.absent(),
-          int? sortOrder}) =>
+          int? sortOrder,
+          Value<double?> activeIngredientPct = const Value.absent(),
+          Value<String?> formulationType = const Value.absent(),
+          Value<String?> manufacturer = const Value.absent(),
+          Value<String?> registrationNumber = const Value.absent(),
+          Value<String?> eppoCode = const Value.absent()}) =>
       TreatmentComponent(
         id: id ?? this.id,
         treatmentId: treatmentId ?? this.treatmentId,
@@ -1529,6 +2861,18 @@ class TreatmentComponent extends DataClass
             : this.applicationTiming,
         notes: notes.present ? notes.value : this.notes,
         sortOrder: sortOrder ?? this.sortOrder,
+        activeIngredientPct: activeIngredientPct.present
+            ? activeIngredientPct.value
+            : this.activeIngredientPct,
+        formulationType: formulationType.present
+            ? formulationType.value
+            : this.formulationType,
+        manufacturer:
+            manufacturer.present ? manufacturer.value : this.manufacturer,
+        registrationNumber: registrationNumber.present
+            ? registrationNumber.value
+            : this.registrationNumber,
+        eppoCode: eppoCode.present ? eppoCode.value : this.eppoCode,
       );
   TreatmentComponent copyWithCompanion(TreatmentComponentsCompanion data) {
     return TreatmentComponent(
@@ -1545,6 +2889,19 @@ class TreatmentComponent extends DataClass
           : this.applicationTiming,
       notes: data.notes.present ? data.notes.value : this.notes,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      activeIngredientPct: data.activeIngredientPct.present
+          ? data.activeIngredientPct.value
+          : this.activeIngredientPct,
+      formulationType: data.formulationType.present
+          ? data.formulationType.value
+          : this.formulationType,
+      manufacturer: data.manufacturer.present
+          ? data.manufacturer.value
+          : this.manufacturer,
+      registrationNumber: data.registrationNumber.present
+          ? data.registrationNumber.value
+          : this.registrationNumber,
+      eppoCode: data.eppoCode.present ? data.eppoCode.value : this.eppoCode,
     );
   }
 
@@ -1559,14 +2916,32 @@ class TreatmentComponent extends DataClass
           ..write('rateUnit: $rateUnit, ')
           ..write('applicationTiming: $applicationTiming, ')
           ..write('notes: $notes, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('activeIngredientPct: $activeIngredientPct, ')
+          ..write('formulationType: $formulationType, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('registrationNumber: $registrationNumber, ')
+          ..write('eppoCode: $eppoCode')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, treatmentId, trialId, productName, rate,
-      rateUnit, applicationTiming, notes, sortOrder);
+  int get hashCode => Object.hash(
+      id,
+      treatmentId,
+      trialId,
+      productName,
+      rate,
+      rateUnit,
+      applicationTiming,
+      notes,
+      sortOrder,
+      activeIngredientPct,
+      formulationType,
+      manufacturer,
+      registrationNumber,
+      eppoCode);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1579,7 +2954,12 @@ class TreatmentComponent extends DataClass
           other.rateUnit == this.rateUnit &&
           other.applicationTiming == this.applicationTiming &&
           other.notes == this.notes &&
-          other.sortOrder == this.sortOrder);
+          other.sortOrder == this.sortOrder &&
+          other.activeIngredientPct == this.activeIngredientPct &&
+          other.formulationType == this.formulationType &&
+          other.manufacturer == this.manufacturer &&
+          other.registrationNumber == this.registrationNumber &&
+          other.eppoCode == this.eppoCode);
 }
 
 class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
@@ -1592,6 +2972,11 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
   final Value<String?> applicationTiming;
   final Value<String?> notes;
   final Value<int> sortOrder;
+  final Value<double?> activeIngredientPct;
+  final Value<String?> formulationType;
+  final Value<String?> manufacturer;
+  final Value<String?> registrationNumber;
+  final Value<String?> eppoCode;
   const TreatmentComponentsCompanion({
     this.id = const Value.absent(),
     this.treatmentId = const Value.absent(),
@@ -1602,6 +2987,11 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.applicationTiming = const Value.absent(),
     this.notes = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.activeIngredientPct = const Value.absent(),
+    this.formulationType = const Value.absent(),
+    this.manufacturer = const Value.absent(),
+    this.registrationNumber = const Value.absent(),
+    this.eppoCode = const Value.absent(),
   });
   TreatmentComponentsCompanion.insert({
     this.id = const Value.absent(),
@@ -1613,6 +3003,11 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.applicationTiming = const Value.absent(),
     this.notes = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.activeIngredientPct = const Value.absent(),
+    this.formulationType = const Value.absent(),
+    this.manufacturer = const Value.absent(),
+    this.registrationNumber = const Value.absent(),
+    this.eppoCode = const Value.absent(),
   })  : treatmentId = Value(treatmentId),
         trialId = Value(trialId),
         productName = Value(productName);
@@ -1626,6 +3021,11 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     Expression<String>? applicationTiming,
     Expression<String>? notes,
     Expression<int>? sortOrder,
+    Expression<double>? activeIngredientPct,
+    Expression<String>? formulationType,
+    Expression<String>? manufacturer,
+    Expression<String>? registrationNumber,
+    Expression<String>? eppoCode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1637,6 +3037,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       if (applicationTiming != null) 'application_timing': applicationTiming,
       if (notes != null) 'notes': notes,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (activeIngredientPct != null)
+        'active_ingredient_pct': activeIngredientPct,
+      if (formulationType != null) 'formulation_type': formulationType,
+      if (manufacturer != null) 'manufacturer': manufacturer,
+      if (registrationNumber != null) 'registration_number': registrationNumber,
+      if (eppoCode != null) 'eppo_code': eppoCode,
     });
   }
 
@@ -1649,7 +3055,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       Value<String?>? rateUnit,
       Value<String?>? applicationTiming,
       Value<String?>? notes,
-      Value<int>? sortOrder}) {
+      Value<int>? sortOrder,
+      Value<double?>? activeIngredientPct,
+      Value<String?>? formulationType,
+      Value<String?>? manufacturer,
+      Value<String?>? registrationNumber,
+      Value<String?>? eppoCode}) {
     return TreatmentComponentsCompanion(
       id: id ?? this.id,
       treatmentId: treatmentId ?? this.treatmentId,
@@ -1660,6 +3071,11 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       applicationTiming: applicationTiming ?? this.applicationTiming,
       notes: notes ?? this.notes,
       sortOrder: sortOrder ?? this.sortOrder,
+      activeIngredientPct: activeIngredientPct ?? this.activeIngredientPct,
+      formulationType: formulationType ?? this.formulationType,
+      manufacturer: manufacturer ?? this.manufacturer,
+      registrationNumber: registrationNumber ?? this.registrationNumber,
+      eppoCode: eppoCode ?? this.eppoCode,
     );
   }
 
@@ -1693,6 +3109,22 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (activeIngredientPct.present) {
+      map['active_ingredient_pct'] =
+          Variable<double>(activeIngredientPct.value);
+    }
+    if (formulationType.present) {
+      map['formulation_type'] = Variable<String>(formulationType.value);
+    }
+    if (manufacturer.present) {
+      map['manufacturer'] = Variable<String>(manufacturer.value);
+    }
+    if (registrationNumber.present) {
+      map['registration_number'] = Variable<String>(registrationNumber.value);
+    }
+    if (eppoCode.present) {
+      map['eppo_code'] = Variable<String>(eppoCode.value);
+    }
     return map;
   }
 
@@ -1707,7 +3139,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
           ..write('rateUnit: $rateUnit, ')
           ..write('applicationTiming: $applicationTiming, ')
           ..write('notes: $notes, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('activeIngredientPct: $activeIngredientPct, ')
+          ..write('formulationType: $formulationType, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('registrationNumber: $registrationNumber, ')
+          ..write('eppoCode: $eppoCode')
           ..write(')'))
         .toString();
   }
@@ -2252,6 +3689,54 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _timingCodeMeta =
+      const VerificationMeta('timingCode');
+  @override
+  late final GeneratedColumn<String> timingCode = GeneratedColumn<String>(
+      'timing_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _daysAfterTreatmentMeta =
+      const VerificationMeta('daysAfterTreatment');
+  @override
+  late final GeneratedColumn<int> daysAfterTreatment = GeneratedColumn<int>(
+      'days_after_treatment', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _assessmentMethodMeta =
+      const VerificationMeta('assessmentMethod');
+  @override
+  late final GeneratedColumn<String> assessmentMethod = GeneratedColumn<String>(
+      'assessment_method', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _validMinMeta =
+      const VerificationMeta('validMin');
+  @override
+  late final GeneratedColumn<double> validMin = GeneratedColumn<double>(
+      'valid_min', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _validMaxMeta =
+      const VerificationMeta('validMax');
+  @override
+  late final GeneratedColumn<double> validMax = GeneratedColumn<double>(
+      'valid_max', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _eppoCodeMeta =
+      const VerificationMeta('eppoCode');
+  @override
+  late final GeneratedColumn<String> eppoCode = GeneratedColumn<String>(
+      'eppo_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cropPartMeta =
+      const VerificationMeta('cropPart');
+  @override
+  late final GeneratedColumn<String> cropPart = GeneratedColumn<String>(
+      'crop_part', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _timingDescriptionMeta =
+      const VerificationMeta('timingDescription');
+  @override
+  late final GeneratedColumn<String> timingDescription =
+      GeneratedColumn<String>('timing_description', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2269,7 +3754,15 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
         isSystem,
         isActive,
         createdAt,
-        updatedAt
+        updatedAt,
+        timingCode,
+        daysAfterTreatment,
+        assessmentMethod,
+        validMin,
+        validMax,
+        eppoCode,
+        cropPart,
+        timingDescription
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2355,6 +3848,46 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
     }
+    if (data.containsKey('timing_code')) {
+      context.handle(
+          _timingCodeMeta,
+          timingCode.isAcceptableOrUnknown(
+              data['timing_code']!, _timingCodeMeta));
+    }
+    if (data.containsKey('days_after_treatment')) {
+      context.handle(
+          _daysAfterTreatmentMeta,
+          daysAfterTreatment.isAcceptableOrUnknown(
+              data['days_after_treatment']!, _daysAfterTreatmentMeta));
+    }
+    if (data.containsKey('assessment_method')) {
+      context.handle(
+          _assessmentMethodMeta,
+          assessmentMethod.isAcceptableOrUnknown(
+              data['assessment_method']!, _assessmentMethodMeta));
+    }
+    if (data.containsKey('valid_min')) {
+      context.handle(_validMinMeta,
+          validMin.isAcceptableOrUnknown(data['valid_min']!, _validMinMeta));
+    }
+    if (data.containsKey('valid_max')) {
+      context.handle(_validMaxMeta,
+          validMax.isAcceptableOrUnknown(data['valid_max']!, _validMaxMeta));
+    }
+    if (data.containsKey('eppo_code')) {
+      context.handle(_eppoCodeMeta,
+          eppoCode.isAcceptableOrUnknown(data['eppo_code']!, _eppoCodeMeta));
+    }
+    if (data.containsKey('crop_part')) {
+      context.handle(_cropPartMeta,
+          cropPart.isAcceptableOrUnknown(data['crop_part']!, _cropPartMeta));
+    }
+    if (data.containsKey('timing_description')) {
+      context.handle(
+          _timingDescriptionMeta,
+          timingDescription.isAcceptableOrUnknown(
+              data['timing_description']!, _timingDescriptionMeta));
+    }
     return context;
   }
 
@@ -2396,6 +3929,22 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      timingCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}timing_code']),
+      daysAfterTreatment: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}days_after_treatment']),
+      assessmentMethod: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}assessment_method']),
+      validMin: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}valid_min']),
+      validMax: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}valid_max']),
+      eppoCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}eppo_code']),
+      cropPart: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}crop_part']),
+      timingDescription: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}timing_description']),
     );
   }
 
@@ -2423,6 +3972,14 @@ class AssessmentDefinition extends DataClass
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? timingCode;
+  final int? daysAfterTreatment;
+  final String? assessmentMethod;
+  final double? validMin;
+  final double? validMax;
+  final String? eppoCode;
+  final String? cropPart;
+  final String? timingDescription;
   const AssessmentDefinition(
       {required this.id,
       required this.code,
@@ -2439,7 +3996,15 @@ class AssessmentDefinition extends DataClass
       required this.isSystem,
       required this.isActive,
       required this.createdAt,
-      required this.updatedAt});
+      required this.updatedAt,
+      this.timingCode,
+      this.daysAfterTreatment,
+      this.assessmentMethod,
+      this.validMin,
+      this.validMax,
+      this.eppoCode,
+      this.cropPart,
+      this.timingDescription});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2473,6 +4038,30 @@ class AssessmentDefinition extends DataClass
     map['is_active'] = Variable<bool>(isActive);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || timingCode != null) {
+      map['timing_code'] = Variable<String>(timingCode);
+    }
+    if (!nullToAbsent || daysAfterTreatment != null) {
+      map['days_after_treatment'] = Variable<int>(daysAfterTreatment);
+    }
+    if (!nullToAbsent || assessmentMethod != null) {
+      map['assessment_method'] = Variable<String>(assessmentMethod);
+    }
+    if (!nullToAbsent || validMin != null) {
+      map['valid_min'] = Variable<double>(validMin);
+    }
+    if (!nullToAbsent || validMax != null) {
+      map['valid_max'] = Variable<double>(validMax);
+    }
+    if (!nullToAbsent || eppoCode != null) {
+      map['eppo_code'] = Variable<String>(eppoCode);
+    }
+    if (!nullToAbsent || cropPart != null) {
+      map['crop_part'] = Variable<String>(cropPart);
+    }
+    if (!nullToAbsent || timingDescription != null) {
+      map['timing_description'] = Variable<String>(timingDescription);
+    }
     return map;
   }
 
@@ -2504,6 +4093,30 @@ class AssessmentDefinition extends DataClass
       isActive: Value(isActive),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      timingCode: timingCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timingCode),
+      daysAfterTreatment: daysAfterTreatment == null && nullToAbsent
+          ? const Value.absent()
+          : Value(daysAfterTreatment),
+      assessmentMethod: assessmentMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assessmentMethod),
+      validMin: validMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(validMin),
+      validMax: validMax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(validMax),
+      eppoCode: eppoCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eppoCode),
+      cropPart: cropPart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropPart),
+      timingDescription: timingDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timingDescription),
     );
   }
 
@@ -2528,6 +4141,15 @@ class AssessmentDefinition extends DataClass
       isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      timingCode: serializer.fromJson<String?>(json['timingCode']),
+      daysAfterTreatment: serializer.fromJson<int?>(json['daysAfterTreatment']),
+      assessmentMethod: serializer.fromJson<String?>(json['assessmentMethod']),
+      validMin: serializer.fromJson<double?>(json['validMin']),
+      validMax: serializer.fromJson<double?>(json['validMax']),
+      eppoCode: serializer.fromJson<String?>(json['eppoCode']),
+      cropPart: serializer.fromJson<String?>(json['cropPart']),
+      timingDescription:
+          serializer.fromJson<String?>(json['timingDescription']),
     );
   }
   @override
@@ -2550,6 +4172,14 @@ class AssessmentDefinition extends DataClass
       'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'timingCode': serializer.toJson<String?>(timingCode),
+      'daysAfterTreatment': serializer.toJson<int?>(daysAfterTreatment),
+      'assessmentMethod': serializer.toJson<String?>(assessmentMethod),
+      'validMin': serializer.toJson<double?>(validMin),
+      'validMax': serializer.toJson<double?>(validMax),
+      'eppoCode': serializer.toJson<String?>(eppoCode),
+      'cropPart': serializer.toJson<String?>(cropPart),
+      'timingDescription': serializer.toJson<String?>(timingDescription),
     };
   }
 
@@ -2569,7 +4199,15 @@ class AssessmentDefinition extends DataClass
           bool? isSystem,
           bool? isActive,
           DateTime? createdAt,
-          DateTime? updatedAt}) =>
+          DateTime? updatedAt,
+          Value<String?> timingCode = const Value.absent(),
+          Value<int?> daysAfterTreatment = const Value.absent(),
+          Value<String?> assessmentMethod = const Value.absent(),
+          Value<double?> validMin = const Value.absent(),
+          Value<double?> validMax = const Value.absent(),
+          Value<String?> eppoCode = const Value.absent(),
+          Value<String?> cropPart = const Value.absent(),
+          Value<String?> timingDescription = const Value.absent()}) =>
       AssessmentDefinition(
         id: id ?? this.id,
         code: code ?? this.code,
@@ -2589,6 +4227,20 @@ class AssessmentDefinition extends DataClass
         isActive: isActive ?? this.isActive,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        timingCode: timingCode.present ? timingCode.value : this.timingCode,
+        daysAfterTreatment: daysAfterTreatment.present
+            ? daysAfterTreatment.value
+            : this.daysAfterTreatment,
+        assessmentMethod: assessmentMethod.present
+            ? assessmentMethod.value
+            : this.assessmentMethod,
+        validMin: validMin.present ? validMin.value : this.validMin,
+        validMax: validMax.present ? validMax.value : this.validMax,
+        eppoCode: eppoCode.present ? eppoCode.value : this.eppoCode,
+        cropPart: cropPart.present ? cropPart.value : this.cropPart,
+        timingDescription: timingDescription.present
+            ? timingDescription.value
+            : this.timingDescription,
       );
   AssessmentDefinition copyWithCompanion(AssessmentDefinitionsCompanion data) {
     return AssessmentDefinition(
@@ -2611,6 +4263,21 @@ class AssessmentDefinition extends DataClass
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      timingCode:
+          data.timingCode.present ? data.timingCode.value : this.timingCode,
+      daysAfterTreatment: data.daysAfterTreatment.present
+          ? data.daysAfterTreatment.value
+          : this.daysAfterTreatment,
+      assessmentMethod: data.assessmentMethod.present
+          ? data.assessmentMethod.value
+          : this.assessmentMethod,
+      validMin: data.validMin.present ? data.validMin.value : this.validMin,
+      validMax: data.validMax.present ? data.validMax.value : this.validMax,
+      eppoCode: data.eppoCode.present ? data.eppoCode.value : this.eppoCode,
+      cropPart: data.cropPart.present ? data.cropPart.value : this.cropPart,
+      timingDescription: data.timingDescription.present
+          ? data.timingDescription.value
+          : this.timingDescription,
     );
   }
 
@@ -2632,29 +4299,46 @@ class AssessmentDefinition extends DataClass
           ..write('isSystem: $isSystem, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('timingCode: $timingCode, ')
+          ..write('daysAfterTreatment: $daysAfterTreatment, ')
+          ..write('assessmentMethod: $assessmentMethod, ')
+          ..write('validMin: $validMin, ')
+          ..write('validMax: $validMax, ')
+          ..write('eppoCode: $eppoCode, ')
+          ..write('cropPart: $cropPart, ')
+          ..write('timingDescription: $timingDescription')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      code,
-      name,
-      category,
-      dataType,
-      unit,
-      scaleMin,
-      scaleMax,
-      target,
-      method,
-      defaultInstructions,
-      timingType,
-      isSystem,
-      isActive,
-      createdAt,
-      updatedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        code,
+        name,
+        category,
+        dataType,
+        unit,
+        scaleMin,
+        scaleMax,
+        target,
+        method,
+        defaultInstructions,
+        timingType,
+        isSystem,
+        isActive,
+        createdAt,
+        updatedAt,
+        timingCode,
+        daysAfterTreatment,
+        assessmentMethod,
+        validMin,
+        validMax,
+        eppoCode,
+        cropPart,
+        timingDescription
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2674,7 +4358,15 @@ class AssessmentDefinition extends DataClass
           other.isSystem == this.isSystem &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.timingCode == this.timingCode &&
+          other.daysAfterTreatment == this.daysAfterTreatment &&
+          other.assessmentMethod == this.assessmentMethod &&
+          other.validMin == this.validMin &&
+          other.validMax == this.validMax &&
+          other.eppoCode == this.eppoCode &&
+          other.cropPart == this.cropPart &&
+          other.timingDescription == this.timingDescription);
 }
 
 class AssessmentDefinitionsCompanion
@@ -2695,6 +4387,14 @@ class AssessmentDefinitionsCompanion
   final Value<bool> isActive;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<String?> timingCode;
+  final Value<int?> daysAfterTreatment;
+  final Value<String?> assessmentMethod;
+  final Value<double?> validMin;
+  final Value<double?> validMax;
+  final Value<String?> eppoCode;
+  final Value<String?> cropPart;
+  final Value<String?> timingDescription;
   const AssessmentDefinitionsCompanion({
     this.id = const Value.absent(),
     this.code = const Value.absent(),
@@ -2712,6 +4412,14 @@ class AssessmentDefinitionsCompanion
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.timingCode = const Value.absent(),
+    this.daysAfterTreatment = const Value.absent(),
+    this.assessmentMethod = const Value.absent(),
+    this.validMin = const Value.absent(),
+    this.validMax = const Value.absent(),
+    this.eppoCode = const Value.absent(),
+    this.cropPart = const Value.absent(),
+    this.timingDescription = const Value.absent(),
   });
   AssessmentDefinitionsCompanion.insert({
     this.id = const Value.absent(),
@@ -2730,6 +4438,14 @@ class AssessmentDefinitionsCompanion
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.timingCode = const Value.absent(),
+    this.daysAfterTreatment = const Value.absent(),
+    this.assessmentMethod = const Value.absent(),
+    this.validMin = const Value.absent(),
+    this.validMax = const Value.absent(),
+    this.eppoCode = const Value.absent(),
+    this.cropPart = const Value.absent(),
+    this.timingDescription = const Value.absent(),
   })  : code = Value(code),
         name = Value(name),
         category = Value(category);
@@ -2750,6 +4466,14 @@ class AssessmentDefinitionsCompanion
     Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<String>? timingCode,
+    Expression<int>? daysAfterTreatment,
+    Expression<String>? assessmentMethod,
+    Expression<double>? validMin,
+    Expression<double>? validMax,
+    Expression<String>? eppoCode,
+    Expression<String>? cropPart,
+    Expression<String>? timingDescription,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2769,6 +4493,15 @@ class AssessmentDefinitionsCompanion
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (timingCode != null) 'timing_code': timingCode,
+      if (daysAfterTreatment != null)
+        'days_after_treatment': daysAfterTreatment,
+      if (assessmentMethod != null) 'assessment_method': assessmentMethod,
+      if (validMin != null) 'valid_min': validMin,
+      if (validMax != null) 'valid_max': validMax,
+      if (eppoCode != null) 'eppo_code': eppoCode,
+      if (cropPart != null) 'crop_part': cropPart,
+      if (timingDescription != null) 'timing_description': timingDescription,
     });
   }
 
@@ -2788,7 +4521,15 @@ class AssessmentDefinitionsCompanion
       Value<bool>? isSystem,
       Value<bool>? isActive,
       Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt}) {
+      Value<DateTime>? updatedAt,
+      Value<String?>? timingCode,
+      Value<int?>? daysAfterTreatment,
+      Value<String?>? assessmentMethod,
+      Value<double?>? validMin,
+      Value<double?>? validMax,
+      Value<String?>? eppoCode,
+      Value<String?>? cropPart,
+      Value<String?>? timingDescription}) {
     return AssessmentDefinitionsCompanion(
       id: id ?? this.id,
       code: code ?? this.code,
@@ -2806,6 +4547,14 @@ class AssessmentDefinitionsCompanion
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      timingCode: timingCode ?? this.timingCode,
+      daysAfterTreatment: daysAfterTreatment ?? this.daysAfterTreatment,
+      assessmentMethod: assessmentMethod ?? this.assessmentMethod,
+      validMin: validMin ?? this.validMin,
+      validMax: validMax ?? this.validMax,
+      eppoCode: eppoCode ?? this.eppoCode,
+      cropPart: cropPart ?? this.cropPart,
+      timingDescription: timingDescription ?? this.timingDescription,
     );
   }
 
@@ -2860,6 +4609,30 @@ class AssessmentDefinitionsCompanion
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (timingCode.present) {
+      map['timing_code'] = Variable<String>(timingCode.value);
+    }
+    if (daysAfterTreatment.present) {
+      map['days_after_treatment'] = Variable<int>(daysAfterTreatment.value);
+    }
+    if (assessmentMethod.present) {
+      map['assessment_method'] = Variable<String>(assessmentMethod.value);
+    }
+    if (validMin.present) {
+      map['valid_min'] = Variable<double>(validMin.value);
+    }
+    if (validMax.present) {
+      map['valid_max'] = Variable<double>(validMax.value);
+    }
+    if (eppoCode.present) {
+      map['eppo_code'] = Variable<String>(eppoCode.value);
+    }
+    if (cropPart.present) {
+      map['crop_part'] = Variable<String>(cropPart.value);
+    }
+    if (timingDescription.present) {
+      map['timing_description'] = Variable<String>(timingDescription.value);
+    }
     return map;
   }
 
@@ -2881,7 +4654,15 @@ class AssessmentDefinitionsCompanion
           ..write('isSystem: $isSystem, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('timingCode: $timingCode, ')
+          ..write('daysAfterTreatment: $daysAfterTreatment, ')
+          ..write('assessmentMethod: $assessmentMethod, ')
+          ..write('validMin: $validMin, ')
+          ..write('validMax: $validMax, ')
+          ..write('eppoCode: $eppoCode, ')
+          ..write('cropPart: $cropPart, ')
+          ..write('timingDescription: $timingDescription')
           ..write(')'))
         .toString();
   }
@@ -3924,6 +5705,60 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   late final GeneratedColumn<DateTime> assignmentUpdatedAt =
       GeneratedColumn<DateTime>('assignment_updated_at', aliasedName, true,
           type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _plotLengthMMeta =
+      const VerificationMeta('plotLengthM');
+  @override
+  late final GeneratedColumn<double> plotLengthM = GeneratedColumn<double>(
+      'plot_length_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _plotWidthMMeta =
+      const VerificationMeta('plotWidthM');
+  @override
+  late final GeneratedColumn<double> plotWidthM = GeneratedColumn<double>(
+      'plot_width_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _plotAreaM2Meta =
+      const VerificationMeta('plotAreaM2');
+  @override
+  late final GeneratedColumn<double> plotAreaM2 = GeneratedColumn<double>(
+      'plot_area_m2', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _harvestLengthMMeta =
+      const VerificationMeta('harvestLengthM');
+  @override
+  late final GeneratedColumn<double> harvestLengthM = GeneratedColumn<double>(
+      'harvest_length_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _harvestWidthMMeta =
+      const VerificationMeta('harvestWidthM');
+  @override
+  late final GeneratedColumn<double> harvestWidthM = GeneratedColumn<double>(
+      'harvest_width_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _harvestAreaM2Meta =
+      const VerificationMeta('harvestAreaM2');
+  @override
+  late final GeneratedColumn<double> harvestAreaM2 = GeneratedColumn<double>(
+      'harvest_area_m2', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _plotDirectionMeta =
+      const VerificationMeta('plotDirection');
+  @override
+  late final GeneratedColumn<String> plotDirection = GeneratedColumn<String>(
+      'plot_direction', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _soilSeriesMeta =
+      const VerificationMeta('soilSeries');
+  @override
+  late final GeneratedColumn<String> soilSeries = GeneratedColumn<String>(
+      'soil_series', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _plotNotesMeta =
+      const VerificationMeta('plotNotes');
+  @override
+  late final GeneratedColumn<String> plotNotes = GeneratedColumn<String>(
+      'plot_notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3938,7 +5773,16 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
         fieldColumn,
         notes,
         assignmentSource,
-        assignmentUpdatedAt
+        assignmentUpdatedAt,
+        plotLengthM,
+        plotWidthM,
+        plotAreaM2,
+        harvestLengthM,
+        harvestWidthM,
+        harvestAreaM2,
+        plotDirection,
+        soilSeries,
+        plotNotes
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4015,6 +5859,58 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           assignmentUpdatedAt.isAcceptableOrUnknown(
               data['assignment_updated_at']!, _assignmentUpdatedAtMeta));
     }
+    if (data.containsKey('plot_length_m')) {
+      context.handle(
+          _plotLengthMMeta,
+          plotLengthM.isAcceptableOrUnknown(
+              data['plot_length_m']!, _plotLengthMMeta));
+    }
+    if (data.containsKey('plot_width_m')) {
+      context.handle(
+          _plotWidthMMeta,
+          plotWidthM.isAcceptableOrUnknown(
+              data['plot_width_m']!, _plotWidthMMeta));
+    }
+    if (data.containsKey('plot_area_m2')) {
+      context.handle(
+          _plotAreaM2Meta,
+          plotAreaM2.isAcceptableOrUnknown(
+              data['plot_area_m2']!, _plotAreaM2Meta));
+    }
+    if (data.containsKey('harvest_length_m')) {
+      context.handle(
+          _harvestLengthMMeta,
+          harvestLengthM.isAcceptableOrUnknown(
+              data['harvest_length_m']!, _harvestLengthMMeta));
+    }
+    if (data.containsKey('harvest_width_m')) {
+      context.handle(
+          _harvestWidthMMeta,
+          harvestWidthM.isAcceptableOrUnknown(
+              data['harvest_width_m']!, _harvestWidthMMeta));
+    }
+    if (data.containsKey('harvest_area_m2')) {
+      context.handle(
+          _harvestAreaM2Meta,
+          harvestAreaM2.isAcceptableOrUnknown(
+              data['harvest_area_m2']!, _harvestAreaM2Meta));
+    }
+    if (data.containsKey('plot_direction')) {
+      context.handle(
+          _plotDirectionMeta,
+          plotDirection.isAcceptableOrUnknown(
+              data['plot_direction']!, _plotDirectionMeta));
+    }
+    if (data.containsKey('soil_series')) {
+      context.handle(
+          _soilSeriesMeta,
+          soilSeries.isAcceptableOrUnknown(
+              data['soil_series']!, _soilSeriesMeta));
+    }
+    if (data.containsKey('plot_notes')) {
+      context.handle(_plotNotesMeta,
+          plotNotes.isAcceptableOrUnknown(data['plot_notes']!, _plotNotesMeta));
+    }
     return context;
   }
 
@@ -4051,6 +5947,24 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
       assignmentUpdatedAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime,
           data['${effectivePrefix}assignment_updated_at']),
+      plotLengthM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}plot_length_m']),
+      plotWidthM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}plot_width_m']),
+      plotAreaM2: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}plot_area_m2']),
+      harvestLengthM: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}harvest_length_m']),
+      harvestWidthM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}harvest_width_m']),
+      harvestAreaM2: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}harvest_area_m2']),
+      plotDirection: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plot_direction']),
+      soilSeries: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_series']),
+      plotNotes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plot_notes']),
     );
   }
 
@@ -4076,6 +5990,15 @@ class Plot extends DataClass implements Insertable<Plot> {
   /// Assignment provenance: 'imported' | 'manual' | null (unknown).
   final String? assignmentSource;
   final DateTime? assignmentUpdatedAt;
+  final double? plotLengthM;
+  final double? plotWidthM;
+  final double? plotAreaM2;
+  final double? harvestLengthM;
+  final double? harvestWidthM;
+  final double? harvestAreaM2;
+  final String? plotDirection;
+  final String? soilSeries;
+  final String? plotNotes;
   const Plot(
       {required this.id,
       required this.trialId,
@@ -4089,7 +6012,16 @@ class Plot extends DataClass implements Insertable<Plot> {
       this.fieldColumn,
       this.notes,
       this.assignmentSource,
-      this.assignmentUpdatedAt});
+      this.assignmentUpdatedAt,
+      this.plotLengthM,
+      this.plotWidthM,
+      this.plotAreaM2,
+      this.harvestLengthM,
+      this.harvestWidthM,
+      this.harvestAreaM2,
+      this.plotDirection,
+      this.soilSeries,
+      this.plotNotes});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4126,6 +6058,33 @@ class Plot extends DataClass implements Insertable<Plot> {
     if (!nullToAbsent || assignmentUpdatedAt != null) {
       map['assignment_updated_at'] = Variable<DateTime>(assignmentUpdatedAt);
     }
+    if (!nullToAbsent || plotLengthM != null) {
+      map['plot_length_m'] = Variable<double>(plotLengthM);
+    }
+    if (!nullToAbsent || plotWidthM != null) {
+      map['plot_width_m'] = Variable<double>(plotWidthM);
+    }
+    if (!nullToAbsent || plotAreaM2 != null) {
+      map['plot_area_m2'] = Variable<double>(plotAreaM2);
+    }
+    if (!nullToAbsent || harvestLengthM != null) {
+      map['harvest_length_m'] = Variable<double>(harvestLengthM);
+    }
+    if (!nullToAbsent || harvestWidthM != null) {
+      map['harvest_width_m'] = Variable<double>(harvestWidthM);
+    }
+    if (!nullToAbsent || harvestAreaM2 != null) {
+      map['harvest_area_m2'] = Variable<double>(harvestAreaM2);
+    }
+    if (!nullToAbsent || plotDirection != null) {
+      map['plot_direction'] = Variable<String>(plotDirection);
+    }
+    if (!nullToAbsent || soilSeries != null) {
+      map['soil_series'] = Variable<String>(soilSeries);
+    }
+    if (!nullToAbsent || plotNotes != null) {
+      map['plot_notes'] = Variable<String>(plotNotes);
+    }
     return map;
   }
 
@@ -4158,6 +6117,33 @@ class Plot extends DataClass implements Insertable<Plot> {
       assignmentUpdatedAt: assignmentUpdatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(assignmentUpdatedAt),
+      plotLengthM: plotLengthM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotLengthM),
+      plotWidthM: plotWidthM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotWidthM),
+      plotAreaM2: plotAreaM2 == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotAreaM2),
+      harvestLengthM: harvestLengthM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(harvestLengthM),
+      harvestWidthM: harvestWidthM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(harvestWidthM),
+      harvestAreaM2: harvestAreaM2 == null && nullToAbsent
+          ? const Value.absent()
+          : Value(harvestAreaM2),
+      plotDirection: plotDirection == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotDirection),
+      soilSeries: soilSeries == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilSeries),
+      plotNotes: plotNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotNotes),
     );
   }
 
@@ -4179,6 +6165,15 @@ class Plot extends DataClass implements Insertable<Plot> {
       assignmentSource: serializer.fromJson<String?>(json['assignmentSource']),
       assignmentUpdatedAt:
           serializer.fromJson<DateTime?>(json['assignmentUpdatedAt']),
+      plotLengthM: serializer.fromJson<double?>(json['plotLengthM']),
+      plotWidthM: serializer.fromJson<double?>(json['plotWidthM']),
+      plotAreaM2: serializer.fromJson<double?>(json['plotAreaM2']),
+      harvestLengthM: serializer.fromJson<double?>(json['harvestLengthM']),
+      harvestWidthM: serializer.fromJson<double?>(json['harvestWidthM']),
+      harvestAreaM2: serializer.fromJson<double?>(json['harvestAreaM2']),
+      plotDirection: serializer.fromJson<String?>(json['plotDirection']),
+      soilSeries: serializer.fromJson<String?>(json['soilSeries']),
+      plotNotes: serializer.fromJson<String?>(json['plotNotes']),
     );
   }
   @override
@@ -4198,6 +6193,15 @@ class Plot extends DataClass implements Insertable<Plot> {
       'notes': serializer.toJson<String?>(notes),
       'assignmentSource': serializer.toJson<String?>(assignmentSource),
       'assignmentUpdatedAt': serializer.toJson<DateTime?>(assignmentUpdatedAt),
+      'plotLengthM': serializer.toJson<double?>(plotLengthM),
+      'plotWidthM': serializer.toJson<double?>(plotWidthM),
+      'plotAreaM2': serializer.toJson<double?>(plotAreaM2),
+      'harvestLengthM': serializer.toJson<double?>(harvestLengthM),
+      'harvestWidthM': serializer.toJson<double?>(harvestWidthM),
+      'harvestAreaM2': serializer.toJson<double?>(harvestAreaM2),
+      'plotDirection': serializer.toJson<String?>(plotDirection),
+      'soilSeries': serializer.toJson<String?>(soilSeries),
+      'plotNotes': serializer.toJson<String?>(plotNotes),
     };
   }
 
@@ -4214,7 +6218,16 @@ class Plot extends DataClass implements Insertable<Plot> {
           Value<int?> fieldColumn = const Value.absent(),
           Value<String?> notes = const Value.absent(),
           Value<String?> assignmentSource = const Value.absent(),
-          Value<DateTime?> assignmentUpdatedAt = const Value.absent()}) =>
+          Value<DateTime?> assignmentUpdatedAt = const Value.absent(),
+          Value<double?> plotLengthM = const Value.absent(),
+          Value<double?> plotWidthM = const Value.absent(),
+          Value<double?> plotAreaM2 = const Value.absent(),
+          Value<double?> harvestLengthM = const Value.absent(),
+          Value<double?> harvestWidthM = const Value.absent(),
+          Value<double?> harvestAreaM2 = const Value.absent(),
+          Value<String?> plotDirection = const Value.absent(),
+          Value<String?> soilSeries = const Value.absent(),
+          Value<String?> plotNotes = const Value.absent()}) =>
       Plot(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -4234,6 +6247,19 @@ class Plot extends DataClass implements Insertable<Plot> {
         assignmentUpdatedAt: assignmentUpdatedAt.present
             ? assignmentUpdatedAt.value
             : this.assignmentUpdatedAt,
+        plotLengthM: plotLengthM.present ? plotLengthM.value : this.plotLengthM,
+        plotWidthM: plotWidthM.present ? plotWidthM.value : this.plotWidthM,
+        plotAreaM2: plotAreaM2.present ? plotAreaM2.value : this.plotAreaM2,
+        harvestLengthM:
+            harvestLengthM.present ? harvestLengthM.value : this.harvestLengthM,
+        harvestWidthM:
+            harvestWidthM.present ? harvestWidthM.value : this.harvestWidthM,
+        harvestAreaM2:
+            harvestAreaM2.present ? harvestAreaM2.value : this.harvestAreaM2,
+        plotDirection:
+            plotDirection.present ? plotDirection.value : this.plotDirection,
+        soilSeries: soilSeries.present ? soilSeries.value : this.soilSeries,
+        plotNotes: plotNotes.present ? plotNotes.value : this.plotNotes,
       );
   Plot copyWithCompanion(PlotsCompanion data) {
     return Plot(
@@ -4258,6 +6284,27 @@ class Plot extends DataClass implements Insertable<Plot> {
       assignmentUpdatedAt: data.assignmentUpdatedAt.present
           ? data.assignmentUpdatedAt.value
           : this.assignmentUpdatedAt,
+      plotLengthM:
+          data.plotLengthM.present ? data.plotLengthM.value : this.plotLengthM,
+      plotWidthM:
+          data.plotWidthM.present ? data.plotWidthM.value : this.plotWidthM,
+      plotAreaM2:
+          data.plotAreaM2.present ? data.plotAreaM2.value : this.plotAreaM2,
+      harvestLengthM: data.harvestLengthM.present
+          ? data.harvestLengthM.value
+          : this.harvestLengthM,
+      harvestWidthM: data.harvestWidthM.present
+          ? data.harvestWidthM.value
+          : this.harvestWidthM,
+      harvestAreaM2: data.harvestAreaM2.present
+          ? data.harvestAreaM2.value
+          : this.harvestAreaM2,
+      plotDirection: data.plotDirection.present
+          ? data.plotDirection.value
+          : this.plotDirection,
+      soilSeries:
+          data.soilSeries.present ? data.soilSeries.value : this.soilSeries,
+      plotNotes: data.plotNotes.present ? data.plotNotes.value : this.plotNotes,
     );
   }
 
@@ -4276,26 +6323,45 @@ class Plot extends DataClass implements Insertable<Plot> {
           ..write('fieldColumn: $fieldColumn, ')
           ..write('notes: $notes, ')
           ..write('assignmentSource: $assignmentSource, ')
-          ..write('assignmentUpdatedAt: $assignmentUpdatedAt')
+          ..write('assignmentUpdatedAt: $assignmentUpdatedAt, ')
+          ..write('plotLengthM: $plotLengthM, ')
+          ..write('plotWidthM: $plotWidthM, ')
+          ..write('plotAreaM2: $plotAreaM2, ')
+          ..write('harvestLengthM: $harvestLengthM, ')
+          ..write('harvestWidthM: $harvestWidthM, ')
+          ..write('harvestAreaM2: $harvestAreaM2, ')
+          ..write('plotDirection: $plotDirection, ')
+          ..write('soilSeries: $soilSeries, ')
+          ..write('plotNotes: $plotNotes')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      trialId,
-      plotId,
-      plotSortIndex,
-      rep,
-      treatmentId,
-      row,
-      column,
-      fieldRow,
-      fieldColumn,
-      notes,
-      assignmentSource,
-      assignmentUpdatedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        trialId,
+        plotId,
+        plotSortIndex,
+        rep,
+        treatmentId,
+        row,
+        column,
+        fieldRow,
+        fieldColumn,
+        notes,
+        assignmentSource,
+        assignmentUpdatedAt,
+        plotLengthM,
+        plotWidthM,
+        plotAreaM2,
+        harvestLengthM,
+        harvestWidthM,
+        harvestAreaM2,
+        plotDirection,
+        soilSeries,
+        plotNotes
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4312,7 +6378,16 @@ class Plot extends DataClass implements Insertable<Plot> {
           other.fieldColumn == this.fieldColumn &&
           other.notes == this.notes &&
           other.assignmentSource == this.assignmentSource &&
-          other.assignmentUpdatedAt == this.assignmentUpdatedAt);
+          other.assignmentUpdatedAt == this.assignmentUpdatedAt &&
+          other.plotLengthM == this.plotLengthM &&
+          other.plotWidthM == this.plotWidthM &&
+          other.plotAreaM2 == this.plotAreaM2 &&
+          other.harvestLengthM == this.harvestLengthM &&
+          other.harvestWidthM == this.harvestWidthM &&
+          other.harvestAreaM2 == this.harvestAreaM2 &&
+          other.plotDirection == this.plotDirection &&
+          other.soilSeries == this.soilSeries &&
+          other.plotNotes == this.plotNotes);
 }
 
 class PlotsCompanion extends UpdateCompanion<Plot> {
@@ -4329,6 +6404,15 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   final Value<String?> notes;
   final Value<String?> assignmentSource;
   final Value<DateTime?> assignmentUpdatedAt;
+  final Value<double?> plotLengthM;
+  final Value<double?> plotWidthM;
+  final Value<double?> plotAreaM2;
+  final Value<double?> harvestLengthM;
+  final Value<double?> harvestWidthM;
+  final Value<double?> harvestAreaM2;
+  final Value<String?> plotDirection;
+  final Value<String?> soilSeries;
+  final Value<String?> plotNotes;
   const PlotsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -4343,6 +6427,15 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.notes = const Value.absent(),
     this.assignmentSource = const Value.absent(),
     this.assignmentUpdatedAt = const Value.absent(),
+    this.plotLengthM = const Value.absent(),
+    this.plotWidthM = const Value.absent(),
+    this.plotAreaM2 = const Value.absent(),
+    this.harvestLengthM = const Value.absent(),
+    this.harvestWidthM = const Value.absent(),
+    this.harvestAreaM2 = const Value.absent(),
+    this.plotDirection = const Value.absent(),
+    this.soilSeries = const Value.absent(),
+    this.plotNotes = const Value.absent(),
   });
   PlotsCompanion.insert({
     this.id = const Value.absent(),
@@ -4358,6 +6451,15 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.notes = const Value.absent(),
     this.assignmentSource = const Value.absent(),
     this.assignmentUpdatedAt = const Value.absent(),
+    this.plotLengthM = const Value.absent(),
+    this.plotWidthM = const Value.absent(),
+    this.plotAreaM2 = const Value.absent(),
+    this.harvestLengthM = const Value.absent(),
+    this.harvestWidthM = const Value.absent(),
+    this.harvestAreaM2 = const Value.absent(),
+    this.plotDirection = const Value.absent(),
+    this.soilSeries = const Value.absent(),
+    this.plotNotes = const Value.absent(),
   })  : trialId = Value(trialId),
         plotId = Value(plotId);
   static Insertable<Plot> custom({
@@ -4374,6 +6476,15 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     Expression<String>? notes,
     Expression<String>? assignmentSource,
     Expression<DateTime>? assignmentUpdatedAt,
+    Expression<double>? plotLengthM,
+    Expression<double>? plotWidthM,
+    Expression<double>? plotAreaM2,
+    Expression<double>? harvestLengthM,
+    Expression<double>? harvestWidthM,
+    Expression<double>? harvestAreaM2,
+    Expression<String>? plotDirection,
+    Expression<String>? soilSeries,
+    Expression<String>? plotNotes,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -4390,6 +6501,15 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       if (assignmentSource != null) 'assignment_source': assignmentSource,
       if (assignmentUpdatedAt != null)
         'assignment_updated_at': assignmentUpdatedAt,
+      if (plotLengthM != null) 'plot_length_m': plotLengthM,
+      if (plotWidthM != null) 'plot_width_m': plotWidthM,
+      if (plotAreaM2 != null) 'plot_area_m2': plotAreaM2,
+      if (harvestLengthM != null) 'harvest_length_m': harvestLengthM,
+      if (harvestWidthM != null) 'harvest_width_m': harvestWidthM,
+      if (harvestAreaM2 != null) 'harvest_area_m2': harvestAreaM2,
+      if (plotDirection != null) 'plot_direction': plotDirection,
+      if (soilSeries != null) 'soil_series': soilSeries,
+      if (plotNotes != null) 'plot_notes': plotNotes,
     });
   }
 
@@ -4406,7 +6526,16 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       Value<int?>? fieldColumn,
       Value<String?>? notes,
       Value<String?>? assignmentSource,
-      Value<DateTime?>? assignmentUpdatedAt}) {
+      Value<DateTime?>? assignmentUpdatedAt,
+      Value<double?>? plotLengthM,
+      Value<double?>? plotWidthM,
+      Value<double?>? plotAreaM2,
+      Value<double?>? harvestLengthM,
+      Value<double?>? harvestWidthM,
+      Value<double?>? harvestAreaM2,
+      Value<String?>? plotDirection,
+      Value<String?>? soilSeries,
+      Value<String?>? plotNotes}) {
     return PlotsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -4421,6 +6550,15 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       notes: notes ?? this.notes,
       assignmentSource: assignmentSource ?? this.assignmentSource,
       assignmentUpdatedAt: assignmentUpdatedAt ?? this.assignmentUpdatedAt,
+      plotLengthM: plotLengthM ?? this.plotLengthM,
+      plotWidthM: plotWidthM ?? this.plotWidthM,
+      plotAreaM2: plotAreaM2 ?? this.plotAreaM2,
+      harvestLengthM: harvestLengthM ?? this.harvestLengthM,
+      harvestWidthM: harvestWidthM ?? this.harvestWidthM,
+      harvestAreaM2: harvestAreaM2 ?? this.harvestAreaM2,
+      plotDirection: plotDirection ?? this.plotDirection,
+      soilSeries: soilSeries ?? this.soilSeries,
+      plotNotes: plotNotes ?? this.plotNotes,
     );
   }
 
@@ -4467,6 +6605,33 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       map['assignment_updated_at'] =
           Variable<DateTime>(assignmentUpdatedAt.value);
     }
+    if (plotLengthM.present) {
+      map['plot_length_m'] = Variable<double>(plotLengthM.value);
+    }
+    if (plotWidthM.present) {
+      map['plot_width_m'] = Variable<double>(plotWidthM.value);
+    }
+    if (plotAreaM2.present) {
+      map['plot_area_m2'] = Variable<double>(plotAreaM2.value);
+    }
+    if (harvestLengthM.present) {
+      map['harvest_length_m'] = Variable<double>(harvestLengthM.value);
+    }
+    if (harvestWidthM.present) {
+      map['harvest_width_m'] = Variable<double>(harvestWidthM.value);
+    }
+    if (harvestAreaM2.present) {
+      map['harvest_area_m2'] = Variable<double>(harvestAreaM2.value);
+    }
+    if (plotDirection.present) {
+      map['plot_direction'] = Variable<String>(plotDirection.value);
+    }
+    if (soilSeries.present) {
+      map['soil_series'] = Variable<String>(soilSeries.value);
+    }
+    if (plotNotes.present) {
+      map['plot_notes'] = Variable<String>(plotNotes.value);
+    }
     return map;
   }
 
@@ -4485,7 +6650,16 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
           ..write('fieldColumn: $fieldColumn, ')
           ..write('notes: $notes, ')
           ..write('assignmentSource: $assignmentSource, ')
-          ..write('assignmentUpdatedAt: $assignmentUpdatedAt')
+          ..write('assignmentUpdatedAt: $assignmentUpdatedAt, ')
+          ..write('plotLengthM: $plotLengthM, ')
+          ..write('plotWidthM: $plotWidthM, ')
+          ..write('plotAreaM2: $plotAreaM2, ')
+          ..write('harvestLengthM: $harvestLengthM, ')
+          ..write('harvestWidthM: $harvestWidthM, ')
+          ..write('harvestAreaM2: $harvestAreaM2, ')
+          ..write('plotDirection: $plotDirection, ')
+          ..write('soilSeries: $soilSeries, ')
+          ..write('plotNotes: $plotNotes')
           ..write(')'))
         .toString();
   }
@@ -6240,6 +8414,58 @@ class $RatingRecordsTable extends RatingRecords
   late final GeneratedColumn<double> capturedLongitude =
       GeneratedColumn<double>('captured_longitude', aliasedName, true,
           type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _ratingTimeMeta =
+      const VerificationMeta('ratingTime');
+  @override
+  late final GeneratedColumn<String> ratingTime = GeneratedColumn<String>(
+      'rating_time', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _ratingMethodMeta =
+      const VerificationMeta('ratingMethod');
+  @override
+  late final GeneratedColumn<String> ratingMethod = GeneratedColumn<String>(
+      'rating_method', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _confidenceMeta =
+      const VerificationMeta('confidence');
+  @override
+  late final GeneratedColumn<String> confidence = GeneratedColumn<String>(
+      'confidence', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _amendedMeta =
+      const VerificationMeta('amended');
+  @override
+  late final GeneratedColumn<bool> amended = GeneratedColumn<bool>(
+      'amended', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("amended" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _originalValueMeta =
+      const VerificationMeta('originalValue');
+  @override
+  late final GeneratedColumn<String> originalValue = GeneratedColumn<String>(
+      'original_value', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _amendmentReasonMeta =
+      const VerificationMeta('amendmentReason');
+  @override
+  late final GeneratedColumn<String> amendmentReason = GeneratedColumn<String>(
+      'amendment_reason', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _amendedByMeta =
+      const VerificationMeta('amendedBy');
+  @override
+  late final GeneratedColumn<String> amendedBy = GeneratedColumn<String>(
+      'amended_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _amendedAtMeta =
+      const VerificationMeta('amendedAt');
+  @override
+  late final GeneratedColumn<DateTime> amendedAt = GeneratedColumn<DateTime>(
+      'amended_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -6259,7 +8485,15 @@ class $RatingRecordsTable extends RatingRecords
         createdAppVersion,
         createdDeviceInfo,
         capturedLatitude,
-        capturedLongitude
+        capturedLongitude,
+        ratingTime,
+        ratingMethod,
+        confidence,
+        amended,
+        originalValue,
+        amendmentReason,
+        amendedBy,
+        amendedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6370,6 +8604,48 @@ class $RatingRecordsTable extends RatingRecords
           capturedLongitude.isAcceptableOrUnknown(
               data['captured_longitude']!, _capturedLongitudeMeta));
     }
+    if (data.containsKey('rating_time')) {
+      context.handle(
+          _ratingTimeMeta,
+          ratingTime.isAcceptableOrUnknown(
+              data['rating_time']!, _ratingTimeMeta));
+    }
+    if (data.containsKey('rating_method')) {
+      context.handle(
+          _ratingMethodMeta,
+          ratingMethod.isAcceptableOrUnknown(
+              data['rating_method']!, _ratingMethodMeta));
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+          _confidenceMeta,
+          confidence.isAcceptableOrUnknown(
+              data['confidence']!, _confidenceMeta));
+    }
+    if (data.containsKey('amended')) {
+      context.handle(_amendedMeta,
+          amended.isAcceptableOrUnknown(data['amended']!, _amendedMeta));
+    }
+    if (data.containsKey('original_value')) {
+      context.handle(
+          _originalValueMeta,
+          originalValue.isAcceptableOrUnknown(
+              data['original_value']!, _originalValueMeta));
+    }
+    if (data.containsKey('amendment_reason')) {
+      context.handle(
+          _amendmentReasonMeta,
+          amendmentReason.isAcceptableOrUnknown(
+              data['amendment_reason']!, _amendmentReasonMeta));
+    }
+    if (data.containsKey('amended_by')) {
+      context.handle(_amendedByMeta,
+          amendedBy.isAcceptableOrUnknown(data['amended_by']!, _amendedByMeta));
+    }
+    if (data.containsKey('amended_at')) {
+      context.handle(_amendedAtMeta,
+          amendedAt.isAcceptableOrUnknown(data['amended_at']!, _amendedAtMeta));
+    }
     return context;
   }
 
@@ -6415,6 +8691,22 @@ class $RatingRecordsTable extends RatingRecords
           DriftSqlType.double, data['${effectivePrefix}captured_latitude']),
       capturedLongitude: attachedDatabase.typeMapping.read(
           DriftSqlType.double, data['${effectivePrefix}captured_longitude']),
+      ratingTime: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rating_time']),
+      ratingMethod: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rating_method']),
+      confidence: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}confidence']),
+      amended: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}amended'])!,
+      originalValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}original_value']),
+      amendmentReason: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}amendment_reason']),
+      amendedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}amended_by']),
+      amendedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}amended_at']),
     );
   }
 
@@ -6443,6 +8735,18 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
   final String? createdDeviceInfo;
   final double? capturedLatitude;
   final double? capturedLongitude;
+
+  /// Local time of rating as HH:mm.
+  final String? ratingTime;
+  final String? ratingMethod;
+
+  /// certain | uncertain | estimated
+  final String? confidence;
+  final bool amended;
+  final String? originalValue;
+  final String? amendmentReason;
+  final String? amendedBy;
+  final DateTime? amendedAt;
   const RatingRecord(
       {required this.id,
       required this.trialId,
@@ -6461,7 +8765,15 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       this.createdAppVersion,
       this.createdDeviceInfo,
       this.capturedLatitude,
-      this.capturedLongitude});
+      this.capturedLongitude,
+      this.ratingTime,
+      this.ratingMethod,
+      this.confidence,
+      required this.amended,
+      this.originalValue,
+      this.amendmentReason,
+      this.amendedBy,
+      this.amendedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -6502,6 +8814,28 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
     }
     if (!nullToAbsent || capturedLongitude != null) {
       map['captured_longitude'] = Variable<double>(capturedLongitude);
+    }
+    if (!nullToAbsent || ratingTime != null) {
+      map['rating_time'] = Variable<String>(ratingTime);
+    }
+    if (!nullToAbsent || ratingMethod != null) {
+      map['rating_method'] = Variable<String>(ratingMethod);
+    }
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<String>(confidence);
+    }
+    map['amended'] = Variable<bool>(amended);
+    if (!nullToAbsent || originalValue != null) {
+      map['original_value'] = Variable<String>(originalValue);
+    }
+    if (!nullToAbsent || amendmentReason != null) {
+      map['amendment_reason'] = Variable<String>(amendmentReason);
+    }
+    if (!nullToAbsent || amendedBy != null) {
+      map['amended_by'] = Variable<String>(amendedBy);
+    }
+    if (!nullToAbsent || amendedAt != null) {
+      map['amended_at'] = Variable<DateTime>(amendedAt);
     }
     return map;
   }
@@ -6546,6 +8880,28 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       capturedLongitude: capturedLongitude == null && nullToAbsent
           ? const Value.absent()
           : Value(capturedLongitude),
+      ratingTime: ratingTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ratingTime),
+      ratingMethod: ratingMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ratingMethod),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      amended: Value(amended),
+      originalValue: originalValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalValue),
+      amendmentReason: amendmentReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amendmentReason),
+      amendedBy: amendedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amendedBy),
+      amendedAt: amendedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amendedAt),
     );
   }
 
@@ -6574,6 +8930,14 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       capturedLatitude: serializer.fromJson<double?>(json['capturedLatitude']),
       capturedLongitude:
           serializer.fromJson<double?>(json['capturedLongitude']),
+      ratingTime: serializer.fromJson<String?>(json['ratingTime']),
+      ratingMethod: serializer.fromJson<String?>(json['ratingMethod']),
+      confidence: serializer.fromJson<String?>(json['confidence']),
+      amended: serializer.fromJson<bool>(json['amended']),
+      originalValue: serializer.fromJson<String?>(json['originalValue']),
+      amendmentReason: serializer.fromJson<String?>(json['amendmentReason']),
+      amendedBy: serializer.fromJson<String?>(json['amendedBy']),
+      amendedAt: serializer.fromJson<DateTime?>(json['amendedAt']),
     );
   }
   @override
@@ -6598,6 +8962,14 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       'createdDeviceInfo': serializer.toJson<String?>(createdDeviceInfo),
       'capturedLatitude': serializer.toJson<double?>(capturedLatitude),
       'capturedLongitude': serializer.toJson<double?>(capturedLongitude),
+      'ratingTime': serializer.toJson<String?>(ratingTime),
+      'ratingMethod': serializer.toJson<String?>(ratingMethod),
+      'confidence': serializer.toJson<String?>(confidence),
+      'amended': serializer.toJson<bool>(amended),
+      'originalValue': serializer.toJson<String?>(originalValue),
+      'amendmentReason': serializer.toJson<String?>(amendmentReason),
+      'amendedBy': serializer.toJson<String?>(amendedBy),
+      'amendedAt': serializer.toJson<DateTime?>(amendedAt),
     };
   }
 
@@ -6619,7 +8991,15 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           Value<String?> createdAppVersion = const Value.absent(),
           Value<String?> createdDeviceInfo = const Value.absent(),
           Value<double?> capturedLatitude = const Value.absent(),
-          Value<double?> capturedLongitude = const Value.absent()}) =>
+          Value<double?> capturedLongitude = const Value.absent(),
+          Value<String?> ratingTime = const Value.absent(),
+          Value<String?> ratingMethod = const Value.absent(),
+          Value<String?> confidence = const Value.absent(),
+          bool? amended,
+          Value<String?> originalValue = const Value.absent(),
+          Value<String?> amendmentReason = const Value.absent(),
+          Value<String?> amendedBy = const Value.absent(),
+          Value<DateTime?> amendedAt = const Value.absent()}) =>
       RatingRecord(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -6650,6 +9030,18 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
         capturedLongitude: capturedLongitude.present
             ? capturedLongitude.value
             : this.capturedLongitude,
+        ratingTime: ratingTime.present ? ratingTime.value : this.ratingTime,
+        ratingMethod:
+            ratingMethod.present ? ratingMethod.value : this.ratingMethod,
+        confidence: confidence.present ? confidence.value : this.confidence,
+        amended: amended ?? this.amended,
+        originalValue:
+            originalValue.present ? originalValue.value : this.originalValue,
+        amendmentReason: amendmentReason.present
+            ? amendmentReason.value
+            : this.amendmentReason,
+        amendedBy: amendedBy.present ? amendedBy.value : this.amendedBy,
+        amendedAt: amendedAt.present ? amendedAt.value : this.amendedAt,
       );
   RatingRecord copyWithCompanion(RatingRecordsCompanion data) {
     return RatingRecord(
@@ -6688,6 +9080,22 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       capturedLongitude: data.capturedLongitude.present
           ? data.capturedLongitude.value
           : this.capturedLongitude,
+      ratingTime:
+          data.ratingTime.present ? data.ratingTime.value : this.ratingTime,
+      ratingMethod: data.ratingMethod.present
+          ? data.ratingMethod.value
+          : this.ratingMethod,
+      confidence:
+          data.confidence.present ? data.confidence.value : this.confidence,
+      amended: data.amended.present ? data.amended.value : this.amended,
+      originalValue: data.originalValue.present
+          ? data.originalValue.value
+          : this.originalValue,
+      amendmentReason: data.amendmentReason.present
+          ? data.amendmentReason.value
+          : this.amendmentReason,
+      amendedBy: data.amendedBy.present ? data.amendedBy.value : this.amendedBy,
+      amendedAt: data.amendedAt.present ? data.amendedAt.value : this.amendedAt,
     );
   }
 
@@ -6711,31 +9119,48 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           ..write('createdAppVersion: $createdAppVersion, ')
           ..write('createdDeviceInfo: $createdDeviceInfo, ')
           ..write('capturedLatitude: $capturedLatitude, ')
-          ..write('capturedLongitude: $capturedLongitude')
+          ..write('capturedLongitude: $capturedLongitude, ')
+          ..write('ratingTime: $ratingTime, ')
+          ..write('ratingMethod: $ratingMethod, ')
+          ..write('confidence: $confidence, ')
+          ..write('amended: $amended, ')
+          ..write('originalValue: $originalValue, ')
+          ..write('amendmentReason: $amendmentReason, ')
+          ..write('amendedBy: $amendedBy, ')
+          ..write('amendedAt: $amendedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      trialId,
-      plotPk,
-      assessmentId,
-      trialAssessmentId,
-      sessionId,
-      subUnitId,
-      resultStatus,
-      numericValue,
-      textValue,
-      isCurrent,
-      previousId,
-      createdAt,
-      raterName,
-      createdAppVersion,
-      createdDeviceInfo,
-      capturedLatitude,
-      capturedLongitude);
+  int get hashCode => Object.hashAll([
+        id,
+        trialId,
+        plotPk,
+        assessmentId,
+        trialAssessmentId,
+        sessionId,
+        subUnitId,
+        resultStatus,
+        numericValue,
+        textValue,
+        isCurrent,
+        previousId,
+        createdAt,
+        raterName,
+        createdAppVersion,
+        createdDeviceInfo,
+        capturedLatitude,
+        capturedLongitude,
+        ratingTime,
+        ratingMethod,
+        confidence,
+        amended,
+        originalValue,
+        amendmentReason,
+        amendedBy,
+        amendedAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6757,7 +9182,15 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           other.createdAppVersion == this.createdAppVersion &&
           other.createdDeviceInfo == this.createdDeviceInfo &&
           other.capturedLatitude == this.capturedLatitude &&
-          other.capturedLongitude == this.capturedLongitude);
+          other.capturedLongitude == this.capturedLongitude &&
+          other.ratingTime == this.ratingTime &&
+          other.ratingMethod == this.ratingMethod &&
+          other.confidence == this.confidence &&
+          other.amended == this.amended &&
+          other.originalValue == this.originalValue &&
+          other.amendmentReason == this.amendmentReason &&
+          other.amendedBy == this.amendedBy &&
+          other.amendedAt == this.amendedAt);
 }
 
 class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
@@ -6779,6 +9212,14 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
   final Value<String?> createdDeviceInfo;
   final Value<double?> capturedLatitude;
   final Value<double?> capturedLongitude;
+  final Value<String?> ratingTime;
+  final Value<String?> ratingMethod;
+  final Value<String?> confidence;
+  final Value<bool> amended;
+  final Value<String?> originalValue;
+  final Value<String?> amendmentReason;
+  final Value<String?> amendedBy;
+  final Value<DateTime?> amendedAt;
   const RatingRecordsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -6798,6 +9239,14 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.createdDeviceInfo = const Value.absent(),
     this.capturedLatitude = const Value.absent(),
     this.capturedLongitude = const Value.absent(),
+    this.ratingTime = const Value.absent(),
+    this.ratingMethod = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.amended = const Value.absent(),
+    this.originalValue = const Value.absent(),
+    this.amendmentReason = const Value.absent(),
+    this.amendedBy = const Value.absent(),
+    this.amendedAt = const Value.absent(),
   });
   RatingRecordsCompanion.insert({
     this.id = const Value.absent(),
@@ -6818,6 +9267,14 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.createdDeviceInfo = const Value.absent(),
     this.capturedLatitude = const Value.absent(),
     this.capturedLongitude = const Value.absent(),
+    this.ratingTime = const Value.absent(),
+    this.ratingMethod = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.amended = const Value.absent(),
+    this.originalValue = const Value.absent(),
+    this.amendmentReason = const Value.absent(),
+    this.amendedBy = const Value.absent(),
+    this.amendedAt = const Value.absent(),
   })  : trialId = Value(trialId),
         plotPk = Value(plotPk),
         assessmentId = Value(assessmentId),
@@ -6841,6 +9298,14 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     Expression<String>? createdDeviceInfo,
     Expression<double>? capturedLatitude,
     Expression<double>? capturedLongitude,
+    Expression<String>? ratingTime,
+    Expression<String>? ratingMethod,
+    Expression<String>? confidence,
+    Expression<bool>? amended,
+    Expression<String>? originalValue,
+    Expression<String>? amendmentReason,
+    Expression<String>? amendedBy,
+    Expression<DateTime>? amendedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6861,6 +9326,14 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       if (createdDeviceInfo != null) 'created_device_info': createdDeviceInfo,
       if (capturedLatitude != null) 'captured_latitude': capturedLatitude,
       if (capturedLongitude != null) 'captured_longitude': capturedLongitude,
+      if (ratingTime != null) 'rating_time': ratingTime,
+      if (ratingMethod != null) 'rating_method': ratingMethod,
+      if (confidence != null) 'confidence': confidence,
+      if (amended != null) 'amended': amended,
+      if (originalValue != null) 'original_value': originalValue,
+      if (amendmentReason != null) 'amendment_reason': amendmentReason,
+      if (amendedBy != null) 'amended_by': amendedBy,
+      if (amendedAt != null) 'amended_at': amendedAt,
     });
   }
 
@@ -6882,7 +9355,15 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       Value<String?>? createdAppVersion,
       Value<String?>? createdDeviceInfo,
       Value<double?>? capturedLatitude,
-      Value<double?>? capturedLongitude}) {
+      Value<double?>? capturedLongitude,
+      Value<String?>? ratingTime,
+      Value<String?>? ratingMethod,
+      Value<String?>? confidence,
+      Value<bool>? amended,
+      Value<String?>? originalValue,
+      Value<String?>? amendmentReason,
+      Value<String?>? amendedBy,
+      Value<DateTime?>? amendedAt}) {
     return RatingRecordsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -6902,6 +9383,14 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       createdDeviceInfo: createdDeviceInfo ?? this.createdDeviceInfo,
       capturedLatitude: capturedLatitude ?? this.capturedLatitude,
       capturedLongitude: capturedLongitude ?? this.capturedLongitude,
+      ratingTime: ratingTime ?? this.ratingTime,
+      ratingMethod: ratingMethod ?? this.ratingMethod,
+      confidence: confidence ?? this.confidence,
+      amended: amended ?? this.amended,
+      originalValue: originalValue ?? this.originalValue,
+      amendmentReason: amendmentReason ?? this.amendmentReason,
+      amendedBy: amendedBy ?? this.amendedBy,
+      amendedAt: amendedAt ?? this.amendedAt,
     );
   }
 
@@ -6962,6 +9451,30 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     if (capturedLongitude.present) {
       map['captured_longitude'] = Variable<double>(capturedLongitude.value);
     }
+    if (ratingTime.present) {
+      map['rating_time'] = Variable<String>(ratingTime.value);
+    }
+    if (ratingMethod.present) {
+      map['rating_method'] = Variable<String>(ratingMethod.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<String>(confidence.value);
+    }
+    if (amended.present) {
+      map['amended'] = Variable<bool>(amended.value);
+    }
+    if (originalValue.present) {
+      map['original_value'] = Variable<String>(originalValue.value);
+    }
+    if (amendmentReason.present) {
+      map['amendment_reason'] = Variable<String>(amendmentReason.value);
+    }
+    if (amendedBy.present) {
+      map['amended_by'] = Variable<String>(amendedBy.value);
+    }
+    if (amendedAt.present) {
+      map['amended_at'] = Variable<DateTime>(amendedAt.value);
+    }
     return map;
   }
 
@@ -6985,7 +9498,15 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
           ..write('createdAppVersion: $createdAppVersion, ')
           ..write('createdDeviceInfo: $createdDeviceInfo, ')
           ..write('capturedLatitude: $capturedLatitude, ')
-          ..write('capturedLongitude: $capturedLongitude')
+          ..write('capturedLongitude: $capturedLongitude, ')
+          ..write('ratingTime: $ratingTime, ')
+          ..write('ratingMethod: $ratingMethod, ')
+          ..write('confidence: $confidence, ')
+          ..write('amended: $amended, ')
+          ..write('originalValue: $originalValue, ')
+          ..write('amendmentReason: $amendmentReason, ')
+          ..write('amendedBy: $amendedBy, ')
+          ..write('amendedAt: $amendedAt')
           ..write(')'))
         .toString();
   }
@@ -13673,6 +16194,42 @@ class $SeedingEventsTable extends SeedingEvents
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
       'notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _varietyMeta =
+      const VerificationMeta('variety');
+  @override
+  late final GeneratedColumn<String> variety = GeneratedColumn<String>(
+      'variety', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _seedTreatmentMeta =
+      const VerificationMeta('seedTreatment');
+  @override
+  late final GeneratedColumn<String> seedTreatment = GeneratedColumn<String>(
+      'seed_treatment', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _germinationPctMeta =
+      const VerificationMeta('germinationPct');
+  @override
+  late final GeneratedColumn<double> germinationPct = GeneratedColumn<double>(
+      'germination_pct', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _emergenceDateMeta =
+      const VerificationMeta('emergenceDate');
+  @override
+  late final GeneratedColumn<DateTime> emergenceDate =
+      GeneratedColumn<DateTime>('emergence_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _emergencePctMeta =
+      const VerificationMeta('emergencePct');
+  @override
+  late final GeneratedColumn<double> emergencePct = GeneratedColumn<double>(
+      'emergence_pct', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _plantingMethodMeta =
+      const VerificationMeta('plantingMethod');
+  @override
+  late final GeneratedColumn<String> plantingMethod = GeneratedColumn<String>(
+      'planting_method', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -13694,6 +16251,12 @@ class $SeedingEventsTable extends SeedingEvents
         rowSpacing,
         equipmentUsed,
         notes,
+        variety,
+        seedTreatment,
+        germinationPct,
+        emergenceDate,
+        emergencePct,
+        plantingMethod,
         createdAt
       ];
   @override
@@ -13769,6 +16332,40 @@ class $SeedingEventsTable extends SeedingEvents
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
+    if (data.containsKey('variety')) {
+      context.handle(_varietyMeta,
+          variety.isAcceptableOrUnknown(data['variety']!, _varietyMeta));
+    }
+    if (data.containsKey('seed_treatment')) {
+      context.handle(
+          _seedTreatmentMeta,
+          seedTreatment.isAcceptableOrUnknown(
+              data['seed_treatment']!, _seedTreatmentMeta));
+    }
+    if (data.containsKey('germination_pct')) {
+      context.handle(
+          _germinationPctMeta,
+          germinationPct.isAcceptableOrUnknown(
+              data['germination_pct']!, _germinationPctMeta));
+    }
+    if (data.containsKey('emergence_date')) {
+      context.handle(
+          _emergenceDateMeta,
+          emergenceDate.isAcceptableOrUnknown(
+              data['emergence_date']!, _emergenceDateMeta));
+    }
+    if (data.containsKey('emergence_pct')) {
+      context.handle(
+          _emergencePctMeta,
+          emergencePct.isAcceptableOrUnknown(
+              data['emergence_pct']!, _emergencePctMeta));
+    }
+    if (data.containsKey('planting_method')) {
+      context.handle(
+          _plantingMethodMeta,
+          plantingMethod.isAcceptableOrUnknown(
+              data['planting_method']!, _plantingMethodMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -13804,6 +16401,18 @@ class $SeedingEventsTable extends SeedingEvents
           .read(DriftSqlType.string, data['${effectivePrefix}equipment_used']),
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      variety: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}variety']),
+      seedTreatment: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}seed_treatment']),
+      germinationPct: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}germination_pct']),
+      emergenceDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}emergence_date']),
+      emergencePct: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}emergence_pct']),
+      plantingMethod: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}planting_method']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -13827,6 +16436,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
   final double? rowSpacing;
   final String? equipmentUsed;
   final String? notes;
+  final String? variety;
+  final String? seedTreatment;
+  final double? germinationPct;
+  final DateTime? emergenceDate;
+  final double? emergencePct;
+  final String? plantingMethod;
   final DateTime createdAt;
   const SeedingEvent(
       {required this.id,
@@ -13840,6 +16455,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       this.rowSpacing,
       this.equipmentUsed,
       this.notes,
+      this.variety,
+      this.seedTreatment,
+      this.germinationPct,
+      this.emergenceDate,
+      this.emergencePct,
+      this.plantingMethod,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -13870,6 +16491,24 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || variety != null) {
+      map['variety'] = Variable<String>(variety);
+    }
+    if (!nullToAbsent || seedTreatment != null) {
+      map['seed_treatment'] = Variable<String>(seedTreatment);
+    }
+    if (!nullToAbsent || germinationPct != null) {
+      map['germination_pct'] = Variable<double>(germinationPct);
+    }
+    if (!nullToAbsent || emergenceDate != null) {
+      map['emergence_date'] = Variable<DateTime>(emergenceDate);
+    }
+    if (!nullToAbsent || emergencePct != null) {
+      map['emergence_pct'] = Variable<double>(emergencePct);
+    }
+    if (!nullToAbsent || plantingMethod != null) {
+      map['planting_method'] = Variable<String>(plantingMethod);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -13903,6 +16542,24 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           : Value(equipmentUsed),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      variety: variety == null && nullToAbsent
+          ? const Value.absent()
+          : Value(variety),
+      seedTreatment: seedTreatment == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedTreatment),
+      germinationPct: germinationPct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(germinationPct),
+      emergenceDate: emergenceDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(emergenceDate),
+      emergencePct: emergencePct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(emergencePct),
+      plantingMethod: plantingMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plantingMethod),
       createdAt: Value(createdAt),
     );
   }
@@ -13922,6 +16579,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       rowSpacing: serializer.fromJson<double?>(json['rowSpacing']),
       equipmentUsed: serializer.fromJson<String?>(json['equipmentUsed']),
       notes: serializer.fromJson<String?>(json['notes']),
+      variety: serializer.fromJson<String?>(json['variety']),
+      seedTreatment: serializer.fromJson<String?>(json['seedTreatment']),
+      germinationPct: serializer.fromJson<double?>(json['germinationPct']),
+      emergenceDate: serializer.fromJson<DateTime?>(json['emergenceDate']),
+      emergencePct: serializer.fromJson<double?>(json['emergencePct']),
+      plantingMethod: serializer.fromJson<String?>(json['plantingMethod']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -13940,6 +16603,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       'rowSpacing': serializer.toJson<double?>(rowSpacing),
       'equipmentUsed': serializer.toJson<String?>(equipmentUsed),
       'notes': serializer.toJson<String?>(notes),
+      'variety': serializer.toJson<String?>(variety),
+      'seedTreatment': serializer.toJson<String?>(seedTreatment),
+      'germinationPct': serializer.toJson<double?>(germinationPct),
+      'emergenceDate': serializer.toJson<DateTime?>(emergenceDate),
+      'emergencePct': serializer.toJson<double?>(emergencePct),
+      'plantingMethod': serializer.toJson<String?>(plantingMethod),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -13956,6 +16625,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           Value<double?> rowSpacing = const Value.absent(),
           Value<String?> equipmentUsed = const Value.absent(),
           Value<String?> notes = const Value.absent(),
+          Value<String?> variety = const Value.absent(),
+          Value<String?> seedTreatment = const Value.absent(),
+          Value<double?> germinationPct = const Value.absent(),
+          Value<DateTime?> emergenceDate = const Value.absent(),
+          Value<double?> emergencePct = const Value.absent(),
+          Value<String?> plantingMethod = const Value.absent(),
           DateTime? createdAt}) =>
       SeedingEvent(
         id: id ?? this.id,
@@ -13975,6 +16650,17 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
         equipmentUsed:
             equipmentUsed.present ? equipmentUsed.value : this.equipmentUsed,
         notes: notes.present ? notes.value : this.notes,
+        variety: variety.present ? variety.value : this.variety,
+        seedTreatment:
+            seedTreatment.present ? seedTreatment.value : this.seedTreatment,
+        germinationPct:
+            germinationPct.present ? germinationPct.value : this.germinationPct,
+        emergenceDate:
+            emergenceDate.present ? emergenceDate.value : this.emergenceDate,
+        emergencePct:
+            emergencePct.present ? emergencePct.value : this.emergencePct,
+        plantingMethod:
+            plantingMethod.present ? plantingMethod.value : this.plantingMethod,
         createdAt: createdAt ?? this.createdAt,
       );
   SeedingEvent copyWithCompanion(SeedingEventsCompanion data) {
@@ -14003,6 +16689,22 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           ? data.equipmentUsed.value
           : this.equipmentUsed,
       notes: data.notes.present ? data.notes.value : this.notes,
+      variety: data.variety.present ? data.variety.value : this.variety,
+      seedTreatment: data.seedTreatment.present
+          ? data.seedTreatment.value
+          : this.seedTreatment,
+      germinationPct: data.germinationPct.present
+          ? data.germinationPct.value
+          : this.germinationPct,
+      emergenceDate: data.emergenceDate.present
+          ? data.emergenceDate.value
+          : this.emergenceDate,
+      emergencePct: data.emergencePct.present
+          ? data.emergencePct.value
+          : this.emergencePct,
+      plantingMethod: data.plantingMethod.present
+          ? data.plantingMethod.value
+          : this.plantingMethod,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -14021,6 +16723,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           ..write('rowSpacing: $rowSpacing, ')
           ..write('equipmentUsed: $equipmentUsed, ')
           ..write('notes: $notes, ')
+          ..write('variety: $variety, ')
+          ..write('seedTreatment: $seedTreatment, ')
+          ..write('germinationPct: $germinationPct, ')
+          ..write('emergenceDate: $emergenceDate, ')
+          ..write('emergencePct: $emergencePct, ')
+          ..write('plantingMethod: $plantingMethod, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -14039,6 +16747,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       rowSpacing,
       equipmentUsed,
       notes,
+      variety,
+      seedTreatment,
+      germinationPct,
+      emergenceDate,
+      emergencePct,
+      plantingMethod,
       createdAt);
   @override
   bool operator ==(Object other) =>
@@ -14055,6 +16769,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           other.rowSpacing == this.rowSpacing &&
           other.equipmentUsed == this.equipmentUsed &&
           other.notes == this.notes &&
+          other.variety == this.variety &&
+          other.seedTreatment == this.seedTreatment &&
+          other.germinationPct == this.germinationPct &&
+          other.emergenceDate == this.emergenceDate &&
+          other.emergencePct == this.emergencePct &&
+          other.plantingMethod == this.plantingMethod &&
           other.createdAt == this.createdAt);
 }
 
@@ -14070,6 +16790,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
   final Value<double?> rowSpacing;
   final Value<String?> equipmentUsed;
   final Value<String?> notes;
+  final Value<String?> variety;
+  final Value<String?> seedTreatment;
+  final Value<double?> germinationPct;
+  final Value<DateTime?> emergenceDate;
+  final Value<double?> emergencePct;
+  final Value<String?> plantingMethod;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const SeedingEventsCompanion({
@@ -14084,6 +16810,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     this.rowSpacing = const Value.absent(),
     this.equipmentUsed = const Value.absent(),
     this.notes = const Value.absent(),
+    this.variety = const Value.absent(),
+    this.seedTreatment = const Value.absent(),
+    this.germinationPct = const Value.absent(),
+    this.emergenceDate = const Value.absent(),
+    this.emergencePct = const Value.absent(),
+    this.plantingMethod = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -14099,6 +16831,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     this.rowSpacing = const Value.absent(),
     this.equipmentUsed = const Value.absent(),
     this.notes = const Value.absent(),
+    this.variety = const Value.absent(),
+    this.seedTreatment = const Value.absent(),
+    this.germinationPct = const Value.absent(),
+    this.emergenceDate = const Value.absent(),
+    this.emergencePct = const Value.absent(),
+    this.plantingMethod = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
@@ -14115,6 +16853,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     Expression<double>? rowSpacing,
     Expression<String>? equipmentUsed,
     Expression<String>? notes,
+    Expression<String>? variety,
+    Expression<String>? seedTreatment,
+    Expression<double>? germinationPct,
+    Expression<DateTime>? emergenceDate,
+    Expression<double>? emergencePct,
+    Expression<String>? plantingMethod,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -14130,6 +16874,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       if (rowSpacing != null) 'row_spacing': rowSpacing,
       if (equipmentUsed != null) 'equipment_used': equipmentUsed,
       if (notes != null) 'notes': notes,
+      if (variety != null) 'variety': variety,
+      if (seedTreatment != null) 'seed_treatment': seedTreatment,
+      if (germinationPct != null) 'germination_pct': germinationPct,
+      if (emergenceDate != null) 'emergence_date': emergenceDate,
+      if (emergencePct != null) 'emergence_pct': emergencePct,
+      if (plantingMethod != null) 'planting_method': plantingMethod,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -14147,6 +16897,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       Value<double?>? rowSpacing,
       Value<String?>? equipmentUsed,
       Value<String?>? notes,
+      Value<String?>? variety,
+      Value<String?>? seedTreatment,
+      Value<double?>? germinationPct,
+      Value<DateTime?>? emergenceDate,
+      Value<double?>? emergencePct,
+      Value<String?>? plantingMethod,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return SeedingEventsCompanion(
@@ -14161,6 +16917,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       rowSpacing: rowSpacing ?? this.rowSpacing,
       equipmentUsed: equipmentUsed ?? this.equipmentUsed,
       notes: notes ?? this.notes,
+      variety: variety ?? this.variety,
+      seedTreatment: seedTreatment ?? this.seedTreatment,
+      germinationPct: germinationPct ?? this.germinationPct,
+      emergenceDate: emergenceDate ?? this.emergenceDate,
+      emergencePct: emergencePct ?? this.emergencePct,
+      plantingMethod: plantingMethod ?? this.plantingMethod,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -14202,6 +16964,24 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (variety.present) {
+      map['variety'] = Variable<String>(variety.value);
+    }
+    if (seedTreatment.present) {
+      map['seed_treatment'] = Variable<String>(seedTreatment.value);
+    }
+    if (germinationPct.present) {
+      map['germination_pct'] = Variable<double>(germinationPct.value);
+    }
+    if (emergenceDate.present) {
+      map['emergence_date'] = Variable<DateTime>(emergenceDate.value);
+    }
+    if (emergencePct.present) {
+      map['emergence_pct'] = Variable<double>(emergencePct.value);
+    }
+    if (plantingMethod.present) {
+      map['planting_method'] = Variable<String>(plantingMethod.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -14225,6 +17005,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
           ..write('rowSpacing: $rowSpacing, ')
           ..write('equipmentUsed: $equipmentUsed, ')
           ..write('notes: $notes, ')
+          ..write('variety: $variety, ')
+          ..write('seedTreatment: $seedTreatment, ')
+          ..write('germinationPct: $germinationPct, ')
+          ..write('emergenceDate: $emergenceDate, ')
+          ..write('emergencePct: $emergencePct, ')
+          ..write('plantingMethod: $plantingMethod, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -14339,6 +17125,114 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
       'notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _applicationTimeMeta =
+      const VerificationMeta('applicationTime');
+  @override
+  late final GeneratedColumn<String> applicationTime = GeneratedColumn<String>(
+      'application_time', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _applicationMethodMeta =
+      const VerificationMeta('applicationMethod');
+  @override
+  late final GeneratedColumn<String> applicationMethod =
+      GeneratedColumn<String>('application_method', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _nozzleTypeMeta =
+      const VerificationMeta('nozzleType');
+  @override
+  late final GeneratedColumn<String> nozzleType = GeneratedColumn<String>(
+      'nozzle_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _nozzleSpacingCmMeta =
+      const VerificationMeta('nozzleSpacingCm');
+  @override
+  late final GeneratedColumn<double> nozzleSpacingCm = GeneratedColumn<double>(
+      'nozzle_spacing_cm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _operatingPressureMeta =
+      const VerificationMeta('operatingPressure');
+  @override
+  late final GeneratedColumn<double> operatingPressure =
+      GeneratedColumn<double>('operating_pressure', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _pressureUnitMeta =
+      const VerificationMeta('pressureUnit');
+  @override
+  late final GeneratedColumn<String> pressureUnit = GeneratedColumn<String>(
+      'pressure_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _groundSpeedMeta =
+      const VerificationMeta('groundSpeed');
+  @override
+  late final GeneratedColumn<double> groundSpeed = GeneratedColumn<double>(
+      'ground_speed', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _speedUnitMeta =
+      const VerificationMeta('speedUnit');
+  @override
+  late final GeneratedColumn<String> speedUnit = GeneratedColumn<String>(
+      'speed_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _adjuvantNameMeta =
+      const VerificationMeta('adjuvantName');
+  @override
+  late final GeneratedColumn<String> adjuvantName = GeneratedColumn<String>(
+      'adjuvant_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _adjuvantRateMeta =
+      const VerificationMeta('adjuvantRate');
+  @override
+  late final GeneratedColumn<double> adjuvantRate = GeneratedColumn<double>(
+      'adjuvant_rate', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _adjuvantRateUnitMeta =
+      const VerificationMeta('adjuvantRateUnit');
+  @override
+  late final GeneratedColumn<String> adjuvantRateUnit = GeneratedColumn<String>(
+      'adjuvant_rate_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _spraySolutionPhMeta =
+      const VerificationMeta('spraySolutionPh');
+  @override
+  late final GeneratedColumn<double> spraySolutionPh = GeneratedColumn<double>(
+      'spray_solution_ph', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _waterVolumeUnitMeta =
+      const VerificationMeta('waterVolumeUnit');
+  @override
+  late final GeneratedColumn<String> waterVolumeUnit = GeneratedColumn<String>(
+      'water_volume_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cloudCoverPctMeta =
+      const VerificationMeta('cloudCoverPct');
+  @override
+  late final GeneratedColumn<double> cloudCoverPct = GeneratedColumn<double>(
+      'cloud_cover_pct', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _soilMoistureMeta =
+      const VerificationMeta('soilMoisture');
+  @override
+  late final GeneratedColumn<String> soilMoisture = GeneratedColumn<String>(
+      'soil_moisture', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _treatedAreaMeta =
+      const VerificationMeta('treatedArea');
+  @override
+  late final GeneratedColumn<double> treatedArea = GeneratedColumn<double>(
+      'treated_area', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _treatedAreaUnitMeta =
+      const VerificationMeta('treatedAreaUnit');
+  @override
+  late final GeneratedColumn<String> treatedAreaUnit = GeneratedColumn<String>(
+      'treated_area_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _plotsTreatedMeta =
+      const VerificationMeta('plotsTreated');
+  @override
+  late final GeneratedColumn<String> plotsTreated = GeneratedColumn<String>(
+      'plots_treated', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -14365,6 +17259,24 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
         temperature,
         humidity,
         notes,
+        applicationTime,
+        applicationMethod,
+        nozzleType,
+        nozzleSpacingCm,
+        operatingPressure,
+        pressureUnit,
+        groundSpeed,
+        speedUnit,
+        adjuvantName,
+        adjuvantRate,
+        adjuvantRateUnit,
+        spraySolutionPh,
+        waterVolumeUnit,
+        cloudCoverPct,
+        soilMoisture,
+        treatedArea,
+        treatedAreaUnit,
+        plotsTreated,
         createdAt
       ];
   @override
@@ -14463,6 +17375,112 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
+    if (data.containsKey('application_time')) {
+      context.handle(
+          _applicationTimeMeta,
+          applicationTime.isAcceptableOrUnknown(
+              data['application_time']!, _applicationTimeMeta));
+    }
+    if (data.containsKey('application_method')) {
+      context.handle(
+          _applicationMethodMeta,
+          applicationMethod.isAcceptableOrUnknown(
+              data['application_method']!, _applicationMethodMeta));
+    }
+    if (data.containsKey('nozzle_type')) {
+      context.handle(
+          _nozzleTypeMeta,
+          nozzleType.isAcceptableOrUnknown(
+              data['nozzle_type']!, _nozzleTypeMeta));
+    }
+    if (data.containsKey('nozzle_spacing_cm')) {
+      context.handle(
+          _nozzleSpacingCmMeta,
+          nozzleSpacingCm.isAcceptableOrUnknown(
+              data['nozzle_spacing_cm']!, _nozzleSpacingCmMeta));
+    }
+    if (data.containsKey('operating_pressure')) {
+      context.handle(
+          _operatingPressureMeta,
+          operatingPressure.isAcceptableOrUnknown(
+              data['operating_pressure']!, _operatingPressureMeta));
+    }
+    if (data.containsKey('pressure_unit')) {
+      context.handle(
+          _pressureUnitMeta,
+          pressureUnit.isAcceptableOrUnknown(
+              data['pressure_unit']!, _pressureUnitMeta));
+    }
+    if (data.containsKey('ground_speed')) {
+      context.handle(
+          _groundSpeedMeta,
+          groundSpeed.isAcceptableOrUnknown(
+              data['ground_speed']!, _groundSpeedMeta));
+    }
+    if (data.containsKey('speed_unit')) {
+      context.handle(_speedUnitMeta,
+          speedUnit.isAcceptableOrUnknown(data['speed_unit']!, _speedUnitMeta));
+    }
+    if (data.containsKey('adjuvant_name')) {
+      context.handle(
+          _adjuvantNameMeta,
+          adjuvantName.isAcceptableOrUnknown(
+              data['adjuvant_name']!, _adjuvantNameMeta));
+    }
+    if (data.containsKey('adjuvant_rate')) {
+      context.handle(
+          _adjuvantRateMeta,
+          adjuvantRate.isAcceptableOrUnknown(
+              data['adjuvant_rate']!, _adjuvantRateMeta));
+    }
+    if (data.containsKey('adjuvant_rate_unit')) {
+      context.handle(
+          _adjuvantRateUnitMeta,
+          adjuvantRateUnit.isAcceptableOrUnknown(
+              data['adjuvant_rate_unit']!, _adjuvantRateUnitMeta));
+    }
+    if (data.containsKey('spray_solution_ph')) {
+      context.handle(
+          _spraySolutionPhMeta,
+          spraySolutionPh.isAcceptableOrUnknown(
+              data['spray_solution_ph']!, _spraySolutionPhMeta));
+    }
+    if (data.containsKey('water_volume_unit')) {
+      context.handle(
+          _waterVolumeUnitMeta,
+          waterVolumeUnit.isAcceptableOrUnknown(
+              data['water_volume_unit']!, _waterVolumeUnitMeta));
+    }
+    if (data.containsKey('cloud_cover_pct')) {
+      context.handle(
+          _cloudCoverPctMeta,
+          cloudCoverPct.isAcceptableOrUnknown(
+              data['cloud_cover_pct']!, _cloudCoverPctMeta));
+    }
+    if (data.containsKey('soil_moisture')) {
+      context.handle(
+          _soilMoistureMeta,
+          soilMoisture.isAcceptableOrUnknown(
+              data['soil_moisture']!, _soilMoistureMeta));
+    }
+    if (data.containsKey('treated_area')) {
+      context.handle(
+          _treatedAreaMeta,
+          treatedArea.isAcceptableOrUnknown(
+              data['treated_area']!, _treatedAreaMeta));
+    }
+    if (data.containsKey('treated_area_unit')) {
+      context.handle(
+          _treatedAreaUnitMeta,
+          treatedAreaUnit.isAcceptableOrUnknown(
+              data['treated_area_unit']!, _treatedAreaUnitMeta));
+    }
+    if (data.containsKey('plots_treated')) {
+      context.handle(
+          _plotsTreatedMeta,
+          plotsTreated.isAcceptableOrUnknown(
+              data['plots_treated']!, _plotsTreatedMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -14508,6 +17526,42 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           .read(DriftSqlType.double, data['${effectivePrefix}humidity']),
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      applicationTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}application_time']),
+      applicationMethod: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}application_method']),
+      nozzleType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nozzle_type']),
+      nozzleSpacingCm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}nozzle_spacing_cm']),
+      operatingPressure: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}operating_pressure']),
+      pressureUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pressure_unit']),
+      groundSpeed: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}ground_speed']),
+      speedUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}speed_unit']),
+      adjuvantName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}adjuvant_name']),
+      adjuvantRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}adjuvant_rate']),
+      adjuvantRateUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}adjuvant_rate_unit']),
+      spraySolutionPh: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}spray_solution_ph']),
+      waterVolumeUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}water_volume_unit']),
+      cloudCoverPct: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}cloud_cover_pct']),
+      soilMoisture: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_moisture']),
+      treatedArea: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}treated_area']),
+      treatedAreaUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}treated_area_unit']),
+      plotsTreated: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plots_treated']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -14537,6 +17591,24 @@ class TrialApplicationEvent extends DataClass
   final double? temperature;
   final double? humidity;
   final String? notes;
+  final String? applicationTime;
+  final String? applicationMethod;
+  final String? nozzleType;
+  final double? nozzleSpacingCm;
+  final double? operatingPressure;
+  final String? pressureUnit;
+  final double? groundSpeed;
+  final String? speedUnit;
+  final String? adjuvantName;
+  final double? adjuvantRate;
+  final String? adjuvantRateUnit;
+  final double? spraySolutionPh;
+  final String? waterVolumeUnit;
+  final double? cloudCoverPct;
+  final String? soilMoisture;
+  final double? treatedArea;
+  final String? treatedAreaUnit;
+  final String? plotsTreated;
   final DateTime createdAt;
   const TrialApplicationEvent(
       {required this.id,
@@ -14555,6 +17627,24 @@ class TrialApplicationEvent extends DataClass
       this.temperature,
       this.humidity,
       this.notes,
+      this.applicationTime,
+      this.applicationMethod,
+      this.nozzleType,
+      this.nozzleSpacingCm,
+      this.operatingPressure,
+      this.pressureUnit,
+      this.groundSpeed,
+      this.speedUnit,
+      this.adjuvantName,
+      this.adjuvantRate,
+      this.adjuvantRateUnit,
+      this.spraySolutionPh,
+      this.waterVolumeUnit,
+      this.cloudCoverPct,
+      this.soilMoisture,
+      this.treatedArea,
+      this.treatedAreaUnit,
+      this.plotsTreated,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -14601,6 +17691,60 @@ class TrialApplicationEvent extends DataClass
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    if (!nullToAbsent || applicationTime != null) {
+      map['application_time'] = Variable<String>(applicationTime);
+    }
+    if (!nullToAbsent || applicationMethod != null) {
+      map['application_method'] = Variable<String>(applicationMethod);
+    }
+    if (!nullToAbsent || nozzleType != null) {
+      map['nozzle_type'] = Variable<String>(nozzleType);
+    }
+    if (!nullToAbsent || nozzleSpacingCm != null) {
+      map['nozzle_spacing_cm'] = Variable<double>(nozzleSpacingCm);
+    }
+    if (!nullToAbsent || operatingPressure != null) {
+      map['operating_pressure'] = Variable<double>(operatingPressure);
+    }
+    if (!nullToAbsent || pressureUnit != null) {
+      map['pressure_unit'] = Variable<String>(pressureUnit);
+    }
+    if (!nullToAbsent || groundSpeed != null) {
+      map['ground_speed'] = Variable<double>(groundSpeed);
+    }
+    if (!nullToAbsent || speedUnit != null) {
+      map['speed_unit'] = Variable<String>(speedUnit);
+    }
+    if (!nullToAbsent || adjuvantName != null) {
+      map['adjuvant_name'] = Variable<String>(adjuvantName);
+    }
+    if (!nullToAbsent || adjuvantRate != null) {
+      map['adjuvant_rate'] = Variable<double>(adjuvantRate);
+    }
+    if (!nullToAbsent || adjuvantRateUnit != null) {
+      map['adjuvant_rate_unit'] = Variable<String>(adjuvantRateUnit);
+    }
+    if (!nullToAbsent || spraySolutionPh != null) {
+      map['spray_solution_ph'] = Variable<double>(spraySolutionPh);
+    }
+    if (!nullToAbsent || waterVolumeUnit != null) {
+      map['water_volume_unit'] = Variable<String>(waterVolumeUnit);
+    }
+    if (!nullToAbsent || cloudCoverPct != null) {
+      map['cloud_cover_pct'] = Variable<double>(cloudCoverPct);
+    }
+    if (!nullToAbsent || soilMoisture != null) {
+      map['soil_moisture'] = Variable<String>(soilMoisture);
+    }
+    if (!nullToAbsent || treatedArea != null) {
+      map['treated_area'] = Variable<double>(treatedArea);
+    }
+    if (!nullToAbsent || treatedAreaUnit != null) {
+      map['treated_area_unit'] = Variable<String>(treatedAreaUnit);
+    }
+    if (!nullToAbsent || plotsTreated != null) {
+      map['plots_treated'] = Variable<String>(plotsTreated);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -14646,6 +17790,60 @@ class TrialApplicationEvent extends DataClass
           : Value(humidity),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      applicationTime: applicationTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(applicationTime),
+      applicationMethod: applicationMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(applicationMethod),
+      nozzleType: nozzleType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nozzleType),
+      nozzleSpacingCm: nozzleSpacingCm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nozzleSpacingCm),
+      operatingPressure: operatingPressure == null && nullToAbsent
+          ? const Value.absent()
+          : Value(operatingPressure),
+      pressureUnit: pressureUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pressureUnit),
+      groundSpeed: groundSpeed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groundSpeed),
+      speedUnit: speedUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(speedUnit),
+      adjuvantName: adjuvantName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(adjuvantName),
+      adjuvantRate: adjuvantRate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(adjuvantRate),
+      adjuvantRateUnit: adjuvantRateUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(adjuvantRateUnit),
+      spraySolutionPh: spraySolutionPh == null && nullToAbsent
+          ? const Value.absent()
+          : Value(spraySolutionPh),
+      waterVolumeUnit: waterVolumeUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(waterVolumeUnit),
+      cloudCoverPct: cloudCoverPct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cloudCoverPct),
+      soilMoisture: soilMoisture == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilMoisture),
+      treatedArea: treatedArea == null && nullToAbsent
+          ? const Value.absent()
+          : Value(treatedArea),
+      treatedAreaUnit: treatedAreaUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(treatedAreaUnit),
+      plotsTreated: plotsTreated == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plotsTreated),
       createdAt: Value(createdAt),
     );
   }
@@ -14670,6 +17868,26 @@ class TrialApplicationEvent extends DataClass
       temperature: serializer.fromJson<double?>(json['temperature']),
       humidity: serializer.fromJson<double?>(json['humidity']),
       notes: serializer.fromJson<String?>(json['notes']),
+      applicationTime: serializer.fromJson<String?>(json['applicationTime']),
+      applicationMethod:
+          serializer.fromJson<String?>(json['applicationMethod']),
+      nozzleType: serializer.fromJson<String?>(json['nozzleType']),
+      nozzleSpacingCm: serializer.fromJson<double?>(json['nozzleSpacingCm']),
+      operatingPressure:
+          serializer.fromJson<double?>(json['operatingPressure']),
+      pressureUnit: serializer.fromJson<String?>(json['pressureUnit']),
+      groundSpeed: serializer.fromJson<double?>(json['groundSpeed']),
+      speedUnit: serializer.fromJson<String?>(json['speedUnit']),
+      adjuvantName: serializer.fromJson<String?>(json['adjuvantName']),
+      adjuvantRate: serializer.fromJson<double?>(json['adjuvantRate']),
+      adjuvantRateUnit: serializer.fromJson<String?>(json['adjuvantRateUnit']),
+      spraySolutionPh: serializer.fromJson<double?>(json['spraySolutionPh']),
+      waterVolumeUnit: serializer.fromJson<String?>(json['waterVolumeUnit']),
+      cloudCoverPct: serializer.fromJson<double?>(json['cloudCoverPct']),
+      soilMoisture: serializer.fromJson<String?>(json['soilMoisture']),
+      treatedArea: serializer.fromJson<double?>(json['treatedArea']),
+      treatedAreaUnit: serializer.fromJson<String?>(json['treatedAreaUnit']),
+      plotsTreated: serializer.fromJson<String?>(json['plotsTreated']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -14693,6 +17911,24 @@ class TrialApplicationEvent extends DataClass
       'temperature': serializer.toJson<double?>(temperature),
       'humidity': serializer.toJson<double?>(humidity),
       'notes': serializer.toJson<String?>(notes),
+      'applicationTime': serializer.toJson<String?>(applicationTime),
+      'applicationMethod': serializer.toJson<String?>(applicationMethod),
+      'nozzleType': serializer.toJson<String?>(nozzleType),
+      'nozzleSpacingCm': serializer.toJson<double?>(nozzleSpacingCm),
+      'operatingPressure': serializer.toJson<double?>(operatingPressure),
+      'pressureUnit': serializer.toJson<String?>(pressureUnit),
+      'groundSpeed': serializer.toJson<double?>(groundSpeed),
+      'speedUnit': serializer.toJson<String?>(speedUnit),
+      'adjuvantName': serializer.toJson<String?>(adjuvantName),
+      'adjuvantRate': serializer.toJson<double?>(adjuvantRate),
+      'adjuvantRateUnit': serializer.toJson<String?>(adjuvantRateUnit),
+      'spraySolutionPh': serializer.toJson<double?>(spraySolutionPh),
+      'waterVolumeUnit': serializer.toJson<String?>(waterVolumeUnit),
+      'cloudCoverPct': serializer.toJson<double?>(cloudCoverPct),
+      'soilMoisture': serializer.toJson<String?>(soilMoisture),
+      'treatedArea': serializer.toJson<double?>(treatedArea),
+      'treatedAreaUnit': serializer.toJson<String?>(treatedAreaUnit),
+      'plotsTreated': serializer.toJson<String?>(plotsTreated),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -14714,6 +17950,24 @@ class TrialApplicationEvent extends DataClass
           Value<double?> temperature = const Value.absent(),
           Value<double?> humidity = const Value.absent(),
           Value<String?> notes = const Value.absent(),
+          Value<String?> applicationTime = const Value.absent(),
+          Value<String?> applicationMethod = const Value.absent(),
+          Value<String?> nozzleType = const Value.absent(),
+          Value<double?> nozzleSpacingCm = const Value.absent(),
+          Value<double?> operatingPressure = const Value.absent(),
+          Value<String?> pressureUnit = const Value.absent(),
+          Value<double?> groundSpeed = const Value.absent(),
+          Value<String?> speedUnit = const Value.absent(),
+          Value<String?> adjuvantName = const Value.absent(),
+          Value<double?> adjuvantRate = const Value.absent(),
+          Value<String?> adjuvantRateUnit = const Value.absent(),
+          Value<double?> spraySolutionPh = const Value.absent(),
+          Value<String?> waterVolumeUnit = const Value.absent(),
+          Value<double?> cloudCoverPct = const Value.absent(),
+          Value<String?> soilMoisture = const Value.absent(),
+          Value<double?> treatedArea = const Value.absent(),
+          Value<String?> treatedAreaUnit = const Value.absent(),
+          Value<String?> plotsTreated = const Value.absent(),
           DateTime? createdAt}) =>
       TrialApplicationEvent(
         id: id ?? this.id,
@@ -14737,6 +17991,46 @@ class TrialApplicationEvent extends DataClass
         temperature: temperature.present ? temperature.value : this.temperature,
         humidity: humidity.present ? humidity.value : this.humidity,
         notes: notes.present ? notes.value : this.notes,
+        applicationTime: applicationTime.present
+            ? applicationTime.value
+            : this.applicationTime,
+        applicationMethod: applicationMethod.present
+            ? applicationMethod.value
+            : this.applicationMethod,
+        nozzleType: nozzleType.present ? nozzleType.value : this.nozzleType,
+        nozzleSpacingCm: nozzleSpacingCm.present
+            ? nozzleSpacingCm.value
+            : this.nozzleSpacingCm,
+        operatingPressure: operatingPressure.present
+            ? operatingPressure.value
+            : this.operatingPressure,
+        pressureUnit:
+            pressureUnit.present ? pressureUnit.value : this.pressureUnit,
+        groundSpeed: groundSpeed.present ? groundSpeed.value : this.groundSpeed,
+        speedUnit: speedUnit.present ? speedUnit.value : this.speedUnit,
+        adjuvantName:
+            adjuvantName.present ? adjuvantName.value : this.adjuvantName,
+        adjuvantRate:
+            adjuvantRate.present ? adjuvantRate.value : this.adjuvantRate,
+        adjuvantRateUnit: adjuvantRateUnit.present
+            ? adjuvantRateUnit.value
+            : this.adjuvantRateUnit,
+        spraySolutionPh: spraySolutionPh.present
+            ? spraySolutionPh.value
+            : this.spraySolutionPh,
+        waterVolumeUnit: waterVolumeUnit.present
+            ? waterVolumeUnit.value
+            : this.waterVolumeUnit,
+        cloudCoverPct:
+            cloudCoverPct.present ? cloudCoverPct.value : this.cloudCoverPct,
+        soilMoisture:
+            soilMoisture.present ? soilMoisture.value : this.soilMoisture,
+        treatedArea: treatedArea.present ? treatedArea.value : this.treatedArea,
+        treatedAreaUnit: treatedAreaUnit.present
+            ? treatedAreaUnit.value
+            : this.treatedAreaUnit,
+        plotsTreated:
+            plotsTreated.present ? plotsTreated.value : this.plotsTreated,
         createdAt: createdAt ?? this.createdAt,
       );
   TrialApplicationEvent copyWithCompanion(
@@ -14772,6 +18066,55 @@ class TrialApplicationEvent extends DataClass
           data.temperature.present ? data.temperature.value : this.temperature,
       humidity: data.humidity.present ? data.humidity.value : this.humidity,
       notes: data.notes.present ? data.notes.value : this.notes,
+      applicationTime: data.applicationTime.present
+          ? data.applicationTime.value
+          : this.applicationTime,
+      applicationMethod: data.applicationMethod.present
+          ? data.applicationMethod.value
+          : this.applicationMethod,
+      nozzleType:
+          data.nozzleType.present ? data.nozzleType.value : this.nozzleType,
+      nozzleSpacingCm: data.nozzleSpacingCm.present
+          ? data.nozzleSpacingCm.value
+          : this.nozzleSpacingCm,
+      operatingPressure: data.operatingPressure.present
+          ? data.operatingPressure.value
+          : this.operatingPressure,
+      pressureUnit: data.pressureUnit.present
+          ? data.pressureUnit.value
+          : this.pressureUnit,
+      groundSpeed:
+          data.groundSpeed.present ? data.groundSpeed.value : this.groundSpeed,
+      speedUnit: data.speedUnit.present ? data.speedUnit.value : this.speedUnit,
+      adjuvantName: data.adjuvantName.present
+          ? data.adjuvantName.value
+          : this.adjuvantName,
+      adjuvantRate: data.adjuvantRate.present
+          ? data.adjuvantRate.value
+          : this.adjuvantRate,
+      adjuvantRateUnit: data.adjuvantRateUnit.present
+          ? data.adjuvantRateUnit.value
+          : this.adjuvantRateUnit,
+      spraySolutionPh: data.spraySolutionPh.present
+          ? data.spraySolutionPh.value
+          : this.spraySolutionPh,
+      waterVolumeUnit: data.waterVolumeUnit.present
+          ? data.waterVolumeUnit.value
+          : this.waterVolumeUnit,
+      cloudCoverPct: data.cloudCoverPct.present
+          ? data.cloudCoverPct.value
+          : this.cloudCoverPct,
+      soilMoisture: data.soilMoisture.present
+          ? data.soilMoisture.value
+          : this.soilMoisture,
+      treatedArea:
+          data.treatedArea.present ? data.treatedArea.value : this.treatedArea,
+      treatedAreaUnit: data.treatedAreaUnit.present
+          ? data.treatedAreaUnit.value
+          : this.treatedAreaUnit,
+      plotsTreated: data.plotsTreated.present
+          ? data.plotsTreated.value
+          : this.plotsTreated,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -14795,30 +18138,67 @@ class TrialApplicationEvent extends DataClass
           ..write('temperature: $temperature, ')
           ..write('humidity: $humidity, ')
           ..write('notes: $notes, ')
+          ..write('applicationTime: $applicationTime, ')
+          ..write('applicationMethod: $applicationMethod, ')
+          ..write('nozzleType: $nozzleType, ')
+          ..write('nozzleSpacingCm: $nozzleSpacingCm, ')
+          ..write('operatingPressure: $operatingPressure, ')
+          ..write('pressureUnit: $pressureUnit, ')
+          ..write('groundSpeed: $groundSpeed, ')
+          ..write('speedUnit: $speedUnit, ')
+          ..write('adjuvantName: $adjuvantName, ')
+          ..write('adjuvantRate: $adjuvantRate, ')
+          ..write('adjuvantRateUnit: $adjuvantRateUnit, ')
+          ..write('spraySolutionPh: $spraySolutionPh, ')
+          ..write('waterVolumeUnit: $waterVolumeUnit, ')
+          ..write('cloudCoverPct: $cloudCoverPct, ')
+          ..write('soilMoisture: $soilMoisture, ')
+          ..write('treatedArea: $treatedArea, ')
+          ..write('treatedAreaUnit: $treatedAreaUnit, ')
+          ..write('plotsTreated: $plotsTreated, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      trialId,
-      treatmentId,
-      applicationDate,
-      growthStageCode,
-      operatorName,
-      equipmentUsed,
-      productName,
-      rate,
-      rateUnit,
-      waterVolume,
-      windSpeed,
-      windDirection,
-      temperature,
-      humidity,
-      notes,
-      createdAt);
+  int get hashCode => Object.hashAll([
+        id,
+        trialId,
+        treatmentId,
+        applicationDate,
+        growthStageCode,
+        operatorName,
+        equipmentUsed,
+        productName,
+        rate,
+        rateUnit,
+        waterVolume,
+        windSpeed,
+        windDirection,
+        temperature,
+        humidity,
+        notes,
+        applicationTime,
+        applicationMethod,
+        nozzleType,
+        nozzleSpacingCm,
+        operatingPressure,
+        pressureUnit,
+        groundSpeed,
+        speedUnit,
+        adjuvantName,
+        adjuvantRate,
+        adjuvantRateUnit,
+        spraySolutionPh,
+        waterVolumeUnit,
+        cloudCoverPct,
+        soilMoisture,
+        treatedArea,
+        treatedAreaUnit,
+        plotsTreated,
+        createdAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -14839,6 +18219,24 @@ class TrialApplicationEvent extends DataClass
           other.temperature == this.temperature &&
           other.humidity == this.humidity &&
           other.notes == this.notes &&
+          other.applicationTime == this.applicationTime &&
+          other.applicationMethod == this.applicationMethod &&
+          other.nozzleType == this.nozzleType &&
+          other.nozzleSpacingCm == this.nozzleSpacingCm &&
+          other.operatingPressure == this.operatingPressure &&
+          other.pressureUnit == this.pressureUnit &&
+          other.groundSpeed == this.groundSpeed &&
+          other.speedUnit == this.speedUnit &&
+          other.adjuvantName == this.adjuvantName &&
+          other.adjuvantRate == this.adjuvantRate &&
+          other.adjuvantRateUnit == this.adjuvantRateUnit &&
+          other.spraySolutionPh == this.spraySolutionPh &&
+          other.waterVolumeUnit == this.waterVolumeUnit &&
+          other.cloudCoverPct == this.cloudCoverPct &&
+          other.soilMoisture == this.soilMoisture &&
+          other.treatedArea == this.treatedArea &&
+          other.treatedAreaUnit == this.treatedAreaUnit &&
+          other.plotsTreated == this.plotsTreated &&
           other.createdAt == this.createdAt);
 }
 
@@ -14860,6 +18258,24 @@ class TrialApplicationEventsCompanion
   final Value<double?> temperature;
   final Value<double?> humidity;
   final Value<String?> notes;
+  final Value<String?> applicationTime;
+  final Value<String?> applicationMethod;
+  final Value<String?> nozzleType;
+  final Value<double?> nozzleSpacingCm;
+  final Value<double?> operatingPressure;
+  final Value<String?> pressureUnit;
+  final Value<double?> groundSpeed;
+  final Value<String?> speedUnit;
+  final Value<String?> adjuvantName;
+  final Value<double?> adjuvantRate;
+  final Value<String?> adjuvantRateUnit;
+  final Value<double?> spraySolutionPh;
+  final Value<String?> waterVolumeUnit;
+  final Value<double?> cloudCoverPct;
+  final Value<String?> soilMoisture;
+  final Value<double?> treatedArea;
+  final Value<String?> treatedAreaUnit;
+  final Value<String?> plotsTreated;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const TrialApplicationEventsCompanion({
@@ -14879,6 +18295,24 @@ class TrialApplicationEventsCompanion
     this.temperature = const Value.absent(),
     this.humidity = const Value.absent(),
     this.notes = const Value.absent(),
+    this.applicationTime = const Value.absent(),
+    this.applicationMethod = const Value.absent(),
+    this.nozzleType = const Value.absent(),
+    this.nozzleSpacingCm = const Value.absent(),
+    this.operatingPressure = const Value.absent(),
+    this.pressureUnit = const Value.absent(),
+    this.groundSpeed = const Value.absent(),
+    this.speedUnit = const Value.absent(),
+    this.adjuvantName = const Value.absent(),
+    this.adjuvantRate = const Value.absent(),
+    this.adjuvantRateUnit = const Value.absent(),
+    this.spraySolutionPh = const Value.absent(),
+    this.waterVolumeUnit = const Value.absent(),
+    this.cloudCoverPct = const Value.absent(),
+    this.soilMoisture = const Value.absent(),
+    this.treatedArea = const Value.absent(),
+    this.treatedAreaUnit = const Value.absent(),
+    this.plotsTreated = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -14899,6 +18333,24 @@ class TrialApplicationEventsCompanion
     this.temperature = const Value.absent(),
     this.humidity = const Value.absent(),
     this.notes = const Value.absent(),
+    this.applicationTime = const Value.absent(),
+    this.applicationMethod = const Value.absent(),
+    this.nozzleType = const Value.absent(),
+    this.nozzleSpacingCm = const Value.absent(),
+    this.operatingPressure = const Value.absent(),
+    this.pressureUnit = const Value.absent(),
+    this.groundSpeed = const Value.absent(),
+    this.speedUnit = const Value.absent(),
+    this.adjuvantName = const Value.absent(),
+    this.adjuvantRate = const Value.absent(),
+    this.adjuvantRateUnit = const Value.absent(),
+    this.spraySolutionPh = const Value.absent(),
+    this.waterVolumeUnit = const Value.absent(),
+    this.cloudCoverPct = const Value.absent(),
+    this.soilMoisture = const Value.absent(),
+    this.treatedArea = const Value.absent(),
+    this.treatedAreaUnit = const Value.absent(),
+    this.plotsTreated = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
@@ -14920,6 +18372,24 @@ class TrialApplicationEventsCompanion
     Expression<double>? temperature,
     Expression<double>? humidity,
     Expression<String>? notes,
+    Expression<String>? applicationTime,
+    Expression<String>? applicationMethod,
+    Expression<String>? nozzleType,
+    Expression<double>? nozzleSpacingCm,
+    Expression<double>? operatingPressure,
+    Expression<String>? pressureUnit,
+    Expression<double>? groundSpeed,
+    Expression<String>? speedUnit,
+    Expression<String>? adjuvantName,
+    Expression<double>? adjuvantRate,
+    Expression<String>? adjuvantRateUnit,
+    Expression<double>? spraySolutionPh,
+    Expression<String>? waterVolumeUnit,
+    Expression<double>? cloudCoverPct,
+    Expression<String>? soilMoisture,
+    Expression<double>? treatedArea,
+    Expression<String>? treatedAreaUnit,
+    Expression<String>? plotsTreated,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -14940,6 +18410,24 @@ class TrialApplicationEventsCompanion
       if (temperature != null) 'temperature': temperature,
       if (humidity != null) 'humidity': humidity,
       if (notes != null) 'notes': notes,
+      if (applicationTime != null) 'application_time': applicationTime,
+      if (applicationMethod != null) 'application_method': applicationMethod,
+      if (nozzleType != null) 'nozzle_type': nozzleType,
+      if (nozzleSpacingCm != null) 'nozzle_spacing_cm': nozzleSpacingCm,
+      if (operatingPressure != null) 'operating_pressure': operatingPressure,
+      if (pressureUnit != null) 'pressure_unit': pressureUnit,
+      if (groundSpeed != null) 'ground_speed': groundSpeed,
+      if (speedUnit != null) 'speed_unit': speedUnit,
+      if (adjuvantName != null) 'adjuvant_name': adjuvantName,
+      if (adjuvantRate != null) 'adjuvant_rate': adjuvantRate,
+      if (adjuvantRateUnit != null) 'adjuvant_rate_unit': adjuvantRateUnit,
+      if (spraySolutionPh != null) 'spray_solution_ph': spraySolutionPh,
+      if (waterVolumeUnit != null) 'water_volume_unit': waterVolumeUnit,
+      if (cloudCoverPct != null) 'cloud_cover_pct': cloudCoverPct,
+      if (soilMoisture != null) 'soil_moisture': soilMoisture,
+      if (treatedArea != null) 'treated_area': treatedArea,
+      if (treatedAreaUnit != null) 'treated_area_unit': treatedAreaUnit,
+      if (plotsTreated != null) 'plots_treated': plotsTreated,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -14962,6 +18450,24 @@ class TrialApplicationEventsCompanion
       Value<double?>? temperature,
       Value<double?>? humidity,
       Value<String?>? notes,
+      Value<String?>? applicationTime,
+      Value<String?>? applicationMethod,
+      Value<String?>? nozzleType,
+      Value<double?>? nozzleSpacingCm,
+      Value<double?>? operatingPressure,
+      Value<String?>? pressureUnit,
+      Value<double?>? groundSpeed,
+      Value<String?>? speedUnit,
+      Value<String?>? adjuvantName,
+      Value<double?>? adjuvantRate,
+      Value<String?>? adjuvantRateUnit,
+      Value<double?>? spraySolutionPh,
+      Value<String?>? waterVolumeUnit,
+      Value<double?>? cloudCoverPct,
+      Value<String?>? soilMoisture,
+      Value<double?>? treatedArea,
+      Value<String?>? treatedAreaUnit,
+      Value<String?>? plotsTreated,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return TrialApplicationEventsCompanion(
@@ -14981,6 +18487,24 @@ class TrialApplicationEventsCompanion
       temperature: temperature ?? this.temperature,
       humidity: humidity ?? this.humidity,
       notes: notes ?? this.notes,
+      applicationTime: applicationTime ?? this.applicationTime,
+      applicationMethod: applicationMethod ?? this.applicationMethod,
+      nozzleType: nozzleType ?? this.nozzleType,
+      nozzleSpacingCm: nozzleSpacingCm ?? this.nozzleSpacingCm,
+      operatingPressure: operatingPressure ?? this.operatingPressure,
+      pressureUnit: pressureUnit ?? this.pressureUnit,
+      groundSpeed: groundSpeed ?? this.groundSpeed,
+      speedUnit: speedUnit ?? this.speedUnit,
+      adjuvantName: adjuvantName ?? this.adjuvantName,
+      adjuvantRate: adjuvantRate ?? this.adjuvantRate,
+      adjuvantRateUnit: adjuvantRateUnit ?? this.adjuvantRateUnit,
+      spraySolutionPh: spraySolutionPh ?? this.spraySolutionPh,
+      waterVolumeUnit: waterVolumeUnit ?? this.waterVolumeUnit,
+      cloudCoverPct: cloudCoverPct ?? this.cloudCoverPct,
+      soilMoisture: soilMoisture ?? this.soilMoisture,
+      treatedArea: treatedArea ?? this.treatedArea,
+      treatedAreaUnit: treatedAreaUnit ?? this.treatedAreaUnit,
+      plotsTreated: plotsTreated ?? this.plotsTreated,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -15037,6 +18561,60 @@ class TrialApplicationEventsCompanion
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (applicationTime.present) {
+      map['application_time'] = Variable<String>(applicationTime.value);
+    }
+    if (applicationMethod.present) {
+      map['application_method'] = Variable<String>(applicationMethod.value);
+    }
+    if (nozzleType.present) {
+      map['nozzle_type'] = Variable<String>(nozzleType.value);
+    }
+    if (nozzleSpacingCm.present) {
+      map['nozzle_spacing_cm'] = Variable<double>(nozzleSpacingCm.value);
+    }
+    if (operatingPressure.present) {
+      map['operating_pressure'] = Variable<double>(operatingPressure.value);
+    }
+    if (pressureUnit.present) {
+      map['pressure_unit'] = Variable<String>(pressureUnit.value);
+    }
+    if (groundSpeed.present) {
+      map['ground_speed'] = Variable<double>(groundSpeed.value);
+    }
+    if (speedUnit.present) {
+      map['speed_unit'] = Variable<String>(speedUnit.value);
+    }
+    if (adjuvantName.present) {
+      map['adjuvant_name'] = Variable<String>(adjuvantName.value);
+    }
+    if (adjuvantRate.present) {
+      map['adjuvant_rate'] = Variable<double>(adjuvantRate.value);
+    }
+    if (adjuvantRateUnit.present) {
+      map['adjuvant_rate_unit'] = Variable<String>(adjuvantRateUnit.value);
+    }
+    if (spraySolutionPh.present) {
+      map['spray_solution_ph'] = Variable<double>(spraySolutionPh.value);
+    }
+    if (waterVolumeUnit.present) {
+      map['water_volume_unit'] = Variable<String>(waterVolumeUnit.value);
+    }
+    if (cloudCoverPct.present) {
+      map['cloud_cover_pct'] = Variable<double>(cloudCoverPct.value);
+    }
+    if (soilMoisture.present) {
+      map['soil_moisture'] = Variable<String>(soilMoisture.value);
+    }
+    if (treatedArea.present) {
+      map['treated_area'] = Variable<double>(treatedArea.value);
+    }
+    if (treatedAreaUnit.present) {
+      map['treated_area_unit'] = Variable<String>(treatedAreaUnit.value);
+    }
+    if (plotsTreated.present) {
+      map['plots_treated'] = Variable<String>(plotsTreated.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -15065,6 +18643,24 @@ class TrialApplicationEventsCompanion
           ..write('temperature: $temperature, ')
           ..write('humidity: $humidity, ')
           ..write('notes: $notes, ')
+          ..write('applicationTime: $applicationTime, ')
+          ..write('applicationMethod: $applicationMethod, ')
+          ..write('nozzleType: $nozzleType, ')
+          ..write('nozzleSpacingCm: $nozzleSpacingCm, ')
+          ..write('operatingPressure: $operatingPressure, ')
+          ..write('pressureUnit: $pressureUnit, ')
+          ..write('groundSpeed: $groundSpeed, ')
+          ..write('speedUnit: $speedUnit, ')
+          ..write('adjuvantName: $adjuvantName, ')
+          ..write('adjuvantRate: $adjuvantRate, ')
+          ..write('adjuvantRateUnit: $adjuvantRateUnit, ')
+          ..write('spraySolutionPh: $spraySolutionPh, ')
+          ..write('waterVolumeUnit: $waterVolumeUnit, ')
+          ..write('cloudCoverPct: $cloudCoverPct, ')
+          ..write('soilMoisture: $soilMoisture, ')
+          ..write('treatedArea: $treatedArea, ')
+          ..write('treatedAreaUnit: $treatedAreaUnit, ')
+          ..write('plotsTreated: $plotsTreated, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -15366,6 +18962,31 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<String?> plotDimensions,
   Value<int?> plotRows,
   Value<String?> plotSpacing,
+  Value<String?> sponsor,
+  Value<String?> protocolNumber,
+  Value<String?> investigatorName,
+  Value<String?> cooperatorName,
+  Value<String?> siteId,
+  Value<String?> fieldName,
+  Value<String?> county,
+  Value<String?> stateProvince,
+  Value<String?> country,
+  Value<double?> latitude,
+  Value<double?> longitude,
+  Value<double?> elevationM,
+  Value<String?> experimentalDesign,
+  Value<double?> plotLengthM,
+  Value<double?> plotWidthM,
+  Value<double?> alleyLengthM,
+  Value<String?> previousCrop,
+  Value<String?> tillage,
+  Value<bool?> irrigated,
+  Value<String?> soilSeries,
+  Value<String?> soilTexture,
+  Value<double?> organicMatterPct,
+  Value<double?> soilPh,
+  Value<DateTime?> harvestDate,
+  Value<String?> studyType,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -15379,6 +19000,31 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<String?> plotDimensions,
   Value<int?> plotRows,
   Value<String?> plotSpacing,
+  Value<String?> sponsor,
+  Value<String?> protocolNumber,
+  Value<String?> investigatorName,
+  Value<String?> cooperatorName,
+  Value<String?> siteId,
+  Value<String?> fieldName,
+  Value<String?> county,
+  Value<String?> stateProvince,
+  Value<String?> country,
+  Value<double?> latitude,
+  Value<double?> longitude,
+  Value<double?> elevationM,
+  Value<String?> experimentalDesign,
+  Value<double?> plotLengthM,
+  Value<double?> plotWidthM,
+  Value<double?> alleyLengthM,
+  Value<String?> previousCrop,
+  Value<String?> tillage,
+  Value<bool?> irrigated,
+  Value<String?> soilSeries,
+  Value<String?> soilTexture,
+  Value<double?> organicMatterPct,
+  Value<double?> soilPh,
+  Value<DateTime?> harvestDate,
+  Value<String?> studyType,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -15409,6 +19055,31 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<String?> plotDimensions = const Value.absent(),
             Value<int?> plotRows = const Value.absent(),
             Value<String?> plotSpacing = const Value.absent(),
+            Value<String?> sponsor = const Value.absent(),
+            Value<String?> protocolNumber = const Value.absent(),
+            Value<String?> investigatorName = const Value.absent(),
+            Value<String?> cooperatorName = const Value.absent(),
+            Value<String?> siteId = const Value.absent(),
+            Value<String?> fieldName = const Value.absent(),
+            Value<String?> county = const Value.absent(),
+            Value<String?> stateProvince = const Value.absent(),
+            Value<String?> country = const Value.absent(),
+            Value<double?> latitude = const Value.absent(),
+            Value<double?> longitude = const Value.absent(),
+            Value<double?> elevationM = const Value.absent(),
+            Value<String?> experimentalDesign = const Value.absent(),
+            Value<double?> plotLengthM = const Value.absent(),
+            Value<double?> plotWidthM = const Value.absent(),
+            Value<double?> alleyLengthM = const Value.absent(),
+            Value<String?> previousCrop = const Value.absent(),
+            Value<String?> tillage = const Value.absent(),
+            Value<bool?> irrigated = const Value.absent(),
+            Value<String?> soilSeries = const Value.absent(),
+            Value<String?> soilTexture = const Value.absent(),
+            Value<double?> organicMatterPct = const Value.absent(),
+            Value<double?> soilPh = const Value.absent(),
+            Value<DateTime?> harvestDate = const Value.absent(),
+            Value<String?> studyType = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
           }) =>
@@ -15422,6 +19093,31 @@ class $$TrialsTableTableManager extends RootTableManager<
             plotDimensions: plotDimensions,
             plotRows: plotRows,
             plotSpacing: plotSpacing,
+            sponsor: sponsor,
+            protocolNumber: protocolNumber,
+            investigatorName: investigatorName,
+            cooperatorName: cooperatorName,
+            siteId: siteId,
+            fieldName: fieldName,
+            county: county,
+            stateProvince: stateProvince,
+            country: country,
+            latitude: latitude,
+            longitude: longitude,
+            elevationM: elevationM,
+            experimentalDesign: experimentalDesign,
+            plotLengthM: plotLengthM,
+            plotWidthM: plotWidthM,
+            alleyLengthM: alleyLengthM,
+            previousCrop: previousCrop,
+            tillage: tillage,
+            irrigated: irrigated,
+            soilSeries: soilSeries,
+            soilTexture: soilTexture,
+            organicMatterPct: organicMatterPct,
+            soilPh: soilPh,
+            harvestDate: harvestDate,
+            studyType: studyType,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -15435,6 +19131,31 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<String?> plotDimensions = const Value.absent(),
             Value<int?> plotRows = const Value.absent(),
             Value<String?> plotSpacing = const Value.absent(),
+            Value<String?> sponsor = const Value.absent(),
+            Value<String?> protocolNumber = const Value.absent(),
+            Value<String?> investigatorName = const Value.absent(),
+            Value<String?> cooperatorName = const Value.absent(),
+            Value<String?> siteId = const Value.absent(),
+            Value<String?> fieldName = const Value.absent(),
+            Value<String?> county = const Value.absent(),
+            Value<String?> stateProvince = const Value.absent(),
+            Value<String?> country = const Value.absent(),
+            Value<double?> latitude = const Value.absent(),
+            Value<double?> longitude = const Value.absent(),
+            Value<double?> elevationM = const Value.absent(),
+            Value<String?> experimentalDesign = const Value.absent(),
+            Value<double?> plotLengthM = const Value.absent(),
+            Value<double?> plotWidthM = const Value.absent(),
+            Value<double?> alleyLengthM = const Value.absent(),
+            Value<String?> previousCrop = const Value.absent(),
+            Value<String?> tillage = const Value.absent(),
+            Value<bool?> irrigated = const Value.absent(),
+            Value<String?> soilSeries = const Value.absent(),
+            Value<String?> soilTexture = const Value.absent(),
+            Value<double?> organicMatterPct = const Value.absent(),
+            Value<double?> soilPh = const Value.absent(),
+            Value<DateTime?> harvestDate = const Value.absent(),
+            Value<String?> studyType = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
           }) =>
@@ -15448,6 +19169,31 @@ class $$TrialsTableTableManager extends RootTableManager<
             plotDimensions: plotDimensions,
             plotRows: plotRows,
             plotSpacing: plotSpacing,
+            sponsor: sponsor,
+            protocolNumber: protocolNumber,
+            investigatorName: investigatorName,
+            cooperatorName: cooperatorName,
+            siteId: siteId,
+            fieldName: fieldName,
+            county: county,
+            stateProvince: stateProvince,
+            country: country,
+            latitude: latitude,
+            longitude: longitude,
+            elevationM: elevationM,
+            experimentalDesign: experimentalDesign,
+            plotLengthM: plotLengthM,
+            plotWidthM: plotWidthM,
+            alleyLengthM: alleyLengthM,
+            previousCrop: previousCrop,
+            tillage: tillage,
+            irrigated: irrigated,
+            soilSeries: soilSeries,
+            soilTexture: soilTexture,
+            organicMatterPct: organicMatterPct,
+            soilPh: soilPh,
+            harvestDate: harvestDate,
+            studyType: studyType,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -15499,6 +19245,131 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<String> get plotSpacing => $state.composableBuilder(
       column: $state.table.plotSpacing,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sponsor => $state.composableBuilder(
+      column: $state.table.sponsor,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get protocolNumber => $state.composableBuilder(
+      column: $state.table.protocolNumber,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get investigatorName => $state.composableBuilder(
+      column: $state.table.investigatorName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cooperatorName => $state.composableBuilder(
+      column: $state.table.cooperatorName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get siteId => $state.composableBuilder(
+      column: $state.table.siteId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get fieldName => $state.composableBuilder(
+      column: $state.table.fieldName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get county => $state.composableBuilder(
+      column: $state.table.county,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get stateProvince => $state.composableBuilder(
+      column: $state.table.stateProvince,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get country => $state.composableBuilder(
+      column: $state.table.country,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get latitude => $state.composableBuilder(
+      column: $state.table.latitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get longitude => $state.composableBuilder(
+      column: $state.table.longitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get elevationM => $state.composableBuilder(
+      column: $state.table.elevationM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get experimentalDesign => $state.composableBuilder(
+      column: $state.table.experimentalDesign,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get plotLengthM => $state.composableBuilder(
+      column: $state.table.plotLengthM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get plotWidthM => $state.composableBuilder(
+      column: $state.table.plotWidthM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get alleyLengthM => $state.composableBuilder(
+      column: $state.table.alleyLengthM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get previousCrop => $state.composableBuilder(
+      column: $state.table.previousCrop,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get tillage => $state.composableBuilder(
+      column: $state.table.tillage,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get irrigated => $state.composableBuilder(
+      column: $state.table.irrigated,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilSeries => $state.composableBuilder(
+      column: $state.table.soilSeries,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilTexture => $state.composableBuilder(
+      column: $state.table.soilTexture,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get organicMatterPct => $state.composableBuilder(
+      column: $state.table.organicMatterPct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get soilPh => $state.composableBuilder(
+      column: $state.table.soilPh,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get harvestDate => $state.composableBuilder(
+      column: $state.table.harvestDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get studyType => $state.composableBuilder(
+      column: $state.table.studyType,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -15859,6 +19730,131 @@ class $$TrialsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<String> get sponsor => $state.composableBuilder(
+      column: $state.table.sponsor,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get protocolNumber => $state.composableBuilder(
+      column: $state.table.protocolNumber,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get investigatorName => $state.composableBuilder(
+      column: $state.table.investigatorName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cooperatorName => $state.composableBuilder(
+      column: $state.table.cooperatorName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get siteId => $state.composableBuilder(
+      column: $state.table.siteId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get fieldName => $state.composableBuilder(
+      column: $state.table.fieldName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get county => $state.composableBuilder(
+      column: $state.table.county,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get stateProvince => $state.composableBuilder(
+      column: $state.table.stateProvince,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get country => $state.composableBuilder(
+      column: $state.table.country,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get latitude => $state.composableBuilder(
+      column: $state.table.latitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get longitude => $state.composableBuilder(
+      column: $state.table.longitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get elevationM => $state.composableBuilder(
+      column: $state.table.elevationM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get experimentalDesign => $state.composableBuilder(
+      column: $state.table.experimentalDesign,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get plotLengthM => $state.composableBuilder(
+      column: $state.table.plotLengthM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get plotWidthM => $state.composableBuilder(
+      column: $state.table.plotWidthM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get alleyLengthM => $state.composableBuilder(
+      column: $state.table.alleyLengthM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get previousCrop => $state.composableBuilder(
+      column: $state.table.previousCrop,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get tillage => $state.composableBuilder(
+      column: $state.table.tillage,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get irrigated => $state.composableBuilder(
+      column: $state.table.irrigated,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilSeries => $state.composableBuilder(
+      column: $state.table.soilSeries,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilTexture => $state.composableBuilder(
+      column: $state.table.soilTexture,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get organicMatterPct => $state.composableBuilder(
+      column: $state.table.organicMatterPct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get soilPh => $state.composableBuilder(
+      column: $state.table.soilPh,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get harvestDate => $state.composableBuilder(
+      column: $state.table.harvestDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get studyType => $state.composableBuilder(
+      column: $state.table.studyType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
       column: $state.table.createdAt,
       builder: (column, joinBuilders) =>
@@ -15876,6 +19872,9 @@ typedef $$TreatmentsTableCreateCompanionBuilder = TreatmentsCompanion Function({
   required String code,
   required String name,
   Value<String?> description,
+  Value<String?> treatmentType,
+  Value<String?> timingCode,
+  Value<String?> eppoCode,
 });
 typedef $$TreatmentsTableUpdateCompanionBuilder = TreatmentsCompanion Function({
   Value<int> id,
@@ -15883,6 +19882,9 @@ typedef $$TreatmentsTableUpdateCompanionBuilder = TreatmentsCompanion Function({
   Value<String> code,
   Value<String> name,
   Value<String?> description,
+  Value<String?> treatmentType,
+  Value<String?> timingCode,
+  Value<String?> eppoCode,
 });
 
 class $$TreatmentsTableTableManager extends RootTableManager<
@@ -15907,6 +19909,9 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             Value<String> code = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<String?> description = const Value.absent(),
+            Value<String?> treatmentType = const Value.absent(),
+            Value<String?> timingCode = const Value.absent(),
+            Value<String?> eppoCode = const Value.absent(),
           }) =>
               TreatmentsCompanion(
             id: id,
@@ -15914,6 +19919,9 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             code: code,
             name: name,
             description: description,
+            treatmentType: treatmentType,
+            timingCode: timingCode,
+            eppoCode: eppoCode,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -15921,6 +19929,9 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             required String code,
             required String name,
             Value<String?> description = const Value.absent(),
+            Value<String?> treatmentType = const Value.absent(),
+            Value<String?> timingCode = const Value.absent(),
+            Value<String?> eppoCode = const Value.absent(),
           }) =>
               TreatmentsCompanion.insert(
             id: id,
@@ -15928,6 +19939,9 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             code: code,
             name: name,
             description: description,
+            treatmentType: treatmentType,
+            timingCode: timingCode,
+            eppoCode: eppoCode,
           ),
         ));
 }
@@ -15952,6 +19966,21 @@ class $$TreatmentsTableFilterComposer
 
   ColumnFilters<String> get description => $state.composableBuilder(
       column: $state.table.description,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get treatmentType => $state.composableBuilder(
+      column: $state.table.treatmentType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get timingCode => $state.composableBuilder(
+      column: $state.table.timingCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get eppoCode => $state.composableBuilder(
+      column: $state.table.eppoCode,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -16052,6 +20081,21 @@ class $$TreatmentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<String> get treatmentType => $state.composableBuilder(
+      column: $state.table.treatmentType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get timingCode => $state.composableBuilder(
+      column: $state.table.timingCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get eppoCode => $state.composableBuilder(
+      column: $state.table.eppoCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -16076,6 +20120,11 @@ typedef $$TreatmentComponentsTableCreateCompanionBuilder
   Value<String?> applicationTiming,
   Value<String?> notes,
   Value<int> sortOrder,
+  Value<double?> activeIngredientPct,
+  Value<String?> formulationType,
+  Value<String?> manufacturer,
+  Value<String?> registrationNumber,
+  Value<String?> eppoCode,
 });
 typedef $$TreatmentComponentsTableUpdateCompanionBuilder
     = TreatmentComponentsCompanion Function({
@@ -16088,6 +20137,11 @@ typedef $$TreatmentComponentsTableUpdateCompanionBuilder
   Value<String?> applicationTiming,
   Value<String?> notes,
   Value<int> sortOrder,
+  Value<double?> activeIngredientPct,
+  Value<String?> formulationType,
+  Value<String?> manufacturer,
+  Value<String?> registrationNumber,
+  Value<String?> eppoCode,
 });
 
 class $$TreatmentComponentsTableTableManager extends RootTableManager<
@@ -16117,6 +20171,11 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<String?> applicationTiming = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
+            Value<double?> activeIngredientPct = const Value.absent(),
+            Value<String?> formulationType = const Value.absent(),
+            Value<String?> manufacturer = const Value.absent(),
+            Value<String?> registrationNumber = const Value.absent(),
+            Value<String?> eppoCode = const Value.absent(),
           }) =>
               TreatmentComponentsCompanion(
             id: id,
@@ -16128,6 +20187,11 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             applicationTiming: applicationTiming,
             notes: notes,
             sortOrder: sortOrder,
+            activeIngredientPct: activeIngredientPct,
+            formulationType: formulationType,
+            manufacturer: manufacturer,
+            registrationNumber: registrationNumber,
+            eppoCode: eppoCode,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -16139,6 +20203,11 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<String?> applicationTiming = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
+            Value<double?> activeIngredientPct = const Value.absent(),
+            Value<String?> formulationType = const Value.absent(),
+            Value<String?> manufacturer = const Value.absent(),
+            Value<String?> registrationNumber = const Value.absent(),
+            Value<String?> eppoCode = const Value.absent(),
           }) =>
               TreatmentComponentsCompanion.insert(
             id: id,
@@ -16150,6 +20219,11 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             applicationTiming: applicationTiming,
             notes: notes,
             sortOrder: sortOrder,
+            activeIngredientPct: activeIngredientPct,
+            formulationType: formulationType,
+            manufacturer: manufacturer,
+            registrationNumber: registrationNumber,
+            eppoCode: eppoCode,
           ),
         ));
 }
@@ -16189,6 +20263,31 @@ class $$TreatmentComponentsTableFilterComposer
 
   ColumnFilters<int> get sortOrder => $state.composableBuilder(
       column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get activeIngredientPct => $state.composableBuilder(
+      column: $state.table.activeIngredientPct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get formulationType => $state.composableBuilder(
+      column: $state.table.formulationType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get manufacturer => $state.composableBuilder(
+      column: $state.table.manufacturer,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get registrationNumber => $state.composableBuilder(
+      column: $state.table.registrationNumber,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get eppoCode => $state.composableBuilder(
+      column: $state.table.eppoCode,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -16252,6 +20351,31 @@ class $$TreatmentComponentsTableOrderingComposer
 
   ColumnOrderings<int> get sortOrder => $state.composableBuilder(
       column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get activeIngredientPct => $state.composableBuilder(
+      column: $state.table.activeIngredientPct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get formulationType => $state.composableBuilder(
+      column: $state.table.formulationType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get manufacturer => $state.composableBuilder(
+      column: $state.table.manufacturer,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get registrationNumber => $state.composableBuilder(
+      column: $state.table.registrationNumber,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get eppoCode => $state.composableBuilder(
+      column: $state.table.eppoCode,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -16526,6 +20650,14 @@ typedef $$AssessmentDefinitionsTableCreateCompanionBuilder
   Value<bool> isActive,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
+  Value<String?> timingCode,
+  Value<int?> daysAfterTreatment,
+  Value<String?> assessmentMethod,
+  Value<double?> validMin,
+  Value<double?> validMax,
+  Value<String?> eppoCode,
+  Value<String?> cropPart,
+  Value<String?> timingDescription,
 });
 typedef $$AssessmentDefinitionsTableUpdateCompanionBuilder
     = AssessmentDefinitionsCompanion Function({
@@ -16545,6 +20677,14 @@ typedef $$AssessmentDefinitionsTableUpdateCompanionBuilder
   Value<bool> isActive,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
+  Value<String?> timingCode,
+  Value<int?> daysAfterTreatment,
+  Value<String?> assessmentMethod,
+  Value<double?> validMin,
+  Value<double?> validMax,
+  Value<String?> eppoCode,
+  Value<String?> cropPart,
+  Value<String?> timingDescription,
 });
 
 class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
@@ -16581,6 +20721,14 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             Value<bool> isActive = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
+            Value<String?> timingCode = const Value.absent(),
+            Value<int?> daysAfterTreatment = const Value.absent(),
+            Value<String?> assessmentMethod = const Value.absent(),
+            Value<double?> validMin = const Value.absent(),
+            Value<double?> validMax = const Value.absent(),
+            Value<String?> eppoCode = const Value.absent(),
+            Value<String?> cropPart = const Value.absent(),
+            Value<String?> timingDescription = const Value.absent(),
           }) =>
               AssessmentDefinitionsCompanion(
             id: id,
@@ -16599,6 +20747,14 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             isActive: isActive,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            timingCode: timingCode,
+            daysAfterTreatment: daysAfterTreatment,
+            assessmentMethod: assessmentMethod,
+            validMin: validMin,
+            validMax: validMax,
+            eppoCode: eppoCode,
+            cropPart: cropPart,
+            timingDescription: timingDescription,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -16617,6 +20773,14 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             Value<bool> isActive = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
+            Value<String?> timingCode = const Value.absent(),
+            Value<int?> daysAfterTreatment = const Value.absent(),
+            Value<String?> assessmentMethod = const Value.absent(),
+            Value<double?> validMin = const Value.absent(),
+            Value<double?> validMax = const Value.absent(),
+            Value<String?> eppoCode = const Value.absent(),
+            Value<String?> cropPart = const Value.absent(),
+            Value<String?> timingDescription = const Value.absent(),
           }) =>
               AssessmentDefinitionsCompanion.insert(
             id: id,
@@ -16635,6 +20799,14 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             isActive: isActive,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            timingCode: timingCode,
+            daysAfterTreatment: daysAfterTreatment,
+            assessmentMethod: assessmentMethod,
+            validMin: validMin,
+            validMax: validMax,
+            eppoCode: eppoCode,
+            cropPart: cropPart,
+            timingDescription: timingDescription,
           ),
         ));
 }
@@ -16719,6 +20891,46 @@ class $$AssessmentDefinitionsTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
       column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get timingCode => $state.composableBuilder(
+      column: $state.table.timingCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get daysAfterTreatment => $state.composableBuilder(
+      column: $state.table.daysAfterTreatment,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get assessmentMethod => $state.composableBuilder(
+      column: $state.table.assessmentMethod,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get validMin => $state.composableBuilder(
+      column: $state.table.validMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get validMax => $state.composableBuilder(
+      column: $state.table.validMax,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get eppoCode => $state.composableBuilder(
+      column: $state.table.eppoCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cropPart => $state.composableBuilder(
+      column: $state.table.cropPart,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get timingDescription => $state.composableBuilder(
+      column: $state.table.timingDescription,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -16817,6 +21029,46 @@ class $$AssessmentDefinitionsTableOrderingComposer
 
   ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
       column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get timingCode => $state.composableBuilder(
+      column: $state.table.timingCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get daysAfterTreatment => $state.composableBuilder(
+      column: $state.table.daysAfterTreatment,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get assessmentMethod => $state.composableBuilder(
+      column: $state.table.assessmentMethod,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get validMin => $state.composableBuilder(
+      column: $state.table.validMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get validMax => $state.composableBuilder(
+      column: $state.table.validMax,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get eppoCode => $state.composableBuilder(
+      column: $state.table.eppoCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cropPart => $state.composableBuilder(
+      column: $state.table.cropPart,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get timingDescription => $state.composableBuilder(
+      column: $state.table.timingDescription,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
@@ -17262,6 +21514,15 @@ typedef $$PlotsTableCreateCompanionBuilder = PlotsCompanion Function({
   Value<String?> notes,
   Value<String?> assignmentSource,
   Value<DateTime?> assignmentUpdatedAt,
+  Value<double?> plotLengthM,
+  Value<double?> plotWidthM,
+  Value<double?> plotAreaM2,
+  Value<double?> harvestLengthM,
+  Value<double?> harvestWidthM,
+  Value<double?> harvestAreaM2,
+  Value<String?> plotDirection,
+  Value<String?> soilSeries,
+  Value<String?> plotNotes,
 });
 typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<int> id,
@@ -17277,6 +21538,15 @@ typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<String?> notes,
   Value<String?> assignmentSource,
   Value<DateTime?> assignmentUpdatedAt,
+  Value<double?> plotLengthM,
+  Value<double?> plotWidthM,
+  Value<double?> plotAreaM2,
+  Value<double?> harvestLengthM,
+  Value<double?> harvestWidthM,
+  Value<double?> harvestAreaM2,
+  Value<String?> plotDirection,
+  Value<String?> soilSeries,
+  Value<String?> plotNotes,
 });
 
 class $$PlotsTableTableManager extends RootTableManager<
@@ -17309,6 +21579,15 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<String?> notes = const Value.absent(),
             Value<String?> assignmentSource = const Value.absent(),
             Value<DateTime?> assignmentUpdatedAt = const Value.absent(),
+            Value<double?> plotLengthM = const Value.absent(),
+            Value<double?> plotWidthM = const Value.absent(),
+            Value<double?> plotAreaM2 = const Value.absent(),
+            Value<double?> harvestLengthM = const Value.absent(),
+            Value<double?> harvestWidthM = const Value.absent(),
+            Value<double?> harvestAreaM2 = const Value.absent(),
+            Value<String?> plotDirection = const Value.absent(),
+            Value<String?> soilSeries = const Value.absent(),
+            Value<String?> plotNotes = const Value.absent(),
           }) =>
               PlotsCompanion(
             id: id,
@@ -17324,6 +21603,15 @@ class $$PlotsTableTableManager extends RootTableManager<
             notes: notes,
             assignmentSource: assignmentSource,
             assignmentUpdatedAt: assignmentUpdatedAt,
+            plotLengthM: plotLengthM,
+            plotWidthM: plotWidthM,
+            plotAreaM2: plotAreaM2,
+            harvestLengthM: harvestLengthM,
+            harvestWidthM: harvestWidthM,
+            harvestAreaM2: harvestAreaM2,
+            plotDirection: plotDirection,
+            soilSeries: soilSeries,
+            plotNotes: plotNotes,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -17339,6 +21627,15 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<String?> notes = const Value.absent(),
             Value<String?> assignmentSource = const Value.absent(),
             Value<DateTime?> assignmentUpdatedAt = const Value.absent(),
+            Value<double?> plotLengthM = const Value.absent(),
+            Value<double?> plotWidthM = const Value.absent(),
+            Value<double?> plotAreaM2 = const Value.absent(),
+            Value<double?> harvestLengthM = const Value.absent(),
+            Value<double?> harvestWidthM = const Value.absent(),
+            Value<double?> harvestAreaM2 = const Value.absent(),
+            Value<String?> plotDirection = const Value.absent(),
+            Value<String?> soilSeries = const Value.absent(),
+            Value<String?> plotNotes = const Value.absent(),
           }) =>
               PlotsCompanion.insert(
             id: id,
@@ -17354,6 +21651,15 @@ class $$PlotsTableTableManager extends RootTableManager<
             notes: notes,
             assignmentSource: assignmentSource,
             assignmentUpdatedAt: assignmentUpdatedAt,
+            plotLengthM: plotLengthM,
+            plotWidthM: plotWidthM,
+            plotAreaM2: plotAreaM2,
+            harvestLengthM: harvestLengthM,
+            harvestWidthM: harvestWidthM,
+            harvestAreaM2: harvestAreaM2,
+            plotDirection: plotDirection,
+            soilSeries: soilSeries,
+            plotNotes: plotNotes,
           ),
         ));
 }
@@ -17413,6 +21719,51 @@ class $$PlotsTableFilterComposer
 
   ColumnFilters<DateTime> get assignmentUpdatedAt => $state.composableBuilder(
       column: $state.table.assignmentUpdatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get plotLengthM => $state.composableBuilder(
+      column: $state.table.plotLengthM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get plotWidthM => $state.composableBuilder(
+      column: $state.table.plotWidthM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get plotAreaM2 => $state.composableBuilder(
+      column: $state.table.plotAreaM2,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get harvestLengthM => $state.composableBuilder(
+      column: $state.table.harvestLengthM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get harvestWidthM => $state.composableBuilder(
+      column: $state.table.harvestWidthM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get harvestAreaM2 => $state.composableBuilder(
+      column: $state.table.harvestAreaM2,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plotDirection => $state.composableBuilder(
+      column: $state.table.plotDirection,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilSeries => $state.composableBuilder(
+      column: $state.table.soilSeries,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plotNotes => $state.composableBuilder(
+      column: $state.table.plotNotes,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -17635,6 +21986,51 @@ class $$PlotsTableOrderingComposer
 
   ColumnOrderings<DateTime> get assignmentUpdatedAt => $state.composableBuilder(
       column: $state.table.assignmentUpdatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get plotLengthM => $state.composableBuilder(
+      column: $state.table.plotLengthM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get plotWidthM => $state.composableBuilder(
+      column: $state.table.plotWidthM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get plotAreaM2 => $state.composableBuilder(
+      column: $state.table.plotAreaM2,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get harvestLengthM => $state.composableBuilder(
+      column: $state.table.harvestLengthM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get harvestWidthM => $state.composableBuilder(
+      column: $state.table.harvestWidthM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get harvestAreaM2 => $state.composableBuilder(
+      column: $state.table.harvestAreaM2,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plotDirection => $state.composableBuilder(
+      column: $state.table.plotDirection,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilSeries => $state.composableBuilder(
+      column: $state.table.soilSeries,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plotNotes => $state.composableBuilder(
+      column: $state.table.plotNotes,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -18574,6 +22970,14 @@ typedef $$RatingRecordsTableCreateCompanionBuilder = RatingRecordsCompanion
   Value<String?> createdDeviceInfo,
   Value<double?> capturedLatitude,
   Value<double?> capturedLongitude,
+  Value<String?> ratingTime,
+  Value<String?> ratingMethod,
+  Value<String?> confidence,
+  Value<bool> amended,
+  Value<String?> originalValue,
+  Value<String?> amendmentReason,
+  Value<String?> amendedBy,
+  Value<DateTime?> amendedAt,
 });
 typedef $$RatingRecordsTableUpdateCompanionBuilder = RatingRecordsCompanion
     Function({
@@ -18595,6 +22999,14 @@ typedef $$RatingRecordsTableUpdateCompanionBuilder = RatingRecordsCompanion
   Value<String?> createdDeviceInfo,
   Value<double?> capturedLatitude,
   Value<double?> capturedLongitude,
+  Value<String?> ratingTime,
+  Value<String?> ratingMethod,
+  Value<String?> confidence,
+  Value<bool> amended,
+  Value<String?> originalValue,
+  Value<String?> amendmentReason,
+  Value<String?> amendedBy,
+  Value<DateTime?> amendedAt,
 });
 
 class $$RatingRecordsTableTableManager extends RootTableManager<
@@ -18632,6 +23044,14 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<String?> createdDeviceInfo = const Value.absent(),
             Value<double?> capturedLatitude = const Value.absent(),
             Value<double?> capturedLongitude = const Value.absent(),
+            Value<String?> ratingTime = const Value.absent(),
+            Value<String?> ratingMethod = const Value.absent(),
+            Value<String?> confidence = const Value.absent(),
+            Value<bool> amended = const Value.absent(),
+            Value<String?> originalValue = const Value.absent(),
+            Value<String?> amendmentReason = const Value.absent(),
+            Value<String?> amendedBy = const Value.absent(),
+            Value<DateTime?> amendedAt = const Value.absent(),
           }) =>
               RatingRecordsCompanion(
             id: id,
@@ -18652,6 +23072,14 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             createdDeviceInfo: createdDeviceInfo,
             capturedLatitude: capturedLatitude,
             capturedLongitude: capturedLongitude,
+            ratingTime: ratingTime,
+            ratingMethod: ratingMethod,
+            confidence: confidence,
+            amended: amended,
+            originalValue: originalValue,
+            amendmentReason: amendmentReason,
+            amendedBy: amendedBy,
+            amendedAt: amendedAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -18672,6 +23100,14 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<String?> createdDeviceInfo = const Value.absent(),
             Value<double?> capturedLatitude = const Value.absent(),
             Value<double?> capturedLongitude = const Value.absent(),
+            Value<String?> ratingTime = const Value.absent(),
+            Value<String?> ratingMethod = const Value.absent(),
+            Value<String?> confidence = const Value.absent(),
+            Value<bool> amended = const Value.absent(),
+            Value<String?> originalValue = const Value.absent(),
+            Value<String?> amendmentReason = const Value.absent(),
+            Value<String?> amendedBy = const Value.absent(),
+            Value<DateTime?> amendedAt = const Value.absent(),
           }) =>
               RatingRecordsCompanion.insert(
             id: id,
@@ -18692,6 +23128,14 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             createdDeviceInfo: createdDeviceInfo,
             capturedLatitude: capturedLatitude,
             capturedLongitude: capturedLongitude,
+            ratingTime: ratingTime,
+            ratingMethod: ratingMethod,
+            confidence: confidence,
+            amended: amended,
+            originalValue: originalValue,
+            amendmentReason: amendmentReason,
+            amendedBy: amendedBy,
+            amendedAt: amendedAt,
           ),
         ));
 }
@@ -18761,6 +23205,46 @@ class $$RatingRecordsTableFilterComposer
 
   ColumnFilters<double> get capturedLongitude => $state.composableBuilder(
       column: $state.table.capturedLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get ratingTime => $state.composableBuilder(
+      column: $state.table.ratingTime,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get ratingMethod => $state.composableBuilder(
+      column: $state.table.ratingMethod,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get confidence => $state.composableBuilder(
+      column: $state.table.confidence,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get amended => $state.composableBuilder(
+      column: $state.table.amended,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get originalValue => $state.composableBuilder(
+      column: $state.table.originalValue,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get amendmentReason => $state.composableBuilder(
+      column: $state.table.amendmentReason,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get amendedBy => $state.composableBuilder(
+      column: $state.table.amendedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get amendedAt => $state.composableBuilder(
+      column: $state.table.amendedAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -18921,6 +23405,46 @@ class $$RatingRecordsTableOrderingComposer
 
   ColumnOrderings<double> get capturedLongitude => $state.composableBuilder(
       column: $state.table.capturedLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get ratingTime => $state.composableBuilder(
+      column: $state.table.ratingTime,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get ratingMethod => $state.composableBuilder(
+      column: $state.table.ratingMethod,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get confidence => $state.composableBuilder(
+      column: $state.table.confidence,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get amended => $state.composableBuilder(
+      column: $state.table.amended,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get originalValue => $state.composableBuilder(
+      column: $state.table.originalValue,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get amendmentReason => $state.composableBuilder(
+      column: $state.table.amendmentReason,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get amendedBy => $state.composableBuilder(
+      column: $state.table.amendedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get amendedAt => $state.composableBuilder(
+      column: $state.table.amendedAt,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -22120,6 +26644,12 @@ typedef $$SeedingEventsTableCreateCompanionBuilder = SeedingEventsCompanion
   Value<double?> rowSpacing,
   Value<String?> equipmentUsed,
   Value<String?> notes,
+  Value<String?> variety,
+  Value<String?> seedTreatment,
+  Value<double?> germinationPct,
+  Value<DateTime?> emergenceDate,
+  Value<double?> emergencePct,
+  Value<String?> plantingMethod,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -22136,6 +26666,12 @@ typedef $$SeedingEventsTableUpdateCompanionBuilder = SeedingEventsCompanion
   Value<double?> rowSpacing,
   Value<String?> equipmentUsed,
   Value<String?> notes,
+  Value<String?> variety,
+  Value<String?> seedTreatment,
+  Value<double?> germinationPct,
+  Value<DateTime?> emergenceDate,
+  Value<double?> emergencePct,
+  Value<String?> plantingMethod,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -22168,6 +26704,12 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             Value<double?> rowSpacing = const Value.absent(),
             Value<String?> equipmentUsed = const Value.absent(),
             Value<String?> notes = const Value.absent(),
+            Value<String?> variety = const Value.absent(),
+            Value<String?> seedTreatment = const Value.absent(),
+            Value<double?> germinationPct = const Value.absent(),
+            Value<DateTime?> emergenceDate = const Value.absent(),
+            Value<double?> emergencePct = const Value.absent(),
+            Value<String?> plantingMethod = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -22183,6 +26725,12 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             rowSpacing: rowSpacing,
             equipmentUsed: equipmentUsed,
             notes: notes,
+            variety: variety,
+            seedTreatment: seedTreatment,
+            germinationPct: germinationPct,
+            emergenceDate: emergenceDate,
+            emergencePct: emergencePct,
+            plantingMethod: plantingMethod,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -22198,6 +26746,12 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             Value<double?> rowSpacing = const Value.absent(),
             Value<String?> equipmentUsed = const Value.absent(),
             Value<String?> notes = const Value.absent(),
+            Value<String?> variety = const Value.absent(),
+            Value<String?> seedTreatment = const Value.absent(),
+            Value<double?> germinationPct = const Value.absent(),
+            Value<DateTime?> emergenceDate = const Value.absent(),
+            Value<double?> emergencePct = const Value.absent(),
+            Value<String?> plantingMethod = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -22213,6 +26767,12 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             rowSpacing: rowSpacing,
             equipmentUsed: equipmentUsed,
             notes: notes,
+            variety: variety,
+            seedTreatment: seedTreatment,
+            germinationPct: germinationPct,
+            emergenceDate: emergenceDate,
+            emergencePct: emergencePct,
+            plantingMethod: plantingMethod,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -22269,6 +26829,36 @@ class $$SeedingEventsTableFilterComposer
 
   ColumnFilters<String> get notes => $state.composableBuilder(
       column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get variety => $state.composableBuilder(
+      column: $state.table.variety,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get seedTreatment => $state.composableBuilder(
+      column: $state.table.seedTreatment,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get germinationPct => $state.composableBuilder(
+      column: $state.table.germinationPct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get emergenceDate => $state.composableBuilder(
+      column: $state.table.emergenceDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get emergencePct => $state.composableBuilder(
+      column: $state.table.emergencePct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plantingMethod => $state.composableBuilder(
+      column: $state.table.plantingMethod,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -22343,6 +26933,36 @@ class $$SeedingEventsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<String> get variety => $state.composableBuilder(
+      column: $state.table.variety,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get seedTreatment => $state.composableBuilder(
+      column: $state.table.seedTreatment,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get germinationPct => $state.composableBuilder(
+      column: $state.table.germinationPct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get emergenceDate => $state.composableBuilder(
+      column: $state.table.emergenceDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get emergencePct => $state.composableBuilder(
+      column: $state.table.emergencePct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plantingMethod => $state.composableBuilder(
+      column: $state.table.plantingMethod,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
       column: $state.table.createdAt,
       builder: (column, joinBuilders) =>
@@ -22379,6 +26999,24 @@ typedef $$TrialApplicationEventsTableCreateCompanionBuilder
   Value<double?> temperature,
   Value<double?> humidity,
   Value<String?> notes,
+  Value<String?> applicationTime,
+  Value<String?> applicationMethod,
+  Value<String?> nozzleType,
+  Value<double?> nozzleSpacingCm,
+  Value<double?> operatingPressure,
+  Value<String?> pressureUnit,
+  Value<double?> groundSpeed,
+  Value<String?> speedUnit,
+  Value<String?> adjuvantName,
+  Value<double?> adjuvantRate,
+  Value<String?> adjuvantRateUnit,
+  Value<double?> spraySolutionPh,
+  Value<String?> waterVolumeUnit,
+  Value<double?> cloudCoverPct,
+  Value<String?> soilMoisture,
+  Value<double?> treatedArea,
+  Value<String?> treatedAreaUnit,
+  Value<String?> plotsTreated,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -22400,6 +27038,24 @@ typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
   Value<double?> temperature,
   Value<double?> humidity,
   Value<String?> notes,
+  Value<String?> applicationTime,
+  Value<String?> applicationMethod,
+  Value<String?> nozzleType,
+  Value<double?> nozzleSpacingCm,
+  Value<double?> operatingPressure,
+  Value<String?> pressureUnit,
+  Value<double?> groundSpeed,
+  Value<String?> speedUnit,
+  Value<String?> adjuvantName,
+  Value<double?> adjuvantRate,
+  Value<String?> adjuvantRateUnit,
+  Value<double?> spraySolutionPh,
+  Value<String?> waterVolumeUnit,
+  Value<double?> cloudCoverPct,
+  Value<String?> soilMoisture,
+  Value<double?> treatedArea,
+  Value<String?> treatedAreaUnit,
+  Value<String?> plotsTreated,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -22438,6 +27094,24 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<double?> temperature = const Value.absent(),
             Value<double?> humidity = const Value.absent(),
             Value<String?> notes = const Value.absent(),
+            Value<String?> applicationTime = const Value.absent(),
+            Value<String?> applicationMethod = const Value.absent(),
+            Value<String?> nozzleType = const Value.absent(),
+            Value<double?> nozzleSpacingCm = const Value.absent(),
+            Value<double?> operatingPressure = const Value.absent(),
+            Value<String?> pressureUnit = const Value.absent(),
+            Value<double?> groundSpeed = const Value.absent(),
+            Value<String?> speedUnit = const Value.absent(),
+            Value<String?> adjuvantName = const Value.absent(),
+            Value<double?> adjuvantRate = const Value.absent(),
+            Value<String?> adjuvantRateUnit = const Value.absent(),
+            Value<double?> spraySolutionPh = const Value.absent(),
+            Value<String?> waterVolumeUnit = const Value.absent(),
+            Value<double?> cloudCoverPct = const Value.absent(),
+            Value<String?> soilMoisture = const Value.absent(),
+            Value<double?> treatedArea = const Value.absent(),
+            Value<String?> treatedAreaUnit = const Value.absent(),
+            Value<String?> plotsTreated = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -22458,6 +27132,24 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             temperature: temperature,
             humidity: humidity,
             notes: notes,
+            applicationTime: applicationTime,
+            applicationMethod: applicationMethod,
+            nozzleType: nozzleType,
+            nozzleSpacingCm: nozzleSpacingCm,
+            operatingPressure: operatingPressure,
+            pressureUnit: pressureUnit,
+            groundSpeed: groundSpeed,
+            speedUnit: speedUnit,
+            adjuvantName: adjuvantName,
+            adjuvantRate: adjuvantRate,
+            adjuvantRateUnit: adjuvantRateUnit,
+            spraySolutionPh: spraySolutionPh,
+            waterVolumeUnit: waterVolumeUnit,
+            cloudCoverPct: cloudCoverPct,
+            soilMoisture: soilMoisture,
+            treatedArea: treatedArea,
+            treatedAreaUnit: treatedAreaUnit,
+            plotsTreated: plotsTreated,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -22478,6 +27170,24 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<double?> temperature = const Value.absent(),
             Value<double?> humidity = const Value.absent(),
             Value<String?> notes = const Value.absent(),
+            Value<String?> applicationTime = const Value.absent(),
+            Value<String?> applicationMethod = const Value.absent(),
+            Value<String?> nozzleType = const Value.absent(),
+            Value<double?> nozzleSpacingCm = const Value.absent(),
+            Value<double?> operatingPressure = const Value.absent(),
+            Value<String?> pressureUnit = const Value.absent(),
+            Value<double?> groundSpeed = const Value.absent(),
+            Value<String?> speedUnit = const Value.absent(),
+            Value<String?> adjuvantName = const Value.absent(),
+            Value<double?> adjuvantRate = const Value.absent(),
+            Value<String?> adjuvantRateUnit = const Value.absent(),
+            Value<double?> spraySolutionPh = const Value.absent(),
+            Value<String?> waterVolumeUnit = const Value.absent(),
+            Value<double?> cloudCoverPct = const Value.absent(),
+            Value<String?> soilMoisture = const Value.absent(),
+            Value<double?> treatedArea = const Value.absent(),
+            Value<String?> treatedAreaUnit = const Value.absent(),
+            Value<String?> plotsTreated = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -22498,6 +27208,24 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             temperature: temperature,
             humidity: humidity,
             notes: notes,
+            applicationTime: applicationTime,
+            applicationMethod: applicationMethod,
+            nozzleType: nozzleType,
+            nozzleSpacingCm: nozzleSpacingCm,
+            operatingPressure: operatingPressure,
+            pressureUnit: pressureUnit,
+            groundSpeed: groundSpeed,
+            speedUnit: speedUnit,
+            adjuvantName: adjuvantName,
+            adjuvantRate: adjuvantRate,
+            adjuvantRateUnit: adjuvantRateUnit,
+            spraySolutionPh: spraySolutionPh,
+            waterVolumeUnit: waterVolumeUnit,
+            cloudCoverPct: cloudCoverPct,
+            soilMoisture: soilMoisture,
+            treatedArea: treatedArea,
+            treatedAreaUnit: treatedAreaUnit,
+            plotsTreated: plotsTreated,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -22574,6 +27302,96 @@ class $$TrialApplicationEventsTableFilterComposer
 
   ColumnFilters<String> get notes => $state.composableBuilder(
       column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get applicationTime => $state.composableBuilder(
+      column: $state.table.applicationTime,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get applicationMethod => $state.composableBuilder(
+      column: $state.table.applicationMethod,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get nozzleType => $state.composableBuilder(
+      column: $state.table.nozzleType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get nozzleSpacingCm => $state.composableBuilder(
+      column: $state.table.nozzleSpacingCm,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get operatingPressure => $state.composableBuilder(
+      column: $state.table.operatingPressure,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get pressureUnit => $state.composableBuilder(
+      column: $state.table.pressureUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get groundSpeed => $state.composableBuilder(
+      column: $state.table.groundSpeed,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get speedUnit => $state.composableBuilder(
+      column: $state.table.speedUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get adjuvantName => $state.composableBuilder(
+      column: $state.table.adjuvantName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get adjuvantRate => $state.composableBuilder(
+      column: $state.table.adjuvantRate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get adjuvantRateUnit => $state.composableBuilder(
+      column: $state.table.adjuvantRateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get spraySolutionPh => $state.composableBuilder(
+      column: $state.table.spraySolutionPh,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get waterVolumeUnit => $state.composableBuilder(
+      column: $state.table.waterVolumeUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get cloudCoverPct => $state.composableBuilder(
+      column: $state.table.cloudCoverPct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilMoisture => $state.composableBuilder(
+      column: $state.table.soilMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get treatedArea => $state.composableBuilder(
+      column: $state.table.treatedArea,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get treatedAreaUnit => $state.composableBuilder(
+      column: $state.table.treatedAreaUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plotsTreated => $state.composableBuilder(
+      column: $state.table.plotsTreated,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -22677,6 +27495,96 @@ class $$TrialApplicationEventsTableOrderingComposer
 
   ColumnOrderings<String> get notes => $state.composableBuilder(
       column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get applicationTime => $state.composableBuilder(
+      column: $state.table.applicationTime,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get applicationMethod => $state.composableBuilder(
+      column: $state.table.applicationMethod,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get nozzleType => $state.composableBuilder(
+      column: $state.table.nozzleType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get nozzleSpacingCm => $state.composableBuilder(
+      column: $state.table.nozzleSpacingCm,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get operatingPressure => $state.composableBuilder(
+      column: $state.table.operatingPressure,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get pressureUnit => $state.composableBuilder(
+      column: $state.table.pressureUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get groundSpeed => $state.composableBuilder(
+      column: $state.table.groundSpeed,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get speedUnit => $state.composableBuilder(
+      column: $state.table.speedUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get adjuvantName => $state.composableBuilder(
+      column: $state.table.adjuvantName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get adjuvantRate => $state.composableBuilder(
+      column: $state.table.adjuvantRate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get adjuvantRateUnit => $state.composableBuilder(
+      column: $state.table.adjuvantRateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get spraySolutionPh => $state.composableBuilder(
+      column: $state.table.spraySolutionPh,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get waterVolumeUnit => $state.composableBuilder(
+      column: $state.table.waterVolumeUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get cloudCoverPct => $state.composableBuilder(
+      column: $state.table.cloudCoverPct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilMoisture => $state.composableBuilder(
+      column: $state.table.soilMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get treatedArea => $state.composableBuilder(
+      column: $state.table.treatedArea,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get treatedAreaUnit => $state.composableBuilder(
+      column: $state.table.treatedAreaUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plotsTreated => $state.composableBuilder(
+      column: $state.table.plotsTreated,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

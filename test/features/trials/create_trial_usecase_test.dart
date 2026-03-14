@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:arm_field_companion/features/trials/usecases/create_trial_usecase.dart';
-import 'package:arm_field_companion/core/database/app_database.dart';
 
 class MockTrialRepository implements TrialRepository {
   final List<Trial> _trials = [];
@@ -37,6 +37,10 @@ class MockTrialRepository implements TrialRepository {
 
   @override
   Future<bool> updateTrial(Trial trial) async => true;
+
+  @override
+  Future<int> updateTrialSetup(int trialId, TrialsCompanion companion) async =>
+      1;
 
   @override
   Future<bool> updateTrialStatus(int trialId, String status) async => true;

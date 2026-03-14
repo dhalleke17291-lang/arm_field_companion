@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
@@ -36,6 +37,36 @@ class MockRatingRepository implements RatingRepository {
       Stream.value(null);
 
   @override
+  Future<RatingRecord?> getRatingById(int id) async =>
+      _records.where((r) => r.id == id).firstOrNull;
+
+  @override
+  Future<RatingRecord> updateRating({
+    required int ratingId,
+    double? numericValue,
+    String? textValue,
+    String? resultStatus,
+    String? amendmentReason,
+    String? amendedBy,
+    String? confidence,
+  }) async {
+    final i = _records.indexWhere((r) => r.id == ratingId);
+    if (i < 0) throw RatingIntegrityException('Rating not found: $ratingId');
+    _records[i] = _records[i].copyWith(
+      numericValue: Value(numericValue ?? _records[i].numericValue),
+      textValue: Value(textValue ?? _records[i].textValue),
+      resultStatus: resultStatus ?? _records[i].resultStatus,
+      amendmentReason: Value(amendmentReason),
+      amendedBy: Value(amendedBy),
+      confidence: Value(confidence),
+      amended: true,
+      amendedAt: Value(DateTime.now().toUtc()),
+      originalValue: Value(_records[i].originalValue ?? _records[i].numericValue?.toString() ?? _records[i].textValue),
+    );
+    return _records[i];
+  }
+
+  @override
   Future<RatingRecord> saveRating({
     required int trialId,
     required int plotPk,
@@ -52,6 +83,9 @@ class MockRatingRepository implements RatingRepository {
     String? createdDeviceInfo,
     double? capturedLatitude,
     double? capturedLongitude,
+    String? ratingTime,
+    String? ratingMethod,
+    String? confidence,
   }) async {
     if (shouldThrow) {
       throw RatingIntegrityException(throwMessage ?? 'Mock error');
@@ -84,6 +118,7 @@ class MockRatingRepository implements RatingRepository {
       createdDeviceInfo: createdDeviceInfo,
       capturedLatitude: capturedLatitude,
       capturedLongitude: capturedLongitude,
+      amended: false,
     );
 
     _records.add(record);

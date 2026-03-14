@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,6 +10,40 @@ import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../assessment_library_picker_dialog.dart';
+
+const List<String> _assessmentMethods = [
+  'Visual rating',
+  'Measured',
+  'Counted',
+  'Weighed',
+  'Calculated',
+];
+
+const List<String> _cropParts = [
+  'Whole plant',
+  'Leaf',
+  'Stem',
+  'Root',
+  'Fruit',
+  'Seed',
+  'Canopy',
+  'Other',
+];
+
+const List<String> _timingCodes = [
+  'PRE',
+  'POST',
+  '7DAT',
+  '14DAT',
+  '21DAT',
+  '28DAT',
+  'AAPRE',
+  'AAPOST',
+  'At harvest',
+  'Other',
+];
+
+const List<String> _dataTypes = ['numeric', 'text'];
 
 /// Assessments tab for trial detail: library + custom assessments list.
 class AssessmentsTab extends ConsumerWidget {
@@ -182,12 +215,39 @@ class AssessmentsTab extends ConsumerWidget {
                       ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          '${def.dataType}${def.unit != null ? ' (${def.unit})' : ''}',
-                          style: const TextStyle(
-                            color: AppDesignTokens.secondaryText,
-                            fontSize: 12,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${def.dataType}${def.unit != null ? ' (${def.unit})' : ''}'
+                                  '${def.scaleMin != null && def.scaleMax != null ? ' · ${def.scaleMin}–${def.scaleMax}' : ''}',
+                              style: const TextStyle(
+                                color: AppDesignTokens.secondaryText,
+                                fontSize: 12,
+                              ),
+                            ),
+                            if (def.timingCode != null &&
+                                def.timingCode!.trim().isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                        color: scheme.outline.withValues(alpha: 0.6)),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    def.timingCode!,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                       trailing: ta.isActive
@@ -253,7 +313,8 @@ class AssessmentsTab extends ConsumerWidget {
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            '${assessment.dataType}${assessment.unit != null ? ' (${assessment.unit})' : ''}',
+                            '${assessment.dataType}${assessment.unit != null ? ' (${assessment.unit})' : ''}'
+                                '${assessment.minValue != null && assessment.maxValue != null ? ' · ${assessment.minValue}–${assessment.maxValue}' : ''}',
                             style: const TextStyle(
                               color: AppDesignTokens.secondaryText,
                               fontSize: 12,
@@ -383,93 +444,394 @@ class AssessmentsTab extends ConsumerWidget {
 
   Future<void> _showAddAssessmentDialog(
       BuildContext context, WidgetRef ref) async {
-    final nameController = TextEditingController();
-    final unitController = TextEditingController();
-    final minController = TextEditingController();
-    final maxController = TextEditingController();
-
     await showDialog(
       context: context,
-      builder: (context) => AppDialog(
-        title: 'Add Assessment',
-        scrollable: true,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Assessment Name *',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
+      builder: (ctx) => _CustomAssessmentFormDialog(
+        trial: trial,
+        ref: ref,
+        existing: null,
+      ),
+    );
+  }
+}
+
+class _CustomAssessmentFormDialog extends ConsumerStatefulWidget {
+  const _CustomAssessmentFormDialog({
+    required this.trial,
+    required this.ref,
+    this.existing,
+  });
+
+  final Trial trial;
+  final WidgetRef ref;
+  final AssessmentDefinition? existing;
+
+  @override
+  ConsumerState<_CustomAssessmentFormDialog> createState() =>
+      _CustomAssessmentFormDialogState();
+}
+
+class _CustomAssessmentFormDialogState
+    extends ConsumerState<_CustomAssessmentFormDialog> {
+  late TextEditingController _nameController;
+  late TextEditingController _unitController;
+  late TextEditingController _scaleMinController;
+  late TextEditingController _scaleMaxController;
+  late TextEditingController _validMinController;
+  late TextEditingController _validMaxController;
+  late TextEditingController _daysAfterTreatmentController;
+  late TextEditingController _timingDescriptionController;
+  late TextEditingController _eppoCodeController;
+  String _dataType = 'numeric';
+  String? _assessmentMethod;
+  String? _cropPart;
+  String? _timingCode;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _nameController = TextEditingController(text: e?.name ?? '');
+    _unitController = TextEditingController(text: e?.unit ?? '');
+    _scaleMinController =
+        TextEditingController(text: e?.scaleMin?.toString() ?? '');
+    _scaleMaxController =
+        TextEditingController(text: e?.scaleMax?.toString() ?? '');
+    _validMinController =
+        TextEditingController(text: e?.validMin?.toString() ?? '');
+    _validMaxController =
+        TextEditingController(text: e?.validMax?.toString() ?? '');
+    _daysAfterTreatmentController =
+        TextEditingController(text: e?.daysAfterTreatment?.toString() ?? '');
+    _timingDescriptionController =
+        TextEditingController(text: e?.timingDescription ?? '');
+    _eppoCodeController = TextEditingController(text: e?.eppoCode ?? '');
+    _dataType = e?.dataType ?? 'numeric';
+    _assessmentMethod = e?.assessmentMethod;
+    _cropPart = e?.cropPart;
+    _timingCode = e?.timingCode;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _unitController.dispose();
+    _scaleMinController.dispose();
+    _scaleMaxController.dispose();
+    _validMinController.dispose();
+    _validMaxController.dispose();
+    _daysAfterTreatmentController.dispose();
+    _timingDescriptionController.dispose();
+    _eppoCodeController.dispose();
+    super.dispose();
+  }
+
+  double? _parseDouble(TextEditingController c) {
+    final s = c.text.trim();
+    if (s.isEmpty) return null;
+    return double.tryParse(s);
+  }
+
+  int? _parseInt(TextEditingController c) {
+    final s = c.text.trim();
+    if (s.isEmpty) return null;
+    return int.tryParse(s);
+  }
+
+  bool get _scaleSectionHasData =>
+      _parseDouble(_scaleMinController) != null ||
+      _parseDouble(_scaleMaxController) != null ||
+      _parseDouble(_validMinController) != null ||
+      _parseDouble(_validMaxController) != null;
+
+  bool get _timingSectionHasData =>
+      _timingCode != null ||
+      _parseInt(_daysAfterTreatmentController) != null ||
+      _timingDescriptionController.text.trim().isNotEmpty ||
+      _eppoCodeController.text.trim().isNotEmpty;
+
+  Future<void> _save() async {
+    if (_saving) return;
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      final defRepo = ref.read(assessmentDefinitionRepositoryProvider);
+      if (widget.existing != null) {
+        await defRepo.updateDefinition(
+          widget.existing!.id,
+          name: name,
+          dataType: _dataType,
+          unit: _unitController.text.trim().isEmpty
+              ? null
+              : _unitController.text.trim(),
+          scaleMin: _parseDouble(_scaleMinController),
+          scaleMax: _parseDouble(_scaleMaxController),
+          assessmentMethod: _assessmentMethod,
+          cropPart: _cropPart,
+          timingCode: _timingCode,
+          daysAfterTreatment: _parseInt(_daysAfterTreatmentController),
+          timingDescription: _timingDescriptionController.text.trim().isEmpty
+              ? null
+              : _timingDescriptionController.text.trim(),
+          validMin: _parseDouble(_validMinController),
+          validMax: _parseDouble(_validMaxController),
+          eppoCode: _eppoCodeController.text.trim().isEmpty
+              ? null
+              : _eppoCodeController.text.trim(),
+        );
+        ref.invalidate(
+            trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id));
+      } else {
+        final code = 'CUSTOM_${widget.trial.id}_${DateTime.now().millisecondsSinceEpoch}';
+        final defId = await defRepo.insertCustom(
+          code: code,
+          name: name,
+          category: 'custom',
+          dataType: _dataType,
+          unit: _unitController.text.trim().isEmpty
+              ? null
+              : _unitController.text.trim(),
+          scaleMin: _parseDouble(_scaleMinController),
+          scaleMax: _parseDouble(_scaleMaxController),
+          assessmentMethod: _assessmentMethod,
+          cropPart: _cropPart,
+          timingCode: _timingCode,
+          daysAfterTreatment: _parseInt(_daysAfterTreatmentController),
+          timingDescription: _timingDescriptionController.text.trim().isEmpty
+              ? null
+              : _timingDescriptionController.text.trim(),
+          validMin: _parseDouble(_validMinController),
+          validMax: _parseDouble(_validMaxController),
+          eppoCode: _eppoCodeController.text.trim().isEmpty
+              ? null
+              : _eppoCodeController.text.trim(),
+        );
+        await ref.read(trialAssessmentRepositoryProvider).addToTrial(
+              trialId: widget.trial.id,
+              assessmentDefinitionId: defId,
+              displayNameOverride: name,
+              selectedManually: true,
+            );
+      }
+      ref.invalidate(
+          trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id));
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Save failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      title: widget.existing != null ? 'Edit Assessment' : 'Add Assessment',
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'Assessment Name *',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: unitController,
-              decoration: const InputDecoration(
-                labelText: 'Unit (e.g. %, cm, score)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: minController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Min Value',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: maxController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Max Value',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            autofocus: widget.existing == null,
           ),
-          FilledButton(
-            onPressed: () async {
-              if (nameController.text.trim().isEmpty) return;
-
-              final db = ref.read(databaseProvider);
-              await db.into(db.assessments).insert(
-                    AssessmentsCompanion.insert(
-                      trialId: trial.id,
-                      name: nameController.text.trim(),
-                      unit: drift.Value(unitController.text.isEmpty
-                          ? null
-                          : unitController.text),
-                      minValue:
-                          drift.Value(double.tryParse(minController.text)),
-                      maxValue:
-                          drift.Value(double.tryParse(maxController.text)),
-                    ),
-                  );
-
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text('Add'),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            key: ValueKey('dt_$_dataType'),
+            initialValue: _dataType,
+            decoration: const InputDecoration(
+              labelText: 'Assessment type',
+              border: OutlineInputBorder(),
+            ),
+            items: _dataTypes
+                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                .toList(),
+            onChanged: (v) => setState(() => _dataType = v ?? 'numeric'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _unitController,
+            decoration: const InputDecoration(
+              labelText: 'Unit (e.g. %, cm, score)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            key: ValueKey('am_$_assessmentMethod'),
+            initialValue: _assessmentMethod,
+            decoration: const InputDecoration(
+              labelText: 'Assessment method',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem<String?>(value: null, child: Text('—')),
+              ..._assessmentMethods.map((s) =>
+                  DropdownMenuItem<String?>(value: s, child: Text(s))),
+            ],
+            onChanged: (v) => setState(() => _assessmentMethod = v),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            key: ValueKey('cp_$_cropPart'),
+            initialValue: _cropPart,
+            decoration: const InputDecoration(
+              labelText: 'Crop part assessed',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem<String?>(value: null, child: Text('—')),
+              ..._cropParts.map((s) =>
+                  DropdownMenuItem<String?>(value: s, child: Text(s))),
+            ],
+            onChanged: (v) => setState(() => _cropPart = v),
+          ),
+          const SizedBox(height: 16),
+          ExpansionTile(
+            title: Text(
+              'Scale & validation${_scaleSectionHasData ? ' (filled)' : ''}',
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            initiallyExpanded: _scaleSectionHasData,
+            children: [
+              TextField(
+                controller: _scaleMinController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Scale minimum',
+                  hintText: 'e.g. 0',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _scaleMaxController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Scale maximum',
+                  hintText: 'e.g. 10',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _validMinController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Valid range minimum',
+                  hintText: 'Reject values below this',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _validMaxController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Valid range maximum',
+                  hintText: 'Reject values above this',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Scale defines the rating range shown to raters. Valid range triggers a warning if exceeded.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          ExpansionTile(
+            title: Text(
+              'Timing & regulatory${_timingSectionHasData ? ' (filled)' : ''}',
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            initiallyExpanded: _timingSectionHasData,
+            children: [
+              DropdownButtonFormField<String?>(
+                key: ValueKey('tc_$_timingCode'),
+                initialValue: _timingCode,
+                decoration: const InputDecoration(
+                  labelText: 'Timing code',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('—')),
+                  ..._timingCodes.map((s) =>
+                      DropdownMenuItem<String?>(value: s, child: Text(s))),
+                ],
+                onChanged: (v) => setState(() => _timingCode = v),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _daysAfterTreatmentController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Days after treatment',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _timingDescriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Timing description',
+                  hintText: 'e.g. 14 days after second application',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _eppoCodeController,
+                decoration: const InputDecoration(
+                  labelText: 'EPPO observation code',
+                  hintText: 'e.g. PHYTO',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
           ),
         ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Saving…' : (widget.existing != null ? 'Save' : 'Add')),
+        ),
+      ],
     );
   }
 }

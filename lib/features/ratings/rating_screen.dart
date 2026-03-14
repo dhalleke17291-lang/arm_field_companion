@@ -57,6 +57,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   String _selectedStatus = 'RECORDED';
   bool _isSaving = false;
 
+  static const String _kLastRaterNameKey = 'last_rater_name';
+  String? _raterName;
+  String _confidence = 'certain';
+
   // Missing condition reasons per spec
   final List<String> _missingReasons = [
     'Hail',
@@ -79,6 +83,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     _assessmentIndex = raw.clamp(0, widget.assessments.length - 1);
     _currentAssessment = widget.assessments[_assessmentIndex];
     WakelockPlus.enable();
+    SharedPreferences.getInstance().then((prefs) {
+      final last = prefs.getString(_kLastRaterNameKey);
+      if (last != null && last.trim().isNotEmpty && mounted) {
+        setState(() => _raterName = last.trim());
+      }
+    });
   }
 
   @override
@@ -1122,6 +1132,46 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 ],
                 if (_selectedStatus == 'RECORDED') ...[
                   const SizedBox(height: AppDesignTokens.spacing24),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => _showRaterSheet(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme.outline
+                                    .withValues(alpha: 0.6)),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.person_outline,
+                                  size: 16,
+                                  color: Theme.of(context)
+                                      .colorScheme.onSurfaceVariant),
+                              const SizedBox(width: 6),
+                              Text(
+                                _raterName != null &&
+                                        _raterName!.trim().isNotEmpty
+                                    ? 'Rater: $_raterName ▾'
+                                    : 'Set rater',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Theme.of(context)
+                                      .colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppDesignTokens.spacing12),
                   const Text('Value',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
@@ -1144,6 +1194,91 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         fillColor: AppDesignTokens.cardSurface,
                       ),
                       autofocus: true,
+                    ),
+                    const SizedBox(height: AppDesignTokens.spacing16),
+                    Text('Confidence',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    const SizedBox(height: 6),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'certain', label: Text('Certain')),
+                        ButtonSegment(value: 'uncertain', label: Text('Uncertain')),
+                        ButtonSegment(value: 'estimated', label: Text('Estimated')),
+                      ],
+                      selected: {_confidence},
+                      onSelectionChanged: (Set<String> s) {
+                        setState(() => _confidence = s.first);
+                      },
+                    ),
+                  ] else if (_hasScaleDefined) ...[
+                    const SizedBox(height: AppDesignTokens.spacing8),
+                    Text(
+                      _valueController.text.trim().isEmpty
+                          ? '${_currentAssessment.minValue}'
+                          : _valueController.text,
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w800,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (_currentAssessment.unit != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _currentAssessment.unit!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    const SizedBox(height: AppDesignTokens.spacing16),
+                    Slider(
+                      value: _sliderValue,
+                      min: _currentAssessment.minValue!,
+                      max: _currentAssessment.maxValue!,
+                      divisions: _sliderDivisions,
+                      onChanged: (v) {
+                        setState(() {
+                          _valueController.text = _sliderDivisions != null
+                              ? v.round().toString()
+                              : v.toStringAsFixed(1);
+                        });
+                      },
+                    ),
+                    if (_showValidRangeWarning) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Value outside recommended range',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    const SizedBox(height: AppDesignTokens.spacing16),
+                    Text('Confidence',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    const SizedBox(height: 6),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'certain', label: Text('Certain')),
+                        ButtonSegment(value: 'uncertain', label: Text('Uncertain')),
+                        ButtonSegment(value: 'estimated', label: Text('Estimated')),
+                      ],
+                      selected: {_confidence},
+                      onSelectionChanged: (Set<String> s) {
+                        setState(() => _confidence = s.first);
+                      },
                     ),
                   ] else ...[
                     if (_currentAssessment.minValue != null ||
@@ -1182,6 +1317,24 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     const SizedBox(height: AppDesignTokens.spacing12),
                     _buildQuickButtons(),
                   ],
+                  const SizedBox(height: AppDesignTokens.spacing16),
+                  Text('Confidence',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'certain', label: Text('Certain')),
+                      ButtonSegment(value: 'uncertain', label: Text('Uncertain')),
+                      ButtonSegment(value: 'estimated', label: Text('Estimated')),
+                    ],
+                    selected: {_confidence},
+                    onSelectionChanged: (Set<String> s) {
+                      setState(() => _confidence = s.first);
+                    },
+                  ),
                 ],
               ],
             ),
@@ -1191,8 +1344,80 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  Future<void> _showRaterSheet(BuildContext context) async {
+    final controller = TextEditingController(text: _raterName ?? '');
+    await showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Rater name',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: 'Enter rater name',
+                  border: OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  setState(() => _raterName = name.isEmpty ? null : name);
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString(
+                      _kLastRaterNameKey, name.isEmpty ? '' : name);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   bool get _isTextAssessment =>
       _currentAssessment.dataType.toLowerCase() == 'text';
+
+  bool get _hasScaleDefined =>
+      _currentAssessment.minValue != null &&
+      _currentAssessment.maxValue != null;
+
+  double get _sliderValue {
+    final min = _currentAssessment.minValue!;
+    final max = _currentAssessment.maxValue!;
+    final v = double.tryParse(_valueController.text);
+    if (v == null) return min;
+    return v.clamp(min, max);
+  }
+
+  int? get _sliderDivisions {
+    final min = _currentAssessment.minValue!;
+    final max = _currentAssessment.maxValue!;
+    final range = (max - min).abs();
+    if (range <= 0) return null;
+    if (range <= 100 && min == min.roundToDouble() && max == max.roundToDouble()) {
+      return range.round();
+    }
+    return null;
+  }
+
+  bool get _showValidRangeWarning {
+    return false;
+  }
 
   Widget _buildQuickButtons() {
     final min = _currentAssessment.minValue?.toInt() ?? 0;
@@ -1572,6 +1797,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     setState(() => _isSaving = true);
 
     final userId = await ref.read(currentUserIdProvider.future);
+    final now = DateTime.now();
+    final ratingTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final useCase = ref.read(saveRatingUseCaseProvider);
     final result = await useCase.execute(
       SaveRatingInput(
@@ -1582,11 +1809,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         resultStatus: _selectedStatus,
         numericValue: numericValue,
         textValue: textValue,
-        raterName: widget.session.raterName,
+        raterName: _raterName?.trim().isNotEmpty == true
+            ? _raterName
+            : widget.session.raterName,
         performedByUserId: userId,
         isSessionClosed: widget.session.endedAt != null,
         minValue: _currentAssessment.minValue,
         maxValue: _currentAssessment.maxValue,
+        ratingTime: ratingTime,
+        confidence: _confidence,
       ),
     );
 
@@ -1596,6 +1827,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     setState(() => _isSaving = false);
 
     if (result.isSuccess) {
+      if (_raterName != null && _raterName!.trim().isNotEmpty) {
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setString(_kLastRaterNameKey, _raterName!.trim());
+        });
+      }
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
       if (numericValue != null) {

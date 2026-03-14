@@ -44,19 +44,25 @@ class AppEmptyState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ) ??
+                  const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             const SizedBox(height: AppDesignTokens.spacing8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppDesignTokens.secondaryText,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppDesignTokens.secondaryText,
+                  ) ??
+                  const TextStyle(
+                    fontSize: 14,
+                    color: AppDesignTokens.secondaryText,
+                  ),
             ),
             if (action != null) ...[
               const SizedBox(height: AppDesignTokens.spacing24),

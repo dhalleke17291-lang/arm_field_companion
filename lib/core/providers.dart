@@ -259,6 +259,12 @@ final trialProvider = FutureProvider.autoDispose.family<Trial?, int>((ref, id) {
   return ref.watch(trialRepositoryProvider).getTrialById(id);
 });
 
+/// Trial setup fields (protocol, location, plot dimensions, soil, etc.). Watch for setup screen; invalidate after update.
+final trialSetupProvider =
+    FutureProvider.autoDispose.family<Trial?, int>((ref, trialId) {
+  return ref.watch(trialRepositoryProvider).getTrialById(trialId);
+});
+
 final plotsForTrialProvider =
     StreamProvider.family<List<Plot>, int>((ref, trialId) {
   return ref.watch(plotRepositoryProvider).watchPlotsForTrial(trialId);

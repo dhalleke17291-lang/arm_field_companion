@@ -11,11 +11,14 @@ import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 
 /// Builds a single-line formula string for a treatment from its components (paper-protocol style).
+/// Includes formulation type when present (e.g. "Headline SC 1.0 L/ha").
 String buildTreatmentFormula(List<TreatmentComponent> components) {
   if (components.isEmpty) return 'No components defined';
   String one(TreatmentComponent c) {
     final parts = <String>[
       c.productName.trim(),
+      if (c.formulationType != null && c.formulationType!.trim().isNotEmpty)
+        c.formulationType!.trim(),
       if (c.rate != null && c.rate!.trim().isNotEmpty) c.rate!.trim(),
       if (c.rateUnit != null && c.rateUnit!.trim().isNotEmpty)
         c.rateUnit!.trim(),
@@ -23,11 +26,49 @@ String buildTreatmentFormula(List<TreatmentComponent> components) {
     return parts.where((s) => s.isNotEmpty).join(' ');
   }
 
-  if (components.length == 1) return one(components.first);
-  if (components.length == 2)
+  if (components.length == 1) {
+    return one(components.first);
+  }
+  if (components.length == 2) {
     return '${one(components[0])} + ${one(components[1])}';
+  }
   return '${one(components.first)} + ${components.length - 1} more';
 }
+
+const List<String> _treatmentTypes = [
+  'Chemical',
+  'Biological',
+  'Cultural',
+  'Untreated control',
+  'Fertiliser',
+  'Other',
+];
+
+const List<String> _timingCodes = [
+  'PRE',
+  'POST',
+  'EPOST',
+  'AT',
+  'FPOST',
+  'LPOST',
+  'MPOST',
+  'PREPLANT',
+  'Other',
+];
+
+const List<String> _formulationTypes = [
+  'EC',
+  'WP',
+  'WDG',
+  'SC',
+  'SL',
+  'GR',
+  'WG',
+  'ME',
+  'EW',
+  'CS',
+  'Other',
+];
 
 /// Treatments tab for trial detail: list treatments, components, add/edit/delete.
 class TreatmentsTab extends ConsumerWidget {
@@ -223,73 +264,130 @@ class TreatmentsTab extends ConsumerWidget {
     final nameController = TextEditingController(text: treatment.name);
     final descController =
         TextEditingController(text: treatment.description ?? '');
+    final eppoController =
+        TextEditingController(text: treatment.eppoCode ?? '');
+    String? treatmentType = treatment.treatmentType;
+    String? timingCode = treatment.timingCode;
 
     await showDialog(
       context: context,
-      builder: (ctx) => AppDialog(
-        title: 'Edit Treatment',
-        scrollable: true,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: codeController,
-              decoration: const InputDecoration(
-                labelText: 'Code (e.g. T1, T2)',
-                border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AppDialog(
+          title: 'Edit Treatment',
+          scrollable: true,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: codeController,
+                decoration: const InputDecoration(
+                  labelText: 'Code (e.g. T1, T2)',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descController,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String?>(
+                key: ValueKey('edit_type_$treatmentType'),
+                initialValue: treatmentType,
+                decoration: const InputDecoration(
+                  labelText: 'Treatment type',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('—')),
+                  ..._treatmentTypes.map((s) =>
+                      DropdownMenuItem<String?>(value: s, child: Text(s))),
+                ],
+                onChanged: (v) => setState(() => treatmentType = v),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                key: ValueKey('edit_timing_$timingCode'),
+                initialValue: timingCode,
+                decoration: const InputDecoration(
+                  labelText: 'Timing code',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('—')),
+                  ..._timingCodes.map((s) =>
+                      DropdownMenuItem<String?>(value: s, child: Text(s))),
+                ],
+                onChanged: (v) => setState(() => timingCode = v),
+              ),
+              const SizedBox(height: 12),
+              ExpansionTile(
+                title: const Text('Regulatory details'),
+                initiallyExpanded: false,
+                children: [
+                  TextField(
+                    controller: eppoController,
+                    decoration: const InputDecoration(
+                      labelText: 'EPPO code',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                border: OutlineInputBorder(),
-              ),
+            FilledButton(
+              onPressed: () async {
+                final useCase = ref.read(updateTreatmentUseCaseProvider);
+                final result = await useCase.execute(
+                  trial: trial,
+                  treatmentId: treatment.id,
+                  code: codeController.text,
+                  name: nameController.text,
+                  description: descController.text.trim().isEmpty
+                      ? null
+                      : descController.text.trim(),
+                  treatmentType: treatmentType,
+                  timingCode: timingCode,
+                  eppoCode: eppoController.text.trim().isEmpty
+                      ? null
+                      : eppoController.text.trim(),
+                );
+                if (!ctx.mounted) return;
+                if (result.success) {
+                  ref.invalidate(treatmentsForTrialProvider(trial.id));
+                  Navigator.pop(ctx);
+                } else {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                        content: Text(result.errorMessage ?? 'Update failed'),
+                        backgroundColor: Colors.red),
+                  );
+                }
+              },
+              child: const Text('Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final useCase = ref.read(updateTreatmentUseCaseProvider);
-              final result = await useCase.execute(
-                trial: trial,
-                treatmentId: treatment.id,
-                code: codeController.text,
-                name: nameController.text,
-                description: descController.text.trim().isEmpty
-                    ? null
-                    : descController.text.trim(),
-              );
-              if (!ctx.mounted) return;
-              if (result.success) {
-                ref.invalidate(treatmentsForTrialProvider(trial.id));
-                Navigator.pop(ctx);
-              } else {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(
-                      content: Text(result.errorMessage ?? 'Update failed'),
-                      backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -341,66 +439,122 @@ class TreatmentsTab extends ConsumerWidget {
     final codeController = TextEditingController();
     final nameController = TextEditingController();
     final descController = TextEditingController();
+    final eppoController = TextEditingController();
+    String? treatmentType;
+    String? timingCode;
 
     await showDialog(
       context: context,
-      builder: (ctx) => AppDialog(
-        title: 'Add Treatment',
-        scrollable: true,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: codeController,
-              decoration: const InputDecoration(
-                labelText: 'Code (e.g. T1, T2)',
-                border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AppDialog(
+          title: 'Add Treatment',
+          scrollable: true,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: codeController,
+                decoration: const InputDecoration(
+                  labelText: 'Code (e.g. T1, T2)',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descController,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String?>(
+                key: ValueKey('add_type_$treatmentType'),
+                initialValue: treatmentType,
+                decoration: const InputDecoration(
+                  labelText: 'Treatment type',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('—')),
+                  ..._treatmentTypes.map((s) =>
+                      DropdownMenuItem<String?>(value: s, child: Text(s))),
+                ],
+                onChanged: (v) => setState(() => treatmentType = v),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                key: ValueKey('add_timing_$timingCode'),
+                initialValue: timingCode,
+                decoration: const InputDecoration(
+                  labelText: 'Timing code',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('—')),
+                  ..._timingCodes.map((s) =>
+                      DropdownMenuItem<String?>(value: s, child: Text(s))),
+                ],
+                onChanged: (v) => setState(() => timingCode = v),
+              ),
+              const SizedBox(height: 12),
+              ExpansionTile(
+                title: const Text('Regulatory details'),
+                initiallyExpanded: false,
+                children: [
+                  TextField(
+                    controller: eppoController,
+                    decoration: const InputDecoration(
+                      labelText: 'EPPO code',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                border: OutlineInputBorder(),
-              ),
+            FilledButton(
+              onPressed: () async {
+                if (codeController.text.trim().isEmpty ||
+                    nameController.text.trim().isEmpty) {
+                  return;
+                }
+                final repo = ref.read(treatmentRepositoryProvider);
+                await repo.insertTreatment(
+                  trialId: trial.id,
+                  code: codeController.text.trim(),
+                  name: nameController.text.trim(),
+                  description: descController.text.trim().isEmpty
+                      ? null
+                      : descController.text.trim(),
+                  treatmentType: treatmentType,
+                  timingCode: timingCode,
+                  eppoCode: eppoController.text.trim().isEmpty
+                      ? null
+                      : eppoController.text.trim(),
+                );
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Add'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              if (codeController.text.trim().isEmpty ||
-                  nameController.text.trim().isEmpty) {
-                return;
-              }
-              final repo = ref.read(treatmentRepositoryProvider);
-              await repo.insertTreatment(
-                trialId: trial.id,
-                code: codeController.text.trim(),
-                name: nameController.text.trim(),
-                description: descController.text.trim().isEmpty
-                    ? null
-                    : descController.text.trim(),
-              );
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Add'),
-          ),
-        ],
       ),
     );
   }
@@ -499,6 +653,54 @@ class _TreatmentExpansionTileState
               color: AppDesignTokens.primaryText,
             ),
           ),
+          if ((widget.treatment.treatmentType != null &&
+                  widget.treatment.treatmentType!.isNotEmpty) ||
+              (widget.treatment.timingCode != null &&
+                  widget.treatment.timingCode!.isNotEmpty)) ...[
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                if (widget.treatment.treatmentType != null &&
+                    widget.treatment.treatmentType!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.6)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      widget.treatment.treatmentType!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                if (widget.treatment.timingCode != null &&
+                    widget.treatment.timingCode!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.6)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      widget.treatment.timingCode!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
           if (!_expanded) ...[
             const SizedBox(height: 2),
             Text(
@@ -693,7 +895,12 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
   final _rateController = TextEditingController();
   final _formulationController = TextEditingController();
   final _notesController = TextEditingController();
+  final _activeIngredientPctController = TextEditingController();
+  final _manufacturerController = TextEditingController();
+  final _registrationNumberController = TextEditingController();
+  final _eppoController = TextEditingController();
   String _rateUnit = _componentRateUnits.first;
+  String? _formulationType;
 
   @override
   void dispose() {
@@ -701,7 +908,17 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
     _rateController.dispose();
     _formulationController.dispose();
     _notesController.dispose();
+    _activeIngredientPctController.dispose();
+    _manufacturerController.dispose();
+    _registrationNumberController.dispose();
+    _eppoController.dispose();
     super.dispose();
+  }
+
+  double? _parseActiveIngredientPct() {
+    final s = _activeIngredientPctController.text.trim();
+    if (s.isEmpty) return null;
+    return double.tryParse(s);
   }
 
   @override
@@ -747,6 +964,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
+                      key: ValueKey('sheet_rate_unit_$_rateUnit'),
                       initialValue: _rateUnit,
                       decoration: const InputDecoration(
                         labelText: 'Unit',
@@ -756,19 +974,77 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                           .map(
                               (u) => DropdownMenuItem(value: u, child: Text(u)))
                           .toList(),
-                      onChanged: (v) => setState(
-                          () => _rateUnit = v ?? _componentRateUnits.first),
+                      onChanged: (v) =>
+                          setState(() => _rateUnit = v ?? _componentRateUnits.first),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                key: ValueKey('sheet_form_$_formulationType'),
+                initialValue: _formulationType,
+                decoration: const InputDecoration(
+                  labelText: 'Formulation type',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('—')),
+                  ..._formulationTypes.map((s) =>
+                      DropdownMenuItem<String?>(value: s, child: Text(s))),
+                ],
+                onChanged: (v) => setState(() => _formulationType = v),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _activeIngredientPctController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Active ingredient %',
+                  suffixText: '%',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _formulationController,
                 decoration: const InputDecoration(
-                  labelText: 'Formulation / Application Timing',
+                  labelText: 'Application timing (optional)',
                   border: OutlineInputBorder(),
                 ),
+              ),
+              const SizedBox(height: 12),
+              ExpansionTile(
+                title: const Text('Regulatory details'),
+                initiallyExpanded: false,
+                children: [
+                  TextField(
+                    controller: _manufacturerController,
+                    decoration: const InputDecoration(
+                      labelText: 'Manufacturer',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _registrationNumberController,
+                    decoration: const InputDecoration(
+                      labelText: 'Registration number',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _eppoController,
+                    decoration: const InputDecoration(
+                      labelText: 'EPPO code',
+                      hintText: 'e.g. 1BAS5B4048',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               TextField(
@@ -808,6 +1084,18 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                         notes: _notesController.text.trim().isEmpty
                             ? null
                             : _notesController.text.trim(),
+                        activeIngredientPct: _parseActiveIngredientPct(),
+                        formulationType: _formulationType,
+                        manufacturer: _manufacturerController.text.trim().isEmpty
+                            ? null
+                            : _manufacturerController.text.trim(),
+                        registrationNumber:
+                            _registrationNumberController.text.trim().isEmpty
+                                ? null
+                                : _registrationNumberController.text.trim(),
+                        eppoCode: _eppoController.text.trim().isEmpty
+                            ? null
+                            : _eppoController.text.trim(),
                       );
                       if (!context.mounted) return;
                       widget.onSaved();
@@ -848,6 +1136,11 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
   late final TextEditingController rateUnitController;
   late final TextEditingController timingController;
   late final TextEditingController notesController;
+  late final TextEditingController activeIngredientPctController;
+  late final TextEditingController manufacturerController;
+  late final TextEditingController registrationNumberController;
+  late final TextEditingController eppoController;
+  String? formulationType;
 
   @override
   void initState() {
@@ -857,6 +1150,10 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
     rateUnitController = TextEditingController();
     timingController = TextEditingController();
     notesController = TextEditingController();
+    activeIngredientPctController = TextEditingController();
+    manufacturerController = TextEditingController();
+    registrationNumberController = TextEditingController();
+    eppoController = TextEditingController();
   }
 
   @override
@@ -866,7 +1163,17 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
     rateUnitController.dispose();
     timingController.dispose();
     notesController.dispose();
+    activeIngredientPctController.dispose();
+    manufacturerController.dispose();
+    registrationNumberController.dispose();
+    eppoController.dispose();
     super.dispose();
+  }
+
+  double? _parseActiveIngredientPct() {
+    final s = activeIngredientPctController.text.trim();
+    if (s.isEmpty) return null;
+    return double.tryParse(s);
   }
 
   @override
@@ -915,12 +1222,70 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
             ],
           ),
           const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            key: ValueKey('dialog_form_$formulationType'),
+            initialValue: formulationType,
+            decoration: const InputDecoration(
+              labelText: 'Formulation type',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                  value: null, child: Text('—')),
+              ..._formulationTypes.map((s) =>
+                  DropdownMenuItem<String?>(value: s, child: Text(s))),
+            ],
+            onChanged: (v) => setState(() => formulationType = v),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: activeIngredientPctController,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Active ingredient %',
+              suffixText: '%',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: timingController,
             decoration: const InputDecoration(
               labelText: 'Application Timing (optional)',
               border: OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 12),
+          ExpansionTile(
+            title: const Text('Regulatory details'),
+            initiallyExpanded: false,
+            children: [
+              TextField(
+                controller: manufacturerController,
+                decoration: const InputDecoration(
+                  labelText: 'Manufacturer',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: registrationNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Registration number',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: eppoController,
+                decoration: const InputDecoration(
+                  labelText: 'EPPO code',
+                  hintText: 'e.g. 1BAS5B4048',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           TextField(
@@ -958,6 +1323,18 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
               notes: notesController.text.trim().isEmpty
                   ? null
                   : notesController.text.trim(),
+              activeIngredientPct: _parseActiveIngredientPct(),
+              formulationType: formulationType,
+              manufacturer: manufacturerController.text.trim().isEmpty
+                  ? null
+                  : manufacturerController.text.trim(),
+              registrationNumber:
+                  registrationNumberController.text.trim().isEmpty
+                      ? null
+                      : registrationNumberController.text.trim(),
+              eppoCode: eppoController.text.trim().isEmpty
+                  ? null
+                  : eppoController.text.trim(),
             );
             if (!context.mounted) return;
             Navigator.pop(context);
@@ -998,11 +1375,12 @@ class _TreatmentComponentsSheetState
   Future<void> _loadComponents() async {
     final repo = ref.read(treatmentRepositoryProvider);
     final result = await repo.getComponentsForTreatment(widget.treatment.id);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _components = result;
         _loading = false;
       });
+    }
     ref.invalidate(treatmentsForTrialProvider(widget.trial.id));
   }
 

@@ -72,6 +72,14 @@ class AssessmentDefinitionRepository {
     String? unit,
     double? scaleMin,
     double? scaleMax,
+    String? timingCode,
+    int? daysAfterTreatment,
+    String? assessmentMethod,
+    double? validMin,
+    double? validMax,
+    String? eppoCode,
+    String? cropPart,
+    String? timingDescription,
   }) async {
     return _db.into(_db.assessmentDefinitions).insert(
           AssessmentDefinitionsCompanion.insert(
@@ -82,9 +90,66 @@ class AssessmentDefinitionRepository {
             unit: Value(unit),
             scaleMin: Value(scaleMin),
             scaleMax: Value(scaleMax),
+            timingCode: Value(timingCode),
+            daysAfterTreatment: Value(daysAfterTreatment),
+            assessmentMethod: Value(assessmentMethod),
+            validMin: Value(validMin),
+            validMax: Value(validMax),
+            eppoCode: Value(eppoCode),
+            cropPart: Value(cropPart),
+            timingDescription: Value(timingDescription),
             isSystem: const Value(false),
             isActive: const Value(true),
           ),
         );
+  }
+
+  /// Update an existing definition. Only the provided fields are updated.
+  Future<void> updateDefinition(
+    int id, {
+    String? code,
+    String? name,
+    String? category,
+    String? dataType,
+    String? unit,
+    double? scaleMin,
+    double? scaleMax,
+    String? timingCode,
+    int? daysAfterTreatment,
+    String? assessmentMethod,
+    double? validMin,
+    double? validMax,
+    String? eppoCode,
+    String? cropPart,
+    String? timingDescription,
+  }) async {
+    await (_db.update(_db.assessmentDefinitions)
+          ..where((d) => d.id.equals(id)))
+        .write(
+      AssessmentDefinitionsCompanion(
+        code: code != null ? Value(code) : const Value.absent(),
+        name: name != null ? Value(name) : const Value.absent(),
+        category: category != null ? Value(category) : const Value.absent(),
+        dataType: dataType != null ? Value(dataType) : const Value.absent(),
+        unit: unit != null ? Value(unit) : const Value.absent(),
+        scaleMin: scaleMin != null ? Value(scaleMin) : const Value.absent(),
+        scaleMax: scaleMax != null ? Value(scaleMax) : const Value.absent(),
+        timingCode:
+            timingCode != null ? Value(timingCode) : const Value.absent(),
+        daysAfterTreatment: daysAfterTreatment != null
+            ? Value(daysAfterTreatment)
+            : const Value.absent(),
+        assessmentMethod: assessmentMethod != null
+            ? Value(assessmentMethod)
+            : const Value.absent(),
+        validMin: validMin != null ? Value(validMin) : const Value.absent(),
+        validMax: validMax != null ? Value(validMax) : const Value.absent(),
+        eppoCode: eppoCode != null ? Value(eppoCode) : const Value.absent(),
+        cropPart: cropPart != null ? Value(cropPart) : const Value.absent(),
+        timingDescription: timingDescription != null
+            ? Value(timingDescription)
+            : const Value.absent(),
+      ),
+    );
   }
 }

@@ -14,6 +14,9 @@ class UpdateTreatmentUseCase {
     required String code,
     required String name,
     String? description,
+    String? treatmentType,
+    String? timingCode,
+    String? eppoCode,
   }) async {
     if (isProtocolLocked(trial.status)) {
       return UpdateTreatmentResult.failure(
@@ -33,6 +36,9 @@ class UpdateTreatmentUseCase {
         code: trimmedCode,
         name: trimmedName,
         description: description?.trim(),
+        treatmentType: treatmentType?.trim(),
+        timingCode: timingCode?.trim(),
+        eppoCode: eppoCode?.trim(),
       );
       return UpdateTreatmentResult.success();
     } on TreatmentNotFoundException {

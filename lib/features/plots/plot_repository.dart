@@ -47,6 +47,15 @@ class PlotRepository {
     int? treatmentId,
     String? row,
     String? column,
+    double? plotLengthM,
+    double? plotWidthM,
+    double? plotAreaM2,
+    double? harvestLengthM,
+    double? harvestWidthM,
+    double? harvestAreaM2,
+    String? plotDirection,
+    String? soilSeries,
+    String? plotNotes,
   }) {
     return _db.into(_db.plots).insert(
           PlotsCompanion.insert(
@@ -57,6 +66,15 @@ class PlotRepository {
             treatmentId: Value(treatmentId),
             row: Value(row),
             column: Value(column),
+            plotLengthM: Value(plotLengthM),
+            plotWidthM: Value(plotWidthM),
+            plotAreaM2: Value(plotAreaM2),
+            harvestLengthM: Value(harvestLengthM),
+            harvestWidthM: Value(harvestWidthM),
+            harvestAreaM2: Value(harvestAreaM2),
+            plotDirection: Value(plotDirection),
+            soilSeries: Value(soilSeries),
+            plotNotes: Value(plotNotes),
           ),
         );
   }
@@ -105,6 +123,43 @@ class PlotRepository {
   Future<void> updatePlotNotes(int plotPk, String? notes) async {
     await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
         .write(PlotsCompanion(notes: Value(notes)));
+  }
+
+  /// Updates plot dimension and field-detail fields. Omitted params are left unchanged.
+  Future<void> updatePlotDetails(
+    int plotPk, {
+    double? plotLengthM,
+    double? plotWidthM,
+    double? plotAreaM2,
+    double? harvestLengthM,
+    double? harvestWidthM,
+    double? harvestAreaM2,
+    String? plotDirection,
+    String? soilSeries,
+    String? plotNotes,
+  }) async {
+    await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
+      PlotsCompanion(
+        plotLengthM: plotLengthM != null ? Value(plotLengthM) : const Value.absent(),
+        plotWidthM: plotWidthM != null ? Value(plotWidthM) : const Value.absent(),
+        plotAreaM2: plotAreaM2 != null ? Value(plotAreaM2) : const Value.absent(),
+        harvestLengthM: harvestLengthM != null
+            ? Value(harvestLengthM)
+            : const Value.absent(),
+        harvestWidthM: harvestWidthM != null
+            ? Value(harvestWidthM)
+            : const Value.absent(),
+        harvestAreaM2: harvestAreaM2 != null
+            ? Value(harvestAreaM2)
+            : const Value.absent(),
+        plotDirection:
+            plotDirection != null ? Value(plotDirection) : const Value.absent(),
+        soilSeries:
+            soilSeries != null ? Value(soilSeries) : const Value.absent(),
+        plotNotes:
+            plotNotes != null ? Value(plotNotes) : const Value.absent(),
+      ),
+    );
   }
 
   /// Updates treatment assignment for a single plot.

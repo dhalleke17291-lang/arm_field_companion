@@ -107,37 +107,37 @@ class ArmFieldCompanionApp extends StatelessWidget {
         elevation: 2,
         shadowColor: Colors.black.withValues(alpha: 0.06),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           side: const BorderSide(color: Color(0xFFEAECF0), width: 1),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFFEEEBE6),
         selectedColor: const Color(0xFFD4E8DC),
         labelStyle: const TextStyle(
           fontSize: 13,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           color: onSurfaceWarm,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceCard,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
           borderSide: const BorderSide(color: Color(0xFFD8D4CE)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
           borderSide: const BorderSide(color: Color(0xFFD8D4CE)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
           borderSide: const BorderSide(color: primaryGreen, width: 2),
         ),
         labelStyle: const TextStyle(color: subtleGrey),
@@ -150,9 +150,9 @@ class ArmFieldCompanionApp extends StatelessWidget {
           backgroundColor: primaryGreen,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           ),
           textStyle: const TextStyle(
             fontSize: 15,
@@ -166,9 +166,9 @@ class ArmFieldCompanionApp extends StatelessWidget {
           backgroundColor: primaryGreen,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           ),
           textStyle: const TextStyle(
             fontSize: 15,
@@ -184,15 +184,79 @@ class ArmFieldCompanionApp extends StatelessWidget {
         shape: StadiumBorder(),
       ),
       listTileTheme: const ListTileThemeData(
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         titleTextStyle: TextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           color: onSurfaceWarm,
         ),
         subtitleTextStyle: TextStyle(
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
+          color: subtleGrey,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        contentTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: colorScheme.onSurface,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primaryGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          ),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primaryGreen,
+          side: const BorderSide(color: Color(0xFFEAECF0)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          ),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: surfaceCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        dragHandleColor: Color(0xFFE5E7EB),
+        dragHandleSize: Size(36, 4),
+        showDragHandle: true,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surfaceCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        titleTextStyle: AppDesignTokens.headerTitleStyle(
+          fontSize: 20,
+          color: onSurfaceWarm,
+        ),
+        contentTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 15,
+          fontWeight: FontWeight.w400,
           color: subtleGrey,
         ),
       ),
@@ -201,18 +265,18 @@ class ArmFieldCompanionApp extends StatelessWidget {
         unselectedLabelColor: Colors.white70,
         indicatorColor: Colors.white,
         labelStyle: TextStyle(
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           fontSize: 15,
           letterSpacing: 0.3,
         ),
         unselectedLabelStyle: TextStyle(
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
           fontSize: 15,
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: Color(0xFFE8E4DE),
-        thickness: 1,
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
+        thickness: 0.5,
         space: 1,
       ),
       textTheme: TextTheme(

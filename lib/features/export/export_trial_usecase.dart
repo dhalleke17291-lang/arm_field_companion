@@ -57,6 +57,14 @@ class ExportTrialUseCase {
     'value',
     'unit',
     'rater_name',
+    'rating_time',
+    'rating_method',
+    'confidence',
+    'amended',
+    'original_value',
+    'amendment_reason',
+    'amended_by',
+    'amended_at',
     'days_after_seeding',
     'days_after_first_application',
     'export_timestamp',
@@ -81,6 +89,15 @@ class ExportTrialUseCase {
     'column',
     'treatment_code',
     'treatment_name',
+    'plot_length_m',
+    'plot_width_m',
+    'plot_area_m2',
+    'harvest_length_m',
+    'harvest_width_m',
+    'harvest_area_m2',
+    'plot_direction',
+    'soil_series',
+    'plot_notes',
     'export_timestamp',
   ];
 
@@ -258,6 +275,54 @@ class ExportTrialUseCase {
       ],
       [
         'observations.csv',
+        'rating_time',
+        'Local time of rating',
+        'HH:mm'
+      ],
+      [
+        'observations.csv',
+        'rating_method',
+        'Method used for rating',
+        ''
+      ],
+      [
+        'observations.csv',
+        'confidence',
+        'Rater confidence',
+        'certain | uncertain | estimated'
+      ],
+      [
+        'observations.csv',
+        'amended',
+        'Whether the rating was amended after first entry',
+        ''
+      ],
+      [
+        'observations.csv',
+        'original_value',
+        'First entered value before amendment',
+        ''
+      ],
+      [
+        'observations.csv',
+        'amendment_reason',
+        'Reason for amendment',
+        ''
+      ],
+      [
+        'observations.csv',
+        'amended_by',
+        'Person who amended the rating',
+        ''
+      ],
+      [
+        'observations.csv',
+        'amended_at',
+        'When the rating was amended',
+        'ISO 8601'
+      ],
+      [
+        'observations.csv',
         'days_after_seeding',
         'Days elapsed since seeding event',
         'days'
@@ -311,6 +376,15 @@ class ExportTrialUseCase {
       ],
       ['plot_assignments.csv', 'treatment_code', 'Assigned treatment code', ''],
       ['plot_assignments.csv', 'treatment_name', 'Assigned treatment name', ''],
+      ['plot_assignments.csv', 'plot_length_m', 'Plot length', 'm'],
+      ['plot_assignments.csv', 'plot_width_m', 'Plot width', 'm'],
+      ['plot_assignments.csv', 'plot_area_m2', 'Plot area', 'm²'],
+      ['plot_assignments.csv', 'harvest_length_m', 'Harvest length', 'm'],
+      ['plot_assignments.csv', 'harvest_width_m', 'Harvest width', 'm'],
+      ['plot_assignments.csv', 'harvest_area_m2', 'Harvest area', 'm²'],
+      ['plot_assignments.csv', 'plot_direction', 'Plot direction/orientation', ''],
+      ['plot_assignments.csv', 'soil_series', 'Soil series', ''],
+      ['plot_assignments.csv', 'plot_notes', 'Plot notes', ''],
       ['plot_assignments.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
       // applications.csv
       ['applications.csv', 'date', 'Date of application event', 'YYYY-MM-DD'],
@@ -490,6 +564,14 @@ class ExportTrialUseCase {
           value,
           unit,
           raterName,
+          _cell(r.ratingTime),
+          _cell(r.ratingMethod),
+          _cell(r.confidence),
+          _cell(r.amended),
+          _cell(r.originalValue),
+          _cell(r.amendmentReason),
+          _cell(r.amendedBy),
+          r.amendedAt != null ? _cell(r.amendedAt!.toIso8601String()) : '',
           daysAfterSeeding != null ? _cell(daysAfterSeeding) : '',
           daysAfterFirstApp != null ? _cell(daysAfterFirstApp) : '',
           exportTimestamp,
@@ -556,6 +638,15 @@ class ExportTrialUseCase {
         _cell(assignment?.column ?? plot.column),
         _cell(treatment?.code),
         _cell(treatment?.name),
+        _cell(plot.plotLengthM),
+        _cell(plot.plotWidthM),
+        _cell(plot.plotAreaM2),
+        _cell(plot.harvestLengthM),
+        _cell(plot.harvestWidthM),
+        _cell(plot.harvestAreaM2),
+        _cell(plot.plotDirection),
+        _cell(plot.soilSeries),
+        _cell(plot.plotNotes),
         exportTimestamp,
       ]);
     }

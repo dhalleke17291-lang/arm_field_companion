@@ -52,6 +52,13 @@ class TrialRepository {
     return _db.update(_db.trials).replace(trial);
   }
 
+  /// Update only trial setup fields (protocol, location, plot dimensions, soil, etc.).
+  /// Does not touch lifecycle fields (status, createdAt, updatedAt) or session data.
+  Future<int> updateTrialSetup(int trialId, TrialsCompanion companion) async {
+    return (_db.update(_db.trials)..where((t) => t.id.equals(trialId)))
+        .write(companion);
+  }
+
   /// Update trial lifecycle status (draft → ready → active → closed → archived).
   Future<bool> updateTrialStatus(int trialId, String status) async {
     final t = await getTrialById(trialId);

@@ -126,8 +126,11 @@ class AppDesignTokens {
   /// Extra small elements (icon containers, tight badges).
   static const double radiusXSmall = 8;
 
-  /// Small elements (chips, inputs).
-  static const double radiusSmall = 10;
+  /// Small elements (inputs, compact controls).
+  static const double radiusSmall = 8;
+
+  /// Chips and badges (pill shape).
+  static const double radiusChip = 20;
 
   /// Large surfaces (sheets, dialogs).
   static const double radiusLarge = 16;
@@ -172,7 +175,7 @@ class AppDesignTokens {
   static TextStyle headerTitleStyle({
     double fontSize = 22,
     Color? color,
-    FontWeight fontWeight = FontWeight.w700,
+    FontWeight fontWeight = FontWeight.w600,
     double letterSpacing = -0.2,
   }) =>
       GoogleFonts.plusJakartaSans(
@@ -186,12 +189,38 @@ class AppDesignTokens {
   static TextStyle bodyCrispStyle({
     double fontSize = 15,
     Color? color,
-    FontWeight fontWeight = FontWeight.w500,
+    FontWeight fontWeight = FontWeight.w400,
     double letterSpacing = 0.15,
   }) =>
       GoogleFonts.plusJakartaSans(
         fontSize: fontSize,
         fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
+
+  /// Body text — w400 only (global consistency).
+  static TextStyle bodyStyle({
+    double fontSize = 15,
+    Color? color,
+    double letterSpacing = 0.15,
+  }) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w400,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
+
+  /// Headings and labels — w600 only (global consistency).
+  static TextStyle headingStyle({
+    double fontSize = 15,
+    Color? color,
+    double letterSpacing = 0.2,
+  }) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w600,
         color: color,
         letterSpacing: letterSpacing,
       );

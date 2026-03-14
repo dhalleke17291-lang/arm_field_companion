@@ -134,10 +134,12 @@ class ExportSessionArmXmlUsecase {
               builder.attribute('plot_pk', plotPk.toString());
               builder.element('plot_id', nest: plotId);
               if (rep != null) builder.element('rep', nest: rep);
-              if (treatmentId != null)
+              if (treatmentId != null) {
                 builder.element('treatment_id', nest: treatmentId);
-              if (treatmentCode != null)
+              }
+              if (treatmentCode != null) {
                 builder.element('treatment_code', nest: treatmentCode);
+              }
             });
           }
         });
@@ -154,8 +156,9 @@ class ExportSessionArmXmlUsecase {
               builder.attribute(
                   'assessment_id', (m['assessment_id'] as int).toString());
               builder.element('result_status', nest: status);
-              if (numVal != null)
+              if (numVal != null) {
                 builder.element('numeric_value', nest: numVal.toString());
+              }
               if (textVal != null && textVal.toString().isNotEmpty) {
                 builder.element('text_value', nest: textVal.toString());
               }

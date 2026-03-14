@@ -11,10 +11,30 @@ class SeedingRepository {
   /// updates the existing row when one already exists.
   /// Never creates a second row for the same trial (unique on trial_id).
   Future<void> upsertSeedingEvent(SeedingEventsCompanion companion) async {
+    final full = companion.copyWith(
+      variety: companion.variety.present
+          ? Value(companion.variety.value)
+          : const Value.absent(),
+      seedTreatment: companion.seedTreatment.present
+          ? Value(companion.seedTreatment.value)
+          : const Value.absent(),
+      germinationPct: companion.germinationPct.present
+          ? Value(companion.germinationPct.value)
+          : const Value.absent(),
+      emergenceDate: companion.emergenceDate.present
+          ? Value(companion.emergenceDate.value)
+          : const Value.absent(),
+      emergencePct: companion.emergencePct.present
+          ? Value(companion.emergencePct.value)
+          : const Value.absent(),
+      plantingMethod: companion.plantingMethod.present
+          ? Value(companion.plantingMethod.value)
+          : const Value.absent(),
+    );
     await _db.into(_db.seedingEvents).insert(
-          companion,
+          full,
           onConflict: DoUpdate<$SeedingEventsTable, SeedingEvent>(
-            (_) => companion,
+            (_) => full,
             target: [_db.seedingEvents.trialId],
           ),
         );

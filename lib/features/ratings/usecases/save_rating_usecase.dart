@@ -58,6 +58,9 @@ class SaveRatingUseCase {
         isSessionClosed: input.isSessionClosed,
         createdAppVersion: createdAppVersion,
         createdDeviceInfo: createdDeviceInfo,
+        ratingTime: input.ratingTime,
+        ratingMethod: input.ratingMethod,
+        confidence: input.confidence,
       );
 
       return SaveRatingResult.success(rating);
@@ -129,6 +132,9 @@ class SaveRatingInput {
   final bool isSessionClosed;
   final double? minValue;
   final double? maxValue;
+  final String? ratingTime;
+  final String? ratingMethod;
+  final String? confidence;
 
   const SaveRatingInput({
     required this.trialId,
@@ -144,6 +150,9 @@ class SaveRatingInput {
     this.isSessionClosed = false,
     this.minValue,
     this.maxValue,
+    this.ratingTime,
+    this.ratingMethod,
+    this.confidence,
   });
 }
 

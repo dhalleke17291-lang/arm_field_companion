@@ -100,6 +100,10 @@ class FakeTrialRepository implements TrialRepository {
   Future<bool> updateTrial(Trial trial) async => throw UnimplementedError();
 
   @override
+  Future<int> updateTrialSetup(int trialId, TrialsCompanion companion) async =>
+      throw UnimplementedError();
+
+  @override
   Future<bool> updateTrialStatus(int trialId, String status) async =>
       throw UnimplementedError();
 
@@ -137,12 +141,38 @@ class FakePlotRepository implements PlotRepository {
     int? treatmentId,
     String? row,
     String? column,
+    double? plotLengthM,
+    double? plotWidthM,
+    double? plotAreaM2,
+    double? harvestLengthM,
+    double? harvestWidthM,
+    double? harvestAreaM2,
+    String? plotDirection,
+    String? soilSeries,
+    String? plotNotes,
   }) async =>
       throw UnimplementedError();
 
   @override
   Future<void> insertPlotsBulk(List<PlotsCompanion> plots) async =>
       throw UnimplementedError();
+
+  @override
+  Future<void> updatePlotNotes(int plotPk, String? notes) async {}
+
+  @override
+  Future<void> updatePlotDetails(
+    int plotPk, {
+    double? plotLengthM,
+    double? plotWidthM,
+    double? plotAreaM2,
+    double? harvestLengthM,
+    double? harvestWidthM,
+    double? harvestAreaM2,
+    String? plotDirection,
+    String? soilSeries,
+    String? plotNotes,
+  }) async {}
 
   @override
   Future<List<Plot>> getPlotsPage({
@@ -156,10 +186,6 @@ class FakePlotRepository implements PlotRepository {
 
   @override
   Future<List<int>> getRepsForTrial(int trialId) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> updatePlotNotes(int plotPk, String? notes) async =>
       throw UnimplementedError();
 
   @override
@@ -209,6 +235,22 @@ class FakeRatingRepository implements RatingRepository {
       throw UnimplementedError();
 
   @override
+  Future<RatingRecord?> getRatingById(int id) async =>
+      ratings.where((r) => r.id == id).firstOrNull;
+
+  @override
+  Future<RatingRecord> updateRating({
+    required int ratingId,
+    double? numericValue,
+    String? textValue,
+    String? resultStatus,
+    String? amendmentReason,
+    String? amendedBy,
+    String? confidence,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<RatingRecord> saveRating({
     required int trialId,
     required int plotPk,
@@ -225,6 +267,9 @@ class FakeRatingRepository implements RatingRepository {
     String? createdDeviceInfo,
     double? capturedLatitude,
     double? capturedLongitude,
+    String? ratingTime,
+    String? ratingMethod,
+    String? confidence,
   }) async =>
       throw UnimplementedError();
 

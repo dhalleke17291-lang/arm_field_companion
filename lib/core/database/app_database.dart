@@ -35,6 +35,34 @@ class Trials extends Table {
 
   /// Spacing between plots (e.g. "0.5 m"). Trial-level default.
   TextColumn get plotSpacing => text().nullable()();
+
+  // --- Trial setup (ARM protocol / site) ---
+  TextColumn get sponsor => text().nullable()();
+  TextColumn get protocolNumber => text().nullable()();
+  TextColumn get investigatorName => text().nullable()();
+  TextColumn get cooperatorName => text().nullable()();
+  TextColumn get siteId => text().nullable()();
+  TextColumn get fieldName => text().nullable()();
+  TextColumn get county => text().nullable()();
+  TextColumn get stateProvince => text().nullable()();
+  TextColumn get country => text().nullable()();
+  RealColumn get latitude => real().nullable()();
+  RealColumn get longitude => real().nullable()();
+  RealColumn get elevationM => real().nullable()();
+  TextColumn get experimentalDesign => text().nullable()();
+  RealColumn get plotLengthM => real().nullable()();
+  RealColumn get plotWidthM => real().nullable()();
+  RealColumn get alleyLengthM => real().nullable()();
+  TextColumn get previousCrop => text().nullable()();
+  TextColumn get tillage => text().nullable()();
+  BoolColumn get irrigated => boolean().nullable()();
+  TextColumn get soilSeries => text().nullable()();
+  TextColumn get soilTexture => text().nullable()();
+  RealColumn get organicMatterPct => real().nullable()();
+  RealColumn get soilPh => real().nullable()();
+  DateTimeColumn get harvestDate => dateTime().nullable()();
+  TextColumn get studyType => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -45,6 +73,9 @@ class Treatments extends Table {
   TextColumn get code => text().withLength(min: 1, max: 50)();
   TextColumn get name => text().withLength(min: 1, max: 255)();
   TextColumn get description => text().nullable()();
+  TextColumn get treatmentType => text().nullable()();
+  TextColumn get timingCode => text().nullable()();
+  TextColumn get eppoCode => text().nullable()();
 }
 
 class TreatmentComponents extends Table {
@@ -57,6 +88,11 @@ class TreatmentComponents extends Table {
   TextColumn get applicationTiming => text().nullable()();
   TextColumn get notes => text().nullable()();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  RealColumn get activeIngredientPct => real().nullable()();
+  TextColumn get formulationType => text().nullable()();
+  TextColumn get manufacturer => text().nullable()();
+  TextColumn get registrationNumber => text().nullable()();
+  TextColumn get eppoCode => text().nullable()();
 }
 
 class Assessments extends Table {
@@ -88,6 +124,15 @@ class AssessmentDefinitions extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  TextColumn get timingCode => text().nullable()();
+  IntColumn get daysAfterTreatment => integer().nullable()();
+  TextColumn get assessmentMethod => text().nullable()();
+  RealColumn get validMin => real().nullable()();
+  RealColumn get validMax => real().nullable()();
+  TextColumn get eppoCode => text().nullable()();
+  TextColumn get cropPart => text().nullable()();
+  TextColumn get timingDescription => text().nullable()();
 }
 
 /// Trial-specific selection from library. Sessions only show assessments enabled here (or legacy Assessments).
@@ -135,6 +180,16 @@ class Plots extends Table {
   /// Assignment provenance: 'imported' | 'manual' | null (unknown).
   TextColumn get assignmentSource => text().nullable()();
   DateTimeColumn get assignmentUpdatedAt => dateTime().nullable()();
+
+  RealColumn get plotLengthM => real().nullable()();
+  RealColumn get plotWidthM => real().nullable()();
+  RealColumn get plotAreaM2 => real().nullable()();
+  RealColumn get harvestLengthM => real().nullable()();
+  RealColumn get harvestWidthM => real().nullable()();
+  RealColumn get harvestAreaM2 => real().nullable()();
+  TextColumn get plotDirection => text().nullable()();
+  TextColumn get soilSeries => text().nullable()();
+  TextColumn get plotNotes => text().nullable()();
 }
 
 /// Protocol-to-field mapping: which treatment is assigned to which plot (ARM first-class entity).
@@ -206,6 +261,17 @@ class RatingRecords extends Table {
   TextColumn get createdDeviceInfo => text().nullable()();
   RealColumn get capturedLatitude => real().nullable()();
   RealColumn get capturedLongitude => real().nullable()();
+
+  /// Local time of rating as HH:mm.
+  TextColumn get ratingTime => text().nullable()();
+  TextColumn get ratingMethod => text().nullable()();
+  /// certain | uncertain | estimated
+  TextColumn get confidence => text().nullable()();
+  BoolColumn get amended => boolean().withDefault(const Constant(false))();
+  TextColumn get originalValue => text().nullable()();
+  TextColumn get amendmentReason => text().nullable()();
+  TextColumn get amendedBy => text().nullable()();
+  DateTimeColumn get amendedAt => dateTime().nullable()();
 }
 
 /// Immutable correction records; original rating record is never overwritten.
@@ -393,6 +459,12 @@ class SeedingEvents extends Table {
   RealColumn get rowSpacing => real().nullable()();
   TextColumn get equipmentUsed => text().nullable()();
   TextColumn get notes => text().nullable()();
+  TextColumn get variety => text().nullable()();
+  TextColumn get seedTreatment => text().nullable()();
+  RealColumn get germinationPct => real().nullable()();
+  DateTimeColumn get emergenceDate => dateTime().nullable()();
+  RealColumn get emergencePct => real().nullable()();
+  TextColumn get plantingMethod => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -419,6 +491,24 @@ class TrialApplicationEvents extends Table {
   RealColumn get temperature => real().nullable()();
   RealColumn get humidity => real().nullable()();
   TextColumn get notes => text().nullable()();
+  TextColumn get applicationTime => text().nullable()();
+  TextColumn get applicationMethod => text().nullable()();
+  TextColumn get nozzleType => text().nullable()();
+  RealColumn get nozzleSpacingCm => real().nullable()();
+  RealColumn get operatingPressure => real().nullable()();
+  TextColumn get pressureUnit => text().nullable()();
+  RealColumn get groundSpeed => real().nullable()();
+  TextColumn get speedUnit => text().nullable()();
+  TextColumn get adjuvantName => text().nullable()();
+  RealColumn get adjuvantRate => real().nullable()();
+  TextColumn get adjuvantRateUnit => text().nullable()();
+  RealColumn get spraySolutionPh => real().nullable()();
+  TextColumn get waterVolumeUnit => text().nullable()();
+  RealColumn get cloudCoverPct => real().nullable()();
+  TextColumn get soilMoisture => text().nullable()();
+  RealColumn get treatedArea => real().nullable()();
+  TextColumn get treatedAreaUnit => text().nullable()();
+  TextColumn get plotsTreated => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -461,7 +551,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -558,6 +648,133 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 17) {
             await m.createTable(trialApplicationEvents);
+          }
+          if (from < 18) {
+            await m.addColumn(trials, trials.sponsor);
+            await m.addColumn(trials, trials.protocolNumber);
+            await m.addColumn(trials, trials.investigatorName);
+            await m.addColumn(trials, trials.cooperatorName);
+            await m.addColumn(trials, trials.siteId);
+            await m.addColumn(trials, trials.fieldName);
+            await m.addColumn(trials, trials.county);
+            await m.addColumn(trials, trials.stateProvince);
+            await m.addColumn(trials, trials.country);
+            await m.addColumn(trials, trials.latitude);
+            await m.addColumn(trials, trials.longitude);
+            await m.addColumn(trials, trials.elevationM);
+            await m.addColumn(trials, trials.experimentalDesign);
+            await m.addColumn(trials, trials.plotLengthM);
+            await m.addColumn(trials, trials.plotWidthM);
+            await m.addColumn(trials, trials.alleyLengthM);
+            await m.addColumn(trials, trials.previousCrop);
+            await m.addColumn(trials, trials.tillage);
+            await m.addColumn(trials, trials.irrigated);
+            await m.addColumn(trials, trials.soilSeries);
+            await m.addColumn(trials, trials.soilTexture);
+            await m.addColumn(trials, trials.organicMatterPct);
+            await m.addColumn(trials, trials.soilPh);
+            await m.addColumn(trials, trials.harvestDate);
+            await m.addColumn(trials, trials.studyType);
+          }
+          if (from < 19) {
+            await m.addColumn(seedingEvents, seedingEvents.variety);
+            await m.addColumn(seedingEvents, seedingEvents.seedTreatment);
+            await m.addColumn(seedingEvents, seedingEvents.germinationPct);
+            await m.addColumn(seedingEvents, seedingEvents.emergenceDate);
+            await m.addColumn(seedingEvents, seedingEvents.emergencePct);
+            await m.addColumn(seedingEvents, seedingEvents.plantingMethod);
+          }
+          if (from < 20) {
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.applicationTime);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.applicationMethod);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.nozzleType);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.nozzleSpacingCm);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.operatingPressure);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.pressureUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.groundSpeed);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.speedUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.adjuvantName);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.adjuvantRate);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.adjuvantRateUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.spraySolutionPh);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.waterVolumeUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.cloudCoverPct);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.soilMoisture);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.treatedArea);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.treatedAreaUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.plotsTreated);
+          }
+          if (from < 21) {
+            await m.addColumn(treatments, treatments.treatmentType);
+            await m.addColumn(treatments, treatments.timingCode);
+            await m.addColumn(treatments, treatments.eppoCode);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.activeIngredientPct);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.formulationType);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.manufacturer);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.registrationNumber);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.eppoCode);
+          }
+          if (from < 22) {
+            await m.addColumn(plots, plots.plotLengthM);
+            await m.addColumn(plots, plots.plotWidthM);
+            await m.addColumn(plots, plots.plotAreaM2);
+            await m.addColumn(plots, plots.harvestLengthM);
+            await m.addColumn(plots, plots.harvestWidthM);
+            await m.addColumn(plots, plots.harvestAreaM2);
+            await m.addColumn(plots, plots.plotDirection);
+            await m.addColumn(plots, plots.soilSeries);
+            await m.addColumn(plots, plots.plotNotes);
+          }
+          if (from < 23) {
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.timingCode);
+            await m.addColumn(assessmentDefinitions,
+                assessmentDefinitions.daysAfterTreatment);
+            await m.addColumn(assessmentDefinitions,
+                assessmentDefinitions.assessmentMethod);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.validMin);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.validMax);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.eppoCode);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.cropPart);
+            await m.addColumn(assessmentDefinitions,
+                assessmentDefinitions.timingDescription);
+          }
+          if (from < 24) {
+            await m.addColumn(ratingRecords, ratingRecords.ratingTime);
+            await m.addColumn(ratingRecords, ratingRecords.ratingMethod);
+            await m.addColumn(ratingRecords, ratingRecords.confidence);
+            await m.addColumn(ratingRecords, ratingRecords.amended);
+            await m.addColumn(ratingRecords, ratingRecords.originalValue);
+            await m.addColumn(ratingRecords, ratingRecords.amendmentReason);
+            await m.addColumn(ratingRecords, ratingRecords.amendedBy);
+            await m.addColumn(ratingRecords, ratingRecords.amendedAt);
           }
           await _createIndexes();
         },

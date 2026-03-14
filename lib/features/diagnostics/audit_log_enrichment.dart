@@ -23,8 +23,9 @@ class EnrichedAuditEvent {
     final parts = <String>[];
     if (trialName != null && trialName!.isNotEmpty) parts.add(trialName!);
     if (sessionName != null && sessionName!.isNotEmpty) parts.add(sessionName!);
-    if (plotLabel != null && plotLabel!.isNotEmpty)
+    if (plotLabel != null && plotLabel!.isNotEmpty) {
       parts.add('Plot $plotLabel');
+    }
     if (parts.isEmpty) {
       if (event.trialId != null) parts.add('Trial ${event.trialId}');
       if (event.sessionId != null) parts.add('Session ${event.sessionId}');

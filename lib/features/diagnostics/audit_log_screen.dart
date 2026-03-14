@@ -161,8 +161,9 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     required int? plotPk,
     required String? plotLabel,
   }) {
-    if (plotPk == null || plotLabel == null || plotLabel.isEmpty)
+    if (plotPk == null || plotLabel == null || plotLabel.isEmpty) {
       return description;
+    }
     // Replace "plot 40" / "plot 40" patterns so UI shows "plot 101" instead of raw ID.
     final pattern = RegExp('plot\\s+$plotPk\\b', caseSensitive: false);
     return description.replaceAll(pattern, 'plot $plotLabel');

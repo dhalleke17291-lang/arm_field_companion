@@ -44,7 +44,7 @@ class GradientScreenHeader extends StatelessWidget
             textTheme: ThemeData.dark().textTheme,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+            padding: const EdgeInsets.fromLTRB(4, 8, 8, 16),
             child: Row(
               children: [
                 leading ??
@@ -69,14 +69,14 @@ class GradientScreenHeader extends StatelessWidget
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (subtitle != null && subtitle!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           subtitle!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            letterSpacing: 0.2,
-                          ),
+                          style: AppDesignTokens.bodyCrispStyle(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontWeight: FontWeight.w500,
+                          ).copyWith(letterSpacing: 0.2),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

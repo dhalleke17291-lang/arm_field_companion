@@ -55,6 +55,9 @@ class TreatmentRepository {
     required String code,
     required String name,
     String? description,
+    String? treatmentType,
+    String? timingCode,
+    String? eppoCode,
   }) {
     return _db.into(_db.treatments).insert(
           TreatmentsCompanion.insert(
@@ -62,6 +65,9 @@ class TreatmentRepository {
             code: code,
             name: name,
             description: Value(description),
+            treatmentType: Value(treatmentType),
+            timingCode: Value(timingCode),
+            eppoCode: Value(eppoCode),
           ),
         );
   }
@@ -71,6 +77,9 @@ class TreatmentRepository {
     String? code,
     String? name,
     String? description,
+    String? treatmentType,
+    String? timingCode,
+    String? eppoCode,
   }) async {
     await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
       TreatmentsCompanion(
@@ -78,6 +87,12 @@ class TreatmentRepository {
         name: name != null ? Value(name) : const Value.absent(),
         description:
             description != null ? Value(description) : const Value.absent(),
+        treatmentType: treatmentType != null
+            ? Value(treatmentType)
+            : const Value.absent(),
+        timingCode:
+            timingCode != null ? Value(timingCode) : const Value.absent(),
+        eppoCode: eppoCode != null ? Value(eppoCode) : const Value.absent(),
       ),
     );
   }
@@ -103,6 +118,11 @@ class TreatmentRepository {
     String? applicationTiming,
     String? notes,
     int sortOrder = 0,
+    double? activeIngredientPct,
+    String? formulationType,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
   }) {
     return _db.into(_db.treatmentComponents).insert(
           TreatmentComponentsCompanion.insert(
@@ -114,6 +134,11 @@ class TreatmentRepository {
             applicationTiming: Value(applicationTiming),
             notes: Value(notes),
             sortOrder: Value(sortOrder),
+            activeIngredientPct: Value(activeIngredientPct),
+            formulationType: Value(formulationType),
+            manufacturer: Value(manufacturer),
+            registrationNumber: Value(registrationNumber),
+            eppoCode: Value(eppoCode),
           ),
         );
   }
