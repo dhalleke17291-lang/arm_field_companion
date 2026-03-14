@@ -1513,12 +1513,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          AppDesignTokens.spacing16,
-          AppDesignTokens.spacing8,
-          AppDesignTokens.spacing16,
-          AppDesignTokens.spacing12,
-        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: const BoxDecoration(
           color: AppDesignTokens.cardSurface,
           border: Border(top: BorderSide(color: AppDesignTokens.borderCrisp)),
@@ -1603,8 +1598,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         elevation: 0,
                         shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppDesignTokens.radiusSmall),
+                          borderRadius:
+                              BorderRadius.circular(AppDesignTokens.radiusCard),
                         ),
                       ),
                       child: _isSaving
@@ -1648,9 +1643,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                   Text(
                                     '→ $destination',
                                     style: TextStyle(
-                                      fontSize: 11,
-                                      color:
-                                          Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),

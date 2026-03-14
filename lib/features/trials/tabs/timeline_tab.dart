@@ -185,9 +185,9 @@ class _TimelineDateGroupSection extends StatelessWidget {
           Text(
             dateHeader,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: scheme.onSurface,
+              color: scheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppDesignTokens.spacing8),
@@ -336,9 +336,8 @@ class _TimelineEventRow extends StatelessWidget {
                             Text(
                               event.timingText!,
                               style: TextStyle(
-                                fontSize: 12,
-                                color: scheme.onSurfaceVariant
-                                    .withValues(alpha: 0.9),
+                                fontSize: 11,
+                                color: scheme.onSurfaceVariant,
                               ),
                             ),
                           ],

@@ -1004,8 +1004,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           }),
           borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppDesignTokens.spacing16, vertical: 10),
+            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
               border: Border.all(color: AppDesignTokens.borderCrisp),

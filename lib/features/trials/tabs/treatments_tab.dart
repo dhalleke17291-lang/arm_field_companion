@@ -625,6 +625,9 @@ class _TreatmentExpansionTileState
     final formula = buildTreatmentFormula(components ?? []);
     return ExpansionTile(
       initiallyExpanded: false,
+      tilePadding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16, vertical: 8),
+      childrenPadding: const EdgeInsets.fromLTRB(32, 0, 16, 8),
       onExpansionChanged: (v) => setState(() => _expanded = v),
       leading: Container(
         padding: const EdgeInsets.symmetric(
@@ -708,7 +711,7 @@ class _TreatmentExpansionTileState
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
-                color: theme.colorScheme.onSurface,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

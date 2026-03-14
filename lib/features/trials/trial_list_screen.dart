@@ -781,7 +781,7 @@ class _TrialCard extends StatelessWidget {
             ? const Color(0xFFC97A0A)
             : const Color(0xFF2563EB);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),

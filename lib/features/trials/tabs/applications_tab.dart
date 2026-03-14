@@ -108,11 +108,14 @@ class ApplicationsTab extends ConsumerWidget {
         ? treatments.where((t) => t.id == e.treatmentId).firstOrNull
         : null;
 
+    final theme = Theme.of(context);
     return Card(
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         title: Text(
           dateTimeLabel,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              fontWeight: FontWeight.w600, fontSize: 15),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,15 +124,18 @@ class ApplicationsTab extends ConsumerWidget {
             Text(
               productLabel ?? 'No product specified',
               style: TextStyle(
+                fontWeight: FontWeight.w400,
                 color: productLabel != null
-                    ? null
-                    : Theme.of(context).textTheme.bodySmall?.color,
+                    ? theme.colorScheme.onSurface
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ),
             if (rateUnitLabel != null)
               Text(
                 rateUnitLabel,
-                style: const TextStyle(fontSize: 13),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant),
               ),
             Wrap(
               spacing: 6,

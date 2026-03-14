@@ -226,25 +226,28 @@ class PlotDetailsBar extends StatelessWidget {
               ),
             );
           },
-          child: const Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppDesignTokens.spacing16,
-              vertical: AppDesignTokens.spacing12,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Plot Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+          child: const SizedBox(
+            height: 56,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppDesignTokens.spacing16,
+                vertical: AppDesignTokens.spacing12,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Plot Details',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                SizedBox(width: AppDesignTokens.spacing8),
-                Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
-              ],
+                  SizedBox(width: AppDesignTokens.spacing8),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
+                ],
+              ),
             ),
           ),
         ),
@@ -1753,7 +1756,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppDesignTokens.spacing16,
-              vertical: AppDesignTokens.spacing8,
+              vertical: AppDesignTokens.spacing12,
             ),
             leading: Container(
               width: 40,
@@ -3005,11 +3008,14 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
             treatmentId: effectiveTreatmentId,
             assignmentSource: effectiveSource);
         return AppCard(
-          margin: const EdgeInsets.only(left: 16, right: 16, top: 6, bottom: 6),
+          margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
           child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppDesignTokens.spacing16,
+                vertical: AppDesignTokens.spacing12),
             dense: true,
             leading: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(8),
