@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
@@ -20,6 +21,82 @@ enum _LayoutLayer { treatments, applications, ratings }
 const double _kGridMinScale = 0.15;
 const double _kGridMaxScale = 5.0;
 const double _kGridZoomFactor = 1.25;
+
+/// Minimap: 48x32 thumbnail of full grid with white viewport rect showing current pan/zoom.
+class _LayoutMinimap extends StatelessWidget {
+  const _LayoutMinimap({
+    required this.gridWidth,
+    required this.gridHeight,
+    required this.viewportWidth,
+    required this.viewportHeight,
+    required this.panDx,
+    required this.panDy,
+    required this.scale,
+  });
+
+  final double gridWidth;
+  final double gridHeight;
+  final double viewportWidth;
+  final double viewportHeight;
+  final double panDx;
+  final double panDy;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    const double w = 48;
+    const double h = 32;
+    if (gridWidth <= 0 || gridHeight <= 0) return const SizedBox.shrink();
+    final vw = (viewportWidth / scale).clamp(0.0, gridWidth);
+    final vh = (viewportHeight / scale).clamp(0.0, gridHeight);
+    final vx = (-panDx / scale).clamp(0.0, gridWidth - vw);
+    final vy = (-panDy / scale).clamp(0.0, gridHeight - vh);
+    final rx = (vx / gridWidth) * w;
+    final ry = (vy / gridHeight) * h;
+    final rw = (vw / gridWidth) * w;
+    final rh = (vh / gridHeight) * h;
+    return Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: scheme.outline.withValues(alpha: 0.5),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ColoredBox(
+                color: scheme.surfaceContainerHighest,
+              ),
+            ),
+            Positioned(
+              left: rx,
+              top: ry,
+              width: rw.clamp(2.0, w),
+              height: rh.clamp(2.0, h),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  border: Border.all(
+                    color: scheme.outline.withValues(alpha: 0.6),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 void _plotGridZoom(TransformationController controller,
     {required bool zoomIn}) {
@@ -267,8 +344,6 @@ class PlotsTab extends ConsumerStatefulWidget {
 }
 
 class _PlotsTabState extends ConsumerState<PlotsTab> {
-  bool _showMatrix = false;
-
   @override
   Widget build(BuildContext context) {
     final trial = widget.trial;
@@ -306,7 +381,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildListMatrixToggle(context),
+                _buildViewPlotLayoutButton(context),
                 _buildPlotsSummaryRowsOnly(
                   context,
                   ref,
@@ -374,59 +449,51 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildListMatrixToggle(context),
-              _showMatrix
-                  ? _AssignmentMatrix(
-                      trial: trial,
-                      plots: plots,
-                      shrinkWrap: true,
-                    )
-                  : _buildPlotsSummaryRowsOnly(
-                      context,
-                      ref,
-                      trial,
-                      plots.length,
-                      rowCount,
-                      columnCount,
-                      repNumbers.length,
-                      assignedCount,
-                      unassignedCount,
-                      treatments.length,
-                      treatmentComponentCount,
-                      ratedPlotsCount,
-                      sessionCount,
-                      applicationCount,
-                      lastApplication,
-                      seedingDate,
-                    ),
+              _buildViewPlotLayoutButton(context),
+              _buildPlotsSummaryRowsOnly(
+                context,
+                ref,
+                trial,
+                plots.length,
+                rowCount,
+                columnCount,
+                repNumbers.length,
+                assignedCount,
+                unassignedCount,
+                treatments.length,
+                treatmentComponentCount,
+                ratedPlotsCount,
+                sessionCount,
+                applicationCount,
+                lastApplication,
+                seedingDate,
+              ),
             ],
           );
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildListMatrixToggle(context),
+            _buildViewPlotLayoutButton(context),
             Expanded(
-              child: _showMatrix
-                  ? _AssignmentMatrix(trial: trial, plots: plots)
-                  : _buildPlotsSummaryWithBar(
-                      context,
-                      ref,
-                      trial,
-                      plots.length,
-                      rowCount,
-                      columnCount,
-                      repNumbers.length,
-                      assignedCount,
-                      unassignedCount,
-                      treatments.length,
-                      treatmentComponentCount,
-                      ratedPlotsCount,
-                      sessionCount,
-                      applicationCount,
-                      lastApplication,
-                      seedingDate,
-                    ),
+              child: _buildPlotsSummaryWithBar(
+                context,
+                ref,
+                trial,
+                plots.length,
+                rowCount,
+                columnCount,
+                repNumbers.length,
+                assignedCount,
+                unassignedCount,
+                treatments.length,
+                treatmentComponentCount,
+                ratedPlotsCount,
+                sessionCount,
+                applicationCount,
+                lastApplication,
+                seedingDate,
+              ),
             ),
           ],
         );
@@ -434,32 +501,23 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     );
   }
 
-  Widget _buildListMatrixToggle(BuildContext context) {
+  Widget _buildViewPlotLayoutButton(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppDesignTokens.spacing16,
-        AppDesignTokens.spacing8,
-        AppDesignTokens.spacing16,
-        AppDesignTokens.spacing4,
-      ),
-      child: SegmentedButton<bool>(
-        segments: const [
-          ButtonSegment(
-              value: false, label: Text('List'), icon: Icon(Icons.list)),
-          ButtonSegment(
-              value: true, label: Text('Matrix'), icon: Icon(Icons.grid_on)),
-        ],
-        selected: {_showMatrix},
-        onSelectionChanged: (Set<bool> selected) {
-          setState(() => _showMatrix = selected.first);
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: OutlinedButton.icon(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => _PlotDetailsScreen(
+                trial: widget.trial,
+                initialShowLayoutView: true,
+              ),
+            ),
+          );
         },
-        style: ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
-            horizontal: AppDesignTokens.spacing12,
-            vertical: AppDesignTokens.spacing8,
-          )),
-        ),
+        icon: const Icon(Icons.grid_view, size: 20),
+        label: const Text('View plot layout'),
       ),
     );
   }
@@ -484,7 +542,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     DateTime? seedingDate,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,311 +860,61 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
   }
 }
 
-/// Assignment matrix: plots grouped by rep, each cell shows plot label + treatment code; tap to assign.
-/// When [shrinkWrap] is true, the matrix is used inside an unbounded scroll (e.g. trial detail Plots tab);
-/// it must not use [Expanded] and instead uses [ListView] with [shrinkWrap: true].
-class _AssignmentMatrix extends ConsumerWidget {
-  const _AssignmentMatrix({
-    required this.trial,
-    required this.plots,
-    this.shrinkWrap = false,
-  });
-
-  final Trial trial;
-  final List<Plot> plots;
-  final bool shrinkWrap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final assignmentsList =
-        ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
-    final treatments =
-        ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
-    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
-    final treatmentById = {for (var t in treatments) t.id: t};
-
-    if (plots.isEmpty) {
-      return Center(
-        child: Text(
-          'No plots',
-          style: TextStyle(
-            fontSize: 15,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
-    final blocks = buildRepBasedLayout(plots);
-    final listContent = ListView(
-      shrinkWrap: shrinkWrap,
-      physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
-      padding: const EdgeInsets.fromLTRB(
-        AppDesignTokens.spacing16,
-        AppDesignTokens.spacing4,
-        AppDesignTokens.spacing16,
-        AppDesignTokens.spacing12,
-      ),
-      children: [
-        for (final block in blocks)
-          for (final repRow in block.repRows) ...[
-            Padding(
-              padding: const EdgeInsets.only(
-                top: AppDesignTokens.spacing12,
-                bottom: AppDesignTokens.spacing8,
-              ),
-              child: Text(
-                'Rep ${repRow.repNumber}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            Wrap(
-              spacing: AppDesignTokens.spacing8,
-              runSpacing: AppDesignTokens.spacing8,
-              children: repRow.plots.map((plot) {
-                final a = assignmentByPlotId[plot.id];
-                final tid = a?.treatmentId ?? plot.treatmentId;
-                final treatment = tid != null ? treatmentById[tid] : null;
-                final code = treatment?.code ?? '—';
-                final treatmentIndex = tid != null
-                    ? treatments.indexWhere((t) => t.id == tid)
-                    : null;
-                return _AssignmentMatrixCell(
-                  plot: plot,
-                  treatmentCode: code,
-                  treatmentIndex: treatmentIndex,
-                  trial: trial,
-                  plots: plots,
-                );
-              }).toList(),
-            ),
-          ],
-      ],
-    );
-
-    if (shrinkWrap) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          listContent,
-          _AssignmentMatrixLegend(treatments: treatments),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(child: listContent),
-        _AssignmentMatrixLegend(treatments: treatments),
-      ],
-    );
-  }
-}
-
-/// One shared legend below the matrix: treatment code (chip) + name. Keeps cells compact.
-class _AssignmentMatrixLegend extends StatelessWidget {
-  const _AssignmentMatrixLegend({required this.treatments});
-
-  final List<Treatment> treatments;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        AppDesignTokens.spacing16,
-        AppDesignTokens.spacing12,
-        AppDesignTokens.spacing16,
-        AppDesignTokens.spacing16,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: Border(
-          top: BorderSide(color: scheme.outline.withValues(alpha: 0.4)),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Treatment legend',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppDesignTokens.spacing8),
-          if (treatments.isEmpty)
-            Text(
-              'No treatments defined',
-              style: TextStyle(
-                fontSize: 13,
-                color: scheme.onSurfaceVariant,
-              ),
-            )
-          else
-            ...treatments
-                .map((t) => _TreatmentLegendRow(code: t.code, name: t.name)),
-        ],
-      ),
-    );
-  }
-}
-
-/// One row in the legend: [code] name.
-class _TreatmentLegendRow extends StatelessWidget {
-  const _TreatmentLegendRow({required this.code, required this.name});
-
-  final String code;
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDesignTokens.spacing8,
-              vertical: 4,
-            ),
-            decoration: BoxDecoration(
-              color: scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
-              border: Border.all(
-                color: scheme.outline.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Text(
-              code,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: scheme.onPrimaryContainer,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppDesignTokens.spacing8),
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: scheme.onSurface,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Single plot cell in the assignment matrix: label + treatment code; tap opens assign dialog.
-class _AssignmentMatrixCell extends ConsumerWidget {
-  const _AssignmentMatrixCell({
-    required this.plot,
-    required this.treatmentCode,
-    required this.trial,
-    required this.plots,
-    this.treatmentIndex,
-  });
-
-  final Plot plot;
-  final String treatmentCode;
-  final Trial trial;
-  final List<Plot> plots;
-  final int? treatmentIndex;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final label = getDisplayPlotLabel(plot, plots);
-    Color bg = scheme.surface;
-    if (treatmentIndex != null && treatmentIndex! >= 0) {
-      bg = scheme.primaryContainer.withValues(
-        alpha: 0.12 + (treatmentIndex! % 3) * 0.04,
-      );
-    }
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
-      child: InkWell(
-        onTap: () async {
-          await showAssignTreatmentDialogForTrial(
-            trial: trial,
-            context: context,
-            ref: ref,
-            plot: plot,
-            plots: plots,
-          );
-          ref.invalidate(assignmentsForTrialProvider(trial.id));
-        },
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDesignTokens.spacing12,
-            vertical: AppDesignTokens.spacing8,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
-            border: Border.all(color: scheme.outline.withValues(alpha: 0.6)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppDesignTokens.primaryText,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                treatmentCode,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Plot Details sub-screen: List/Layout toggle, layer switcher, and full plot list or grid.
 class _PlotDetailsScreen extends ConsumerStatefulWidget {
   final Trial trial;
+  /// When true, open with Layout (grid) tab selected instead of List.
+  final bool initialShowLayoutView;
 
-  const _PlotDetailsScreen({required this.trial});
+  const _PlotDetailsScreen({
+    required this.trial,
+    this.initialShowLayoutView = false,
+  });
 
   @override
   ConsumerState<_PlotDetailsScreen> createState() => _PlotDetailsScreenState();
 }
 
 class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
-  bool _showLayoutView = false;
+  late bool _showLayoutView;
+
+  @override
+  void initState() {
+    super.initState();
+    _showLayoutView = widget.initialShowLayoutView;
+    _loadPlotLayoutHintDismissed();
+    _gridTransformController.addListener(_onGridTransformChanged);
+  }
+
+  bool? _plotLayoutHintDismissed;
+  static const String _kPlotLayoutHintDismissedKey = 'plot_layout_hint_dismissed';
+
+  Future<void> _loadPlotLayoutHintDismissed() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _plotLayoutHintDismissed = prefs.getBool(_kPlotLayoutHintDismissedKey) ?? false;
+    });
+  }
+
+  double? _layoutGridWidth;
+  double? _layoutGridHeight;
+  double? _layoutViewportWidth;
+  double? _layoutViewportHeight;
+  double _panDx = 0;
+  double _panDy = 0;
+  double _scale = 1.0;
+
+  void _onGridTransformChanged() {
+    final m = _gridTransformController.value;
+    if (!mounted) return;
+    setState(() {
+      _scale = m.entry(0, 0).abs();
+      _panDx = m.entry(0, 3);
+      _panDy = m.entry(1, 3);
+    });
+  }
+
   _LayoutLayer _layoutLayer = _LayoutLayer.treatments;
   ApplicationEvent? _selectedAppEvent;
   List<ApplicationPlotRecord> _appPlotRecords = [];
@@ -1119,6 +927,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
 
   @override
   void dispose() {
+    _gridTransformController.removeListener(_onGridTransformChanged);
     _gridTransformController.dispose();
     super.dispose();
   }
@@ -1153,12 +962,19 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
       gridWidth = columnCount * 56.0;
       gridHeight = rowCount * (rowHeight + rowSpacing) + 24;
     }
-    final dx = (viewportWidth - gridWidth) / 2;
-    final dy = (viewportHeight - gridHeight) / 2;
-    final dxClamped = dx > 0 ? dx : 0.0;
-    final dyClamped = dy > 0 ? dy : 0.0;
+    if (mounted) {
+      setState(() {
+        _layoutGridWidth = gridWidth;
+        _layoutGridHeight = gridHeight;
+        _layoutViewportWidth = viewportWidth;
+        _layoutViewportHeight = viewportHeight;
+      });
+    }
+    // Start at left when grid overflows; center when grid fits.
+    final dx = gridWidth > viewportWidth ? 0.0 : (viewportWidth - gridWidth) / 2;
+    final dy = gridHeight > viewportHeight ? 0.0 : (viewportHeight - gridHeight) / 2;
     _gridTransformController.value = Matrix4.identity()
-      ..translateByDouble(dxClamped, dyClamped, 0.0, 1.0);
+      ..translateByDouble(dx, dy, 0.0, 1.0);
   }
 
   void _gridZoomIn() => _plotGridZoom(_gridTransformController, zoomIn: true);
@@ -1221,6 +1037,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         _buildListLayoutToggleForDetails(context, ref, plots),
         if (_showLayoutView) ...[
           _buildLayerSwitcherForDetails(context),
+          if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
           if (_layoutLayer == _LayoutLayer.applications)
             _buildAppEventSelectorForDetails(context, ref),
         ],
@@ -1309,6 +1126,15 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                           plotPksWithTrialApplication.add(p.id);
                         }
                       }
+                      final scheme = Theme.of(context).colorScheme;
+                      final gridW = _layoutGridWidth ?? gridContentWidth;
+                      final gridH = _layoutGridHeight ?? (viewportHeight * 0.5);
+                      final vw = _layoutViewportWidth ?? viewportWidth;
+                      final vh = _layoutViewportHeight ?? viewportHeight;
+                      final showRightFade = gridW * _scale > vw &&
+                          _panDx > vw - gridW * _scale;
+                      final showBottomFade = gridH * _scale > vh &&
+                          _panDy > vh - gridH * _scale;
                       return ClipRect(
                         child: Stack(
                           children: [
@@ -1346,6 +1172,62 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                                 ),
                               ),
                             ),
+                            if (showRightFade)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: 32,
+                                child: IgnorePointer(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                        colors: [
+                                          Colors.transparent,
+                                          scheme.surface.withValues(alpha: 0.8),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (showBottomFade)
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                height: 32,
+                                child: IgnorePointer(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          scheme.surface.withValues(alpha: 0.8),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (gridW > 0 && gridH > 0)
+                              Positioned(
+                                left: 12,
+                                bottom: 12,
+                                child: _LayoutMinimap(
+                                  gridWidth: gridW,
+                                  gridHeight: gridH,
+                                  viewportWidth: vw,
+                                  viewportHeight: vh,
+                                  panDx: _panDx,
+                                  panDy: _panDy,
+                                  scale: _scale,
+                                ),
+                              ),
                             Positioned(
                               right: AppDesignTokens.spacing12,
                               bottom: AppDesignTokens.spacing12,
@@ -1382,6 +1264,40 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
               child: _buildPlotsListBodyForDetails(
                   context, ref, plots, assignmentsLocked)),
       ],
+    );
+  }
+
+  Widget _buildPanZoomHint(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_kPlotLayoutHintDismissedKey, true);
+        if (!mounted) return;
+        setState(() => _plotLayoutHintDismissed = true);
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.swipe,
+              size: 14,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Pan to explore · Pinch to zoom',
+              style: TextStyle(
+                fontSize: 11,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -2413,6 +2329,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                   child: SizedBox(
                     height: rowHeight,
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         SizedBox(
@@ -2428,46 +2345,38 @@ class _PlotLayoutGrid extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: _tileSpacing),
-                        Expanded(
-                          child: ClipRect(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  for (var i = 0;
-                                      i < repRow.plots.length;
-                                      i++) ...[
-                                    if (i > 0)
-                                      const SizedBox(width: _tileSpacing),
-                                    SizedBox(
-                                      width: cellSize,
-                                      height: cellSize,
-                                      child: _PlotGridTile(
-                                        plot: repRow.plots[i],
-                                        treatmentMap: treatmentMap,
-                                        treatments: treatments,
-                                        trial: trial,
-                                        tileColor:
-                                            _tileColorFor(repRow.plots[i]),
-                                        treatmentIdOverride:
-                                            plotIdToTreatmentId?[
-                                                    repRow.plots[i].id] ??
-                                                repRow.plots[i].treatmentId,
-                                        displayLabel: getDisplayPlotLabel(
-                                            repRow.plots[i], plots),
-                                        onLongPress: onLongPressPlot != null
-                                            ? () => onLongPressPlot!(
-                                                repRow.plots[i])
-                                            : null,
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (var i = 0;
+                                i < repRow.plots.length;
+                                i++) ...[
+                              if (i > 0)
+                                const SizedBox(width: _tileSpacing),
+                              SizedBox(
+                                width: cellSize,
+                                height: cellSize,
+                                child: _PlotGridTile(
+                                  plot: repRow.plots[i],
+                                  treatmentMap: treatmentMap,
+                                  treatments: treatments,
+                                  trial: trial,
+                                  tileColor:
+                                      _tileColorFor(repRow.plots[i]),
+                                  treatmentIdOverride:
+                                      plotIdToTreatmentId?[
+                                              repRow.plots[i].id] ??
+                                          repRow.plots[i].treatmentId,
+                                  displayLabel: getDisplayPlotLabel(
+                                      repRow.plots[i], plots),
+                                  onLongPress: onLongPressPlot != null
+                                      ? () => onLongPressPlot!(
+                                          repRow.plots[i])
+                                      : null,
+                                ),
                               ),
-                            ),
-                          ),
+                            ],
+                          ],
                         ),
                       ],
                     ),

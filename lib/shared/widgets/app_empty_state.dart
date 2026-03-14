@@ -23,22 +23,14 @@ class AppEmptyState extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: AppDesignTokens.spacing24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 48,
-                color: scheme.primary,
-              ),
+            Icon(
+              icon,
+              size: 64,
+              color: scheme.outlineVariant,
             ),
             const SizedBox(height: AppDesignTokens.spacing16),
             Text(
@@ -57,11 +49,11 @@ class AppEmptyState extends StatelessWidget {
               subtitle,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppDesignTokens.secondaryText,
+                    color: scheme.onSurfaceVariant,
                   ) ??
-                  const TextStyle(
+                  TextStyle(
                     fontSize: 14,
-                    color: AppDesignTokens.secondaryText,
+                    color: scheme.onSurfaceVariant,
                   ),
             ),
             if (action != null) ...[

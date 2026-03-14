@@ -13,8 +13,8 @@ class AppUiConstants {
   /// Section header: vertical padding (compact)
   static const double sectionHeaderPaddingV = 8;
 
-  /// Empty state: icon size
-  static const double emptyStateIconSize = 56;
+  /// Empty state: icon size (standardized for consistency)
+  static const double emptyStateIconSize = 64;
 
   /// Empty state: space between icon and title
   static const double emptyStateSpacingAfterIcon = 12;
@@ -184,7 +184,7 @@ class StandardEmptyState extends StatelessWidget {
             Icon(
               icon,
               size: AppUiConstants.emptyStateIconSize,
-              color: scheme.primary,
+              color: scheme.outlineVariant,
             ),
             const SizedBox(height: AppUiConstants.emptyStateSpacingAfterIcon),
             Text(

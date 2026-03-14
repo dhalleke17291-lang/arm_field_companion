@@ -841,6 +841,8 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           title: Text(
             'Plot dimensions (${_dimensionsFilledCount()} filled)',
             style: const TextStyle(
@@ -1015,6 +1017,8 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
           ],
         ),
         ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           title: Text(
             'Field conditions (${_fieldConditionsFilledCount()} filled)',
             style: const TextStyle(

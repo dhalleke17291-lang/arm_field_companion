@@ -31,7 +31,7 @@ class AppDialog extends StatelessWidget {
     }
 
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
@@ -40,10 +40,18 @@ class AppDialog extends StatelessWidget {
       title: Text(
         title,
         style: theme.textTheme.titleMedium?.copyWith(
+          fontSize: 17,
           fontWeight: FontWeight.w600,
         ),
       ),
-      content: body,
+      content: DefaultTextStyle(
+        style: (theme.textTheme.bodyLarge ?? const TextStyle(fontSize: 15))
+            .copyWith(
+          fontSize: 15,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        child: body,
+      ),
       actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: actions,
     );

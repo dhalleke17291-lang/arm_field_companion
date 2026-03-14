@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 
 /// Five-section add/edit application bottom sheet content.
@@ -379,7 +378,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
 
     return SingleChildScrollView(
       controller: widget.scrollController,
-      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -481,6 +480,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           // Section 2 — Equipment
           ExpansionTile(
             initiallyExpanded: _initialExpandedEquip,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             title: Row(
               children: [
                 const Text('Equipment details'),
@@ -599,6 +600,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           // Section 3 — Tank mix
           ExpansionTile(
             initiallyExpanded: _initialExpandedTank,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             title: Row(
               children: [
                 const Text('Tank mix'),
@@ -740,6 +743,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           // Section 4 — Weather
           ExpansionTile(
             initiallyExpanded: _initialExpandedWeather,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             title: Row(
               children: [
                 const Text('Weather & conditions'),
@@ -822,6 +827,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           // Section 5 — Coverage & timing
           ExpansionTile(
             initiallyExpanded: _initialExpandedCoverage,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             title: Row(
               children: [
                 const Text('Coverage & timing'),
@@ -887,24 +894,32 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                       : () async {
                           final confirm = await showDialog<bool>(
                             context: context,
-                            builder: (d) => AlertDialog(
-                              title: const Text('Delete Application?'),
-                              content: const Text(
-                                'This application will be permanently deleted.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(d, false),
-                                  child: const Text('Cancel'),
+                            builder: (d) {
+                              final theme = Theme.of(d);
+                              return AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
+                                title: const Text('Delete Application?'),
+                                content: Text(
+                                  'This application will be permanently deleted.',
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                      color: theme.colorScheme.onSurfaceVariant),
                                 ),
-                                FilledButton(
-                                  style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.red),
-                                  onPressed: () => Navigator.pop(d, true),
-                                  child: const Text('Delete'),
-                                ),
-                              ],
-                            ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(d, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    style: FilledButton.styleFrom(
+                                        backgroundColor: theme.colorScheme.error),
+                                    onPressed: () => Navigator.pop(d, true),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              );
+                            },
                           );
                           if (confirm == true && mounted) widget.onDelete!();
                         },

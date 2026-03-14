@@ -233,110 +233,55 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  Widget _buildReadinessCard(BuildContext context, WidgetRef ref, Trial trial) {
-    final async = ref.watch(trialReadinessProvider(trial.id));
-    return async.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+  Widget _buildExportIconWithBadge(
+      BuildContext context, WidgetRef ref, Trial trial) {
+    final theme = Theme.of(context);
+    final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
+    return readinessAsync.when(
+      loading: () => _exportIconButton(context, ref, trial),
+      error: (_, __) => _exportIconButton(context, ref, trial),
       data: (report) {
-        final status = report.status;
-        String statusLabel;
-        Color borderColor;
-        switch (status) {
-          case TrialReadinessStatus.ready:
-            statusLabel = 'Ready to export';
-            borderColor = AppDesignTokens.successFg;
-            break;
-          case TrialReadinessStatus.readyWithWarnings:
-            statusLabel = 'Ready with warnings';
-            borderColor = Colors.amber.shade700;
-            break;
-          case TrialReadinessStatus.notReady:
-            statusLabel = 'Not ready to export';
-            borderColor = Theme.of(context).colorScheme.error;
-            break;
-        }
-        final parts = <String>[];
-        if (report.warningCount > 0) {
-          parts.add('${report.warningCount} warnings');
-        }
-        if (report.blockerCount > 0) {
-          parts.add('${report.blockerCount} blockers');
-        }
-        final countsLine =
-            parts.isEmpty ? 'All checks passed' : parts.join(' · ');
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppDesignTokens.spacing16, vertical: 6),
-          child: Material(
-            color: AppDesignTokens.cardSurface,
-            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-            child: InkWell(
-              onTap: () {
-                _showReadinessSheet(
-                  context,
-                  ref,
-                  trial,
-                  report,
-                  showExportAnyway: report.canExport && report.warningCount > 0,
-                );
-              },
-              borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppDesignTokens.spacing16, vertical: 10),
-                decoration: BoxDecoration(
-                  borderRadius:
-                      BorderRadius.circular(AppDesignTokens.radiusCard),
-                  border: Border.all(color: borderColor, width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            statusLabel,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: borderColor,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            countsLine,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppDesignTokens.secondaryText,
-                            ),
-                          ),
-                        ],
-                      ),
+        final showBadge =
+            report.blockerCount > 0 || report.warningCount > 0;
+        final isBlocker = report.blockerCount > 0;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            _exportIconButton(context, ref, trial),
+            if (showBadge)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isBlocker
+                          ? theme.colorScheme.error
+                          : Colors.amber,
                     ),
-                    TextButton(
-                      onPressed: () {
-                        _showReadinessSheet(
-                          context,
-                          ref,
-                          trial,
-                          report,
-                          showExportAnyway:
-                              report.canExport && report.warningCount > 0,
-                        );
-                      },
-                      child: const Text('View details'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _exportIconButton(
+      BuildContext context, WidgetRef ref, Trial trial) {
+    return IconButton(
+      icon: const Icon(Icons.ios_share_outlined,
+          color: Colors.white, size: 22),
+      iconSize: 22,
+      padding: const EdgeInsets.all(8),
+      onPressed: _isExporting
+          ? null
+          : () => _onExportTapped(context, ref, trial),
+      tooltip: 'Export trial (CSV bundle)',
     );
   }
 
@@ -421,7 +366,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            currentTrial.name,
+                            currentTrial.name.length > 20
+                                ? '${currentTrial.name.substring(0, 20)}…'
+                                : currentTrial.name,
                             style: AppDesignTokens.headerTitleStyle(
                               fontSize: 17,
                               color: Colors.white,
@@ -434,8 +381,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                             Text(
                               currentTrial.crop!,
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.8),
                               ),
                             ),
                           ],
@@ -451,7 +398,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          currentTrial.status,
+                          labelForTrialStatus(currentTrial.status),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -464,6 +411,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     IconButton(
                       icon: const Icon(Icons.edit_outlined,
                           color: Colors.white, size: 22),
+                      iconSize: 22,
+                      padding: const EdgeInsets.all(8),
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute<void>(
@@ -476,6 +425,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     IconButton(
                       icon: const Icon(Icons.description_outlined,
                           color: Colors.white, size: 22),
+                      iconSize: 22,
+                      padding: const EdgeInsets.all(8),
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute<void>(
@@ -485,15 +436,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                       ),
                       tooltip: 'View full protocol',
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.ios_share_outlined,
-                          color: Colors.white, size: 22),
-                      onPressed: _isExporting
-                          ? null
-                          : () => _onExportTapped(
-                              context, ref, currentTrial),
-                      tooltip: 'Export trial (CSV bundle)',
-                    ),
+                    _buildExportIconWithBadge(context, ref, currentTrial),
                   ],
                 ),
               ),
@@ -515,15 +458,18 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
           ),
           const SizedBox(height: AppDesignTokens.spacing12),
-          _buildCropLocationSection(context, currentTrial),
-          _buildSessionsBar(
-            context,
-            ref.watch(sessionsForTrialProvider(widget.trial.id)),
-            ref.watch(seedingEventForTrialProvider(widget.trial.id)),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildSessionsBar(
+              context,
+              ref.watch(sessionsForTrialProvider(widget.trial.id)),
+              ref.watch(seedingEventForTrialProvider(widget.trial.id)),
+            ),
           ),
-          _buildReadinessCard(context, ref, currentTrial),
-          const SizedBox(height: AppDesignTokens.spacing12),
-          PlotsTab(trial: currentTrial, embeddedInScroll: true),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: PlotsTab(trial: currentTrial, embeddedInScroll: true),
+          ),
           const SizedBox(height: 24),
         ],
       ),
@@ -586,7 +532,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  currentTrial.name,
+                                  currentTrial.name.length > 20
+                                      ? '${currentTrial.name.substring(0, 20)}…'
+                                      : currentTrial.name,
                                   style: AppDesignTokens.headerTitleStyle(
                                     fontSize: 17,
                                     color: Colors.white,
@@ -599,9 +547,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                   Text(
                                     currentTrial.crop!,
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 13,
                                       color: Colors.white
-                                          .withValues(alpha: 0.7),
+                                          .withValues(alpha: 0.8),
                                     ),
                                   ),
                                 ],
@@ -617,7 +565,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                currentTrial.status,
+                                labelForTrialStatus(currentTrial.status),
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -630,6 +578,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           IconButton(
                             icon: const Icon(Icons.edit_outlined,
                                 color: Colors.white, size: 22),
+                            iconSize: 22,
+                            padding: const EdgeInsets.all(8),
                             onPressed: () => Navigator.push(
                               context,
                               MaterialPageRoute<void>(
@@ -642,6 +592,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           IconButton(
                             icon: const Icon(Icons.description_outlined,
                                 color: Colors.white, size: 22),
+                            iconSize: 22,
+                            padding: const EdgeInsets.all(8),
                             onPressed: () => Navigator.push(
                               context,
                               MaterialPageRoute<void>(
@@ -651,15 +603,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                             ),
                             tooltip: 'View full protocol',
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.ios_share_outlined,
-                                color: Colors.white, size: 22),
-                            onPressed: _isExporting
-                                ? null
-                                : () => _onExportTapped(
-                                    context, ref, currentTrial),
-                            tooltip: 'Export trial (CSV bundle)',
-                          ),
+                          _buildExportIconWithBadge(
+                              context, ref, currentTrial),
                         ],
                       ),
                     ),
@@ -682,15 +627,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ),
                 const SizedBox(height: AppDesignTokens.spacing12),
                 if (_selectedTabIndex != _sessionsIndex) ...[
-                  _buildCropLocationSection(context, currentTrial),
-                  _buildSessionsBar(
-                    context,
-                    ref.watch(sessionsForTrialProvider(widget.trial.id)),
-                    ref.watch(
-                        seedingEventForTrialProvider(widget.trial.id)),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _buildSessionsBar(
+                      context,
+                      ref.watch(sessionsForTrialProvider(widget.trial.id)),
+                      ref.watch(
+                          seedingEventForTrialProvider(widget.trial.id)),
+                    ),
                   ),
-                  _buildReadinessCard(context, ref, currentTrial),
-                  const SizedBox(height: AppDesignTokens.spacing12),
+                  const SizedBox(height: 8),
                 ],
               ],
             ),
@@ -745,69 +691,54 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ? 'Close Trial'
                 : null;
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppDesignTokens.spacing16,
-          vertical: AppDesignTokens.spacing12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       decoration: const BoxDecoration(
         color: AppDesignTokens.sectionHeaderBg,
         border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (int i = 0; i < _stepperStatuses.length; i++) ...[
                 if (i > 0)
                   Expanded(
-                    child: Container(
-                      height: 2,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      color: i <= currentIndex
-                          ? AppDesignTokens.primary
-                          : AppDesignTokens.divider,
+                    child: Center(
+                      child: Container(
+                        height: 2,
+                        margin: const EdgeInsets.only(top: 13),
+                        color: i <= currentIndex
+                            ? AppDesignTokens.primary
+                            : AppDesignTokens.divider,
+                      ),
                     ),
                   ),
-                _buildStepperDot(context, i, currentIndex),
+                _buildStepperStep(context, i, currentIndex),
                 if (i < _stepperStatuses.length - 1)
                   Expanded(
-                    child: Container(
-                      height: 2,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      color: i < currentIndex
-                          ? AppDesignTokens.primary
-                          : AppDesignTokens.divider,
+                    child: Center(
+                      child: Container(
+                        height: 2,
+                        margin: const EdgeInsets.only(top: 13),
+                        color: i < currentIndex
+                            ? AppDesignTokens.primary
+                            : AppDesignTokens.divider,
+                      ),
                     ),
                   ),
               ],
             ],
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (int i = 0; i < _stepperStatuses.length; i++)
-                Expanded(
-                  child: Text(
-                    labelForTrialStatus(_stepperStatuses[i]),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight:
-                          i == currentIndex ? FontWeight.w700 : FontWeight.w500,
-                      color: i <= currentIndex
-                          ? AppDesignTokens.primaryText
-                          : AppDesignTokens.secondaryText,
-                    ),
-                  ),
-                ),
-            ],
-          ),
           if (buttonLabel != null && nextStatus != null) ...[
             const SizedBox(height: AppDesignTokens.spacing12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
                 onPressed: () =>
                     _transitionTrialStatus(context, ref, nextStatus),
                 style: ElevatedButton.styleFrom(
@@ -820,6 +751,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   ),
                 ),
                 child: Text(buttonLabel),
+                ),
               ),
             ),
           ],
@@ -828,20 +760,24 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  Widget _buildStepperDot(
+  static const double _stepperCircleSize = 28;
+  static const double _stepperLabelWidth = 56;
+
+  Widget _buildStepperStep(
       BuildContext context, int stepIndex, int currentIndex) {
-    const double size = 28;
     final isCompleted = stepIndex < currentIndex;
     final isCurrent = stepIndex == currentIndex;
     final isFuture = stepIndex > currentIndex;
-    return SizedBox(
-      width: size + 8,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: size,
-            height: size,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: _stepperCircleSize,
+          height: _stepperCircleSize,
+          child: Container(
+            width: _stepperCircleSize,
+            height: _stepperCircleSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isCompleted
@@ -875,15 +811,32 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           '${stepIndex + 1}',
                           style: const TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                             color: AppDesignTokens.secondaryText,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       )
                     : null,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          width: _stepperLabelWidth,
+          child: Text(
+            labelForTrialStatus(_stepperStatuses[stepIndex]),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight:
+                  stepIndex == currentIndex ? FontWeight.w700 : FontWeight.w500,
+              color: stepIndex <= currentIndex
+                  ? AppDesignTokens.primaryText
+                  : AppDesignTokens.secondaryText,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -924,49 +877,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         const SnackBar(content: Text('Could not update trial status')),
       );
     }
-  }
-
-  Widget _buildCropLocationSection(BuildContext context, Trial trial) {
-    final cropPart = trial.crop?.trim();
-    final seasonPart = trial.season?.trim();
-    final locationPart = trial.location?.trim();
-    final hasCropYear = (cropPart != null && cropPart.isNotEmpty) ||
-        (seasonPart != null && seasonPart.isNotEmpty);
-    final hasLocation = locationPart != null && locationPart.isNotEmpty;
-    if (!hasCropYear && !hasLocation) return const SizedBox.shrink();
-    final cropYearText = [
-      if (cropPart != null && cropPart.isNotEmpty) cropPart,
-      if (seasonPart != null && seasonPart.isNotEmpty) seasonPart,
-    ].join(' · ');
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppDesignTokens.spacing16,
-          vertical: AppDesignTokens.spacing4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (hasCropYear)
-            Text(
-              cropYearText,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppDesignTokens.primaryText,
-              ),
-            ),
-          if (hasCropYear && hasLocation) const SizedBox(height: 4),
-          if (locationPart != null && locationPart.isNotEmpty)
-            Text(
-              locationPart,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-        ],
-      ),
-    );
   }
 
   Widget _buildSessionsBar(

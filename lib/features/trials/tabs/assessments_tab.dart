@@ -701,6 +701,8 @@ class _CustomAssessmentFormDialogState
           ),
           const SizedBox(height: 16),
           ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             title: Text(
               'Scale & validation${_scaleSectionHasData ? ' (filled)' : ''}',
               style: const TextStyle(
@@ -766,6 +768,8 @@ class _CustomAssessmentFormDialogState
             ],
           ),
           ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             title: Text(
               'Timing & regulatory${_timingSectionHasData ? ' (filled)' : ''}',
               style: const TextStyle(
