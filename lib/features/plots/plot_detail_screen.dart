@@ -199,8 +199,11 @@ class PlotDetailScreen extends ConsumerWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(width: 8),
-                                      const Icon(Icons.circle,
-                                          size: 6, color: Colors.grey),
+                                      Icon(Icons.circle,
+                                          size: 6,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outlineVariant),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -267,10 +270,16 @@ class PlotDetailScreen extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.history,
-                                size: 48, color: Colors.grey.shade300),
+                                size: 48,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant),
                             const SizedBox(height: 12),
-                            const Text('No Ratings Yet',
-                                style: TextStyle(color: Colors.grey)),
+                            Text('No Ratings Yet',
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant)),
                           ],
                         ),
                       ),
@@ -355,8 +364,11 @@ class PlotDetailScreen extends ConsumerWidget {
                                     ),
                                     Text(
                                       _formatDate(rating.createdAt),
-                                      style: const TextStyle(
-                                          fontSize: 11, color: Colors.grey),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant),
                                     ),
                                     TextButton(
                                       style: TextButton.styleFrom(

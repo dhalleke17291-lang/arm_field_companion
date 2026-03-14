@@ -1245,7 +1245,7 @@ class _SessionPill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

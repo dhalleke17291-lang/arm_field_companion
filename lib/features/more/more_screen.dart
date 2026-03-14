@@ -130,7 +130,7 @@ class MoreScreen extends ConsumerWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         fontSize: 16,
                         color: AppDesignTokens.primaryText,
                       ),

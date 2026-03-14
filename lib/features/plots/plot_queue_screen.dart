@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
@@ -210,7 +211,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                       Icon(
                         plots.isEmpty ? Icons.grid_off : Icons.check_circle,
                         size: 64,
-                        color: plots.isEmpty ? Colors.grey : Colors.green,
+                        color: plots.isEmpty
+                            ? Theme.of(context).colorScheme.outlineVariant
+                            : Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -224,7 +227,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                         plots.isEmpty
                             ? 'Go to the Plots tab to import plots first.'
                             : 'You can export and share this session now.',
-                        style: TextStyle(color: Colors.grey[700]),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -347,8 +351,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final items = <Widget>[];
     for (final rep in sortedReps) {
       items.add(Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        color: Colors.grey.shade200,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Text(
           rep != null ? 'Rep $rep' : 'No Rep',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
@@ -547,7 +551,7 @@ class _PlotQueueTile extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: const Color(0xFF2D5A40),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
           ),
           child: Text(
             displayNum,
@@ -575,7 +579,7 @@ class _PlotQueueTile extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
                   border: Border.all(color: Colors.orange.shade300),
                 ),
                 child: Text(
@@ -607,7 +611,8 @@ class _PlotQueueTile extends ConsumerWidget {
         ),
         subtitle: plot.rep != null ? Text('Rep ${plot.rep}') : null,
         trailing: isRated
-            ? const Icon(Icons.chevron_right, color: Colors.grey)
+            ? Icon(Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)
             : const Icon(Icons.chevron_right),
         onTap: () async {
           if (isRated && plotRatings.isNotEmpty) {

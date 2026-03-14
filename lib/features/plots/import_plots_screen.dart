@@ -274,7 +274,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
           const SizedBox(width: 8),
           Text('$label: $count',
               style:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );

@@ -130,7 +130,7 @@ class AssessmentsTab extends ConsumerWidget {
                 child: Text(
                   total == 1 ? '1 assessment' : '$total assessments',
                   style: const TextStyle(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     fontSize: 12,
                     color: AppDesignTokens.primary,
                   ),

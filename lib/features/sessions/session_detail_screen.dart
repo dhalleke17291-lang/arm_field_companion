@@ -184,10 +184,12 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             children: [
               Text('${result.rowCount} ratings exported'),
               if (result.auditFilePath != null)
-                const Padding(
-                  padding: EdgeInsets.only(top: 4),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
                   child: Text('Session audit events exported (separate file).',
-                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               if (result.warningMessage != null) ...[
                 const SizedBox(height: AppDesignTokens.spacing8),
@@ -204,7 +206,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               SelectableText(result.filePath!,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
           actions: [
@@ -299,7 +303,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               SelectableText(result.filePath!,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
           actions: [
@@ -693,7 +699,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                         vertical: AppDesignTokens.spacing8),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2D5A40),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
                     ),
                     child: Text(
                       displayNum,
@@ -744,9 +750,12 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       : null,
                   children: plotRatings.isEmpty
                       ? [
-                          const ListTile(
+                          ListTile(
                             title: Text('Not rated',
-                                style: TextStyle(color: Colors.grey)),
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant)),
                           )
                         ]
                       : plotRatings.map((rating) {

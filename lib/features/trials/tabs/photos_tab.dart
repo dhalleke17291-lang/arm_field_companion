@@ -29,7 +29,7 @@ class PhotosTab extends ConsumerWidget {
               const Expanded(
                 child: Text(
                   'Photos',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(

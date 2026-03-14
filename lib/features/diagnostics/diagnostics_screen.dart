@@ -511,7 +511,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                   'This action cannot be undone.\nUse this only for development or testing.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.error,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 const SizedBox(height: 16),

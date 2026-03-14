@@ -28,8 +28,8 @@ class AppUiConstants {
   /// Card list: horizontal padding
   static const double listPaddingH = 8;
 
-  /// Card list: vertical padding
-  static const double listPaddingV = 6;
+  /// Card list: vertical padding (8pt grid)
+  static const double listPaddingV = 8;
 
   /// Primary action button: vertical padding (compact)
   static const double primaryButtonPaddingV = 12;
@@ -43,8 +43,8 @@ class AppUiConstants {
   /// Lock notice: space above when shown under a section header
   static const double lockNoticeSpacingAbove = 0;
 
-  /// Lock notice: space below when shown under a section header
-  static const double lockNoticeSpacingBelow = 6;
+  /// Lock notice: space below when shown under a section header (8pt grid)
+  static const double lockNoticeSpacingBelow = 8;
 
   /// Section-level Add button: icon size (use in [StandardSectionAddButton]).
   static const double sectionAddIconSize = 18;
@@ -360,7 +360,7 @@ class OperationalSourceBadge extends StatelessWidget {
         _label,
         style: TextStyle(
           fontSize: 11,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
           color: scheme.onSurfaceVariant,
         ),
       ),
@@ -407,7 +407,7 @@ class ProtocolLockChip extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w400,
                 color: isLocked ? scheme.onSurfaceVariant : scheme.primary,
               ),
             ),

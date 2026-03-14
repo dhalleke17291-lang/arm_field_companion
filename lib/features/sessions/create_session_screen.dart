@@ -166,14 +166,18 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
               ? Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'No assessments defined.\nGo to Assessments tab to add some.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant),
                     ),
                   ),
                 )
@@ -204,9 +208,15 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                         secondary: CircleAvatar(
                           backgroundColor: isSelected
                               ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.shade200,
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
                           child: Icon(Icons.analytics,
-                              color: isSelected ? Colors.white : Colors.grey,
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                               size: 20),
                         ),
                         shape: RoundedRectangleBorder(
@@ -240,9 +250,15 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                         secondary: CircleAvatar(
                           backgroundColor: isSelected
                               ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.shade200,
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
                           child: Icon(Icons.analytics,
-                              color: isSelected ? Colors.white : Colors.grey,
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                               size: 20),
                         ),
                         shape: RoundedRectangleBorder(

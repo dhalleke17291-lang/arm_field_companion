@@ -401,7 +401,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
       padding: const EdgeInsets.symmetric(vertical: AppDesignTokens.spacing8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
       ),
       child: Column(
         children: [
@@ -824,7 +824,7 @@ class _TrialCard extends StatelessWidget {
                       height: 52,
                       decoration: BoxDecoration(
                         color: style.lightColor,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
                       ),
                       child: Icon(style.icon, color: style.color, size: 24),
                     ),
