@@ -5,7 +5,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/trial_state.dart';
-import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -18,32 +17,6 @@ const List<String> _assessmentMethods = [
   'Weighed',
   'Calculated',
 ];
-
-const List<String> _cropParts = [
-  'Whole plant',
-  'Leaf',
-  'Stem',
-  'Root',
-  'Fruit',
-  'Seed',
-  'Canopy',
-  'Other',
-];
-
-const List<String> _timingCodes = [
-  'PRE',
-  'POST',
-  '7DAT',
-  '14DAT',
-  '21DAT',
-  '28DAT',
-  'AAPRE',
-  'AAPOST',
-  'At harvest',
-  'Other',
-];
-
-const List<String> _dataTypes = ['numeric', 'text'];
 
 /// Assessments tab for trial detail: library + custom assessments list.
 class AssessmentsTab extends ConsumerWidget {
@@ -444,14 +417,304 @@ class AssessmentsTab extends ConsumerWidget {
 
   Future<void> _showAddAssessmentDialog(
       BuildContext context, WidgetRef ref) async {
-    await showDialog(
+    final nameController = TextEditingController();
+    final unitController = TextEditingController();
+    final scaleMinController = TextEditingController();
+    final scaleMaxController = TextEditingController();
+    String? selectedType;
+
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => _CustomAssessmentFormDialog(
-        trial: trial,
-        ref: ref,
-        existing: null,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.6,
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Add Assessment',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: InputDecoration(
+                            hintText: 'Assessment name',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFFE0DDD6)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFFE0DDD6)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF2D5A40), width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 14),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<String?>(
+                          key: ValueKey(selectedType),
+                          initialValue: selectedType,
+                          decoration: InputDecoration(
+                            hintText: 'Assessment type',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFFE0DDD6)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFFE0DDD6)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF2D5A40), width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 14),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          items: [
+                            'Visual rating',
+                            'Measured',
+                            'Counted',
+                            'Weighed',
+                            'Calculated',
+                          ]
+                              .map((t) => DropdownMenuItem<String?>(
+                                  value: t, child: Text(t)))
+                              .toList(),
+                          onChanged: (v) => setState(() => selectedType = v),
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: unitController,
+                          decoration: InputDecoration(
+                            hintText: 'Unit e.g. %, cm, kg/ha',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFFE0DDD6)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFFE0DDD6)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF2D5A40), width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 14),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: scaleMinController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: 'Scale min',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFFE0DDD6)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFFE0DDD6)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFF2D5A40),
+                                        width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 14),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextFormField(
+                                controller: scaleMaxController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: 'Scale max',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFFE0DDD6)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFFE0DDD6)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFF2D5A40),
+                                        width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 14),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2D5A40),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () async {
+                        final name = nameController.text.trim();
+                        if (name.isEmpty) return;
+                        try {
+                          final defRepo = ref.read(
+                              assessmentDefinitionRepositoryProvider);
+                          final code =
+                              'CUSTOM_${trial.id}_${DateTime.now().millisecondsSinceEpoch}';
+                          final scaleMin = double.tryParse(
+                              scaleMinController.text.trim());
+                          final scaleMax = double.tryParse(
+                              scaleMaxController.text.trim());
+                          final unitStr = unitController.text.trim();
+                          final defId = await defRepo.insertCustom(
+                            code: code,
+                            name: name,
+                            category: 'custom',
+                            dataType: 'numeric',
+                            unit:
+                                unitStr.isEmpty ? null : unitStr,
+                            scaleMin: scaleMin,
+                            scaleMax: scaleMax,
+                            assessmentMethod: selectedType,
+                            cropPart: null,
+                            timingCode: null,
+                            daysAfterTreatment: null,
+                            timingDescription: null,
+                            validMin: null,
+                            validMax: null,
+                            eppoCode: null,
+                          );
+                          await ref
+                              .read(trialAssessmentRepositoryProvider)
+                              .addToTrial(
+                                trialId: trial.id,
+                                assessmentDefinitionId: defId,
+                                displayNameOverride: name,
+                                selectedManually: true,
+                              );
+                          ref.invalidate(
+                              trialAssessmentsWithDefinitionsForTrialProvider(
+                                  trial.id));
+                          if (sheetContext.mounted) {
+                            Navigator.of(sheetContext).pop();
+                          }
+                        } catch (e) {
+                          if (sheetContext.mounted) {
+                            ScaffoldMessenger.of(sheetContext).showSnackBar(
+                              SnackBar(
+                                content: Text('Save failed: $e'),
+                                backgroundColor: Theme.of(sheetContext)
+                                    .colorScheme
+                                    .error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
+    nameController.dispose();
+    unitController.dispose();
+    scaleMinController.dispose();
+    scaleMaxController.dispose();
   }
 }
 
@@ -459,6 +722,7 @@ class _CustomAssessmentFormDialog extends ConsumerStatefulWidget {
   const _CustomAssessmentFormDialog({
     required this.trial,
     required this.ref,
+    // ignore: unused_element_parameter
     this.existing,
   });
 
@@ -538,18 +802,6 @@ class _CustomAssessmentFormDialogState
     if (s.isEmpty) return null;
     return int.tryParse(s);
   }
-
-  bool get _scaleSectionHasData =>
-      _parseDouble(_scaleMinController) != null ||
-      _parseDouble(_scaleMaxController) != null ||
-      _parseDouble(_validMinController) != null ||
-      _parseDouble(_validMaxController) != null;
-
-  bool get _timingSectionHasData =>
-      _timingCode != null ||
-      _parseInt(_daysAfterTreatmentController) != null ||
-      _timingDescriptionController.text.trim().isNotEmpty ||
-      _eppoCodeController.text.trim().isNotEmpty;
 
   Future<void> _save() async {
     if (_saving) return;
@@ -631,211 +883,164 @@ class _CustomAssessmentFormDialogState
     }
   }
 
+  static const _border = Color(0xFFE0DDD6);
+  static const _focused = Color(0xFF2D5A40);
+
+  InputDecoration _fieldDecoration(String hintText) => InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(color: Colors.grey.shade400),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: _border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: _border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: _focused, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        filled: true,
+        fillColor: Colors.white,
+      );
+
   @override
   Widget build(BuildContext context) {
-    return AppDialog(
-      title: widget.existing != null ? 'Edit Assessment' : 'Add Assessment',
-      scrollable: true,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Assessment Name *',
-              border: OutlineInputBorder(),
-            ),
-            autofocus: widget.existing == null,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            key: ValueKey('dt_$_dataType'),
-            initialValue: _dataType,
-            decoration: const InputDecoration(
-              labelText: 'Assessment type',
-              border: OutlineInputBorder(),
-            ),
-            items: _dataTypes
-                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                .toList(),
-            onChanged: (v) => setState(() => _dataType = v ?? 'numeric'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _unitController,
-            decoration: const InputDecoration(
-              labelText: 'Unit (e.g. %, cm, score)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            key: ValueKey('am_$_assessmentMethod'),
-            initialValue: _assessmentMethod,
-            decoration: const InputDecoration(
-              labelText: 'Assessment method',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem<String?>(value: null, child: Text('—')),
-              ..._assessmentMethods.map((s) =>
-                  DropdownMenuItem<String?>(value: s, child: Text(s))),
-            ],
-            onChanged: (v) => setState(() => _assessmentMethod = v),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            key: ValueKey('cp_$_cropPart'),
-            initialValue: _cropPart,
-            decoration: const InputDecoration(
-              labelText: 'Crop part assessed',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem<String?>(value: null, child: Text('—')),
-              ..._cropParts.map((s) =>
-                  DropdownMenuItem<String?>(value: s, child: Text(s))),
-            ],
-            onChanged: (v) => setState(() => _cropPart = v),
-          ),
-          const SizedBox(height: 16),
-          ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            title: Text(
-              'Scale & validation${_scaleSectionHasData ? ' (filled)' : ''}',
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-            initiallyExpanded: _scaleSectionHasData,
+    return StatefulBuilder(
+      builder: (context, setModalState) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.6,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: _scaleMinController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Scale minimum',
-                  hintText: 'e.g. 0',
-                  border: OutlineInputBorder(),
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _scaleMaxController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Scale maximum',
-                  hintText: 'e.g. 10',
-                  border: OutlineInputBorder(),
+              // Title
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    widget.existing != null
+                        ? 'Edit Assessment'
+                        : 'Add Assessment',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _validMinController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Valid range minimum',
-                  hintText: 'Reject values below this',
-                  border: OutlineInputBorder(),
+              // Scrollable fields
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: _fieldDecoration('Assessment name'),
+                        autofocus: widget.existing == null,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String?>(
+                        key: ValueKey('am_$_assessmentMethod'),
+                        initialValue: _assessmentMethod,
+                        decoration: _fieldDecoration('Assessment type'),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                              value: null, child: Text('—')),
+                          ..._assessmentMethods.map((s) =>
+                              DropdownMenuItem<String?>(
+                                  value: s, child: Text(s))),
+                        ],
+                        onChanged: (v) {
+                          setState(() => _assessmentMethod = v);
+                          setModalState(() {});
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _unitController,
+                        decoration:
+                            _fieldDecoration('Unit e.g. %, cm, kg/ha'),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _scaleMinController,
+                              keyboardType: TextInputType.number,
+                              decoration: _fieldDecoration('Scale min'),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _scaleMaxController,
+                              keyboardType: TextInputType.number,
+                              decoration: _fieldDecoration('Scale max'),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _validMaxController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Valid range maximum',
-                  hintText: 'Reject values above this',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Scale defines the rating range shown to raters. Valid range triggers a warning if exceeded.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+              // Save button pinned at bottom
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2D5A40),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: _saving ? null : _save,
+                    child: Text(
+                      _saving ? 'Saving…' : 'Save',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            title: Text(
-              'Timing & regulatory${_timingSectionHasData ? ' (filled)' : ''}',
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-            initiallyExpanded: _timingSectionHasData,
-            children: [
-              DropdownButtonFormField<String?>(
-                key: ValueKey('tc_$_timingCode'),
-                initialValue: _timingCode,
-                decoration: const InputDecoration(
-                  labelText: 'Timing code',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                      value: null, child: Text('—')),
-                  ..._timingCodes.map((s) =>
-                      DropdownMenuItem<String?>(value: s, child: Text(s))),
-                ],
-                onChanged: (v) => setState(() => _timingCode = v),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _daysAfterTreatmentController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Days after treatment',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _timingDescriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Timing description',
-                  hintText: 'e.g. 14 days after second application',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _eppoCodeController,
-                decoration: const InputDecoration(
-                  labelText: 'EPPO observation code',
-                  hintText: 'e.g. PHYTO',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'Saving…' : (widget.existing != null ? 'Save' : 'Add')),
-        ),
-      ],
     );
   }
 }
