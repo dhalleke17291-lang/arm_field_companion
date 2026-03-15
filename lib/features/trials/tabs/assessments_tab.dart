@@ -461,7 +461,8 @@ class AssessmentsTab extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Flexible(
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
