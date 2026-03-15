@@ -435,10 +435,9 @@ class AssessmentsTab extends ConsumerWidget {
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          child: SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.6,
-            child: Column(
-              children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
                 Center(
                   child: Container(
                     width: 40,
@@ -461,8 +460,7 @@ class AssessmentsTab extends ConsumerWidget {
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.6,
+                Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
@@ -710,7 +708,6 @@ class AssessmentsTab extends ConsumerWidget {
             ),
           ),
         ),
-      ),
     );
     nameController.dispose();
     unitController.dispose();
