@@ -1283,28 +1283,36 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     ),
                   ] else if (_hasScaleDefined) ...[
                     const SizedBox(height: AppDesignTokens.spacing8),
-                    Text(
-                      _valueController.text.trim().isEmpty
-                          ? '${_currentAssessment.minValue}'
-                          : _valueController.text,
-                      style: const TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w800,
-                        color: AppDesignTokens.primaryText,
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            _valueController.text.trim().isEmpty
+                                ? '${_currentAssessment.minValue}'
+                                : _valueController.text,
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w800,
+                              color: AppDesignTokens.primaryText,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (_currentAssessment.unit != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              _currentAssessment.unit!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ],
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    if (_currentAssessment.unit != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        _currentAssessment.unit!,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
                     const SizedBox(height: AppDesignTokens.spacing16),
                     Slider(
                       value: _sliderValue,
@@ -1342,6 +1350,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                     const SizedBox(height: AppDesignTokens.spacing8),
