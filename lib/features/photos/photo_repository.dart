@@ -82,6 +82,24 @@ class PhotoRepository {
         .get();
   }
 
+  /// Photos for a single plot in a single session (one-shot fetch).
+  Future<List<Photo>> getPhotosForPlotInSession({
+    required int trialId,
+    required int plotPk,
+    required int sessionId,
+  }) {
+    return getPhotosForPlot(
+      trialId: trialId,
+      plotPk: plotPk,
+      sessionId: sessionId,
+    );
+  }
+
+  /// Deletes a photo record by id. Does not delete the file on disk.
+  Future<void> deletePhoto(int id) async {
+    await (_db.delete(_db.photos)..where((p) => p.id.equals(id))).go();
+  }
+
   Future<void> cleanupOrphanTempFiles() async {
     final pendingPhotos = await (_db.select(_db.photos)
           ..where((p) => p.status.equals('pending')))

@@ -426,6 +426,7 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     sessionRepository: ref.watch(sessionRepositoryProvider),
     ratingRepository: ref.watch(ratingRepositoryProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
+    photoRepository: ref.watch(photoRepositoryProvider),
   );
 });
 
@@ -502,6 +503,17 @@ class PhotosForPlotParams {
 final photosForPlotProvider =
     StreamProvider.family<List<Photo>, PhotosForPlotParams>((ref, params) {
   return ref.watch(photoRepositoryProvider).watchPhotosForPlot(
+        trialId: params.trialId,
+        plotPk: params.plotPk,
+        sessionId: params.sessionId,
+      );
+});
+
+/// One-shot fetch of photos for a plot in a session.
+final photosForPlotInSessionProvider =
+    FutureProvider.autoDispose.family<List<Photo>, PhotosForPlotParams>(
+        (ref, params) {
+  return ref.read(photoRepositoryProvider).getPhotosForPlotInSession(
         trialId: params.trialId,
         plotPk: params.plotPk,
         sessionId: params.sessionId,

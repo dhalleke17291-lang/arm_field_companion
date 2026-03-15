@@ -1,8 +1,8 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
+import 'package:arm_field_companion/core/database/app_database.dart';
 
 class MockRatingRepository implements RatingRepository {
   final List<RatingRecord> _records = [];
@@ -17,14 +17,12 @@ class MockRatingRepository implements RatingRepository {
     required int sessionId,
     int? subUnitId,
   }) async {
-    return _records
-        .where((r) =>
-            r.trialId == trialId &&
-            r.plotPk == plotPk &&
-            r.assessmentId == assessmentId &&
-            r.sessionId == sessionId &&
-            r.isCurrent)
-        .firstOrNull;
+    return _records.where((r) =>
+        r.trialId == trialId &&
+        r.plotPk == plotPk &&
+        r.assessmentId == assessmentId &&
+        r.sessionId == sessionId &&
+        r.isCurrent).firstOrNull;
   }
 
   @override
@@ -33,38 +31,7 @@ class MockRatingRepository implements RatingRepository {
     required int plotPk,
     required int assessmentId,
     required int sessionId,
-  }) =>
-      Stream.value(null);
-
-  @override
-  Future<RatingRecord?> getRatingById(int id) async =>
-      _records.where((r) => r.id == id).firstOrNull;
-
-  @override
-  Future<RatingRecord> updateRating({
-    required int ratingId,
-    double? numericValue,
-    String? textValue,
-    String? resultStatus,
-    String? amendmentReason,
-    String? amendedBy,
-    String? confidence,
-  }) async {
-    final i = _records.indexWhere((r) => r.id == ratingId);
-    if (i < 0) throw RatingIntegrityException('Rating not found: $ratingId');
-    _records[i] = _records[i].copyWith(
-      numericValue: Value(numericValue ?? _records[i].numericValue),
-      textValue: Value(textValue ?? _records[i].textValue),
-      resultStatus: resultStatus ?? _records[i].resultStatus,
-      amendmentReason: Value(amendmentReason),
-      amendedBy: Value(amendedBy),
-      confidence: Value(confidence),
-      amended: true,
-      amendedAt: Value(DateTime.now().toUtc()),
-      originalValue: Value(_records[i].originalValue ?? _records[i].numericValue?.toString() ?? _records[i].textValue),
-    );
-    return _records[i];
-  }
+  }) => Stream.value(null);
 
   @override
   Future<RatingRecord> saveRating({
@@ -73,12 +40,12 @@ class MockRatingRepository implements RatingRepository {
     required int assessmentId,
     required int sessionId,
     required String resultStatus,
+    required bool isSessionClosed,
     double? numericValue,
     String? textValue,
     int? subUnitId,
     String? raterName,
     int? performedByUserId,
-    required bool isSessionClosed,
     String? createdAppVersion,
     String? createdDeviceInfo,
     double? capturedLatitude,
@@ -114,15 +81,37 @@ class MockRatingRepository implements RatingRepository {
       previousId: null,
       createdAt: DateTime.now(),
       raterName: raterName,
-      createdAppVersion: createdAppVersion,
-      createdDeviceInfo: createdDeviceInfo,
-      capturedLatitude: capturedLatitude,
-      capturedLongitude: capturedLongitude,
       amended: false,
     );
 
     _records.add(record);
     return record;
+  }
+
+  @override
+  Future<RatingRecord?> getRatingById(int id) async {
+    return _records.where((r) => r.id == id).firstOrNull;
+  }
+
+  @override
+  Future<RatingRecord> updateRating({
+    required int ratingId,
+    double? numericValue,
+    String? textValue,
+    String? resultStatus,
+    String? amendmentReason,
+    String? amendedBy,
+    String? confidence,
+  }) async {
+    final idx = _records.indexWhere((r) => r.id == ratingId);
+    if (idx == -1) throw RatingIntegrityException('Rating not found: $ratingId');
+    final r = _records[idx];
+    _records[idx] = r.copyWith(
+      numericValue: Value(numericValue ?? r.numericValue),
+      textValue: Value(textValue ?? r.textValue),
+      resultStatus: resultStatus ?? r.resultStatus,
+    );
+    return _records[idx];
   }
 
   @override
@@ -145,12 +134,33 @@ class MockRatingRepository implements RatingRepository {
   }) async {}
 
   @override
-  Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) async =>
-      null;
+  Future<List<RatingRecord>> getCurrentRatingsForSession(int sessionId) async {
+    return _records.where((r) => r.sessionId == sessionId && r.isCurrent).toList();
+  }
 
   @override
-  Future<List<RatingCorrection>> getCorrectionsForRating(int ratingId) async =>
-      [];
+  Future<Set<int>> getRatedPlotPks({
+    required int sessionId,
+    required int assessmentId,
+  }) async {
+    return _records
+        .where((r) => r.sessionId == sessionId &&
+            r.assessmentId == assessmentId &&
+            r.isCurrent)
+        .map((r) => r.plotPk)
+        .toSet();
+  }
+
+  @override
+  Future<int> getRatedPlotCountForTrial(int trialId) async {
+    return _records.where((r) => r.trialId == trialId && r.isCurrent).map((r) => r.plotPk).toSet().length;
+  }
+
+  @override
+  Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) async => null;
+
+  @override
+  Future<List<RatingCorrection>> getCorrectionsForRating(int ratingId) async => [];
 
   @override
   Future<RatingCorrection> applyCorrection({
@@ -166,37 +176,7 @@ class MockRatingRepository implements RatingRepository {
     int? sessionId,
     int? plotPk,
   }) async {
-    throw UnimplementedError('applyCorrection mock');
-  }
-
-  @override
-  Future<List<RatingRecord>> getCurrentRatingsForSession(int sessionId) async {
-    return _records
-        .where((r) => r.sessionId == sessionId && r.isCurrent)
-        .toList();
-  }
-
-  @override
-  Future<Set<int>> getRatedPlotPks({
-    required int sessionId,
-    required int assessmentId,
-  }) async {
-    return _records
-        .where((r) =>
-            r.sessionId == sessionId &&
-            r.assessmentId == assessmentId &&
-            r.isCurrent)
-        .map((r) => r.plotPk)
-        .toSet();
-  }
-
-  @override
-  Future<int> getRatedPlotCountForTrial(int trialId) async {
-    return _records
-        .where((r) => r.trialId == trialId && r.isCurrent)
-        .map((r) => r.plotPk)
-        .toSet()
-        .length;
+    throw UnimplementedError('applyCorrection not used in save_rating_usecase_test');
   }
 }
 
@@ -210,8 +190,7 @@ void main() {
   });
 
   group('SaveRatingUseCase — Core Invariants', () {
-    test('INVARIANT: numericValue must be null when status is NOT_OBSERVED',
-        () async {
+    test('INVARIANT: numericValue must be null when status is NOT_OBSERVED', () async {
       final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
@@ -220,12 +199,12 @@ void main() {
         resultStatus: 'NOT_OBSERVED',
         numericValue: 5.0,
       ));
+
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('numericValue must be null'));
     });
 
-    test('INVARIANT: numericValue must be null when status is NOT_APPLICABLE',
-        () async {
+    test('INVARIANT: numericValue must be null when status is NOT_APPLICABLE', () async {
       final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
@@ -234,13 +213,12 @@ void main() {
         resultStatus: 'NOT_APPLICABLE',
         numericValue: 3.0,
       ));
+
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('numericValue must be null'));
     });
 
-    test(
-        'INVARIANT: numericValue must be null when status is MISSING_CONDITION',
-        () async {
+    test('INVARIANT: numericValue must be null when status is MISSING_CONDITION', () async {
       final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
@@ -249,6 +227,7 @@ void main() {
         resultStatus: 'MISSING_CONDITION',
         numericValue: 1.0,
       ));
+
       expect(result.isFailure, true);
     });
 
@@ -261,6 +240,7 @@ void main() {
         resultStatus: 'RECORDED',
         numericValue: 7.5,
       ));
+
       expect(result.isSuccess, true);
       expect(result.rating?.numericValue, 7.5);
       expect(result.rating?.resultStatus, 'RECORDED');
@@ -275,6 +255,7 @@ void main() {
         resultStatus: 'NOT_OBSERVED',
         numericValue: null,
       ));
+
       expect(result.isSuccess, true);
       expect(result.rating?.numericValue, null);
     });
@@ -290,6 +271,7 @@ void main() {
         minValue: 0.0,
         maxValue: 100.0,
       ));
+
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('below minimum'));
     });
@@ -305,6 +287,7 @@ void main() {
         minValue: 0.0,
         maxValue: 100.0,
       ));
+
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('exceeds maximum'));
     });
@@ -318,6 +301,7 @@ void main() {
         resultStatus: 'RECORDED',
         numericValue: 5.0,
       ));
+
       expect(result.isFailure, true);
       expect(result.errorMessage, contains('Invalid session ID'));
     });
@@ -331,6 +315,7 @@ void main() {
         resultStatus: 'RECORDED',
         numericValue: 5.0,
       ));
+
       final future2 = useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
@@ -339,8 +324,10 @@ void main() {
         resultStatus: 'RECORDED',
         numericValue: 6.0,
       ));
+
       final results = await Future.wait([future1, future2]);
       final statuses = results.map((r) => r.status).toList();
+
       expect(statuses.contains(SaveRatingStatus.success), true);
       expect(statuses.contains(SaveRatingStatus.debounced), true);
     });

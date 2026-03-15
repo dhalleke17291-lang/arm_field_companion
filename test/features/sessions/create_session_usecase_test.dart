@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
+import 'package:arm_field_companion/core/database/app_database.dart';
 
 class MockSessionRepository implements SessionRepository {
   final List<Session> _sessions = [];
@@ -19,6 +20,20 @@ class MockSessionRepository implements SessionRepository {
         .where((s) => s.trialId == trialId && s.endedAt == null)
         .firstOrNull);
   }
+
+  @override
+  Future<List<Session>> getSessionsForDate(String dateLocal,
+      {int? createdByUserId}) async {
+    return _sessions
+        .where((s) => s.sessionDateLocal == dateLocal)
+        .toList();
+  }
+
+  @override
+  Future<void> updateSessionAssessmentOrder(
+    int sessionId,
+    List<int> assessmentIdsInOrder,
+  ) async {}
 
   @override
   Future<Session> createSession({
@@ -40,7 +55,6 @@ class MockSessionRepository implements SessionRepository {
       endedAt: null,
       sessionDateLocal: sessionDateLocal,
       raterName: raterName,
-      createdByUserId: createdByUserId,
       status: 'open',
     );
     _sessions.add(session);
@@ -48,24 +62,11 @@ class MockSessionRepository implements SessionRepository {
   }
 
   @override
-  Future<void> closeSession(
-    int sessionId, {
-    String? raterName,
-    int? closedByUserId,
-  }) async {
+  Future<void> closeSession(int sessionId,
+      {String? raterName, int? closedByUserId}) async {
     final idx = _sessions.indexWhere((s) => s.id == sessionId);
     if (idx != -1) {
-      _sessions[idx] = Session(
-        id: _sessions[idx].id,
-        trialId: _sessions[idx].trialId,
-        name: _sessions[idx].name,
-        startedAt: _sessions[idx].startedAt,
-        endedAt: DateTime.now(),
-        sessionDateLocal: _sessions[idx].sessionDateLocal,
-        raterName: _sessions[idx].raterName,
-        createdByUserId: _sessions[idx].createdByUserId,
-        status: 'closed',
-      );
+      _sessions[idx] = _sessions[idx].copyWith(endedAt: Value(DateTime.now()));
     }
   }
 
@@ -76,17 +77,6 @@ class MockSessionRepository implements SessionRepository {
   Future<Session?> getSessionById(int sessionId) async {
     return _sessions.where((s) => s.id == sessionId).firstOrNull;
   }
-
-  @override
-  Future<List<Session>> getSessionsForDate(String dateLocal,
-          {int? createdByUserId}) async =>
-      _sessions.where((s) => s.sessionDateLocal == dateLocal).toList();
-
-  @override
-  Future<void> updateSessionAssessmentOrder(
-    int sessionId,
-    List<int> assessmentIdsInOrder,
-  ) async {}
 
   @override
   Future<List<Session>> getSessionsForTrial(int trialId) async {
@@ -112,6 +102,7 @@ void main() {
         assessmentIds: [1, 2, 3],
         raterName: 'Parminder',
       ));
+
       expect(result.success, true);
       expect(result.session?.name, 'Morning Rating');
     });
@@ -130,6 +121,7 @@ void main() {
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
+
       expect(result.success, false);
       expect(result.errorMessage, contains('already has an open session'));
     });
@@ -141,6 +133,7 @@ void main() {
         sessionDateLocal: '2026-03-04',
         assessmentIds: [],
       ));
+
       expect(result.success, false);
       expect(result.errorMessage, contains('At least one assessment'));
     });
@@ -152,6 +145,7 @@ void main() {
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
+
       expect(result.success, false);
       expect(result.errorMessage, contains('must not be empty'));
     });
@@ -163,12 +157,14 @@ void main() {
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
+
       final result2 = await useCase.execute(const CreateSessionInput(
         trialId: 2,
         name: 'Trial 2 Session',
         sessionDateLocal: '2026-03-04',
         assessmentIds: [1],
       ));
+
       expect(result1.success, true);
       expect(result2.success, true);
     });

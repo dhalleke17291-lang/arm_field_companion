@@ -66,8 +66,10 @@ class PlotDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
           SliverToBoxAdapter(
             child: Card(
               margin: const EdgeInsets.all(12),
@@ -395,9 +397,11 @@ class PlotDetailScreen extends ConsumerWidget {
                   ],
           ),
           SliverToBoxAdapter(
-            child: SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+            child: SizedBox(
+                height: MediaQuery.paddingOf(context).bottom + 24),
           ),
         ],
+        ),
       ),
     );
   }

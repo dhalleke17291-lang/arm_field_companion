@@ -237,51 +237,64 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       BuildContext context, WidgetRef ref, Trial trial) {
     final theme = Theme.of(context);
     final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
-    return readinessAsync.when(
-      loading: () => _exportIconButton(context, ref, trial),
-      error: (_, __) => _exportIconButton(context, ref, trial),
-      data: (report) {
-        final showBadge =
-            report.blockerCount > 0 || report.warningCount > 0;
-        final isBlocker = report.blockerCount > 0;
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _exportIconButton(context, ref, trial),
-            if (showBadge)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: IgnorePointer(
-                  child: Container(
-                    width: 10,
-                    height: 10,
+    final showBadge = readinessAsync.valueOrNull != null &&
+        (readinessAsync.value!.blockerCount > 0 ||
+            readinessAsync.value!.warningCount > 0);
+    final isBlocker = (readinessAsync.valueOrNull?.blockerCount ?? 0) > 0;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isExporting
+            ? null
+            : () => _onExportTapped(context, ref, trial),
+        borderRadius: BorderRadius.circular(20),
+        child: Tooltip(
+          message: 'Export trial (CSV bundle)',
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(8, 5, 10, 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.ios_share_outlined,
+                  color: Colors.white,
+                  size: 14,
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'Export',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                if (showBadge) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 8,
+                    height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isBlocker
                           ? theme.colorScheme.error
-                          : Colors.amber,
+                          : const Color(0xFFEF9F27),
                     ),
                   ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _exportIconButton(
-      BuildContext context, WidgetRef ref, Trial trial) {
-    return IconButton(
-      icon: const Icon(Icons.ios_share_outlined,
-          color: Colors.white, size: 22),
-      iconSize: 22,
-      padding: const EdgeInsets.all(8),
-      onPressed: _isExporting
-          ? null
-          : () => _onExportTapped(context, ref, trial),
-      tooltip: 'Export trial (CSV bundle)',
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -357,56 +370,53 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Trial',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            currentTrial.name.length > 20
-                                ? '${currentTrial.name.substring(0, 20)}…'
-                                : currentTrial.name,
+                            currentTrial.name,
                             style: AppDesignTokens.headerTitleStyle(
-                              fontSize: 17,
+                              fontSize: 18,
                               color: Colors.white,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (currentTrial.crop != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              currentTrial.crop!,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                            ),
-                          ],
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              if (currentTrial.crop != null)
+                                Expanded(
+                                  child: Text(
+                                    currentTrial.crop!,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white.withValues(alpha: 0.92),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              if (currentTrial.status.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    labelForTrialStatus(currentTrial.status),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
-                    if (currentTrial.status.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          labelForTrialStatus(currentTrial.status),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined,
@@ -522,58 +532,58 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  'Trial',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.white
-                                        .withValues(alpha: 0.7),
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  currentTrial.name.length > 20
-                                      ? '${currentTrial.name.substring(0, 20)}…'
-                                      : currentTrial.name,
+                                  currentTrial.name,
                                   style: AppDesignTokens.headerTitleStyle(
-                                    fontSize: 17,
+                                    fontSize: 18,
                                     color: Colors.white,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                if (currentTrial.crop != null) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    currentTrial.crop!,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.white
-                                          .withValues(alpha: 0.8),
-                                    ),
-                                  ),
-                                ],
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    if (currentTrial.crop != null)
+                                      Expanded(
+                                        child: Text(
+                                          currentTrial.crop!,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white
+                                                .withValues(alpha: 0.92),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    if (currentTrial.status.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          labelForTrialStatus(
+                                              currentTrial.status),
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white
+                                                .withValues(alpha: 0.9),
+                                            letterSpacing: 0.2,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
-                          if (currentTrial.status.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                labelForTrialStatus(currentTrial.status),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                            ),
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.edit_outlined,

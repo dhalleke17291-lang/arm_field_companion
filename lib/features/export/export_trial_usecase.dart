@@ -9,6 +9,7 @@ import '../../data/repositories/treatment_repository.dart';
 import '../../data/repositories/application_repository.dart';
 import '../../data/repositories/seeding_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
+import '../photos/photo_repository.dart';
 import 'csv_export_service.dart';
 import 'trial_export_bundle.dart';
 
@@ -23,6 +24,7 @@ class ExportTrialUseCase {
     required SessionRepository sessionRepository,
     required RatingRepository ratingRepository,
     required AssignmentRepository assignmentRepository,
+    required PhotoRepository photoRepository,
   })  : _trialRepository = trialRepository,
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
@@ -30,7 +32,8 @@ class ExportTrialUseCase {
         _seedingRepository = seedingRepository,
         _sessionRepository = sessionRepository,
         _ratingRepository = ratingRepository,
-        _assignmentRepository = assignmentRepository;
+        _assignmentRepository = assignmentRepository,
+        _photoRepository = photoRepository;
 
   final TrialRepository _trialRepository;
   final PlotRepository _plotRepository;
@@ -40,6 +43,7 @@ class ExportTrialUseCase {
   final SessionRepository _sessionRepository;
   final RatingRepository _ratingRepository;
   final AssignmentRepository _assignmentRepository;
+  final PhotoRepository _photoRepository;
 
   static const List<String> _observationsHeaders = [
     'trial_id',
@@ -67,6 +71,7 @@ class ExportTrialUseCase {
     'amended_at',
     'days_after_seeding',
     'days_after_first_application',
+    'photo_files',
     'export_timestamp',
   ];
 
@@ -335,6 +340,12 @@ class ExportTrialUseCase {
       ],
       [
         'observations.csv',
+        'photo_files',
+        'Comma-separated filenames of photos attached to this plot/session',
+        ''
+      ],
+      [
+        'observations.csv',
         'export_timestamp',
         'UTC timestamp when export was generated',
         'ISO 8601'
@@ -548,6 +559,16 @@ class ExportTrialUseCase {
           daysAfterFirstApp = r.createdAt.difference(firstAppDate).inDays;
         }
 
+        final photosForPlotSession = await _photoRepository.getPhotosForPlotInSession(
+          trialId: trialPk,
+          plotPk: r.plotPk,
+          sessionId: session.id,
+        );
+        final photoFiles = photosForPlotSession
+            .map((p) => p.filePath.split('/').last)
+            .where((s) => s.isNotEmpty)
+            .join(',');
+
         rows.add([
           _cell(trialPk),
           _cell(trial.name),
@@ -574,6 +595,7 @@ class ExportTrialUseCase {
           r.amendedAt != null ? _cell(r.amendedAt!.toIso8601String()) : '',
           daysAfterSeeding != null ? _cell(daysAfterSeeding) : '',
           daysAfterFirstApp != null ? _cell(daysAfterFirstApp) : '',
+          _cell(photoFiles.isEmpty ? null : photoFiles),
           exportTimestamp,
         ]);
       }
