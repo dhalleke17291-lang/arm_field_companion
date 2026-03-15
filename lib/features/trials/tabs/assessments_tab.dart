@@ -310,404 +310,180 @@ class AssessmentsTab extends ConsumerWidget {
   }
 
   void _showAddAssessmentOptions(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppDesignTokens.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppDesignTokens.radiusLarge),
-        ),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin:
-                    const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
-                decoration: BoxDecoration(
-                  color: AppDesignTokens.dragHandle,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const Padding(
-                padding:
-                    EdgeInsets.only(left: 20, bottom: AppDesignTokens.spacing8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Add Assessment',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppDesignTokens.primaryText,
-                    ),
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppDesignTokens.primaryTint,
-                    borderRadius:
-                        BorderRadius.circular(AppDesignTokens.radiusSmall),
-                  ),
-                  child: const Icon(
-                    Icons.library_books_outlined,
-                    color: AppDesignTokens.primary,
-                    size: 20,
-                  ),
-                ),
-                title: const Text(
-                  'From Library',
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
-                ),
-                subtitle: const Text(
-                  'Choose from standard templates',
-                  style: TextStyle(
-                      fontSize: 12, color: AppDesignTokens.secondaryText),
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  AssessmentLibraryPickerDialog.show(context, trial.id);
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppDesignTokens.primaryTint,
-                    borderRadius:
-                        BorderRadius.circular(AppDesignTokens.radiusSmall),
-                  ),
-                  child: const Icon(
-                    Icons.edit_outlined,
-                    color: AppDesignTokens.primary,
-                    size: 20,
-                  ),
-                ),
-                title: const Text(
-                  'Custom Assessment',
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
-                ),
-                subtitle: const Text(
-                  'Create your own assessment',
-                  style: TextStyle(
-                      fontSize: 12, color: AppDesignTokens.secondaryText),
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _showAddAssessmentDialog(context, ref);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
+    // Open the form dialog directly so the user always sees content.
+    // "From Library" is available as a link inside the dialog.
+    _showAddAssessmentDialog(context, ref);
   }
+
+  InputDecoration _formDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFE0DDD6)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFE0DDD6)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF2D5A40), width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        filled: true,
+        fillColor: Colors.white,
+      );
 
   Future<void> _showAddAssessmentDialog(
       BuildContext context, WidgetRef ref) async {
+    final parentContext = context;
     final nameController = TextEditingController();
     final unitController = TextEditingController();
     final scaleMinController = TextEditingController();
     final scaleMaxController = TextEditingController();
     String? selectedType;
 
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+      useRootNavigator: true,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('Add Assessment'),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      AssessmentLibraryPickerDialog.show(parentContext, trial.id);
+                    },
+                    icon: const Icon(Icons.library_books_outlined, size: 20),
+                    label: const Text('Add from library instead'),
                   ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Add Assessment',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: nameController,
+                    decoration: _formDecoration('Assessment name'),
                   ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            hintText: 'Assessment name',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFE0DDD6)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFE0DDD6)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF2D5A40), width: 1.5),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 14),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        DropdownButtonFormField<String?>(
-                          key: ValueKey(selectedType),
-                          initialValue: selectedType,
-                          decoration: InputDecoration(
-                            hintText: 'Assessment type',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFE0DDD6)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFE0DDD6)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF2D5A40), width: 1.5),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 14),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          items: [
-                            'Visual rating',
-                            'Measured',
-                            'Counted',
-                            'Weighed',
-                            'Calculated',
-                          ]
-                              .map((t) => DropdownMenuItem<String?>(
-                                  value: t, child: Text(t)))
-                              .toList(),
-                          onChanged: (v) => setState(() => selectedType = v),
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: unitController,
-                          decoration: InputDecoration(
-                            hintText: 'Unit e.g. %, cm, kg/ha',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFE0DDD6)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFE0DDD6)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF2D5A40), width: 1.5),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 14),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: scaleMinController,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  hintText: 'Scale min',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFFE0DDD6)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFFE0DDD6)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFF2D5A40),
-                                        width: 1.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 14),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextFormField(
-                                controller: scaleMaxController,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  hintText: 'Scale max',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFFE0DDD6)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFFE0DDD6)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFF2D5A40),
-                                        width: 1.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 14),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String?>(
+                    key: ValueKey(selectedType),
+                    initialValue: selectedType,
+                    decoration: _formDecoration('Assessment type'),
+                    items: [
+                      'Visual rating',
+                      'Measured',
+                      'Counted',
+                      'Weighed',
+                      'Calculated',
+                    ]
+                        .map((t) => DropdownMenuItem<String?>(
+                            value: t, child: Text(t)))
+                        .toList(),
+                    onChanged: (v) => setState(() => selectedType = v),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D5A40),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: unitController,
+                    decoration: _formDecoration('Unit e.g. %, cm, kg/ha'),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: scaleMinController,
+                          keyboardType: TextInputType.number,
+                          decoration: _formDecoration('Scale min'),
+                        ),
                       ),
-                      onPressed: () async {
-                        final name = nameController.text.trim();
-                        if (name.isEmpty) return;
-                        try {
-                          final defRepo = ref.read(
-                              assessmentDefinitionRepositoryProvider);
-                          final code =
-                              'CUSTOM_${trial.id}_${DateTime.now().millisecondsSinceEpoch}';
-                          final scaleMin = double.tryParse(
-                              scaleMinController.text.trim());
-                          final scaleMax = double.tryParse(
-                              scaleMaxController.text.trim());
-                          final unitStr = unitController.text.trim();
-                          final defId = await defRepo.insertCustom(
-                            code: code,
-                            name: name,
-                            category: 'custom',
-                            dataType: 'numeric',
-                            unit:
-                                unitStr.isEmpty ? null : unitStr,
-                            scaleMin: scaleMin,
-                            scaleMax: scaleMax,
-                            assessmentMethod: selectedType,
-                            cropPart: null,
-                            timingCode: null,
-                            daysAfterTreatment: null,
-                            timingDescription: null,
-                            validMin: null,
-                            validMax: null,
-                            eppoCode: null,
-                          );
-                          await ref
-                              .read(trialAssessmentRepositoryProvider)
-                              .addToTrial(
-                                trialId: trial.id,
-                                assessmentDefinitionId: defId,
-                                displayNameOverride: name,
-                                selectedManually: true,
-                              );
-                          ref.invalidate(
-                              trialAssessmentsWithDefinitionsForTrialProvider(
-                                  trial.id));
-                          if (sheetContext.mounted) {
-                            Navigator.of(sheetContext).pop();
-                          }
-                        } catch (e) {
-                          if (sheetContext.mounted) {
-                            ScaffoldMessenger.of(sheetContext).showSnackBar(
-                              SnackBar(
-                                content: Text('Save failed: $e'),
-                                backgroundColor: Theme.of(sheetContext)
-                                    .colorScheme
-                                    .error,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextFormField(
+                          controller: scaleMaxController,
+                          keyboardType: TextInputType.number,
+                          decoration: _formDecoration('Scale max'),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF2D5A40),
+              ),
+              onPressed: () async {
+                final name = nameController.text.trim();
+                if (name.isEmpty) return;
+                try {
+                  final defRepo =
+                      ref.read(assessmentDefinitionRepositoryProvider);
+                  final code =
+                      'CUSTOM_${trial.id}_${DateTime.now().millisecondsSinceEpoch}';
+                  final scaleMin =
+                      double.tryParse(scaleMinController.text.trim());
+                  final scaleMax =
+                      double.tryParse(scaleMaxController.text.trim());
+                  final unitStr = unitController.text.trim();
+                  final defId = await defRepo.insertCustom(
+                    code: code,
+                    name: name,
+                    category: 'custom',
+                    dataType: 'numeric',
+                    unit: unitStr.isEmpty ? null : unitStr,
+                    scaleMin: scaleMin,
+                    scaleMax: scaleMax,
+                    assessmentMethod: selectedType,
+                    cropPart: null,
+                    timingCode: null,
+                    daysAfterTreatment: null,
+                    timingDescription: null,
+                    validMin: null,
+                    validMax: null,
+                    eppoCode: null,
+                  );
+                  await ref.read(trialAssessmentRepositoryProvider).addToTrial(
+                        trialId: trial.id,
+                        assessmentDefinitionId: defId,
+                        displayNameOverride: name,
+                        selectedManually: true,
+                      );
+                  ref.invalidate(
+                      trialAssessmentsWithDefinitionsForTrialProvider(trial.id));
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                } catch (e) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                        content: Text('Save failed: $e'),
+                        backgroundColor:
+                            Theme.of(dialogContext).colorScheme.error,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
         ),
+      ),
     );
     nameController.dispose();
     unitController.dispose();
