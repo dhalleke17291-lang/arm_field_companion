@@ -345,6 +345,32 @@ class RatingRepository {
         .get();
   }
 
+  /// Distinct session IDs among [sessionIds] that have at least one
+  /// [rating_corrections] row with matching [sessionId] (batched query).
+  Future<Set<int>> getSessionIdsWithCorrections(Iterable<int> sessionIds) async {
+    final wanted = sessionIds.toSet();
+    if (wanted.isEmpty) return {};
+    final list = wanted.toList();
+    final rows = await (_db.select(_db.ratingCorrections)
+          ..where((c) => c.sessionId.isIn(list)))
+        .get();
+    final out = <int>{};
+    for (final c in rows) {
+      final sid = c.sessionId;
+      if (sid != null && wanted.contains(sid)) out.add(sid);
+    }
+    return out;
+  }
+
+  /// Plot primary keys with at least one correction recorded for [sessionId].
+  Future<Set<int>> getPlotPksWithCorrectionsForSession(int sessionId) async {
+    final rows = await (_db.select(_db.ratingCorrections)
+          ..where((c) =>
+              c.sessionId.equals(sessionId) & c.plotPk.isNotNull()))
+        .get();
+    return {for (final c in rows) if (c.plotPk != null) c.plotPk!};
+  }
+
   /// Applies a correction (closed sessions only). Original rating is never updated.
   Future<RatingCorrection> applyCorrection({
     required int ratingId,

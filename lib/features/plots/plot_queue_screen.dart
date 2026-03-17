@@ -125,6 +125,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final plotIdToTreatmentId = {
       for (var a in assignments) a.plotId: a.treatmentId
     };
+    final plotPksWithCorrections = ref
+            .watch(plotPksWithCorrectionsForSessionProvider(widget.session.id))
+            .valueOrNull ??
+        <int>{};
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
@@ -167,8 +171,16 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                             flaggedPlotIdsForSessionProvider(widget.session.id))
                         .valueOrNull ??
                     <int>{};
-                return _buildQueue(context, plots, assessments, ratedPks,
-                    ratings, treatmentById, plotIdToTreatmentId, flaggedIds);
+                return _buildQueue(
+                    context,
+                    plots,
+                    assessments,
+                    ratedPks,
+                    ratings,
+                    treatmentById,
+                    plotIdToTreatmentId,
+                    flaggedIds,
+                    plotPksWithCorrections);
               },
             ),
           ),
@@ -186,6 +198,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Map<int, Treatment> treatmentById,
     Map<int, int?> plotIdToTreatmentId,
     Set<int> flaggedIds,
+    Set<int> plotPksWithCorrections,
   ) {
     // Apply session walk order (numeric, serpentine, or custom) for rating navigation
     final plots = sortPlotsByWalkOrder(
@@ -398,9 +411,18 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ],
                   ),
                 )
-              : _buildGroupedList(context, filtered, assessments, ratedPks,
-                  ratings, treatmentById, plotIdToTreatmentId, flaggedIds,
-                  allPlotsForTrial: plots),
+              : _buildGroupedList(
+                  context,
+                  filtered,
+                  assessments,
+                  ratedPks,
+                  ratings,
+                  treatmentById,
+                  plotIdToTreatmentId,
+                  flaggedIds,
+                  plotPksWithCorrections,
+                  allPlotsForTrial: plots,
+                ),
         ),
       ],
     );
@@ -414,7 +436,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     List<RatingRecord> ratings,
     Map<int, Treatment> treatmentById,
     Map<int, int?> plotIdToTreatmentId,
-    Set<int> flaggedIds, {
+    Set<int> flaggedIds,
+    Set<int> plotPksWithCorrections, {
     required List<Plot> allPlotsForTrial,
   }) {
     final groups = <int?, List<Plot>>{};
@@ -437,7 +460,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       for (final plot in groups[rep]!) {
         final plotRatings = ratings.where((r) => r.plotPk == plot.id).toList();
         final hasEdited = plotRatings.any(
-            (r) => r.amended || (r.previousId != null));
+                (r) => r.amended || (r.previousId != null)) ||
+            plotPksWithCorrections.contains(plot.id);
         items.add(_PlotQueueTile(
           plot: plot,
           allPlotsForTrial: allPlotsForTrial,

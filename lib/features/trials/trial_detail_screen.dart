@@ -1578,8 +1578,13 @@ class SessionsView extends ConsumerWidget {
         .toSet();
     final hasIssues = issuePlotIds.isNotEmpty;
     final needsAttention = hasFlags || hasIssues;
+    final correctionSessionIds = ref
+            .watch(sessionIdsWithCorrectionsForTrialProvider(trial.id))
+            .valueOrNull ??
+        <int>{};
     final hasEdited = ratings.any(
-        (r) => r.amended || (r.previousId != null));
+            (r) => r.amended || (r.previousId != null)) ||
+        correctionSessionIds.contains(session.id);
 
     return Container(
       margin: const EdgeInsets.symmetric(

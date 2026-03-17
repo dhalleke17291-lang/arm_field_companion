@@ -427,6 +427,24 @@ final sessionRatingsProvider =
       .getCurrentRatingsForSession(sessionId);
 });
 
+/// Session IDs among the trial's sessions that have any rating correction (one batch per trial).
+final sessionIdsWithCorrectionsForTrialProvider =
+    FutureProvider.autoDispose.family<Set<int>, int>((ref, trialId) async {
+  final sessions = ref.watch(sessionsForTrialProvider(trialId)).valueOrNull ??
+      const <Session>[];
+  final ids = sessions.map((s) => s.id).toList();
+  if (ids.isEmpty) return {};
+  return ref.read(ratingRepositoryProvider).getSessionIdsWithCorrections(ids);
+});
+
+/// Plot PKs with at least one correction in the given session (single query per session).
+final plotPksWithCorrectionsForSessionProvider =
+    FutureProvider.autoDispose.family<Set<int>, int>((ref, sessionId) {
+  return ref
+      .read(ratingRepositoryProvider)
+      .getPlotPksWithCorrectionsForSession(sessionId);
+});
+
 // ===== Export (CSV) =====
 
 final exportRepositoryProvider = Provider<ExportRepository>((ref) {

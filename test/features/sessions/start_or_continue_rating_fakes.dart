@@ -349,6 +349,13 @@ class FakeRatingRepository implements RatingRepository {
       throw UnimplementedError();
 
   @override
+  Future<Set<int>> getSessionIdsWithCorrections(Iterable<int> sessionIds) async =>
+      {};
+
+  @override
+  Future<Set<int>> getPlotPksWithCorrectionsForSession(int sessionId) async => {};
+
+  @override
   Future<RatingCorrection> applyCorrection({
     required int ratingId,
     required String oldResultStatus,
