@@ -317,36 +317,31 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ],
                   ),
                 ),
-              if (_showUnratedOnly)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.orange,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text('Unrated Only',
-                      style: TextStyle(color: Colors.white, fontSize: 11)),
-                ),
-              if (_showIssuesOnly ||
-                  _showEditedOnly ||
-                  _showFlaggedOnly) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
+              if (_anyPlotFiltersActive()) ...[
+                if (plots.any((p) => p.fieldRow != null))
+                  const SizedBox(width: 6),
+                Tooltip(
+                  message: 'Clear all filters',
+                  child: Material(
                     color: Theme.of(context).colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Filtered',
-                    style: TextStyle(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSecondaryContainer,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                    child: InkWell(
+                      onTap: _clearAllPlotFilters,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        child: Text(
+                          'Filters',
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -405,11 +400,18 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                             ? 'Go to the Plots tab to import plots first.'
                             : (_emptyQueueIsAllRatedUnratedOnly()
                                 ? 'You can export and share this session now.'
-                                : 'Try changing or clearing filters in the filter menu.'),
+                                : 'Clear filters below to see all plots again.'),
                         style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurfaceVariant),
                         textAlign: TextAlign.center,
                       ),
+                      if (plots.isNotEmpty && filtered.isEmpty) ...[
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: _clearAllPlotFilters,
+                          child: const Text('Clear filters'),
+                        ),
+                      ],
                       const SizedBox(height: 16),
 
                       // Export + Share
@@ -489,14 +491,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                           label: const Text('Back to Sessions'),
                           onPressed: () => Navigator.pop(context),
                         ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      TextButton(
-                        onPressed: () =>
-                            setState(() => _showUnratedOnly = false),
-                        child: const Text('Show all plots'),
                       ),
                     ],
                   ),
@@ -659,6 +653,24 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       assessments: assessments,
       allPlotsForTrial: plots,
     );
+  }
+
+  bool _anyPlotFiltersActive() {
+    return _repFilter != null ||
+        _showUnratedOnly ||
+        _showIssuesOnly ||
+        _showEditedOnly ||
+        _showFlaggedOnly;
+  }
+
+  void _clearAllPlotFilters() {
+    setState(() {
+      _repFilter = null;
+      _showUnratedOnly = false;
+      _showIssuesOnly = false;
+      _showEditedOnly = false;
+      _showFlaggedOnly = false;
+    });
   }
 
   /// Empty list + unrated-only on full trial (no other filters) → "all rated" UX.
