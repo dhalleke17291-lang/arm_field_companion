@@ -1264,14 +1264,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             '';
         if (!_userHasInteracted) {
           _selectedStatus = existing.resultStatus;
-        }
-        _selectedMissingReasons.clear();
-        if (_selectedStatus == 'MISSING_CONDITION' ||
-            _selectedStatus == 'TECHNICAL_ISSUE') {
-          final t = existing.textValue?.trim() ?? '';
-          if (t.isNotEmpty) {
-            _selectedMissingReasons.addAll(
-                t.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+          _selectedMissingReasons.clear();
+          if (_selectedStatus == 'MISSING_CONDITION' ||
+              _selectedStatus == 'TECHNICAL_ISSUE') {
+            final t = existing.textValue?.trim() ?? '';
+            if (t.isNotEmpty) {
+              _selectedMissingReasons.addAll(
+                  t.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+            }
           }
         }
         final numVal = existing.numericValue;
