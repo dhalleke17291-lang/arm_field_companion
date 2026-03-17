@@ -22,6 +22,7 @@ void main() {
       status: 'active',
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
+      isDeleted: false,
     );
     treatments = [
       const Treatment(
@@ -60,6 +61,7 @@ void main() {
         fieldColumn: null,
         assignmentSource: null,
         assignmentUpdatedAt: null,
+        isDeleted: false,
       ),
     ];
     assignments = [

@@ -203,7 +203,8 @@ class ApplicationRepository {
       List<int> plotPks;
       if (coversEntireTrial) {
         final plots = await (_db.select(_db.plots)
-              ..where((p) => p.trialId.equals(trialId)))
+              ..where((p) =>
+                  p.trialId.equals(trialId) & p.isDeleted.equals(false)))
             .get();
         plotPks = plots.map((p) => p.id).toList();
       } else {

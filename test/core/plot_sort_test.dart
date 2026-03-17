@@ -25,6 +25,7 @@ Plot _plot({
       notes: null,
       assignmentSource: null,
       assignmentUpdatedAt: null,
+      isDeleted: false,
     );
 
 void main() {

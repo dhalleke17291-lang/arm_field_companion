@@ -8,19 +8,25 @@ class SessionRepository {
 
   Future<Session?> getOpenSession(int trialId) {
     return (_db.select(_db.sessions)
-          ..where((s) => s.trialId.equals(trialId) & s.endedAt.isNull()))
+          ..where((s) =>
+              s.trialId.equals(trialId) &
+              s.endedAt.isNull() &
+              s.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
   Stream<Session?> watchOpenSession(int trialId) {
     return (_db.select(_db.sessions)
-          ..where((s) => s.trialId.equals(trialId) & s.endedAt.isNull()))
+          ..where((s) =>
+              s.trialId.equals(trialId) &
+              s.endedAt.isNull() &
+              s.isDeleted.equals(false)))
         .watchSingleOrNull();
   }
 
   Future<List<Session>> getSessionsForTrial(int trialId) {
     return (_db.select(_db.sessions)
-          ..where((s) => s.trialId.equals(trialId))
+          ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false))
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
         .get();
   }
@@ -30,7 +36,8 @@ class SessionRepository {
       {int? createdByUserId}) {
     var query = _db.select(_db.sessions)
       ..where((s) {
-        var pred = s.sessionDateLocal.equals(dateLocal);
+        var pred =
+            s.sessionDateLocal.equals(dateLocal) & s.isDeleted.equals(false);
         if (createdByUserId != null) {
           pred = pred & s.createdByUserId.equals(createdByUserId);
         }
@@ -148,8 +155,29 @@ class SessionRepository {
   }
 
   Future<Session?> getSessionById(int sessionId) {
-    return (_db.select(_db.sessions)..where((s) => s.id.equals(sessionId)))
+    return (_db.select(_db.sessions)
+          ..where((s) => s.id.equals(sessionId) & s.isDeleted.equals(false)))
         .getSingleOrNull();
+  }
+
+  /// Soft-delete session and all rating_records for that session.
+  Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {
+    final now = DateTime.now().toUtc();
+    await _db.transaction(() async {
+      await (_db.update(_db.ratingRecords)
+            ..where((r) => r.sessionId.equals(sessionId)))
+          .write(RatingRecordsCompanion(
+        isDeleted: const Value(true),
+        deletedAt: Value(now),
+        deletedBy: Value(deletedBy),
+      ));
+      await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
+          .write(SessionsCompanion(
+        isDeleted: const Value(true),
+        deletedAt: Value(now),
+        deletedBy: Value(deletedBy),
+      ));
+    });
   }
 }
 

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +38,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     // Count existing sessions today for this trial
     final db = ref.read(databaseProvider);
     final allSessions = await (db.select(db.sessions)
-          ..where((s) => s.trialId.equals(widget.trial.id)))
+          ..where((s) =>
+              s.trialId.equals(widget.trial.id) & s.isDeleted.equals(false)))
         .get();
     final todaySessions =
         allSessions.where((s) => s.sessionDateLocal == dateStr).toList();
@@ -306,7 +308,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     // Warn if no plots
     final db = ref.read(databaseProvider);
     final plotCount = await (db.select(db.plots)
-          ..where((p) => p.trialId.equals(widget.trial.id)))
+          ..where((p) =>
+              p.trialId.equals(widget.trial.id) & p.isDeleted.equals(false)))
         .get();
     if (!mounted || !context.mounted) return;
 

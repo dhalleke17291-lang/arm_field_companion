@@ -112,6 +112,9 @@ class MockSessionRepository implements SessionRepository {
     int sessionId,
     List<int> assessmentIdsInOrder,
   ) async {}
+
+  @override
+  Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {}
 }
 
 Trial _trial({String status = 'ACTIVE'}) => Trial(
@@ -123,6 +126,7 @@ Trial _trial({String status = 'ACTIVE'}) => Trial(
       crop: null,
       location: null,
       season: null,
+      isDeleted: false,
     );
 
 void main() {
@@ -203,6 +207,7 @@ void main() {
           raterName: null,
           createdByUserId: null,
           status: 'open',
+          isDeleted: false,
         ),
       ];
       final result = await useCase.updateOne(

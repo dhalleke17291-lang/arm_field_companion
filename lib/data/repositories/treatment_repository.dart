@@ -37,7 +37,7 @@ class TreatmentRepository {
     }
     // Fallback: legacy Plot.treatmentId
     final plot = await (_db.select(_db.plots)
-          ..where((p) => p.id.equals(plotPk)))
+          ..where((p) => p.id.equals(plotPk) & p.isDeleted.equals(false)))
         .getSingleOrNull();
     if (plot == null || plot.treatmentId == null) return null;
     return getTreatmentById(plot.treatmentId!);

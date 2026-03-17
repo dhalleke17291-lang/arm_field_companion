@@ -20,7 +20,8 @@ class RatingRepository {
               r.plotPk.equals(plotPk) &
               r.assessmentId.equals(assessmentId) &
               r.sessionId.equals(sessionId) &
-              r.isCurrent.equals(true)))
+              r.isCurrent.equals(true) &
+              r.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
@@ -37,7 +38,8 @@ class RatingRepository {
               r.plotPk.equals(plotPk) &
               r.assessmentId.equals(assessmentId) &
               r.sessionId.equals(sessionId) &
-              r.isCurrent.equals(true)))
+              r.isCurrent.equals(true) &
+              r.isDeleted.equals(false)))
         .watchSingleOrNull();
   }
 
@@ -138,7 +140,7 @@ class RatingRepository {
     int? performedByUserId,
   }) async {
     final session = await (_db.select(_db.sessions)
-          ..where((s) => s.id.equals(sessionId)))
+          ..where((s) => s.id.equals(sessionId) & s.isDeleted.equals(false)))
         .getSingleOrNull();
     if (session != null && session.endedAt != null) {
       throw SessionClosedException();
@@ -146,8 +148,9 @@ class RatingRepository {
 
     return _db.transaction(() async {
       final current = await (_db.select(_db.ratingRecords)
-            ..where((r) => r.id.equals(currentRatingId)))
-          .getSingleOrNull();
+            ..where((r) =>
+                r.id.equals(currentRatingId) & r.isDeleted.equals(false)))
+        .getSingleOrNull();
 
       if (current == null) return;
 
@@ -211,7 +214,8 @@ class RatingRepository {
 
   /// Get a single rating by id (for edit/amendment flow).
   Future<RatingRecord?> getRatingById(int id) {
-    return (_db.select(_db.ratingRecords)..where((r) => r.id.equals(id)))
+    return (_db.select(_db.ratingRecords)
+          ..where((r) => r.id.equals(id) & r.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
@@ -271,8 +275,10 @@ class RatingRepository {
   // Get all current ratings for a session
   Future<List<RatingRecord>> getCurrentRatingsForSession(int sessionId) {
     return (_db.select(_db.ratingRecords)
-          ..where(
-              (r) => r.sessionId.equals(sessionId) & r.isCurrent.equals(true)))
+          ..where((r) =>
+              r.sessionId.equals(sessionId) &
+              r.isCurrent.equals(true) &
+              r.isDeleted.equals(false)))
         .get();
   }
 
@@ -285,7 +291,8 @@ class RatingRepository {
           ..where((r) =>
               r.sessionId.equals(sessionId) &
               r.assessmentId.equals(assessmentId) &
-              r.isCurrent.equals(true)))
+              r.isCurrent.equals(true) &
+              r.isDeleted.equals(false)))
         .get();
     return ratings.map((r) => r.plotPk).toSet();
   }
@@ -293,7 +300,10 @@ class RatingRepository {
   /// Count of distinct plots with at least one current rating for this trial (Trial Summary).
   Future<int> getRatedPlotCountForTrial(int trialId) async {
     final ratings = await (_db.select(_db.ratingRecords)
-          ..where((r) => r.trialId.equals(trialId) & r.isCurrent.equals(true)))
+          ..where((r) =>
+              r.trialId.equals(trialId) &
+              r.isCurrent.equals(true) &
+              r.isDeleted.equals(false)))
         .get();
     return ratings.map((r) => r.plotPk).toSet().length;
   }

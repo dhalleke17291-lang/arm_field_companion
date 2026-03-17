@@ -65,6 +65,10 @@ class Trials extends Table {
 
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 class Treatments extends Table {
@@ -190,6 +194,10 @@ class Plots extends Table {
   TextColumn get plotDirection => text().nullable()();
   TextColumn get soilSeries => text().nullable()();
   TextColumn get plotNotes => text().nullable()();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 /// Protocol-to-field mapping: which treatment is assigned to which plot (ARM first-class entity).
@@ -226,6 +234,10 @@ class Sessions extends Table {
   IntColumn get createdByUserId =>
       integer().references(Users, #id).nullable()();
   TextColumn get status => text().withDefault(const Constant('open'))();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 class SessionAssessments extends Table {
@@ -272,6 +284,10 @@ class RatingRecords extends Table {
   TextColumn get amendmentReason => text().nullable()();
   TextColumn get amendedBy => text().nullable()();
   DateTimeColumn get amendedAt => dateTime().nullable()();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 /// Immutable correction records; original rating record is never overwritten.
@@ -555,7 +571,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -793,6 +809,20 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(
                 trialApplicationEvents,
                 trialApplicationEvents.soilDepthUnit);
+          }
+          if (from < 26) {
+            await m.addColumn(trials, trials.isDeleted);
+            await m.addColumn(trials, trials.deletedAt);
+            await m.addColumn(trials, trials.deletedBy);
+            await m.addColumn(sessions, sessions.isDeleted);
+            await m.addColumn(sessions, sessions.deletedAt);
+            await m.addColumn(sessions, sessions.deletedBy);
+            await m.addColumn(plots, plots.isDeleted);
+            await m.addColumn(plots, plots.deletedAt);
+            await m.addColumn(plots, plots.deletedBy);
+            await m.addColumn(ratingRecords, ratingRecords.isDeleted);
+            await m.addColumn(ratingRecords, ratingRecords.deletedAt);
+            await m.addColumn(ratingRecords, ratingRecords.deletedBy);
           }
           await _createIndexes();
         },

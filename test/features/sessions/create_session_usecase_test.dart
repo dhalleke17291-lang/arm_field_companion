@@ -55,7 +55,9 @@ class MockSessionRepository implements SessionRepository {
       endedAt: null,
       sessionDateLocal: sessionDateLocal,
       raterName: raterName,
+      createdByUserId: null,
       status: 'open',
+      isDeleted: false,
     );
     _sessions.add(session);
     return session;
@@ -82,6 +84,9 @@ class MockSessionRepository implements SessionRepository {
   Future<List<Session>> getSessionsForTrial(int trialId) async {
     return _sessions.where((s) => s.trialId == trialId).toList();
   }
+
+  @override
+  Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {}
 }
 
 void main() {

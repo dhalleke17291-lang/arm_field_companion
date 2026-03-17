@@ -75,6 +75,9 @@ class _FakeSessionRepository implements SessionRepository {
     int sessionId,
     List<int> assessmentIdsInOrder,
   ) async {}
+
+  @override
+  Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {}
 }
 
 class _FakeTrialRepository implements TrialRepository {
@@ -120,6 +123,9 @@ class _FakeTrialRepository implements TrialRepository {
   Future<TrialSummary> getTrialSummary(int trialId) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> softDeleteTrial(int trialId, {String? deletedBy}) async {}
 }
 
 class _FakePlotRepository implements PlotRepository {
@@ -224,6 +230,9 @@ class _FakePlotRepository implements PlotRepository {
   }) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> softDeletePlot(int plotPk, {String? deletedBy}) async {}
 }
 
 class _FakeRatingRepository implements RatingRepository {
@@ -379,6 +388,7 @@ void main() {
         status: 'active',
         createdAt: DateTime(2026, 1, 1),
         updatedAt: DateTime(2026, 1, 1),
+        isDeleted: false,
       );
 
       session = Session(
@@ -391,6 +401,7 @@ void main() {
         raterName: 'R',
         createdByUserId: null,
         status: 'open',
+        isDeleted: false,
       );
 
       // Three plots in simple order, no grid to keep the test easy to follow.
@@ -409,6 +420,7 @@ void main() {
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          isDeleted: false,
         ),
         Plot(
           id: 102,
@@ -424,6 +436,7 @@ void main() {
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          isDeleted: false,
         ),
         Plot(
           id: 103,
@@ -439,6 +452,7 @@ void main() {
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          isDeleted: false,
         ),
       ];
 
@@ -503,6 +517,7 @@ void main() {
           capturedLongitude: null,
           createdAt: DateTime(2026, 1, 3),
           amended: false,
+          isDeleted: false,
         ),
       ]);
 
@@ -546,6 +561,7 @@ void main() {
           capturedLongitude: null,
           createdAt: DateTime(2026, 1, 3),
           amended: false,
+          isDeleted: false,
         ),
         RatingRecord(
           id: 2,
@@ -565,6 +581,7 @@ void main() {
           capturedLongitude: null,
           createdAt: DateTime(2026, 1, 3),
           amended: false,
+          isDeleted: false,
         ),
         RatingRecord(
           id: 3,
@@ -584,6 +601,7 @@ void main() {
           capturedLongitude: null,
           createdAt: DateTime(2026, 1, 3),
           amended: false,
+          isDeleted: false,
         ),
       ]);
 

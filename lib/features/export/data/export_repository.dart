@@ -26,7 +26,10 @@ class ExportRepository {
           asg, asg.plotId.equalsExp(p.id) & asg.trialId.equalsExp(p.trialId)),
       drift.leftOuterJoin(t, t.id.equalsExp(asg.treatmentId)),
     ])
-      ..where(rr.sessionId.equals(sessionId) & rr.isCurrent.equals(true))
+      ..where(rr.sessionId.equals(sessionId) &
+          rr.isCurrent.equals(true) &
+          rr.isDeleted.equals(false) &
+          p.isDeleted.equals(false))
       ..orderBy([
         drift.OrderingTerm.asc(p.rep),
         drift.OrderingTerm.asc(p.plotSortIndex),

@@ -79,6 +79,9 @@ class _MockSessionRepository implements SessionRepository {
     int sessionId,
     List<int> assessmentIdsInOrder,
   ) async {}
+
+  @override
+  Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {}
 }
 
 class _FakePathProvider extends PathProviderPlatform {
@@ -133,6 +136,7 @@ void main() {
           raterName: 'Tech',
           createdByUserId: null,
           status: 'open',
+          isDeleted: false,
         ),
       ];
       final result = await batchUseCase.execute(
@@ -165,6 +169,7 @@ void main() {
           raterName: 'Tech',
           createdByUserId: null,
           status: 'closed',
+          isDeleted: false,
         ),
       ];
       final result = await batchUseCase.execute(
@@ -199,6 +204,7 @@ void main() {
           raterName: 'Tech',
           createdByUserId: null,
           status: 'closed',
+          isDeleted: false,
         ),
         Session(
           id: 2,
@@ -210,6 +216,7 @@ void main() {
           raterName: 'Tech',
           createdByUserId: null,
           status: 'closed',
+          isDeleted: false,
         ),
       ];
       final result = await batchUseCase.execute(
@@ -235,6 +242,7 @@ void main() {
           raterName: null,
           createdByUserId: null,
           status: 'closed',
+          isDeleted: false,
         ),
       ];
       mockSessionRepo.shouldThrow = true;

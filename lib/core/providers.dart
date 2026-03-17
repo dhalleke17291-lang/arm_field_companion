@@ -292,7 +292,7 @@ final sessionsForTrialProvider =
     StreamProvider.family<List<Session>, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.sessions)
-        ..where((s) => s.trialId.equals(trialId))
+        ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false))
         ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
       .watch();
 });
@@ -347,8 +347,10 @@ final ratedPlotPksProvider =
     StreamProvider.family<Set<int>, int>((ref, sessionId) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.ratingRecords)
-        ..where(
-            (r) => r.sessionId.equals(sessionId) & r.isCurrent.equals(true)))
+        ..where((r) =>
+            r.sessionId.equals(sessionId) &
+            r.isCurrent.equals(true) &
+            r.isDeleted.equals(false)))
       .watch()
       .map((ratings) => ratings.map((r) => r.plotPk).toSet());
 });
@@ -559,7 +561,9 @@ final plotRatingHistoryProvider =
   final db = ref.watch(databaseProvider);
   return (db.select(db.ratingRecords)
         ..where((r) =>
-            r.trialId.equals(params.trialId) & r.plotPk.equals(params.plotPk))
+            r.trialId.equals(params.trialId) &
+            r.plotPk.equals(params.plotPk) &
+            r.isDeleted.equals(false))
         ..orderBy([(r) => drift.OrderingTerm.desc(r.createdAt)]))
       .watch();
 });

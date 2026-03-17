@@ -10,13 +10,15 @@ class TrialRepository {
   // Get all trials ordered by most recent
   Stream<List<Trial>> watchAllTrials() {
     return (_db.select(_db.trials)
+          ..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .watch();
   }
 
   // Get single trial by id
   Future<Trial?> getTrialById(int id) {
-    return (_db.select(_db.trials)..where((t) => t.id.equals(id)))
+    return (_db.select(_db.trials)
+          ..where((t) => t.id.equals(id) & t.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
@@ -29,7 +31,7 @@ class TrialRepository {
   }) async {
     // Duplicate name check — silent overwrite forbidden per spec
     final existing = await (_db.select(_db.trials)
-          ..where((t) => t.name.equals(name)))
+          ..where((t) => t.name.equals(name) & t.isDeleted.equals(false)))
         .getSingleOrNull();
 
     if (existing != null) {
@@ -72,7 +74,8 @@ class TrialRepository {
     if (trial == null) throw TrialNotFoundException(trialId);
 
     final plotCount = await (_db.select(_db.plots)
-          ..where((p) => p.trialId.equals(trialId)))
+          ..where((p) =>
+              p.trialId.equals(trialId) & p.isDeleted.equals(false)))
         .get()
         .then((list) => list.length);
 
@@ -92,6 +95,38 @@ class TrialRepository {
       treatmentCount: treatmentCount,
       assessmentCount: assessmentCount,
     );
+  }
+
+  /// Soft-delete trial and cascade: sessions, plots, and all rating_records for the trial.
+  Future<void> softDeleteTrial(int trialId, {String? deletedBy}) async {
+    final now = DateTime.now().toUtc();
+    await _db.transaction(() async {
+      await (_db.update(_db.ratingRecords)
+            ..where((r) => r.trialId.equals(trialId)))
+          .write(RatingRecordsCompanion(
+        isDeleted: const Value(true),
+        deletedAt: Value(now),
+        deletedBy: Value(deletedBy),
+      ));
+      await (_db.update(_db.sessions)..where((s) => s.trialId.equals(trialId)))
+          .write(SessionsCompanion(
+        isDeleted: const Value(true),
+        deletedAt: Value(now),
+        deletedBy: Value(deletedBy),
+      ));
+      await (_db.update(_db.plots)..where((p) => p.trialId.equals(trialId)))
+          .write(PlotsCompanion(
+        isDeleted: const Value(true),
+        deletedAt: Value(now),
+        deletedBy: Value(deletedBy),
+      ));
+      await (_db.update(_db.trials)..where((t) => t.id.equals(trialId)))
+          .write(TrialsCompanion(
+        isDeleted: const Value(true),
+        deletedAt: Value(now),
+        deletedBy: Value(deletedBy),
+      ));
+    });
   }
 }
 

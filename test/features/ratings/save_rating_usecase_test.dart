@@ -82,6 +82,7 @@ class MockRatingRepository implements RatingRepository {
       createdAt: DateTime.now(),
       raterName: raterName,
       amended: false,
+      isDeleted: false,
     );
 
     _records.add(record);

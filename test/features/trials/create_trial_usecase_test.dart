@@ -30,6 +30,7 @@ class MockTrialRepository implements TrialRepository {
       status: 'active',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      isDeleted: false,
     );
     _trials.add(trial);
     return trial.id;
@@ -56,6 +57,9 @@ class MockTrialRepository implements TrialRepository {
       assessmentCount: 0,
     );
   }
+
+  @override
+  Future<void> softDeleteTrial(int trialId, {String? deletedBy}) async {}
 
   @override
   Stream<List<Trial>> watchAllTrials() => Stream.value(_trials);

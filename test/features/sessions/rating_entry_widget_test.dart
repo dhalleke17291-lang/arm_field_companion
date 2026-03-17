@@ -32,6 +32,7 @@ void main() {
       status: 'active',
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
+      isDeleted: false,
     );
     session = Session(
       id: 10,
@@ -43,6 +44,7 @@ void main() {
       raterName: 'R',
       createdByUserId: null,
       status: 'open',
+      isDeleted: false,
     );
     plots = [
       Plot(
@@ -59,6 +61,7 @@ void main() {
         fieldColumn: null,
         assignmentSource: null,
         assignmentUpdatedAt: null,
+        isDeleted: false,
       ),
     ];
     assessments = [

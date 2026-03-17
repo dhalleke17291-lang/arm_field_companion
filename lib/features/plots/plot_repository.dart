@@ -8,7 +8,7 @@ class PlotRepository {
 
   Future<List<Plot>> getPlotsForTrial(int trialId) {
     return (_db.select(_db.plots)
-          ..where((p) => p.trialId.equals(trialId))
+          ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false))
           ..orderBy([
             (p) => OrderingTerm.asc(p.rep),
             (p) => OrderingTerm.asc(p.plotSortIndex),
@@ -19,7 +19,7 @@ class PlotRepository {
 
   Stream<List<Plot>> watchPlotsForTrial(int trialId) {
     return (_db.select(_db.plots)
-          ..where((p) => p.trialId.equals(trialId))
+          ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false))
           ..orderBy([
             (p) => OrderingTerm.asc(p.rep),
             (p) => OrderingTerm.asc(p.plotSortIndex),
@@ -29,13 +29,17 @@ class PlotRepository {
   }
 
   Future<Plot?> getPlotByPk(int plotPk) {
-    return (_db.select(_db.plots)..where((p) => p.id.equals(plotPk)))
+    return (_db.select(_db.plots)
+          ..where((p) => p.id.equals(plotPk) & p.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
   Future<Plot?> getPlotByPlotId(int trialId, String plotId) {
     return (_db.select(_db.plots)
-          ..where((p) => p.trialId.equals(trialId) & p.plotId.equals(plotId)))
+          ..where((p) =>
+              p.trialId.equals(trialId) &
+              p.plotId.equals(plotId) &
+              p.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
@@ -96,7 +100,8 @@ class PlotRepository {
   }) {
     final query = _db.select(_db.plots)
       ..where((p) {
-        Expression<bool> condition = p.trialId.equals(trialId);
+        Expression<bool> condition =
+            p.trialId.equals(trialId) & p.isDeleted.equals(false);
         if (repFilter != null) {
           condition = condition & p.rep.equals(repFilter);
         }
@@ -208,6 +213,18 @@ class PlotRepository {
         ));
       }
     });
+  }
+
+  /// Soft-delete plot only. Rating records for this plot are unchanged.
+  Future<void> softDeletePlot(int plotPk, {String? deletedBy}) async {
+    final now = DateTime.now().toUtc();
+    await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
+      PlotsCompanion(
+        isDeleted: const Value(true),
+        deletedAt: Value(now),
+        deletedBy: Value(deletedBy),
+      ),
+    );
   }
 }
 

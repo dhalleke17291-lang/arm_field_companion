@@ -14,6 +14,7 @@ Session _session({
     endedAt: endedAt,
     sessionDateLocal: '2026-01-01',
     status: status,
+    isDeleted: false,
   );
 }
 

@@ -610,6 +610,28 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedByMeta =
+      const VerificationMeta('deletedBy');
+  @override
+  late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
+      'deleted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -647,7 +669,10 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         harvestDate,
         studyType,
         createdAt,
-        updatedAt
+        updatedAt,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -836,6 +861,18 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('deleted_by')) {
+      context.handle(_deletedByMeta,
+          deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
+    }
     return context;
   }
 
@@ -917,6 +954,12 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      deletedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
     );
   }
 
@@ -969,6 +1012,9 @@ class Trial extends DataClass implements Insertable<Trial> {
   final String? studyType;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   const Trial(
       {required this.id,
       required this.name,
@@ -1005,7 +1051,10 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.harvestDate,
       this.studyType,
       required this.createdAt,
-      required this.updatedAt});
+      required this.updatedAt,
+      required this.isDeleted,
+      this.deletedAt,
+      this.deletedBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1107,6 +1156,13 @@ class Trial extends DataClass implements Insertable<Trial> {
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || deletedBy != null) {
+      map['deleted_by'] = Variable<String>(deletedBy);
+    }
     return map;
   }
 
@@ -1204,6 +1260,13 @@ class Trial extends DataClass implements Insertable<Trial> {
           : Value(studyType),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      isDeleted: Value(isDeleted),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      deletedBy: deletedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedBy),
     );
   }
 
@@ -1248,6 +1311,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       studyType: serializer.fromJson<String?>(json['studyType']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      deletedBy: serializer.fromJson<String?>(json['deletedBy']),
     );
   }
   @override
@@ -1290,6 +1356,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       'studyType': serializer.toJson<String?>(studyType),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'deletedBy': serializer.toJson<String?>(deletedBy),
     };
   }
 
@@ -1329,7 +1398,10 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<DateTime?> harvestDate = const Value.absent(),
           Value<String?> studyType = const Value.absent(),
           DateTime? createdAt,
-          DateTime? updatedAt}) =>
+          DateTime? updatedAt,
+          bool? isDeleted,
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<String?> deletedBy = const Value.absent()}) =>
       Trial(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -1379,6 +1451,9 @@ class Trial extends DataClass implements Insertable<Trial> {
         studyType: studyType.present ? studyType.value : this.studyType,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        isDeleted: isDeleted ?? this.isDeleted,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
       );
   Trial copyWithCompanion(TrialsCompanion data) {
     return Trial(
@@ -1443,6 +1518,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       studyType: data.studyType.present ? data.studyType.value : this.studyType,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
     );
   }
 
@@ -1484,7 +1562,10 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('harvestDate: $harvestDate, ')
           ..write('studyType: $studyType, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -1526,7 +1607,10 @@ class Trial extends DataClass implements Insertable<Trial> {
         harvestDate,
         studyType,
         createdAt,
-        updatedAt
+        updatedAt,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ]);
   @override
   bool operator ==(Object other) =>
@@ -1567,7 +1651,10 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.harvestDate == this.harvestDate &&
           other.studyType == this.studyType &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.deletedAt == this.deletedAt &&
+          other.deletedBy == this.deletedBy);
 }
 
 class TrialsCompanion extends UpdateCompanion<Trial> {
@@ -1607,6 +1694,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<String?> studyType;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<bool> isDeleted;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> deletedBy;
   const TrialsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -1644,6 +1734,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.studyType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   });
   TrialsCompanion.insert({
     this.id = const Value.absent(),
@@ -1682,6 +1775,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.studyType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Trial> custom({
     Expression<int>? id,
@@ -1720,6 +1816,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<String>? studyType,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? deletedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1758,6 +1857,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (studyType != null) 'study_type': studyType,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deletedBy != null) 'deleted_by': deletedBy,
     });
   }
 
@@ -1797,7 +1899,10 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<DateTime?>? harvestDate,
       Value<String?>? studyType,
       Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt}) {
+      Value<DateTime>? updatedAt,
+      Value<bool>? isDeleted,
+      Value<DateTime?>? deletedAt,
+      Value<String?>? deletedBy}) {
     return TrialsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -1835,6 +1940,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       studyType: studyType ?? this.studyType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 
@@ -1949,6 +2057,15 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (deletedBy.present) {
+      map['deleted_by'] = Variable<String>(deletedBy.value);
+    }
     return map;
   }
 
@@ -1990,7 +2107,10 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('harvestDate: $harvestDate, ')
           ..write('studyType: $studyType, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -5759,6 +5879,28 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   late final GeneratedColumn<String> plotNotes = GeneratedColumn<String>(
       'plot_notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedByMeta =
+      const VerificationMeta('deletedBy');
+  @override
+  late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
+      'deleted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -5782,7 +5924,10 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
         harvestAreaM2,
         plotDirection,
         soilSeries,
-        plotNotes
+        plotNotes,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5911,6 +6056,18 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
       context.handle(_plotNotesMeta,
           plotNotes.isAcceptableOrUnknown(data['plot_notes']!, _plotNotesMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('deleted_by')) {
+      context.handle(_deletedByMeta,
+          deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
+    }
     return context;
   }
 
@@ -5965,6 +6122,12 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           .read(DriftSqlType.string, data['${effectivePrefix}soil_series']),
       plotNotes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}plot_notes']),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      deletedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
     );
   }
 
@@ -5999,6 +6162,9 @@ class Plot extends DataClass implements Insertable<Plot> {
   final String? plotDirection;
   final String? soilSeries;
   final String? plotNotes;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   const Plot(
       {required this.id,
       required this.trialId,
@@ -6021,7 +6187,10 @@ class Plot extends DataClass implements Insertable<Plot> {
       this.harvestAreaM2,
       this.plotDirection,
       this.soilSeries,
-      this.plotNotes});
+      this.plotNotes,
+      required this.isDeleted,
+      this.deletedAt,
+      this.deletedBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -6085,6 +6254,13 @@ class Plot extends DataClass implements Insertable<Plot> {
     if (!nullToAbsent || plotNotes != null) {
       map['plot_notes'] = Variable<String>(plotNotes);
     }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || deletedBy != null) {
+      map['deleted_by'] = Variable<String>(deletedBy);
+    }
     return map;
   }
 
@@ -6144,6 +6320,13 @@ class Plot extends DataClass implements Insertable<Plot> {
       plotNotes: plotNotes == null && nullToAbsent
           ? const Value.absent()
           : Value(plotNotes),
+      isDeleted: Value(isDeleted),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      deletedBy: deletedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedBy),
     );
   }
 
@@ -6174,6 +6357,9 @@ class Plot extends DataClass implements Insertable<Plot> {
       plotDirection: serializer.fromJson<String?>(json['plotDirection']),
       soilSeries: serializer.fromJson<String?>(json['soilSeries']),
       plotNotes: serializer.fromJson<String?>(json['plotNotes']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      deletedBy: serializer.fromJson<String?>(json['deletedBy']),
     );
   }
   @override
@@ -6202,6 +6388,9 @@ class Plot extends DataClass implements Insertable<Plot> {
       'plotDirection': serializer.toJson<String?>(plotDirection),
       'soilSeries': serializer.toJson<String?>(soilSeries),
       'plotNotes': serializer.toJson<String?>(plotNotes),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'deletedBy': serializer.toJson<String?>(deletedBy),
     };
   }
 
@@ -6227,7 +6416,10 @@ class Plot extends DataClass implements Insertable<Plot> {
           Value<double?> harvestAreaM2 = const Value.absent(),
           Value<String?> plotDirection = const Value.absent(),
           Value<String?> soilSeries = const Value.absent(),
-          Value<String?> plotNotes = const Value.absent()}) =>
+          Value<String?> plotNotes = const Value.absent(),
+          bool? isDeleted,
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<String?> deletedBy = const Value.absent()}) =>
       Plot(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -6260,6 +6452,9 @@ class Plot extends DataClass implements Insertable<Plot> {
             plotDirection.present ? plotDirection.value : this.plotDirection,
         soilSeries: soilSeries.present ? soilSeries.value : this.soilSeries,
         plotNotes: plotNotes.present ? plotNotes.value : this.plotNotes,
+        isDeleted: isDeleted ?? this.isDeleted,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
       );
   Plot copyWithCompanion(PlotsCompanion data) {
     return Plot(
@@ -6305,6 +6500,9 @@ class Plot extends DataClass implements Insertable<Plot> {
       soilSeries:
           data.soilSeries.present ? data.soilSeries.value : this.soilSeries,
       plotNotes: data.plotNotes.present ? data.plotNotes.value : this.plotNotes,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
     );
   }
 
@@ -6332,7 +6530,10 @@ class Plot extends DataClass implements Insertable<Plot> {
           ..write('harvestAreaM2: $harvestAreaM2, ')
           ..write('plotDirection: $plotDirection, ')
           ..write('soilSeries: $soilSeries, ')
-          ..write('plotNotes: $plotNotes')
+          ..write('plotNotes: $plotNotes, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -6360,7 +6561,10 @@ class Plot extends DataClass implements Insertable<Plot> {
         harvestAreaM2,
         plotDirection,
         soilSeries,
-        plotNotes
+        plotNotes,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ]);
   @override
   bool operator ==(Object other) =>
@@ -6387,7 +6591,10 @@ class Plot extends DataClass implements Insertable<Plot> {
           other.harvestAreaM2 == this.harvestAreaM2 &&
           other.plotDirection == this.plotDirection &&
           other.soilSeries == this.soilSeries &&
-          other.plotNotes == this.plotNotes);
+          other.plotNotes == this.plotNotes &&
+          other.isDeleted == this.isDeleted &&
+          other.deletedAt == this.deletedAt &&
+          other.deletedBy == this.deletedBy);
 }
 
 class PlotsCompanion extends UpdateCompanion<Plot> {
@@ -6413,6 +6620,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   final Value<String?> plotDirection;
   final Value<String?> soilSeries;
   final Value<String?> plotNotes;
+  final Value<bool> isDeleted;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> deletedBy;
   const PlotsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -6436,6 +6646,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.plotDirection = const Value.absent(),
     this.soilSeries = const Value.absent(),
     this.plotNotes = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   });
   PlotsCompanion.insert({
     this.id = const Value.absent(),
@@ -6460,6 +6673,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.plotDirection = const Value.absent(),
     this.soilSeries = const Value.absent(),
     this.plotNotes = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   })  : trialId = Value(trialId),
         plotId = Value(plotId);
   static Insertable<Plot> custom({
@@ -6485,6 +6701,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     Expression<String>? plotDirection,
     Expression<String>? soilSeries,
     Expression<String>? plotNotes,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? deletedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6510,6 +6729,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       if (plotDirection != null) 'plot_direction': plotDirection,
       if (soilSeries != null) 'soil_series': soilSeries,
       if (plotNotes != null) 'plot_notes': plotNotes,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deletedBy != null) 'deleted_by': deletedBy,
     });
   }
 
@@ -6535,7 +6757,10 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       Value<double?>? harvestAreaM2,
       Value<String?>? plotDirection,
       Value<String?>? soilSeries,
-      Value<String?>? plotNotes}) {
+      Value<String?>? plotNotes,
+      Value<bool>? isDeleted,
+      Value<DateTime?>? deletedAt,
+      Value<String?>? deletedBy}) {
     return PlotsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -6559,6 +6784,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       plotDirection: plotDirection ?? this.plotDirection,
       soilSeries: soilSeries ?? this.soilSeries,
       plotNotes: plotNotes ?? this.plotNotes,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 
@@ -6632,6 +6860,15 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     if (plotNotes.present) {
       map['plot_notes'] = Variable<String>(plotNotes.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (deletedBy.present) {
+      map['deleted_by'] = Variable<String>(deletedBy.value);
+    }
     return map;
   }
 
@@ -6659,7 +6896,10 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
           ..write('harvestAreaM2: $harvestAreaM2, ')
           ..write('plotDirection: $plotDirection, ')
           ..write('soilSeries: $soilSeries, ')
-          ..write('plotNotes: $plotNotes')
+          ..write('plotNotes: $plotNotes, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -7552,6 +7792,28 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('open'));
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedByMeta =
+      const VerificationMeta('deletedBy');
+  @override
+  late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
+      'deleted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -7562,7 +7824,10 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         sessionDateLocal,
         raterName,
         createdByUserId,
-        status
+        status,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7619,6 +7884,18 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('deleted_by')) {
+      context.handle(_deletedByMeta,
+          deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
+    }
     return context;
   }
 
@@ -7646,6 +7923,12 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
           .read(DriftSqlType.int, data['${effectivePrefix}created_by_user_id']),
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      deletedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
     );
   }
 
@@ -7665,6 +7948,9 @@ class Session extends DataClass implements Insertable<Session> {
   final String? raterName;
   final int? createdByUserId;
   final String status;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   const Session(
       {required this.id,
       required this.trialId,
@@ -7674,7 +7960,10 @@ class Session extends DataClass implements Insertable<Session> {
       required this.sessionDateLocal,
       this.raterName,
       this.createdByUserId,
-      required this.status});
+      required this.status,
+      required this.isDeleted,
+      this.deletedAt,
+      this.deletedBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -7693,6 +7982,13 @@ class Session extends DataClass implements Insertable<Session> {
       map['created_by_user_id'] = Variable<int>(createdByUserId);
     }
     map['status'] = Variable<String>(status);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || deletedBy != null) {
+      map['deleted_by'] = Variable<String>(deletedBy);
+    }
     return map;
   }
 
@@ -7713,6 +8009,13 @@ class Session extends DataClass implements Insertable<Session> {
           ? const Value.absent()
           : Value(createdByUserId),
       status: Value(status),
+      isDeleted: Value(isDeleted),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      deletedBy: deletedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedBy),
     );
   }
 
@@ -7729,6 +8032,9 @@ class Session extends DataClass implements Insertable<Session> {
       raterName: serializer.fromJson<String?>(json['raterName']),
       createdByUserId: serializer.fromJson<int?>(json['createdByUserId']),
       status: serializer.fromJson<String>(json['status']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      deletedBy: serializer.fromJson<String?>(json['deletedBy']),
     );
   }
   @override
@@ -7744,6 +8050,9 @@ class Session extends DataClass implements Insertable<Session> {
       'raterName': serializer.toJson<String?>(raterName),
       'createdByUserId': serializer.toJson<int?>(createdByUserId),
       'status': serializer.toJson<String>(status),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'deletedBy': serializer.toJson<String?>(deletedBy),
     };
   }
 
@@ -7756,7 +8065,10 @@ class Session extends DataClass implements Insertable<Session> {
           String? sessionDateLocal,
           Value<String?> raterName = const Value.absent(),
           Value<int?> createdByUserId = const Value.absent(),
-          String? status}) =>
+          String? status,
+          bool? isDeleted,
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<String?> deletedBy = const Value.absent()}) =>
       Session(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -7769,6 +8081,9 @@ class Session extends DataClass implements Insertable<Session> {
             ? createdByUserId.value
             : this.createdByUserId,
         status: status ?? this.status,
+        isDeleted: isDeleted ?? this.isDeleted,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
       );
   Session copyWithCompanion(SessionsCompanion data) {
     return Session(
@@ -7785,6 +8100,9 @@ class Session extends DataClass implements Insertable<Session> {
           ? data.createdByUserId.value
           : this.createdByUserId,
       status: data.status.present ? data.status.value : this.status,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
     );
   }
 
@@ -7799,14 +8117,28 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('sessionDateLocal: $sessionDateLocal, ')
           ..write('raterName: $raterName, ')
           ..write('createdByUserId: $createdByUserId, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, trialId, name, startedAt, endedAt,
-      sessionDateLocal, raterName, createdByUserId, status);
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      name,
+      startedAt,
+      endedAt,
+      sessionDateLocal,
+      raterName,
+      createdByUserId,
+      status,
+      isDeleted,
+      deletedAt,
+      deletedBy);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -7819,7 +8151,10 @@ class Session extends DataClass implements Insertable<Session> {
           other.sessionDateLocal == this.sessionDateLocal &&
           other.raterName == this.raterName &&
           other.createdByUserId == this.createdByUserId &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.isDeleted == this.isDeleted &&
+          other.deletedAt == this.deletedAt &&
+          other.deletedBy == this.deletedBy);
 }
 
 class SessionsCompanion extends UpdateCompanion<Session> {
@@ -7832,6 +8167,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String?> raterName;
   final Value<int?> createdByUserId;
   final Value<String> status;
+  final Value<bool> isDeleted;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> deletedBy;
   const SessionsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -7842,6 +8180,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.raterName = const Value.absent(),
     this.createdByUserId = const Value.absent(),
     this.status = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   });
   SessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -7853,6 +8194,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.raterName = const Value.absent(),
     this.createdByUserId = const Value.absent(),
     this.status = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   })  : trialId = Value(trialId),
         name = Value(name),
         sessionDateLocal = Value(sessionDateLocal);
@@ -7866,6 +8210,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? raterName,
     Expression<int>? createdByUserId,
     Expression<String>? status,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? deletedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7877,6 +8224,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (raterName != null) 'rater_name': raterName,
       if (createdByUserId != null) 'created_by_user_id': createdByUserId,
       if (status != null) 'status': status,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deletedBy != null) 'deleted_by': deletedBy,
     });
   }
 
@@ -7889,7 +8239,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       Value<String>? sessionDateLocal,
       Value<String?>? raterName,
       Value<int?>? createdByUserId,
-      Value<String>? status}) {
+      Value<String>? status,
+      Value<bool>? isDeleted,
+      Value<DateTime?>? deletedAt,
+      Value<String?>? deletedBy}) {
     return SessionsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -7900,6 +8253,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       raterName: raterName ?? this.raterName,
       createdByUserId: createdByUserId ?? this.createdByUserId,
       status: status ?? this.status,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 
@@ -7933,6 +8289,15 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (deletedBy.present) {
+      map['deleted_by'] = Variable<String>(deletedBy.value);
+    }
     return map;
   }
 
@@ -7947,7 +8312,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('sessionDateLocal: $sessionDateLocal, ')
           ..write('raterName: $raterName, ')
           ..write('createdByUserId: $createdByUserId, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -8466,6 +8834,28 @@ class $RatingRecordsTable extends RatingRecords
   late final GeneratedColumn<DateTime> amendedAt = GeneratedColumn<DateTime>(
       'amended_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedByMeta =
+      const VerificationMeta('deletedBy');
+  @override
+  late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
+      'deleted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -8493,7 +8883,10 @@ class $RatingRecordsTable extends RatingRecords
         originalValue,
         amendmentReason,
         amendedBy,
-        amendedAt
+        amendedAt,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8646,6 +9039,18 @@ class $RatingRecordsTable extends RatingRecords
       context.handle(_amendedAtMeta,
           amendedAt.isAcceptableOrUnknown(data['amended_at']!, _amendedAtMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('deleted_by')) {
+      context.handle(_deletedByMeta,
+          deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
+    }
     return context;
   }
 
@@ -8707,6 +9112,12 @@ class $RatingRecordsTable extends RatingRecords
           .read(DriftSqlType.string, data['${effectivePrefix}amended_by']),
       amendedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}amended_at']),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      deletedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
     );
   }
 
@@ -8747,6 +9158,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
   final String? amendmentReason;
   final String? amendedBy;
   final DateTime? amendedAt;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   const RatingRecord(
       {required this.id,
       required this.trialId,
@@ -8773,7 +9187,10 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       this.originalValue,
       this.amendmentReason,
       this.amendedBy,
-      this.amendedAt});
+      this.amendedAt,
+      required this.isDeleted,
+      this.deletedAt,
+      this.deletedBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -8836,6 +9253,13 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
     }
     if (!nullToAbsent || amendedAt != null) {
       map['amended_at'] = Variable<DateTime>(amendedAt);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || deletedBy != null) {
+      map['deleted_by'] = Variable<String>(deletedBy);
     }
     return map;
   }
@@ -8902,6 +9326,13 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       amendedAt: amendedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(amendedAt),
+      isDeleted: Value(isDeleted),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      deletedBy: deletedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedBy),
     );
   }
 
@@ -8938,6 +9369,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       amendmentReason: serializer.fromJson<String?>(json['amendmentReason']),
       amendedBy: serializer.fromJson<String?>(json['amendedBy']),
       amendedAt: serializer.fromJson<DateTime?>(json['amendedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      deletedBy: serializer.fromJson<String?>(json['deletedBy']),
     );
   }
   @override
@@ -8970,6 +9404,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       'amendmentReason': serializer.toJson<String?>(amendmentReason),
       'amendedBy': serializer.toJson<String?>(amendedBy),
       'amendedAt': serializer.toJson<DateTime?>(amendedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'deletedBy': serializer.toJson<String?>(deletedBy),
     };
   }
 
@@ -8999,7 +9436,10 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           Value<String?> originalValue = const Value.absent(),
           Value<String?> amendmentReason = const Value.absent(),
           Value<String?> amendedBy = const Value.absent(),
-          Value<DateTime?> amendedAt = const Value.absent()}) =>
+          Value<DateTime?> amendedAt = const Value.absent(),
+          bool? isDeleted,
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<String?> deletedBy = const Value.absent()}) =>
       RatingRecord(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -9042,6 +9482,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
             : this.amendmentReason,
         amendedBy: amendedBy.present ? amendedBy.value : this.amendedBy,
         amendedAt: amendedAt.present ? amendedAt.value : this.amendedAt,
+        isDeleted: isDeleted ?? this.isDeleted,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
       );
   RatingRecord copyWithCompanion(RatingRecordsCompanion data) {
     return RatingRecord(
@@ -9096,6 +9539,9 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           : this.amendmentReason,
       amendedBy: data.amendedBy.present ? data.amendedBy.value : this.amendedBy,
       amendedAt: data.amendedAt.present ? data.amendedAt.value : this.amendedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
     );
   }
 
@@ -9127,7 +9573,10 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           ..write('originalValue: $originalValue, ')
           ..write('amendmentReason: $amendmentReason, ')
           ..write('amendedBy: $amendedBy, ')
-          ..write('amendedAt: $amendedAt')
+          ..write('amendedAt: $amendedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -9159,7 +9608,10 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
         originalValue,
         amendmentReason,
         amendedBy,
-        amendedAt
+        amendedAt,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ]);
   @override
   bool operator ==(Object other) =>
@@ -9190,7 +9642,10 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           other.originalValue == this.originalValue &&
           other.amendmentReason == this.amendmentReason &&
           other.amendedBy == this.amendedBy &&
-          other.amendedAt == this.amendedAt);
+          other.amendedAt == this.amendedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.deletedAt == this.deletedAt &&
+          other.deletedBy == this.deletedBy);
 }
 
 class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
@@ -9220,6 +9675,9 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
   final Value<String?> amendmentReason;
   final Value<String?> amendedBy;
   final Value<DateTime?> amendedAt;
+  final Value<bool> isDeleted;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> deletedBy;
   const RatingRecordsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -9247,6 +9705,9 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.amendmentReason = const Value.absent(),
     this.amendedBy = const Value.absent(),
     this.amendedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   });
   RatingRecordsCompanion.insert({
     this.id = const Value.absent(),
@@ -9275,6 +9736,9 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.amendmentReason = const Value.absent(),
     this.amendedBy = const Value.absent(),
     this.amendedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   })  : trialId = Value(trialId),
         plotPk = Value(plotPk),
         assessmentId = Value(assessmentId),
@@ -9306,6 +9770,9 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     Expression<String>? amendmentReason,
     Expression<String>? amendedBy,
     Expression<DateTime>? amendedAt,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? deletedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -9334,6 +9801,9 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       if (amendmentReason != null) 'amendment_reason': amendmentReason,
       if (amendedBy != null) 'amended_by': amendedBy,
       if (amendedAt != null) 'amended_at': amendedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deletedBy != null) 'deleted_by': deletedBy,
     });
   }
 
@@ -9363,7 +9833,10 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       Value<String?>? originalValue,
       Value<String?>? amendmentReason,
       Value<String?>? amendedBy,
-      Value<DateTime?>? amendedAt}) {
+      Value<DateTime?>? amendedAt,
+      Value<bool>? isDeleted,
+      Value<DateTime?>? deletedAt,
+      Value<String?>? deletedBy}) {
     return RatingRecordsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -9391,6 +9864,9 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       amendmentReason: amendmentReason ?? this.amendmentReason,
       amendedBy: amendedBy ?? this.amendedBy,
       amendedAt: amendedAt ?? this.amendedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 
@@ -9475,6 +9951,15 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     if (amendedAt.present) {
       map['amended_at'] = Variable<DateTime>(amendedAt.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (deletedBy.present) {
+      map['deleted_by'] = Variable<String>(deletedBy.value);
+    }
     return map;
   }
 
@@ -9506,7 +9991,10 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
           ..write('originalValue: $originalValue, ')
           ..write('amendmentReason: $amendmentReason, ')
           ..write('amendedBy: $amendedBy, ')
-          ..write('amendedAt: $amendedAt')
+          ..write('amendedAt: $amendedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -19165,6 +19653,9 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<String?> studyType,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<int> id,
@@ -19203,6 +19694,9 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<String?> studyType,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 
 class $$TrialsTableTableManager extends RootTableManager<
@@ -19258,6 +19752,9 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<String?> studyType = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               TrialsCompanion(
             id: id,
@@ -19296,6 +19793,9 @@ class $$TrialsTableTableManager extends RootTableManager<
             studyType: studyType,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -19334,6 +19834,9 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<String?> studyType = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               TrialsCompanion.insert(
             id: id,
@@ -19372,6 +19875,9 @@ class $$TrialsTableTableManager extends RootTableManager<
             studyType: studyType,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
         ));
 }
@@ -19556,6 +20062,21 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
       column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -20038,6 +20559,21 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
       column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
@@ -21699,6 +22235,9 @@ typedef $$PlotsTableCreateCompanionBuilder = PlotsCompanion Function({
   Value<String?> plotDirection,
   Value<String?> soilSeries,
   Value<String?> plotNotes,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<int> id,
@@ -21723,6 +22262,9 @@ typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<String?> plotDirection,
   Value<String?> soilSeries,
   Value<String?> plotNotes,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 
 class $$PlotsTableTableManager extends RootTableManager<
@@ -21764,6 +22306,9 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<String?> plotDirection = const Value.absent(),
             Value<String?> soilSeries = const Value.absent(),
             Value<String?> plotNotes = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               PlotsCompanion(
             id: id,
@@ -21788,6 +22333,9 @@ class $$PlotsTableTableManager extends RootTableManager<
             plotDirection: plotDirection,
             soilSeries: soilSeries,
             plotNotes: plotNotes,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -21812,6 +22360,9 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<String?> plotDirection = const Value.absent(),
             Value<String?> soilSeries = const Value.absent(),
             Value<String?> plotNotes = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               PlotsCompanion.insert(
             id: id,
@@ -21836,6 +22387,9 @@ class $$PlotsTableTableManager extends RootTableManager<
             plotDirection: plotDirection,
             soilSeries: soilSeries,
             plotNotes: plotNotes,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
         ));
 }
@@ -21940,6 +22494,21 @@ class $$PlotsTableFilterComposer
 
   ColumnFilters<String> get plotNotes => $state.composableBuilder(
       column: $state.table.plotNotes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -22207,6 +22776,21 @@ class $$PlotsTableOrderingComposer
 
   ColumnOrderings<String> get plotNotes => $state.composableBuilder(
       column: $state.table.plotNotes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -22615,6 +23199,9 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   Value<String?> raterName,
   Value<int?> createdByUserId,
   Value<String> status,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<int> id,
@@ -22626,6 +23213,9 @@ typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<String?> raterName,
   Value<int?> createdByUserId,
   Value<String> status,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 
 class $$SessionsTableTableManager extends RootTableManager<
@@ -22654,6 +23244,9 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<String?> raterName = const Value.absent(),
             Value<int?> createdByUserId = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               SessionsCompanion(
             id: id,
@@ -22665,6 +23258,9 @@ class $$SessionsTableTableManager extends RootTableManager<
             raterName: raterName,
             createdByUserId: createdByUserId,
             status: status,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -22676,6 +23272,9 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<String?> raterName = const Value.absent(),
             Value<int?> createdByUserId = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               SessionsCompanion.insert(
             id: id,
@@ -22687,6 +23286,9 @@ class $$SessionsTableTableManager extends RootTableManager<
             raterName: raterName,
             createdByUserId: createdByUserId,
             status: status,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
         ));
 }
@@ -22726,6 +23328,21 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get status => $state.composableBuilder(
       column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -22931,6 +23548,21 @@ class $$SessionsTableOrderingComposer
 
   ColumnOrderings<String> get status => $state.composableBuilder(
       column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -23154,6 +23786,9 @@ typedef $$RatingRecordsTableCreateCompanionBuilder = RatingRecordsCompanion
   Value<String?> amendmentReason,
   Value<String?> amendedBy,
   Value<DateTime?> amendedAt,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 typedef $$RatingRecordsTableUpdateCompanionBuilder = RatingRecordsCompanion
     Function({
@@ -23183,6 +23818,9 @@ typedef $$RatingRecordsTableUpdateCompanionBuilder = RatingRecordsCompanion
   Value<String?> amendmentReason,
   Value<String?> amendedBy,
   Value<DateTime?> amendedAt,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 
 class $$RatingRecordsTableTableManager extends RootTableManager<
@@ -23228,6 +23866,9 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<String?> amendmentReason = const Value.absent(),
             Value<String?> amendedBy = const Value.absent(),
             Value<DateTime?> amendedAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               RatingRecordsCompanion(
             id: id,
@@ -23256,6 +23897,9 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             amendmentReason: amendmentReason,
             amendedBy: amendedBy,
             amendedAt: amendedAt,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -23284,6 +23928,9 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<String?> amendmentReason = const Value.absent(),
             Value<String?> amendedBy = const Value.absent(),
             Value<DateTime?> amendedAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               RatingRecordsCompanion.insert(
             id: id,
@@ -23312,6 +23959,9 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             amendmentReason: amendmentReason,
             amendedBy: amendedBy,
             amendedAt: amendedAt,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
         ));
 }
@@ -23421,6 +24071,21 @@ class $$RatingRecordsTableFilterComposer
 
   ColumnFilters<DateTime> get amendedAt => $state.composableBuilder(
       column: $state.table.amendedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -23621,6 +24286,21 @@ class $$RatingRecordsTableOrderingComposer
 
   ColumnOrderings<DateTime> get amendedAt => $state.composableBuilder(
       column: $state.table.amendedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

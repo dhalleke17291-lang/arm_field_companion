@@ -73,6 +73,9 @@ class FakeSessionRepository implements SessionRepository {
     int sessionId,
     List<int> assessmentIdsInOrder,
   ) async {}
+
+  @override
+  Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {}
 }
 
 class FakeTrialRepository implements TrialRepository {
@@ -110,6 +113,9 @@ class FakeTrialRepository implements TrialRepository {
   @override
   Future<TrialSummary> getTrialSummary(int trialId) async =>
       throw UnimplementedError();
+
+  @override
+  Future<void> softDeleteTrial(int trialId, {String? deletedBy}) async {}
 }
 
 class FakePlotRepository implements PlotRepository {
@@ -204,6 +210,9 @@ class FakePlotRepository implements PlotRepository {
     DateTime? assignmentUpdatedAt,
   }) async =>
       throw UnimplementedError();
+
+  @override
+  Future<void> softDeletePlot(int plotPk, {String? deletedBy}) async {}
 }
 
 class FakeRatingRepository implements RatingRepository {

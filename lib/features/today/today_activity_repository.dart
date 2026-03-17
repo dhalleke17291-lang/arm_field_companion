@@ -34,7 +34,8 @@ class TodayActivityRepository {
     final startedSessions = await (_db.select(_db.sessions)
           ..where((s) {
             final inRange = s.startedAt.isBiggerOrEqualValue(start) &
-                s.startedAt.isSmallerThanValue(end);
+                s.startedAt.isSmallerThanValue(end) &
+                s.isDeleted.equals(false);
             if (currentUserId != null) {
               return inRange & s.createdByUserId.equals(currentUserId);
             }
@@ -78,7 +79,8 @@ class TodayActivityRepository {
     final ratings = await (_db.select(_db.ratingRecords)
           ..where((r) =>
               r.createdAt.isBiggerOrEqualValue(start) &
-              r.createdAt.isSmallerThanValue(end)))
+              r.createdAt.isSmallerThanValue(end) &
+              r.isDeleted.equals(false)))
         .get();
     final bySession = <int, List<RatingRecord>>{};
     for (final r in ratings) {
@@ -216,7 +218,8 @@ class TodayActivityRepository {
 
     final startedSessions = await (_db.select(_db.sessions)
           ..where((s) {
-            final ok = s.startedAt.isBiggerOrEqualValue(cutoff);
+            final ok =
+                s.startedAt.isBiggerOrEqualValue(cutoff) & s.isDeleted.equals(false);
             if (currentUserId != null) {
               return ok & s.createdByUserId.equals(currentUserId);
             }
@@ -243,7 +246,9 @@ class TodayActivityRepository {
     }
 
     final ratings = await (_db.select(_db.ratingRecords)
-          ..where((r) => r.createdAt.isBiggerOrEqualValue(cutoff)))
+          ..where((r) =>
+              r.createdAt.isBiggerOrEqualValue(cutoff) &
+              r.isDeleted.equals(false)))
         .get();
     for (final r in ratings) {
       add(toDateLocal(r.createdAt));
@@ -286,8 +291,10 @@ class TodayActivityRepository {
 }
 
 extension on AppDatabase {
-  Future<Trial?> getTrialById(int id) =>
-      (select(trials)..where((t) => t.id.equals(id))).getSingleOrNull();
-  Future<Session?> getSessionById(int id) =>
-      (select(sessions)..where((s) => s.id.equals(id))).getSingleOrNull();
+  Future<Trial?> getTrialById(int id) => (select(trials)
+        ..where((t) => t.id.equals(id) & t.isDeleted.equals(false)))
+      .getSingleOrNull();
+  Future<Session?> getSessionById(int id) => (select(sessions)
+        ..where((s) => s.id.equals(id) & s.isDeleted.equals(false)))
+      .getSingleOrNull();
 }
