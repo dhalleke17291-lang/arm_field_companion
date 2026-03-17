@@ -30,6 +30,51 @@ const _kEmptyStateStyle = TextStyle(
   color: AppDesignTokens.secondaryText,
 );
 
+Future<void> _runPlotRestore(
+  BuildContext context,
+  WidgetRef ref,
+  Plot plot,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.clearSnackBars();
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Restoring plot...')),
+  );
+
+  final user = await ref.read(currentUserProvider.future);
+  final result = await ref.read(plotRepositoryProvider).restorePlot(
+        plot.id,
+        restoredBy: user?.displayName,
+        restoredByUserId: user?.id,
+      );
+
+  if (!context.mounted) return;
+  messenger.clearSnackBars();
+
+  if (result.success) {
+    ref.invalidate(deletedPlotsProvider);
+    ref.invalidate(plotsForTrialProvider(plot.trialId));
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Plot restored')),
+    );
+    return;
+  }
+
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Cannot Restore Plot'),
+      content: SelectableText(result.errorMessage ?? 'Restore failed.'),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
+
 String? _trialCropLocationSubtitle(Trial t) {
   final parts = <String>[];
   if (t.crop != null && t.crop!.trim().isNotEmpty) {
@@ -633,31 +678,62 @@ class _PlotRecoveryRow extends ConsumerWidget {
       if (repPart != null) repPart,
       trialLabel,
     ].join(' · ');
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          plot.plotId,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: AppDesignTokens.primaryText,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                plot.plotId,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: AppDesignTokens.primaryText,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                secondary,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _deletedMetadataLine(plot.deletedAt, plot.deletedBy),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          secondary,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppDesignTokens.secondaryText,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          _deletedMetadataLine(plot.deletedAt, plot.deletedBy),
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppDesignTokens.secondaryText,
+        Tooltip(
+          message: 'Restores this deleted plot to the active trial layout',
+          child: TextButton.icon(
+            onPressed: () => _runPlotRestore(context, ref, plot),
+            icon: const Icon(
+              Icons.restore_outlined,
+              size: 18,
+              color: AppDesignTokens.primary,
+            ),
+            label: const Text(
+              'Restore',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppDesignTokens.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
         ),
       ],

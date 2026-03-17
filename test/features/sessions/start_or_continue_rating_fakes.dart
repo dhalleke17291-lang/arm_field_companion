@@ -240,6 +240,11 @@ class FakePlotRepository implements PlotRepository {
 
   @override
   Future<Plot?> getDeletedPlotByPk(int plotPk) async => null;
+
+  @override
+  Future<PlotRestoreResult> restorePlot(int plotPk,
+          {String? restoredBy, int? restoredByUserId}) async =>
+      PlotRestoreResult.failure('Not implemented');
 }
 
 class FakeRatingRepository implements RatingRepository {

@@ -275,6 +275,85 @@ class PlotRepository {
           ..where((p) => p.id.equals(plotPk) & p.isDeleted.equals(true)))
         .getSingleOrNull();
   }
+
+  /// Restores a soft-deleted plot when trial is active and no active plot shares the same plotId.
+  Future<PlotRestoreResult> restorePlot(int plotPk,
+      {String? restoredBy, int? restoredByUserId}) async {
+    return _db.transaction(() async {
+      final plot = await getDeletedPlotByPk(plotPk);
+      if (plot == null) {
+        return PlotRestoreResult.failure(
+          'This plot was not found or is no longer deleted.',
+        );
+      }
+
+      final trial = await (_db.select(_db.trials)
+            ..where((t) => t.id.equals(plot.trialId)))
+          .getSingleOrNull();
+      if (trial == null) {
+        return PlotRestoreResult.failure(
+          'Trial not found. This plot cannot be restored.',
+        );
+      }
+      if (trial.isDeleted) {
+        return PlotRestoreResult.failure(
+          'Restore the trial from Recovery before restoring this plot.',
+        );
+      }
+
+      final conflictingActive = await (_db.select(_db.plots)
+            ..where((p) =>
+                p.trialId.equals(plot.trialId) &
+                p.plotId.equals(plot.plotId) &
+                p.isDeleted.equals(false)))
+          .get();
+      if (conflictingActive.isNotEmpty) {
+        return PlotRestoreResult.failure(
+          'An active plot with the same plot ID already exists in this trial. '
+          'Remove or rename it before restoring.',
+        );
+      }
+
+      await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
+        const PlotsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(plot.trialId),
+              plotPk: Value(plotPk),
+              eventType: 'PLOT_RESTORED',
+              description: 'Plot restored from Recovery',
+              performedBy: Value(restoredBy),
+              performedByUserId: Value(restoredByUserId),
+              metadata: Value(jsonEncode({
+                'plot_id': plot.plotId,
+                'rep': plot.rep,
+              })),
+            ),
+          );
+
+      return PlotRestoreResult.ok();
+    });
+  }
+}
+
+/// Result of [PlotRepository.restorePlot].
+class PlotRestoreResult {
+  const PlotRestoreResult._({required this.success, this.errorMessage});
+
+  final bool success;
+  final String? errorMessage;
+
+  factory PlotRestoreResult.ok() =>
+      const PlotRestoreResult._(success: true);
+
+  factory PlotRestoreResult.failure(String message) =>
+      PlotRestoreResult._(success: false, errorMessage: message);
 }
 
 class PlotNotFoundException implements Exception {
