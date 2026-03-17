@@ -89,6 +89,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   final TextEditingController _valueController = TextEditingController();
   String _selectedStatus = 'RECORDED';
+  bool _userHasInteracted = false;
   bool _isSaving = false;
 
   static const String _kLastRaterNameKey = 'last_rater_name';
@@ -1060,6 +1061,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           _lastSliderSteppedValue = null;
           _valueController.clear();
           _selectedStatus = 'RECORDED';
+          _userHasInteracted = false;
           _selectedMissingReasons.clear();
         });
         _clampValueToEffectiveRange();
@@ -1260,7 +1262,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _valueController.text = existing.numericValue?.toString() ??
             existing.textValue?.trim() ??
             '';
-        _selectedStatus = existing.resultStatus;
+        if (!_userHasInteracted) {
+          _selectedStatus = existing.resultStatus;
+        }
         _selectedMissingReasons.clear();
         if (_selectedStatus == 'MISSING_CONDITION' ||
             _selectedStatus == 'TECHNICAL_ISSUE') {
@@ -2885,6 +2889,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     return GestureDetector(
       onTap: () {
         setState(() {
+          _userHasInteracted = true;
           _selectedStatus = value;
           if (value != 'RECORDED') {
             _valueController.clear();
@@ -2930,6 +2935,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     return GestureDetector(
       onTap: () {
         setState(() {
+          _userHasInteracted = true;
           _selectedStatus = 'MISSING_CONDITION';
           _valueController.clear();
           // Keep _selectedMissingReasons; user may open Reason sheet after
