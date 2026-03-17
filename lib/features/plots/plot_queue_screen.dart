@@ -51,14 +51,33 @@ Future<void> _pushRatingScreenFromPlotQueue({
   );
 }
 
+/// Optional one-time seed for plot queue filters (e.g. deep link from Session Summary).
+class PlotQueueInitialFilters {
+  final bool flaggedOnly;
+  final bool issuesOnly;
+  final bool editedOnly;
+  final bool unratedOnly;
+  final int? rep;
+
+  const PlotQueueInitialFilters({
+    this.flaggedOnly = false,
+    this.issuesOnly = false,
+    this.editedOnly = false,
+    this.unratedOnly = false,
+    this.rep,
+  });
+}
+
 class PlotQueueScreen extends ConsumerStatefulWidget {
   final Trial trial;
   final Session session;
+  final PlotQueueInitialFilters? initialFilters;
 
   const PlotQueueScreen({
     super.key,
     required this.trial,
     required this.session,
+    this.initialFilters,
   });
 
   @override
@@ -78,6 +97,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   @override
   void initState() {
     super.initState();
+    final f = widget.initialFilters;
+    if (f != null) {
+      _showFlaggedOnly = f.flaggedOnly;
+      _showIssuesOnly = f.issuesOnly;
+      _showEditedOnly = f.editedOnly;
+      _showUnratedOnly = f.unratedOnly;
+      _repFilter = f.rep;
+    }
     WakelockPlus.enable();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadWalkOrder());
   }

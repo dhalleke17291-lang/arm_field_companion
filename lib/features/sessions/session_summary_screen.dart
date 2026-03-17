@@ -11,11 +11,20 @@ import '../diagnostics/edited_items_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import 'session_completeness_screen.dart';
 
-void _navigatePlotQueue(BuildContext context, Trial trial, Session session) {
+void _navigatePlotQueue(
+  BuildContext context,
+  Trial trial,
+  Session session, [
+  PlotQueueInitialFilters? initialFilters,
+]) {
   Navigator.push<void>(
     context,
     MaterialPageRoute<void>(
-      builder: (_) => PlotQueueScreen(trial: trial, session: session),
+      builder: (_) => PlotQueueScreen(
+        trial: trial,
+        session: session,
+        initialFilters: initialFilters,
+      ),
     ),
   );
 }
@@ -178,42 +187,70 @@ class SessionSummaryScreen extends ConsumerWidget {
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: Semantics(
-                              button: true,
-                              label: 'Open Plot Queue',
-                              child: GestureDetector(
-                                onTap: () => _navigatePlotQueue(
-                                    context, trial, session),
-                                behavior: HitTestBehavior.opaque,
-                                child: AppCard(
-                                  padding: const EdgeInsets.all(
-                                      AppDesignTokens.spacing16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const _CardHeaderRow(title: 'Progress'),
-                                      const SizedBox(height: 10),
-                                      _MetricRow('Total plots', '$total'),
-                                      _MetricRow('Rated plots', '$ratedCount'),
-                                      _MetricRow(
-                                          'Not rated plots', '$notRatedCount'),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        progressPct != null
-                                            ? 'Progress: $progressPct%'
-                                            : 'Progress: —',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
+                            child: AppCard(
+                              padding: const EdgeInsets.all(
+                                  AppDesignTokens.spacing16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Semantics(
+                                    button: true,
+                                    label: 'Open Plot Queue',
+                                    child: InkWell(
+                                      onTap: () => _navigatePlotQueue(
+                                          context, trial, session),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const _CardHeaderRow(
+                                              title: 'Progress'),
+                                          const SizedBox(height: 10),
+                                          _MetricRow('Total plots', '$total'),
+                                          _MetricRow(
+                                              'Rated plots', '$ratedCount'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  _MetricRow(
+                                    'Not rated plots',
+                                    '$notRatedCount',
+                                    onTap: () => _navigatePlotQueue(
+                                      context,
+                                      trial,
+                                      session,
+                                      const PlotQueueInitialFilters(
+                                          unratedOnly: true),
+                                    ),
+                                    semanticsLabel:
+                                        'Open Plot Queue, unrated plots only',
+                                  ),
+                                  Semantics(
+                                    button: true,
+                                    label: 'Open Plot Queue',
+                                    child: InkWell(
+                                      onTap: () => _navigatePlotQueue(
+                                          context, trial, session),
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 10),
+                                        child: Text(
+                                          progressPct != null
+                                              ? 'Progress: $progressPct%'
+                                              : 'Progress: —',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                          ),
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
                           ),
@@ -283,42 +320,90 @@ class SessionSummaryScreen extends ConsumerWidget {
                           ),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 20),
-                            child: Semantics(
-                              button: true,
-                              label: 'Open Plot Queue',
-                              child: GestureDetector(
-                                onTap: () => _navigatePlotQueue(
-                                    context, trial, session),
-                                behavior: HitTestBehavior.opaque,
-                                child: AppCard(
-                                  padding: const EdgeInsets.all(
-                                      AppDesignTokens.spacing16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const _CardHeaderRow(title: 'Attention'),
-                                      const SizedBox(height: 10),
-                                      _MetricRow(
-                                          'Flagged plots', '$flaggedCount'),
-                                      _MetricRow('Plots with issues',
-                                          '$issuesPlotCount'),
-                                      _MetricRow(
-                                          'Edited plots', '$editedPlotCount'),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        'Open Plot Queue and use filters to review flagged, issue, or edited plots.',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          height: 1.35,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
+                            child: AppCard(
+                              padding: const EdgeInsets.all(
+                                  AppDesignTokens.spacing16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Semantics(
+                                    button: true,
+                                    label: 'Open Plot Queue',
+                                    child: InkWell(
+                                      onTap: () => _navigatePlotQueue(
+                                          context, trial, session),
+                                      child: const Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          _CardHeaderRow(title: 'Attention'),
+                                          SizedBox(height: 10),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  _MetricRow(
+                                    'Flagged plots',
+                                    '$flaggedCount',
+                                    onTap: () => _navigatePlotQueue(
+                                      context,
+                                      trial,
+                                      session,
+                                      const PlotQueueInitialFilters(
+                                          flaggedOnly: true),
+                                    ),
+                                    semanticsLabel:
+                                        'Open Plot Queue, flagged plots only',
+                                  ),
+                                  _MetricRow(
+                                    'Plots with issues',
+                                    '$issuesPlotCount',
+                                    onTap: () => _navigatePlotQueue(
+                                      context,
+                                      trial,
+                                      session,
+                                      const PlotQueueInitialFilters(
+                                          issuesOnly: true),
+                                    ),
+                                    semanticsLabel:
+                                        'Open Plot Queue, plots with issues only',
+                                  ),
+                                  _MetricRow(
+                                    'Edited plots',
+                                    '$editedPlotCount',
+                                    onTap: () => _navigatePlotQueue(
+                                      context,
+                                      trial,
+                                      session,
+                                      const PlotQueueInitialFilters(
+                                          editedOnly: true),
+                                    ),
+                                    semanticsLabel:
+                                        'Open Plot Queue, edited plots only',
+                                  ),
+                                  Semantics(
+                                    button: true,
+                                    label: 'Open Plot Queue',
+                                    child: InkWell(
+                                      onTap: () => _navigatePlotQueue(
+                                          context, trial, session),
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 10),
+                                        child: Text(
+                                          'Open Plot Queue and use filters to review flagged, issue, or edited plots.',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            height: 1.35,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
                           ),
@@ -424,14 +509,21 @@ class _CardHeaderRow extends StatelessWidget {
 }
 
 class _MetricRow extends StatelessWidget {
-  const _MetricRow(this.label, this.value);
+  const _MetricRow(
+    this.label,
+    this.value, {
+    this.onTap,
+    this.semanticsLabel,
+  });
 
   final String label;
   final String value;
+  final VoidCallback? onTap;
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -454,6 +546,15 @@ class _MetricRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+    if (onTap == null) return row;
+    return Semantics(
+      button: true,
+      label: semanticsLabel ?? label,
+      child: InkWell(
+        onTap: onTap,
+        child: row,
       ),
     );
   }
