@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 
@@ -216,15 +218,39 @@ class PlotRepository {
   }
 
   /// Soft-delete plot only. Rating records for this plot are unchanged.
-  Future<void> softDeletePlot(int plotPk, {String? deletedBy}) async {
+  /// [deletedByUserId] optional; stored on audit event as [performedByUserId].
+  Future<void> softDeletePlot(int plotPk,
+      {String? deletedBy, int? deletedByUserId}) async {
     final now = DateTime.now().toUtc();
-    await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
-      PlotsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(now),
-        deletedBy: Value(deletedBy),
-      ),
-    );
+    await _db.transaction(() async {
+      final plot = await (_db.select(_db.plots)
+            ..where((p) => p.id.equals(plotPk)))
+          .getSingleOrNull();
+      if (plot == null) return;
+
+      await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
+        PlotsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(now),
+          deletedBy: Value(deletedBy),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(plot.trialId),
+              plotPk: Value(plotPk),
+              eventType: 'PLOT_DELETED',
+              description: 'Plot deleted and moved to Recovery',
+              performedBy: Value(deletedBy),
+              performedByUserId: Value(deletedByUserId),
+              metadata: Value(jsonEncode({
+                'plot_id': plot.plotId,
+                'rep': plot.rep,
+              })),
+            ),
+          );
+    });
   }
 
   /// Recovery: soft-deleted plots for a trial, newest deletion first.

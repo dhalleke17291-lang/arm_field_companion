@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 
@@ -161,9 +163,21 @@ class SessionRepository {
   }
 
   /// Soft-delete session and all rating_records for that session.
-  Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {
+  /// [deletedByUserId] optional; stored on audit event as [performedByUserId].
+  Future<void> softDeleteSession(int sessionId,
+      {String? deletedBy, int? deletedByUserId}) async {
     final now = DateTime.now().toUtc();
     await _db.transaction(() async {
+      final sessionRow = await (_db.select(_db.sessions)
+            ..where((s) => s.id.equals(sessionId)))
+          .getSingleOrNull();
+      final trialId = sessionRow?.trialId;
+
+      final deletedRatingsCount = await (_db.select(_db.ratingRecords)
+            ..where((r) => r.sessionId.equals(sessionId)))
+          .get()
+          .then((l) => l.length);
+
       await (_db.update(_db.ratingRecords)
             ..where((r) => r.sessionId.equals(sessionId)))
           .write(RatingRecordsCompanion(
@@ -177,6 +191,21 @@ class SessionRepository {
         deletedAt: Value(now),
         deletedBy: Value(deletedBy),
       ));
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId:
+                  trialId != null ? Value(trialId) : const Value.absent(),
+              sessionId: Value(sessionId),
+              eventType: 'SESSION_DELETED',
+              description: 'Session deleted and moved to Recovery',
+              performedBy: Value(deletedBy),
+              performedByUserId: Value(deletedByUserId),
+              metadata: Value(jsonEncode({
+                'deleted_ratings_count': deletedRatingsCount,
+              })),
+            ),
+          );
     });
   }
 

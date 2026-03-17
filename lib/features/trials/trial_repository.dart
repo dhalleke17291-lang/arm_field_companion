@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 import '../../core/trial_state.dart';
@@ -98,9 +100,24 @@ class TrialRepository {
   }
 
   /// Soft-delete trial and cascade: sessions, plots, and all rating_records for the trial.
-  Future<void> softDeleteTrial(int trialId, {String? deletedBy}) async {
+  /// [deletedByUserId] optional; stored on audit event as [performedByUserId].
+  Future<void> softDeleteTrial(int trialId,
+      {String? deletedBy, int? deletedByUserId}) async {
     final now = DateTime.now().toUtc();
     await _db.transaction(() async {
+      final deletedSessionsCount = await (_db.select(_db.sessions)
+            ..where((s) => s.trialId.equals(trialId)))
+          .get()
+          .then((l) => l.length);
+      final deletedPlotsCount = await (_db.select(_db.plots)
+            ..where((p) => p.trialId.equals(trialId)))
+          .get()
+          .then((l) => l.length);
+      final deletedRatingsCount = await (_db.select(_db.ratingRecords)
+            ..where((r) => r.trialId.equals(trialId)))
+          .get()
+          .then((l) => l.length);
+
       await (_db.update(_db.ratingRecords)
             ..where((r) => r.trialId.equals(trialId)))
           .write(RatingRecordsCompanion(
@@ -126,6 +143,21 @@ class TrialRepository {
         deletedAt: Value(now),
         deletedBy: Value(deletedBy),
       ));
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(trialId),
+              eventType: 'TRIAL_DELETED',
+              description: 'Trial deleted and moved to Recovery',
+              performedBy: Value(deletedBy),
+              performedByUserId: Value(deletedByUserId),
+              metadata: Value(jsonEncode({
+                'deleted_sessions_count': deletedSessionsCount,
+                'deleted_plots_count': deletedPlotsCount,
+                'deleted_ratings_count': deletedRatingsCount,
+              })),
+            ),
+          );
     });
   }
 
