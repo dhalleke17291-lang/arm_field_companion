@@ -179,6 +179,15 @@ class MockRatingRepository implements RatingRepository {
   }) async {
     throw UnimplementedError('applyCorrection not used in save_rating_usecase_test');
   }
+
+  @override
+  Future<List<RatingRecord>> getRatingRecordsForSessionRecoveryExport(
+      int sessionId) async {
+    final list =
+        _records.where((r) => r.sessionId == sessionId).toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
 }
 
 void main() {

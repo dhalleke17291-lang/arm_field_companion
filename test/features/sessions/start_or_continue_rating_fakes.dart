@@ -360,6 +360,15 @@ class FakeRatingRepository implements RatingRepository {
     int? plotPk,
   }) async =>
       throw UnimplementedError();
+
+  @override
+  Future<List<RatingRecord>> getRatingRecordsForSessionRecoveryExport(
+      int sessionId) async {
+    final list =
+        ratings.where((r) => r.sessionId == sessionId).toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
 }
 
 /// Use case double that returns a configurable result for widget tests.

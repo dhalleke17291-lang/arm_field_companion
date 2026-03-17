@@ -31,6 +31,7 @@ import '../features/export/domain/export_session_csv_usecase.dart';
 import '../features/export/domain/export_session_arm_xml_usecase.dart';
 import '../features/export/domain/export_trial_closed_sessions_usecase.dart';
 import '../features/export/domain/export_trial_closed_sessions_arm_xml_usecase.dart';
+import '../features/export/domain/export_deleted_session_recovery_zip_usecase.dart';
 import '../features/export/export_trial_usecase.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
@@ -454,6 +455,15 @@ final exportTrialClosedSessionsArmXmlUsecaseProvider =
   return ExportTrialClosedSessionsArmXmlUsecase(
     ref.watch(exportSessionArmXmlUsecaseProvider),
     ref.watch(sessionRepositoryProvider),
+  );
+});
+
+final exportDeletedSessionRecoveryZipUsecaseProvider =
+    Provider<ExportDeletedSessionRecoveryZipUsecase>((ref) {
+  return ExportDeletedSessionRecoveryZipUsecase(
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    trialRepository: ref.watch(trialRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
   );
 });
 

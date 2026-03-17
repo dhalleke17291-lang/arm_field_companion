@@ -392,6 +392,15 @@ class _FakeRatingRepository implements RatingRepository {
   }) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<List<RatingRecord>> getRatingRecordsForSessionRecoveryExport(
+      int sessionId) async {
+    final list =
+        _ratings.where((r) => r.sessionId == sessionId).toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
 }
 
 void main() {

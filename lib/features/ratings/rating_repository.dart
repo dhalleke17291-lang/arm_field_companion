@@ -282,6 +282,16 @@ class RatingRepository {
         .get();
   }
 
+  /// Recovery export: every [rating_records] row for [sessionId], including
+  /// soft-deleted ratings and non-current chain members. Ordered by id ascending.
+  Future<List<RatingRecord>> getRatingRecordsForSessionRecoveryExport(
+      int sessionId) {
+    return (_db.select(_db.ratingRecords)
+          ..where((r) => r.sessionId.equals(sessionId))
+          ..orderBy([(r) => OrderingTerm.asc(r.id)]))
+        .get();
+  }
+
   // Get rated plot IDs for a session/assessment
   Future<Set<int>> getRatedPlotPks({
     required int sessionId,
