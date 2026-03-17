@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_display.dart';
+import '../../core/plot_sort.dart';
 import '../../core/providers.dart';
+import '../../core/session_walk_order_store.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 
-/// Phase 1: read-only plot-level completeness for one session (trial plot order).
-class SessionCompletenessScreen extends ConsumerWidget {
+/// Read-only plot-level completeness; Phase 2: rows in session walk order (Plot Queue parity).
+class SessionCompletenessScreen extends ConsumerStatefulWidget {
   const SessionCompletenessScreen({
     super.key,
     required this.trial,
@@ -19,16 +22,52 @@ class SessionCompletenessScreen extends ConsumerWidget {
   final Trial trial;
   final Session session;
 
-  void _invalidateForRetry(WidgetRef ref) {
-    ref.invalidate(plotsForTrialProvider(trial.id));
-    ref.invalidate(sessionRatingsProvider(session.id));
-    ref.invalidate(ratedPlotPksProvider(session.id));
-    ref.invalidate(flaggedPlotIdsForSessionProvider(session.id));
-    ref.invalidate(plotPksWithCorrectionsForSessionProvider(session.id));
+  @override
+  ConsumerState<SessionCompletenessScreen> createState() =>
+      _SessionCompletenessScreenState();
+}
+
+class _SessionCompletenessScreenState
+    extends ConsumerState<SessionCompletenessScreen> {
+  bool _walkOrderLoaded = false;
+  WalkOrderMode _walkOrderMode = WalkOrderMode.serpentine;
+  List<int>? _customPlotIds;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadWalkOrder());
+  }
+
+  Future<void> _loadWalkOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final store = SessionWalkOrderStore(prefs);
+    final mode = store.getMode(widget.session.id);
+    final customIds = mode == WalkOrderMode.custom
+        ? store.getCustomOrder(widget.session.id)
+        : null;
+    setState(() {
+      _walkOrderLoaded = true;
+      _walkOrderMode = mode;
+      _customPlotIds = customIds;
+    });
+  }
+
+  void _invalidateForRetry() {
+    final t = widget.trial;
+    final s = widget.session;
+    ref.invalidate(plotsForTrialProvider(t.id));
+    ref.invalidate(sessionRatingsProvider(s.id));
+    ref.invalidate(ratedPlotPksProvider(s.id));
+    ref.invalidate(flaggedPlotIdsForSessionProvider(s.id));
+    ref.invalidate(plotPksWithCorrectionsForSessionProvider(s.id));
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final trial = widget.trial;
+    final session = widget.session;
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final ratedPksAsync = ref.watch(ratedPlotPksProvider(session.id));
@@ -49,38 +88,41 @@ class SessionCompletenessScreen extends ConsumerWidget {
           error: (e, st) => AppErrorView(
             error: e,
             stackTrace: st,
-            onRetry: () => _invalidateForRetry(ref),
+            onRetry: _invalidateForRetry,
           ),
-          data: (plots) => ratingsAsync.when(
+          data: (rawPlots) => ratingsAsync.when(
             loading: () => const AppLoadingView(),
             error: (e, st) => AppErrorView(
               error: e,
               stackTrace: st,
-              onRetry: () => _invalidateForRetry(ref),
+              onRetry: _invalidateForRetry,
             ),
             data: (ratings) => ratedPksAsync.when(
               loading: () => const AppLoadingView(),
               error: (e, st) => AppErrorView(
                 error: e,
                 stackTrace: st,
-                onRetry: () => _invalidateForRetry(ref),
+                onRetry: _invalidateForRetry,
               ),
               data: (ratedPks) => flaggedAsync.when(
                 loading: () => const AppLoadingView(),
                 error: (e, st) => AppErrorView(
                   error: e,
                   stackTrace: st,
-                  onRetry: () => _invalidateForRetry(ref),
+                  onRetry: _invalidateForRetry,
                 ),
                 data: (flaggedIds) => correctionsAsync.when(
                   loading: () => const AppLoadingView(),
                   error: (e, st) => AppErrorView(
                     error: e,
                     stackTrace: st,
-                    onRetry: () => _invalidateForRetry(ref),
+                    onRetry: _invalidateForRetry,
                   ),
                   data: (correctionPlotPks) {
-                    if (plots.isEmpty) {
+                    if (!_walkOrderLoaded) {
+                      return const AppLoadingView();
+                    }
+                    if (rawPlots.isEmpty) {
                       return Center(
                         child: Padding(
                           padding: const EdgeInsets.all(
@@ -108,7 +150,7 @@ class SessionCompletenessScreen extends ConsumerWidget {
                     var issuesCount = 0;
                     var editedCount = 0;
 
-                    for (final plot in plots) {
+                    for (final plot in rawPlots) {
                       final plotRatings = ratingsByPlot[plot.id] ?? [];
                       final isRated = ratedPks.contains(plot.id);
                       if (isRated) {
@@ -127,16 +169,24 @@ class SessionCompletenessScreen extends ConsumerWidget {
                       if (hasEdited) editedCount++;
                     }
 
+                    final orderedPlots = sortPlotsByWalkOrder(
+                      rawPlots,
+                      _walkOrderMode,
+                      customPlotIds: _customPlotIds,
+                    );
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _SummaryStrip(
-                          totalPlots: plots.length,
+                          totalPlots: rawPlots.length,
                           ratedCount: ratedCount,
                           notRatedCount: notRatedCount,
                           flaggedCount: flaggedCount,
                           issuesCount: issuesCount,
                           editedCount: editedCount,
+                          walkOrderLabel:
+                              SessionWalkOrderStore.labelForMode(_walkOrderMode),
                         ),
                         Expanded(
                           child: ListView.builder(
@@ -145,9 +195,9 @@ class SessionCompletenessScreen extends ConsumerWidget {
                               right: AppDesignTokens.spacing16,
                               bottom: AppDesignTokens.spacing16,
                             ),
-                            itemCount: plots.length,
+                            itemCount: orderedPlots.length,
                             itemBuilder: (context, index) {
-                              final plot = plots[index];
+                              final plot = orderedPlots[index];
                               final plotRatings =
                                   ratingsByPlot[plot.id] ?? [];
                               final isRated = ratedPks.contains(plot.id);
@@ -159,7 +209,7 @@ class SessionCompletenessScreen extends ConsumerWidget {
                                       (r.previousId != null)) ||
                                   correctionPlotPks.contains(plot.id);
                               final label =
-                                  getDisplayPlotLabel(plot, plots);
+                                  getDisplayPlotLabel(plot, rawPlots);
 
                               return _PlotCompletenessRow(
                                 plotLabel: label,
@@ -192,6 +242,7 @@ class _SummaryStrip extends StatelessWidget {
     required this.flaggedCount,
     required this.issuesCount,
     required this.editedCount,
+    required this.walkOrderLabel,
   });
 
   final int totalPlots;
@@ -200,6 +251,7 @@ class _SummaryStrip extends StatelessWidget {
   final int flaggedCount;
   final int issuesCount;
   final int editedCount;
+  final String walkOrderLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -216,15 +268,29 @@ class _SummaryStrip extends StatelessWidget {
           bottom: BorderSide(color: AppDesignTokens.borderCrisp),
         ),
       ),
-      child: Text(
-        '$totalPlots plots · $ratedCount rated · $notRatedCount not rated · '
-        '$flaggedCount flagged · $issuesCount issues · $editedCount edited',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurface,
-          height: 1.35,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$totalPlots plots · $ratedCount rated · $notRatedCount not rated · '
+            '$flaggedCount flagged · $issuesCount issues · $editedCount edited',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Walk order: $walkOrderLabel',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
