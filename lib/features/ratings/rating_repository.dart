@@ -292,6 +292,16 @@ class RatingRepository {
         .get();
   }
 
+  /// Recovery export: all [rating_records] for [trialId] (any isDeleted / isCurrent).
+  /// Ordered by id ascending for stable analysis dumps.
+  Future<List<RatingRecord>> getRatingRecordsForTrialRecoveryExport(
+      int trialId) {
+    return (_db.select(_db.ratingRecords)
+          ..where((r) => r.trialId.equals(trialId))
+          ..orderBy([(r) => OrderingTerm.asc(r.id)]))
+        .get();
+  }
+
   // Get rated plot IDs for a session/assessment
   Future<Set<int>> getRatedPlotPks({
     required int sessionId,

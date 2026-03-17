@@ -188,6 +188,14 @@ class MockRatingRepository implements RatingRepository {
     list.sort((a, b) => a.id.compareTo(b.id));
     return list;
   }
+
+  @override
+  Future<List<RatingRecord>> getRatingRecordsForTrialRecoveryExport(
+      int trialId) async {
+    final list = _records.where((r) => r.trialId == trialId).toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
 }
 
 void main() {

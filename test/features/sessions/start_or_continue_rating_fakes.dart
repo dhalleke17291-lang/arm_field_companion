@@ -369,6 +369,14 @@ class FakeRatingRepository implements RatingRepository {
     list.sort((a, b) => a.id.compareTo(b.id));
     return list;
   }
+
+  @override
+  Future<List<RatingRecord>> getRatingRecordsForTrialRecoveryExport(
+      int trialId) async {
+    final list = ratings.where((r) => r.trialId == trialId).toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
 }
 
 /// Use case double that returns a configurable result for widget tests.
