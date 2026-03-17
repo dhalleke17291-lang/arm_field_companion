@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
@@ -241,6 +242,106 @@ class _DeletedSessionsSection extends StatelessWidget {
   }
 }
 
+Future<void> _runDeletedSessionRecoveryExport(
+  BuildContext context,
+  WidgetRef ref,
+  Session session,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.clearSnackBars();
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Exporting recovery ZIP...')),
+  );
+
+  final user = await ref.read(currentUserProvider.future);
+  final result = await ref
+      .read(exportDeletedSessionRecoveryZipUsecaseProvider)
+      .execute(
+        sessionId: session.id,
+        exportedByDisplayName: user?.displayName,
+      );
+
+  if (!context.mounted) return;
+  messenger.clearSnackBars();
+
+  if (!result.success ||
+      result.filePath == null ||
+      result.filePath!.isEmpty) {
+    ref.read(diagnosticsStoreProvider).recordError(
+          result.errorMessage ?? 'Recovery export failed',
+          code: 'recovery_export_failed',
+        );
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Export Failed'),
+        content: SelectableText(
+          result.errorMessage ?? 'Recovery export failed.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Recovery Export Ready'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Deleted-session Recovery ZIP is ready for analysis or review. '
+            'This file is not for standard operational re-import.',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Saved to:',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          SelectableText(
+            result.filePath!,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Close'),
+        ),
+        FilledButton.icon(
+          onPressed: () async {
+            Navigator.pop(ctx);
+            final box = context.findRenderObject() as RenderBox?;
+            await Share.shareXFiles(
+              [XFile(result.filePath!)],
+              subject: 'Recovery export — ${session.name}',
+              sharePositionOrigin: box == null
+                  ? const Rect.fromLTWH(0, 0, 100, 100)
+                  : box.localToGlobal(Offset.zero) & box.size,
+            );
+          },
+          icon: const Icon(Icons.share),
+          label: const Text('Share'),
+        ),
+      ],
+    ),
+  );
+}
+
 class _SessionRecoveryRow extends ConsumerWidget {
   const _SessionRecoveryRow({required this.session});
 
@@ -255,29 +356,67 @@ class _SessionRecoveryRow extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          session.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: AppDesignTokens.primaryText,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '$trialLabel • ${session.sessionDateLocal}',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppDesignTokens.secondaryText,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          _deletedMetadataLine(session.deletedAt, session.deletedBy),
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppDesignTokens.secondaryText,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    session.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$trialLabel • ${session.sessionDateLocal}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _deletedMetadataLine(session.deletedAt, session.deletedBy),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Tooltip(
+              message: 'Exports deleted session data for analysis',
+              child: TextButton.icon(
+                onPressed: () =>
+                    _runDeletedSessionRecoveryExport(context, ref, session),
+                icon: const Icon(
+                  Icons.download_outlined,
+                  size: 18,
+                  color: AppDesignTokens.primary,
+                ),
+                label: const Text(
+                  'Export (Recovery)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppDesignTokens.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
