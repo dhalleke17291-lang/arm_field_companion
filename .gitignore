@@ -3,7 +3,6 @@
 *.log
 *.pyc
 *.swp
-.DS_Store
 .atom/
 .build/
 .buildlog/
@@ -11,6 +10,9 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+
+# macOS
+.DS_Store
 
 # IntelliJ related
 *.iml
@@ -23,31 +25,40 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
+# Flutter / Dart
+.flutter-plugins
 .flutter-plugins-dependencies
-.flutter-plugins-dependencies 6
-.flutter-plugins-dependencies 7
-.pub-cache/
+.flutter-plugins-dependencies*
+.packages
 .pub/
+.pub-cache/
+.dart_tool/
+**/doc/api/
 /build/
 /coverage/
 
+# Duplicate / misnamed Flutter tool outputs (spaces in filename)
+flutter_export_environment*.sh
+Generated*.xcconfig
+
 # Android build
 android/.gradle/
+/android/app/debug
+/android/app/profile
+/android/app/release
 
-# iOS build
+# iOS (Flutter generated) — also see ios/.gitignore
+**/ios/Flutter/.last_build_id
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
+
+# Xcode / CocoaPods (workspace metadata is tracked; xcuserdata in ios/.gitignore)
 ios/Pods/
+DerivedData/
 
 # Symbolication related
 app.*.symbols
 
 # Obfuscation related
 app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
