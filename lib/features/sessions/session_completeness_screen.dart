@@ -10,6 +10,7 @@ import '../../core/providers.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
+import '../plots/plot_queue_screen.dart';
 
 /// Read-only plot-level completeness; Phase 2: rows in session walk order (Plot Queue parity).
 class SessionCompletenessScreen extends ConsumerStatefulWidget {
@@ -84,6 +85,27 @@ class _SessionCompletenessScreenState
         title: 'Session Completeness',
         subtitle: '${session.name} · ${session.sessionDateLocal}',
         titleFontSize: 17,
+        actions: [
+          Semantics(
+            label: 'Open full plot queue, all plots',
+            button: true,
+            child: IconButton(
+              icon: const Icon(Icons.view_list, color: Colors.white),
+              tooltip: 'Open full plot queue',
+              onPressed: () {
+                Navigator.push<void>(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => PlotQueueScreen(
+                      trial: trial,
+                      session: session,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: plotsAsync.when(
