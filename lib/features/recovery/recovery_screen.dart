@@ -75,6 +75,102 @@ Future<void> _runPlotRestore(
   );
 }
 
+Future<void> _runSessionRestore(
+  BuildContext context,
+  WidgetRef ref,
+  Session session,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.clearSnackBars();
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Restoring session...')),
+  );
+
+  final user = await ref.read(currentUserProvider.future);
+  final result = await ref.read(sessionRepositoryProvider).restoreSession(
+        session.id,
+        restoredBy: user?.displayName,
+        restoredByUserId: user?.id,
+      );
+
+  if (!context.mounted) return;
+  messenger.clearSnackBars();
+
+  if (result.success) {
+    ref.invalidate(deletedSessionsProvider);
+    ref.invalidate(sessionsForTrialProvider(session.trialId));
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Session restored')),
+    );
+    return;
+  }
+
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Cannot Restore Session'),
+      content: SelectableText(result.errorMessage ?? 'Restore failed.'),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _runTrialRestore(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.clearSnackBars();
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Restoring trial...')),
+  );
+
+  final user = await ref.read(currentUserProvider.future);
+  final result = await ref.read(trialRepositoryProvider).restoreTrial(
+        trial.id,
+        restoredBy: user?.displayName,
+        restoredByUserId: user?.id,
+      );
+
+  if (!context.mounted) return;
+  messenger.clearSnackBars();
+
+  if (result.success) {
+    ref.invalidate(deletedTrialsProvider);
+    ref.invalidate(deletedSessionsProvider);
+    ref.invalidate(deletedPlotsProvider);
+    ref.invalidate(trialsStreamProvider);
+    ref.invalidate(sessionsForTrialProvider(trial.id));
+    ref.invalidate(plotsForTrialProvider(trial.id));
+    ref.invalidate(trialProvider(trial.id));
+    ref.invalidate(trialSetupProvider(trial.id));
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Trial restored')),
+    );
+    return;
+  }
+
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Cannot Restore Trial'),
+      content: SelectableText(result.errorMessage ?? 'Restore failed.'),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
+
 String? _trialCropLocationSubtitle(Trial t) {
   final parts = <String>[];
   if (t.crop != null && t.crop!.trim().isNotEmpty) {
@@ -226,30 +322,61 @@ class _TrialRecoveryRow extends ConsumerWidget {
             ],
           ),
         ),
-        Tooltip(
-          message: 'Exports deleted trial data for analysis',
-          child: TextButton.icon(
-            onPressed: () =>
-                _runDeletedTrialRecoveryExport(context, ref, trial),
-            icon: const Icon(
-              Icons.download_outlined,
-              size: 18,
-              color: AppDesignTokens.primary,
-            ),
-            label: const Text(
-              'Export (Recovery)',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppDesignTokens.primary,
-                fontWeight: FontWeight.w500,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: 'Restores this deleted trial and its deleted data',
+              child: TextButton.icon(
+                onPressed: () => _runTrialRestore(context, ref, trial),
+                icon: const Icon(
+                  Icons.restore_outlined,
+                  size: 18,
+                  color: AppDesignTokens.primary,
+                ),
+                label: const Text(
+                  'Restore',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppDesignTokens.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
             ),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            Tooltip(
+              message: 'Exports deleted trial data for analysis',
+              child: TextButton.icon(
+                onPressed: () =>
+                    _runDeletedTrialRecoveryExport(context, ref, trial),
+                icon: const Icon(
+                  Icons.download_outlined,
+                  size: 18,
+                  color: AppDesignTokens.primary,
+                ),
+                label: const Text(
+                  'Export (Recovery)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppDesignTokens.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );
@@ -567,31 +694,62 @@ class _SessionRecoveryRow extends ConsumerWidget {
                 ],
               ),
             ),
-            Tooltip(
-              message: 'Exports deleted session data for analysis',
-              child: TextButton.icon(
-                onPressed: () =>
-                    _runDeletedSessionRecoveryExport(context, ref, session),
-                icon: const Icon(
-                  Icons.download_outlined,
-                  size: 18,
-                  color: AppDesignTokens.primary,
-                ),
-                label: const Text(
-                  'Export (Recovery)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppDesignTokens.primary,
-                    fontWeight: FontWeight.w500,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Tooltip(
+                  message: 'Restores this deleted session and its rating data',
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        _runSessionRestore(context, ref, session),
+                    icon: const Icon(
+                      Icons.restore_outlined,
+                      size: 18,
+                      color: AppDesignTokens.primary,
+                    ),
+                    label: const Text(
+                      'Restore',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
                 ),
-                style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                Tooltip(
+                  message: 'Exports deleted session data for analysis',
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        _runDeletedSessionRecoveryExport(context, ref, session),
+                    icon: const Icon(
+                      Icons.download_outlined,
+                      size: 18,
+                      color: AppDesignTokens.primary,
+                    ),
+                    label: const Text(
+                      'Export (Recovery)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

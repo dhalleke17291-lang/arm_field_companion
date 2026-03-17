@@ -175,6 +175,93 @@ class TrialRepository {
           ..where((t) => t.id.equals(id) & t.isDeleted.equals(true)))
         .getSingleOrNull();
   }
+
+  /// Restores a soft-deleted trial and child rows previously soft-deleted with it
+  /// (sessions, plots, rating_records for [trialId] where [isDeleted] is true).
+  Future<TrialRestoreResult> restoreTrial(int trialId,
+      {String? restoredBy, int? restoredByUserId}) async {
+    return _db.transaction(() async {
+      final trial = await getDeletedTrialById(trialId);
+      if (trial == null) {
+        return TrialRestoreResult.failure(
+          'This trial was not found or is no longer deleted.',
+        );
+      }
+
+      final restoredRatingsCount = await (_db.update(_db.ratingRecords)
+            ..where((r) =>
+                r.trialId.equals(trialId) & r.isDeleted.equals(true)))
+          .write(
+        const RatingRecordsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      final restoredSessionsCount = await (_db.update(_db.sessions)
+            ..where((s) =>
+                s.trialId.equals(trialId) & s.isDeleted.equals(true)))
+          .write(
+        const SessionsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      final restoredPlotsCount = await (_db.update(_db.plots)
+            ..where((p) =>
+                p.trialId.equals(trialId) & p.isDeleted.equals(true)))
+          .write(
+        const PlotsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      await (_db.update(_db.trials)..where((t) => t.id.equals(trialId)))
+          .write(
+        const TrialsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(trialId),
+              eventType: 'TRIAL_RESTORED',
+              description: 'Trial restored from Recovery',
+              performedBy: Value(restoredBy),
+              performedByUserId: Value(restoredByUserId),
+              metadata: Value(jsonEncode({
+                'restored_sessions_count': restoredSessionsCount,
+                'restored_plots_count': restoredPlotsCount,
+                'restored_ratings_count': restoredRatingsCount,
+              })),
+            ),
+          );
+
+      return TrialRestoreResult.ok();
+    });
+  }
+}
+
+/// Result of [TrialRepository.restoreTrial].
+class TrialRestoreResult {
+  const TrialRestoreResult._({required this.success, this.errorMessage});
+
+  final bool success;
+  final String? errorMessage;
+
+  factory TrialRestoreResult.ok() =>
+      const TrialRestoreResult._(success: true);
+
+  factory TrialRestoreResult.failure(String message) =>
+      TrialRestoreResult._(success: false, errorMessage: message);
 }
 
 // ─────────────────────────────────────────────
