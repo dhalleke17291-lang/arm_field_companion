@@ -5,6 +5,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../diagnostics/diagnostics_screen.dart';
+import '../recovery/recovery_screen.dart';
 import '../users/user_selection_screen.dart';
 
 void _openUserSelection(BuildContext context) {
@@ -70,6 +71,21 @@ class MoreScreen extends ConsumerWidget {
                   context,
                   MaterialPageRoute<void>(
                     builder: (_) => const DiagnosticsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: AppDesignTokens.spacing12),
+            _buildActionCard(
+              context,
+              icon: Icons.restore_from_trash_outlined,
+              title: 'Recovery',
+              subtitle: 'View deleted trials, sessions and plots',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const RecoveryScreen(),
                   ),
                 );
               },

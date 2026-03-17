@@ -179,6 +179,29 @@ class SessionRepository {
       ));
     });
   }
+
+  /// Recovery: soft-deleted sessions for a trial, newest deletion first.
+  Future<List<Session>> getDeletedSessionsForTrial(int trialId) {
+    return (_db.select(_db.sessions)
+          ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(true))
+          ..orderBy([(s) => OrderingTerm.desc(s.deletedAt)]))
+        .get();
+  }
+
+  /// Recovery: all soft-deleted sessions, newest deletion first.
+  Future<List<Session>> getAllDeletedSessions() {
+    return (_db.select(_db.sessions)
+          ..where((s) => s.isDeleted.equals(true))
+          ..orderBy([(s) => OrderingTerm.desc(s.deletedAt)]))
+        .get();
+  }
+
+  /// Recovery: single soft-deleted session by id, or null.
+  Future<Session?> getDeletedSessionById(int id) {
+    return (_db.select(_db.sessions)
+          ..where((s) => s.id.equals(id) & s.isDeleted.equals(true)))
+        .getSingleOrNull();
+  }
 }
 
 class OpenSessionExistsException implements Exception {

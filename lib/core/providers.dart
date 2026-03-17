@@ -297,6 +297,23 @@ final sessionsForTrialProvider =
       .watch();
 });
 
+/// Soft-deleted trials (Recovery). Newest [deletedAt] first.
+final deletedTrialsProvider =
+    FutureProvider.autoDispose<List<Trial>>((ref) {
+  return ref.watch(trialRepositoryProvider).getDeletedTrials();
+});
+
+/// Soft-deleted sessions across all trials (Recovery). Newest [deletedAt] first.
+final deletedSessionsProvider =
+    FutureProvider.autoDispose<List<Session>>((ref) {
+  return ref.watch(sessionRepositoryProvider).getAllDeletedSessions();
+});
+
+/// Soft-deleted plots across all trials (Recovery). Newest [deletedAt] first.
+final deletedPlotsProvider = FutureProvider.autoDispose<List<Plot>>((ref) {
+  return ref.watch(plotRepositoryProvider).getAllDeletedPlots();
+});
+
 /// Seeding records for a trial (for Seeding tab). Invalidate after add/edit/delete.
 final seedingRecordsForTrialProvider = FutureProvider.autoDispose
     .family<List<SeedingRecord>, int>((ref, trialId) async {

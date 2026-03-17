@@ -87,6 +87,15 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {}
+
+  @override
+  Future<List<Session>> getDeletedSessionsForTrial(int trialId) async => [];
+
+  @override
+  Future<List<Session>> getAllDeletedSessions() async => [];
+
+  @override
+  Future<Session?> getDeletedSessionById(int id) async => null;
 }
 
 void main() {

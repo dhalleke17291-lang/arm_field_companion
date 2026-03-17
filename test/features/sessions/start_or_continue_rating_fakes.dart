@@ -76,6 +76,15 @@ class FakeSessionRepository implements SessionRepository {
 
   @override
   Future<void> softDeleteSession(int sessionId, {String? deletedBy}) async {}
+
+  @override
+  Future<List<Session>> getDeletedSessionsForTrial(int trialId) async => [];
+
+  @override
+  Future<List<Session>> getAllDeletedSessions() async => [];
+
+  @override
+  Future<Session?> getDeletedSessionById(int id) async => null;
 }
 
 class FakeTrialRepository implements TrialRepository {
@@ -116,6 +125,12 @@ class FakeTrialRepository implements TrialRepository {
 
   @override
   Future<void> softDeleteTrial(int trialId, {String? deletedBy}) async {}
+
+  @override
+  Future<List<Trial>> getDeletedTrials() async => [];
+
+  @override
+  Future<Trial?> getDeletedTrialById(int id) async => null;
 }
 
 class FakePlotRepository implements PlotRepository {
@@ -213,6 +228,15 @@ class FakePlotRepository implements PlotRepository {
 
   @override
   Future<void> softDeletePlot(int plotPk, {String? deletedBy}) async {}
+
+  @override
+  Future<List<Plot>> getDeletedPlotsForTrial(int trialId) async => [];
+
+  @override
+  Future<List<Plot>> getAllDeletedPlots() async => [];
+
+  @override
+  Future<Plot?> getDeletedPlotByPk(int plotPk) async => null;
 }
 
 class FakeRatingRepository implements RatingRepository {

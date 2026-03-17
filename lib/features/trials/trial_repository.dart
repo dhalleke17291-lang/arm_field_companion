@@ -128,6 +128,21 @@ class TrialRepository {
       ));
     });
   }
+
+  /// Recovery: soft-deleted trials only, newest deletion first.
+  Future<List<Trial>> getDeletedTrials() {
+    return (_db.select(_db.trials)
+          ..where((t) => t.isDeleted.equals(true))
+          ..orderBy([(t) => OrderingTerm.desc(t.deletedAt)]))
+        .get();
+  }
+
+  /// Recovery: single soft-deleted trial by id, or null.
+  Future<Trial?> getDeletedTrialById(int id) {
+    return (_db.select(_db.trials)
+          ..where((t) => t.id.equals(id) & t.isDeleted.equals(true)))
+        .getSingleOrNull();
+  }
 }
 
 // ─────────────────────────────────────────────

@@ -226,6 +226,29 @@ class PlotRepository {
       ),
     );
   }
+
+  /// Recovery: soft-deleted plots for a trial, newest deletion first.
+  Future<List<Plot>> getDeletedPlotsForTrial(int trialId) {
+    return (_db.select(_db.plots)
+          ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(true))
+          ..orderBy([(p) => OrderingTerm.desc(p.deletedAt)]))
+        .get();
+  }
+
+  /// Recovery: all soft-deleted plots, newest deletion first.
+  Future<List<Plot>> getAllDeletedPlots() {
+    return (_db.select(_db.plots)
+          ..where((p) => p.isDeleted.equals(true))
+          ..orderBy([(p) => OrderingTerm.desc(p.deletedAt)]))
+        .get();
+  }
+
+  /// Recovery: single soft-deleted plot by primary key, or null.
+  Future<Plot?> getDeletedPlotByPk(int plotPk) {
+    return (_db.select(_db.plots)
+          ..where((p) => p.id.equals(plotPk) & p.isDeleted.equals(true)))
+        .getSingleOrNull();
+  }
 }
 
 class PlotNotFoundException implements Exception {
