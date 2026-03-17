@@ -15,6 +15,42 @@ import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
 import '../sessions/arrange_plots_screen.dart';
 
+/// Shared [RatingScreen] push from Plot Queue (index + [SessionResumeStore] logic).
+Future<void> _pushRatingScreenFromPlotQueue({
+  required BuildContext context,
+  required Plot plot,
+  required Trial trial,
+  required Session session,
+  required List<Assessment> assessments,
+  required List<Plot> allPlotsForTrial,
+}) async {
+  final idx = allPlotsForTrial.indexWhere((p) => p.id == plot.id);
+  final currentPlotIndex = idx < 0 ? 0 : idx;
+  int? initialAssessmentIndex;
+  final prefs = await SharedPreferences.getInstance();
+  if (!context.mounted) return;
+  final pos = SessionResumeStore(prefs).getPosition(session.id);
+  if (pos != null && pos.$1 == currentPlotIndex) {
+    initialAssessmentIndex =
+        pos.$2.clamp(0, assessments.length - 1);
+  }
+  if (!context.mounted) return;
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => RatingScreen(
+        trial: trial,
+        session: session,
+        plot: plot,
+        assessments: assessments,
+        allPlots: allPlotsForTrial,
+        currentPlotIndex: currentPlotIndex,
+        initialAssessmentIndex: initialAssessmentIndex,
+      ),
+    ),
+  );
+}
+
 class PlotQueueScreen extends ConsumerStatefulWidget {
   final Trial trial;
   final Session session;
@@ -615,27 +651,13 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       return;
     }
     if (!context.mounted) return;
-    final prefs = await SharedPreferences.getInstance();
-    if (!context.mounted) return;
-    int? initialAssessmentIndex;
-    final pos = SessionResumeStore(prefs).getPosition(widget.session.id);
-    if (pos != null && pos.$1 == index) {
-      initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
-    }
-    if (!context.mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RatingScreen(
-          trial: widget.trial,
-          session: widget.session,
-          plot: plots[index],
-          assessments: assessments,
-          allPlots: plots,
-          currentPlotIndex: index,
-          initialAssessmentIndex: initialAssessmentIndex,
-        ),
-      ),
+    await _pushRatingScreenFromPlotQueue(
+      context: context,
+      plot: plots[index],
+      trial: widget.trial,
+      session: widget.session,
+      assessments: assessments,
+      allPlotsForTrial: plots,
     );
   }
 
@@ -859,9 +881,37 @@ class _PlotQueueTile extends ConsumerWidget {
           ],
         ),
         subtitle: plot.rep != null ? Text('Rep ${plot.rep}') : null,
-        trailing: isRated
-            ? Icon(Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onSurfaceVariant)
+        trailing: isRated && plotRatings.isNotEmpty
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    tooltip: 'Edit',
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.all(6),
+                      minimumSize: Size.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () async {
+                      await _pushRatingScreenFromPlotQueue(
+                        context: context,
+                        plot: plot,
+                        trial: trial,
+                        session: session,
+                        assessments: assessments,
+                        allPlotsForTrial: allPlotsForTrial,
+                      );
+                    },
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color:
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              )
             : const Icon(Icons.chevron_right),
         onTap: () async {
           if (isRated && plotRatings.isNotEmpty) {
@@ -876,28 +926,13 @@ class _PlotQueueTile extends ConsumerWidget {
               displayNum,
             );
           } else {
-            final index = allPlotsForTrial.indexWhere((p) => p.id == plot.id);
-            final idx = index < 0 ? 0 : index;
-            int? initialAssessmentIndex;
-            final prefs = await SharedPreferences.getInstance();
-            final pos = SessionResumeStore(prefs).getPosition(session.id);
-            if (pos != null && pos.$1 == idx) {
-              initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
-            }
-            if (!context.mounted) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => RatingScreen(
-                  trial: trial,
-                  session: session,
-                  plot: plot,
-                  assessments: assessments,
-                  allPlots: allPlotsForTrial,
-                  currentPlotIndex: idx,
-                  initialAssessmentIndex: initialAssessmentIndex,
-                ),
-              ),
+            await _pushRatingScreenFromPlotQueue(
+              context: context,
+              plot: plot,
+              trial: trial,
+              session: session,
+              assessments: assessments,
+              allPlotsForTrial: allPlotsForTrial,
             );
           }
         },
@@ -1017,30 +1052,14 @@ class _PlotQueueTile extends ConsumerWidget {
               child: FilledButton.icon(
                 onPressed: () async {
                   Navigator.pop(ctx);
-                  final index =
-                      allPlotsForTrial.indexWhere((p) => p.id == plot.id);
-                  final idx = index < 0 ? 0 : index;
-                  int? initialAssessmentIndex;
-                  final prefs = await SharedPreferences.getInstance();
-                  final pos = SessionResumeStore(prefs).getPosition(session.id);
-                  if (pos != null && pos.$1 == idx) {
-                    initialAssessmentIndex =
-                        pos.$2.clamp(0, assessments.length - 1);
-                  }
                   if (!context.mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => RatingScreen(
-                        trial: trial,
-                        session: session,
-                        plot: plot,
-                        assessments: assessments,
-                        allPlots: allPlotsForTrial,
-                        currentPlotIndex: idx,
-                        initialAssessmentIndex: initialAssessmentIndex,
-                      ),
-                    ),
+                  await _pushRatingScreenFromPlotQueue(
+                    context: context,
+                    plot: plot,
+                    trial: trial,
+                    session: session,
+                    assessments: assessments,
+                    allPlotsForTrial: allPlotsForTrial,
                   );
                 },
                 icon: const Icon(Icons.edit, size: 18),
