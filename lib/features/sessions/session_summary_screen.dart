@@ -195,7 +195,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                                 children: [
                                   Semantics(
                                     button: true,
-                                    label: 'Open Plot Queue',
+                                    label: 'Open full plot queue',
                                     child: InkWell(
                                       onTap: () => _navigatePlotQueue(
                                           context, trial, session),
@@ -205,6 +205,10 @@ class SessionSummaryScreen extends ConsumerWidget {
                                         children: [
                                           const _CardHeaderRow(
                                               title: 'Progress'),
+                                          const SizedBox(height: 6),
+                                          const _CaptionHint(
+                                            'Full plot queue — total and rated',
+                                          ),
                                           const SizedBox(height: 10),
                                           _MetricRow('Total plots', '$total'),
                                           _MetricRow(
@@ -228,24 +232,33 @@ class SessionSummaryScreen extends ConsumerWidget {
                                   ),
                                   Semantics(
                                     button: true,
-                                    label: 'Open Plot Queue',
+                                    label: 'Open full plot queue',
                                     child: InkWell(
                                       onTap: () => _navigatePlotQueue(
                                           context, trial, session),
                                       child: Padding(
                                         padding:
                                             const EdgeInsets.only(top: 10),
-                                        child: Text(
-                                          progressPct != null
-                                              ? 'Progress: $progressPct%'
-                                              : 'Progress: —',
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
-                                          ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const _CaptionHint(
+                                                'Full plot queue'),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              progressPct != null
+                                                  ? 'Progress: $progressPct%'
+                                                  : 'Progress: —',
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -328,7 +341,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                                 children: [
                                   Semantics(
                                     button: true,
-                                    label: 'Open Plot Queue',
+                                    label: 'Open full plot queue',
                                     child: InkWell(
                                       onTap: () => _navigatePlotQueue(
                                           context, trial, session),
@@ -337,7 +350,9 @@ class SessionSummaryScreen extends ConsumerWidget {
                                             CrossAxisAlignment.start,
                                         children: [
                                           _CardHeaderRow(title: 'Attention'),
-                                          SizedBox(height: 10),
+                                          SizedBox(height: 6),
+                                          _CaptionHint('Full plot queue'),
+                                          SizedBox(height: 8),
                                         ],
                                       ),
                                     ),
@@ -415,7 +430,11 @@ class SessionSummaryScreen extends ConsumerWidget {
                               color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
+                          const _CaptionHint(
+                            'Plot Queue opens the full list (same as card areas above).',
+                          ),
+                          const SizedBox(height: 10),
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton(
@@ -461,6 +480,27 @@ class SessionSummaryScreen extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CaptionHint extends StatelessWidget {
+  const _CaptionHint(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 11,
+        height: 1.3,
+        color: Theme.of(context)
+            .colorScheme
+            .onSurfaceVariant
+            .withValues(alpha: 0.88),
       ),
     );
   }
@@ -524,9 +564,9 @@ class _MetricRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final row = Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Text(
@@ -537,14 +577,38 @@ class _MetricRow extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppDesignTokens.primaryText,
+          if (onTap != null)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.45),
+                ),
+              ],
+            )
+          else
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.primaryText,
+              ),
             ),
-          ),
         ],
       ),
     );
