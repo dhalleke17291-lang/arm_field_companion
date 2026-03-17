@@ -506,6 +506,10 @@ class TrialApplicationEvents extends Table {
   TextColumn get waterVolumeUnit => text().nullable()();
   RealColumn get cloudCoverPct => real().nullable()();
   TextColumn get soilMoisture => text().nullable()();
+  RealColumn get soilTemperature => real().nullable()();
+  TextColumn get soilTempUnit => text().nullable()();
+  RealColumn get soilDepth => real().nullable()();
+  TextColumn get soilDepthUnit => text().nullable()();
   RealColumn get treatedArea => real().nullable()();
   TextColumn get treatedAreaUnit => text().nullable()();
   TextColumn get plotsTreated => text().nullable()();
@@ -551,7 +555,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -775,6 +779,20 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(ratingRecords, ratingRecords.amendmentReason);
             await m.addColumn(ratingRecords, ratingRecords.amendedBy);
             await m.addColumn(ratingRecords, ratingRecords.amendedAt);
+          }
+          if (from < 25) {
+            await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.soilTemperature);
+            await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.soilTempUnit);
+            await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.soilDepth);
+            await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.soilDepthUnit);
           }
           await _createIndexes();
         },

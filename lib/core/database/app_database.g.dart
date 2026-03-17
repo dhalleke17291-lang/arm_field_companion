@@ -17215,6 +17215,30 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
   late final GeneratedColumn<String> soilMoisture = GeneratedColumn<String>(
       'soil_moisture', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _soilTemperatureMeta =
+      const VerificationMeta('soilTemperature');
+  @override
+  late final GeneratedColumn<double> soilTemperature = GeneratedColumn<double>(
+      'soil_temperature', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _soilTempUnitMeta =
+      const VerificationMeta('soilTempUnit');
+  @override
+  late final GeneratedColumn<String> soilTempUnit = GeneratedColumn<String>(
+      'soil_temp_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _soilDepthMeta =
+      const VerificationMeta('soilDepth');
+  @override
+  late final GeneratedColumn<double> soilDepth = GeneratedColumn<double>(
+      'soil_depth', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _soilDepthUnitMeta =
+      const VerificationMeta('soilDepthUnit');
+  @override
+  late final GeneratedColumn<String> soilDepthUnit = GeneratedColumn<String>(
+      'soil_depth_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _treatedAreaMeta =
       const VerificationMeta('treatedArea');
   @override
@@ -17274,6 +17298,10 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
         waterVolumeUnit,
         cloudCoverPct,
         soilMoisture,
+        soilTemperature,
+        soilTempUnit,
+        soilDepth,
+        soilDepthUnit,
         treatedArea,
         treatedAreaUnit,
         plotsTreated,
@@ -17463,6 +17491,28 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           soilMoisture.isAcceptableOrUnknown(
               data['soil_moisture']!, _soilMoistureMeta));
     }
+    if (data.containsKey('soil_temperature')) {
+      context.handle(
+          _soilTemperatureMeta,
+          soilTemperature.isAcceptableOrUnknown(
+              data['soil_temperature']!, _soilTemperatureMeta));
+    }
+    if (data.containsKey('soil_temp_unit')) {
+      context.handle(
+          _soilTempUnitMeta,
+          soilTempUnit.isAcceptableOrUnknown(
+              data['soil_temp_unit']!, _soilTempUnitMeta));
+    }
+    if (data.containsKey('soil_depth')) {
+      context.handle(_soilDepthMeta,
+          soilDepth.isAcceptableOrUnknown(data['soil_depth']!, _soilDepthMeta));
+    }
+    if (data.containsKey('soil_depth_unit')) {
+      context.handle(
+          _soilDepthUnitMeta,
+          soilDepthUnit.isAcceptableOrUnknown(
+              data['soil_depth_unit']!, _soilDepthUnitMeta));
+    }
     if (data.containsKey('treated_area')) {
       context.handle(
           _treatedAreaMeta,
@@ -17556,6 +17606,14 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           .read(DriftSqlType.double, data['${effectivePrefix}cloud_cover_pct']),
       soilMoisture: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}soil_moisture']),
+      soilTemperature: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}soil_temperature']),
+      soilTempUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_temp_unit']),
+      soilDepth: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}soil_depth']),
+      soilDepthUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_depth_unit']),
       treatedArea: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}treated_area']),
       treatedAreaUnit: attachedDatabase.typeMapping.read(
@@ -17606,6 +17664,10 @@ class TrialApplicationEvent extends DataClass
   final String? waterVolumeUnit;
   final double? cloudCoverPct;
   final String? soilMoisture;
+  final double? soilTemperature;
+  final String? soilTempUnit;
+  final double? soilDepth;
+  final String? soilDepthUnit;
   final double? treatedArea;
   final String? treatedAreaUnit;
   final String? plotsTreated;
@@ -17642,6 +17704,10 @@ class TrialApplicationEvent extends DataClass
       this.waterVolumeUnit,
       this.cloudCoverPct,
       this.soilMoisture,
+      this.soilTemperature,
+      this.soilTempUnit,
+      this.soilDepth,
+      this.soilDepthUnit,
       this.treatedArea,
       this.treatedAreaUnit,
       this.plotsTreated,
@@ -17735,6 +17801,18 @@ class TrialApplicationEvent extends DataClass
     }
     if (!nullToAbsent || soilMoisture != null) {
       map['soil_moisture'] = Variable<String>(soilMoisture);
+    }
+    if (!nullToAbsent || soilTemperature != null) {
+      map['soil_temperature'] = Variable<double>(soilTemperature);
+    }
+    if (!nullToAbsent || soilTempUnit != null) {
+      map['soil_temp_unit'] = Variable<String>(soilTempUnit);
+    }
+    if (!nullToAbsent || soilDepth != null) {
+      map['soil_depth'] = Variable<double>(soilDepth);
+    }
+    if (!nullToAbsent || soilDepthUnit != null) {
+      map['soil_depth_unit'] = Variable<String>(soilDepthUnit);
     }
     if (!nullToAbsent || treatedArea != null) {
       map['treated_area'] = Variable<double>(treatedArea);
@@ -17835,6 +17913,18 @@ class TrialApplicationEvent extends DataClass
       soilMoisture: soilMoisture == null && nullToAbsent
           ? const Value.absent()
           : Value(soilMoisture),
+      soilTemperature: soilTemperature == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilTemperature),
+      soilTempUnit: soilTempUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilTempUnit),
+      soilDepth: soilDepth == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilDepth),
+      soilDepthUnit: soilDepthUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilDepthUnit),
       treatedArea: treatedArea == null && nullToAbsent
           ? const Value.absent()
           : Value(treatedArea),
@@ -17885,6 +17975,10 @@ class TrialApplicationEvent extends DataClass
       waterVolumeUnit: serializer.fromJson<String?>(json['waterVolumeUnit']),
       cloudCoverPct: serializer.fromJson<double?>(json['cloudCoverPct']),
       soilMoisture: serializer.fromJson<String?>(json['soilMoisture']),
+      soilTemperature: serializer.fromJson<double?>(json['soilTemperature']),
+      soilTempUnit: serializer.fromJson<String?>(json['soilTempUnit']),
+      soilDepth: serializer.fromJson<double?>(json['soilDepth']),
+      soilDepthUnit: serializer.fromJson<String?>(json['soilDepthUnit']),
       treatedArea: serializer.fromJson<double?>(json['treatedArea']),
       treatedAreaUnit: serializer.fromJson<String?>(json['treatedAreaUnit']),
       plotsTreated: serializer.fromJson<String?>(json['plotsTreated']),
@@ -17926,6 +18020,10 @@ class TrialApplicationEvent extends DataClass
       'waterVolumeUnit': serializer.toJson<String?>(waterVolumeUnit),
       'cloudCoverPct': serializer.toJson<double?>(cloudCoverPct),
       'soilMoisture': serializer.toJson<String?>(soilMoisture),
+      'soilTemperature': serializer.toJson<double?>(soilTemperature),
+      'soilTempUnit': serializer.toJson<String?>(soilTempUnit),
+      'soilDepth': serializer.toJson<double?>(soilDepth),
+      'soilDepthUnit': serializer.toJson<String?>(soilDepthUnit),
       'treatedArea': serializer.toJson<double?>(treatedArea),
       'treatedAreaUnit': serializer.toJson<String?>(treatedAreaUnit),
       'plotsTreated': serializer.toJson<String?>(plotsTreated),
@@ -17965,6 +18063,10 @@ class TrialApplicationEvent extends DataClass
           Value<String?> waterVolumeUnit = const Value.absent(),
           Value<double?> cloudCoverPct = const Value.absent(),
           Value<String?> soilMoisture = const Value.absent(),
+          Value<double?> soilTemperature = const Value.absent(),
+          Value<String?> soilTempUnit = const Value.absent(),
+          Value<double?> soilDepth = const Value.absent(),
+          Value<String?> soilDepthUnit = const Value.absent(),
           Value<double?> treatedArea = const Value.absent(),
           Value<String?> treatedAreaUnit = const Value.absent(),
           Value<String?> plotsTreated = const Value.absent(),
@@ -18025,6 +18127,14 @@ class TrialApplicationEvent extends DataClass
             cloudCoverPct.present ? cloudCoverPct.value : this.cloudCoverPct,
         soilMoisture:
             soilMoisture.present ? soilMoisture.value : this.soilMoisture,
+        soilTemperature: soilTemperature.present
+            ? soilTemperature.value
+            : this.soilTemperature,
+        soilTempUnit:
+            soilTempUnit.present ? soilTempUnit.value : this.soilTempUnit,
+        soilDepth: soilDepth.present ? soilDepth.value : this.soilDepth,
+        soilDepthUnit:
+            soilDepthUnit.present ? soilDepthUnit.value : this.soilDepthUnit,
         treatedArea: treatedArea.present ? treatedArea.value : this.treatedArea,
         treatedAreaUnit: treatedAreaUnit.present
             ? treatedAreaUnit.value
@@ -18107,6 +18217,16 @@ class TrialApplicationEvent extends DataClass
       soilMoisture: data.soilMoisture.present
           ? data.soilMoisture.value
           : this.soilMoisture,
+      soilTemperature: data.soilTemperature.present
+          ? data.soilTemperature.value
+          : this.soilTemperature,
+      soilTempUnit: data.soilTempUnit.present
+          ? data.soilTempUnit.value
+          : this.soilTempUnit,
+      soilDepth: data.soilDepth.present ? data.soilDepth.value : this.soilDepth,
+      soilDepthUnit: data.soilDepthUnit.present
+          ? data.soilDepthUnit.value
+          : this.soilDepthUnit,
       treatedArea:
           data.treatedArea.present ? data.treatedArea.value : this.treatedArea,
       treatedAreaUnit: data.treatedAreaUnit.present
@@ -18153,6 +18273,10 @@ class TrialApplicationEvent extends DataClass
           ..write('waterVolumeUnit: $waterVolumeUnit, ')
           ..write('cloudCoverPct: $cloudCoverPct, ')
           ..write('soilMoisture: $soilMoisture, ')
+          ..write('soilTemperature: $soilTemperature, ')
+          ..write('soilTempUnit: $soilTempUnit, ')
+          ..write('soilDepth: $soilDepth, ')
+          ..write('soilDepthUnit: $soilDepthUnit, ')
           ..write('treatedArea: $treatedArea, ')
           ..write('treatedAreaUnit: $treatedAreaUnit, ')
           ..write('plotsTreated: $plotsTreated, ')
@@ -18194,6 +18318,10 @@ class TrialApplicationEvent extends DataClass
         waterVolumeUnit,
         cloudCoverPct,
         soilMoisture,
+        soilTemperature,
+        soilTempUnit,
+        soilDepth,
+        soilDepthUnit,
         treatedArea,
         treatedAreaUnit,
         plotsTreated,
@@ -18234,6 +18362,10 @@ class TrialApplicationEvent extends DataClass
           other.waterVolumeUnit == this.waterVolumeUnit &&
           other.cloudCoverPct == this.cloudCoverPct &&
           other.soilMoisture == this.soilMoisture &&
+          other.soilTemperature == this.soilTemperature &&
+          other.soilTempUnit == this.soilTempUnit &&
+          other.soilDepth == this.soilDepth &&
+          other.soilDepthUnit == this.soilDepthUnit &&
           other.treatedArea == this.treatedArea &&
           other.treatedAreaUnit == this.treatedAreaUnit &&
           other.plotsTreated == this.plotsTreated &&
@@ -18273,6 +18405,10 @@ class TrialApplicationEventsCompanion
   final Value<String?> waterVolumeUnit;
   final Value<double?> cloudCoverPct;
   final Value<String?> soilMoisture;
+  final Value<double?> soilTemperature;
+  final Value<String?> soilTempUnit;
+  final Value<double?> soilDepth;
+  final Value<String?> soilDepthUnit;
   final Value<double?> treatedArea;
   final Value<String?> treatedAreaUnit;
   final Value<String?> plotsTreated;
@@ -18310,6 +18446,10 @@ class TrialApplicationEventsCompanion
     this.waterVolumeUnit = const Value.absent(),
     this.cloudCoverPct = const Value.absent(),
     this.soilMoisture = const Value.absent(),
+    this.soilTemperature = const Value.absent(),
+    this.soilTempUnit = const Value.absent(),
+    this.soilDepth = const Value.absent(),
+    this.soilDepthUnit = const Value.absent(),
     this.treatedArea = const Value.absent(),
     this.treatedAreaUnit = const Value.absent(),
     this.plotsTreated = const Value.absent(),
@@ -18348,6 +18488,10 @@ class TrialApplicationEventsCompanion
     this.waterVolumeUnit = const Value.absent(),
     this.cloudCoverPct = const Value.absent(),
     this.soilMoisture = const Value.absent(),
+    this.soilTemperature = const Value.absent(),
+    this.soilTempUnit = const Value.absent(),
+    this.soilDepth = const Value.absent(),
+    this.soilDepthUnit = const Value.absent(),
     this.treatedArea = const Value.absent(),
     this.treatedAreaUnit = const Value.absent(),
     this.plotsTreated = const Value.absent(),
@@ -18387,6 +18531,10 @@ class TrialApplicationEventsCompanion
     Expression<String>? waterVolumeUnit,
     Expression<double>? cloudCoverPct,
     Expression<String>? soilMoisture,
+    Expression<double>? soilTemperature,
+    Expression<String>? soilTempUnit,
+    Expression<double>? soilDepth,
+    Expression<String>? soilDepthUnit,
     Expression<double>? treatedArea,
     Expression<String>? treatedAreaUnit,
     Expression<String>? plotsTreated,
@@ -18425,6 +18573,10 @@ class TrialApplicationEventsCompanion
       if (waterVolumeUnit != null) 'water_volume_unit': waterVolumeUnit,
       if (cloudCoverPct != null) 'cloud_cover_pct': cloudCoverPct,
       if (soilMoisture != null) 'soil_moisture': soilMoisture,
+      if (soilTemperature != null) 'soil_temperature': soilTemperature,
+      if (soilTempUnit != null) 'soil_temp_unit': soilTempUnit,
+      if (soilDepth != null) 'soil_depth': soilDepth,
+      if (soilDepthUnit != null) 'soil_depth_unit': soilDepthUnit,
       if (treatedArea != null) 'treated_area': treatedArea,
       if (treatedAreaUnit != null) 'treated_area_unit': treatedAreaUnit,
       if (plotsTreated != null) 'plots_treated': plotsTreated,
@@ -18465,6 +18617,10 @@ class TrialApplicationEventsCompanion
       Value<String?>? waterVolumeUnit,
       Value<double?>? cloudCoverPct,
       Value<String?>? soilMoisture,
+      Value<double?>? soilTemperature,
+      Value<String?>? soilTempUnit,
+      Value<double?>? soilDepth,
+      Value<String?>? soilDepthUnit,
       Value<double?>? treatedArea,
       Value<String?>? treatedAreaUnit,
       Value<String?>? plotsTreated,
@@ -18502,6 +18658,10 @@ class TrialApplicationEventsCompanion
       waterVolumeUnit: waterVolumeUnit ?? this.waterVolumeUnit,
       cloudCoverPct: cloudCoverPct ?? this.cloudCoverPct,
       soilMoisture: soilMoisture ?? this.soilMoisture,
+      soilTemperature: soilTemperature ?? this.soilTemperature,
+      soilTempUnit: soilTempUnit ?? this.soilTempUnit,
+      soilDepth: soilDepth ?? this.soilDepth,
+      soilDepthUnit: soilDepthUnit ?? this.soilDepthUnit,
       treatedArea: treatedArea ?? this.treatedArea,
       treatedAreaUnit: treatedAreaUnit ?? this.treatedAreaUnit,
       plotsTreated: plotsTreated ?? this.plotsTreated,
@@ -18606,6 +18766,18 @@ class TrialApplicationEventsCompanion
     if (soilMoisture.present) {
       map['soil_moisture'] = Variable<String>(soilMoisture.value);
     }
+    if (soilTemperature.present) {
+      map['soil_temperature'] = Variable<double>(soilTemperature.value);
+    }
+    if (soilTempUnit.present) {
+      map['soil_temp_unit'] = Variable<String>(soilTempUnit.value);
+    }
+    if (soilDepth.present) {
+      map['soil_depth'] = Variable<double>(soilDepth.value);
+    }
+    if (soilDepthUnit.present) {
+      map['soil_depth_unit'] = Variable<String>(soilDepthUnit.value);
+    }
     if (treatedArea.present) {
       map['treated_area'] = Variable<double>(treatedArea.value);
     }
@@ -18658,6 +18830,10 @@ class TrialApplicationEventsCompanion
           ..write('waterVolumeUnit: $waterVolumeUnit, ')
           ..write('cloudCoverPct: $cloudCoverPct, ')
           ..write('soilMoisture: $soilMoisture, ')
+          ..write('soilTemperature: $soilTemperature, ')
+          ..write('soilTempUnit: $soilTempUnit, ')
+          ..write('soilDepth: $soilDepth, ')
+          ..write('soilDepthUnit: $soilDepthUnit, ')
           ..write('treatedArea: $treatedArea, ')
           ..write('treatedAreaUnit: $treatedAreaUnit, ')
           ..write('plotsTreated: $plotsTreated, ')
@@ -27014,6 +27190,10 @@ typedef $$TrialApplicationEventsTableCreateCompanionBuilder
   Value<String?> waterVolumeUnit,
   Value<double?> cloudCoverPct,
   Value<String?> soilMoisture,
+  Value<double?> soilTemperature,
+  Value<String?> soilTempUnit,
+  Value<double?> soilDepth,
+  Value<String?> soilDepthUnit,
   Value<double?> treatedArea,
   Value<String?> treatedAreaUnit,
   Value<String?> plotsTreated,
@@ -27053,6 +27233,10 @@ typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
   Value<String?> waterVolumeUnit,
   Value<double?> cloudCoverPct,
   Value<String?> soilMoisture,
+  Value<double?> soilTemperature,
+  Value<String?> soilTempUnit,
+  Value<double?> soilDepth,
+  Value<String?> soilDepthUnit,
   Value<double?> treatedArea,
   Value<String?> treatedAreaUnit,
   Value<String?> plotsTreated,
@@ -27109,6 +27293,10 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<String?> waterVolumeUnit = const Value.absent(),
             Value<double?> cloudCoverPct = const Value.absent(),
             Value<String?> soilMoisture = const Value.absent(),
+            Value<double?> soilTemperature = const Value.absent(),
+            Value<String?> soilTempUnit = const Value.absent(),
+            Value<double?> soilDepth = const Value.absent(),
+            Value<String?> soilDepthUnit = const Value.absent(),
             Value<double?> treatedArea = const Value.absent(),
             Value<String?> treatedAreaUnit = const Value.absent(),
             Value<String?> plotsTreated = const Value.absent(),
@@ -27147,6 +27335,10 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             waterVolumeUnit: waterVolumeUnit,
             cloudCoverPct: cloudCoverPct,
             soilMoisture: soilMoisture,
+            soilTemperature: soilTemperature,
+            soilTempUnit: soilTempUnit,
+            soilDepth: soilDepth,
+            soilDepthUnit: soilDepthUnit,
             treatedArea: treatedArea,
             treatedAreaUnit: treatedAreaUnit,
             plotsTreated: plotsTreated,
@@ -27185,6 +27377,10 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<String?> waterVolumeUnit = const Value.absent(),
             Value<double?> cloudCoverPct = const Value.absent(),
             Value<String?> soilMoisture = const Value.absent(),
+            Value<double?> soilTemperature = const Value.absent(),
+            Value<String?> soilTempUnit = const Value.absent(),
+            Value<double?> soilDepth = const Value.absent(),
+            Value<String?> soilDepthUnit = const Value.absent(),
             Value<double?> treatedArea = const Value.absent(),
             Value<String?> treatedAreaUnit = const Value.absent(),
             Value<String?> plotsTreated = const Value.absent(),
@@ -27223,6 +27419,10 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             waterVolumeUnit: waterVolumeUnit,
             cloudCoverPct: cloudCoverPct,
             soilMoisture: soilMoisture,
+            soilTemperature: soilTemperature,
+            soilTempUnit: soilTempUnit,
+            soilDepth: soilDepth,
+            soilDepthUnit: soilDepthUnit,
             treatedArea: treatedArea,
             treatedAreaUnit: treatedAreaUnit,
             plotsTreated: plotsTreated,
@@ -27377,6 +27577,26 @@ class $$TrialApplicationEventsTableFilterComposer
 
   ColumnFilters<String> get soilMoisture => $state.composableBuilder(
       column: $state.table.soilMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get soilTemperature => $state.composableBuilder(
+      column: $state.table.soilTemperature,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilTempUnit => $state.composableBuilder(
+      column: $state.table.soilTempUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get soilDepth => $state.composableBuilder(
+      column: $state.table.soilDepth,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilDepthUnit => $state.composableBuilder(
+      column: $state.table.soilDepthUnit,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -27570,6 +27790,26 @@ class $$TrialApplicationEventsTableOrderingComposer
 
   ColumnOrderings<String> get soilMoisture => $state.composableBuilder(
       column: $state.table.soilMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get soilTemperature => $state.composableBuilder(
+      column: $state.table.soilTemperature,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilTempUnit => $state.composableBuilder(
+      column: $state.table.soilTempUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get soilDepth => $state.composableBuilder(
+      column: $state.table.soilDepth,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilDepthUnit => $state.composableBuilder(
+      column: $state.table.soilDepthUnit,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

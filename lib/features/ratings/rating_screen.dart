@@ -120,6 +120,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   /// Prior session rating for same plot + assessment (read-only context).
   RatingRecord? _priorRating;
+  // ignore: unused_field — kept for potential future display (e.g. session context)
   String? _priorSessionName;
 
   final ScrollController _assessmentScrollController = ScrollController();
@@ -159,8 +160,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
-  static String _formatDate(DateTime dt) {
-    return DateFormat('MMM d · HH:mm').format(dt);
+  /// Formatted date from previous record timestamp (e.g. "Mar 16, 2026").
+  static String _formatDatePrev(DateTime dt) {
+    return DateFormat('MMM d, yyyy').format(dt);
   }
 
   @override
@@ -1302,7 +1304,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     Container(
                       margin: const EdgeInsets.only(bottom: 6),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8F6F2),
                         borderRadius: BorderRadius.circular(8),
@@ -1313,12 +1315,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              'PREVIOUS · $_priorSessionName · ${_formatDate(_priorRating!.createdAt)}',
+                              'Previous Value • ${_formatDatePrev(_priorRating!.createdAt)}',
                               style: TextStyle(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade500,
-                                letterSpacing: 0.3,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade600,
+                                letterSpacing: 0.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

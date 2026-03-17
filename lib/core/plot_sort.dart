@@ -1,30 +1,74 @@
 import 'database/app_database.dart';
 
-/// Sorts plots into serpentine field-walking order using fieldRow / fieldColumn.
+/// Walk order mode for session plot navigation (numbering is unchanged; only navigation order).
+enum WalkOrderMode {
+  /// 101 → 102 → 103 → 201 → 202... (rep asc, then plot order within rep).
+  numeric,
+
+  /// Odd reps forward, even reps backward: 101→102→105, 205→204→201, 301→...
+  serpentine,
+
+  /// User-defined order (placeholder: same as serpentine until custom UI exists).
+  custom,
+}
+
+/// Sorts plots in numeric order: rep ascending, then plot order within rep (plotSortIndex / numeric plotId).
+/// Does not change plot IDs or labels; only the sequence used for navigation.
+List<Plot> sortPlotsNumeric(List<Plot> plots) {
+  final sorted = [...plots];
+  sorted.sort((a, b) {
+    final repCmp = (a.rep ?? 999).compareTo(b.rep ?? 999);
+    if (repCmp != 0) return repCmp;
+    return _comparePlotOrderWithinRep(a, b);
+  });
+  return sorted;
+}
+
+/// Returns plots in the requested walk order.
+/// For [WalkOrderMode.custom], pass [customPlotIds] (ordered plot PKs); if null or empty, falls back to serpentine.
+List<Plot> sortPlotsByWalkOrder(
+  List<Plot> plots,
+  WalkOrderMode mode, {
+  List<int>? customPlotIds,
+}) {
+  switch (mode) {
+    case WalkOrderMode.numeric:
+      return sortPlotsNumeric(plots);
+    case WalkOrderMode.serpentine:
+      return sortPlotsSerpentine(plots);
+    case WalkOrderMode.custom:
+      if (customPlotIds != null && customPlotIds.isNotEmpty) {
+        return sortPlotsByCustomOrder(plots, customPlotIds);
+      }
+      return sortPlotsSerpentine(plots);
+  }
+}
+
+/// Sorts plots to match [orderedPlotIds] (plot PKs). Plots not in the list are appended at the end in existing order.
+List<Plot> sortPlotsByCustomOrder(List<Plot> plots, List<int> orderedPlotIds) {
+  final idToPlot = {for (final p in plots) p.id: p};
+  final result = <Plot>[];
+  for (final id in orderedPlotIds) {
+    final p = idToPlot[id];
+    if (p != null) result.add(p);
+  }
+  for (final p in plots) {
+    if (!orderedPlotIds.contains(p.id)) result.add(p);
+  }
+  return result;
+}
+
+/// Sorts plots into serpentine field-walking order.
 ///
-/// Serpentine pattern (Range × Column grid):
-///   Row 1: C1 → C2 → C3 → C4  (ascending)
-///   Row 2: C4 → C3 → C2 → C1  (descending)
-///   Row 3: C1 → C2 → C3 → C4  (ascending)
-///
-/// Falls back to rep → plotSortIndex → plotId if fieldRow/fieldColumn are null.
+/// When fieldRow/fieldColumn exist: row 1 forward, row 2 backward, row 3 forward, etc.
+/// When not: group by rep, sort within rep by plotSortIndex/plotId; odd reps forward, even reps backward.
 List<Plot> sortPlotsSerpentine(List<Plot> plots) {
-  // Check if any plots have grid coordinates
   final hasGrid = plots.any(
     (p) => p.fieldRow != null && p.fieldColumn != null,
   );
 
   if (!hasGrid) {
-    // Fallback: original sort
-    final sorted = [...plots];
-    sorted.sort((a, b) {
-      final repCmp = (a.rep ?? 999).compareTo(b.rep ?? 999);
-      if (repCmp != 0) return repCmp;
-      final idxCmp = (a.plotSortIndex ?? 999).compareTo(b.plotSortIndex ?? 999);
-      if (idxCmp != 0) return idxCmp;
-      return a.plotId.compareTo(b.plotId);
-    });
-    return sorted;
+    return _serpentineByRep(plots);
   }
 
   // Separate plots with and without grid coordinates
@@ -55,21 +99,46 @@ List<Plot> sortPlotsSerpentine(List<Plot> plots) {
     }
   }
 
-  // Append non-grid plots at the end using fallback sort
-  nonGridPlots.sort((a, b) {
-    final repCmp = (a.rep ?? 999).compareTo(b.rep ?? 999);
-    if (repCmp != 0) return repCmp;
-    final idxCmp = (a.plotSortIndex ?? 999).compareTo(b.plotSortIndex ?? 999);
-    if (idxCmp != 0) return idxCmp;
-    return a.plotId.compareTo(b.plotId);
-  });
-  result.addAll(nonGridPlots);
-
+  // Append non-grid plots at the end in rep-based serpentine order
+  result.addAll(_serpentineByRep(nonGridPlots));
   return result;
 }
 
-/// Returns the serpentine index of a plot within a sorted list.
-/// Returns -1 if not found.
-int serpentineIndexOf(List<Plot> sortedPlots, int plotPk) {
-  return sortedPlots.indexWhere((p) => p.id == plotPk);
+/// Serpentine by rep: group by rep, sort reps by ascending rep number (position in list = 1st, 2nd, 3rd rep).
+/// Sort plots within each rep by plotSortIndex then numeric plotId; alternate direction by rep position:
+/// 1st rep forward, 2nd reverse, 3rd forward, etc. Handles uneven rep sizes and missing plots.
+List<Plot> _serpentineByRep(List<Plot> plots) {
+  final repMap = <int?, List<Plot>>{};
+  for (final p in plots) {
+    repMap.putIfAbsent(p.rep, () => []).add(p);
+  }
+  final repKeys = repMap.keys.toList()
+    ..sort((a, b) => (a ?? 999).compareTo(b ?? 999));
+  final out = <Plot>[];
+  for (var i = 0; i < repKeys.length; i++) {
+    final row = repMap[repKeys[i]]!;
+    row.sort(_comparePlotOrderWithinRep);
+    if (i.isOdd) {
+      out.addAll(row.reversed);
+    } else {
+      out.addAll(row);
+    }
+  }
+  return out;
+}
+
+/// Stable order within a rep: prefer plotSortIndex, then numeric plotId, then string plotId.
+/// Avoids string sort giving 101, 102, 110, 111, 103.
+int _comparePlotOrderWithinRep(Plot a, Plot b) {
+  final idxCmp = (a.plotSortIndex ?? 999).compareTo(b.plotSortIndex ?? 999);
+  if (idxCmp != 0) return idxCmp;
+  final na = int.tryParse(a.plotId);
+  final nb = int.tryParse(b.plotId);
+  if (na != null && nb != null) return na.compareTo(nb);
+  return a.plotId.compareTo(b.plotId);
+}
+
+/// Returns the index of a plot in a walk-ordered list. Returns -1 if not found.
+int walkOrderIndexOf(List<Plot> orderedPlots, int plotPk) {
+  return orderedPlots.indexWhere((p) => p.id == plotPk);
 }

@@ -6,10 +6,13 @@ import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
+import '../../core/plot_sort.dart';
 import '../../core/providers.dart';
 import '../../core/last_session_store.dart';
 import '../../core/session_resume_store.dart';
+import '../../core/session_walk_order_store.dart';
 import 'package:share_plus/share_plus.dart';
+import 'arrange_plots_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import '../ratings/rating_screen.dart';
 import '../derived/derived_snapshot_provider.dart';
@@ -34,6 +37,20 @@ class SessionDetailScreen extends ConsumerStatefulWidget {
 
 class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   int _selectedTabIndex = 0;
+  WalkOrderMode _walkOrderMode = WalkOrderMode.serpentine;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadWalkOrder());
+  }
+
+  Future<void> _loadWalkOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _walkOrderMode =
+        SessionWalkOrderStore(prefs).getMode(widget.session.id));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +127,27 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       setState(() => _selectedTabIndex = index),
                   ratedCount: ratings.map((r) => r.plotPk).toSet().length,
                   plotCount: plots.length,
+                ),
+                _SessionWalkOrderBar(
+                  sessionId: session.id,
+                  mode: _walkOrderMode,
+                  onModeChanged: (WalkOrderMode mode) async {
+                    setState(() => _walkOrderMode = mode);
+                    final prefs = await SharedPreferences.getInstance();
+                    await SessionWalkOrderStore(prefs).setMode(session.id, mode);
+                    if (mode == WalkOrderMode.custom && context.mounted) {
+                      final saved = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ArrangePlotsScreen(
+                            trial: widget.trial,
+                            session: session,
+                          ),
+                        ),
+                      );
+                      if (saved == true && mounted) setState(() {});
+                    }
+                  },
                 ),
                 Expanded(
                   child: IndexedStack(
@@ -382,6 +420,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               icon: const Icon(Icons.swap_vert, size: 18),
               label: const Text('Set rating order'),
             ),
+            const SizedBox(height: 8),
             Text(
               'Open the plot queue to enter or edit ratings.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -452,8 +491,16 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       ),
     );
 
-    final result = await useCase
-        .execute(StartOrContinueRatingInput(sessionId: session.id));
+    final prefs = await SharedPreferences.getInstance();
+    final store = SessionWalkOrderStore(prefs);
+    final walkOrder = store.getMode(session.id);
+    final customIds = walkOrder == WalkOrderMode.custom ? store.getCustomOrder(session.id) : null;
+    final result = await useCase.execute(
+        StartOrContinueRatingInput(
+          sessionId: session.id,
+          walkOrderMode: walkOrder,
+          customPlotIds: customIds,
+        ));
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -488,7 +535,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     int startIndex = result.startPlotIndex!;
     int? initialAssessmentIndex;
 
-    final prefs = await SharedPreferences.getInstance();
     final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
     if (pos != null && pos.$1 >= 0 && pos.$1 < plots.length) {
       startIndex = pos.$1;
@@ -893,6 +939,58 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Walk order selector visible on all session tabs (Plots and Rate).
+class _SessionWalkOrderBar extends StatelessWidget {
+  const _SessionWalkOrderBar({
+    required this.sessionId,
+    required this.mode,
+    required this.onModeChanged,
+  });
+
+  final int sessionId;
+  final WalkOrderMode mode;
+  final ValueChanged<WalkOrderMode> onModeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing16,
+        vertical: AppDesignTokens.spacing8,
+      ),
+      decoration: const BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Walk order:',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+          const SizedBox(width: 8),
+          DropdownButton<WalkOrderMode>(
+            value: mode,
+            items: const [
+              DropdownMenuItem(
+                  value: WalkOrderMode.numeric, child: Text('Numeric')),
+              DropdownMenuItem(
+                  value: WalkOrderMode.serpentine, child: Text('Serpentine')),
+              DropdownMenuItem(
+                  value: WalkOrderMode.custom, child: Text('Custom')),
+            ],
+            onChanged: (WalkOrderMode? value) {
+              if (value != null) onModeChanged(value);
+            },
+          ),
+        ],
       ),
     );
   }

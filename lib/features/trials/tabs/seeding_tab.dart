@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -20,22 +21,10 @@ const List<String> _kPlantingMethods = [
 
 Widget _sectionHeader(String title) {
   return Padding(
-    padding: const EdgeInsets.only(
-        top: AppDesignTokens.spacing16, bottom: AppDesignTokens.spacing8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppDesignTokens.primaryText,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Divider(height: 1),
-      ],
+    padding: FormStyles.sectionLabelPadding,
+    child: Text(
+      title.toUpperCase(),
+      style: FormStyles.sectionLabelStyle,
     ),
   );
 }
@@ -93,6 +82,7 @@ class SeedingTab extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      showDragHandle: false,
       backgroundColor: AppDesignTokens.cardSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
@@ -715,9 +705,7 @@ class _SeedingEventFormSheetState
           Container(
             width: 40,
             height: 4,
-            margin: const EdgeInsets.only(
-                top: AppDesignTokens.spacing12,
-                bottom: AppDesignTokens.spacing16),
+            margin: const EdgeInsets.only(top: 8, bottom: 4),
             decoration: BoxDecoration(
               color: AppDesignTokens.dragHandle,
               borderRadius: BorderRadius.circular(2),
@@ -760,14 +748,12 @@ class _SeedingEventFormSheetState
                       color: AppDesignTokens.primary, size: 20),
                   onTap: _pickDate,
                 ),
-                const SizedBox(height: AppDesignTokens.spacing8),
+                const SizedBox(height: 10),
                 DropdownButtonFormField<String?>(
                   key: ValueKey<String?>(_plantingMethod),
                   initialValue: _plantingMethod,
-                  decoration: const InputDecoration(
-                    labelText: 'Planting method',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: FormStyles.inputDecoration(
+                      labelText: 'Planting method'),
                   items: [
                     const DropdownMenuItem<String?>(
                         value: null, child: Text('—')),
@@ -777,173 +763,208 @@ class _SeedingEventFormSheetState
                   ],
                   onChanged: (v) => setState(() => _plantingMethod = v),
                 ),
-                const SizedBox(height: AppDesignTokens.spacing12),
+                const SizedBox(height: 10),
                 TextField(
                   controller: _varietyController,
-                  decoration: const InputDecoration(
+                  decoration: FormStyles.inputDecoration(
                     labelText: 'Variety / cultivar (optional)',
                     hintText: 'e.g. AAC Brandon, Pioneer P9623',
-                    border: OutlineInputBorder(),
                   ),
                   textCapitalization: TextCapitalization.words,
                 ),
-                const SizedBox(height: AppDesignTokens.spacing12),
+                const SizedBox(height: 10),
                 TextField(
                   controller: _seedLotController,
-                  decoration: const InputDecoration(
-                    labelText: 'Seed lot number (optional)',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: FormStyles.inputDecoration(
+                      labelText: 'Seed lot number (optional)'),
                 ),
-                const SizedBox(height: AppDesignTokens.spacing12),
-                TextField(
-                  controller: _seedTreatmentController,
-                  decoration: const InputDecoration(
-                    labelText: 'Seed treatment (optional)',
-                    hintText: 'e.g. Vibrance 500 FS',
-                    border: OutlineInputBorder(),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: AppDesignTokens.spacing12),
-                TextField(
-                  controller: _germinationPctController,
-                  decoration: const InputDecoration(
-                    labelText: 'Germination % (optional)',
-                    suffixText: '%',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                ),
-                _sectionHeader('Operation details'),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 14),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(bottom: 8),
+                  trailing: const Icon(Icons.keyboard_arrow_down_rounded),
+                  title: const Text('Seed treatment & germination',
+                      style: FormStyles.expansionTitleStyle),
+                  initiallyExpanded: false,
                   children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _rateController,
-                        decoration: const InputDecoration(
-                          labelText: 'Seeding rate (optional)',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                      ),
-                    ),
-                    const SizedBox(width: AppDesignTokens.spacing8),
-                    Expanded(
-                      child: DropdownButtonFormField<String?>(
-                        key: ValueKey<String?>(_rateUnit),
-                        initialValue: _rateUnit,
-                        decoration: const InputDecoration(
-                          labelText: 'Unit',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: [
-                          const DropdownMenuItem<String?>(
-                              value: null, child: Text('—')),
-                          ..._kSeedingRateUnits.map(
-                            (u) => DropdownMenuItem<String?>(
-                                value: u, child: Text(u)),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TextField(
+                            controller: _seedTreatmentController,
+                            decoration: FormStyles.inputDecoration(
+                              labelText: 'Seed treatment (optional)',
+                              hintText: 'e.g. Vibrance 500 FS',
+                            ),
+                            textCapitalization: TextCapitalization.words,
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _germinationPctController,
+                            decoration: FormStyles.inputDecoration(
+                              labelText: 'Germination % (optional)',
+                            ).copyWith(suffixText: '%'),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                           ),
                         ],
-                        onChanged: (v) => setState(() => _rateUnit = v),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppDesignTokens.spacing12),
-                TextField(
-                  controller: _depthController,
-                  decoration: const InputDecoration(
-                    labelText: 'Seeding depth cm (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(bottom: 8),
+                  trailing: const Icon(Icons.keyboard_arrow_down_rounded),
+                  title: const Text('Operation details',
+                      style: FormStyles.expansionTitleStyle),
+                  initiallyExpanded: false,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          left: 16, right: 16, bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TextField(
+                            controller: _rateController,
+                            decoration: FormStyles.inputDecoration(
+                              labelText: 'Seeding rate (optional)',
+                              suffixIcon: DropdownButtonHideUnderline(
+                                child: DropdownButton<String?>(
+                                  value: _rateUnit,
+                                  isDense: true,
+                                  icon: const Icon(
+                                      Icons.arrow_drop_down, size: 20),
+                                  padding: const EdgeInsets.only(right: 8),
+                                  items: [
+                                    const DropdownMenuItem<String?>(
+                                        value: null, child: Text('—')),
+                                    ..._kSeedingRateUnits.map(
+                                      (u) => DropdownMenuItem<String?>(
+                                          value: u,
+                                          child: Text(u,
+                                              style: const TextStyle(
+                                                  fontSize: 13))),
+                                    ),
+                                  ],
+                                  onChanged: (v) =>
+                                      setState(() => _rateUnit = v),
+                                ),
+                              ),
+                            ),
+                            keyboardType: const TextInputType
+                                .numberWithOptions(decimal: true),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _depthController,
+                            decoration: FormStyles.inputDecoration(
+                                labelText: 'Seeding depth cm (optional)'),
+                            keyboardType: const TextInputType
+                                .numberWithOptions(decimal: true),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _rowSpacingController,
+                            decoration: FormStyles.inputDecoration(
+                                labelText: 'Row spacing cm (optional)'),
+                            keyboardType: const TextInputType
+                                .numberWithOptions(decimal: true),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _equipmentController,
+                            decoration: FormStyles.inputDecoration(
+                                labelText: 'Equipment used (optional)'),
+                            textCapitalization: TextCapitalization.words,
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _operatorController,
+                            decoration: FormStyles.inputDecoration(
+                                labelText: 'Operator name (optional)'),
+                            textCapitalization: TextCapitalization.words,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppDesignTokens.spacing12),
-                TextField(
-                  controller: _rowSpacingController,
-                  decoration: const InputDecoration(
-                    labelText: 'Row spacing cm (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(bottom: 8),
+                  trailing: const Icon(Icons.keyboard_arrow_down_rounded),
+                  title: const Text('Establishment (fill after emergence)',
+                      style: FormStyles.expansionTitleStyle),
+                  initiallyExpanded: false,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('Emergence date (optional)',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppDesignTokens.primaryText)),
+                            subtitle: Text(
+                              _emergenceDate == null
+                                  ? 'Tap to select'
+                                  : _emergenceDate!
+                                      .toLocal()
+                                      .toString()
+                                      .split(' ')[0],
+                              style: const TextStyle(
+                                  color: AppDesignTokens.primary,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            trailing: const Icon(Icons.calendar_today_outlined,
+                                color: AppDesignTokens.primary, size: 20),
+                            onTap: _pickEmergenceDate,
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _emergencePctController,
+                            decoration: FormStyles.inputDecoration(
+                                labelText: 'Emergence % (optional)')
+                                .copyWith(suffixText: '%'),
+                            keyboardType: const TextInputType
+                                .numberWithOptions(decimal: true),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _notesController,
+                            decoration: FormStyles.inputDecoration(
+                                labelText: 'Notes (optional)')
+                                .copyWith(alignLabelWithHint: true),
+                            maxLines: 3,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppDesignTokens.spacing12),
-                TextField(
-                  controller: _equipmentController,
-                  decoration: const InputDecoration(
-                    labelText: 'Equipment used (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: AppDesignTokens.spacing12),
-                TextField(
-                  controller: _operatorController,
-                  decoration: const InputDecoration(
-                    labelText: 'Operator name (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                _sectionHeader('Establishment (fill after emergence)'),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Emergence date (optional)',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppDesignTokens.primaryText)),
-                  subtitle: Text(
-                    _emergenceDate == null
-                        ? 'Tap to select'
-                        : _emergenceDate!
-                            .toLocal()
-                            .toString()
-                            .split(' ')[0],
-                    style: const TextStyle(
-                        color: AppDesignTokens.primary,
-                        fontWeight: FontWeight.w500),
-                  ),
-                  trailing: const Icon(Icons.calendar_today_outlined,
-                      color: AppDesignTokens.primary, size: 20),
-                  onTap: _pickEmergenceDate,
-                ),
-                const SizedBox(height: AppDesignTokens.spacing8),
-                TextField(
-                  controller: _emergencePctController,
-                  decoration: const InputDecoration(
-                    labelText: 'Emergence % (optional)',
-                    suffixText: '%',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                ),
-                const SizedBox(height: AppDesignTokens.spacing12),
-                TextField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes (optional)',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: AppDesignTokens.spacing24),
+                const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
+                  height: FormStyles.buttonHeight,
                   child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: FormStyles.primaryButton,
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(FormStyles.buttonRadius)),
+                    ),
                     onPressed: _saving ? null : _save,
                     child: Text(_saving ? 'Saving…' : 'Save'),
                   ),
                 ),
-                const SizedBox(height: AppDesignTokens.spacing16),
+                const SizedBox(height: 14),
               ],
             ),
           ),

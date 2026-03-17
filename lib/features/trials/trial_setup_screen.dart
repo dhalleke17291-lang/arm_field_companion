@@ -9,7 +9,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 
-/// Full-screen form for trial setup (protocol, location, plot dimensions, soil, field history).
+/// Full-screen form for trial setup: Protocol, People, Location, Trial design & field.
 class TrialSetupScreen extends ConsumerStatefulWidget {
   const TrialSetupScreen({super.key, required this.trial});
 
@@ -268,11 +268,16 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
               children: [
                 _textField('Sponsor', _sponsor),
                 _textField('Protocol number', _protocolNumber),
-                _textField('Investigator name', _investigatorName),
-                _textField('Cooperator name', _cooperatorName),
                 _dropdown('Study type', _studyType, _studyTypes, (v) {
                   setState(() => _studyType = v);
                 }),
+              ],
+            ),
+            _SectionCard(
+              title: 'People',
+              children: [
+                _textField('Investigator name', _investigatorName),
+                _textField('Cooperator name', _cooperatorName),
               ],
             ),
             _SectionCard(
@@ -300,7 +305,7 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
               ],
             ),
             _SectionCard(
-              title: 'Plot dimensions',
+              title: 'Trial design & field',
               children: [
                 _dropdown('Experimental design', _experimentalDesign,
                     _experimentalDesigns, (v) {
@@ -315,11 +320,6 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
                 _textField('Alley length m', _alleyLengthM,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true)),
-              ],
-            ),
-            _SectionCard(
-              title: 'Field history',
-              children: [
                 _textField('Previous crop', _previousCrop),
                 _dropdown('Tillage', _tillage, _tillages, (v) {
                   setState(() => _tillage = v);
@@ -331,11 +331,6 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
                       ? null
                       : (v) => setState(() => _irrigated = v),
                 ),
-              ],
-            ),
-            _SectionCard(
-              title: 'Soil',
-              children: [
                 _textField('Soil series', _soilSeries),
                 _dropdown('Soil texture', _soilTexture, _soilTextures, (v) {
                   setState(() => _soilTexture = v);
@@ -346,11 +341,6 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
                 _textField('Soil pH', _soilPh,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true)),
-              ],
-            ),
-            _SectionCard(
-              title: 'Harvest',
-              children: [
                 ListTile(
                   title: Text(_harvestDate == null
                       ? 'Harvest date'

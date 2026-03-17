@@ -8,9 +8,15 @@ import '../../ratings/rating_repository.dart';
 /// Input for starting or continuing a rating session.
 class StartOrContinueRatingInput {
   final int sessionId;
+  /// Walk order for plot navigation. Defaults to [WalkOrderMode.serpentine] if null.
+  final WalkOrderMode? walkOrderMode;
+  /// When [walkOrderMode] is [WalkOrderMode.custom], use this ordered list of plot PKs; otherwise ignored.
+  final List<int>? customPlotIds;
 
   const StartOrContinueRatingInput({
     required this.sessionId,
+    this.walkOrderMode,
+    this.customPlotIds,
   });
 }
 
@@ -115,8 +121,12 @@ class StartOrContinueRatingUseCase {
             'No plots in this trial. Import plots before rating.');
       }
 
-      // Serpentine walking order (grid-aware, with defined fallback).
-      final serpentinePlots = sortPlotsSerpentine(plots);
+      final mode = input.walkOrderMode ?? WalkOrderMode.serpentine;
+      final orderedPlots = sortPlotsByWalkOrder(
+        plots,
+        mode,
+        customPlotIds: input.customPlotIds,
+      );
 
       final assessments =
           await _sessionRepository.getSessionAssessments(session.id);
@@ -130,10 +140,10 @@ class StartOrContinueRatingUseCase {
           await _ratingRepository.getCurrentRatingsForSession(session.id);
       final ratedPlotPks = ratings.map((r) => r.plotPk).toSet();
 
-      // Find the last-rated plot in serpentine order, if any.
+      // Find the last-rated plot in walk order, if any.
       var lastRatedIndex = -1;
-      for (var i = 0; i < serpentinePlots.length; i++) {
-        if (ratedPlotPks.contains(serpentinePlots[i].id)) {
+      for (var i = 0; i < orderedPlots.length; i++) {
+        if (ratedPlotPks.contains(orderedPlots[i].id)) {
           lastRatedIndex = i;
         }
       }
@@ -142,15 +152,12 @@ class StartOrContinueRatingUseCase {
       final int startIndex;
 
       if (lastRatedIndex == -1) {
-        // Nothing rated yet — start at the first serpentine plot.
         allRated = false;
         startIndex = 0;
-      } else if (lastRatedIndex >= serpentinePlots.length - 1) {
-        // All plots have at least one rating — session is complete.
+      } else if (lastRatedIndex >= orderedPlots.length - 1) {
         allRated = true;
-        startIndex = serpentinePlots.length - 1;
+        startIndex = orderedPlots.length - 1;
       } else {
-        // Resume at the plot after the last-rated plot in serpentine order.
         allRated = false;
         startIndex = lastRatedIndex + 1;
       }
@@ -158,7 +165,7 @@ class StartOrContinueRatingUseCase {
       return StartOrContinueRatingResult.success(
         trial: trial,
         session: session,
-        allPlotsSerpentine: serpentinePlots,
+        allPlotsSerpentine: orderedPlots,
         assessments: assessments,
         startPlotIndex: startIndex,
         isSessionComplete: allRated,

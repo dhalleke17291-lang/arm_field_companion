@@ -140,4 +140,16 @@ class PhotoRepository {
           ]))
         .watch();
   }
+
+  /// One-shot fetch of all photos for a trial. Ordered by session then createdAt.
+  /// Used by export (ARM handoff, ZIP bundle).
+  Future<List<Photo>> getPhotosForTrial(int trialId) {
+    return (_db.select(_db.photos)
+          ..where((p) => p.trialId.equals(trialId))
+          ..orderBy([
+            (p) => OrderingTerm.asc(p.sessionId),
+            (p) => OrderingTerm.asc(p.createdAt),
+          ]))
+        .get();
+  }
 }

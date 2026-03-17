@@ -1,30 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/database/app_database.dart';
+import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/loading_error_widgets.dart';
-
-const Map<String, String> _categoryLabels = {
-  'crop_injury': 'Crop Injury',
-  'disease': 'Disease',
-  'weed': 'Weed',
-  'growth': 'Growth',
-  'yield': 'Yield',
-  'phenology': 'Phenology',
-  'quality': 'Quality',
-  'custom': 'Custom',
-};
-
-const Color _titleColor = Color(0xFF1F2937);
-const Color _subtitleColor = Color(0xFF6B7280);
-const Color _borderColor = Color(0xFFE5E7EB);
-const Color _iconBgColor = Color(0xFFF3F4F6);
-const Color _primaryGreen = Color(0xFF2D5A40);
-const Color _unselectedCheckColor = Color(0xFFD1D5DB);
-const Color _dialogBgColor = Color(0xFFF8F6F2);
-
-String _categoryLabel(String category) => _categoryLabels[category] ?? category;
 
 class AssessmentLibraryPickerDialog extends ConsumerStatefulWidget {
   final int trialId;
@@ -32,8 +11,14 @@ class AssessmentLibraryPickerDialog extends ConsumerStatefulWidget {
   const AssessmentLibraryPickerDialog({super.key, required this.trialId});
 
   static Future<void> show(BuildContext context, int trialId) {
-    return showDialog<void>(
+    return showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) => AssessmentLibraryPickerDialog(trialId: trialId),
     );
   }
@@ -77,243 +62,276 @@ class _AssessmentLibraryPickerDialogState
     final trialListAsync =
         ref.watch(trialAssessmentsForTrialProvider(widget.trialId));
 
-    return AlertDialog(
-      backgroundColor: _dialogBgColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      contentPadding: EdgeInsets.zero,
-      actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      title: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Add Assessments',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: _titleColor,
+          // Title + subtitle
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              'Add Assessments',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppDesignTokens.primaryText,
+              ),
             ),
           ),
-          SizedBox(height: 4),
-          Text(
-            'Select one or more assessments to add',
-            style: TextStyle(fontSize: 13, color: _subtitleColor),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Text(
+              'Tap to select · tap again to deselect',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade400,
+              ),
+            ),
+          ),
+          // Content: loading / error / empty / chips
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.5,
+            ),
+            child: definitionsAsync.when(
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: AppLoadingView(),
+                ),
+              ),
+              error: (e, st) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: AppErrorView(
+                  error: e,
+                  stackTrace: st,
+                  onRetry: () =>
+                      ref.invalidate(assessmentDefinitionsProvider),
+                ),
+              ),
+              data: (definitions) {
+                if (definitions.isEmpty) {
+                  if (!_hasTriedSeeding) {
+                    _hasTriedSeeding = true;
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      await ref
+                          .read(databaseProvider)
+                          .ensureAssessmentDefinitionsSeeded();
+                      if (mounted) {
+                        ref.invalidate(assessmentDefinitionsProvider);
+                      }
+                    });
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Loading default templates…',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppDesignTokens.secondaryText,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'No assessment templates in the library.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppDesignTokens.secondaryText,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton.icon(
+                            onPressed: () =>
+                                ref.invalidate(assessmentDefinitionsProvider),
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                final alreadyIds = trialListAsync.valueOrNull
+                        ?.map((ta) => ta.assessmentDefinitionId)
+                        .toSet() ??
+                    {};
+                return ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                  children: definitions.map((def) {
+                    final alreadyAdded = alreadyIds.contains(def.id);
+                    final isSelected = _selectedIds.contains(def.id);
+                    return InkWell(
+                      onTap: alreadyAdded
+                          ? null
+                          : () => _toggleSelection(def.id),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: alreadyAdded
+                              ? AppDesignTokens.emptyBadgeBg
+                              : (isSelected
+                                  ? const Color(0xFFE8F5EE)
+                                  : Colors.white),
+                          border: const Border(
+                            bottom: BorderSide(
+                              color: Color(0xFFF0EDE8),
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    def.name,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: alreadyAdded
+                                          ? AppDesignTokens.secondaryText
+                                          : (isSelected
+                                              ? const Color(0xFF2D5A40)
+                                              : const Color(0xFF1A1A1A)),
+                                    ),
+                                  ),
+                                  if (def.unit != null &&
+                                      def.unit!.isNotEmpty)
+                                    Text(
+                                      def.unit!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if (alreadyAdded)
+                              Text(
+                                'Added',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade400,
+                                ),
+                              )
+                            else if (isSelected)
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: Color(0xFF2D5A40),
+                                size: 20,
+                              )
+                            else
+                              Icon(
+                                Icons.circle_outlined,
+                                color: Colors.grey.shade300,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+          // Divider + action row
+          const Divider(height: 1, thickness: 0.5),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE0DDD6)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: const Size(0, 48),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _selectedIds.isEmpty
+                          ? Colors.grey.shade200
+                          : const Color(0xFF2D5A40),
+                      foregroundColor: _selectedIds.isEmpty
+                          ? Colors.grey.shade400
+                          : Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: const Size(0, 48),
+                    ),
+                    onPressed:
+                        _selectedIds.isEmpty ? null : _saveSelected,
+                    child: Text(
+                      _selectedIds.isEmpty
+                          ? 'Select assessments'
+                          : 'Add ${_selectedIds.length}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: _selectedIds.isEmpty
+                            ? Colors.grey.shade400
+                            : Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      content: SizedBox(
-        width: double.infinity,
-        child: definitionsAsync.when(
-          loading: () => const AppLoadingView(),
-          error: (e, st) => AppErrorView(
-            error: e,
-            stackTrace: st,
-            onRetry: () => ref.invalidate(assessmentDefinitionsProvider),
-          ),
-          data: (definitions) {
-            if (definitions.isEmpty) {
-              if (!_hasTriedSeeding) {
-                _hasTriedSeeding = true;
-                WidgetsBinding.instance.addPostFrameCallback((_) async {
-                  await ref
-                      .read(databaseProvider)
-                      .ensureAssessmentDefinitionsSeeded();
-                  if (mounted) ref.invalidate(assessmentDefinitionsProvider);
-                });
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 32,
-                          height: 32,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Loading default templates…',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: _subtitleColor, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'No assessment templates in the library.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: _subtitleColor, fontSize: 14),
-                      ),
-                      const SizedBox(height: 16),
-                      TextButton.icon(
-                        onPressed: () {
-                          ref.invalidate(assessmentDefinitionsProvider);
-                        },
-                        icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            final alreadyIds = trialListAsync.valueOrNull
-                    ?.map((ta) => ta.assessmentDefinitionId)
-                    .toSet() ??
-                {};
-            final byCategory = <String, List<AssessmentDefinition>>{};
-            for (final d in definitions) {
-              byCategory.putIfAbsent(d.category, () => []).add(d);
-            }
-            final categories = byCategory.keys.toList()..sort();
-
-            return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 16),
-                    ...categories.map((cat) {
-                      final list = byCategory[cat]!;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8, top: 12),
-                            child: Text(
-                              _categoryLabel(cat),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: _subtitleColor,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          ...list.map((def) {
-                            final alreadyAdded = alreadyIds.contains(def.id);
-                            final isChecked =
-                                alreadyAdded || _selectedIds.contains(def.id);
-                            final isSelected = _selectedIds.contains(def.id);
-                            final dataTypeLabel =
-                                '${def.dataType}${def.unit != null ? " (${def.unit})" : ""}';
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color:
-                                      isSelected ? _primaryGreen : _borderColor,
-                                  width: isSelected ? 1.5 : 1.0,
-                                ),
-                              ),
-                              child: CheckboxListTile(
-                                value: isChecked,
-                                onChanged: alreadyAdded
-                                    ? null
-                                    : (val) => _toggleSelection(def.id),
-                                activeColor: _primaryGreen,
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                                title: Text(
-                                  def.name,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: _titleColor,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  dataTypeLabel,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: _subtitleColor,
-                                  ),
-                                ),
-                                secondary: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: _iconBgColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Icon(
-                                    Icons.analytics_outlined,
-                                    size: 18,
-                                    color: alreadyAdded
-                                        ? _unselectedCheckColor
-                                        : _primaryGreen,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                          const SizedBox(height: 8),
-                        ],
-                      );
-                    }),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-      actions: [
-        Row(
-          children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: _primaryGreen),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _selectedIds.isEmpty ? null : _saveSelected,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryGreen,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: _borderColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  child: Text(
-                    _selectedIds.isEmpty
-                        ? 'Add Selected'
-                        : 'Add Selected (${_selectedIds.length})',
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

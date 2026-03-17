@@ -8,6 +8,8 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/last_session_store.dart';
 import '../../core/session_resume_store.dart';
+import '../../core/plot_sort.dart';
+import '../../core/session_walk_order_store.dart';
 import '../../core/database/app_database.dart';
 import '../../core/crop_icons.dart';
 import '../../core/widgets/app_dialog.dart';
@@ -59,8 +61,16 @@ Future<void> _navigateToRatingForSession(
   Session session,
 ) async {
   final useCase = ref.read(startOrContinueRatingUseCaseProvider);
-  final result =
-      await useCase.execute(StartOrContinueRatingInput(sessionId: session.id));
+  final prefs = await SharedPreferences.getInstance();
+  final store = SessionWalkOrderStore(prefs);
+  final walkOrder = store.getMode(session.id);
+  final customIds = walkOrder == WalkOrderMode.custom ? store.getCustomOrder(session.id) : null;
+  final result = await useCase.execute(
+      StartOrContinueRatingInput(
+        sessionId: session.id,
+        walkOrderMode: walkOrder,
+        customPlotIds: customIds,
+      ));
   if (!context.mounted) return;
   if (!result.success ||
       result.trial == null ||
@@ -83,7 +93,6 @@ Future<void> _navigateToRatingForSession(
   final assessments = result.assessments!;
   int startIndex = result.startPlotIndex!;
   int? initialAssessmentIndex;
-  final prefs = await SharedPreferences.getInstance();
   final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
   if (pos != null && pos.$1 >= 0 && pos.$1 < plots.length) {
     startIndex = pos.$1;
@@ -1006,8 +1015,16 @@ class _TrialQuickActions extends ConsumerWidget {
 
     final session = createResult.session!;
     final useCase = ref.read(startOrContinueRatingUseCaseProvider);
-    final result = await useCase
-        .execute(StartOrContinueRatingInput(sessionId: session.id));
+    final prefs = await SharedPreferences.getInstance();
+    final store = SessionWalkOrderStore(prefs);
+    final walkOrder = store.getMode(session.id);
+    final customIds = walkOrder == WalkOrderMode.custom ? store.getCustomOrder(session.id) : null;
+    final result = await useCase.execute(
+        StartOrContinueRatingInput(
+          sessionId: session.id,
+          walkOrderMode: walkOrder,
+          customPlotIds: customIds,
+        ));
 
     if (!context.mounted) return;
     if (!result.success ||
@@ -1032,7 +1049,6 @@ class _TrialQuickActions extends ConsumerWidget {
     int startIndex = result.startPlotIndex!;
     int? initialAssessmentIndex;
 
-    final prefs = await SharedPreferences.getInstance();
     final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
     if (pos != null && pos.$1 >= 0 && pos.$1 < plots.length) {
       startIndex = pos.$1;

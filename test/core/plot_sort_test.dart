@@ -134,7 +134,7 @@ void main() {
     });
   });
 
-  group('serpentineIndexOf', () {
+  group('walkOrderIndexOf', () {
     test('returns correct index for known plot', () {
       final plots = [
         _plot(id: 1, plotId: '001', fieldRow: 1, fieldColumn: 1),
@@ -143,15 +143,15 @@ void main() {
         _plot(id: 4, plotId: '004', fieldRow: 2, fieldColumn: 1),
       ];
       final sorted = sortPlotsSerpentine(plots);
-      expect(serpentineIndexOf(sorted, 3), 2);
-      expect(serpentineIndexOf(sorted, 4), 3);
+      expect(walkOrderIndexOf(sorted, 3), 2);
+      expect(walkOrderIndexOf(sorted, 4), 3);
     });
 
     test('returns -1 for unknown plotPk', () {
       final plots = [
         _plot(id: 1, plotId: '001', fieldRow: 1, fieldColumn: 1),
       ];
-      expect(serpentineIndexOf(plots, 999), -1);
+      expect(walkOrderIndexOf(plots, 999), -1);
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,9 +19,83 @@ import '../../plots/plot_detail_screen.dart';
 
 enum _LayoutLayer { treatments, applications, ratings }
 
-const double _kGridMinScale = 0.15;
-const double _kGridMaxScale = 5.0;
+const double _kGridMinScale = 0.3;
+const double _kGridMaxScale = 3.0;
 const double _kGridZoomFactor = 1.25;
+
+/// Reusable treatment legend card: compact accent badge + name + optional subtitle.
+/// Enterprise-style mini-card; used in summary and grid legend.
+Widget _buildTreatmentLegendCard(
+  Color color,
+  String code,
+  String name, [
+  String? subtitle,
+]) {
+  return Container(
+    constraints: const BoxConstraints(minHeight: 52),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(
+      color: AppDesignTokens.cardSurface,
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: AppDesignTokens.borderCrisp, width: 1),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Center(
+            child: Text(
+              code,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+              if (subtitle != null && subtitle.trim().isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle.trim(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
 /// Minimap: 48x32 thumbnail of full grid with white viewport rect showing current pan/zoom.
 class _LayoutMinimap extends StatelessWidget {
@@ -376,6 +451,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
       ),
       data: (plots) {
         if (plots.isEmpty) {
+          final showTestPlotsButton = !isProtocolLocked(trial.status);
           if (widget.embeddedInScroll) {
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -399,27 +475,43 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                   applicationCount,
                   lastApplication,
                   seedingDate,
+                  treatmentsAsync.value ?? [],
                 ),
+                if (showTestPlotsButton) ...[
+                  const SizedBox(height: 16),
+                  _AddTestPlotsButton(trial: trial),
+                ],
               ],
             );
           }
-          return _buildPlotsSummaryWithBar(
-            context,
-            ref,
-            trial,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            treatmentsAsync.value?.length ?? 0,
-            treatmentComponentCount,
-            ratedPlotsCount,
-            sessionCount,
-            applicationCount,
-            lastApplication,
-            seedingDate,
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildPlotsSummaryWithBar(
+                context,
+                ref,
+                trial,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                treatmentsAsync.value?.length ?? 0,
+                treatmentComponentCount,
+                ratedPlotsCount,
+                sessionCount,
+                applicationCount,
+                lastApplication,
+                seedingDate,
+                treatmentsAsync.value ?? [],
+              ),
+              if (showTestPlotsButton) ...[
+                const SizedBox(height: 16),
+                _AddTestPlotsButton(trial: trial),
+              ],
+            ],
           );
         }
         final treatments = treatmentsAsync.value ?? [];
@@ -467,6 +559,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 applicationCount,
                 lastApplication,
                 seedingDate,
+                treatments,
               ),
             ],
           );
@@ -476,7 +569,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
           children: [
             _buildViewPlotLayoutButton(context),
             Expanded(
-              child: _buildPlotsSummaryWithBar(
+              child:               _buildPlotsSummaryWithBar(
                 context,
                 ref,
                 trial,
@@ -493,6 +586,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 applicationCount,
                 lastApplication,
                 seedingDate,
+                treatments,
               ),
             ),
           ],
@@ -540,43 +634,95 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     int applicationCount,
     TrialApplicationEvent? lastApplication,
     DateTime? seedingDate,
+    List<Treatment> treatments,
   ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Trial Summary',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.primary,
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE0DDD6)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Rated plots',
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade500),
+                    ),
+                    Text(
+                      '$ratedPlotsCount of $totalPlots',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2D5A40)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: totalPlots == 0
+                        ? 0.0
+                        : ratedPlotsCount / totalPlots,
+                    backgroundColor: const Color(0xFFE8E5E0),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF2D5A40)),
+                    minHeight: 6,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '$totalPlots plots · ${treatments.length} treatments · $replicateCount reps',
+                  style: TextStyle(
+                      fontSize: 11, color: Colors.grey.shade400),
+                ),
+              ],
             ),
           ),
-          if (trial.sponsor != null ||
-              trial.protocolNumber != null ||
-              trial.investigatorName != null) ...[
-            const SizedBox(height: 8),
-            _buildProtocolHeader(context, trial),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: AppDesignTokens.spacing12),
-          _summaryRow('Total plots', '$totalPlots'),
-          _summaryRow('Ranges', '$rowCount'),
-          _summaryRow('Columns', '$columnCount'),
-          _summaryRow('Replicates', '$replicateCount'),
-          _summaryRow('Assigned plots', '$assignedCount'),
-          _summaryRow('Unassigned plots', '$unassignedCount'),
-          _summaryRow('Treatments', '$treatmentCount'),
-          _summaryRow('Treatment components', '$treatmentComponentCount'),
-          _summaryRow('Rated plots', '$ratedPlotsCount of $totalPlots'),
-          _summaryRow('Sessions', '$sessionCount'),
-          _applicationsSummaryRow(context, trial, applicationCount),
-          _lastApplicationSummaryRow(context, lastApplication),
-          _seedingDateSummaryRow(seedingDate),
+          if (treatments.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const spacing = 8.0;
+                  final cardWidth =
+                      (constraints.maxWidth - spacing) / 2;
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      ...treatments.asMap().entries.map((entry) {
+                        final color = AppDesignTokens.treatmentPalette[
+                            entry.key %
+                                AppDesignTokens.treatmentPalette.length];
+                        return SizedBox(
+                          width: cardWidth,
+                          child: _buildTreatmentLegendCard(
+                            color,
+                            entry.value.code,
+                            entry.value.name,
+                            entry.value.description,
+                          ),
+                        );
+                      }),
+                    ],
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -599,6 +745,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     int applicationCount,
     TrialApplicationEvent? lastApplication,
     DateTime? seedingDate,
+    List<Treatment> treatments,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -610,35 +757,87 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Trial Summary',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.primary,
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE0DDD6)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Rated plots',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade500),
+                          ),
+                          Text(
+                            '$ratedPlotsCount of $totalPlots',
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2D5A40)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: totalPlots == 0
+                              ? 0.0
+                              : ratedPlotsCount / totalPlots,
+                          backgroundColor: const Color(0xFFE8E5E0),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF2D5A40)),
+                          minHeight: 6,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '$totalPlots plots · ${treatments.length} treatments · $replicateCount reps',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade400),
+                      ),
+                    ],
                   ),
                 ),
-                if (trial.sponsor != null ||
-                    trial.protocolNumber != null ||
-                    trial.investigatorName != null) ...[
-                  const SizedBox(height: 8),
-                  _buildProtocolHeader(context, trial),
-                  const SizedBox(height: 8),
-                ],
-                const SizedBox(height: AppDesignTokens.spacing12),
-                _summaryRow('Total plots', '$totalPlots'),
-                _summaryRow('Ranges', '$rowCount'),
-                _summaryRow('Columns', '$columnCount'),
-                _summaryRow('Replicates', '$replicateCount'),
-                _summaryRow('Assigned plots', '$assignedCount'),
-                _summaryRow('Unassigned plots', '$unassignedCount'),
-                _summaryRow('Treatments', '$treatmentCount'),
-                _summaryRow('Treatment components', '$treatmentComponentCount'),
-                _summaryRow('Rated plots', '$ratedPlotsCount of $totalPlots'),
-                _summaryRow('Sessions', '$sessionCount'),
-                _applicationsSummaryRow(context, trial, applicationCount),
-                _lastApplicationSummaryRow(context, lastApplication),
-                _seedingDateSummaryRow(seedingDate),
+                if (treatments.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        const spacing = 8.0;
+                        final cardWidth =
+                            (constraints.maxWidth - spacing) / 2;
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: spacing,
+                          children: [
+                            ...treatments.asMap().entries.map((entry) {
+                              final color = AppDesignTokens.treatmentPalette[
+                                  entry.key %
+                                      AppDesignTokens.treatmentPalette.length];
+                              return SizedBox(
+                                width: cardWidth,
+                                child: _buildTreatmentLegendCard(
+                                  color,
+                                  entry.value.code,
+                                  entry.value.name,
+                                  entry.value.description,
+                                ),
+                              );
+                            }),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
               ],
             ),
           ),
@@ -685,6 +884,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildProtocolHeader(BuildContext context, Trial trial) {
     final lines = <String>[];
     if (trial.sponsor != null && trial.sponsor!.trim().isNotEmpty) {
@@ -726,6 +926,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _summaryRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
@@ -754,6 +955,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _applicationsSummaryRow(
       BuildContext context, Trial trial, int applicationCount) {
     return Padding(
@@ -783,6 +985,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _lastApplicationSummaryRow(
       BuildContext context, TrialApplicationEvent? lastApplication) {
     String value = 'None';
@@ -825,6 +1028,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _seedingDateSummaryRow(DateTime? seedingDate) {
     final value = seedingDate == null
         ? 'Not recorded'
@@ -2129,6 +2333,7 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
 }
 
 /// Empty state for PlotDetailsScreen when trial has no plots.
+/// Shows "Add Test Plots" button only when trial has zero plots (caller ensures empty).
 class _PlotDetailsEmptyContent extends ConsumerWidget {
   final Trial trial;
 
@@ -2137,12 +2342,68 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locked = isProtocolLocked(trial.status);
-    return AppEmptyState(
-      icon: Icons.grid_on,
-      title: 'No Plots Yet',
-      subtitle: locked
-          ? getProtocolLockMessage(trial.status)
-          : 'Import plots via CSV or add test plots from the Trial screen.',
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        AppEmptyState(
+          icon: Icons.grid_on,
+          title: 'No Plots Yet',
+          subtitle: locked
+              ? getProtocolLockMessage(trial.status)
+              : 'Import plots via CSV or add test plots below.',
+        ),
+        if (!locked) ...[
+          const SizedBox(height: 24),
+          _AddTestPlotsButton(trial: trial),
+        ],
+      ],
+    );
+  }
+}
+
+/// Temporary dev button: creates 4 reps × 6 plots (101–106, 201–206, 301–306, 401–406).
+/// Only shown when trial has no plots; disappears after creation.
+class _AddTestPlotsButton extends ConsumerWidget {
+  final Trial trial;
+
+  const _AddTestPlotsButton({required this.trial});
+
+  Future<void> _addTestPlots(WidgetRef ref) async {
+    final repo = ref.read(plotRepositoryProvider);
+    final companions = <PlotsCompanion>[];
+    for (var rep = 1; rep <= 4; rep++) {
+      final base = rep * 100;
+      for (var i = 1; i <= 6; i++) {
+        final plotId = '${base + i}';
+        companions.add(PlotsCompanion.insert(
+          trialId: trial.id,
+          plotId: plotId,
+          rep: drift.Value(rep),
+          plotSortIndex: drift.Value(i - 1),
+        ));
+      }
+    }
+    await repo.insertPlotsBulk(companions);
+    ref.invalidate(plotsForTrialProvider(trial.id));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () => _addTestPlots(ref),
+          icon: const Icon(Icons.add_chart, size: 20),
+          label: const Text('Add Test Plots'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF2D5A40),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2254,14 +2515,18 @@ class _PlotLayoutGrid extends StatelessWidget {
                         ],
                 )
               : Wrap(
-                  spacing: 12,
-                  runSpacing: 6,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     ...treatments.asMap().entries.map((entry) {
                       final color = AppDesignTokens.treatmentPalette[
                           entry.key % AppDesignTokens.treatmentPalette.length];
-                      return _legendChip(
-                          color, '${entry.value.code} ${entry.value.name}');
+                      return _buildTreatmentLegendCard(
+                        color,
+                        entry.value.code,
+                        entry.value.name,
+                        entry.value.description,
+                      );
                     }),
                     _legendChip(AppDesignTokens.unassignedColor, 'Unassigned'),
                   ],
@@ -2619,7 +2884,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         error: (e, st) => Center(child: Text('Error: $e')),
         data: (plots) {
           if (plots.isEmpty) {
-            return const Center(child: Text('No plots'));
+            return _PlotDetailsEmptyContent(trial: widget.trial);
           }
           final sessions =
               ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];

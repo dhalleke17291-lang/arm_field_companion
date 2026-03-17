@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/trial_state.dart';
 import '../../../core/widgets/app_dialog.dart';
@@ -280,36 +281,27 @@ class TreatmentsTab extends ConsumerWidget {
             children: [
               TextField(
                 controller: codeController,
-                decoration: const InputDecoration(
-                  labelText: 'Code (e.g. T1, T2)',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: FormStyles.inputDecoration(
+                    labelText: 'Code (e.g. T1, T2)'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: FormStyles.inputDecoration(labelText: 'Name'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               TextField(
                 controller: descController,
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: FormStyles.inputDecoration(
+                    labelText: 'Description (optional)'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               DropdownButtonFormField<String?>(
                 key: ValueKey('edit_type_$treatmentType'),
                 initialValue: treatmentType,
-                decoration: const InputDecoration(
-                  labelText: 'Treatment type',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: FormStyles.inputDecoration(
+                    labelText: 'Treatment type'),
                 items: [
                   const DropdownMenuItem<String?>(
                       value: null, child: Text('—')),
@@ -318,14 +310,12 @@ class TreatmentsTab extends ConsumerWidget {
                 ],
                 onChanged: (v) => setState(() => treatmentType = v),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               DropdownButtonFormField<String?>(
                 key: ValueKey('edit_timing_$timingCode'),
                 initialValue: timingCode,
-                decoration: const InputDecoration(
-                  labelText: 'Timing code',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: FormStyles.inputDecoration(
+                    labelText: 'Timing code'),
                 items: [
                   const DropdownMenuItem<String?>(
                       value: null, child: Text('—')),
@@ -334,17 +324,19 @@ class TreatmentsTab extends ConsumerWidget {
                 ],
                 onChanged: (v) => setState(() => timingCode = v),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               ExpansionTile(
-                title: const Text('Regulatory details'),
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(bottom: 8),
+                trailing: const Icon(Icons.keyboard_arrow_down_rounded),
+                title: const Text('Regulatory details',
+                    style: FormStyles.expansionTitleStyle),
                 initiallyExpanded: false,
                 children: [
                   TextField(
                     controller: eppoController,
-                    decoration: const InputDecoration(
-                      labelText: 'EPPO code',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: FormStyles.inputDecoration(
+                        labelText: 'EPPO code'),
                   ),
                 ],
               ),
@@ -352,10 +344,23 @@ class TreatmentsTab extends ConsumerWidget {
           ),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                minimumSize: const Size(0, FormStyles.buttonHeight),
+                shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(FormStyles.buttonRadius)),
+              ),
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancel'),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: FormStyles.primaryButton,
+                minimumSize: const Size(0, FormStyles.buttonHeight),
+                shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(FormStyles.buttonRadius)),
+              ),
               onPressed: () async {
                 final useCase = ref.read(updateTreatmentUseCaseProvider);
                 final result = await useCase.execute(
@@ -454,35 +459,31 @@ class TreatmentsTab extends ConsumerWidget {
             children: [
               TextField(
                 controller: codeController,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Code (e.g. T1, T2)',
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Name',
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: descController,
                 maxLines: 2,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Description (optional)',
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String?>(
                 key: ValueKey('add_type_$treatmentType'),
                 initialValue: treatmentType,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Treatment type',
-                  border: OutlineInputBorder(),
                 ),
                 items: [
                   const DropdownMenuItem<String?>(
@@ -496,9 +497,8 @@ class TreatmentsTab extends ConsumerWidget {
               DropdownButtonFormField<String?>(
                 key: ValueKey('add_timing_$timingCode'),
                 initialValue: timingCode,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Timing code',
-                  border: OutlineInputBorder(),
                 ),
                 items: [
                   const DropdownMenuItem<String?>(
@@ -515,10 +515,9 @@ class TreatmentsTab extends ConsumerWidget {
                 children: [
                   TextField(
                     controller: eppoController,
-                    decoration: const InputDecoration(
-                      labelText: 'EPPO code',
-                      border: OutlineInputBorder(),
-                    ),
+decoration: FormStyles.inputDecoration(
+                labelText: 'EPPO code',
+                ),
                   ),
                 ],
               ),
@@ -943,9 +942,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
               const SizedBox(height: 16),
               TextField(
                 controller: _productController,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Component Name *',
-                  border: OutlineInputBorder(),
                 ),
                 textCapitalization: TextCapitalization.words,
               ),
@@ -954,25 +952,22 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                 children: [
                   Expanded(
                     flex: 2,
-                    child: TextField(
+                    child: TextFormField(
                       controller: _rateController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Rate',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: FormStyles.inputDecoration(
+                          labelText: 'Rate'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
+                    flex: 1,
                     child: DropdownButtonFormField<String>(
                       key: ValueKey('sheet_rate_unit_$_rateUnit'),
                       initialValue: _rateUnit,
-                      decoration: const InputDecoration(
-                        labelText: 'Unit',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: FormStyles.inputDecoration(
+                          labelText: 'Unit'),
                       items: _componentRateUnits
                           .map(
                               (u) => DropdownMenuItem(value: u, child: Text(u)))
@@ -987,9 +982,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
               DropdownButtonFormField<String?>(
                 key: ValueKey('sheet_form_$_formulationType'),
                 initialValue: _formulationType,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Formulation type',
-                  border: OutlineInputBorder(),
                 ),
                 items: [
                   const DropdownMenuItem<String?>(
@@ -1004,18 +998,16 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                 controller: _activeIngredientPctController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Active ingredient %',
                   suffixText: '%',
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _formulationController,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Application timing (optional)',
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -1025,27 +1017,24 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                 children: [
                   TextField(
                     controller: _manufacturerController,
-                    decoration: const InputDecoration(
-                      labelText: 'Manufacturer',
-                      border: OutlineInputBorder(),
-                    ),
+decoration: FormStyles.inputDecoration(
+                labelText: 'Manufacturer',
+                ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _registrationNumberController,
-                    decoration: const InputDecoration(
-                      labelText: 'Registration number',
-                      border: OutlineInputBorder(),
-                    ),
+decoration: FormStyles.inputDecoration(
+                labelText: 'Registration number',
+                ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _eppoController,
-                    decoration: const InputDecoration(
-                      labelText: 'EPPO code',
+decoration: FormStyles.inputDecoration(
+                labelText: 'EPPO code',
                       hintText: 'e.g. 1BAS5B4048',
-                      border: OutlineInputBorder(),
-                    ),
+                ),
                   ),
                 ],
               ),
@@ -1053,9 +1042,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
               TextField(
                 controller: _notesController,
                 maxLines: 2,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Notes',
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 24),
@@ -1191,9 +1179,8 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
             controller: productController,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Product Name *',
-              border: OutlineInputBorder(),
+decoration: FormStyles.inputDecoration(
+                labelText: 'Product Name *',
             ),
           ),
           const SizedBox(height: 12),
@@ -1201,24 +1188,22 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
             children: [
               Expanded(
                 flex: 2,
-                child: TextField(
+                child: TextFormField(
                   controller: rateController,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
+                  decoration: FormStyles.inputDecoration(
                     labelText: 'Rate',
-                    border: OutlineInputBorder(),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
-                flex: 2,
-                child: TextField(
+                flex: 1,
+                child: TextFormField(
                   controller: rateUnitController,
-                  decoration: const InputDecoration(
+                  decoration: FormStyles.inputDecoration(
                     labelText: 'Unit (e.g. L/ha)',
-                    border: OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -1228,9 +1213,8 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
           DropdownButtonFormField<String?>(
             key: ValueKey('dialog_form_$formulationType'),
             initialValue: formulationType,
-            decoration: const InputDecoration(
-              labelText: 'Formulation type',
-              border: OutlineInputBorder(),
+decoration: FormStyles.inputDecoration(
+                labelText: 'Formulation type',
             ),
             items: [
               const DropdownMenuItem<String?>(
@@ -1245,18 +1229,16 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
             controller: activeIngredientPctController,
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Active ingredient %',
+decoration: FormStyles.inputDecoration(
+                labelText: 'Active ingredient %',
               suffixText: '%',
-              border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: timingController,
-            decoration: const InputDecoration(
-              labelText: 'Application Timing (optional)',
-              border: OutlineInputBorder(),
+decoration: FormStyles.inputDecoration(
+                labelText: 'Application Timing (optional)',
             ),
           ),
           const SizedBox(height: 12),
@@ -1266,26 +1248,23 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
             children: [
               TextField(
                 controller: manufacturerController,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Manufacturer',
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: registrationNumberController,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'Registration number',
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: eppoController,
-                decoration: const InputDecoration(
+                decoration: FormStyles.inputDecoration(
                   labelText: 'EPPO code',
                   hintText: 'e.g. 1BAS5B4048',
-                  border: OutlineInputBorder(),
                 ),
               ),
             ],
@@ -1294,9 +1273,8 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
           TextField(
             controller: notesController,
             maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Notes (optional)',
-              border: OutlineInputBorder(),
+decoration: FormStyles.inputDecoration(
+                labelText: 'Notes (optional)',
             ),
           ),
         ],

@@ -1,7 +1,18 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
+
+import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
 import '../plots/plot_repository.dart';
+import 'arm_field_mapping.dart';
+import 'export_format.dart';
+import 'export_validation_service.dart' as export_validation;
 import '../trials/trial_repository.dart';
 import '../sessions/session_repository.dart';
 import '../ratings/rating_repository.dart';
@@ -35,6 +46,8 @@ class ExportTrialUseCase {
         _assignmentRepository = assignmentRepository,
         _photoRepository = photoRepository;
 
+  // Kept for API consistency; trial is passed into execute().
+  // ignore: unused_field
   final TrialRepository _trialRepository;
   final PlotRepository _plotRepository;
   final TreatmentRepository _treatmentRepository;
@@ -147,11 +160,11 @@ class ExportTrialUseCase {
     'export_timestamp',
   ];
 
-  Future<TrialExportBundle> execute(String trialId) async {
+  Future<TrialExportBundle> execute({required Trial trial, required ExportFormat format}) async {
     final exportTimestamp = DateTime.now().toUtc().toIso8601String();
-    final trialPk = int.parse(trialId);
-    final trial = await _trialRepository.getTrialById(trialPk);
-    if (trial == null) throw ExportTrialException('Trial not found: $trialId');
+    final trialPk = trial.id;
+    final armAligned =
+        format == ExportFormat.armHandoff || format == ExportFormat.zipBundle;
 
     final plots = await _plotRepository.getPlotsForTrial(trialPk);
     final plotMap = {for (final p in plots) p.id: p};
@@ -181,11 +194,13 @@ class ExportTrialUseCase {
       seedingDate: seedingDate,
       firstAppDate: firstAppDate,
       exportTimestamp: exportTimestamp,
+      armAligned: armAligned,
     );
 
     final treatmentsCsv = await _buildTreatmentsCsv(
       treatments,
       exportTimestamp,
+      armAligned: armAligned,
     );
 
     final plotAssignmentsCsv = _buildPlotAssignmentsCsv(
@@ -194,25 +209,29 @@ class ExportTrialUseCase {
       assignmentByPlot: assignmentByPlot,
       trialPk: trialPk,
       exportTimestamp: exportTimestamp,
+      armAligned: armAligned,
     );
 
     final applicationsCsv = _buildApplicationsCsv(
       applications: applications,
       seedingDate: seedingDate,
       exportTimestamp: exportTimestamp,
+      armAligned: armAligned,
     );
 
-    final seedingCsv = _buildSeedingCsv(seeding, exportTimestamp);
+    final seedingCsv =
+        _buildSeedingCsv(seeding, exportTimestamp, armAligned: armAligned);
 
     final sessionsCsv = await _buildSessionsCsv(
       sessions,
       exportTimestamp,
+      armAligned: armAligned,
     );
 
     const appVersion = '1.0.0';
     final dataDictionaryCsv = _buildDataDictionary(exportTimestamp, appVersion);
 
-    return TrialExportBundle(
+    final bundle = TrialExportBundle(
       observationsCsv: observationsCsv,
       treatmentsCsv: treatmentsCsv,
       plotAssignmentsCsv: plotAssignmentsCsv,
@@ -221,6 +240,39 @@ class ExportTrialUseCase {
       sessionsCsv: sessionsCsv,
       dataDictionaryCsv: dataDictionaryCsv,
     );
+
+    if (armAligned) {
+      final photos = await _photoRepository.getPhotosForTrial(trialPk);
+      final assessmentMap = <int, export_validation.AssessmentDefinition>{};
+      for (final session in sessions) {
+        final sessionAssessments =
+            await _sessionRepository.getSessionAssessments(session.id);
+        for (final a in sessionAssessments) {
+          assessmentMap[a.id] =
+              export_validation.AssessmentDefinition(id: a.id, name: a.name);
+        }
+      }
+      final records = <RatingRecord>[];
+      for (final session in sessions) {
+        final ratings =
+            await _ratingRepository.getCurrentRatingsForSession(session.id);
+        records.addAll(ratings);
+      }
+      final validation = export_validation.ExportValidationService().validate(
+        plots: plots,
+        assignments: assignments,
+        assessments: assessmentMap.values.toList(),
+        records: records,
+        sessions: sessions,
+        photos: photos,
+      );
+      final zipFile = await _buildArmHandoffPackage(
+          bundle, trial, validation, photos);
+      await Share.shareXFiles([XFile(zipFile.path)],
+          text: '${trial.name} – ARM Import Assistant package');
+    }
+
+    return bundle;
   }
 
   /// Returns a static CSV documenting all exported columns. No queries.
@@ -518,6 +570,7 @@ class ExportTrialUseCase {
     required DateTime? seedingDate,
     required DateTime? firstAppDate,
     required String exportTimestamp,
+    bool armAligned = false,
   }) async {
     final trialPk = trial.id;
     final rows = <List<String>>[];
@@ -600,13 +653,19 @@ class ExportTrialUseCase {
         ]);
       }
     }
-    return CsvExportService.buildCsv(_observationsHeaders, rows);
+    return CsvExportService.buildCsv(
+      _observationsHeaders,
+      rows,
+      armAligned: armAligned,
+      headerMapping: armAligned ? ArmFieldMapping.observationHeaders : null,
+    );
   }
 
   Future<String> _buildTreatmentsCsv(
     List<Treatment> treatments,
-    String exportTimestamp,
-  ) async {
+    String exportTimestamp, {
+    bool armAligned = false,
+  }) async {
     final rows = <List<String>>[];
     for (final t in treatments) {
       final components =
@@ -637,7 +696,12 @@ class ExportTrialUseCase {
         }
       }
     }
-    return CsvExportService.buildCsv(_treatmentsHeaders, rows);
+    return CsvExportService.buildCsv(
+      _treatmentsHeaders,
+      rows,
+      armAligned: armAligned,
+      headerMapping: armAligned ? ArmFieldMapping.treatmentHeaders : null,
+    );
   }
 
   String _buildPlotAssignmentsCsv({
@@ -646,6 +710,7 @@ class ExportTrialUseCase {
     required Map<int, Assignment> assignmentByPlot,
     required int trialPk,
     required String exportTimestamp,
+    bool armAligned = false,
   }) {
     final rows = <List<String>>[];
     for (final plot in plots) {
@@ -672,13 +737,19 @@ class ExportTrialUseCase {
         exportTimestamp,
       ]);
     }
-    return CsvExportService.buildCsv(_plotAssignmentsHeaders, rows);
+    return CsvExportService.buildCsv(
+      _plotAssignmentsHeaders,
+      rows,
+      armAligned: armAligned,
+      headerMapping: armAligned ? ArmFieldMapping.plotHeaders : null,
+    );
   }
 
   String _buildApplicationsCsv({
     required List<TrialApplicationEvent> applications,
     DateTime? seedingDate,
     required String exportTimestamp,
+    bool armAligned = false,
   }) {
     final rows = <List<String>>[];
     for (final a in applications) {
@@ -704,12 +775,23 @@ class ExportTrialUseCase {
         exportTimestamp,
       ]);
     }
-    return CsvExportService.buildCsv(_applicationsHeaders, rows);
+    return CsvExportService.buildCsv(
+      _applicationsHeaders,
+      rows,
+      armAligned: armAligned,
+      headerMapping: armAligned ? ArmFieldMapping.applicationHeaders : null,
+    );
   }
 
-  String _buildSeedingCsv(SeedingEvent? seeding, String exportTimestamp) {
+  String _buildSeedingCsv(SeedingEvent? seeding, String exportTimestamp,
+      {bool armAligned = false}) {
     if (seeding == null) {
-      return CsvExportService.buildCsv(_seedingHeaders, []);
+      return CsvExportService.buildCsv(
+        _seedingHeaders,
+        [],
+        armAligned: armAligned,
+        headerMapping: armAligned ? ArmFieldMapping.seedingHeaders : null,
+      );
     }
     final row = [
       _date(seeding.seedingDate),
@@ -723,13 +805,19 @@ class ExportTrialUseCase {
       _cell(seeding.notes),
       exportTimestamp,
     ];
-    return CsvExportService.buildCsv(_seedingHeaders, [row]);
+    return CsvExportService.buildCsv(
+      _seedingHeaders,
+      [row],
+      armAligned: armAligned,
+      headerMapping: armAligned ? ArmFieldMapping.seedingHeaders : null,
+    );
   }
 
   Future<String> _buildSessionsCsv(
     List<Session> sessions,
-    String exportTimestamp,
-  ) async {
+    String exportTimestamp, {
+    bool armAligned = false,
+  }) async {
     final rows = <List<String>>[];
     for (final s in sessions) {
       final ratings = await _ratingRepository.getCurrentRatingsForSession(s.id);
@@ -744,7 +832,112 @@ class ExportTrialUseCase {
         exportTimestamp,
       ]);
     }
-    return CsvExportService.buildCsv(_sessionsHeaders, rows);
+    return CsvExportService.buildCsv(
+      _sessionsHeaders,
+      rows,
+      armAligned: armAligned,
+      headerMapping: armAligned ? ArmFieldMapping.sessionHeaders : null,
+    );
+  }
+
+  Future<File> _buildArmHandoffPackage(
+    TrialExportBundle bundle,
+    Trial trial,
+    export_validation.ExportValidationReport validation,
+    List<Photo> photos,
+  ) async {
+    final archive = Archive();
+    final tempDir = await getTemporaryDirectory();
+    final date = DateFormat('yyyyMMdd').format(DateTime.now());
+
+    final csvFiles = <String, String>{
+      'observations.csv': bundle.observationsCsv,
+      'treatments.csv': bundle.treatmentsCsv,
+      'plot_assignments.csv': bundle.plotAssignmentsCsv,
+      'applications.csv': bundle.applicationsCsv,
+      'seeding.csv': bundle.seedingCsv,
+      'sessions.csv': bundle.sessionsCsv,
+      'data_dictionary.csv': bundle.dataDictionaryCsv,
+    };
+    for (final entry in csvFiles.entries) {
+      final bytes = utf8.encode(entry.value);
+      archive.addFile(ArchiveFile(entry.key, bytes.length, bytes));
+    }
+
+    final mappingCsv = CsvExportService.buildArmMappingCsv();
+    final mappingBytes = utf8.encode(mappingCsv);
+    archive.addFile(
+        ArchiveFile('arm_mapping.csv', mappingBytes.length, mappingBytes));
+
+    final guideCsv = CsvExportService.buildImportGuideCsv(
+        trial.name, date, validation);
+    final guideBytes = utf8.encode(guideCsv);
+    archive.addFile(
+        ArchiveFile('import_guide.csv', guideBytes.length, guideBytes));
+
+    final validationCsv =
+        export_validation.ExportValidationService().toCsv(validation);
+    final validationBytes = utf8.encode(validationCsv);
+    archive.addFile(ArchiveFile(
+        'validation_report.csv', validationBytes.length, validationBytes));
+
+    final successfullyExported = <String>[];
+    final missingPhotos = <String>[];
+    for (var i = 0; i < photos.length; i += 10) {
+      final batch = photos.sublist(i, math.min(i + 10, photos.length));
+      for (final photo in batch) {
+        try {
+          final file = File(photo.filePath);
+          if (await file.exists()) {
+            final bytes = await file.readAsBytes();
+            final fileName = p.basename(photo.filePath);
+            archive.addFile(
+                ArchiveFile('photos/$fileName', bytes.length, bytes));
+            successfullyExported.add(fileName);
+          } else {
+            missingPhotos.add(p.basename(photo.filePath));
+          }
+        } catch (_) {
+          missingPhotos.add(p.basename(photo.filePath));
+        }
+      }
+    }
+
+    if (successfullyExported.isNotEmpty) {
+      final manifest = StringBuffer();
+      manifest.writeln(
+          'file_name,plot_id,session_id,captured_at,sequence_number');
+      var seq = 0;
+      for (final photo in photos.where(
+          (ph) => successfullyExported.contains(p.basename(ph.filePath)))) {
+        manifest.writeln([
+          p.basename(photo.filePath),
+          photo.plotPk,
+          photo.sessionId,
+          photo.createdAt.toIso8601String(),
+          seq++,
+        ].join(','));
+      }
+      final mBytes = utf8.encode(manifest.toString());
+      archive.addFile(ArchiveFile(
+          'photos/photos_manifest.csv', mBytes.length, mBytes));
+    }
+
+    if (missingPhotos.isNotEmpty) {
+      final mBytes =
+          utf8.encode('file_name\n${missingPhotos.join('\n')}');
+      archive.addFile(ArchiveFile(
+          'photos/photos_missing.csv', mBytes.length, mBytes));
+    }
+
+    final zipBytes = ZipEncoder().encode(archive);
+    if (zipBytes == null) throw ExportTrialException('ZIP encode failed');
+    final safeName =
+        trial.name.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final zipFile =
+        File('${tempDir.path}/AGQ_${safeName}_$date.zip');
+    await zipFile.writeAsBytes(zipBytes);
+    return zipFile;
   }
 }
 

@@ -12,6 +12,8 @@ import '../../core/session_resume_store.dart';
 import '../ratings/rating_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/plot_sort.dart';
+import '../../core/session_walk_order_store.dart';
+import '../sessions/arrange_plots_screen.dart';
 
 class PlotQueueScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -30,11 +32,76 @@ class PlotQueueScreen extends ConsumerStatefulWidget {
 class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   int? _repFilter;
   bool _showUnratedOnly = false;
+  WalkOrderMode _walkOrderMode = WalkOrderMode.serpentine;
+  List<int>? _customPlotIds;
 
   @override
   void initState() {
     super.initState();
     WakelockPlus.enable();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadWalkOrder());
+  }
+
+  Future<void> _loadWalkOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final store = SessionWalkOrderStore(prefs);
+    final mode = store.getMode(widget.session.id);
+    final customIds = mode == WalkOrderMode.custom ? store.getCustomOrder(widget.session.id) : null;
+    setState(() {
+      _walkOrderMode = mode;
+      _customPlotIds = customIds;
+    });
+  }
+
+  Future<void> _showWalkOrderSheet(BuildContext context) async {
+    final mode = await showModalBottomSheet<WalkOrderMode>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Walk order',
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              for (final m in WalkOrderMode.values)
+                ListTile(
+                  title: Text(SessionWalkOrderStore.labelForMode(m)),
+                  selected: _walkOrderMode == m,
+                  onTap: () => Navigator.pop(ctx, m),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (mode == null || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await SessionWalkOrderStore(prefs).setMode(widget.session.id, mode);
+    if (!mounted) return;
+    setState(() => _walkOrderMode = mode);
+    if (mode == WalkOrderMode.custom) {
+      _loadWalkOrder();
+      if (context.mounted) {
+        final saved = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ArrangePlotsScreen(
+              trial: widget.trial,
+              session: widget.session,
+            ),
+          ),
+        );
+        if (saved == true && mounted) await _loadWalkOrder();
+      }
+    }
   }
 
   @override
@@ -63,9 +130,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: GradientScreenHeader(
         title: widget.trial.name,
-        subtitle: widget.session.name,
+        subtitle: '${widget.session.name} · Walk order: ${SessionWalkOrderStore.labelForMode(_walkOrderMode)}',
         titleFontSize: 17,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.directions_walk),
+            tooltip: 'Change walk order',
+            onPressed: () => _showWalkOrderSheet(context),
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Jump to plot',
@@ -115,8 +187,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Map<int, int?> plotIdToTreatmentId,
     Set<int> flaggedIds,
   ) {
-    // Apply serpentine walking order for rating navigation
-    final plots = sortPlotsSerpentine(rawPlots);
+    // Apply session walk order (numeric, serpentine, or custom) for rating navigation
+    final plots = sortPlotsByWalkOrder(
+      rawPlots,
+      _walkOrderMode,
+      customPlotIds: _customPlotIds,
+    );
     var filtered = plots;
     if (_repFilter != null) {
       filtered = filtered.where((p) => p.rep == _repFilter).toList();
@@ -379,10 +455,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   }
 
   Future<void> _showJumpToPlotDialog(BuildContext context) async {
-    final plots = ref.read(plotsForTrialProvider(widget.trial.id)).value ?? [];
+    final rawPlots = ref.read(plotsForTrialProvider(widget.trial.id)).value ?? [];
     final assessments =
         ref.read(sessionAssessmentsProvider(widget.session.id)).value ?? [];
-    if (plots.isEmpty) {
+    if (rawPlots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No plots in this trial')),
       );
@@ -394,6 +470,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       );
       return;
     }
+    final prefs = await SharedPreferences.getInstance();
+    if (!context.mounted) return;
+    final mode = SessionWalkOrderStore(prefs).getMode(widget.session.id);
+    final plots = sortPlotsByWalkOrder(rawPlots, mode);
     final controller = TextEditingController();
     final plotId = await showDialog<String>(
       context: context,
@@ -423,7 +503,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       ),
     );
     if (plotId == null || plotId.isEmpty || !context.mounted) return;
-    final index = plots.indexWhere((p) => p.plotId == plotId);
+    final index = plots.indexWhere((p) =>
+        p.plotId == plotId || getDisplayPlotLabel(p, plots) == plotId);
     if (index < 0) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -434,7 +515,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     }
     if (!context.mounted) return;
     int? initialAssessmentIndex;
-    final prefs = await SharedPreferences.getInstance();
     final pos = SessionResumeStore(prefs).getPosition(widget.session.id);
     if (pos != null && pos.$1 == index) {
       initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
