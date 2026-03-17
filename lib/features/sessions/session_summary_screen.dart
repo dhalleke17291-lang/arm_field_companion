@@ -11,6 +11,26 @@ import '../diagnostics/edited_items_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import 'session_completeness_screen.dart';
 
+void _navigatePlotQueue(BuildContext context, Trial trial, Session session) {
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => PlotQueueScreen(trial: trial, session: session),
+    ),
+  );
+}
+
+void _navigateSessionCompleteness(
+    BuildContext context, Trial trial, Session session) {
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) =>
+          SessionCompletenessScreen(trial: trial, session: session),
+    ),
+  );
+}
+
 /// Read-only aggregate dashboard for one session (v1: metrics + navigation links).
 class SessionSummaryScreen extends ConsumerWidget {
   const SessionSummaryScreen({
@@ -148,79 +168,158 @@ class SessionSummaryScreen extends ConsumerWidget {
                       }
 
                       final total = rawPlots.length;
+                      final progressPct = total > 0
+                          ? ((100 * ratedCount) / total).round()
+                          : null;
 
                       return ListView(
                         padding: const EdgeInsets.all(
                             AppDesignTokens.spacing16),
                         children: [
-                          AppCard(
-                            padding: const EdgeInsets.all(
-                                AppDesignTokens.spacing16),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _SectionTitle('Progress'),
-                                const SizedBox(height: 10),
-                                _MetricRow('Total plots', '$total'),
-                                _MetricRow('Rated plots', '$ratedCount'),
-                                _MetricRow('Not rated plots', '$notRatedCount'),
-                              ],
-                            ),
-                          ),
-                          AppCard(
-                            padding: const EdgeInsets.all(
-                                AppDesignTokens.spacing16),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _SectionTitle('Assessment coverage'),
-                                const SizedBox(height: 10),
-                                if (sTotal == 0)
-                                  Text(
-                                    'No assessments in this session.',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
-                                  )
-                                else ...[
-                                  _MetricRow(
-                                      'Complete plots', '$completeCount'),
-                                  _MetricRow('Partial plots', '$partialCount'),
-                                  _MetricRow(
-                                      'Not started plots', '$notStartedCount'),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '$sTotal assessments per plot',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Semantics(
+                              button: true,
+                              label: 'Open Plot Queue',
+                              child: GestureDetector(
+                                onTap: () => _navigatePlotQueue(
+                                    context, trial, session),
+                                behavior: HitTestBehavior.opaque,
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _CardHeaderRow(title: 'Progress'),
+                                      const SizedBox(height: 10),
+                                      _MetricRow('Total plots', '$total'),
+                                      _MetricRow('Rated plots', '$ratedCount'),
+                                      _MetricRow(
+                                          'Not rated plots', '$notRatedCount'),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        progressPct != null
+                                            ? 'Progress: $progressPct%'
+                                            : 'Progress: —',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ],
+                                ),
+                              ),
                             ),
                           ),
-                          AppCard(
-                            padding: const EdgeInsets.all(
-                                AppDesignTokens.spacing16),
-                            margin: const EdgeInsets.only(bottom: 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _SectionTitle('Attention'),
-                                const SizedBox(height: 10),
-                                _MetricRow('Flagged plots', '$flaggedCount'),
-                                _MetricRow(
-                                    'Plots with issues', '$issuesPlotCount'),
-                                _MetricRow('Edited plots', '$editedPlotCount'),
-                              ],
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Semantics(
+                              button: true,
+                              label: 'Open Session Completeness',
+                              child: GestureDetector(
+                                onTap: () => _navigateSessionCompleteness(
+                                    context, trial, session),
+                                behavior: HitTestBehavior.opaque,
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _CardHeaderRow(
+                                          title: 'Assessment coverage'),
+                                      const SizedBox(height: 10),
+                                      if (sTotal == 0)
+                                        Text(
+                                          'No assessments in this session.',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        )
+                                      else ...[
+                                        _MetricRow('Complete plots',
+                                            '$completeCount'),
+                                        _MetricRow(
+                                            'Partial plots', '$partialCount'),
+                                        _MetricRow('Not started plots',
+                                            '$notStartedCount'),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '$sTotal assessments per plot',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Open Session Completeness for plot-by-plot coverage.',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          height: 1.35,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: Semantics(
+                              button: true,
+                              label: 'Open Plot Queue',
+                              child: GestureDetector(
+                                onTap: () => _navigatePlotQueue(
+                                    context, trial, session),
+                                behavior: HitTestBehavior.opaque,
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _CardHeaderRow(title: 'Attention'),
+                                      const SizedBox(height: 10),
+                                      _MetricRow(
+                                          'Flagged plots', '$flaggedCount'),
+                                      _MetricRow('Plots with issues',
+                                          '$issuesPlotCount'),
+                                      _MetricRow(
+                                          'Edited plots', '$editedPlotCount'),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Open Plot Queue and use filters to review flagged, issue, or edited plots.',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          height: 1.35,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                           Text(
@@ -235,18 +334,8 @@ class SessionSummaryScreen extends ConsumerWidget {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.push<void>(
-                                  context,
-                                  MaterialPageRoute<void>(
-                                    builder: (_) =>
-                                        SessionCompletenessScreen(
-                                      trial: trial,
-                                      session: session,
-                                    ),
-                                  ),
-                                );
-                              },
+                              onPressed: () => _navigateSessionCompleteness(
+                                  context, trial, session),
                               child: const Text('Open Session Completeness'),
                             ),
                           ),
@@ -254,17 +343,8 @@ class SessionSummaryScreen extends ConsumerWidget {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.push<void>(
-                                  context,
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => PlotQueueScreen(
-                                      trial: trial,
-                                      session: session,
-                                    ),
-                                  ),
-                                );
-                              },
+                              onPressed: () =>
+                                  _navigatePlotQueue(context, trial, session),
                               child: const Text('Open Plot Queue'),
                             ),
                           ),
@@ -315,6 +395,30 @@ class _SectionTitle extends StatelessWidget {
         fontSize: 15,
         color: AppDesignTokens.primaryText,
       ),
+    );
+  }
+}
+
+class _CardHeaderRow extends StatelessWidget {
+  const _CardHeaderRow({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _SectionTitle(title)),
+        Icon(
+          Icons.chevron_right,
+          size: 22,
+          color: Theme.of(context)
+              .colorScheme
+              .onSurfaceVariant
+              .withValues(alpha: 0.65),
+        ),
+      ],
     );
   }
 }
