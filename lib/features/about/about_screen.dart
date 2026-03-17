@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/app_info.dart';
+import '../../core/config/app_info.dart';
 import '../../core/providers.dart';
 import '../diagnostics/diagnostics_screen.dart';
 import '../users/user_selection_screen.dart';
@@ -12,7 +13,6 @@ import '../users/user_selection_screen.dart';
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
-  static const String appName = 'Ag-Quest Field Companion';
   static const String developerCredit = 'Developed by Parminder Singh';
 
   @override
@@ -30,7 +30,7 @@ class AboutScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                appName,
+                AppInfo.appName,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
