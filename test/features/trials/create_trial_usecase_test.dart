@@ -59,7 +59,8 @@ class MockTrialRepository implements TrialRepository {
   }
 
   @override
-  Future<void> softDeleteTrial(int trialId, {String? deletedBy}) async {}
+  Future<void> softDeleteTrial(int trialId,
+      {String? deletedBy, int? deletedByUserId}) async {}
 
   @override
   Future<List<Trial>> getDeletedTrials() async => [];
