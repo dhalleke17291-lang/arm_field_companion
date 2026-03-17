@@ -58,10 +58,20 @@ Future<List<EnrichedAuditEvent>> enrichAuditEvents(
     final t = await trialRepo.getTrialById(id);
     if (t != null) trialById[id] = t;
   }
+  for (final id in trialIds) {
+    if (trialById.containsKey(id)) continue;
+    final t = await trialRepo.getDeletedTrialById(id);
+    if (t != null) trialById[id] = t;
+  }
 
   final sessionById = <int, Session>{};
   for (final id in sessionIds) {
     final s = await sessionRepo.getSessionById(id);
+    if (s != null) sessionById[id] = s;
+  }
+  for (final id in sessionIds) {
+    if (sessionById.containsKey(id)) continue;
+    final s = await sessionRepo.getDeletedSessionById(id);
     if (s != null) sessionById[id] = s;
   }
 
@@ -73,6 +83,24 @@ Future<List<EnrichedAuditEvent>> enrichAuditEvents(
       byPk[p.id] = getDisplayPlotLabel(p, plots);
     }
     plotLabelByTrialAndPk[trialId] = byPk;
+  }
+
+  final unresolvedPlotPks = <int>{};
+  for (final e in events) {
+    if (e.trialId == null || e.plotPk == null) continue;
+    final label = plotLabelByTrialAndPk[e.trialId!]?[e.plotPk!];
+    if (label == null || label.isEmpty) {
+      unresolvedPlotPks.add(e.plotPk!);
+    }
+  }
+  for (final plotPk in unresolvedPlotPks) {
+    final plot = await plotRepo.getDeletedPlotByPk(plotPk);
+    if (plot == null) continue;
+    final label = plot.plotId.isNotEmpty
+        ? plot.plotId
+        : getDisplayPlotNumberFallback(plot);
+    plotLabelByTrialAndPk
+        .putIfAbsent(plot.trialId, () => <int, String>{})[plotPk] = label;
   }
 
   return events.map((e) {
