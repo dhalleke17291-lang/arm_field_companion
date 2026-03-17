@@ -19,6 +19,7 @@ import '../derived/derived_snapshot_provider.dart';
 import 'usecases/start_or_continue_rating_usecase.dart';
 import 'rating_order_sheet.dart';
 import 'session_completeness_screen.dart';
+import 'session_summary_screen.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -75,6 +76,21 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         subtitle: session.sessionDateLocal,
         titleFontSize: 17,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.insights_outlined, color: Colors.white),
+            tooltip: 'Session summary',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => SessionSummaryScreen(
+                    trial: trial,
+                    session: session,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.fact_check_outlined, color: Colors.white),
             tooltip: 'Session completeness',
