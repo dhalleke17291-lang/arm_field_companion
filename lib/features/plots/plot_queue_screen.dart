@@ -835,10 +835,119 @@ class _PlotQueueTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final displayNum = getDisplayPlotLabel(plot, allPlotsForTrial);
     final titleText = 'Plot $displayNum · $treatmentLabel';
+    final hasStatusRow =
+        isFlagged || hasIssues || hasEdited || isRated;
+    final rep = plot.rep;
+
+    Widget? statusSubtitle;
+    if (hasStatusRow || rep != null) {
+      final statusLabels = <String>[
+        if (isFlagged) 'Flagged',
+        if (hasIssues) 'Issues',
+        if (hasEdited) 'Edited',
+        if (isRated) 'Rated',
+      ];
+      statusSubtitle = Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasStatusRow)
+              Semantics(
+                label: statusLabels.join(', '),
+                child: Wrap(
+                  spacing: 5,
+                  runSpacing: 3,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (isFlagged)
+                      const Icon(Icons.flag, color: Colors.amber, size: 18),
+                    if (hasIssues)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius:
+                              BorderRadius.circular(AppDesignTokens.radiusChip),
+                          border: Border.all(color: Colors.orange.shade300),
+                        ),
+                        child: Text(
+                          'Issues',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange.shade800,
+                          ),
+                        ),
+                      ),
+                    if (hasEdited)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.shade50,
+                          borderRadius:
+                              BorderRadius.circular(AppDesignTokens.radiusChip),
+                          border: Border.all(color: Colors.blueGrey.shade200),
+                        ),
+                        child: Text(
+                          'Edited',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blueGrey.shade800,
+                          ),
+                        ),
+                      ),
+                    if (isRated)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.shade300),
+                        ),
+                        child: Text(
+                          'Rated',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green.shade800,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            if (rep != null)
+              Padding(
+                padding: EdgeInsets.only(top: hasStatusRow ? 3 : 0),
+                child: Text(
+                  'Rep $rep',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    height: 1.2,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.72),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        dense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         leading: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -854,72 +963,13 @@ class _PlotQueueTile extends ConsumerWidget {
             ),
           ),
         ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(titleText,
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-            ),
-            if (isFlagged)
-              const Padding(
-                padding: EdgeInsets.only(right: 4),
-                child: Icon(Icons.flag, color: Colors.amber, size: 20),
-              ),
-            if (hasIssues)
-              Container(
-                margin: const EdgeInsets.only(right: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
-                  border: Border.all(color: Colors.orange.shade300),
-                ),
-                child: Text(
-                  'Issues',
-                  style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange.shade800),
-                ),
-              ),
-            if (hasEdited)
-              Container(
-                margin: const EdgeInsets.only(right: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.blueGrey.shade50,
-                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
-                  border: Border.all(color: Colors.blueGrey.shade200),
-                ),
-                child: Text(
-                  'Edited',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blueGrey.shade800,
-                  ),
-                ),
-              ),
-            if (isRated)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.shade300),
-                ),
-                child: Text(
-                  'Rated',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green.shade800,
-                  ),
-                ),
-              ),
-          ],
+        title: Text(
+          titleText,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
         ),
-        subtitle: plot.rep != null ? Text('Rep ${plot.rep}') : null,
+        subtitle: statusSubtitle,
         trailing: isRated && plotRatings.isNotEmpty
             ? Row(
                 mainAxisSize: MainAxisSize.min,
