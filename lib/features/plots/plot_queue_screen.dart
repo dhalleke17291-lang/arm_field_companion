@@ -14,6 +14,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
 import '../sessions/arrange_plots_screen.dart';
+import '../sessions/session_export_trust_dialog.dart';
 
 /// Shared [RatingScreen] push from Plot Queue (index + [SessionResumeStore] logic).
 Future<void> _pushRatingScreenFromPlotQueue({
@@ -448,6 +449,13 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                           icon: const Icon(Icons.share),
                           label: const Text('Export & Share CSV'),
                           onPressed: () async {
+                            final proceed = await confirmSessionExportTrust(
+                              context: context,
+                              ref: ref,
+                              trialId: widget.trial.id,
+                              sessionId: widget.session.id,
+                            );
+                            if (!proceed || !mounted) return;
                             try {
                               final usecase =
                                   ref.read(exportSessionCsvUsecaseProvider);

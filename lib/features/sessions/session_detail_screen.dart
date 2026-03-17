@@ -20,6 +20,7 @@ import 'usecases/start_or_continue_rating_usecase.dart';
 import 'rating_order_sheet.dart';
 import 'session_completeness_screen.dart';
 import 'session_summary_screen.dart';
+import 'session_export_trust_dialog.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -109,9 +110,20 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.download, color: Colors.white),
             tooltip: 'Export',
-            onSelected: (value) {
-              if (value == 'csv') _exportCsv(context, ref);
-              if (value == 'arm_xml') _exportArmXml(context, ref);
+            onSelected: (value) async {
+              final ok = await confirmSessionExportTrust(
+                context: context,
+                ref: ref,
+                trialId: trial.id,
+                sessionId: session.id,
+              );
+              if (!context.mounted) return;
+              if (!ok) return;
+              if (value == 'csv') {
+                await _exportCsv(context, ref);
+              } else if (value == 'arm_xml') {
+                await _exportArmXml(context, ref);
+              }
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'csv', child: Text('Export to CSV')),
