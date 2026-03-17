@@ -32,8 +32,12 @@ class PlotQueueScreen extends ConsumerStatefulWidget {
 class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   int? _repFilter;
   bool _showUnratedOnly = false;
+  bool _showIssuesOnly = false;
+  bool _showEditedOnly = false;
+  bool _showFlaggedOnly = false;
   WalkOrderMode _walkOrderMode = WalkOrderMode.serpentine;
   List<int>? _customPlotIds;
+  final ScrollController _plotQueueScrollController = ScrollController();
 
   @override
   void initState() {
@@ -106,6 +110,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
 
   @override
   void dispose() {
+    _plotQueueScrollController.dispose();
     WakelockPlus.disable();
     super.dispose();
   }
@@ -200,6 +205,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Set<int> flaggedIds,
     Set<int> plotPksWithCorrections,
   ) {
+    final ratingsByPlot = <int, List<RatingRecord>>{};
+    for (final r in ratings) {
+      ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
+    }
+
     // Apply session walk order (numeric, serpentine, or custom) for rating navigation
     final plots = sortPlotsByWalkOrder(
       rawPlots,
@@ -212,6 +222,23 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     }
     if (_showUnratedOnly) {
       filtered = filtered.where((p) => !ratedPks.contains(p.id)).toList();
+    }
+    if (_showIssuesOnly) {
+      filtered = filtered.where((p) {
+        final pr = ratingsByPlot[p.id] ?? [];
+        return pr.any((r) => r.resultStatus != 'RECORDED');
+      }).toList();
+    }
+    if (_showEditedOnly) {
+      filtered = filtered.where((p) {
+        final pr = ratingsByPlot[p.id] ?? [];
+        return pr.any((r) => r.amended || (r.previousId != null)) ||
+            plotPksWithCorrections.contains(p.id);
+      }).toList();
+    }
+    if (_showFlaggedOnly) {
+      filtered =
+          filtered.where((p) => flaggedIds.contains(p.id)).toList();
     }
 
     final totalPlots = plots.length;
@@ -265,6 +292,29 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                   child: const Text('Unrated Only',
                       style: TextStyle(color: Colors.white, fontSize: 11)),
                 ),
+              if (_showIssuesOnly ||
+                  _showEditedOnly ||
+                  _showFlaggedOnly) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Filtered',
+                    style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSecondaryContainer,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -308,14 +358,18 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                       Text(
                           plots.isEmpty
                               ? 'No plots in this trial'
-                              : 'All plots rated!',
+                              : (_emptyQueueIsAllRatedUnratedOnly()
+                                  ? 'All plots rated!'
+                                  : 'No plots match filters'),
                           style: const TextStyle(
                               fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Text(
                         plots.isEmpty
                             ? 'Go to the Plots tab to import plots first.'
-                            : 'You can export and share this session now.',
+                            : (_emptyQueueIsAllRatedUnratedOnly()
+                                ? 'You can export and share this session now.'
+                                : 'Try changing or clearing filters in the filter menu.'),
                         style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurfaceVariant),
                         textAlign: TextAlign.center,
@@ -411,12 +465,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ],
                   ),
                 )
-              : _buildGroupedList(
+              : _buildLazyGroupedQueueList(
                   context,
                   filtered,
                   assessments,
                   ratedPks,
-                  ratings,
+                  ratingsByPlot,
                   treatmentById,
                   plotIdToTreatmentId,
                   flaggedIds,
@@ -428,41 +482,60 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     );
   }
 
-  Widget _buildGroupedList(
+  List<_PlotQueueListItem> _flattenGroupedQueueItems(List<Plot> filteredPlots) {
+    final groups = <int?, List<Plot>>{};
+    for (final plot in filteredPlots) {
+      groups.putIfAbsent(plot.rep, () => []).add(plot);
+    }
+    final sortedReps = groups.keys.toList()
+      ..sort((a, b) => (a ?? 999).compareTo(b ?? 999));
+    final items = <_PlotQueueListItem>[];
+    for (final rep in sortedReps) {
+      items.add(_PlotQueueListItem.header(
+          rep != null ? 'Rep $rep' : 'No Rep'));
+      for (final plot in groups[rep]!) {
+        items.add(_PlotQueueListItem.plot(plot));
+      }
+    }
+    return items;
+  }
+
+  Widget _buildLazyGroupedQueueList(
     BuildContext context,
-    List<Plot> plots,
+    List<Plot> filteredPlots,
     List<Assessment> assessments,
     Set<int> ratedPks,
-    List<RatingRecord> ratings,
+    Map<int, List<RatingRecord>> ratingsByPlot,
     Map<int, Treatment> treatmentById,
     Map<int, int?> plotIdToTreatmentId,
     Set<int> flaggedIds,
     Set<int> plotPksWithCorrections, {
     required List<Plot> allPlotsForTrial,
   }) {
-    final groups = <int?, List<Plot>>{};
-    for (final plot in plots) {
-      groups.putIfAbsent(plot.rep, () => []).add(plot);
-    }
-    final sortedReps = groups.keys.toList()
-      ..sort((a, b) => (a ?? 999).compareTo(b ?? 999));
-
-    final items = <Widget>[];
-    for (final rep in sortedReps) {
-      items.add(Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Text(
-          rep != null ? 'Rep $rep' : 'No Rep',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-      ));
-      for (final plot in groups[rep]!) {
-        final plotRatings = ratings.where((r) => r.plotPk == plot.id).toList();
+    final entries = _flattenGroupedQueueItems(filteredPlots);
+    return ListView.builder(
+      controller: _plotQueueScrollController,
+      padding: EdgeInsets.zero,
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final item = entries[index];
+        if (item.isHeader) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Text(
+              item.headerTitle!,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          );
+        }
+        final plot = item.plot!;
+        final plotRatings = ratingsByPlot[plot.id] ?? [];
         final hasEdited = plotRatings.any(
                 (r) => r.amended || (r.previousId != null)) ||
             plotPksWithCorrections.contains(plot.id);
-        items.add(_PlotQueueTile(
+        return _PlotQueueTile(
           plot: plot,
           allPlotsForTrial: allPlotsForTrial,
           treatmentLabel: getTreatmentDisplayLabel(plot, treatmentById,
@@ -475,10 +548,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           isFlagged: flaggedIds.contains(plot.id),
           hasIssues: plotRatings.any((r) => r.resultStatus != 'RECORDED'),
           hasEdited: hasEdited,
-        ));
-      }
-    }
-    return ListView(children: items);
+        );
+      },
+    );
   }
 
   Future<void> _showJumpToPlotDialog(BuildContext context) async {
@@ -497,10 +569,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       );
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
     if (!context.mounted) return;
-    final mode = SessionWalkOrderStore(prefs).getMode(widget.session.id);
-    final plots = sortPlotsByWalkOrder(rawPlots, mode);
+    final plots = sortPlotsByWalkOrder(
+      rawPlots,
+      _walkOrderMode,
+      customPlotIds: _customPlotIds,
+    );
     final controller = TextEditingController();
     final plotId = await showDialog<String>(
       context: context,
@@ -541,6 +615,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       return;
     }
     if (!context.mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    if (!context.mounted) return;
     int? initialAssessmentIndex;
     final pos = SessionResumeStore(prefs).getPosition(widget.session.id);
     if (pos != null && pos.$1 == index) {
@@ -563,6 +639,15 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     );
   }
 
+  /// Empty list + unrated-only on full trial (no other filters) → "all rated" UX.
+  bool _emptyQueueIsAllRatedUnratedOnly() {
+    return _showUnratedOnly &&
+        _repFilter == null &&
+        !_showIssuesOnly &&
+        !_showEditedOnly &&
+        !_showFlaggedOnly;
+  }
+
   void _showFilterSheet(BuildContext context) {
     final plotsAsync = ref.read(plotsForTrialProvider(widget.trial.id));
     final plots = plotsAsync.value ?? [];
@@ -573,10 +658,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       context: context,
       builder: (context) => Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             const Text('Filter Plots',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
@@ -585,6 +671,30 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               value: _showUnratedOnly,
               onChanged: (val) {
                 setState(() => _showUnratedOnly = val);
+                Navigator.pop(context);
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Show Issues Only'),
+              value: _showIssuesOnly,
+              onChanged: (val) {
+                setState(() => _showIssuesOnly = val);
+                Navigator.pop(context);
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Show Edited Only'),
+              value: _showEditedOnly,
+              onChanged: (val) {
+                setState(() => _showEditedOnly = val);
+                Navigator.pop(context);
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Show Flagged Only'),
+              value: _showFlaggedOnly,
+              onChanged: (val) {
+                setState(() => _showFlaggedOnly = val);
                 Navigator.pop(context);
               },
             ),
@@ -615,10 +725,22 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               ),
             ],
           ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// Flattened row for lazy queue list: rep header or plot tile.
+class _PlotQueueListItem {
+  const _PlotQueueListItem.header(this.headerTitle) : plot = null;
+  const _PlotQueueListItem.plot(this.plot) : headerTitle = null;
+
+  final String? headerTitle;
+  final Plot? plot;
+
+  bool get isHeader => plot == null;
 }
 
 class _PlotQueueTile extends ConsumerWidget {
