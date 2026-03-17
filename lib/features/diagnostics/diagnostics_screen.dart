@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/diagnostics/reset_app_data.dart';
 import 'integrity_check_result.dart';
 import 'audit_log_screen.dart';
+import 'edited_items_screen.dart';
 
 class DiagnosticsScreen extends ConsumerStatefulWidget {
   const DiagnosticsScreen({super.key});
@@ -288,6 +289,46 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                     },
                     icon: const Icon(Icons.history_outlined),
                     label: const Text('Open audit log'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          AppCard(
+            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Edited Items',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Review amended and corrected data',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const EditedItemsScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_note_outlined),
+                    label: const Text('Open edited items'),
                   ),
                 ),
               ],
