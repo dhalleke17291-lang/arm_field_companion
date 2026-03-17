@@ -276,6 +276,17 @@ final trialSetupProvider =
   return ref.watch(trialRepositoryProvider).getTrialById(trialId);
 });
 
+/// Trial name for Recovery session/plot rows: active trial, else soft-deleted, else fallback.
+final recoveryTrialDisplayNameProvider =
+    FutureProvider.autoDispose.family<String, int>((ref, trialId) async {
+  final repo = ref.watch(trialRepositoryProvider);
+  final active = await repo.getTrialById(trialId);
+  if (active != null) return active.name;
+  final deleted = await repo.getDeletedTrialById(trialId);
+  if (deleted != null) return deleted.name;
+  return 'Trial #$trialId';
+});
+
 final plotsForTrialProvider =
     StreamProvider.family<List<Plot>, int>((ref, trialId) {
   return ref.watch(plotRepositoryProvider).watchPlotsForTrial(trialId);

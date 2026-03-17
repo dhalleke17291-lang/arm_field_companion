@@ -241,13 +241,17 @@ class _DeletedSessionsSection extends StatelessWidget {
   }
 }
 
-class _SessionRecoveryRow extends StatelessWidget {
+class _SessionRecoveryRow extends ConsumerWidget {
   const _SessionRecoveryRow({required this.session});
 
   final Session session;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trialLabelAsync =
+        ref.watch(recoveryTrialDisplayNameProvider(session.trialId));
+    final trialLabel = trialLabelAsync.valueOrNull ?? 'Trial #${session.trialId}';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -261,7 +265,7 @@ class _SessionRecoveryRow extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '${session.sessionDateLocal} · Trial #${session.trialId}',
+          '$trialLabel • ${session.sessionDateLocal}',
           style: const TextStyle(
             fontSize: 13,
             color: AppDesignTokens.secondaryText,
@@ -343,17 +347,20 @@ class _DeletedPlotsSection extends StatelessWidget {
   }
 }
 
-class _PlotRecoveryRow extends StatelessWidget {
+class _PlotRecoveryRow extends ConsumerWidget {
   const _PlotRecoveryRow({required this.plot});
 
   final Plot plot;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trialLabelAsync =
+        ref.watch(recoveryTrialDisplayNameProvider(plot.trialId));
+    final trialLabel = trialLabelAsync.valueOrNull ?? 'Trial #${plot.trialId}';
     final repPart = plot.rep != null ? 'Rep ${plot.rep}' : null;
     final secondary = [
       if (repPart != null) repPart,
-      'Trial #${plot.trialId}',
+      trialLabel,
     ].join(' · ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
