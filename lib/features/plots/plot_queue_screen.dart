@@ -436,6 +436,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       ));
       for (final plot in groups[rep]!) {
         final plotRatings = ratings.where((r) => r.plotPk == plot.id).toList();
+        final hasEdited = plotRatings.any(
+            (r) => r.amended || (r.previousId != null));
         items.add(_PlotQueueTile(
           plot: plot,
           allPlotsForTrial: allPlotsForTrial,
@@ -448,6 +450,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           session: widget.session,
           isFlagged: flaggedIds.contains(plot.id),
           hasIssues: plotRatings.any((r) => r.resultStatus != 'RECORDED'),
+          hasEdited: hasEdited,
         ));
       }
     }
@@ -605,6 +608,7 @@ class _PlotQueueTile extends ConsumerWidget {
   final Session session;
   final bool isFlagged;
   final bool hasIssues;
+  final bool hasEdited;
 
   const _PlotQueueTile({
     required this.plot,
@@ -617,6 +621,7 @@ class _PlotQueueTile extends ConsumerWidget {
     required this.session,
     required this.isFlagged,
     required this.hasIssues,
+    required this.hasEdited,
   });
 
   @override
@@ -668,6 +673,24 @@ class _PlotQueueTile extends ConsumerWidget {
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: Colors.orange.shade800),
+                ),
+              ),
+            if (hasEdited)
+              Container(
+                margin: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blueGrey.shade50,
+                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+                  border: Border.all(color: Colors.blueGrey.shade200),
+                ),
+                child: Text(
+                  'Edited',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blueGrey.shade800,
+                  ),
                 ),
               ),
             if (isRated)

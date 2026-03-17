@@ -1578,6 +1578,8 @@ class SessionsView extends ConsumerWidget {
         .toSet();
     final hasIssues = issuePlotIds.isNotEmpty;
     final needsAttention = hasFlags || hasIssues;
+    final hasEdited = ratings.any(
+        (r) => r.amended || (r.previousId != null));
 
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -1632,7 +1634,20 @@ class SessionsView extends ConsumerWidget {
                 fontSize: 15,
                 color: AppDesignTokens.primaryText)),
         subtitle: Text(_formatSessionTimes(session)),
-        trailing: _buildSessionTrailing(isOpen, needsAttention),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasEdited) ...[
+              const _SessionPill(
+                label: 'Edited',
+                backgroundColor: AppDesignTokens.sectionHeaderBg,
+                foregroundColor: AppDesignTokens.secondaryText,
+              ),
+              const SizedBox(width: AppDesignTokens.spacing8),
+            ],
+            _buildSessionTrailing(isOpen, needsAttention),
+          ],
+        ),
       ),
     );
   }
