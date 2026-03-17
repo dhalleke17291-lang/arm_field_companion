@@ -69,6 +69,11 @@ class MockTrialRepository implements TrialRepository {
   Future<Trial?> getDeletedTrialById(int id) async => null;
 
   @override
+  Future<TrialRestoreResult> restoreTrial(int trialId,
+          {String? restoredBy, int? restoredByUserId}) async =>
+      TrialRestoreResult.ok();
+
+  @override
   Stream<List<Trial>> watchAllTrials() => Stream.value(_trials);
 }
 

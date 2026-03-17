@@ -231,6 +231,83 @@ class SessionRepository {
           ..where((s) => s.id.equals(id) & s.isDeleted.equals(true)))
         .getSingleOrNull();
   }
+
+  /// Restores a soft-deleted session and its soft-deleted ratings for that session.
+  Future<SessionRestoreResult> restoreSession(int sessionId,
+      {String? restoredBy, int? restoredByUserId}) async {
+    return _db.transaction(() async {
+      final session = await getDeletedSessionById(sessionId);
+      if (session == null) {
+        return SessionRestoreResult.failure(
+          'This session was not found or is no longer deleted.',
+        );
+      }
+
+      final trial = await (_db.select(_db.trials)
+            ..where((t) => t.id.equals(session.trialId)))
+          .getSingleOrNull();
+      if (trial == null) {
+        return SessionRestoreResult.failure(
+          'Trial not found. This session cannot be restored.',
+        );
+      }
+      if (trial.isDeleted) {
+        return SessionRestoreResult.failure(
+          'Restore the trial from Recovery before restoring this session.',
+        );
+      }
+
+      final restoredRatingsCount = await (_db.update(_db.ratingRecords)
+            ..where((r) =>
+                r.sessionId.equals(sessionId) & r.isDeleted.equals(true)))
+          .write(
+        const RatingRecordsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
+          .write(
+        const SessionsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(session.trialId),
+              sessionId: Value(sessionId),
+              eventType: 'SESSION_RESTORED',
+              description: 'Session restored from Recovery',
+              performedBy: Value(restoredBy),
+              performedByUserId: Value(restoredByUserId),
+              metadata: Value(jsonEncode({
+                'restored_ratings_count': restoredRatingsCount,
+              })),
+            ),
+          );
+
+      return SessionRestoreResult.ok();
+    });
+  }
+}
+
+/// Result of [SessionRepository.restoreSession].
+class SessionRestoreResult {
+  const SessionRestoreResult._({required this.success, this.errorMessage});
+
+  final bool success;
+  final String? errorMessage;
+
+  factory SessionRestoreResult.ok() =>
+      const SessionRestoreResult._(success: true);
+
+  factory SessionRestoreResult.failure(String message) =>
+      SessionRestoreResult._(success: false, errorMessage: message);
 }
 
 class OpenSessionExistsException implements Exception {

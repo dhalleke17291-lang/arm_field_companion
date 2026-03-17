@@ -88,6 +88,11 @@ class _FakeSessionRepository implements SessionRepository {
 
   @override
   Future<Session?> getDeletedSessionById(int id) async => null;
+
+  @override
+  Future<SessionRestoreResult> restoreSession(int sessionId,
+          {String? restoredBy, int? restoredByUserId}) async =>
+      SessionRestoreResult.failure('Not implemented');
 }
 
 class _FakeTrialRepository implements TrialRepository {
@@ -143,6 +148,11 @@ class _FakeTrialRepository implements TrialRepository {
 
   @override
   Future<Trial?> getDeletedTrialById(int id) async => null;
+
+  @override
+  Future<TrialRestoreResult> restoreTrial(int trialId,
+          {String? restoredBy, int? restoredByUserId}) async =>
+      TrialRestoreResult.failure('Not implemented');
 }
 
 class _FakePlotRepository implements PlotRepository {
