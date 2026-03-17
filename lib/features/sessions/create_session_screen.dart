@@ -383,6 +383,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     setState(() => _isCreating = false);
 
     if (result.success) {
+      ref.invalidate(trialProvider(widget.trial.id));
       Navigator.pop(context, result.session);
     } else {
       if (!context.mounted) return;

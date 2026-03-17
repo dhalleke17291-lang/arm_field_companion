@@ -1,10 +1,14 @@
 import '../session_repository.dart';
 import '../../../core/database/app_database.dart';
-
 class CreateSessionUseCase {
   final SessionRepository _sessionRepository;
+  /// When a new open session is created, promotes trial Ready → Active (lifecycle consistency).
+  final Future<void> Function(int trialId) _promoteTrialToActiveIfReady;
 
-  CreateSessionUseCase(this._sessionRepository);
+  CreateSessionUseCase(
+    this._sessionRepository, {
+    required Future<void> Function(int trialId) promoteTrialToActiveIfReady,
+  }) : _promoteTrialToActiveIfReady = promoteTrialToActiveIfReady;
 
   Future<CreateSessionResult> execute(CreateSessionInput input) async {
     try {
@@ -27,6 +31,12 @@ class CreateSessionUseCase {
         raterName: input.raterName,
         createdByUserId: input.createdByUserId,
       );
+
+      try {
+        await _promoteTrialToActiveIfReady(input.trialId);
+      } catch (_) {
+        // Session exists; status promotion is best-effort
+      }
 
       return CreateSessionResult.success(session);
     } on OpenSessionExistsException catch (e) {

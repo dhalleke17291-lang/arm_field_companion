@@ -9,6 +9,7 @@ import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
+import 'trial_state.dart';
 import '../features/trials/trial_repository.dart';
 import '../features/plots/plot_repository.dart';
 import '../features/plots/usecases/update_plot_assignment_usecase.dart';
@@ -233,7 +234,17 @@ final latestCorrectionForRatingProvider =
 });
 
 final createSessionUseCaseProvider = Provider<CreateSessionUseCase>((ref) {
-  return CreateSessionUseCase(ref.watch(sessionRepositoryProvider));
+  final sessionRepo = ref.watch(sessionRepositoryProvider);
+  final trialRepo = ref.watch(trialRepositoryProvider);
+  return CreateSessionUseCase(
+    sessionRepo,
+    promoteTrialToActiveIfReady: (trialId) async {
+      final t = await trialRepo.getTrialById(trialId);
+      if (t != null && t.status == kTrialStatusReady) {
+        await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+      }
+    },
+  );
 });
 
 final closeSessionUseCaseProvider = Provider<CloseSessionUseCase>((ref) {

@@ -1,4 +1,7 @@
 /// Trial lifecycle states (Constitution §9).
+/// Stored on [Trials.status] (`trials.status` TEXT). Values are lowercase strings
+/// defined below — use these constants only; do not invent alternate spellings.
+///
 /// Draft → Ready → Active → Closed → Archived.
 ///
 /// Keep transitions strict: only the defined next steps (e.g. draft→ready→active).

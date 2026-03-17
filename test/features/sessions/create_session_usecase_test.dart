@@ -90,7 +90,10 @@ void main() {
 
   setUp(() {
     mockRepo = MockSessionRepository();
-    useCase = CreateSessionUseCase(mockRepo);
+    useCase = CreateSessionUseCase(
+      mockRepo,
+      promoteTrialToActiveIfReady: (_) async {},
+    );
   });
 
   group('CreateSessionUseCase — Invariants', () {
@@ -167,6 +170,23 @@ void main() {
 
       expect(result1.success, true);
       expect(result2.success, true);
+    });
+
+    test('calls promoteTrialToActiveIfReady with trialId on success', () async {
+      int? promotedId;
+      final uc = CreateSessionUseCase(
+        mockRepo,
+        promoteTrialToActiveIfReady: (id) async {
+          promotedId = id;
+        },
+      );
+      await uc.execute(const CreateSessionInput(
+        trialId: 42,
+        name: 'S',
+        sessionDateLocal: '2026-03-04',
+        assessmentIds: [1],
+      ));
+      expect(promotedId, 42);
     });
   });
 }
