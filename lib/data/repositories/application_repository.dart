@@ -23,9 +23,12 @@ class ApplicationRepository {
         .get();
   }
 
-  Future<void> createApplication(TrialApplicationEventsCompanion companion) {
+  Future<String> createApplication(TrialApplicationEventsCompanion companion) {
     final full = _withNewFields(companion);
-    return _db.into(_db.trialApplicationEvents).insert(full);
+    return _db
+        .into(_db.trialApplicationEvents)
+        .insertReturning(full)
+        .then((row) => row.id);
   }
 
   Future<void> updateApplication(
@@ -96,8 +99,11 @@ class ApplicationRepository {
     );
   }
 
-  Future<void> deleteApplication(String id) {
-    return (_db.delete(_db.trialApplicationEvents)
+  Future<void> deleteApplication(String id) async {
+    await (_db.delete(_db.trialApplicationProducts)
+          ..where((p) => p.trialApplicationEventId.equals(id)))
+        .go();
+    await (_db.delete(_db.trialApplicationEvents)
           ..where((e) => e.id.equals(id)))
         .go();
   }

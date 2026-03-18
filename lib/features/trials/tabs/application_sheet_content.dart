@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/plot_display.dart';
 import '../../../core/providers.dart';
@@ -52,9 +55,10 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
   late DateTime _date;
   late String? _timeStr;
   late int? _treatmentId;
-  late final TextEditingController _productController;
-  late final TextEditingController _rateController;
-  late String? _rateUnit;
+  late List<TextEditingController> _productControllers;
+  late List<TextEditingController> _rateControllers;
+  late List<String> _rateUnits;
+  bool _junctionLoadScheduled = false;
   late String? _applicationMethod;
 
   late final TextEditingController _nozzleSpacingController;
@@ -111,10 +115,14 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
     _date = e?.applicationDate.toLocal() ?? DateTime.now();
     _timeStr = e?.applicationTime;
     _treatmentId = e?.treatmentId;
-    _productController = TextEditingController(text: e?.productName ?? '');
-    _rateController = TextEditingController(
-        text: e?.rate != null ? e!.rate.toString() : '');
-    _rateUnit = e?.rateUnit ?? widget.rateUnits.first;
+    _productControllers = [
+      TextEditingController(text: e?.productName ?? ''),
+    ];
+    _rateControllers = [
+      TextEditingController(
+          text: e?.rate != null ? e!.rate.toString() : ''),
+    ];
+    _rateUnits = [e?.rateUnit ?? widget.rateUnits.first];
     _applicationMethod = e?.applicationMethod;
 
     _nozzleType = e?.nozzleType;
@@ -192,10 +200,54 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
         _trim(e?.notes) != null;
   }
 
+  void _disposeProductRows() {
+    for (final c in _productControllers) {
+      c.dispose();
+    }
+    for (final c in _rateControllers) {
+      c.dispose();
+    }
+    _productControllers = [];
+    _rateControllers = [];
+    _rateUnits = [];
+  }
+
+  Future<void> _loadJunctionProducts() async {
+    final id = widget.existing?.id;
+    if (id == null) return;
+    final list = await ref
+        .read(applicationProductRepositoryProvider)
+        .getProductsForEvent(id);
+    if (!mounted || list.isEmpty) return;
+    setState(() {
+      _disposeProductRows();
+      _productControllers = list
+          .map((p) => TextEditingController(text: p.productName))
+          .toList();
+      _rateControllers = list
+          .map((p) => TextEditingController(
+              text: p.rate != null ? p.rate.toString() : ''))
+          .toList();
+      _rateUnits = list
+          .map((p) => (p.rateUnit != null && p.rateUnit!.trim().isNotEmpty)
+              ? p.rateUnit!.trim()
+              : widget.rateUnits.first)
+          .toList();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.existing != null && !_junctionLoadScheduled) {
+      _junctionLoadScheduled = true;
+      unawaited(_loadJunctionProducts());
+    }
+  }
+
   @override
   void dispose() {
-    _productController.dispose();
-    _rateController.dispose();
+    _disposeProductRows();
     _nozzleSpacingController.dispose();
     _operatingPressureController.dispose();
     _groundSpeedController.dispose();
@@ -287,17 +339,43 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
     return n;
   }
 
+  String? _firstProductName() => _productControllers.isNotEmpty
+      ? _trim(_productControllers.first.text)
+      : null;
+
+  double? _firstRate() => _rateControllers.isNotEmpty
+      ? _parseDouble(_rateControllers.first.text)
+      : null;
+
+  String? _firstRateUnit() => _rateUnits.isNotEmpty
+      ? _rateUnits.first
+      : widget.rateUnits.first;
+
   Future<void> _save() async {
     if (_saving) return;
     setState(() => _saving = true);
     try {
       final repo = ref.read(applicationRepositoryProvider);
+      final productRepo = ref.read(applicationProductRepositoryProvider);
       final companion = _buildCompanion();
+      final String eventId;
       if (widget.existing == null) {
-        await repo.createApplication(companion);
+        eventId = await repo.createApplication(companion);
       } else {
         await repo.updateApplication(widget.existing!.id, companion);
+        eventId = widget.existing!.id;
       }
+      final rows = <({String productName, double? rate, String? rateUnit})>[];
+      for (var i = 0; i < _productControllers.length; i++) {
+        final name = _productControllers[i].text.trim();
+        if (name.isEmpty) continue;
+        rows.add((
+          productName: name,
+          rate: _parseDouble(_rateControllers[i].text),
+          rateUnit: i < _rateUnits.length ? _rateUnits[i] : null,
+        ));
+      }
+      await productRepo.saveProductsForEvent(eventId, rows);
       if (mounted) widget.onSaved();
     } catch (e) {
       if (mounted) {
@@ -320,9 +398,9 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
         applicationDate: _date,
         applicationTime: drift.Value(_timeStr),
         treatmentId: drift.Value(_treatmentId),
-        productName: drift.Value(_trim(_productController.text)),
-        rate: drift.Value(_parseDouble(_rateController.text)),
-        rateUnit: drift.Value(_rateUnit),
+        productName: drift.Value(_firstProductName()),
+        rate: drift.Value(_firstRate()),
+        rateUnit: drift.Value(_firstRateUnit()),
         applicationMethod: drift.Value(_applicationMethod),
         nozzleType: drift.Value(_nozzleType),
         nozzleSpacingCm: drift.Value(_parseDouble(_nozzleSpacingController.text)),
@@ -361,9 +439,9 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       applicationDate: drift.Value(_date),
       applicationTime: drift.Value(_timeStr),
       treatmentId: drift.Value(_treatmentId),
-      productName: drift.Value(_trim(_productController.text)),
-      rate: drift.Value(_parseDouble(_rateController.text)),
-      rateUnit: drift.Value(_rateUnit),
+      productName: drift.Value(_firstProductName()),
+      rate: drift.Value(_firstRate()),
+      rateUnit: drift.Value(_firstRateUnit()),
       applicationMethod: drift.Value(_applicationMethod),
       nozzleType: drift.Value(_nozzleType),
       nozzleSpacingCm: drift.Value(_parseDouble(_nozzleSpacingController.text)),
@@ -445,39 +523,117 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
             ],
             onChanged: (v) => setState(() => _treatmentId = v),
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _productController,
-            decoration: FormStyles.inputDecoration(
-                labelText: 'Product name'),
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _rateController,
-            decoration: FormStyles.inputDecoration(
-              labelText: 'Rate',
-              suffixIcon: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _rateUnit ?? widget.rateUnits.first,
-                  isDense: true,
-                  icon: const Icon(Icons.arrow_drop_down, size: 20),
-                  padding: const EdgeInsets.only(right: 8),
-                  items: widget.rateUnits
-                      .map((u) => DropdownMenuItem<String>(
-                          value: u,
-                          child: Text(u,
-                              style: const TextStyle(fontSize: 13))))
-                      .toList(),
-                  onChanged: (v) => setState(() => _rateUnit = v),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('PRODUCTS', style: FormStyles.sectionLabelStyle),
+              TextButton.icon(
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add Product'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppDesignTokens.primary,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
+                onPressed: () => setState(() {
+                  _productControllers.add(TextEditingController());
+                  _rateControllers.add(TextEditingController());
+                  _rateUnits.add(widget.rateUnits.first);
+                }),
               ),
-            ),
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            onChanged: (_) => setState(() {}),
+            ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
+          ...List.generate(_productControllers.length, (i) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (i > 0) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                          child: Divider(color: Colors.grey.shade200)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          'Product ${i + 1}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                          child: Divider(color: Colors.grey.shade200)),
+                      IconButton(
+                        icon: Icon(Icons.remove_circle_outline,
+                            color: Colors.grey.shade400, size: 18),
+                        onPressed: () {
+                          if (_productControllers.length <= 1) return;
+                          setState(() {
+                            _productControllers[i].dispose();
+                            _rateControllers[i].dispose();
+                            _productControllers.removeAt(i);
+                            _rateControllers.removeAt(i);
+                            _rateUnits.removeAt(i);
+                          });
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                            minWidth: 32, minHeight: 32),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                TextField(
+                  controller: _productControllers[i],
+                  decoration: FormStyles.inputDecoration(
+                    hintText: 'Product name',
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _rateControllers[i],
+                  keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true),
+                  decoration: FormStyles.inputDecoration(
+                    hintText: 'Rate',
+                    suffixIcon: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: i < _rateUnits.length
+                            ? _rateUnits[i]
+                            : widget.rateUnits.first,
+                        isDense: true,
+                        icon: const Icon(Icons.arrow_drop_down, size: 18),
+                        padding: const EdgeInsets.only(right: 8),
+                        items: widget.rateUnits
+                            .map((u) => DropdownMenuItem<String>(
+                                  value: u,
+                                  child: Text(u,
+                                      style: const TextStyle(fontSize: 13)),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() {
+                              while (_rateUnits.length <= i) {
+                                _rateUnits.add(widget.rateUnits.first);
+                              }
+                              _rateUnits[i] = v;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 10),
+              ],
+            );
+          }),
           DropdownButtonFormField<String?>(
             key: ValueKey<String?>(_applicationMethod),
             initialValue: _applicationMethod,

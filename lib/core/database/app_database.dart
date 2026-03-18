@@ -541,6 +541,18 @@ class TrialApplicationEvents extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Tank-mix products per trial application event (trial_application_events.id is TEXT).
+class TrialApplicationProducts extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get trialApplicationEventId =>
+      text().references(TrialApplicationEvents, #id,
+          onDelete: KeyAction.cascade)();
+  TextColumn get productName => text()();
+  RealColumn get rate => real().nullable()();
+  TextColumn get rateUnit => text().nullable()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -569,6 +581,7 @@ class TrialApplicationEvents extends Table {
   ImportEvents,
   SeedingEvents,
   TrialApplicationEvents,
+  TrialApplicationProducts,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -577,7 +590,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -837,6 +850,16 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 28) {
             await m.addColumn(plots, plots.isGuardRow);
+          }
+          if (from < 29) {
+            await m.createTable(trialApplicationProducts);
+            await customStatement('''
+INSERT INTO trial_application_products (
+  trial_application_event_id, product_name, rate, rate_unit, sort_order)
+SELECT id, product_name, rate, rate_unit, 0
+FROM trial_application_events
+WHERE product_name IS NOT NULL AND LENGTH(TRIM(product_name)) > 0
+''');
           }
           await _createIndexes();
         },

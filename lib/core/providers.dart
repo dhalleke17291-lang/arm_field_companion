@@ -3,6 +3,7 @@ import "../data/repositories/assignment_repository.dart";
 import "../data/repositories/assessment_definition_repository.dart";
 import "../data/repositories/trial_assessment_repository.dart";
 import "../data/repositories/application_repository.dart";
+import "../data/repositories/application_product_repository.dart";
 import "../data/repositories/seeding_repository.dart";
 import "../domain/models/plot_context.dart";
 import "../domain/usecases/resolve_plot_treatment.dart";
@@ -508,6 +509,8 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     plotRepository: ref.watch(plotRepositoryProvider),
     treatmentRepository: ref.watch(treatmentRepositoryProvider),
     applicationRepository: ref.watch(applicationRepositoryProvider),
+    applicationProductRepository:
+        ref.watch(applicationProductRepositoryProvider),
     seedingRepository: ref.watch(seedingRepositoryProvider),
     sessionRepository: ref.watch(sessionRepositoryProvider),
     ratingRepository: ref.watch(ratingRepositoryProvider),
@@ -701,6 +704,20 @@ final plotContextProvider =
 
 final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) {
   return ApplicationRepository(ref.watch(databaseProvider));
+});
+
+final applicationProductRepositoryProvider =
+    Provider<ApplicationProductRepository>((ref) {
+  return ApplicationProductRepository(ref.watch(databaseProvider));
+});
+
+/// Products (tank mix) for a trial application event; empty stream until event exists.
+final trialApplicationProductsForEventProvider =
+    StreamProvider.autoDispose.family<List<TrialApplicationProduct>, String>(
+        (ref, eventId) {
+  return ref
+      .watch(applicationProductRepositoryProvider)
+      .watchProductsForEvent(eventId);
 });
 
 final seedingRepositoryProvider = Provider<SeedingRepository>((ref) {

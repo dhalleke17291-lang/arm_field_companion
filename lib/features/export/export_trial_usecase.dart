@@ -18,6 +18,7 @@ import '../sessions/session_repository.dart';
 import '../ratings/rating_repository.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../data/repositories/application_repository.dart';
+import '../../data/repositories/application_product_repository.dart';
 import '../../data/repositories/seeding_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
 import '../photos/photo_repository.dart';
@@ -31,6 +32,7 @@ class ExportTrialUseCase {
     required PlotRepository plotRepository,
     required TreatmentRepository treatmentRepository,
     required ApplicationRepository applicationRepository,
+    required ApplicationProductRepository applicationProductRepository,
     required SeedingRepository seedingRepository,
     required SessionRepository sessionRepository,
     required RatingRepository ratingRepository,
@@ -40,6 +42,7 @@ class ExportTrialUseCase {
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
         _applicationRepository = applicationRepository,
+        _applicationProductRepository = applicationProductRepository,
         _seedingRepository = seedingRepository,
         _sessionRepository = sessionRepository,
         _ratingRepository = ratingRepository,
@@ -52,6 +55,7 @@ class ExportTrialUseCase {
   final PlotRepository _plotRepository;
   final TreatmentRepository _treatmentRepository;
   final ApplicationRepository _applicationRepository;
+  final ApplicationProductRepository _applicationProductRepository;
   final SeedingRepository _seedingRepository;
   final SessionRepository _sessionRepository;
   final RatingRepository _ratingRepository;
@@ -242,8 +246,14 @@ class ExportTrialUseCase {
       armAligned: armAligned,
     );
 
-    final applicationsCsv = _buildApplicationsCsv(
+    final productsByEventId = <String, List<TrialApplicationProduct>>{};
+    for (final a in applications) {
+      productsByEventId[a.id] =
+          await _applicationProductRepository.getProductsForEvent(a.id);
+    }
+    final applicationsCsv = await _buildApplicationsCsv(
       applications: applications,
+      productsByEventId: productsByEventId,
       seedingDate: seedingDate,
       exportTimestamp: exportTimestamp,
       armAligned: armAligned,
@@ -955,23 +965,20 @@ class ExportTrialUseCase {
     );
   }
 
-  String _buildApplicationsCsv({
+  Future<String> _buildApplicationsCsv({
     required List<TrialApplicationEvent> applications,
+    required Map<String, List<TrialApplicationProduct>> productsByEventId,
     DateTime? seedingDate,
     required String exportTimestamp,
     bool armAligned = false,
-  }) {
+  }) async {
     final rows = <List<String>>[];
     for (final a in applications) {
       int? daysAfterSeeding;
       if (seedingDate != null) {
         daysAfterSeeding = a.applicationDate.difference(seedingDate).inDays;
       }
-      rows.add([
-        _date(a.applicationDate),
-        _cell(a.productName),
-        _cell(a.rate),
-        _cell(a.rateUnit),
+      final tail = <String>[
         _cell(a.waterVolume),
         _cell(a.growthStageCode),
         _cell(a.operatorName),
@@ -983,7 +990,27 @@ class ExportTrialUseCase {
         _cell(a.notes),
         daysAfterSeeding != null ? _cell(daysAfterSeeding) : '',
         exportTimestamp,
-      ]);
+      ];
+      final prods = productsByEventId[a.id] ?? [];
+      if (prods.isEmpty) {
+        rows.add([
+          _date(a.applicationDate),
+          _cell(a.productName),
+          _cell(a.rate),
+          _cell(a.rateUnit),
+          ...tail,
+        ]);
+      } else {
+        for (final p in prods) {
+          rows.add([
+            _date(a.applicationDate),
+            _cell(p.productName),
+            _cell(p.rate),
+            _cell(p.rateUnit),
+            ...tail,
+          ]);
+        }
+      }
     }
     return CsvExportService.buildCsv(
       _applicationsHeaders,

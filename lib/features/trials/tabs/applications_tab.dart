@@ -94,11 +94,29 @@ class ApplicationsTab extends ConsumerWidget {
         : null;
     final dateTimeLabel =
         timeStr != null ? '$dateStr $timeStr' : dateStr;
-    final productLabel =
-        e.productName?.trim().isNotEmpty == true ? e.productName! : null;
-    final rateUnitLabel = (e.rate != null && e.rateUnit != null)
-        ? '${e.rate} ${e.rateUnit}'
-        : null;
+    final productsAsync =
+        ref.watch(trialApplicationProductsForEventProvider(e.id));
+    final prods = productsAsync.valueOrNull;
+    final String primaryLine;
+    final String? rateLine;
+    if (prods == null || prods.isEmpty) {
+      primaryLine = e.productName?.trim().isNotEmpty == true
+          ? e.productName!.trim()
+          : 'No product specified';
+      rateLine = (e.rate != null && e.rateUnit != null)
+          ? '${e.rate} ${e.rateUnit}'
+          : null;
+    } else if (prods.length == 1) {
+      final p = prods.first;
+      primaryLine = p.productName;
+      rateLine = (p.rate != null && p.rateUnit != null)
+          ? '${p.rate} ${p.rateUnit}'
+          : (p.rate != null ? '${p.rate}' : null);
+    } else {
+      primaryLine =
+          '${prods.first.productName} + ${prods.length - 1} more';
+      rateLine = '${prods.length} products';
+    }
     final methodLabel = e.applicationMethod?.trim().isNotEmpty == true
         ? e.applicationMethod!
         : null;
@@ -122,17 +140,17 @@ class ApplicationsTab extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              productLabel ?? 'No product specified',
+              primaryLine,
               style: TextStyle(
                 fontWeight: FontWeight.w400,
-                color: productLabel != null
+                color: primaryLine != 'No product specified'
                     ? theme.colorScheme.onSurface
                     : theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            if (rateUnitLabel != null)
+            if (rateLine != null)
               Text(
-                rateUnitLabel,
+                rateLine,
                 style: TextStyle(
                     fontSize: 12,
                     color: theme.colorScheme.onSurfaceVariant),

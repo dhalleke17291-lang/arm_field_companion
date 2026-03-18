@@ -19472,6 +19472,365 @@ class TrialApplicationEventsCompanion
   }
 }
 
+class $TrialApplicationProductsTable extends TrialApplicationProducts
+    with TableInfo<$TrialApplicationProductsTable, TrialApplicationProduct> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrialApplicationProductsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialApplicationEventIdMeta =
+      const VerificationMeta('trialApplicationEventId');
+  @override
+  late final GeneratedColumn<String> trialApplicationEventId =
+      GeneratedColumn<String>('trial_application_event_id', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: true,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'REFERENCES trial_application_events (id) ON DELETE CASCADE'));
+  static const VerificationMeta _productNameMeta =
+      const VerificationMeta('productName');
+  @override
+  late final GeneratedColumn<String> productName = GeneratedColumn<String>(
+      'product_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _rateMeta = const VerificationMeta('rate');
+  @override
+  late final GeneratedColumn<double> rate = GeneratedColumn<double>(
+      'rate', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _rateUnitMeta =
+      const VerificationMeta('rateUnit');
+  @override
+  late final GeneratedColumn<String> rateUnit = GeneratedColumn<String>(
+      'rate_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sortOrderMeta =
+      const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+      'sort_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, trialApplicationEventId, productName, rate, rateUnit, sortOrder];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trial_application_products';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TrialApplicationProduct> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_application_event_id')) {
+      context.handle(
+          _trialApplicationEventIdMeta,
+          trialApplicationEventId.isAcceptableOrUnknown(
+              data['trial_application_event_id']!,
+              _trialApplicationEventIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialApplicationEventIdMeta);
+    }
+    if (data.containsKey('product_name')) {
+      context.handle(
+          _productNameMeta,
+          productName.isAcceptableOrUnknown(
+              data['product_name']!, _productNameMeta));
+    } else if (isInserting) {
+      context.missing(_productNameMeta);
+    }
+    if (data.containsKey('rate')) {
+      context.handle(
+          _rateMeta, rate.isAcceptableOrUnknown(data['rate']!, _rateMeta));
+    }
+    if (data.containsKey('rate_unit')) {
+      context.handle(_rateUnitMeta,
+          rateUnit.isAcceptableOrUnknown(data['rate_unit']!, _rateUnitMeta));
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(_sortOrderMeta,
+          sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TrialApplicationProduct map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrialApplicationProduct(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialApplicationEventId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}trial_application_event_id'])!,
+      productName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}product_name'])!,
+      rate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}rate']),
+      rateUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rate_unit']),
+      sortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
+    );
+  }
+
+  @override
+  $TrialApplicationProductsTable createAlias(String alias) {
+    return $TrialApplicationProductsTable(attachedDatabase, alias);
+  }
+}
+
+class TrialApplicationProduct extends DataClass
+    implements Insertable<TrialApplicationProduct> {
+  final int id;
+  final String trialApplicationEventId;
+  final String productName;
+  final double? rate;
+  final String? rateUnit;
+  final int sortOrder;
+  const TrialApplicationProduct(
+      {required this.id,
+      required this.trialApplicationEventId,
+      required this.productName,
+      this.rate,
+      this.rateUnit,
+      required this.sortOrder});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_application_event_id'] =
+        Variable<String>(trialApplicationEventId);
+    map['product_name'] = Variable<String>(productName);
+    if (!nullToAbsent || rate != null) {
+      map['rate'] = Variable<double>(rate);
+    }
+    if (!nullToAbsent || rateUnit != null) {
+      map['rate_unit'] = Variable<String>(rateUnit);
+    }
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  TrialApplicationProductsCompanion toCompanion(bool nullToAbsent) {
+    return TrialApplicationProductsCompanion(
+      id: Value(id),
+      trialApplicationEventId: Value(trialApplicationEventId),
+      productName: Value(productName),
+      rate: rate == null && nullToAbsent ? const Value.absent() : Value(rate),
+      rateUnit: rateUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rateUnit),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory TrialApplicationProduct.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrialApplicationProduct(
+      id: serializer.fromJson<int>(json['id']),
+      trialApplicationEventId:
+          serializer.fromJson<String>(json['trialApplicationEventId']),
+      productName: serializer.fromJson<String>(json['productName']),
+      rate: serializer.fromJson<double?>(json['rate']),
+      rateUnit: serializer.fromJson<String?>(json['rateUnit']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialApplicationEventId':
+          serializer.toJson<String>(trialApplicationEventId),
+      'productName': serializer.toJson<String>(productName),
+      'rate': serializer.toJson<double?>(rate),
+      'rateUnit': serializer.toJson<String?>(rateUnit),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  TrialApplicationProduct copyWith(
+          {int? id,
+          String? trialApplicationEventId,
+          String? productName,
+          Value<double?> rate = const Value.absent(),
+          Value<String?> rateUnit = const Value.absent(),
+          int? sortOrder}) =>
+      TrialApplicationProduct(
+        id: id ?? this.id,
+        trialApplicationEventId:
+            trialApplicationEventId ?? this.trialApplicationEventId,
+        productName: productName ?? this.productName,
+        rate: rate.present ? rate.value : this.rate,
+        rateUnit: rateUnit.present ? rateUnit.value : this.rateUnit,
+        sortOrder: sortOrder ?? this.sortOrder,
+      );
+  TrialApplicationProduct copyWithCompanion(
+      TrialApplicationProductsCompanion data) {
+    return TrialApplicationProduct(
+      id: data.id.present ? data.id.value : this.id,
+      trialApplicationEventId: data.trialApplicationEventId.present
+          ? data.trialApplicationEventId.value
+          : this.trialApplicationEventId,
+      productName:
+          data.productName.present ? data.productName.value : this.productName,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      rateUnit: data.rateUnit.present ? data.rateUnit.value : this.rateUnit,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialApplicationProduct(')
+          ..write('id: $id, ')
+          ..write('trialApplicationEventId: $trialApplicationEventId, ')
+          ..write('productName: $productName, ')
+          ..write('rate: $rate, ')
+          ..write('rateUnit: $rateUnit, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, trialApplicationEventId, productName, rate, rateUnit, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrialApplicationProduct &&
+          other.id == this.id &&
+          other.trialApplicationEventId == this.trialApplicationEventId &&
+          other.productName == this.productName &&
+          other.rate == this.rate &&
+          other.rateUnit == this.rateUnit &&
+          other.sortOrder == this.sortOrder);
+}
+
+class TrialApplicationProductsCompanion
+    extends UpdateCompanion<TrialApplicationProduct> {
+  final Value<int> id;
+  final Value<String> trialApplicationEventId;
+  final Value<String> productName;
+  final Value<double?> rate;
+  final Value<String?> rateUnit;
+  final Value<int> sortOrder;
+  const TrialApplicationProductsCompanion({
+    this.id = const Value.absent(),
+    this.trialApplicationEventId = const Value.absent(),
+    this.productName = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.rateUnit = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  });
+  TrialApplicationProductsCompanion.insert({
+    this.id = const Value.absent(),
+    required String trialApplicationEventId,
+    required String productName,
+    this.rate = const Value.absent(),
+    this.rateUnit = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  })  : trialApplicationEventId = Value(trialApplicationEventId),
+        productName = Value(productName);
+  static Insertable<TrialApplicationProduct> custom({
+    Expression<int>? id,
+    Expression<String>? trialApplicationEventId,
+    Expression<String>? productName,
+    Expression<double>? rate,
+    Expression<String>? rateUnit,
+    Expression<int>? sortOrder,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialApplicationEventId != null)
+        'trial_application_event_id': trialApplicationEventId,
+      if (productName != null) 'product_name': productName,
+      if (rate != null) 'rate': rate,
+      if (rateUnit != null) 'rate_unit': rateUnit,
+      if (sortOrder != null) 'sort_order': sortOrder,
+    });
+  }
+
+  TrialApplicationProductsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? trialApplicationEventId,
+      Value<String>? productName,
+      Value<double?>? rate,
+      Value<String?>? rateUnit,
+      Value<int>? sortOrder}) {
+    return TrialApplicationProductsCompanion(
+      id: id ?? this.id,
+      trialApplicationEventId:
+          trialApplicationEventId ?? this.trialApplicationEventId,
+      productName: productName ?? this.productName,
+      rate: rate ?? this.rate,
+      rateUnit: rateUnit ?? this.rateUnit,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialApplicationEventId.present) {
+      map['trial_application_event_id'] =
+          Variable<String>(trialApplicationEventId.value);
+    }
+    if (productName.present) {
+      map['product_name'] = Variable<String>(productName.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<double>(rate.value);
+    }
+    if (rateUnit.present) {
+      map['rate_unit'] = Variable<String>(rateUnit.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialApplicationProductsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialApplicationEventId: $trialApplicationEventId, ')
+          ..write('productName: $productName, ')
+          ..write('rate: $rate, ')
+          ..write('rateUnit: $rateUnit, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -19513,6 +19872,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SeedingEventsTable seedingEvents = $SeedingEventsTable(this);
   late final $TrialApplicationEventsTable trialApplicationEvents =
       $TrialApplicationEventsTable(this);
+  late final $TrialApplicationProductsTable trialApplicationProducts =
+      $TrialApplicationProductsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -19544,8 +19905,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         auditEvents,
         importEvents,
         seedingEvents,
-        trialApplicationEvents
+        trialApplicationEvents,
+        trialApplicationProducts
       ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
+        [
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trial_application_events',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('trial_application_products',
+                  kind: UpdateKind.delete),
+            ],
+          ),
+        ],
+      );
 }
 
 typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
@@ -28538,6 +28913,24 @@ class $$TrialApplicationEventsTableFilterComposer
                 $state.db.treatments, joinBuilder, parentComposers)));
     return composer;
   }
+
+  ComposableFilter trialApplicationProductsRefs(
+      ComposableFilter Function($$TrialApplicationProductsTableFilterComposer f)
+          f) {
+    final $$TrialApplicationProductsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialApplicationProducts,
+            getReferencedColumn: (t) => t.trialApplicationEventId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationProductsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationProducts,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialApplicationEventsTableOrderingComposer
@@ -28753,6 +29146,167 @@ class $$TrialApplicationEventsTableOrderingComposer
   }
 }
 
+typedef $$TrialApplicationProductsTableCreateCompanionBuilder
+    = TrialApplicationProductsCompanion Function({
+  Value<int> id,
+  required String trialApplicationEventId,
+  required String productName,
+  Value<double?> rate,
+  Value<String?> rateUnit,
+  Value<int> sortOrder,
+});
+typedef $$TrialApplicationProductsTableUpdateCompanionBuilder
+    = TrialApplicationProductsCompanion Function({
+  Value<int> id,
+  Value<String> trialApplicationEventId,
+  Value<String> productName,
+  Value<double?> rate,
+  Value<String?> rateUnit,
+  Value<int> sortOrder,
+});
+
+class $$TrialApplicationProductsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TrialApplicationProductsTable,
+    TrialApplicationProduct,
+    $$TrialApplicationProductsTableFilterComposer,
+    $$TrialApplicationProductsTableOrderingComposer,
+    $$TrialApplicationProductsTableCreateCompanionBuilder,
+    $$TrialApplicationProductsTableUpdateCompanionBuilder> {
+  $$TrialApplicationProductsTableTableManager(
+      _$AppDatabase db, $TrialApplicationProductsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$TrialApplicationProductsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$TrialApplicationProductsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> trialApplicationEventId = const Value.absent(),
+            Value<String> productName = const Value.absent(),
+            Value<double?> rate = const Value.absent(),
+            Value<String?> rateUnit = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+          }) =>
+              TrialApplicationProductsCompanion(
+            id: id,
+            trialApplicationEventId: trialApplicationEventId,
+            productName: productName,
+            rate: rate,
+            rateUnit: rateUnit,
+            sortOrder: sortOrder,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String trialApplicationEventId,
+            required String productName,
+            Value<double?> rate = const Value.absent(),
+            Value<String?> rateUnit = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+          }) =>
+              TrialApplicationProductsCompanion.insert(
+            id: id,
+            trialApplicationEventId: trialApplicationEventId,
+            productName: productName,
+            rate: rate,
+            rateUnit: rateUnit,
+            sortOrder: sortOrder,
+          ),
+        ));
+}
+
+class $$TrialApplicationProductsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $TrialApplicationProductsTable> {
+  $$TrialApplicationProductsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get productName => $state.composableBuilder(
+      column: $state.table.productName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get rate => $state.composableBuilder(
+      column: $state.table.rate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get rateUnit => $state.composableBuilder(
+      column: $state.table.rateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get sortOrder => $state.composableBuilder(
+      column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialApplicationEventsTableFilterComposer get trialApplicationEventId {
+    final $$TrialApplicationEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialApplicationEventId,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+}
+
+class $$TrialApplicationProductsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $TrialApplicationProductsTable> {
+  $$TrialApplicationProductsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get productName => $state.composableBuilder(
+      column: $state.table.productName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get rate => $state.composableBuilder(
+      column: $state.table.rate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get rateUnit => $state.composableBuilder(
+      column: $state.table.rateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get sortOrder => $state.composableBuilder(
+      column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialApplicationEventsTableOrderingComposer get trialApplicationEventId {
+    final $$TrialApplicationEventsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialApplicationEventId,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableOrderingComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -28812,4 +29366,7 @@ class $AppDatabaseManager {
   $$TrialApplicationEventsTableTableManager get trialApplicationEvents =>
       $$TrialApplicationEventsTableTableManager(
           _db, _db.trialApplicationEvents);
+  $$TrialApplicationProductsTableTableManager get trialApplicationProducts =>
+      $$TrialApplicationProductsTableTableManager(
+          _db, _db.trialApplicationProducts);
 }
