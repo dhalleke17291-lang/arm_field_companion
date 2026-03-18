@@ -15,7 +15,8 @@ import 'package:share_plus/share_plus.dart';
 import 'arrange_plots_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import '../ratings/rating_screen.dart';
-import '../derived/derived_snapshot_provider.dart';
+import '../derived/derived_snapshot_provider.dart'
+    show derivedSnapshotForSessionProvider;
 import 'usecases/start_or_continue_rating_usecase.dart';
 import 'rating_order_sheet.dart';
 import 'session_completeness_screen.dart';
@@ -53,6 +54,71 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     if (!mounted) return;
     setState(() => _walkOrderMode =
         SessionWalkOrderStore(prefs).getMode(widget.session.id));
+  }
+
+  Future<void> _confirmAndSoftDeleteSession(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete session'),
+        content: const Text(
+          'This session moves to Recovery. Ratings in this session move to Recovery too. '
+          'The trial and its plots are unchanged. You can restore this session later from Recovery.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete session'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      final userId = await ref.read(currentUserIdProvider.future);
+      await ref.read(sessionRepositoryProvider).softDeleteSession(
+            widget.session.id,
+            deletedBy: user?.displayName,
+            deletedByUserId: userId,
+          );
+      if (!context.mounted) return;
+      final trialId = widget.trial.id;
+      final sessionId = widget.session.id;
+      ref.invalidate(sessionsForTrialProvider(trialId));
+      ref.invalidate(deletedSessionsProvider);
+      ref.invalidate(openSessionProvider(trialId));
+      ref.invalidate(sessionRatingsProvider(sessionId));
+      ref.invalidate(sessionAssessmentsProvider(sessionId));
+      ref.invalidate(ratedPlotPksProvider(sessionId));
+      ref.invalidate(derivedSnapshotForSessionProvider(sessionId));
+      ref.invalidate(lastSessionContextProvider);
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Session moved to Recovery')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Could not delete session'),
+          content: SelectableText('$e'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -130,6 +196,21 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   value: 'csv', child: Text('Session Data (CSV)')),
               const PopupMenuItem(
                   value: 'arm_xml', child: Text('Session (ARM XML)')),
+            ],
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            tooltip: 'More',
+            onSelected: (value) {
+              if (value == 'delete_session') {
+                _confirmAndSoftDeleteSession(context);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'delete_session',
+                child: Text('Delete session'),
+              ),
             ],
           ),
         ],
