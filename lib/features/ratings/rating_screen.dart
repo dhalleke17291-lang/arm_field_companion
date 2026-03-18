@@ -71,6 +71,8 @@ class RatingScreen extends ConsumerStatefulWidget {
   /// Plot Queue filter-aware next/prev only; resume still uses full [allPlots] indices.
   final List<int>? filteredPlotIds;
   final bool isFilteredMode;
+  /// Short label from Plot Queue when a single filter is active (e.g. "Unrated"); null → generic chip.
+  final String? navigationModeLabel;
 
   const RatingScreen({
     super.key,
@@ -83,6 +85,7 @@ class RatingScreen extends ConsumerStatefulWidget {
     this.initialAssessmentIndex,
     this.filteredPlotIds,
     this.isFilteredMode = false,
+    this.navigationModeLabel,
   });
 
   @override
@@ -895,6 +898,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final tertiaryLine = 'Session ${widget.session.id}';
     final progressText =
         '${widget.currentPlotIndex + 1} of ${widget.allPlots.length}';
+    final showFilteredChip = widget.isFilteredMode &&
+        widget.filteredPlotIds != null &&
+        widget.filteredPlotIds!.isNotEmpty;
+    final filteredChipText = showFilteredChip
+        ? (widget.navigationModeLabel != null &&
+                widget.navigationModeLabel!.trim().isNotEmpty
+            ? '${widget.navigationModeLabel!.trim()} mode • ${widget.filteredPlotIds!.length} plots'
+            : 'Filtered mode • ${widget.filteredPlotIds!.length} plots')
+        : '';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(
@@ -1005,6 +1017,34 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
             ],
           ),
+          if (showFilteredChip) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.2),
+                ),
+              ),
+              child: Text(
+                filteredChipText,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.15,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -2730,20 +2770,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         if (!context.mounted) return;
         if (_effectiveIsLastPlotForNavigation) {
           if (_isAtEndOfFilteredSequence) {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('End of filtered list.'),
-                action: SnackBarAction(
-                  label: 'Plot Queue',
-                  onPressed: () {
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                ),
-              ),
-            );
+            _showEndOfFilteredListDialog(context);
           } else {
             _showSessionCompleteDialog(context);
           }
@@ -2883,6 +2910,58 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  void _showEndOfFilteredListDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('End of Filtered List'),
+        content: const Text(
+          'You\'ve reached the last plot in this filter.',
+          style: TextStyle(fontSize: 14, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('Plot Queue'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _continueFullWalkFromFiltered(context);
+            },
+            child: const Text('Continue Full Walk'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _continueFullWalkFromFiltered(BuildContext context) {
+    if (!context.mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => RatingScreen(
+          trial: widget.trial,
+          session: widget.session,
+          plot: widget.plot,
+          assessments: widget.assessments,
+          allPlots: widget.allPlots,
+          currentPlotIndex: widget.currentPlotIndex,
+          initialAssessmentIndex: _assessmentIndex,
+          filteredPlotIds: null,
+          isFilteredMode: false,
+          navigationModeLabel: null,
+        ),
+      ),
+    );
+  }
+
   /// True when current plot is the last entry in [filteredPlotIds] (filter-aware walk).
   bool get _isAtEndOfFilteredSequence {
     final ids = widget.filteredPlotIds;
@@ -2981,6 +3060,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           initialAssessmentIndex: null,
           filteredPlotIds: widget.filteredPlotIds,
           isFilteredMode: widget.isFilteredMode,
+          navigationModeLabel: widget.navigationModeLabel,
         ),
       ),
     );

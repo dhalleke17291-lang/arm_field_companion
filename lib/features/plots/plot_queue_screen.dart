@@ -21,6 +21,9 @@ typedef _PlotQueueOpenRating = Future<void> Function(
   Plot plot,
   List<Plot> walkPlots,
   List<Assessment> assessments,
+  List<int>? filteredPlotIds,
+  bool isFilteredMode,
+  String? navigationModeLabel,
 );
 
 /// Optional one-time seed for plot queue filters (e.g. deep link from Session Summary).
@@ -160,6 +163,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Plot plot,
     List<Plot> walkPlots,
     List<Assessment> assessments,
+    List<int>? filteredPlotIds,
+    bool isFilteredMode,
+    String? navigationModeLabel,
   ) async {
     final idx = walkPlots.indexWhere((p) => p.id == plot.id);
     final currentPlotIndex = idx < 0 ? 0 : idx;
@@ -183,6 +189,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           allPlots: walkPlots,
           currentPlotIndex: currentPlotIndex,
           initialAssessmentIndex: initialAssessmentIndex,
+          filteredPlotIds: filteredPlotIds,
+          isFilteredMode: isFilteredMode,
+          navigationModeLabel: navigationModeLabel,
         ),
       ),
     );
@@ -459,6 +468,13 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       plotPksWithCorrections,
     );
     _scheduleScrollToPlotPkOnOpen(filtered);
+    final filterNavActive =
+        _anyPlotFiltersActive() && filtered.isNotEmpty;
+    final filteredPlotIdsForRating = filterNavActive
+        ? filtered.map((p) => p.id).toList()
+        : null;
+    final navigationModeLabelForRating =
+        filterNavActive ? _singleNavigationModeLabel() : null;
 
     final totalPlots = plots.length;
     final ratedCount = ratedPks.length;
@@ -771,8 +787,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                   flaggedIds,
                   plotPksWithCorrections,
                   allPlotsForTrial: plots,
-                  onOpenRating: (plot, walkPlots, asmt) =>
-                      _openRatingFromQueue(context, plot, walkPlots, asmt),
+                  filteredPlotIdsForRating: filteredPlotIdsForRating,
+                  isFilteredModeForRating: filterNavActive,
+                  navigationModeLabelForRating: navigationModeLabelForRating,
+                  onOpenRating: (plot, walkPlots, asmt, fIds, fMode, navLabel) =>
+                      _openRatingFromQueue(context, plot, walkPlots, asmt,
+                          fIds, fMode, navLabel),
                   highlightPlotPk: _highlightPlotPk,
                   rowKeyForPlot: _keyForPlotRow,
                 ),
@@ -810,6 +830,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Set<int> flaggedIds,
     Set<int> plotPksWithCorrections, {
     required List<Plot> allPlotsForTrial,
+    required List<int>? filteredPlotIdsForRating,
+    required bool isFilteredModeForRating,
+    required String? navigationModeLabelForRating,
     required _PlotQueueOpenRating onOpenRating,
     required int? highlightPlotPk,
     required GlobalKey Function(int plotPk) rowKeyForPlot,
@@ -845,12 +868,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             editRecencyLine = 'Edited ${formatEditRecencyCompact(ts)}';
           }
         }
+        final displayNum = getDisplayPlotLabel(plot, allPlotsForTrial);
+        final isRated = ratedPks.contains(plot.id);
         return _PlotQueueTile(
           plot: plot,
           allPlotsForTrial: allPlotsForTrial,
           treatmentLabel: getTreatmentDisplayLabel(plot, treatmentById,
               treatmentIdOverride: plotIdToTreatmentId[plot.id]),
-          isRated: ratedPks.contains(plot.id),
+          isRated: isRated,
           plotRatings: plotRatings,
           assessments: assessments,
           trial: widget.trial,
@@ -860,6 +885,27 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           hasEdited: hasEdited,
           editRecencyLine: editRecencyLine,
           onOpenRating: onOpenRating,
+          filteredPlotIdsForRating: filteredPlotIdsForRating,
+          isFilteredModeForRating: isFilteredModeForRating,
+          navigationModeLabelForRating: navigationModeLabelForRating,
+          onShowRatedSummary: isRated && plotRatings.isNotEmpty
+              ? () => _showRatingSummarySheet(
+                    context,
+                    plot,
+                    plotRatings,
+                    assessments,
+                    widget.trial,
+                    widget.session,
+                    displayNum,
+                    openRatingFromQueue: () => onOpenRating(
+                        plot,
+                        allPlotsForTrial,
+                        assessments,
+                        filteredPlotIdsForRating,
+                        isFilteredModeForRating,
+                        navigationModeLabelForRating),
+                  )
+              : null,
           highlightRow: plot.id == highlightPlotPk,
           rowKey: rowKeyForPlot(plot.id),
         );
@@ -934,6 +980,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       plots[index],
       plots,
       assessments,
+      null,
+      false,
+      null,
     );
   }
 
@@ -943,6 +992,36 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         _showIssuesOnly ||
         _showEditedOnly ||
         _showFlaggedOnly;
+  }
+
+  /// Single clear filter name for RatingScreen chip; null → generic "Filtered mode".
+  String? _singleNavigationModeLabel() {
+    final repOnly = _repFilter != null &&
+        !_showUnratedOnly &&
+        !_showIssuesOnly &&
+        !_showEditedOnly &&
+        !_showFlaggedOnly;
+    if (repOnly) {
+      return 'Rep $_repFilter';
+    }
+    final flags = <String>[];
+    if (_showUnratedOnly) flags.add('unrated');
+    if (_showIssuesOnly) flags.add('issues');
+    if (_showEditedOnly) flags.add('edited');
+    if (_showFlaggedOnly) flags.add('flagged');
+    if (flags.length != 1) return null;
+    switch (flags.single) {
+      case 'unrated':
+        return 'Unrated';
+      case 'issues':
+        return 'Issues';
+      case 'edited':
+        return 'Edited';
+      case 'flagged':
+        return 'Flagged';
+      default:
+        return null;
+    }
   }
 
   void _clearAllPlotFilters() {
@@ -1050,6 +1129,132 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       ),
     );
   }
+
+  void _showRatingSummarySheet(
+    BuildContext context,
+    Plot plot,
+    List<RatingRecord> plotRatings,
+    List<Assessment> assessments,
+    Trial trial,
+    Session session,
+    String displayNum, {
+    required Future<void> Function() openRatingFromQueue,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Plot $displayNum',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                if (plot.rep != null) ...[
+                  const SizedBox(width: 12),
+                  Text('Rep ${plot.rep}',
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface)),
+                ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Text(
+              'Values in this session',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            ...plotRatings.map((r) {
+              Assessment? assessment;
+              for (final a in assessments) {
+                if (a.id == r.assessmentId) {
+                  assessment = a;
+                  break;
+                }
+              }
+              final name = assessment?.name ?? 'Assessment ${r.assessmentId}';
+              final value = r.resultStatus == 'RECORDED'
+                  ? (r.numericValue != null
+                      ? r.numericValue!.toString()
+                      : r.textValue ?? '—')
+                  : r.resultStatus;
+              final unit = assessment?.unit;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 140,
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        unit != null && r.resultStatus == 'RECORDED'
+                            ? '$value $unit'
+                            : value,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: r.resultStatus == 'RECORDED'
+                              ? Colors.green.shade700
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  if (!context.mounted) return;
+                  await openRatingFromQueue();
+                },
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Rate Again / Edit'),
+              ),
+            ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Flattened row for lazy queue list: rep header or plot tile.
@@ -1063,7 +1268,7 @@ class _PlotQueueListItem {
   bool get isHeader => plot == null;
 }
 
-class _PlotQueueTile extends ConsumerWidget {
+class _PlotQueueTile extends StatelessWidget {
   final Plot plot;
   final List<Plot> allPlotsForTrial;
   final String treatmentLabel;
@@ -1078,6 +1283,11 @@ class _PlotQueueTile extends ConsumerWidget {
   /// Subtle per-plot edit time; null when edited but no safe timestamp.
   final String? editRecencyLine;
   final _PlotQueueOpenRating onOpenRating;
+  final List<int>? filteredPlotIdsForRating;
+  final bool isFilteredModeForRating;
+  final String? navigationModeLabelForRating;
+  /// Long-press on rated row: session value summary sheet (optional).
+  final VoidCallback? onShowRatedSummary;
   final bool highlightRow;
   final GlobalKey rowKey;
 
@@ -1095,12 +1305,16 @@ class _PlotQueueTile extends ConsumerWidget {
     required this.hasEdited,
     this.editRecencyLine,
     required this.onOpenRating,
+    required this.filteredPlotIdsForRating,
+    required this.isFilteredModeForRating,
+    required this.navigationModeLabelForRating,
+    this.onShowRatedSummary,
     required this.highlightRow,
     required this.rowKey,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final displayNum = getDisplayPlotLabel(plot, allPlotsForTrial);
     final titleText = 'Plot $displayNum · $treatmentLabel';
     final hasStatusRow =
@@ -1276,7 +1490,12 @@ class _PlotQueueTile extends ConsumerWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                     onPressed: () => onOpenRating(
-                        plot, allPlotsForTrial, assessments),
+                        plot,
+                        allPlotsForTrial,
+                        assessments,
+                        filteredPlotIdsForRating,
+                        isFilteredModeForRating,
+                        navigationModeLabelForRating),
                   ),
                   Icon(
                     Icons.chevron_right,
@@ -1286,24 +1505,15 @@ class _PlotQueueTile extends ConsumerWidget {
                 ],
               )
             : const Icon(Icons.chevron_right),
-        onTap: () async {
-          if (isRated && plotRatings.isNotEmpty) {
-            _showRatingSummarySheet(
-              context,
-              ref,
-              plot,
-              plotRatings,
-              assessments,
-              trial,
-              session,
-              displayNum,
-              openRatingFromQueue: () =>
-                  onOpenRating(plot, allPlotsForTrial, assessments),
-            );
-          } else {
-            await onOpenRating(plot, allPlotsForTrial, assessments);
-          }
-        },
+        onTap: () => onOpenRating(
+            plot,
+            allPlotsForTrial,
+            assessments,
+            filteredPlotIdsForRating,
+            isFilteredModeForRating,
+            navigationModeLabelForRating),
+        onLongPress:
+            onShowRatedSummary != null ? () => onShowRatedSummary!() : null,
       ),
     );
 
@@ -1325,133 +1535,6 @@ class _PlotQueueTile extends ConsumerWidget {
                 : Colors.transparent,
           ),
           child: card,
-        ),
-      ),
-    );
-  }
-
-  void _showRatingSummarySheet(
-    BuildContext context,
-    WidgetRef ref,
-    Plot plot,
-    List<RatingRecord> plotRatings,
-    List<Assessment> assessments,
-    Trial trial,
-    Session session,
-    String displayNum, {
-    required Future<void> Function() openRatingFromQueue,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Plot $displayNum',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                if (plot.rep != null) ...[
-                  const SizedBox(width: 12),
-                  Text('Rep ${plot.rep}',
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface)),
-                ],
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            Text(
-              'Values in this session',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            ...plotRatings.map((r) {
-              Assessment? assessment;
-              for (final a in assessments) {
-                if (a.id == r.assessmentId) {
-                  assessment = a;
-                  break;
-                }
-              }
-              final name = assessment?.name ?? 'Assessment ${r.assessmentId}';
-              final value = r.resultStatus == 'RECORDED'
-                  ? (r.numericValue != null
-                      ? r.numericValue!.toString()
-                      : r.textValue ?? '—')
-                  : r.resultStatus;
-              final unit = assessment?.unit;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 140,
-                      child: Text(
-                        name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        unit != null && r.resultStatus == 'RECORDED'
-                            ? '$value $unit'
-                            : value,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: r.resultStatus == 'RECORDED'
-                              ? Colors.green.shade700
-                              : Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  if (!context.mounted) return;
-                  await openRatingFromQueue();
-                },
-                icon: const Icon(Icons.edit, size: 18),
-                label: const Text('Rate Again / Edit'),
-              ),
-            ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-          ],
         ),
       ),
     );
