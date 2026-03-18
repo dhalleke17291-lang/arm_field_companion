@@ -92,6 +92,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   bool _userHasInteracted = false;
   bool _isSaving = false;
 
+  /// Set when [_prefillFromLastValue] fills the field from last-plot memory (this visit only).
+  double? _carryForwardBaselineNumeric;
+  /// True after the user changes the numeric value via field, quick buttons, or fine ±.
+  bool _numericValueUserEditedThisVisit = false;
+  /// After "Keep & Continue" on carry-forward confirm: skip repeat prompts for same assessment+baseline until context changes.
+  int? _carryForwardConfirmSuppressedAssessmentId;
+  double? _carryForwardConfirmSuppressedBaseline;
+
   static const String _kLastRaterNameKey = 'last_rater_name';
   String? _raterName;
   bool _hasDefaultedRaterFromUser = false;
@@ -1089,6 +1097,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           _selectedStatus = 'RECORDED';
           _userHasInteracted = false;
           _selectedMissingReasons.clear();
+          _carryForwardBaselineNumeric = null;
+          _numericValueUserEditedThisVisit = false;
+          _carryForwardConfirmSuppressedAssessmentId = null;
+          _carryForwardConfirmSuppressedBaseline = null;
         });
         _clampValueToEffectiveRange();
         _scrollToActiveAssessment();
@@ -1132,10 +1144,72 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     if (last != null && _valueController.text.isEmpty && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _valueController.text.isEmpty) {
-          setState(() => _valueController.text = last.toString());
+          setState(() {
+            // Re-prefill = new carry-forward context; warn again if user cleared field.
+            _carryForwardConfirmSuppressedAssessmentId = null;
+            _carryForwardConfirmSuppressedBaseline = null;
+            _valueController.text = last.toString();
+            _carryForwardBaselineNumeric = last;
+            _numericValueUserEditedThisVisit = false;
+          });
         }
       });
     }
+  }
+
+  void _markNumericValueUserEdited() {
+    if (!_numericValueUserEditedThisVisit) {
+      setState(() {
+        _numericValueUserEditedThisVisit = true;
+        _carryForwardConfirmSuppressedAssessmentId = null;
+        _carryForwardConfirmSuppressedBaseline = null;
+      });
+    }
+  }
+
+  static bool _doublesMatchCarryForward(double a, double b) =>
+      (a - b).abs() < 1e-9;
+
+  /// Carry-forward duplicate: prefilled from previous plot, user never edited, value unchanged.
+  bool _shouldConfirmUnchangedCarryForward() {
+    if (_selectedStatus != 'RECORDED' || _isTextAssessment) return false;
+    final baseline = _carryForwardBaselineNumeric;
+    if (baseline == null) return false;
+    if (_numericValueUserEditedThisVisit) return false;
+    final cur = double.tryParse(_valueController.text.trim());
+    if (cur == null) return false;
+    if (!_doublesMatchCarryForward(cur, baseline)) return false;
+    final supA = _carryForwardConfirmSuppressedAssessmentId;
+    final supB = _carryForwardConfirmSuppressedBaseline;
+    if (supA != null &&
+        supB != null &&
+        supA == _currentAssessment.id &&
+        _doublesMatchCarryForward(supB, baseline)) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<bool> _showCarryForwardConfirmDialog(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: const Text(
+          'This value is the same as the previous plot. Keep it?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Change'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Keep & Continue'),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
   }
 
   Future<void> _showCorrectDialog(
@@ -1286,6 +1360,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _valueController.text = existing.numericValue?.toString() ??
             existing.textValue?.trim() ??
             '';
+        _carryForwardBaselineNumeric = null;
+        _numericValueUserEditedThisVisit = false;
+        _carryForwardConfirmSuppressedAssessmentId = null;
+        _carryForwardConfirmSuppressedBaseline = null;
         if (!_userHasInteracted) {
           _selectedStatus = existing.resultStatus;
           _selectedMissingReasons.clear();
@@ -1540,6 +1618,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                           ),
                         ),
                         autofocus: true,
+                        onChanged: (_) {
+                          _markNumericValueUserEdited();
+                          setState(() {});
+                          _clampValueToEffectiveRange();
+                        },
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -1957,6 +2040,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             .toList();
 
     void applyFine(double delta) {
+      _markNumericValueUserEdited();
       final current = double.tryParse(_valueController.text) ?? _effectiveMin;
       final next = (current + delta).clamp(_effectiveMin, _effectiveMax);
       setState(() {
@@ -1983,6 +2067,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             return GestureDetector(
               onTap: () {
                 HapticFeedback.selectionClick();
+                _markNumericValueUserEdited();
                 setState(() => _valueController.text = val.toString());
               },
               child: Container(
@@ -2073,6 +2158,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                             isDense: true,
                           ),
                           onChanged: (_) {
+                            _markNumericValueUserEdited();
                             setState(() {});
                             _clampValueToEffectiveRange();
                           },
@@ -2514,7 +2600,25 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   /// Saves the current rating. When [navigateAfterSave] is true (default), advances to next
   /// assessment or next plot or shows session complete; when false, stays on current plot/assessment.
   Future<void> _saveRating(BuildContext context,
-      {bool navigateAfterSave = true}) async {
+      {bool navigateAfterSave = true,
+      bool skipCarryForwardConfirm = false}) async {
+    if (!skipCarryForwardConfirm && _shouldConfirmUnchangedCarryForward()) {
+      final proceed = await _showCarryForwardConfirmDialog(context);
+      if (!context.mounted) return;
+      if (!proceed) return;
+      if (mounted && _carryForwardBaselineNumeric != null) {
+        setState(() {
+          _carryForwardConfirmSuppressedAssessmentId =
+              _currentAssessment.id;
+          _carryForwardConfirmSuppressedBaseline =
+              _carryForwardBaselineNumeric;
+        });
+      }
+      return _saveRating(context,
+          navigateAfterSave: navigateAfterSave,
+          skipCarryForwardConfirm: true);
+    }
+
     double? numericValue;
     String? textValue;
     if (_selectedStatus == 'RECORDED') {
@@ -2606,6 +2710,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           _valueController.clear();
           _selectedStatus = 'RECORDED';
           _selectedMissingReasons.clear();
+          _carryForwardBaselineNumeric = null;
+          _numericValueUserEditedThisVisit = false;
+          _carryForwardConfirmSuppressedAssessmentId = null;
+          _carryForwardConfirmSuppressedBaseline = null;
         });
         _clampValueToEffectiveRange();
         _scrollToActiveAssessment();
