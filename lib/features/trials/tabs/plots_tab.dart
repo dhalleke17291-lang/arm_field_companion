@@ -1477,6 +1477,12 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   final GlobalKey _plotViewportKey = GlobalKey();
   final GlobalKey _gridContentKey = GlobalKey();
   bool _gridCenterScheduled = false;
+  /// Display-only: when false, guard plots are hidden from list and layout in this screen.
+  bool _showGuardPlots = true;
+
+  List<Plot> _plotsVisibleInPlotsTab(List<Plot> all) => _showGuardPlots
+      ? List<Plot>.from(all)
+      : all.where((p) => !p.isGuardRow).toList();
 
   @override
   void dispose() {
@@ -1576,6 +1582,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
 
   Widget _buildPlotDetailsContent(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
+    final displayPlots = _plotsVisibleInPlotsTab(plots);
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final sessions =
@@ -1588,6 +1595,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
       children: [
         _buildPlotsHeaderForDetails(context, ref, plots, assignmentsLocked),
         _buildListLayoutToggleForDetails(context, ref, plots),
+        _buildShowGuardsToggleForDetails(context),
         if (_showLayoutView) ...[
           _buildLayerSwitcherForDetails(context),
           if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
@@ -1611,7 +1619,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                     context: context,
                     ref: ref,
                     trial: widget.trial,
-                    plots: plots,
+                    plots: displayPlots,
                     sessions: sessions,
                     selectedRatingSession: _selectedRatingSession,
                     onSessionChanged: (s) =>
@@ -1622,7 +1630,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                       if (!_gridCenterScheduled) {
                         _gridCenterScheduled = true;
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _centerGridOnFirstFrame(context, plots);
+                          _centerGridOnFirstFrame(context, displayPlots);
                         });
                       }
                       final size = MediaQuery.sizeOf(context);
@@ -1715,7 +1723,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                                   key: _gridContentKey,
                                   width: gridContentWidth,
                                   child: _PlotLayoutGrid(
-                                    plots: plots,
+                                    plots: displayPlots,
+                                    plotLabelContextPlots: plots,
                                     treatments: treatments,
                                     trial: widget.trial,
                                     layer: _layoutLayer,
@@ -1821,8 +1830,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           )
         else
           Expanded(
-              child: _buildPlotsListBodyForDetails(
-                  context, ref, plots, assignmentsLocked)),
+              child: _buildPlotsListBodyForDetails(context, ref, displayPlots,
+                  plots, assignmentsLocked)),
       ],
     );
   }
@@ -2006,6 +2015,38 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
+  Widget _buildShowGuardsToggleForDetails(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppDesignTokens.spacing16, 0, AppDesignTokens.spacing16, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Show guards',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: _showGuardPlots,
+            onChanged: (v) {
+              setState(() {
+                _showGuardPlots = v;
+                _gridCenterScheduled = false;
+              });
+            },
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPlotsHeaderForDetails(BuildContext context, WidgetRef ref,
       List<Plot> plots, bool assignmentsLocked) {
     final sessions =
@@ -2183,8 +2224,12 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
-  Widget _buildPlotsListBodyForDetails(BuildContext context, WidgetRef ref,
-      List<Plot> plots, bool assignmentsLocked) {
+  Widget _buildPlotsListBodyForDetails(
+      BuildContext context,
+      WidgetRef ref,
+      List<Plot> visiblePlots,
+      List<Plot> allPlots,
+      bool assignmentsLocked) {
     final sessions =
         ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentsLockMessage =
@@ -2196,15 +2241,15 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     return ListView.builder(
-      itemCount: plots.length,
+      itemCount: visiblePlots.length,
       itemBuilder: (context, index) {
-        final plot = plots[index];
+        final plot = visiblePlots[index];
         final assignment = assignmentByPlotId[plot.id];
         final effectiveTreatmentId =
             assignment?.treatmentId ?? plot.treatmentId;
         final effectiveSource =
             assignment?.assignmentSource ?? plot.assignmentSource;
-        final displayNum = getDisplayPlotLabel(plot, plots);
+        final displayNum = getDisplayPlotLabel(plot, allPlots);
         final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap,
             treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
@@ -2297,7 +2342,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Guard row',
+                        'Guard',
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
@@ -2324,7 +2369,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                 );
                 return;
               }
-              _showAssignTreatmentDialogForDetails(context, ref, plot, plots);
+              _showAssignTreatmentDialogForDetails(
+                  context, ref, plot, allPlots);
             },
           ),
         );
@@ -2789,6 +2835,8 @@ class _AddTestPlotsButton extends ConsumerWidget {
 /// Order is always by rep and plot position; never by treatment.
 class _PlotLayoutGrid extends StatelessWidget {
   final List<Plot> plots;
+  /// Full trial plot list for stable display labels when [plots] is a filtered subset.
+  final List<Plot>? plotLabelContextPlots;
   final List<Treatment> treatments;
   final Trial trial;
   final _LayoutLayer layer;
@@ -2801,6 +2849,7 @@ class _PlotLayoutGrid extends StatelessWidget {
 
   const _PlotLayoutGrid({
     required this.plots,
+    this.plotLabelContextPlots,
     required this.treatments,
     required this.trial,
     required this.layer,
@@ -2927,6 +2976,7 @@ class _PlotLayoutGrid extends StatelessWidget {
 
   Widget _buildRepBasedGrid(
       BuildContext context, Map<int, Treatment> treatmentMap) {
+    final labelPlots = plotLabelContextPlots ?? plots;
     final blocks = buildRepBasedLayout(plots);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -3010,7 +3060,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                                               repRow.plots[i].id] ??
                                           repRow.plots[i].treatmentId,
                                   displayLabel: getDisplayPlotLabel(
-                                      repRow.plots[i], plots),
+                                      repRow.plots[i], labelPlots),
                                   onLongPress: onLongPressPlot != null
                                       ? () => onLongPressPlot!(
                                           repRow.plots[i])
@@ -3124,7 +3174,7 @@ class _PlotGridTile extends StatelessWidget {
                 ),
                 if (plot.isGuardRow)
                   Text(
-                    'Guard',
+                    'G',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.75),
                       fontSize: 8,
@@ -3184,6 +3234,11 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   final GlobalKey _plotViewportKey = GlobalKey();
   final GlobalKey _gridContentKey = GlobalKey();
   bool _gridCenterScheduled = false;
+  bool _showGuardPlots = true;
+
+  List<Plot> _plotsVisibleInPlotsTab(List<Plot> all) => _showGuardPlots
+      ? List<Plot>.from(all)
+      : all.where((p) => !p.isGuardRow).toList();
 
   @override
   void initState() {
@@ -3278,8 +3333,40 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
           final assignmentsLocked =
               isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
+          final displayPlots = _plotsVisibleInPlotsTab(plots);
           if (!widget.isLayoutView) {
-            return _buildListBody(context, ref, plots, assignmentsLocked);
+            final scheme = Theme.of(context).colorScheme;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Show guards',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: _showGuardPlots,
+                        onChanged: (v) => setState(() => _showGuardPlots = v),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _buildListBody(context, ref, displayPlots, plots,
+                      assignmentsLocked),
+                ),
+              ],
+            );
           }
           final treatments =
               ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ??
@@ -3290,10 +3377,38 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           final Map<int, int?> plotIdToTreatmentId = {
             for (final a in assignments) a.plotId: a.treatmentId
           };
-          const double maxTopHeight = 200;
+          const double maxTopHeight = 240;
+          final scheme = Theme.of(context).colorScheme;
           final topSection = Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Show guards',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Switch.adaptive(
+                      value: _showGuardPlots,
+                      onChanged: (v) {
+                        setState(() {
+                          _showGuardPlots = v;
+                          _gridCenterScheduled = false;
+                        });
+                      },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ],
+                ),
+              ),
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -3339,7 +3454,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                         context: context,
                         ref: ref,
                         trial: widget.trial,
-                        plots: plots,
+                        plots: displayPlots,
                         sessions: sessions,
                         selectedRatingSession: _selectedRatingSession,
                         onSessionChanged: (s) =>
@@ -3350,7 +3465,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                           if (!_gridCenterScheduled) {
                             _gridCenterScheduled = true;
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _centerGridOnFirstFrame(context, plots);
+                              _centerGridOnFirstFrame(context, displayPlots);
                             });
                           }
                           final size = MediaQuery.sizeOf(context);
@@ -3363,7 +3478,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                       constraints.maxHeight > 0
                                   ? constraints.maxHeight
                                   : size.height;
-                          final blocks = buildRepBasedLayout(plots);
+                          final blocks = buildRepBasedLayout(displayPlots);
                           int columnCount = 0;
                           for (final block in blocks) {
                             for (final row in block.repRows) {
@@ -3402,7 +3517,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                               .whereType<int>()
                               .toSet();
                           final plotPksWithTrialApplication = <int>{};
-                          for (final p in plots) {
+                          for (final p in displayPlots) {
                             final tid =
                                 plotIdToTreatmentId[p.id] ?? p.treatmentId;
                             if (tid != null &&
@@ -3430,7 +3545,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                       key: _gridContentKey,
                                       width: gridContentWidth,
                                       child: _PlotLayoutGrid(
-                                        plots: plots,
+                                        plots: displayPlots,
+                                        plotLabelContextPlots: plots,
                                         treatments: treatments,
                                         trial: widget.trial,
                                         layer: _layoutLayer,
@@ -3547,7 +3663,11 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     );
   }
 
-  Widget _buildListBody(BuildContext context, WidgetRef ref, List<Plot> plots,
+  Widget _buildListBody(
+      BuildContext context,
+      WidgetRef ref,
+      List<Plot> visiblePlots,
+      List<Plot> allPlots,
       bool assignmentsLocked) {
     final sessions =
         ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
@@ -3561,15 +3681,15 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: plots.length,
+      itemCount: visiblePlots.length,
       itemBuilder: (context, index) {
-        final plot = plots[index];
+        final plot = visiblePlots[index];
         final assignment = assignmentByPlotId[plot.id];
         final effectiveTreatmentId =
             assignment?.treatmentId ?? plot.treatmentId;
         final effectiveSource =
             assignment?.assignmentSource ?? plot.assignmentSource;
-        final displayNum = getDisplayPlotLabel(plot, plots);
+        final displayNum = getDisplayPlotLabel(plot, allPlots);
         final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap,
             treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
@@ -3631,7 +3751,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   Padding(
                     padding: const EdgeInsets.only(top: 3),
                     child: Text(
-                      'Guard row',
+                      'Guard',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -3655,7 +3775,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                     SnackBar(content: Text(assignmentsLockMessage)));
                 return;
               }
-              _showAssignDialog(context, ref, plot, plots);
+              _showAssignDialog(context, ref, plot, allPlots);
             },
           ),
         );
