@@ -279,6 +279,30 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             ),
           ),
           actions: [
+            if (!isSessionEditable(widget.session)) ...[
+              Builder(
+                builder: (context) {
+                  final existing = existingRatingAsync.asData?.value;
+                  if (existing == null) return const SizedBox.shrink();
+                  return TextButton(
+                    onPressed: () => _showCorrectDialog(context, existing),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      minimumSize: const Size(0, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Correct',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: Colors.white),
               tooltip: 'More options',
@@ -1114,8 +1138,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
-  // Used from plot detail or future correction entry point.
-  // ignore: unused_element
   Future<void> _showCorrectDialog(
       BuildContext context, RatingRecord existing) async {
     final newValueController = TextEditingController(
