@@ -10,7 +10,10 @@ import '../ratings/domain/get_edited_ratings_usecase.dart';
 import '../../shared/widgets/app_card.dart';
 
 class EditedItemsScreen extends ConsumerStatefulWidget {
-  const EditedItemsScreen({super.key});
+  const EditedItemsScreen({super.key, this.trialId});
+
+  /// When set, only ratings for this trial are loaded.
+  final int? trialId;
 
   @override
   ConsumerState<EditedItemsScreen> createState() => _EditedItemsScreenState();
@@ -29,7 +32,7 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
       trialRepo: ref.read(trialRepositoryProvider),
       sessionRepo: ref.read(sessionRepositoryProvider),
       plotRepo: ref.read(plotRepositoryProvider),
-    ).call();
+    ).call(trialId: widget.trialId);
     final repo = ref.read(ratingRepositoryProvider);
     final out = <_EditedItemWithDiff>[];
     for (final item in items) {
@@ -142,9 +145,11 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
-      appBar: const GradientScreenHeader(
+      appBar: GradientScreenHeader(
         title: 'Edited Items',
-        subtitle: 'Includes all sessions in this trial',
+        subtitle: widget.trialId != null
+            ? 'Includes all sessions in this trial'
+            : 'App-wide · all trials and sessions',
       ),
       body: FutureBuilder<List<_EditedItemWithDiff>>(
         future: _ensureFuture(),

@@ -55,11 +55,16 @@ class GetEditedRatingsUseCase {
   final SessionRepository _sessionRepo;
   final PlotRepository _plotRepo;
 
-  Future<List<EditedRatingListItem>> call() async {
+  Future<List<EditedRatingListItem>> call({int? trialId}) async {
     final amendedOrChain = await (_db.select(_db.ratingRecords)
-          ..where((r) =>
-              r.isDeleted.equals(false) &
-              (r.amended.equals(true) | r.previousId.isNotNull())))
+          ..where((r) {
+            var cond = r.isDeleted.equals(false) &
+                (r.amended.equals(true) | r.previousId.isNotNull());
+            if (trialId != null) {
+              cond = cond & r.trialId.equals(trialId);
+            }
+            return cond;
+          }))
         .get();
 
     final correctionRows = await _db.select(_db.ratingCorrections).get();
@@ -74,9 +79,14 @@ class GetEditedRatingsUseCase {
         correctionRatingIds.difference(byId.keys.toSet());
     if (missingForCorrection.isNotEmpty) {
       final extra = await (_db.select(_db.ratingRecords)
-            ..where((r) =>
-                r.id.isIn(missingForCorrection.toList()) &
-                r.isDeleted.equals(false)))
+            ..where((r) {
+              var cond = r.id.isIn(missingForCorrection.toList()) &
+                  r.isDeleted.equals(false);
+              if (trialId != null) {
+                cond = cond & r.trialId.equals(trialId);
+              }
+              return cond;
+            }))
           .get();
       for (final r in extra) {
         byId[r.id] = r;
