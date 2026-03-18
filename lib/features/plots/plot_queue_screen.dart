@@ -17,41 +17,11 @@ import '../../core/session_walk_order_store.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/session_export_trust_dialog.dart';
 
-/// Shared [RatingScreen] push from Plot Queue (index + [SessionResumeStore] logic).
-Future<void> _pushRatingScreenFromPlotQueue({
-  required BuildContext context,
-  required Plot plot,
-  required Trial trial,
-  required Session session,
-  required List<Assessment> assessments,
-  required List<Plot> allPlotsForTrial,
-}) async {
-  final idx = allPlotsForTrial.indexWhere((p) => p.id == plot.id);
-  final currentPlotIndex = idx < 0 ? 0 : idx;
-  int? initialAssessmentIndex;
-  final prefs = await SharedPreferences.getInstance();
-  if (!context.mounted) return;
-  final pos = SessionResumeStore(prefs).getPosition(session.id);
-  if (pos != null && pos.$1 == currentPlotIndex) {
-    initialAssessmentIndex =
-        pos.$2.clamp(0, assessments.length - 1);
-  }
-  if (!context.mounted) return;
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => RatingScreen(
-        trial: trial,
-        session: session,
-        plot: plot,
-        assessments: assessments,
-        allPlots: allPlotsForTrial,
-        currentPlotIndex: currentPlotIndex,
-        initialAssessmentIndex: initialAssessmentIndex,
-      ),
-    ),
-  );
-}
+typedef _PlotQueueOpenRating = Future<void> Function(
+  Plot plot,
+  List<Plot> walkPlots,
+  List<Assessment> assessments,
+);
 
 /// Optional one-time seed for plot queue filters (e.g. deep link from Session Summary).
 class PlotQueueInitialFilters {
@@ -75,11 +45,15 @@ class PlotQueueScreen extends ConsumerStatefulWidget {
   final Session session;
   final PlotQueueInitialFilters? initialFilters;
 
+  /// After open, scroll list to this plot PK (full queue, default filters only).
+  final int? scrollToPlotPkOnOpen;
+
   const PlotQueueScreen({
     super.key,
     required this.trial,
     required this.session,
     this.initialFilters,
+    this.scrollToPlotPkOnOpen,
   });
 
   @override
@@ -95,6 +69,202 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   WalkOrderMode _walkOrderMode = WalkOrderMode.serpentine;
   List<int>? _customPlotIds;
   final ScrollController _plotQueueScrollController = ScrollController();
+  final Map<int, GlobalKey> _plotRowKeys = {};
+  int? _highlightPlotPk;
+  bool _consumedScrollToPlotOnOpen = false;
+
+  GlobalKey _keyForPlotRow(int plotPk) =>
+      _plotRowKeys.putIfAbsent(plotPk, GlobalKey.new);
+
+  /// Same filter pipeline as [_buildQueue] (full walk order in, filtered out).
+  List<Plot> _plotsAfterQueueFilters(
+    List<Plot> plotsInWalkOrder,
+    Set<int> ratedPks,
+    Map<int, List<RatingRecord>> ratingsByPlot,
+    Set<int> flaggedIds,
+    Set<int> plotPksWithCorrections,
+  ) {
+    var filtered = plotsInWalkOrder;
+    if (_repFilter != null) {
+      filtered = filtered.where((p) => p.rep == _repFilter).toList();
+    }
+    if (_showUnratedOnly) {
+      filtered = filtered.where((p) => !ratedPks.contains(p.id)).toList();
+    }
+    if (_showIssuesOnly) {
+      filtered = filtered.where((p) {
+        final pr = ratingsByPlot[p.id] ?? [];
+        return pr.any((r) => r.resultStatus != 'RECORDED');
+      }).toList();
+    }
+    if (_showEditedOnly) {
+      filtered = filtered.where((p) {
+        final pr = ratingsByPlot[p.id] ?? [];
+        return pr.any((r) => r.amended || (r.previousId != null)) ||
+            plotPksWithCorrections.contains(p.id);
+      }).toList();
+    }
+    if (_showFlaggedOnly) {
+      filtered = filtered.where((p) => flaggedIds.contains(p.id)).toList();
+    }
+    return filtered;
+  }
+
+  void _scheduleScrollToPlotPkOnOpen(List<Plot> filteredPlots) {
+    final pk = widget.scrollToPlotPkOnOpen;
+    if (pk == null || _consumedScrollToPlotOnOpen) return;
+    if (!filteredPlots.any((p) => p.id == pk)) {
+      _consumedScrollToPlotOnOpen = true;
+      return;
+    }
+    _consumedScrollToPlotOnOpen = true;
+    final entries = _flattenGroupedQueueItems(filteredPlots);
+    const double headerH = 40;
+    const double rowH = 88;
+    double y = 0;
+    var found = false;
+    for (final item in entries) {
+      if (item.isHeader) {
+        y += headerH;
+      } else if (item.plot!.id == pk) {
+        found = true;
+        break;
+      } else {
+        y += rowH;
+      }
+    }
+    if (!found) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_plotQueueScrollController.hasClients) {
+        final max = _plotQueueScrollController.position.maxScrollExtent;
+        _plotQueueScrollController.jumpTo(y.clamp(0.0, max));
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final ctx = _plotRowKeys[pk]?.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOut,
+            alignment: 0.14,
+          );
+        }
+      });
+    });
+  }
+
+  Future<void> _openRatingFromQueue(
+    BuildContext context,
+    Plot plot,
+    List<Plot> walkPlots,
+    List<Assessment> assessments,
+  ) async {
+    final idx = walkPlots.indexWhere((p) => p.id == plot.id);
+    final currentPlotIndex = idx < 0 ? 0 : idx;
+    int? initialAssessmentIndex;
+    final prefs = await SharedPreferences.getInstance();
+    if (!context.mounted) return;
+    final pos = SessionResumeStore(prefs).getPosition(widget.session.id);
+    if (pos != null && pos.$1 == currentPlotIndex) {
+      initialAssessmentIndex =
+          pos.$2.clamp(0, assessments.length - 1);
+    }
+    if (!context.mounted) return;
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => RatingScreen(
+          trial: widget.trial,
+          session: widget.session,
+          plot: plot,
+          assessments: assessments,
+          allPlots: walkPlots,
+          currentPlotIndex: currentPlotIndex,
+          initialAssessmentIndex: initialAssessmentIndex,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    _afterReturnFromRating(plot, walkPlots);
+  }
+
+  void _afterReturnFromRating(Plot openedPlot, List<Plot> walkPlots) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(Duration.zero);
+      if (!mounted) return;
+      // Allow rating stream to emit after save before choosing "next unrated".
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      if (!mounted) return;
+      final rated = ref.read(ratedPlotPksProvider(widget.session.id)).valueOrNull ??
+          <int>{};
+      final raw =
+          ref.read(plotsForTrialProvider(widget.trial.id)).valueOrNull ?? [];
+      if (raw.isEmpty || walkPlots.isEmpty) return;
+      final walk = sortPlotsByWalkOrder(
+        raw,
+        _walkOrderMode,
+        customPlotIds: _customPlotIds,
+      );
+      final startIdx = walk.indexWhere((p) => p.id == openedPlot.id);
+      if (startIdx < 0) return;
+      Plot? nextUnrated;
+      for (var j = startIdx + 1; j < walk.length; j++) {
+        if (!rated.contains(walk[j].id)) {
+          nextUnrated = walk[j];
+          break;
+        }
+      }
+      final nextUnratedPlot = nextUnrated;
+      if (nextUnratedPlot == null) return;
+
+      final ratings =
+          ref.read(sessionRatingsProvider(widget.session.id)).valueOrNull ?? [];
+      final ratingsByPlot = <int, List<RatingRecord>>{};
+      for (final r in ratings) {
+        ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
+      }
+      final flagged = ref
+              .read(flaggedPlotIdsForSessionProvider(widget.session.id))
+              .valueOrNull ??
+          <int>{};
+      final plotPksWithCorrections = ref
+              .read(plotPksWithCorrectionsForSessionProvider(widget.session.id))
+              .valueOrNull ??
+          <int>{};
+      final filtered = _plotsAfterQueueFilters(
+        walk,
+        rated,
+        ratingsByPlot,
+        flagged,
+        plotPksWithCorrections,
+      );
+      if (!filtered.any((p) => p.id == nextUnratedPlot.id)) return;
+
+      final targetPk = nextUnratedPlot.id;
+      setState(() => _highlightPlotPk = targetPk);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final ctx = _plotRowKeys[targetPk]?.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            alignment: 0.12,
+            duration: const Duration(milliseconds: 420),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+      Future<void>.delayed(const Duration(milliseconds: 2000), () {
+        if (mounted) {
+          setState(() {
+            if (_highlightPlotPk == targetPk) _highlightPlotPk = null;
+          });
+        }
+      });
+    });
+  }
 
   @override
   void initState() {
@@ -281,30 +451,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       _walkOrderMode,
       customPlotIds: _customPlotIds,
     );
-    var filtered = plots;
-    if (_repFilter != null) {
-      filtered = filtered.where((p) => p.rep == _repFilter).toList();
-    }
-    if (_showUnratedOnly) {
-      filtered = filtered.where((p) => !ratedPks.contains(p.id)).toList();
-    }
-    if (_showIssuesOnly) {
-      filtered = filtered.where((p) {
-        final pr = ratingsByPlot[p.id] ?? [];
-        return pr.any((r) => r.resultStatus != 'RECORDED');
-      }).toList();
-    }
-    if (_showEditedOnly) {
-      filtered = filtered.where((p) {
-        final pr = ratingsByPlot[p.id] ?? [];
-        return pr.any((r) => r.amended || (r.previousId != null)) ||
-            plotPksWithCorrections.contains(p.id);
-      }).toList();
-    }
-    if (_showFlaggedOnly) {
-      filtered =
-          filtered.where((p) => flaggedIds.contains(p.id)).toList();
-    }
+    final filtered = _plotsAfterQueueFilters(
+      plots,
+      ratedPks,
+      ratingsByPlot,
+      flaggedIds,
+      plotPksWithCorrections,
+    );
+    _scheduleScrollToPlotPkOnOpen(filtered);
 
     final totalPlots = plots.length;
     final ratedCount = ratedPks.length;
@@ -317,6 +471,18 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       children: [
         const _PlotQueueDockBar(),
         const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+          child: Text(
+            'Save & Next Plot on the rating screen keeps you in the walk order without returning here.',
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.3,
+              fontStyle: FontStyle.italic,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.88),
+            ),
+          ),
+        ),
         // Section header (same as Trial Plots tab)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -605,6 +771,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                   flaggedIds,
                   plotPksWithCorrections,
                   allPlotsForTrial: plots,
+                  onOpenRating: (plot, walkPlots, asmt) =>
+                      _openRatingFromQueue(context, plot, walkPlots, asmt),
+                  highlightPlotPk: _highlightPlotPk,
+                  rowKeyForPlot: _keyForPlotRow,
                 ),
         ),
       ],
@@ -640,6 +810,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Set<int> flaggedIds,
     Set<int> plotPksWithCorrections, {
     required List<Plot> allPlotsForTrial,
+    required _PlotQueueOpenRating onOpenRating,
+    required int? highlightPlotPk,
+    required GlobalKey Function(int plotPk) rowKeyForPlot,
   }) {
     final entries = _flattenGroupedQueueItems(filteredPlots);
     return ListView.builder(
@@ -686,6 +859,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           hasIssues: plotRatings.any((r) => r.resultStatus != 'RECORDED'),
           hasEdited: hasEdited,
           editRecencyLine: editRecencyLine,
+          onOpenRating: onOpenRating,
+          highlightRow: plot.id == highlightPlotPk,
+          rowKey: rowKeyForPlot(plot.id),
         );
       },
     );
@@ -753,13 +929,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       return;
     }
     if (!context.mounted) return;
-    await _pushRatingScreenFromPlotQueue(
-      context: context,
-      plot: plots[index],
-      trial: widget.trial,
-      session: widget.session,
-      assessments: assessments,
-      allPlotsForTrial: plots,
+    await _openRatingFromQueue(
+      context,
+      plots[index],
+      plots,
+      assessments,
     );
   }
 
@@ -903,6 +1077,9 @@ class _PlotQueueTile extends ConsumerWidget {
   final bool hasEdited;
   /// Subtle per-plot edit time; null when edited but no safe timestamp.
   final String? editRecencyLine;
+  final _PlotQueueOpenRating onOpenRating;
+  final bool highlightRow;
+  final GlobalKey rowKey;
 
   const _PlotQueueTile({
     required this.plot,
@@ -917,6 +1094,9 @@ class _PlotQueueTile extends ConsumerWidget {
     required this.hasIssues,
     required this.hasEdited,
     this.editRecencyLine,
+    required this.onOpenRating,
+    required this.highlightRow,
+    required this.rowKey,
   });
 
   @override
@@ -1053,8 +1233,9 @@ class _PlotQueueTile extends ConsumerWidget {
       );
     }
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    final scheme = Theme.of(context).colorScheme;
+    final card = Card(
+      margin: EdgeInsets.zero,
       child: ListTile(
         dense: true,
         contentPadding:
@@ -1094,16 +1275,8 @@ class _PlotQueueTile extends ConsumerWidget {
                       minimumSize: Size.zero,
                       visualDensity: VisualDensity.compact,
                     ),
-                    onPressed: () async {
-                      await _pushRatingScreenFromPlotQueue(
-                        context: context,
-                        plot: plot,
-                        trial: trial,
-                        session: session,
-                        assessments: assessments,
-                        allPlotsForTrial: allPlotsForTrial,
-                      );
-                    },
+                    onPressed: () => onOpenRating(
+                        plot, allPlotsForTrial, assessments),
                   ),
                   Icon(
                     Icons.chevron_right,
@@ -1124,18 +1297,35 @@ class _PlotQueueTile extends ConsumerWidget {
               trial,
               session,
               displayNum,
+              openRatingFromQueue: () =>
+                  onOpenRating(plot, allPlotsForTrial, assessments),
             );
           } else {
-            await _pushRatingScreenFromPlotQueue(
-              context: context,
-              plot: plot,
-              trial: trial,
-              session: session,
-              assessments: assessments,
-              allPlotsForTrial: allPlotsForTrial,
-            );
+            await onOpenRating(plot, allPlotsForTrial, assessments);
           }
         },
+      ),
+    );
+
+    return KeyedSubtree(
+      key: rowKey,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: highlightRow ? scheme.primary : Colors.transparent,
+              width: highlightRow ? 2 : 0,
+            ),
+            color: highlightRow
+                ? scheme.primaryContainer.withValues(alpha: 0.32)
+                : Colors.transparent,
+          ),
+          child: card,
+        ),
       ),
     );
   }
@@ -1148,8 +1338,9 @@ class _PlotQueueTile extends ConsumerWidget {
     List<Assessment> assessments,
     Trial trial,
     Session session,
-    String displayNum,
-  ) {
+    String displayNum, {
+    required Future<void> Function() openRatingFromQueue,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1253,14 +1444,7 @@ class _PlotQueueTile extends ConsumerWidget {
                 onPressed: () async {
                   Navigator.pop(ctx);
                   if (!context.mounted) return;
-                  await _pushRatingScreenFromPlotQueue(
-                    context: context,
-                    plot: plot,
-                    trial: trial,
-                    session: session,
-                    assessments: assessments,
-                    allPlotsForTrial: allPlotsForTrial,
-                  );
+                  await openRatingFromQueue();
                 },
                 icon: const Icon(Icons.edit, size: 18),
                 label: const Text('Rate Again / Edit'),

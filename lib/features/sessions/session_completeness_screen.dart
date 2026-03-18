@@ -302,6 +302,18 @@ class _SessionCompletenessScreenState
                                   assessmentCovered: c,
                                   assessmentTotal: s,
                                   coverageLabel: coverageLabel,
+                                  onOpenInPlotQueue: () {
+                                    Navigator.push<void>(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => PlotQueueScreen(
+                                          trial: trial,
+                                          session: session,
+                                          scrollToPlotPkOnOpen: plot.id,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 );
                               },
                             ),
@@ -401,6 +413,16 @@ class _SummaryStrip extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
+            'Partial = missing assessments · Issues = non-recorded status',
+            style: TextStyle(
+              fontSize: 10,
+              height: 1.3,
+              fontWeight: FontWeight.w500,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
             'Edited includes amended, corrected, and re-saved values',
             style: TextStyle(
               fontSize: 10,
@@ -425,6 +447,7 @@ class _PlotCompletenessRow extends StatelessWidget {
     this.assessmentCovered,
     this.assessmentTotal,
     this.coverageLabel,
+    required this.onOpenInPlotQueue,
   });
 
   /// Display label from [getDisplayPlotLabel].
@@ -436,11 +459,11 @@ class _PlotCompletenessRow extends StatelessWidget {
   final int? assessmentCovered;
   final int? assessmentTotal;
   final _AssessmentCoverageLabel? coverageLabel;
+  final VoidCallback onOpenInPlotQueue;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: AppDesignTokens.spacing8),
+    final card = Container(
       padding: const EdgeInsets.all(AppDesignTokens.spacing12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -489,6 +512,11 @@ class _PlotCompletenessRow extends StatelessWidget {
                     color: AppDesignTokens.primaryText,
                   ),
                 ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -583,6 +611,18 @@ class _PlotCompletenessRow extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppDesignTokens.spacing8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          onTap: onOpenInPlotQueue,
+          child: card,
+        ),
       ),
     );
   }
