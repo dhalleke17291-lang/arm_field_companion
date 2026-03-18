@@ -68,6 +68,10 @@ class RatingScreen extends ConsumerStatefulWidget {
   /// Restored from session resume (field speed). When set, open on this assessment chip.
   final int? initialAssessmentIndex;
 
+  /// Plot Queue filter-aware next/prev only; resume still uses full [allPlots] indices.
+  final List<int>? filteredPlotIds;
+  final bool isFilteredMode;
+
   const RatingScreen({
     super.key,
     required this.trial,
@@ -77,6 +81,8 @@ class RatingScreen extends ConsumerStatefulWidget {
     required this.allPlots,
     required this.currentPlotIndex,
     this.initialAssessmentIndex,
+    this.filteredPlotIds,
+    this.isFilteredMode = false,
   });
 
   @override
@@ -2358,15 +2364,16 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   /// Persistent next-action dock: same location, same order, every time.
   /// Save (secondary) + Save & Next (primary); Prev, Jump, Flag below.
   Widget _buildBottomBar(BuildContext context) {
-    final isLastPlot = widget.currentPlotIndex >= widget.allPlots.length - 1;
+    final isLastPlot = _effectiveIsLastPlotForNavigation;
     final isLastAssessment = _assessmentIndex >= widget.assessments.length - 1;
     final isVeryLast = isLastPlot && isLastAssessment;
-    final canGoBack = widget.currentPlotIndex > 0;
+    final canGoBack = !_effectiveIsFirstPlotForNavigation;
 
     // Dynamic primary button label
     String primaryLabel;
     if (isVeryLast) {
-      primaryLabel = 'Save & Finish';
+      primaryLabel =
+          _isAtEndOfFilteredSequence ? 'Done' : 'Save & Finish';
     } else if (isLastAssessment) {
       primaryLabel = 'Save & Next Plot';
     } else {
@@ -2721,9 +2728,25 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _prefillFromLastValue();
       } else {
         if (!context.mounted) return;
-        // Last assessment on last plot — session complete
-        if (widget.currentPlotIndex >= widget.allPlots.length - 1) {
-          _showSessionCompleteDialog(context);
+        if (_effectiveIsLastPlotForNavigation) {
+          if (_isAtEndOfFilteredSequence) {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('End of filtered list.'),
+                action: SnackBarAction(
+                  label: 'Plot Queue',
+                  onPressed: () {
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                ),
+              ),
+            );
+          } else {
+            _showSessionCompleteDialog(context);
+          }
         } else {
           _navigatePlot(context, 1);
         }
@@ -2860,7 +2883,59 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  /// True when current plot is the last entry in [filteredPlotIds] (filter-aware walk).
+  bool get _isAtEndOfFilteredSequence {
+    final ids = widget.filteredPlotIds;
+    if (!widget.isFilteredMode || ids == null || ids.isEmpty) {
+      return false;
+    }
+    final i = ids.indexOf(widget.plot.id);
+    return i >= 0 && i == ids.length - 1;
+  }
+
+  /// Last plot for Save & Next / session-complete when filter mode is on.
+  bool get _effectiveIsLastPlotForNavigation {
+    final ids = widget.filteredPlotIds;
+    if (widget.isFilteredMode && ids != null && ids.isNotEmpty) {
+      final i = ids.indexOf(widget.plot.id);
+      if (i < 0) {
+        return widget.currentPlotIndex >= widget.allPlots.length - 1;
+      }
+      return i >= ids.length - 1;
+    }
+    return widget.currentPlotIndex >= widget.allPlots.length - 1;
+  }
+
+  bool get _effectiveIsFirstPlotForNavigation {
+    final ids = widget.filteredPlotIds;
+    if (widget.isFilteredMode && ids != null && ids.isNotEmpty) {
+      final i = ids.indexOf(widget.plot.id);
+      if (i < 0) {
+        return widget.currentPlotIndex <= 0;
+      }
+      return i <= 0;
+    }
+    return widget.currentPlotIndex <= 0;
+  }
+
   void _navigatePlot(BuildContext context, int direction) {
+    final ids = widget.filteredPlotIds;
+    if (widget.isFilteredMode && ids != null && ids.isNotEmpty) {
+      final fi = ids.indexOf(widget.plot.id);
+      if (fi >= 0) {
+        final nextFi = fi + direction;
+        if (nextFi >= 0 && nextFi < ids.length) {
+          final targetId = ids[nextFi];
+          final fullIndex = widget.allPlots.indexWhere((p) => p.id == targetId);
+          if (fullIndex >= 0) {
+            _pushRatingReplacementAtFullIndex(context, fullIndex);
+            return;
+          }
+        }
+        return;
+      }
+    }
+
     final nextIndex = widget.currentPlotIndex + direction;
     if (nextIndex < 0 || nextIndex >= widget.allPlots.length) {
       return;
@@ -2870,8 +2945,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     if (direction == 1) {
       final currentRep = widget.plot.rep;
       if (currentRep != null) {
-        bool isLastInRep = true;
-        for (int i = widget.currentPlotIndex + 1;
+        var isLastInRep = true;
+        for (var i = widget.currentPlotIndex + 1;
             i < widget.allPlots.length;
             i++) {
           if (widget.allPlots[i].rep == currentRep) {
@@ -2885,18 +2960,27 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       }
     }
 
-    // Sequence resets for each new plot: always start at first assessment (A1).
+    _pushRatingReplacementAtFullIndex(context, nextIndex);
+  }
+
+  void _pushRatingReplacementAtFullIndex(
+      BuildContext context, int fullIndex) {
+    if (fullIndex < 0 || fullIndex >= widget.allPlots.length) {
+      return;
+    }
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      MaterialPageRoute<void>(
         builder: (_) => RatingScreen(
           trial: widget.trial,
           session: widget.session,
-          plot: widget.allPlots[nextIndex],
+          plot: widget.allPlots[fullIndex],
           assessments: widget.assessments,
           allPlots: widget.allPlots,
-          currentPlotIndex: nextIndex,
+          currentPlotIndex: fullIndex,
           initialAssessmentIndex: null,
+          filteredPlotIds: widget.filteredPlotIds,
+          isFilteredMode: widget.isFilteredMode,
         ),
       ),
     );
