@@ -23,6 +23,97 @@ import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
+enum _TrialListStatusFilter { all, active, draft, closed, archived }
+
+enum _TrialListSortMode { newestCreated, oldestCreated, nameAz, nameZa }
+
+/// Client-side only: search → status filter → sort. Does not mutate [trials].
+List<Trial> _deriveDisplayedTrials({
+  required List<Trial> trials,
+  required String searchQuery,
+  required _TrialListStatusFilter statusFilter,
+  required _TrialListSortMode sortMode,
+}) {
+  final q = searchQuery.trim().toLowerCase();
+  Iterable<Trial> afterSearch = trials;
+  if (q.isNotEmpty) {
+    afterSearch = trials.where((t) {
+      bool fieldContains(String? s) =>
+          s != null && s.toLowerCase().contains(q);
+      return t.name.toLowerCase().contains(q) ||
+          fieldContains(t.crop) ||
+          fieldContains(t.location) ||
+          fieldContains(t.season) ||
+          t.status.toLowerCase().contains(q);
+    });
+  }
+  var list = afterSearch.toList();
+  switch (statusFilter) {
+    case _TrialListStatusFilter.all:
+      break;
+    case _TrialListStatusFilter.active:
+      list = list
+          .where((t) => t.status.toLowerCase() == 'active')
+          .toList();
+      break;
+    case _TrialListStatusFilter.draft:
+      list =
+          list.where((t) => t.status.toLowerCase() == 'draft').toList();
+      break;
+    case _TrialListStatusFilter.closed:
+      list =
+          list.where((t) => t.status.toLowerCase() == 'closed').toList();
+      break;
+    case _TrialListStatusFilter.archived:
+      list = list
+          .where((t) => t.status.toLowerCase() == 'archived')
+          .toList();
+      break;
+  }
+  int cmpNameCi(Trial a, Trial b) {
+    final c = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    if (c != 0) return c;
+    return a.id.compareTo(b.id);
+  }
+
+  switch (sortMode) {
+    case _TrialListSortMode.newestCreated:
+      list.sort((a, b) {
+        final c = b.createdAt.compareTo(a.createdAt);
+        if (c != 0) return c;
+        return b.id.compareTo(a.id);
+      });
+      break;
+    case _TrialListSortMode.oldestCreated:
+      list.sort((a, b) {
+        final c = a.createdAt.compareTo(b.createdAt);
+        if (c != 0) return c;
+        return a.id.compareTo(b.id);
+      });
+      break;
+    case _TrialListSortMode.nameAz:
+      list.sort(cmpNameCi);
+      break;
+    case _TrialListSortMode.nameZa:
+      list.sort((a, b) => cmpNameCi(b, a));
+      break;
+  }
+  return list;
+}
+
+String _sortModeLabel(_TrialListSortMode m) {
+  switch (m) {
+    case _TrialListSortMode.newestCreated:
+      return 'Newest created';
+    case _TrialListSortMode.oldestCreated:
+      return 'Oldest created';
+    case _TrialListSortMode.nameAz:
+      return 'Name A–Z';
+    case _TrialListSortMode.nameZa:
+      return 'Name Z–A';
+  }
+}
+
 void _showAppInfoDialog(BuildContext context) {
   showDialog<void>(
     context: context,
@@ -197,6 +288,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
   String _searchQuery = '';
   final _searchFocusNode = FocusNode();
   final _searchController = TextEditingController();
+  _TrialListStatusFilter _statusFilter = _TrialListStatusFilter.all;
+  _TrialListSortMode _sortMode = _TrialListSortMode.newestCreated;
 
   @override
   void dispose() {
@@ -251,7 +344,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                             IconButton(
                               icon:
                                   const Icon(Icons.search, color: Colors.white),
-                              tooltip: 'Search trials by name',
+                              tooltip: 'Search trials',
                               onPressed: () {
                                 setState(() {
                                   _searchQuery = '';
@@ -323,7 +416,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                                   style: const TextStyle(
                                       color: Colors.white, fontSize: 15),
                                   decoration: InputDecoration(
-                                    hintText: 'Search trials by name...',
+                                    hintText:
+                                        'Search name, crop, location, season…',
                                     hintStyle: TextStyle(
                                         color:
                                             Colors.white.withValues(alpha: 0.7),
@@ -381,18 +475,68 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (trials) {
                 if (trials.isEmpty) return _buildEmptyState(context);
-                final filtered = _searchQuery.isEmpty
-                    ? trials
-                    : trials
-                        .where((t) => t.name
-                            .toLowerCase()
-                            .contains(_searchQuery.toLowerCase()))
-                        .toList();
-                if (filtered.isEmpty && _searchQuery.isNotEmpty) {
-                  return _buildTrialList(context, ref, filtered,
-                      noResultsMessage: 'No trials match "$_searchQuery"');
+                final displayed = _deriveDisplayedTrials(
+                  trials: trials,
+                  searchQuery: _searchQuery,
+                  statusFilter: _statusFilter,
+                  sortMode: _sortMode,
+                );
+                String? noResultsMessage;
+                if (displayed.isEmpty) {
+                  if (_searchQuery.trim().isNotEmpty) {
+                    noResultsMessage =
+                        'No trials match "$_searchQuery"';
+                  } else if (_statusFilter != _TrialListStatusFilter.all) {
+                    noResultsMessage = 'No trials match this filter.';
+                  } else {
+                    noResultsMessage = 'No trials to show.';
+                  }
                 }
-                return _buildTrialList(context, ref, filtered);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppDesignTokens.spacing16,
+                        0,
+                        AppDesignTokens.spacing16,
+                        AppDesignTokens.spacing8,
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildStatusFilterChip(
+                                _TrialListStatusFilter.all, 'All'),
+                            const SizedBox(width: 6),
+                            _buildStatusFilterChip(
+                                _TrialListStatusFilter.active, 'Active'),
+                            const SizedBox(width: 6),
+                            _buildStatusFilterChip(
+                                _TrialListStatusFilter.draft, 'Draft'),
+                            const SizedBox(width: 6),
+                            _buildStatusFilterChip(
+                                _TrialListStatusFilter.closed, 'Closed'),
+                            const SizedBox(width: 6),
+                            _buildStatusFilterChip(
+                                _TrialListStatusFilter.archived, 'Archived'),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildTrialList(
+                        context,
+                        ref,
+                        displayed,
+                        sortMode: _sortMode,
+                        onSortChanged: (m) =>
+                            setState(() => _sortMode = m),
+                        noResultsMessage: noResultsMessage,
+                      ),
+                    ),
+                  ],
+                );
               },
             ),
           ),
@@ -402,6 +546,33 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
         onPressed: () => _showCreateTrialDialog(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('New Trial'),
+      ),
+    );
+  }
+
+  Widget _buildStatusFilterChip(_TrialListStatusFilter value, String label) {
+    final selected = _statusFilter == value;
+    return FilterChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+          color: const Color(0xFF1A2E20),
+        ),
+      ),
+      selected: selected,
+      onSelected: (_) => setState(() => _statusFilter = value),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      showCheckmark: false,
+      selectedColor: const Color(0xFFE8F2EC),
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: selected
+            ? AppDesignTokens.primary
+            : const Color(0xFFE8E2D8),
       ),
     );
   }
@@ -473,8 +644,13 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
   }
 
   Widget _buildTrialList(
-      BuildContext context, WidgetRef ref, List<Trial> trials,
-      {String? noResultsMessage}) {
+    BuildContext context,
+    WidgetRef ref,
+    List<Trial> trials, {
+    required _TrialListSortMode sortMode,
+    required ValueChanged<_TrialListSortMode> onSortChanged,
+    String? noResultsMessage,
+  }) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0,
           AppDesignTokens.spacing16, AppDesignTokens.spacing24),
@@ -483,17 +659,54 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
           onNavigate: (trial, session) =>
               _navigateToRatingForSession(context, ref, trial, session),
         ),
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Recent Trials',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF4A6358),
-              letterSpacing: 0.5,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Recent Trials',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF4A6358),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
             ),
-          ),
+            PopupMenuButton<_TrialListSortMode>(
+              tooltip: 'Sort: ${_sortModeLabel(sortMode)}',
+              onSelected: onSortChanged,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8, right: 4),
+                child: Icon(
+                  Icons.sort,
+                  size: 22,
+                  color: AppDesignTokens.primary.withValues(alpha: 0.85),
+                ),
+              ),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _TrialListSortMode.newestCreated,
+                  child: Text(_sortModeLabel(_TrialListSortMode.newestCreated)),
+                ),
+                PopupMenuItem(
+                  value: _TrialListSortMode.oldestCreated,
+                  child: Text(_sortModeLabel(_TrialListSortMode.oldestCreated)),
+                ),
+                PopupMenuItem(
+                  value: _TrialListSortMode.nameAz,
+                  child: Text(_sortModeLabel(_TrialListSortMode.nameAz)),
+                ),
+                PopupMenuItem(
+                  value: _TrialListSortMode.nameZa,
+                  child: Text(_sortModeLabel(_TrialListSortMode.nameZa)),
+                ),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: AppDesignTokens.spacing16),
         if (noResultsMessage != null)
