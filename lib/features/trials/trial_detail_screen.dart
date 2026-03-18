@@ -196,7 +196,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         final box = context.findRenderObject() as RenderBox?;
         await Share.shareXFiles(
           files,
-          text: '${trial.name} – trial export (${files.length} CSV files)',
+          text:
+              '${trial.name} – trial CSV bundle (${files.length} files; see data_dictionary.csv)',
           sharePositionOrigin: box == null
               ? const Rect.fromLTWH(0, 0, 100, 100)
               : box.localToGlobal(Offset.zero) & box.size,
@@ -278,7 +279,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             : () => _onExportTapped(context, ref, trial),
         borderRadius: BorderRadius.circular(20),
         child: Tooltip(
-          message: 'Export trial (CSV bundle)',
+          message: 'Export trial data (bundle or ARM package)',
           child: Container(
             padding: const EdgeInsets.fromLTRB(8, 5, 10, 5),
             decoration: BoxDecoration(
@@ -1376,7 +1377,7 @@ class SessionsView extends ConsumerWidget {
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.download_for_offline),
-                tooltip: 'Export all closed sessions',
+                tooltip: 'Export closed sessions (ZIP per session)',
                 onSelected: (value) async {
                   final user = await ref.read(currentUserProvider.future);
                   if (!context.mounted) return;
@@ -1430,10 +1431,13 @@ class SessionsView extends ConsumerWidget {
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
-                      value: 'csv', child: Text('Export all to CSV (ZIP)')),
+                    value: 'csv',
+                    child: Text('Closed Sessions (CSV ZIP)'),
+                  ),
                   const PopupMenuItem(
-                      value: 'arm_xml',
-                      child: Text('Export all as ARM XML (ZIP)')),
+                    value: 'arm_xml',
+                    child: Text('Closed Sessions (ARM XML ZIP)'),
+                  ),
                 ],
               ),
             ],

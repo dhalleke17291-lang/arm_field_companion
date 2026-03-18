@@ -264,7 +264,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                               icon: const Icon(Icons.file_upload_outlined,
                                   color: Colors.white),
                               tooltip:
-                                  'Export all trial data (closed sessions)',
+                                  'Export closed sessions (ZIP per trial)',
                               onPressed: () => _exportAllTrials(context, ref),
                             ),
                             IconButton(

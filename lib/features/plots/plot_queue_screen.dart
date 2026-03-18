@@ -447,7 +447,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                         width: 220,
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.share),
-                          label: const Text('Export & Share CSV'),
+                          label: const Text('Export & Share Session CSV'),
                           onPressed: () async {
                             final proceed = await confirmSessionExportTrust(
                               context: context,

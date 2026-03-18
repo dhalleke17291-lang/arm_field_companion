@@ -11,7 +11,7 @@ extension ExportFormatDetails on ExportFormat {
   String get label {
     switch (this) {
       case ExportFormat.flatCsv:
-        return 'Flat summary CSV';
+        return 'Trial CSV bundle';
       case ExportFormat.armHandoff:
         return 'ARM Import Assistant';
       case ExportFormat.zipBundle:
@@ -24,9 +24,9 @@ extension ExportFormatDetails on ExportFormat {
   String get description {
     switch (this) {
       case ExportFormat.flatCsv:
-        return 'Human-readable, Excel-friendly format';
+        return 'Multiple CSV files per trial—observations, manual-transfer sheet, and more. Open data_dictionary.csv for column help.';
       case ExportFormat.armHandoff:
-        return 'Complete ARM handoff package — observations, mapping sheet, import guide, validation report';
+        return 'ZIP with observations, manual-transfer sheet, arm_mapping, import_guide (file roles), validation report, and photos if any.';
       case ExportFormat.zipBundle:
         return 'All CSV files plus photos packaged in one ZIP file';
       case ExportFormat.pdfReport:

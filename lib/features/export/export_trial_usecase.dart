@@ -311,6 +311,12 @@ class ExportTrialUseCase {
     const headers = ['file', 'column', 'description', 'unit'];
     final rows = <List<String>>[
       // observations.csv
+      [
+        'observations.csv',
+        '_file_note',
+        'Primary long-format observations (one row per rating). Use for analysis; in handoff ZIP, headers map to ARM via arm_mapping.csv.',
+        ''
+      ],
       ['observations.csv', 'trial_id', 'Trial database identifier', ''],
       ['observations.csv', 'trial_name', 'Name of the trial', ''],
       ['observations.csv', 'session_name', 'Name of the rating session', ''],
@@ -432,6 +438,12 @@ class ExportTrialUseCase {
         'export_timestamp',
         'UTC timestamp when export was generated',
         'ISO 8601'
+      ],
+      [
+        'observations_arm_transfer.csv',
+        '_file_note',
+        'Manual-transfer-friendly table: internal plot PK, protocol plot label, session ID, result status, and separate numeric/text value columns.',
+        ''
       ],
       [
         'observations_arm_transfer.csv',

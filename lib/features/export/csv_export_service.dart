@@ -63,6 +63,17 @@ class CsvExportService {
     sb.writeln('"Trial","$trialName"');
     sb.writeln('"Export date","$exportDate"');
     sb.writeln('"","" ');
+    sb.writeln('"FILE GUIDE",""');
+    sb.writeln(
+      '"observations.csv","Primary observations table in this package—for analysis and ARM-oriented import (see arm_mapping.csv for field names)."',
+    );
+    sb.writeln(
+      '"observations_arm_transfer.csv","Manual-transfer-friendly observations with explicit IDs and result status when typing into ARM by hand."',
+    );
+    sb.writeln(
+      '"data_dictionary.csv","Column reference for every CSV file in this bundle."',
+    );
+    sb.writeln('"","" ');
     sb.writeln('"RECOMMENDED IMPORT ORDER",""');
     sb.writeln(
       '"Step 1","Confirm trial structure exists in ARM with matching plot/rep/treatment layout"',

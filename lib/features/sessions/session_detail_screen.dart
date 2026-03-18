@@ -109,7 +109,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.download, color: Colors.white),
-            tooltip: 'Export',
+            tooltip: 'Export session',
             onSelected: (value) async {
               final ok = await confirmSessionExportTrust(
                 context: context,
@@ -126,9 +126,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'csv', child: Text('Export to CSV')),
               const PopupMenuItem(
-                  value: 'arm_xml', child: Text('Export as ARM XML')),
+                  value: 'csv', child: Text('Session Data (CSV)')),
+              const PopupMenuItem(
+                  value: 'arm_xml', child: Text('Session (ARM XML)')),
             ],
           ),
         ],
