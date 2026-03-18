@@ -53,6 +53,7 @@ Future<void> _runPlotRestore(
 
   if (result.success) {
     ref.invalidate(deletedPlotsProvider);
+    ref.invalidate(deletedPlotsForTrialRecoveryProvider(plot.trialId));
     ref.invalidate(plotsForTrialProvider(plot.trialId));
     messenger.showSnackBar(
       const SnackBar(content: Text('Plot restored')),
@@ -98,6 +99,7 @@ Future<void> _runSessionRestore(
 
   if (result.success) {
     ref.invalidate(deletedSessionsProvider);
+    ref.invalidate(deletedSessionsForTrialRecoveryProvider(session.trialId));
     ref.invalidate(sessionsForTrialProvider(session.trialId));
     messenger.showSnackBar(
       const SnackBar(content: Text('Session restored')),
@@ -145,6 +147,8 @@ Future<void> _runTrialRestore(
     ref.invalidate(deletedTrialsProvider);
     ref.invalidate(deletedSessionsProvider);
     ref.invalidate(deletedPlotsProvider);
+    ref.invalidate(deletedSessionsForTrialRecoveryProvider(trial.id));
+    ref.invalidate(deletedPlotsForTrialRecoveryProvider(trial.id));
     ref.invalidate(trialsStreamProvider);
     ref.invalidate(sessionsForTrialProvider(trial.id));
     ref.invalidate(plotsForTrialProvider(trial.id));
@@ -184,18 +188,34 @@ String? _trialCropLocationSubtitle(Trial t) {
 }
 
 /// Read-only list of soft-deleted trials, sessions, and plots (Recovery).
+///
+/// When [trialId] is null, lists all deleted trials, sessions, and plots.
+/// When [trialId] is set, lists only deleted sessions and plots for that trial.
 class RecoveryScreen extends ConsumerWidget {
-  const RecoveryScreen({super.key});
+  const RecoveryScreen({super.key, this.trialId});
+
+  final int? trialId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final trialsAsync = ref.watch(deletedTrialsProvider);
-    final sessionsAsync = ref.watch(deletedSessionsProvider);
-    final plotsAsync = ref.watch(deletedPlotsProvider);
+    final t = trialId;
+    final scoped = t != null;
+    final trialsAsync = scoped ? null : ref.watch(deletedTrialsProvider);
+    final sessionsAsync = t == null
+        ? ref.watch(deletedSessionsProvider)
+        : ref.watch(deletedSessionsForTrialRecoveryProvider(t));
+    final plotsAsync = t == null
+        ? ref.watch(deletedPlotsProvider)
+        : ref.watch(deletedPlotsForTrialRecoveryProvider(t));
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
-      appBar: const GradientScreenHeader(title: 'Recovery'),
+      appBar: GradientScreenHeader(
+        title: 'Recovery',
+        subtitle: scoped
+            ? 'Deleted items in this trial'
+            : 'All deleted items',
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(
@@ -203,8 +223,10 @@ class RecoveryScreen extends ConsumerWidget {
             vertical: AppDesignTokens.spacing24,
           ),
           children: [
-            _DeletedTrialsSection(async: trialsAsync),
-            const SizedBox(height: AppDesignTokens.spacing16),
+            if (!scoped && trialsAsync != null) ...[
+              _DeletedTrialsSection(async: trialsAsync),
+              const SizedBox(height: AppDesignTokens.spacing16),
+            ],
             _DeletedSessionsSection(async: sessionsAsync),
             const SizedBox(height: AppDesignTokens.spacing16),
             _DeletedPlotsSection(async: plotsAsync),

@@ -450,7 +450,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                         onPressed: () {
                           Navigator.of(context).push<void>(
                             MaterialPageRoute<void>(
-                              builder: (_) => const RecoveryScreen(),
+                              builder: (_) => RecoveryScreen(trialId: trial.id),
                             ),
                           );
                         },

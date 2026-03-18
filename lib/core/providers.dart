@@ -334,6 +334,20 @@ final deletedPlotsProvider = FutureProvider.autoDispose<List<Plot>>((ref) {
   return ref.watch(plotRepositoryProvider).getAllDeletedPlots();
 });
 
+/// Soft-deleted sessions for one trial (Recovery trial-scoped).
+final deletedSessionsForTrialRecoveryProvider =
+    FutureProvider.autoDispose.family<List<Session>, int>((ref, trialId) {
+  return ref
+      .watch(sessionRepositoryProvider)
+      .getDeletedSessionsForTrial(trialId);
+});
+
+/// Soft-deleted plots for one trial (Recovery trial-scoped).
+final deletedPlotsForTrialRecoveryProvider =
+    FutureProvider.autoDispose.family<List<Plot>, int>((ref, trialId) {
+  return ref.watch(plotRepositoryProvider).getDeletedPlotsForTrial(trialId);
+});
+
 /// Seeding records for a trial (for Seeding tab). Invalidate after add/edit/delete.
 final seedingRecordsForTrialProvider = FutureProvider.autoDispose
     .family<List<SeedingRecord>, int>((ref, trialId) async {
