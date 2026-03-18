@@ -396,6 +396,39 @@ class SessionSummaryScreen extends ConsumerWidget {
                                     semanticsLabel:
                                         'Open Plot Queue, edited plots only',
                                   ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        left: 4, right: 4, bottom: 4),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Includes amended, corrected, and re-saved values',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            height: 1.3,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Tap to review edited plots in this session',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            height: 1.3,
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withValues(alpha: 0.85),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                   Semantics(
                                     button: true,
                                     label: 'Open Plot Queue',
@@ -404,9 +437,9 @@ class SessionSummaryScreen extends ConsumerWidget {
                                           context, trial, session),
                                       child: Padding(
                                         padding:
-                                            const EdgeInsets.only(top: 10),
+                                            const EdgeInsets.only(top: 6),
                                         child: Text(
-                                          'Open Plot Queue and use filters to review flagged, issue, or edited plots.',
+                                          'Tap Flagged or Issues above for those filters. Open Plot Queue below for the full list.',
                                           style: TextStyle(
                                             fontSize: 12,
                                             height: 1.35,
@@ -466,7 +499,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                                 );
                               },
                               child: const Text(
-                                'Open Edited Items (trial-level)',
+                                'Edited Items (all sessions)',
                               ),
                             ),
                           ),

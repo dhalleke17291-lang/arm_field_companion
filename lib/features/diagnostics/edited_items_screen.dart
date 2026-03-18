@@ -49,7 +49,10 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
-      appBar: const GradientScreenHeader(title: 'Edited Items'),
+      appBar: const GradientScreenHeader(
+        title: 'Edited Items',
+        subtitle: 'Includes all sessions in this trial',
+      ),
       body: FutureBuilder<List<EditedRatingListItem>>(
         future: _ensureFuture(),
         builder: (context, snapshot) {

@@ -399,6 +399,16 @@ class _SummaryStrip extends StatelessWidget {
               color: scheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            'Edited includes amended, corrected, and re-saved values',
+            style: TextStyle(
+              fontSize: 10,
+              height: 1.3,
+              fontWeight: FontWeight.w500,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );

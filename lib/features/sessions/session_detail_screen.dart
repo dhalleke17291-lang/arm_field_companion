@@ -196,9 +196,24 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-                  child: _SessionExportTrustCaption(
-                    trialId: widget.trial.id,
-                    sessionId: session.id,
+                  child: Column(
+                    children: [
+                      _SessionExportTrustCaption(
+                        trialId: widget.trial.id,
+                        sessionId: session.id,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'See full history in Diagnostics → Audit log',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.48),
+                            ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(

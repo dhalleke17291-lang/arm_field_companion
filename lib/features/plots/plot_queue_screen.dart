@@ -448,6 +448,19 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             ),
           ),
         ],
+        if (_showEditedOnly)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+            child: Text(
+              'Edited = amended, corrected, or re-saved ratings',
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.25,
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
 
         // Plot list grouped by rep
         Expanded(
@@ -803,6 +816,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             ),
             SwitchListTile(
               title: const Text('Show Edited Only'),
+              subtitle: const Text(
+                'Edited = amended, corrected, or re-saved ratings',
+                style: TextStyle(fontSize: 12),
+              ),
               value: _showEditedOnly,
               onChanged: (val) {
                 setState(() => _showEditedOnly = val);
@@ -941,21 +958,26 @@ class _PlotQueueTile extends ConsumerWidget {
                         ),
                       ),
                     if (hasEdited)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blueGrey.shade50,
-                          borderRadius:
-                              BorderRadius.circular(AppDesignTokens.radiusChip),
-                          border: Border.all(color: Colors.blueGrey.shade200),
-                        ),
-                        child: Text(
-                          'Edited',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blueGrey.shade800,
+                      Tooltip(
+                        message:
+                            'Edited = amended, corrected, or re-saved ratings',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blueGrey.shade50,
+                            borderRadius: BorderRadius.circular(
+                                AppDesignTokens.radiusChip),
+                            border:
+                                Border.all(color: Colors.blueGrey.shade200),
+                          ),
+                          child: Text(
+                            'Edited',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blueGrey.shade800,
+                            ),
                           ),
                         ),
                       ),
