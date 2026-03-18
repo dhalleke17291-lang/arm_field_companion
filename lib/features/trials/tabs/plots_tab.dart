@@ -23,6 +23,87 @@ const double _kGridMinScale = 0.3;
 const double _kGridMaxScale = 3.0;
 const double _kGridZoomFactor = 1.25;
 
+Future<void> _runGenerateRepGuardPlots(
+  BuildContext context,
+  WidgetRef ref,
+  int trialId,
+) async {
+  final uc = ref.read(generateRepGuardPlotsUseCaseProvider);
+  final n = await uc.countToInsert(trialId);
+  if (!context.mounted) return;
+  if (n == 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'All rep guard plots already exist. Nothing to add.',
+        ),
+      ),
+    );
+    return;
+  }
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Add Rep Guard Plots'),
+      content: Text(
+        'Add $n guard plot${n == 1 ? '' : 's'}? '
+        'Each rep gets flank plots G{rep}-L (left) and G{rep}-R (right). '
+        'Existing research plots are not modified.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Add'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  final added = await uc.execute(trialId);
+  ref.invalidate(plotsForTrialProvider(trialId));
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        added == 1
+            ? 'Added 1 guard plot.'
+            : 'Added $added guard plots.',
+      ),
+    ),
+  );
+}
+
+Widget _buildAddRepGuardsRow(
+  BuildContext context,
+  WidgetRef ref,
+  int trialId,
+) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppDesignTokens.spacing16,
+      0,
+      AppDesignTokens.spacing16,
+      4,
+    ),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () => _runGenerateRepGuardPlots(context, ref, trialId),
+        icon: const Icon(Icons.add_moderator_outlined, size: 18),
+        label: const Text('Add Rep Guards'),
+        style: TextButton.styleFrom(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
+      ),
+    ),
+  );
+}
+
 /// Reusable treatment legend card: compact accent badge + name + optional subtitle.
 /// Enterprise-style mini-card; used in summary and grid legend.
 Widget _buildTreatmentLegendCard(
@@ -1596,6 +1677,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         _buildPlotsHeaderForDetails(context, ref, plots, assignmentsLocked),
         _buildListLayoutToggleForDetails(context, ref, plots),
         _buildShowGuardsToggleForDetails(context),
+        _buildAddRepGuardsRow(context, ref, widget.trial.id),
         if (_showLayoutView) ...[
           _buildLayerSwitcherForDetails(context),
           if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
@@ -3361,6 +3443,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                     ],
                   ),
                 ),
+                _buildAddRepGuardsRow(context, ref, widget.trial.id),
                 Expanded(
                   child: _buildListBody(context, ref, displayPlots, plots,
                       assignmentsLocked),
@@ -3409,6 +3492,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   ],
                 ),
               ),
+              _buildAddRepGuardsRow(context, ref, widget.trial.id),
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

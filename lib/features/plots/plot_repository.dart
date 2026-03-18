@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import 'rep_guard_plot_plan.dart';
 
 class PlotRepository {
   final AppDatabase _db;
@@ -99,6 +100,33 @@ class PlotRepository {
         await _db.into(_db.plots).insert(plot);
       }
     });
+  }
+
+  /// How many rep flank guard plots would be inserted (v1: G{rep}-L / G{rep}-R).
+  Future<int> countRepGuardPlotsToInsert(int trialId) async {
+    final plots = await getPlotsForTrial(trialId);
+    return planRepGuardPlotInserts(plots).length;
+  }
+
+  /// Inserts missing rep flank guards; idempotent by plotId. Does not update existing plots.
+  Future<int> insertRepGuardPlotsIfNeeded(int trialId) async {
+    final plots = await getPlotsForTrial(trialId);
+    final plans = planRepGuardPlotInserts(plots);
+    if (plans.isEmpty) return 0;
+    await _db.transaction(() async {
+      for (final plan in plans) {
+        await _db.into(_db.plots).insert(
+              PlotsCompanion.insert(
+                trialId: trialId,
+                plotId: plan.plotId,
+                plotSortIndex: Value(plan.plotSortIndex),
+                rep: Value(plan.layoutRep),
+                isGuardRow: const Value(true),
+              ),
+            );
+      }
+    });
+    return plans.length;
   }
 
   Future<List<Plot>> getPlotsPage({

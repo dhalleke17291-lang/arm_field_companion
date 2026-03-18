@@ -192,6 +192,12 @@ class FakePlotRepository implements PlotRepository {
       throw UnimplementedError();
 
   @override
+  Future<int> countRepGuardPlotsToInsert(int trialId) async => 0;
+
+  @override
+  Future<int> insertRepGuardPlotsIfNeeded(int trialId) async => 0;
+
+  @override
   Future<void> updatePlotGuardRow(int plotPk, bool isGuardRow) async {}
 
   @override
