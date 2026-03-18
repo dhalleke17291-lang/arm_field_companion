@@ -97,6 +97,354 @@ Widget _buildTreatmentLegendCard(
   );
 }
 
+Color _ratingCellColor(String? status) {
+  switch (status) {
+    case 'RECORDED':
+      return const Color(0xFF2D5A40);
+    case 'NOT_OBSERVED':
+      return Colors.grey.shade400;
+    case 'NOT_APPLICABLE':
+      return Colors.grey.shade400;
+    case 'MISSING_CONDITION':
+      return const Color(0xFFF59E0B);
+    case 'TECHNICAL_ISSUE':
+      return const Color(0xFFEA580C);
+    default:
+      return Colors.white;
+  }
+}
+
+Color _ratingTextColor(String? status) {
+  if (status == null) return Colors.grey.shade400;
+  return Colors.white;
+}
+
+String _ratingCellLabel(RatingRecord? rating) {
+  if (rating == null) return '';
+  switch (rating.resultStatus) {
+    case 'RECORDED':
+      if (rating.numericValue != null) {
+        final v = rating.numericValue!;
+        return v == v.truncateToDouble()
+            ? v.toInt().toString()
+            : v.toStringAsFixed(1);
+      }
+      return rating.textValue ?? '';
+    case 'NOT_OBSERVED':
+      return 'N/O';
+    case 'NOT_APPLICABLE':
+      return 'N/A';
+    case 'MISSING_CONDITION':
+      return '!';
+    case 'TECHNICAL_ISSUE':
+      return 'T';
+    default:
+      return '';
+  }
+}
+
+Widget _ratingOverlayLegendChip(Color color, String label) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: const Color(0xFFE0DDD6)),
+        ),
+      ),
+      const SizedBox(width: 6),
+      Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+      ),
+    ],
+  );
+}
+
+Widget _buildRatingsOverlay({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Trial trial,
+  required List<Plot> plots,
+  required List<Session> sessions,
+  required Session? selectedRatingSession,
+  required ValueChanged<Session> onSessionChanged,
+}) {
+  if (sessions.isEmpty) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bar_chart_outlined, size: 48, color: Color(0xFFBBBBBB)),
+          SizedBox(height: 12),
+          Text(
+            'No sessions yet',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFFBBBBBB),
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Start a rating session to see the overlay',
+            style: TextStyle(fontSize: 12, color: Color(0xFFCCCCCC)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  var activeSession = sessions.first;
+  final sel = selectedRatingSession;
+  if (sel != null) {
+    for (final s in sessions) {
+      if (s.id == sel.id) {
+        activeSession = s;
+        break;
+      }
+    }
+  }
+
+  final ratingsAsync = ref.watch(sessionRatingsProvider(activeSession.id));
+
+  return Column(
+    key: ValueKey<Object>(Object.hash(trial.id, activeSession.id)),
+    children: [
+      if (sessions.length > 1)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: DropdownButtonFormField<int>(
+            // ignore: deprecated_member_use
+            value: activeSession.id,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE0DDD6)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE0DDD6)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(
+                  color: Color(0xFF2D5A40),
+                  width: 1.5,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            items: sessions
+                .map(
+                  (s) => DropdownMenuItem<int>(
+                    value: s.id,
+                    child: Text(s.name, overflow: TextOverflow.ellipsis),
+                  ),
+                )
+                .toList(),
+            onChanged: (id) {
+              if (id == null) return;
+              final s = sessions.firstWhere((e) => e.id == id);
+              onSessionChanged(s);
+            },
+          ),
+        ),
+      Expanded(
+        child: ratingsAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: Color(0xFF2D5A40)),
+          ),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (allRatings) {
+            final ratings =
+                allRatings.where((r) => r.resultStatus != 'VOID').toList();
+
+            final ratingByPlot = <int, RatingRecord>{};
+            final assessmentCountByPlot = <int, int>{};
+
+            for (final r in ratings) {
+              ratingByPlot.putIfAbsent(r.plotPk, () => r);
+              assessmentCountByPlot[r.plotPk] =
+                  (assessmentCountByPlot[r.plotPk] ?? 0) + 1;
+            }
+
+            final byRep = <int?, List<Plot>>{};
+            for (final p in plots) {
+              byRep.putIfAbsent(p.rep, () => []).add(p);
+            }
+
+            final sortedReps = byRep.keys.toList()
+              ..sort((a, b) {
+                if (a == null) return 1;
+                if (b == null) return -1;
+                return a.compareTo(b);
+              });
+
+            const tileSize = 56.0;
+            const tileSpacing = 6.0;
+            const repLabelWidth = 52.0;
+
+            return InteractiveViewer(
+              constrained: false,
+              minScale: 0.3,
+              maxScale: 3.0,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...sortedReps.map((rep) {
+                      final repPlots = List<Plot>.from(byRep[rep]!);
+                      repPlots.sort((a, b) =>
+                          (a.fieldColumn ?? 0).compareTo(b.fieldColumn ?? 0));
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: tileSpacing),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: repLabelWidth,
+                              child: Text(
+                                'Rep ${rep ?? '?'}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ),
+                            ...repPlots.map((plot) {
+                              final rating = ratingByPlot[plot.id];
+                              final count =
+                                  assessmentCountByPlot[plot.id] ?? 0;
+                              final cellColor =
+                                  _ratingCellColor(rating?.resultStatus);
+                              final textColor =
+                                  _ratingTextColor(rating?.resultStatus);
+                              final label = _ratingCellLabel(rating);
+
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.only(right: tileSpacing),
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: tileSize,
+                                      height: tileSize,
+                                      decoration: BoxDecoration(
+                                        color: cellColor,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: rating == null
+                                              ? const Color(0xFFE0DDD6)
+                                              : cellColor,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            plot.plotId,
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: rating == null
+                                                  ? Colors.grey.shade400
+                                                  : textColor.withValues(
+                                                      alpha: 0.7,
+                                                    ),
+                                            ),
+                                          ),
+                                          if (label.isNotEmpty)
+                                            Text(
+                                              label,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: textColor,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (count > 1)
+                                      Positioned(
+                                        top: 3,
+                                        right: 3,
+                                        child: Tooltip(
+                                          message:
+                                              '$count assessments recorded',
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                              vertical: 1,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black54,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              '+${count - 1}A',
+                                              style: const TextStyle(
+                                                fontSize: 8,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 6,
+                      children: [
+                        _ratingOverlayLegendChip(
+                            const Color(0xFF2D5A40), 'Recorded'),
+                        _ratingOverlayLegendChip(
+                            Colors.grey.shade400, 'Not observed'),
+                        _ratingOverlayLegendChip(
+                            const Color(0xFFF59E0B), 'Missing'),
+                        _ratingOverlayLegendChip(
+                            const Color(0xFFEA580C), 'Tech issue'),
+                        _ratingOverlayLegendChip(Colors.white, 'No record'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    ],
+  );
+}
+
 /// Minimap: 48x32 thumbnail of full grid with white viewport rect showing current pan/zoom.
 class _LayoutMinimap extends StatelessWidget {
   const _LayoutMinimap({
@@ -1121,6 +1469,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
 
   _LayoutLayer _layoutLayer = _LayoutLayer.treatments;
   ApplicationEvent? _selectedAppEvent;
+  Session? _selectedRatingSession;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
   final TransformationController _gridTransformController =
@@ -1258,9 +1607,16 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         if (_showLayoutView)
           Expanded(
             child: _layoutLayer == _LayoutLayer.ratings
-                ? const Center(
-                    child: Text('Ratings overlay coming soon',
-                        style: TextStyle(color: AppDesignTokens.secondaryText)))
+                ? _buildRatingsOverlay(
+                    context: context,
+                    ref: ref,
+                    trial: widget.trial,
+                    plots: plots,
+                    sessions: sessions,
+                    selectedRatingSession: _selectedRatingSession,
+                    onSessionChanged: (s) =>
+                        setState(() => _selectedRatingSession = s),
+                  )
                 : LayoutBuilder(
                     builder: (context, constraints) {
                       if (!_gridCenterScheduled) {
@@ -2789,6 +3145,7 @@ class _PlotsFullScreenPage extends ConsumerStatefulWidget {
 class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   late _LayoutLayer _layoutLayer;
   ApplicationEvent? _selectedAppEvent;
+  Session? _selectedRatingSession;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
   final TransformationController _gridTransformController =
@@ -2947,10 +3304,16 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               ),
               Expanded(
                 child: _layoutLayer == _LayoutLayer.ratings
-                    ? const Center(
-                        child: Text('Ratings overlay coming soon',
-                            style: TextStyle(
-                                color: AppDesignTokens.secondaryText)))
+                    ? _buildRatingsOverlay(
+                        context: context,
+                        ref: ref,
+                        trial: widget.trial,
+                        plots: plots,
+                        sessions: sessions,
+                        selectedRatingSession: _selectedRatingSession,
+                        onSessionChanged: (s) =>
+                            setState(() => _selectedRatingSession = s),
+                      )
                     : LayoutBuilder(
                         builder: (context, constraints) {
                           if (!_gridCenterScheduled) {
