@@ -308,96 +308,146 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final totalPlots = plots.length;
     final ratedCount = ratedPks.length;
 
+    final scheme = Theme.of(context).colorScheme;
+    final hasFieldRow = plots.any((p) => p.fieldRow != null);
+    const serpentineGreen = Color(0xFF2D5A40);
+
     return Column(
       children: [
         const _PlotQueueDockBar(),
+        const SizedBox(height: 4),
         // Section header (same as Trial Plots tab)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: Theme.of(context).colorScheme.primaryContainer,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          color: scheme.primaryContainer,
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(Icons.grid_on, color: Theme.of(context).colorScheme.primary),
+              Icon(Icons.grid_on, color: scheme.primary, size: 22),
               const SizedBox(width: 8),
-              Text('$ratedCount / $totalPlots rated',
+              Expanded(
+                child: Text(
+                  '$ratedCount / $totalPlots rated',
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary)),
-              const Spacer(),
-              if (plots.any((p) => p.fieldRow != null))
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2D5A40),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.route, size: 11, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text('Serpentine',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700)),
-                    ],
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    height: 1.2,
+                    color: scheme.primary,
                   ),
                 ),
-              if (_anyPlotFiltersActive()) ...[
-                if (plots.any((p) => p.fieldRow != null))
-                  const SizedBox(width: 6),
-                Tooltip(
-                  message: 'Clear all filters',
-                  child: Material(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      onTap: _clearAllPlotFilters,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        child: Text(
-                          'Filters',
-                          style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSecondaryContainer,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasFieldRow)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: serpentineGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: serpentineGreen.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.route, size: 11, color: serpentineGreen),
+                          SizedBox(width: 4),
+                          Text(
+                            'Serpentine',
+                            style: TextStyle(
+                              color: serpentineGreen,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (hasFieldRow && _anyPlotFiltersActive())
+                    const SizedBox(width: 8),
+                  if (_anyPlotFiltersActive())
+                    Tooltip(
+                      message: 'Clear all filters',
+                      child: Material(
+                        color: scheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                        child: InkWell(
+                          onTap: _clearAllPlotFilters,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 4),
+                            child: Text(
+                              'Filtered',
+                              style: TextStyle(
+                                color: scheme.onSecondaryContainer,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ],
           ),
         ),
-        // Assessment chips
-        if (assessments.isNotEmpty)
-          SizedBox(
-            height: 44,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              itemCount: assessments.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: Chip(
-                    label: Text(assessments[index].name,
-                        style: const TextStyle(fontSize: 12)),
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
+        if (assessments.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 8, 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Assessments in this session',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.15,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 34,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.zero,
+                    itemCount: assessments.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Chip(
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          label: Text(
+                            assessments[index].name,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                          backgroundColor: scheme.surfaceContainerHighest,
+                          side: BorderSide(
+                            color: scheme.outlineVariant.withValues(
+                                alpha: 0.9),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
+        ],
 
         // Plot list grouped by rep
         Expanded(
@@ -1178,9 +1228,9 @@ class _PlotQueueDockBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 110,
+      height: 94,
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      padding: const EdgeInsets.only(top: 6, bottom: 4),
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1223,7 +1273,7 @@ class _PlotQueueDockTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: selected ? scheme.primaryContainer : Colors.transparent,
                 shape: BoxShape.circle,
@@ -1231,7 +1281,7 @@ class _PlotQueueDockTile extends StatelessWidget {
               child: Icon(
                 icon,
                 color: selected ? activeColor : inactiveColor,
-                size: selected ? 24 : 20,
+                size: selected ? 22 : 19,
               ),
             ),
             const SizedBox(height: 3),
