@@ -30,6 +30,8 @@ import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
 import 'tabs/timeline_tab.dart';
 import 'trial_setup_screen.dart';
+import '../diagnostics/edited_items_screen.dart';
+import '../recovery/recovery_screen.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -240,6 +242,19 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     _runExport(format);
   }
 
+  Future<void> _openReadinessReview(
+      BuildContext context, WidgetRef ref, Trial trial) async {
+    final report = await ref.read(trialReadinessProvider(trial.id).future);
+    if (!context.mounted) return;
+    _showReadinessSheet(
+      context,
+      ref,
+      trial,
+      report,
+      showExportAnyway: report.blockerCount == 0,
+    );
+  }
+
   void _showReadinessSheet(
     BuildContext context,
     WidgetRef ref,
@@ -260,6 +275,208 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           _runExport(format);
         },
         onClose: () => Navigator.pop(ctx),
+      ),
+    );
+  }
+
+  /// Informational trust signals only; does not affect export or readiness logic.
+  Widget _buildTrialTrustSummaryCard(
+      BuildContext context, WidgetRef ref, Trial trial) {
+    final theme = Theme.of(context);
+    final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
+    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trial.id));
+    final correctionsAsync =
+        ref.watch(sessionIdsWithCorrectionsForTrialProvider(trial.id));
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          border: Border.all(color: AppDesignTokens.borderCrisp),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+          child: readinessAsync.when(
+            loading: () => const Text(
+              'Updating trust summary…',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            error: (_, __) => const Text(
+              'Trust summary unavailable.',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            data: (report) {
+              final ({Color bg, Color fg}) statusStyle =
+                  switch (report.status) {
+                TrialReadinessStatus.ready => (
+                    bg: const Color(0xFFE8F5E9),
+                    fg: const Color(0xFF2E7D32),
+                  ),
+                TrialReadinessStatus.readyWithWarnings => (
+                    bg: const Color(0xFFFFF8E6),
+                    fg: const Color(0xFFB45309),
+                  ),
+                TrialReadinessStatus.notReady => (
+                    bg: theme.colorScheme.errorContainer,
+                    fg: theme.colorScheme.onErrorContainer,
+                  ),
+              };
+              final statusLabel = switch (report.status) {
+                TrialReadinessStatus.ready => 'Ready',
+                TrialReadinessStatus.readyWithWarnings =>
+                  'Ready with warnings',
+                TrialReadinessStatus.notReady => 'Not ready',
+              };
+
+              final totalPlots = plotsAsync.valueOrNull?.length;
+              final rated = ratedAsync.valueOrNull;
+              final int? unrated = totalPlots != null &&
+                      rated != null &&
+                      totalPlots > 0
+                  ? (totalPlots - rated).clamp(0, totalPlots)
+                  : null;
+
+              final corrections =
+                  correctionsAsync.valueOrNull?.length ?? 0;
+              final correctionsLoaded = correctionsAsync.hasValue;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Trust summary',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: statusStyle.bg,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          statusLabel,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: statusStyle.fg,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (unrated != null && unrated > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '$unrated plot${unrated == 1 ? '' : 's'} without ratings',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                  ],
+                  if (correctionsLoaded && corrections > 0) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      '$corrections session${corrections == 1 ? '' : 's'} with corrections',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 0,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: () =>
+                            _openReadinessReview(context, ref, trial),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('Review Readiness'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push<void>(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const EditedItemsScreen(),
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('Edited Items'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push<void>(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const RecoveryScreen(),
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('Recovery'),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Edited Items and Recovery are app-wide.',
+                    style: TextStyle(
+                      fontSize: 10,
+                      height: 1.3,
+                      color: AppDesignTokens.secondaryText.withValues(
+                          alpha: 0.85),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -617,6 +834,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               ref.watch(seedingEventForTrialProvider(widget.trial.id)),
             ),
           ),
+          _buildTrialTrustSummaryCard(context, ref, currentTrial),
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: PlotsTab(trial: currentTrial, embeddedInScroll: true),
@@ -800,6 +1018,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
           ),
         ),
+        _buildTrialTrustSummaryCard(context, ref, currentTrial),
         Expanded(
           child: IndexedStack(
             index: _selectedTabIndex,
