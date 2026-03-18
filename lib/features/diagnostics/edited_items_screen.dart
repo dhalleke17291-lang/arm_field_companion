@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
@@ -15,15 +16,69 @@ class EditedItemsScreen extends ConsumerStatefulWidget {
 }
 
 class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
-  Future<List<EditedRatingListItem>>? _future;
+  Future<List<_EditedItemWithDiff>>? _future;
 
-  Future<List<EditedRatingListItem>> _ensureFuture() {
-    return _future ??= GetEditedRatingsUseCase(
+  Future<List<_EditedItemWithDiff>> _ensureFuture() {
+    return _future ??= _loadEditedItemsWithCorrectionDiffs();
+  }
+
+  Future<List<_EditedItemWithDiff>> _loadEditedItemsWithCorrectionDiffs() async {
+    final items = await GetEditedRatingsUseCase(
       db: ref.read(databaseProvider),
       trialRepo: ref.read(trialRepositoryProvider),
       sessionRepo: ref.read(sessionRepositoryProvider),
       plotRepo: ref.read(plotRepositoryProvider),
     ).call();
+    final repo = ref.read(ratingRepositoryProvider);
+    final out = <_EditedItemWithDiff>[];
+    for (final item in items) {
+      String? diffLine;
+      if (item.hasCorrection) {
+        final c = await repo.getLatestCorrectionForRating(item.rating.id);
+        if (c != null) {
+          diffLine = _correctionDiffLine(c);
+        }
+      }
+      out.add(_EditedItemWithDiff(item, diffLine));
+    }
+    return out;
+  }
+
+  /// Single-line summary from stored correction fields only (no audit/chain).
+  static String? _correctionDiffLine(RatingCorrection c) {
+    final os = c.oldResultStatus;
+    final ns = c.newResultStatus;
+
+    if (os != ns) {
+      if (ns == 'RECORDED' && c.newNumericValue != null) {
+        return 'Status: $os → RECORDED (${c.newNumericValue})';
+      }
+      final nt = c.newTextValue?.trim();
+      if (ns == 'RECORDED' && nt != null && nt.isNotEmpty) {
+        return 'Status: $os → RECORDED ($nt)';
+      }
+      return 'Status: $os → $ns';
+    }
+
+    final on = c.oldNumericValue;
+    final nn = c.newNumericValue;
+    if (on != null || nn != null) {
+      final o = on?.toString() ?? '—';
+      final n = nn?.toString() ?? '—';
+      if (o != n) return 'Was $o → Now $n';
+    }
+
+    final ot = c.oldTextValue?.trim() ?? '';
+    final nt = c.newTextValue?.trim() ?? '';
+    if (ot.isNotEmpty || nt.isNotEmpty) {
+      if (ot != nt) {
+        final o = ot.isEmpty ? '—' : ot;
+        final n = nt.isEmpty ? '—' : nt;
+        return 'Was $o → Now $n';
+      }
+    }
+
+    return null;
   }
 
   static String _formatDate(DateTime at) {
@@ -53,7 +108,7 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
         title: 'Edited Items',
         subtitle: 'Includes all sessions in this trial',
       ),
-      body: FutureBuilder<List<EditedRatingListItem>>(
+      body: FutureBuilder<List<_EditedItemWithDiff>>(
         future: _ensureFuture(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -70,8 +125,8 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
               ),
             );
           }
-          final items = snapshot.data ?? const <EditedRatingListItem>[];
-          if (items.isEmpty) {
+          final rows = snapshot.data ?? const <_EditedItemWithDiff>[];
+          if (rows.isEmpty) {
             return const Center(
               child: Text(
                 'No edited items',
@@ -84,11 +139,12 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
           }
           return ListView.separated(
             padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-            itemCount: items.length,
+            itemCount: rows.length,
             separatorBuilder: (_, __) =>
                 const SizedBox(height: AppDesignTokens.spacing12),
             itemBuilder: (context, i) {
-              final item = items[i];
+              final row = rows[i];
+              final item = row.item;
               final r = item.rating;
               final primary = item.assessmentLabel != null &&
                       item.assessmentLabel!.isNotEmpty
@@ -128,6 +184,20 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
                         color: AppDesignTokens.primary,
                       ),
                     ),
+                    if (row.correctionDiffLine != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        row.correctionDiffLine!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          height: 1.25,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                      ),
+                    ],
                     if (r.amendmentReason != null &&
                         r.amendmentReason!.trim().isNotEmpty) ...[
                       const SizedBox(height: 6),
@@ -151,4 +221,11 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
       ),
     );
   }
+}
+
+class _EditedItemWithDiff {
+  const _EditedItemWithDiff(this.item, this.correctionDiffLine);
+
+  final EditedRatingListItem item;
+  final String? correctionDiffLine;
 }
