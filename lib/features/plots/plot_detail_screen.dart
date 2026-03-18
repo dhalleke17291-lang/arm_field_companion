@@ -20,6 +20,75 @@ const List<String> _plotDirectionOptions = [
   'Other',
 ];
 
+Future<void> _confirmAndSoftDeletePlot(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Plot plot,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete plot'),
+      content: const Text(
+        'This plot will be moved to Recovery.\n\n'
+        'Existing ratings for this plot are not deleted.\n\n'
+        'The trial and sessions are unchanged.\n\n'
+        'You can restore this plot later from Recovery.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete plot'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  try {
+    final user = await ref.read(currentUserProvider.future);
+    final userId = await ref.read(currentUserIdProvider.future);
+    await ref.read(plotRepositoryProvider).softDeletePlot(
+          plot.id,
+          deletedBy: user?.displayName,
+          deletedByUserId: userId,
+        );
+    if (!context.mounted) return;
+    final trialId = trial.id;
+    final plotPk = plot.id;
+    ref.invalidate(plotsForTrialProvider(trialId));
+    ref.invalidate(deletedPlotsProvider);
+    ref.invalidate(plotRatingHistoryProvider(
+        PlotRatingParams(trialId: trialId, plotPk: plotPk)));
+    ref.invalidate(plotContextProvider(plotPk));
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Plot moved to Recovery')),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Could not delete plot'),
+        content: SelectableText('$e'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class PlotDetailScreen extends ConsumerWidget {
   final Trial trial;
   final Plot plot;
@@ -63,6 +132,21 @@ class PlotDetailScreen extends ConsumerWidget {
             tooltip: 'Notes',
             onPressed: () =>
                 showPlotNotesDialog(context, ref, plotToShow, trial),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More',
+            onSelected: (value) {
+              if (value == 'delete_plot') {
+                _confirmAndSoftDeletePlot(context, ref, trial, plot);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'delete_plot',
+                child: Text('Delete plot'),
+              ),
+            ],
           ),
         ],
       ),
