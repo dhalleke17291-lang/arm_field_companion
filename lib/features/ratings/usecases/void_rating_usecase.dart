@@ -13,6 +13,7 @@ class VoidRatingUseCase {
     required String reason,
     bool isSessionClosed = false,
     String? raterName,
+    int? performedByUserId,
   }) async {
     try {
       if (isSessionClosed) {
@@ -32,6 +33,7 @@ class VoidRatingUseCase {
         reason: reason,
         isSessionClosed: isSessionClosed,
         raterName: raterName,
+        performedByUserId: performedByUserId,
       );
 
       return VoidRatingResult.success();

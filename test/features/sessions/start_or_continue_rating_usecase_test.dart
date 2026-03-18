@@ -322,6 +322,7 @@ class _FakeRatingRepository implements RatingRepository {
     String? amendmentReason,
     String? amendedBy,
     String? confidence,
+    int? lastEditedByUserId,
   }) async {
     throw UnimplementedError();
   }
@@ -369,6 +370,7 @@ class _FakeRatingRepository implements RatingRepository {
     required String reason,
     required bool isSessionClosed,
     String? raterName,
+    int? performedByUserId,
   }) async {
     throw UnimplementedError();
   }

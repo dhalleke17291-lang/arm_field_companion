@@ -643,6 +643,7 @@ Future<void> _showEditRatingSheet(
                   }
                 }
                 try {
+                  final userId = await ref.read(currentUserIdProvider.future);
                   await repo.updateRating(
                     ratingId: rating.id,
                     numericValue: numericValue ?? rating.numericValue,
@@ -651,6 +652,7 @@ Future<void> _showEditRatingSheet(
                     amendedBy: amendedByController.text.trim().isEmpty
                         ? null
                         : amendedByController.text.trim(),
+                    lastEditedByUserId: userId,
                   );
                   if (ctx.mounted) {
                     ref.invalidate(plotRatingHistoryProvider(

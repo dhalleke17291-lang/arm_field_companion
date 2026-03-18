@@ -103,6 +103,7 @@ class MockRatingRepository implements RatingRepository {
     String? amendmentReason,
     String? amendedBy,
     String? confidence,
+    int? lastEditedByUserId,
   }) async {
     final idx = _records.indexWhere((r) => r.id == ratingId);
     if (idx == -1) throw RatingIntegrityException('Rating not found: $ratingId');
@@ -132,6 +133,7 @@ class MockRatingRepository implements RatingRepository {
     required String reason,
     required bool isSessionClosed,
     String? raterName,
+    int? performedByUserId,
   }) async {}
 
   @override

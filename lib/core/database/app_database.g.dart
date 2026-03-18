@@ -8834,6 +8834,21 @@ class $RatingRecordsTable extends RatingRecords
   late final GeneratedColumn<DateTime> amendedAt = GeneratedColumn<DateTime>(
       'amended_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _lastEditedByUserIdMeta =
+      const VerificationMeta('lastEditedByUserId');
+  @override
+  late final GeneratedColumn<int> lastEditedByUserId = GeneratedColumn<int>(
+      'last_edited_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _lastEditedAtMeta =
+      const VerificationMeta('lastEditedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastEditedAt = GeneratedColumn<DateTime>(
+      'last_edited_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _isDeletedMeta =
       const VerificationMeta('isDeleted');
   @override
@@ -8884,6 +8899,8 @@ class $RatingRecordsTable extends RatingRecords
         amendmentReason,
         amendedBy,
         amendedAt,
+        lastEditedByUserId,
+        lastEditedAt,
         isDeleted,
         deletedAt,
         deletedBy
@@ -9039,6 +9056,18 @@ class $RatingRecordsTable extends RatingRecords
       context.handle(_amendedAtMeta,
           amendedAt.isAcceptableOrUnknown(data['amended_at']!, _amendedAtMeta));
     }
+    if (data.containsKey('last_edited_by_user_id')) {
+      context.handle(
+          _lastEditedByUserIdMeta,
+          lastEditedByUserId.isAcceptableOrUnknown(
+              data['last_edited_by_user_id']!, _lastEditedByUserIdMeta));
+    }
+    if (data.containsKey('last_edited_at')) {
+      context.handle(
+          _lastEditedAtMeta,
+          lastEditedAt.isAcceptableOrUnknown(
+              data['last_edited_at']!, _lastEditedAtMeta));
+    }
     if (data.containsKey('is_deleted')) {
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
@@ -9112,6 +9141,10 @@ class $RatingRecordsTable extends RatingRecords
           .read(DriftSqlType.string, data['${effectivePrefix}amended_by']),
       amendedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}amended_at']),
+      lastEditedByUserId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}last_edited_by_user_id']),
+      lastEditedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_edited_at']),
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
       deletedAt: attachedDatabase.typeMapping
@@ -9158,6 +9191,8 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
   final String? amendmentReason;
   final String? amendedBy;
   final DateTime? amendedAt;
+  final int? lastEditedByUserId;
+  final DateTime? lastEditedAt;
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
@@ -9188,6 +9223,8 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       this.amendmentReason,
       this.amendedBy,
       this.amendedAt,
+      this.lastEditedByUserId,
+      this.lastEditedAt,
       required this.isDeleted,
       this.deletedAt,
       this.deletedBy});
@@ -9253,6 +9290,12 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
     }
     if (!nullToAbsent || amendedAt != null) {
       map['amended_at'] = Variable<DateTime>(amendedAt);
+    }
+    if (!nullToAbsent || lastEditedByUserId != null) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId);
+    }
+    if (!nullToAbsent || lastEditedAt != null) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt);
     }
     map['is_deleted'] = Variable<bool>(isDeleted);
     if (!nullToAbsent || deletedAt != null) {
@@ -9326,6 +9369,12 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       amendedAt: amendedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(amendedAt),
+      lastEditedByUserId: lastEditedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedByUserId),
+      lastEditedAt: lastEditedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedAt),
       isDeleted: Value(isDeleted),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -9369,6 +9418,8 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       amendmentReason: serializer.fromJson<String?>(json['amendmentReason']),
       amendedBy: serializer.fromJson<String?>(json['amendedBy']),
       amendedAt: serializer.fromJson<DateTime?>(json['amendedAt']),
+      lastEditedByUserId: serializer.fromJson<int?>(json['lastEditedByUserId']),
+      lastEditedAt: serializer.fromJson<DateTime?>(json['lastEditedAt']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
@@ -9404,6 +9455,8 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
       'amendmentReason': serializer.toJson<String?>(amendmentReason),
       'amendedBy': serializer.toJson<String?>(amendedBy),
       'amendedAt': serializer.toJson<DateTime?>(amendedAt),
+      'lastEditedByUserId': serializer.toJson<int?>(lastEditedByUserId),
+      'lastEditedAt': serializer.toJson<DateTime?>(lastEditedAt),
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
@@ -9437,6 +9490,8 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           Value<String?> amendmentReason = const Value.absent(),
           Value<String?> amendedBy = const Value.absent(),
           Value<DateTime?> amendedAt = const Value.absent(),
+          Value<int?> lastEditedByUserId = const Value.absent(),
+          Value<DateTime?> lastEditedAt = const Value.absent(),
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
           Value<String?> deletedBy = const Value.absent()}) =>
@@ -9482,6 +9537,11 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
             : this.amendmentReason,
         amendedBy: amendedBy.present ? amendedBy.value : this.amendedBy,
         amendedAt: amendedAt.present ? amendedAt.value : this.amendedAt,
+        lastEditedByUserId: lastEditedByUserId.present
+            ? lastEditedByUserId.value
+            : this.lastEditedByUserId,
+        lastEditedAt:
+            lastEditedAt.present ? lastEditedAt.value : this.lastEditedAt,
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
@@ -9539,6 +9599,12 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           : this.amendmentReason,
       amendedBy: data.amendedBy.present ? data.amendedBy.value : this.amendedBy,
       amendedAt: data.amendedAt.present ? data.amendedAt.value : this.amendedAt,
+      lastEditedByUserId: data.lastEditedByUserId.present
+          ? data.lastEditedByUserId.value
+          : this.lastEditedByUserId,
+      lastEditedAt: data.lastEditedAt.present
+          ? data.lastEditedAt.value
+          : this.lastEditedAt,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
@@ -9574,6 +9640,8 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           ..write('amendmentReason: $amendmentReason, ')
           ..write('amendedBy: $amendedBy, ')
           ..write('amendedAt: $amendedAt, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy')
@@ -9609,6 +9677,8 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
         amendmentReason,
         amendedBy,
         amendedAt,
+        lastEditedByUserId,
+        lastEditedAt,
         isDeleted,
         deletedAt,
         deletedBy
@@ -9643,6 +9713,8 @@ class RatingRecord extends DataClass implements Insertable<RatingRecord> {
           other.amendmentReason == this.amendmentReason &&
           other.amendedBy == this.amendedBy &&
           other.amendedAt == this.amendedAt &&
+          other.lastEditedByUserId == this.lastEditedByUserId &&
+          other.lastEditedAt == this.lastEditedAt &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
           other.deletedBy == this.deletedBy);
@@ -9675,6 +9747,8 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
   final Value<String?> amendmentReason;
   final Value<String?> amendedBy;
   final Value<DateTime?> amendedAt;
+  final Value<int?> lastEditedByUserId;
+  final Value<DateTime?> lastEditedAt;
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
@@ -9705,6 +9779,8 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.amendmentReason = const Value.absent(),
     this.amendedBy = const Value.absent(),
     this.amendedAt = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -9736,6 +9812,8 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     this.amendmentReason = const Value.absent(),
     this.amendedBy = const Value.absent(),
     this.amendedAt = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -9770,6 +9848,8 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     Expression<String>? amendmentReason,
     Expression<String>? amendedBy,
     Expression<DateTime>? amendedAt,
+    Expression<int>? lastEditedByUserId,
+    Expression<DateTime>? lastEditedAt,
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
@@ -9801,6 +9881,9 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       if (amendmentReason != null) 'amendment_reason': amendmentReason,
       if (amendedBy != null) 'amended_by': amendedBy,
       if (amendedAt != null) 'amended_at': amendedAt,
+      if (lastEditedByUserId != null)
+        'last_edited_by_user_id': lastEditedByUserId,
+      if (lastEditedAt != null) 'last_edited_at': lastEditedAt,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
@@ -9834,6 +9917,8 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       Value<String?>? amendmentReason,
       Value<String?>? amendedBy,
       Value<DateTime?>? amendedAt,
+      Value<int?>? lastEditedByUserId,
+      Value<DateTime?>? lastEditedAt,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
       Value<String?>? deletedBy}) {
@@ -9864,6 +9949,8 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
       amendmentReason: amendmentReason ?? this.amendmentReason,
       amendedBy: amendedBy ?? this.amendedBy,
       amendedAt: amendedAt ?? this.amendedAt,
+      lastEditedByUserId: lastEditedByUserId ?? this.lastEditedByUserId,
+      lastEditedAt: lastEditedAt ?? this.lastEditedAt,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
@@ -9951,6 +10038,12 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
     if (amendedAt.present) {
       map['amended_at'] = Variable<DateTime>(amendedAt.value);
     }
+    if (lastEditedByUserId.present) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId.value);
+    }
+    if (lastEditedAt.present) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt.value);
+    }
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
@@ -9992,6 +10085,8 @@ class RatingRecordsCompanion extends UpdateCompanion<RatingRecord> {
           ..write('amendmentReason: $amendmentReason, ')
           ..write('amendedBy: $amendedBy, ')
           ..write('amendedAt: $amendedAt, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy')
@@ -19546,6 +19641,19 @@ class $$UsersTableFilterComposer
     return f(composer);
   }
 
+  ComposableFilter ratingRecordsRefs(
+      ComposableFilter Function($$RatingRecordsTableFilterComposer f) f) {
+    final $$RatingRecordsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.ratingRecords,
+        getReferencedColumn: (t) => t.lastEditedByUserId,
+        builder: (joinBuilder, parentComposers) =>
+            $$RatingRecordsTableFilterComposer(ComposerState($state.db,
+                $state.db.ratingRecords, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
   ComposableFilter ratingCorrectionsRefs(
       ComposableFilter Function($$RatingCorrectionsTableFilterComposer f) f) {
     final $$RatingCorrectionsTableFilterComposer composer =
@@ -23786,6 +23894,8 @@ typedef $$RatingRecordsTableCreateCompanionBuilder = RatingRecordsCompanion
   Value<String?> amendmentReason,
   Value<String?> amendedBy,
   Value<DateTime?> amendedAt,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -23818,6 +23928,8 @@ typedef $$RatingRecordsTableUpdateCompanionBuilder = RatingRecordsCompanion
   Value<String?> amendmentReason,
   Value<String?> amendedBy,
   Value<DateTime?> amendedAt,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -23866,6 +23978,8 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<String?> amendmentReason = const Value.absent(),
             Value<String?> amendedBy = const Value.absent(),
             Value<DateTime?> amendedAt = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -23897,6 +24011,8 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             amendmentReason: amendmentReason,
             amendedBy: amendedBy,
             amendedAt: amendedAt,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -23928,6 +24044,8 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             Value<String?> amendmentReason = const Value.absent(),
             Value<String?> amendedBy = const Value.absent(),
             Value<DateTime?> amendedAt = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -23959,6 +24077,8 @@ class $$RatingRecordsTableTableManager extends RootTableManager<
             amendmentReason: amendmentReason,
             amendedBy: amendedBy,
             amendedAt: amendedAt,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -24074,6 +24194,11 @@ class $$RatingRecordsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ColumnFilters<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
   ColumnFilters<bool> get isDeleted => $state.composableBuilder(
       column: $state.table.isDeleted,
       builder: (column, joinBuilders) =>
@@ -24147,6 +24272,18 @@ class $$RatingRecordsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$SessionsTableFilterComposer(ComposerState(
                 $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get lastEditedByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 
@@ -24289,6 +24426,11 @@ class $$RatingRecordsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
       column: $state.table.isDeleted,
       builder: (column, joinBuilders) =>
@@ -24362,6 +24504,18 @@ class $$RatingRecordsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$SessionsTableOrderingComposer(ComposerState(
                 $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get lastEditedByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }

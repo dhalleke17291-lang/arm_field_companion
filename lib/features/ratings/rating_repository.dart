@@ -89,6 +89,7 @@ class RatingRepository {
             .write(const RatingRecordsCompanion(isCurrent: Value(false)));
       }
 
+      final nowUtc = DateTime.now().toUtc();
       // Insert new current record (with optional provenance and rating metadata)
       final newId = await _db.into(_db.ratingRecords).insert(
             RatingRecordsCompanion.insert(
@@ -110,6 +111,10 @@ class RatingRepository {
               ratingTime: Value(ratingTime),
               ratingMethod: Value(ratingMethod),
               confidence: Value(confidence),
+              lastEditedAt: existing != null ? Value(nowUtc) : const Value.absent(),
+              lastEditedByUserId: existing != null && performedByUserId != null
+                  ? Value(performedByUserId)
+                  : const Value.absent(),
             ),
           );
 
@@ -189,6 +194,7 @@ class RatingRepository {
     required String reason,
     required bool isSessionClosed,
     String? raterName,
+    int? performedByUserId,
   }) async {
     await saveRating(
       trialId: trialId,
@@ -197,6 +203,7 @@ class RatingRepository {
       sessionId: sessionId,
       resultStatus: 'VOID',
       raterName: raterName,
+      performedByUserId: performedByUserId,
       isSessionClosed: isSessionClosed,
     );
 
@@ -230,6 +237,7 @@ class RatingRepository {
     String? amendmentReason,
     String? amendedBy,
     String? confidence,
+    int? lastEditedByUserId,
   }) async {
     final existing = await getRatingById(ratingId);
     if (existing == null) throw RatingIntegrityException('Rating not found: $ratingId');
@@ -246,9 +254,11 @@ class RatingRepository {
     DateTime? amendedAt = existing.amendedAt;
     String? originalValue = existing.originalValue;
 
+    DateTime? editAtUtc;
     if (valueChanged) {
       amended = true;
-      amendedAt = DateTime.now().toUtc();
+      editAtUtc = DateTime.now().toUtc();
+      amendedAt = editAtUtc;
       if (originalValue == null || originalValue.isEmpty) {
         originalValue = existingValueStr;
       }
@@ -266,6 +276,10 @@ class RatingRepository {
         amendmentReason: amendmentReason != null ? Value(amendmentReason) : const Value.absent(),
         amendedBy: amendedBy != null ? Value(amendedBy) : const Value.absent(),
         confidence: confidence != null ? Value(confidence) : const Value.absent(),
+        lastEditedAt: editAtUtc != null ? Value(editAtUtc) : const Value.absent(),
+        lastEditedByUserId: editAtUtc != null && lastEditedByUserId != null
+            ? Value(lastEditedByUserId)
+            : const Value.absent(),
       ),
     );
 
@@ -385,41 +399,53 @@ class RatingRepository {
     int? sessionId,
     int? plotPk,
   }) async {
-    final id = await _db.into(_db.ratingCorrections).insert(
-          RatingCorrectionsCompanion.insert(
-            ratingId: ratingId,
-            oldResultStatus: oldResultStatus,
-            newResultStatus: newResultStatus,
-            oldNumericValue: Value(oldNumericValue),
-            newNumericValue: Value(newNumericValue),
-            oldTextValue: Value(oldTextValue),
-            newTextValue: Value(newTextValue),
-            reason: reason,
-            correctedByUserId: Value(correctedByUserId),
-            sessionId: Value(sessionId),
-            plotPk: Value(plotPk),
-          ),
-        );
-    final correction = await (_db.select(_db.ratingCorrections)
-          ..where((c) => c.id.equals(id)))
-        .getSingle();
-
-    final rating = await (_db.select(_db.ratingRecords)
-          ..where((r) => r.id.equals(ratingId)))
-        .getSingleOrNull();
-    if (rating != null) {
-      await _db.into(_db.auditEvents).insert(
-            AuditEventsCompanion.insert(
-              trialId: Value(rating.trialId),
-              sessionId: Value(rating.sessionId),
-              plotPk: Value(rating.plotPk),
-              eventType: 'RATING_CORRECTED',
-              description: 'Correction: $reason',
-              performedByUserId: Value(correctedByUserId),
+    return _db.transaction(() async {
+      final id = await _db.into(_db.ratingCorrections).insert(
+            RatingCorrectionsCompanion.insert(
+              ratingId: ratingId,
+              oldResultStatus: oldResultStatus,
+              newResultStatus: newResultStatus,
+              oldNumericValue: Value(oldNumericValue),
+              newNumericValue: Value(newNumericValue),
+              oldTextValue: Value(oldTextValue),
+              newTextValue: Value(newTextValue),
+              reason: reason,
+              correctedByUserId: Value(correctedByUserId),
+              sessionId: Value(sessionId),
+              plotPk: Value(plotPk),
             ),
           );
-    }
-    return correction;
+      final correction = await (_db.select(_db.ratingCorrections)
+            ..where((c) => c.id.equals(id)))
+          .getSingle();
+
+      await (_db.update(_db.ratingRecords)..where((r) => r.id.equals(ratingId)))
+          .write(
+        RatingRecordsCompanion(
+          lastEditedAt: Value(correction.correctedAt),
+          lastEditedByUserId: correctedByUserId != null
+              ? Value(correctedByUserId)
+              : const Value.absent(),
+        ),
+      );
+
+      final rating = await (_db.select(_db.ratingRecords)
+            ..where((r) => r.id.equals(ratingId)))
+          .getSingleOrNull();
+      if (rating != null) {
+        await _db.into(_db.auditEvents).insert(
+              AuditEventsCompanion.insert(
+                trialId: Value(rating.trialId),
+                sessionId: Value(rating.sessionId),
+                plotPk: Value(rating.plotPk),
+                eventType: 'RATING_CORRECTED',
+                description: 'Correction: $reason',
+                performedByUserId: Value(correctedByUserId),
+              ),
+            );
+      }
+      return correction;
+    });
   }
 }
 

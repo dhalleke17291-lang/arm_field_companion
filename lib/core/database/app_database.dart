@@ -284,6 +284,9 @@ class RatingRecords extends Table {
   TextColumn get amendmentReason => text().nullable()();
   TextColumn get amendedBy => text().nullable()();
   DateTimeColumn get amendedAt => dateTime().nullable()();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
 
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -571,7 +574,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -823,6 +826,11 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(ratingRecords, ratingRecords.isDeleted);
             await m.addColumn(ratingRecords, ratingRecords.deletedAt);
             await m.addColumn(ratingRecords, ratingRecords.deletedBy);
+          }
+          if (from < 27) {
+            await m.addColumn(
+                ratingRecords, ratingRecords.lastEditedByUserId);
+            await m.addColumn(ratingRecords, ratingRecords.lastEditedAt);
           }
           await _createIndexes();
         },
