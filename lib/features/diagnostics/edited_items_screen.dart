@@ -19,10 +19,10 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
   Future<List<_EditedItemWithDiff>>? _future;
 
   Future<List<_EditedItemWithDiff>> _ensureFuture() {
-    return _future ??= _loadEditedItemsWithCorrectionDiffs();
+    return _future ??= _loadEditedItemsWithDiffs();
   }
 
-  Future<List<_EditedItemWithDiff>> _loadEditedItemsWithCorrectionDiffs() async {
+  Future<List<_EditedItemWithDiff>> _loadEditedItemsWithDiffs() async {
     final items = await GetEditedRatingsUseCase(
       db: ref.read(databaseProvider),
       trialRepo: ref.read(trialRepositoryProvider),
@@ -38,6 +38,8 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
         if (c != null) {
           diffLine = _correctionDiffLine(c);
         }
+      } else {
+        diffLine = _amendmentDiffLine(item.rating);
       }
       out.add(_EditedItemWithDiff(item, diffLine));
     }
@@ -79,6 +81,20 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
     }
 
     return null;
+  }
+
+  /// originalValue → current row only; no corrections, chain, or status inference.
+  static String? _amendmentDiffLine(RatingRecord r) {
+    if (!r.amended) return null;
+    final old = r.originalValue?.trim() ?? '';
+    if (old.isEmpty) return null;
+    final now = r.numericValue != null
+        ? r.numericValue!.toString()
+        : ((r.textValue != null && r.textValue!.trim().isNotEmpty)
+            ? r.textValue!.trim()
+            : '—');
+    if (old == now) return null;
+    return 'Was $old → Now $now';
   }
 
   static String _formatDate(DateTime at) {
@@ -184,10 +200,10 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
                         color: AppDesignTokens.primary,
                       ),
                     ),
-                    if (row.correctionDiffLine != null) ...[
+                    if (row.diffLine != null) ...[
                       const SizedBox(height: 6),
                       Text(
-                        row.correctionDiffLine!,
+                        row.diffLine!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -224,8 +240,9 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
 }
 
 class _EditedItemWithDiff {
-  const _EditedItemWithDiff(this.item, this.correctionDiffLine);
+  const _EditedItemWithDiff(this.item, this.diffLine);
 
   final EditedRatingListItem item;
-  final String? correctionDiffLine;
+  /// Correction diff if [EditedRatingListItem.hasCorrection]; else amendment diff.
+  final String? diffLine;
 }
