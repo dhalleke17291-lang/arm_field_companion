@@ -52,7 +52,7 @@ Future<bool> confirmSessionExportTrust({
     }
   }
   if (lines.isEmpty) {
-    lines.add('No additional notes for this export.');
+    lines.add('No additional notes for this export');
   }
 
   if (!context.mounted) return false;
@@ -81,7 +81,7 @@ Future<bool> confirmSessionExportTrust({
         ),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Export Anyway'),
+          child: const Text('Export anyway'),
         ),
       ],
     ),

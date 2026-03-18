@@ -1163,7 +1163,7 @@ class _SessionExportTrustCaption extends ConsumerWidget {
                   parts.add('$editedPlotCount plots edited');
                 }
                 line = parts.isEmpty
-                    ? 'No additional export notes'
+                    ? 'No additional notes for this export'
                     : parts.join(' · ');
               }
 
