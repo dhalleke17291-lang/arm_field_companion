@@ -40,6 +40,12 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
         }
       } else {
         diffLine = _amendmentDiffLine(item.rating);
+        if (diffLine == null && item.rating.previousId != null) {
+          final prev = await repo.getRatingById(item.rating.previousId!);
+          if (prev != null) {
+            diffLine = _chainDiffLine(prev, item.rating);
+          }
+        }
       }
       out.add(_EditedItemWithDiff(item, diffLine));
     }
@@ -95,6 +101,28 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
             : '—');
     if (old == now) return null;
     return 'Was $old → Now $now';
+  }
+
+  /// One hop: immediate previous row vs current only.
+  static String? _chainDiffLine(RatingRecord prev, RatingRecord curr) {
+    if (prev.resultStatus != curr.resultStatus) {
+      return 'Status: ${prev.resultStatus} → ${curr.resultStatus}';
+    }
+    final on = prev.numericValue;
+    final nn = curr.numericValue;
+    if (on != null || nn != null) {
+      final o = on?.toString() ?? '—';
+      final n = nn?.toString() ?? '—';
+      if (o != n) return 'Was $o → Now $n';
+    }
+    final ot = prev.textValue?.trim() ?? '';
+    final nt = curr.textValue?.trim() ?? '';
+    if (ot.isNotEmpty || nt.isNotEmpty) {
+      if (ot != nt) {
+        return 'Was ${ot.isEmpty ? '—' : ot} → Now ${nt.isEmpty ? '—' : nt}';
+      }
+    }
+    return null;
   }
 
   static String _formatDate(DateTime at) {
@@ -243,6 +271,6 @@ class _EditedItemWithDiff {
   const _EditedItemWithDiff(this.item, this.diffLine);
 
   final EditedRatingListItem item;
-  /// Correction diff if [EditedRatingListItem.hasCorrection]; else amendment diff.
+  /// Correction, else amendment, else one-hop chain diff.
   final String? diffLine;
 }
