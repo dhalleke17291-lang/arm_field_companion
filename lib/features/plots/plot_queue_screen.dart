@@ -6,6 +6,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
+import '../../core/edit_recency_display.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../core/session_resume_store.dart';
@@ -663,6 +664,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         final hasEdited = plotRatings.any(
                 (r) => r.amended || (r.previousId != null)) ||
             plotPksWithCorrections.contains(plot.id);
+        final plotHasCorr = plotPksWithCorrections.contains(plot.id);
+        String? editRecencyLine;
+        if (hasEdited) {
+          final ts = latestEditRecencyForPlot(plotRatings, plotHasCorr);
+          if (ts != null) {
+            editRecencyLine = 'Edited ${formatEditRecencyCompact(ts)}';
+          }
+        }
         return _PlotQueueTile(
           plot: plot,
           allPlotsForTrial: allPlotsForTrial,
@@ -676,6 +685,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           isFlagged: flaggedIds.contains(plot.id),
           hasIssues: plotRatings.any((r) => r.resultStatus != 'RECORDED'),
           hasEdited: hasEdited,
+          editRecencyLine: editRecencyLine,
         );
       },
     );
@@ -891,6 +901,8 @@ class _PlotQueueTile extends ConsumerWidget {
   final bool isFlagged;
   final bool hasIssues;
   final bool hasEdited;
+  /// Subtle per-plot edit time; null when edited but no safe timestamp.
+  final String? editRecencyLine;
 
   const _PlotQueueTile({
     required this.plot,
@@ -904,6 +916,7 @@ class _PlotQueueTile extends ConsumerWidget {
     required this.isFlagged,
     required this.hasIssues,
     required this.hasEdited,
+    this.editRecencyLine,
   });
 
   @override
@@ -1002,9 +1015,27 @@ class _PlotQueueTile extends ConsumerWidget {
                   ],
                 ),
               ),
+            if (editRecencyLine != null)
+              Padding(
+                padding: EdgeInsets.only(top: hasStatusRow ? 4 : 2),
+                child: Text(
+                  editRecencyLine!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    height: 1.2,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.82),
+                  ),
+                ),
+              ),
             if (rep != null)
               Padding(
-                padding: EdgeInsets.only(top: hasStatusRow ? 3 : 0),
+                padding: EdgeInsets.only(
+                    top: (hasStatusRow || editRecencyLine != null) ? 3 : 0),
                 child: Text(
                   'Rep $rep',
                   style: TextStyle(

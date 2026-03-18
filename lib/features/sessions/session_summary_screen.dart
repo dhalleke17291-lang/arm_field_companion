@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/edit_recency_display.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
@@ -175,6 +176,13 @@ class SessionSummaryScreen extends ConsumerWidget {
                           }
                         }
                       }
+
+                      final latestEditAmongEdited =
+                          latestEditRecencyAcrossEditedPlots(
+                        plots: rawPlots,
+                        ratingsByPlot: ratingsByPlot,
+                        correctionPlotPks: correctionPlotPks,
+                      );
 
                       final total = rawPlots.length;
                       final progressPct = total > 0
@@ -426,6 +434,21 @@ class SessionSummaryScreen extends ConsumerWidget {
                                                 .withValues(alpha: 0.85),
                                           ),
                                         ),
+                                        if (editedPlotCount > 0 &&
+                                            latestEditAmongEdited != null) ...[
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Recent edit activity: ${formatEditRecencyWithYear(latestEditAmongEdited)}',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              height: 1.25,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant
+                                                  .withValues(alpha: 0.88),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
