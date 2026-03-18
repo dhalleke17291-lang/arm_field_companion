@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
@@ -125,23 +126,16 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
     return null;
   }
 
-  static String _formatDate(DateTime at) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final month = at.month >= 1 && at.month <= 12 ? months[at.month - 1] : '';
-    return '${at.day} $month ${at.year}';
+  static String _recordKindLabel(bool hasCorrection) =>
+      hasCorrection ? 'Corrected record' : 'Edited record';
+
+  static String _lastEditedLine(DateTime at, String? byDisplayName) {
+    final fmt = DateFormat('MMM d, yyyy, h:mm a').format(at.toLocal());
+    final name = byDisplayName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return 'Last edited $fmt by $name';
+    }
+    return 'Last edited $fmt';
   }
 
   @override
@@ -196,8 +190,6 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
                   : 'Plot ${item.plotLabel}';
               final secondary =
                   '${item.trialName} · ${item.sessionName}';
-              final meta =
-                  '${item.statusLabel} · ${_formatDate(item.displayDate)}';
               return AppCard(
                 padding: const EdgeInsets.all(AppDesignTokens.spacing16),
                 child: Column(
@@ -221,11 +213,22 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      meta,
+                      _recordKindLabel(item.hasCorrection),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppDesignTokens.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _lastEditedLine(
+                        item.displayDate,
+                        item.lastEditedByDisplayName,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppDesignTokens.secondaryText,
                       ),
                     ),
                     if (row.diffLine != null) ...[

@@ -15,6 +15,7 @@ class EditedRatingListItem {
     required this.plotLabel,
     this.assessmentLabel,
     required this.hasCorrection,
+    this.lastEditedByDisplayName,
   });
 
   final RatingRecord rating;
@@ -24,10 +25,17 @@ class EditedRatingListItem {
   final String? assessmentLabel;
   final bool hasCorrection;
 
+  /// Resolved from [Users.displayName] when [rating.lastEditedByUserId] matches
+  /// a local user row; null if id null, user missing, or name empty.
+  final String? lastEditedByDisplayName;
+
   /// Shown when [hasCorrection] is true; otherwise amended/chain edits.
   String get statusLabel => hasCorrection ? 'Corrected' : 'Amended';
 
-  DateTime get displayDate => rating.amendedAt ?? rating.createdAt;
+  /// Display time: [RatingRecord.lastEditedAt], then [RatingRecord.amendedAt],
+  /// then [RatingRecord.createdAt] (legacy rows).
+  DateTime get displayDate =>
+      rating.lastEditedAt ?? rating.amendedAt ?? rating.createdAt;
 }
 
 /// Read-only: ratings that are amended, part of a save chain, and/or corrected.
@@ -93,8 +101,21 @@ class GetEditedRatingsUseCase {
       }
     }
 
+    final userIds = ratings.map((r) => r.lastEditedByUserId).whereType<int>().toSet();
+    final lastEditedNameByUserId = <int, String>{};
+    if (userIds.isNotEmpty) {
+      final userRows = await (_db.select(_db.users)
+            ..where((u) => u.id.isIn(userIds.toList())))
+          .get();
+      for (final u in userRows) {
+        final n = u.displayName.trim();
+        if (n.isNotEmpty) lastEditedNameByUserId[u.id] = n;
+      }
+    }
+
     final items = <EditedRatingListItem>[];
     for (final r in ratings) {
+      final uid = r.lastEditedByUserId;
       items.add(
         EditedRatingListItem(
           rating: r,
@@ -103,6 +124,8 @@ class GetEditedRatingsUseCase {
           plotLabel: await _resolvePlotLabel(r.trialId, r.plotPk),
           assessmentLabel: assessmentNames[r.assessmentId],
           hasCorrection: correctionRatingIds.contains(r.id),
+          lastEditedByDisplayName:
+              uid != null ? lastEditedNameByUserId[uid] : null,
         ),
       );
     }
