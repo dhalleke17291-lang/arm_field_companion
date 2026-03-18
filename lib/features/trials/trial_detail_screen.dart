@@ -328,6 +328,96 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
+  Widget _buildTrialOverflowMenu(BuildContext context, Trial trial) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Colors.white),
+      tooltip: 'More',
+      padding: const EdgeInsets.all(8),
+      onSelected: (value) {
+        if (value == 'delete_trial') {
+          _confirmAndSoftDeleteTrial(context, trial);
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem<String>(
+          value: 'delete_trial',
+          child: Text('Delete trial'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmAndSoftDeleteTrial(
+      BuildContext context, Trial trial) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete trial'),
+        content: const Text(
+          'This trial will be moved to Recovery.\n\n'
+          'All sessions in this trial will move to Recovery.\n\n'
+          'All plots in this trial will move to Recovery.\n\n'
+          'All ratings in this trial will move to Recovery.\n\n'
+          'This affects the entire trial—not a single session or plot.\n\n'
+          'You can restore this trial later from Recovery.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete trial'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      final userId = await ref.read(currentUserIdProvider.future);
+      await ref.read(trialRepositoryProvider).softDeleteTrial(
+            trial.id,
+            deletedBy: user?.displayName,
+            deletedByUserId: userId,
+          );
+      if (!context.mounted) return;
+      final trialId = trial.id;
+      ref.invalidate(trialsStreamProvider);
+      ref.invalidate(deletedTrialsProvider);
+      ref.invalidate(trialProvider(trialId));
+      ref.invalidate(trialSetupProvider(trialId));
+      ref.invalidate(plotsForTrialProvider(trialId));
+      ref.invalidate(sessionsForTrialProvider(trialId));
+      ref.invalidate(openSessionProvider(trialId));
+      ref.invalidate(deletedSessionsProvider);
+      ref.invalidate(deletedPlotsProvider);
+      ref.invalidate(lastSessionContextProvider);
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Trial moved to Recovery')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Could not delete trial'),
+          content: SelectableText('$e'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final trialAsync = ref.watch(trialProvider(widget.trial.id));
@@ -492,6 +582,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                       tooltip: 'View full protocol',
                     ),
                     _buildExportIconWithBadge(context, ref, currentTrial),
+                    const SizedBox(width: 4),
+                    _buildTrialOverflowMenu(context, currentTrial),
                   ],
                 ),
               ),
@@ -665,6 +757,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           ),
                           _buildExportIconWithBadge(
                               context, ref, currentTrial),
+                          const SizedBox(width: 4),
+                          _buildTrialOverflowMenu(context, currentTrial),
                         ],
                       ),
                     ),
