@@ -1,8 +1,8 @@
-/// Holds the seven CSV file contents for a full trial export.
-/// All values are human-readable; no internal IDs in column values.
+/// Holds CSV file contents for a full trial export (flat bundle + companion files).
 class TrialExportBundle {
   const TrialExportBundle({
     required this.observationsCsv,
+    required this.observationsArmTransferCsv,
     required this.treatmentsCsv,
     required this.plotAssignmentsCsv,
     required this.applicationsCsv,
@@ -12,6 +12,8 @@ class TrialExportBundle {
   });
 
   final String observationsCsv;
+  /// ARM-aligned manual-transfer companion; does not replace observations.csv.
+  final String observationsArmTransferCsv;
   final String treatmentsCsv;
   final String plotAssignmentsCsv;
   final String applicationsCsv;

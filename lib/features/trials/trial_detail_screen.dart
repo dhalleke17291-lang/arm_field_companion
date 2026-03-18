@@ -169,6 +169,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         final files = <XFile>[];
         final names = [
           'observations',
+          'observations_arm_transfer',
           'treatments',
           'plot_assignments',
           'applications',
@@ -178,6 +179,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ];
         final contents = [
           bundle.observationsCsv,
+          bundle.observationsArmTransferCsv,
           bundle.treatmentsCsv,
           bundle.plotAssignmentsCsv,
           bundle.applicationsCsv,

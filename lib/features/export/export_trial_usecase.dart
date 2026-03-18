@@ -88,6 +88,28 @@ class ExportTrialUseCase {
     'export_timestamp',
   ];
 
+  static const List<String> _observationsArmTransferHeaders = [
+    'trial_id',
+    'trial_name',
+    'session_id',
+    'session_name',
+    'session_date',
+    'plot_pk',
+    'plot_id',
+    'rep',
+    'treatment_id',
+    'treatment_code',
+    'treatment_name',
+    'assessment_id',
+    'assessment_name',
+    'unit',
+    'result_status',
+    'value_numeric',
+    'value_text',
+    'value_display',
+    'rater_name',
+  ];
+
   static const List<String> _treatmentsHeaders = [
     'treatment_code',
     'treatment_name',
@@ -197,6 +219,14 @@ class ExportTrialUseCase {
       armAligned: armAligned,
     );
 
+    final observationsArmTransferCsv = await _buildObservationsArmTransferCsv(
+      trial: trial,
+      sessions: sessions,
+      plotMap: plotMap,
+      treatmentMap: treatmentMap,
+      assignmentByPlot: assignmentByPlot,
+    );
+
     final treatmentsCsv = await _buildTreatmentsCsv(
       treatments,
       exportTimestamp,
@@ -233,6 +263,7 @@ class ExportTrialUseCase {
 
     final bundle = TrialExportBundle(
       observationsCsv: observationsCsv,
+      observationsArmTransferCsv: observationsArmTransferCsv,
       treatmentsCsv: treatmentsCsv,
       plotAssignmentsCsv: plotAssignmentsCsv,
       applicationsCsv: applicationsCsv,
@@ -401,6 +432,115 @@ class ExportTrialUseCase {
         'export_timestamp',
         'UTC timestamp when export was generated',
         'ISO 8601'
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'trial_id',
+        'Trial database identifier',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'trial_name',
+        'Trial name',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'session_id',
+        'Session database identifier',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'session_name',
+        'Rating session name',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'session_date',
+        'Session date (local)',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'plot_pk',
+        'Internal plot primary key',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'plot_id',
+        'Protocol / visible plot label',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'rep',
+        'Replication number',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'treatment_id',
+        'Treatment database identifier',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'treatment_code',
+        'Treatment code',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'treatment_name',
+        'Treatment name',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'assessment_id',
+        'Assessment database identifier',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'assessment_name',
+        'Assessment name',
+        ''
+      ],
+      ['observations_arm_transfer.csv', 'unit', 'Assessment unit', ''],
+      [
+        'observations_arm_transfer.csv',
+        'result_status',
+        'Rating result status e.g. RECORDED',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'value_numeric',
+        'Numeric value if present',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'value_text',
+        'Text value if present',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'value_display',
+        'Display value for manual transfer',
+        ''
+      ],
+      [
+        'observations_arm_transfer.csv',
+        'rater_name',
+        'Rater name',
+        ''
       ],
       // treatments.csv
       ['treatments.csv', 'treatment_code', 'Code assigned to treatment', ''],
@@ -661,6 +801,64 @@ class ExportTrialUseCase {
     );
   }
 
+  /// Manual ARM handoff companion; same rating loop as [_buildObservationsCsv].
+  Future<String> _buildObservationsArmTransferCsv({
+    required Trial trial,
+    required List<Session> sessions,
+    required Map<int, Plot> plotMap,
+    required Map<int, Treatment> treatmentMap,
+    required Map<int, Assignment> assignmentByPlot,
+  }) async {
+    final trialPk = trial.id;
+    final rows = <List<String>>[];
+    for (final session in sessions) {
+      final sessionAssessments =
+          await _sessionRepository.getSessionAssessments(session.id);
+      final assessmentMap = {for (final a in sessionAssessments) a.id: a};
+      final ratings =
+          await _ratingRepository.getCurrentRatingsForSession(session.id);
+      for (final r in ratings) {
+        final plot = plotMap[r.plotPk];
+        final assignment = plot != null ? assignmentByPlot[plot.id] : null;
+        final treatmentId = assignment?.treatmentId ?? plot?.treatmentId;
+        final treatment =
+            treatmentId != null ? treatmentMap[treatmentId] : null;
+        final assessment = assessmentMap[r.assessmentId];
+
+        final valueNumeric =
+            r.numericValue != null ? _cell(r.numericValue) : '';
+        final rawText = r.textValue?.trim() ?? '';
+        final valueText =
+            r.numericValue == null && rawText.isNotEmpty ? rawText : '';
+        final valueDisplay =
+            r.numericValue != null ? _cell(r.numericValue) : rawText;
+
+        rows.add([
+          _cell(trialPk),
+          _cell(trial.name),
+          _cell(session.id),
+          _cell(session.name),
+          _cell(session.sessionDateLocal),
+          _cell(r.plotPk),
+          plot != null ? _cell(plot.plotId) : '',
+          _cell(assignment?.replication ?? plot?.rep),
+          treatmentId != null ? _cell(treatmentId) : '',
+          _cell(treatment?.code),
+          _cell(treatment?.name),
+          _cell(r.assessmentId),
+          _cell(assessment?.name),
+          _cell(assessment?.unit),
+          _cell(r.resultStatus),
+          valueNumeric,
+          valueText,
+          valueDisplay,
+          _cell(r.raterName),
+        ]);
+      }
+    }
+    return CsvExportService.buildCsv(_observationsArmTransferHeaders, rows);
+  }
+
   Future<String> _buildTreatmentsCsv(
     List<Treatment> treatments,
     String exportTimestamp, {
@@ -852,6 +1050,7 @@ class ExportTrialUseCase {
 
     final csvFiles = <String, String>{
       'observations.csv': bundle.observationsCsv,
+      'observations_arm_transfer.csv': bundle.observationsArmTransferCsv,
       'treatments.csv': bundle.treatmentsCsv,
       'plot_assignments.csv': bundle.plotAssignmentsCsv,
       'applications.csv': bundle.applicationsCsv,

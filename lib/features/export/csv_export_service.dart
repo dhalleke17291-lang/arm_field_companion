@@ -70,6 +70,9 @@ class CsvExportService {
     sb.writeln(
       '"Step 2","Import observations.csv using PLOTNO / REPNO / TRTNO as keys"',
     );
+    sb.writeln(
+      '"Manual transfer","For manual entry without automated import, use observations_arm_transfer.csv"',
+    );
     sb.writeln('"Step 3","Use OBSDATE as the observation date for each session"');
     sb.writeln(
       '"Step 4","Review validation_report.csv for any errors or warnings before import"',
