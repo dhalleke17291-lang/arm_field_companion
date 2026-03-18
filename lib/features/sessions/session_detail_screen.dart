@@ -194,6 +194,13 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     }
                   },
                 ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                  child: _SessionExportTrustCaption(
+                    trialId: widget.trial.id,
+                    sessionId: session.id,
+                  ),
+                ),
                 Expanded(
                   child: IndexedStack(
                     index: _selectedTabIndex,
@@ -1085,6 +1092,96 @@ class _SessionDockBar extends StatelessWidget {
             onTap: () => onSelected(item.$1),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Read-only pre-export trust line (same signals as [confirmSessionExportTrust], no blocking).
+class _SessionExportTrustCaption extends ConsumerWidget {
+  const _SessionExportTrustCaption({
+    required this.trialId,
+    required this.sessionId,
+  });
+
+  final int trialId;
+  final int sessionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plotsAsync = ref.watch(plotsForTrialProvider(trialId));
+    final ratedAsync = ref.watch(ratedPlotPksProvider(sessionId));
+    final ratingsAsync = ref.watch(sessionRatingsProvider(sessionId));
+    final correctionsAsync =
+        ref.watch(plotPksWithCorrectionsForSessionProvider(sessionId));
+
+    return plotsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (plots) => ratedAsync.when(
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+        data: (ratedPks) => ratingsAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (ratings) => correctionsAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (corrections) {
+              final unratedPlots =
+                  plots.where((p) => !ratedPks.contains(p.id)).length;
+              final noRatings = ratings.isEmpty;
+              final ratingsByPlot = <int, List<RatingRecord>>{};
+              for (final r in ratings) {
+                ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
+              }
+              var issuesPlotCount = 0;
+              var editedPlotCount = 0;
+              for (final plot in plots) {
+                final pr = ratingsByPlot[plot.id] ?? [];
+                if (pr.any((r) => r.resultStatus != 'RECORDED')) {
+                  issuesPlotCount++;
+                }
+                if (pr.any((r) => r.amended || (r.previousId != null)) ||
+                    corrections.contains(plot.id)) {
+                  editedPlotCount++;
+                }
+              }
+
+              final String line;
+              if (noRatings) {
+                line = 'No ratings in this session';
+              } else {
+                final parts = <String>[];
+                if (unratedPlots > 0) {
+                  parts.add('$unratedPlots plots not rated');
+                }
+                if (issuesPlotCount > 0) {
+                  parts.add('$issuesPlotCount plots have issues');
+                }
+                if (editedPlotCount > 0) {
+                  parts.add('$editedPlotCount plots edited');
+                }
+                line = parts.isEmpty
+                    ? 'No additional export notes'
+                    : parts.join(' · ');
+              }
+
+              return Text(
+                line,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.55),
+                    ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
