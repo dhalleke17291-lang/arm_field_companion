@@ -197,6 +197,7 @@ class _FakePlotRepository implements PlotRepository {
     String? plotDirection,
     String? soilSeries,
     String? plotNotes,
+    bool isGuardRow = false,
   }) async {
     throw UnimplementedError();
   }
@@ -205,6 +206,9 @@ class _FakePlotRepository implements PlotRepository {
   Future<void> insertPlotsBulk(List<PlotsCompanion> plots) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> updatePlotGuardRow(int plotPk, bool isGuardRow) async {}
 
   @override
   Future<void> updatePlotNotes(int plotPk, String? notes) async {}
@@ -488,6 +492,7 @@ void main() {
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          isGuardRow: false,
           isDeleted: false,
         ),
         Plot(
@@ -504,6 +509,7 @@ void main() {
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          isGuardRow: false,
           isDeleted: false,
         ),
         Plot(
@@ -520,6 +526,7 @@ void main() {
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          isGuardRow: false,
           isDeleted: false,
         ),
       ];

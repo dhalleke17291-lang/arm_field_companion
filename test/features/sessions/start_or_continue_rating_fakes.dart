@@ -183,12 +183,16 @@ class FakePlotRepository implements PlotRepository {
     String? plotDirection,
     String? soilSeries,
     String? plotNotes,
+    bool isGuardRow = false,
   }) async =>
       throw UnimplementedError();
 
   @override
   Future<void> insertPlotsBulk(List<PlotsCompanion> plots) async =>
       throw UnimplementedError();
+
+  @override
+  Future<void> updatePlotGuardRow(int plotPk, bool isGuardRow) async {}
 
   @override
   Future<void> updatePlotNotes(int plotPk, String? notes) async {}

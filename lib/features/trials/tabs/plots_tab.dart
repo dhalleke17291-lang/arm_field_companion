@@ -2261,29 +2261,50 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                     color: AppDesignTokens.primaryText)),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Text(
-                      treatmentLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: effectiveTreatmentId != null
-                            ? AppDesignTokens.primary
-                            : AppDesignTokens.secondaryText,
-                        fontWeight: effectiveTreatmentId != null
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          treatmentLabel,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: effectiveTreatmentId != null
+                                ? AppDesignTokens.primary
+                                : AppDesignTokens.secondaryText,
+                            fontWeight: effectiveTreatmentId != null
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (sourceLabel != 'Unknown' &&
+                          sourceLabel != 'Unassigned')
+                        Text(
+                          sourceLabel,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppDesignTokens.secondaryText,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                    ],
                   ),
-                  if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
-                    Text(
-                      sourceLabel,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppDesignTokens.secondaryText,
-                        fontStyle: FontStyle.italic,
+                  if (plot.isGuardRow)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Guard row',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.15,
+                          color: AppDesignTokens.secondaryText
+                              .withValues(alpha: 0.9),
+                        ),
                       ),
                     ),
                 ],
@@ -3101,6 +3122,16 @@ class _PlotGridTile extends StatelessWidget {
                   maxLines: 1,
                   textAlign: TextAlign.center,
                 ),
+                if (plot.isGuardRow)
+                  Text(
+                    'Guard',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
                 Text(
                   treatment != null ? treatment.code : '',
                   style: TextStyle(
@@ -3567,27 +3598,48 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
             ),
             title: Text('Plot $displayNum',
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Row(
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Text(
-                    treatmentLabel,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: effectiveTreatmentId != null
-                          ? Theme.of(context).colorScheme.primary
-                          : AppDesignTokens.secondaryText,
-                      fontWeight:
-                          effectiveTreatmentId != null ? FontWeight.w600 : null,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        treatmentLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: effectiveTreatmentId != null
+                              ? Theme.of(context).colorScheme.primary
+                              : AppDesignTokens.secondaryText,
+                          fontWeight: effectiveTreatmentId != null
+                              ? FontWeight.w600
+                              : null,
+                        ),
+                      ),
+                    ),
+                    if (sourceLabel != 'Unknown' &&
+                        sourceLabel != 'Unassigned')
+                      Text(sourceLabel,
+                          style: const TextStyle(
+                              fontSize: 10,
+                              color: AppDesignTokens.secondaryText,
+                              fontStyle: FontStyle.italic)),
+                  ],
+                ),
+                if (plot.isGuardRow)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      'Guard row',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.secondaryText
+                            .withValues(alpha: 0.88),
+                      ),
                     ),
                   ),
-                ),
-                if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
-                  Text(sourceLabel,
-                      style: const TextStyle(
-                          fontSize: 10,
-                          color: AppDesignTokens.secondaryText,
-                          fontStyle: FontStyle.italic)),
               ],
             ),
             trailing: const Icon(Icons.chevron_right, size: 18),

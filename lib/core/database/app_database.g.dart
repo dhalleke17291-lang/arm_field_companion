@@ -5879,6 +5879,16 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   late final GeneratedColumn<String> plotNotes = GeneratedColumn<String>(
       'plot_notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isGuardRowMeta =
+      const VerificationMeta('isGuardRow');
+  @override
+  late final GeneratedColumn<bool> isGuardRow = GeneratedColumn<bool>(
+      'is_guard_row', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_guard_row" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _isDeletedMeta =
       const VerificationMeta('isDeleted');
   @override
@@ -5925,6 +5935,7 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
         plotDirection,
         soilSeries,
         plotNotes,
+        isGuardRow,
         isDeleted,
         deletedAt,
         deletedBy
@@ -6056,6 +6067,12 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
       context.handle(_plotNotesMeta,
           plotNotes.isAcceptableOrUnknown(data['plot_notes']!, _plotNotesMeta));
     }
+    if (data.containsKey('is_guard_row')) {
+      context.handle(
+          _isGuardRowMeta,
+          isGuardRow.isAcceptableOrUnknown(
+              data['is_guard_row']!, _isGuardRowMeta));
+    }
     if (data.containsKey('is_deleted')) {
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
@@ -6122,6 +6139,8 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           .read(DriftSqlType.string, data['${effectivePrefix}soil_series']),
       plotNotes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}plot_notes']),
+      isGuardRow: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_guard_row'])!,
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
       deletedAt: attachedDatabase.typeMapping
@@ -6162,6 +6181,9 @@ class Plot extends DataClass implements Insertable<Plot> {
   final String? plotDirection;
   final String? soilSeries;
   final String? plotNotes;
+
+  /// Field layout: non-data / border plot (v1: display + flag only; no workflow change).
+  final bool isGuardRow;
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
@@ -6188,6 +6210,7 @@ class Plot extends DataClass implements Insertable<Plot> {
       this.plotDirection,
       this.soilSeries,
       this.plotNotes,
+      required this.isGuardRow,
       required this.isDeleted,
       this.deletedAt,
       this.deletedBy});
@@ -6254,6 +6277,7 @@ class Plot extends DataClass implements Insertable<Plot> {
     if (!nullToAbsent || plotNotes != null) {
       map['plot_notes'] = Variable<String>(plotNotes);
     }
+    map['is_guard_row'] = Variable<bool>(isGuardRow);
     map['is_deleted'] = Variable<bool>(isDeleted);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
@@ -6320,6 +6344,7 @@ class Plot extends DataClass implements Insertable<Plot> {
       plotNotes: plotNotes == null && nullToAbsent
           ? const Value.absent()
           : Value(plotNotes),
+      isGuardRow: Value(isGuardRow),
       isDeleted: Value(isDeleted),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -6357,6 +6382,7 @@ class Plot extends DataClass implements Insertable<Plot> {
       plotDirection: serializer.fromJson<String?>(json['plotDirection']),
       soilSeries: serializer.fromJson<String?>(json['soilSeries']),
       plotNotes: serializer.fromJson<String?>(json['plotNotes']),
+      isGuardRow: serializer.fromJson<bool>(json['isGuardRow']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
@@ -6388,6 +6414,7 @@ class Plot extends DataClass implements Insertable<Plot> {
       'plotDirection': serializer.toJson<String?>(plotDirection),
       'soilSeries': serializer.toJson<String?>(soilSeries),
       'plotNotes': serializer.toJson<String?>(plotNotes),
+      'isGuardRow': serializer.toJson<bool>(isGuardRow),
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
@@ -6417,6 +6444,7 @@ class Plot extends DataClass implements Insertable<Plot> {
           Value<String?> plotDirection = const Value.absent(),
           Value<String?> soilSeries = const Value.absent(),
           Value<String?> plotNotes = const Value.absent(),
+          bool? isGuardRow,
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
           Value<String?> deletedBy = const Value.absent()}) =>
@@ -6452,6 +6480,7 @@ class Plot extends DataClass implements Insertable<Plot> {
             plotDirection.present ? plotDirection.value : this.plotDirection,
         soilSeries: soilSeries.present ? soilSeries.value : this.soilSeries,
         plotNotes: plotNotes.present ? plotNotes.value : this.plotNotes,
+        isGuardRow: isGuardRow ?? this.isGuardRow,
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
@@ -6500,6 +6529,8 @@ class Plot extends DataClass implements Insertable<Plot> {
       soilSeries:
           data.soilSeries.present ? data.soilSeries.value : this.soilSeries,
       plotNotes: data.plotNotes.present ? data.plotNotes.value : this.plotNotes,
+      isGuardRow:
+          data.isGuardRow.present ? data.isGuardRow.value : this.isGuardRow,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
@@ -6531,6 +6562,7 @@ class Plot extends DataClass implements Insertable<Plot> {
           ..write('plotDirection: $plotDirection, ')
           ..write('soilSeries: $soilSeries, ')
           ..write('plotNotes: $plotNotes, ')
+          ..write('isGuardRow: $isGuardRow, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy')
@@ -6562,6 +6594,7 @@ class Plot extends DataClass implements Insertable<Plot> {
         plotDirection,
         soilSeries,
         plotNotes,
+        isGuardRow,
         isDeleted,
         deletedAt,
         deletedBy
@@ -6592,6 +6625,7 @@ class Plot extends DataClass implements Insertable<Plot> {
           other.plotDirection == this.plotDirection &&
           other.soilSeries == this.soilSeries &&
           other.plotNotes == this.plotNotes &&
+          other.isGuardRow == this.isGuardRow &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
           other.deletedBy == this.deletedBy);
@@ -6620,6 +6654,7 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   final Value<String?> plotDirection;
   final Value<String?> soilSeries;
   final Value<String?> plotNotes;
+  final Value<bool> isGuardRow;
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
@@ -6646,6 +6681,7 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.plotDirection = const Value.absent(),
     this.soilSeries = const Value.absent(),
     this.plotNotes = const Value.absent(),
+    this.isGuardRow = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -6673,6 +6709,7 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.plotDirection = const Value.absent(),
     this.soilSeries = const Value.absent(),
     this.plotNotes = const Value.absent(),
+    this.isGuardRow = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -6701,6 +6738,7 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     Expression<String>? plotDirection,
     Expression<String>? soilSeries,
     Expression<String>? plotNotes,
+    Expression<bool>? isGuardRow,
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
@@ -6729,6 +6767,7 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       if (plotDirection != null) 'plot_direction': plotDirection,
       if (soilSeries != null) 'soil_series': soilSeries,
       if (plotNotes != null) 'plot_notes': plotNotes,
+      if (isGuardRow != null) 'is_guard_row': isGuardRow,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
@@ -6758,6 +6797,7 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       Value<String?>? plotDirection,
       Value<String?>? soilSeries,
       Value<String?>? plotNotes,
+      Value<bool>? isGuardRow,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
       Value<String?>? deletedBy}) {
@@ -6784,6 +6824,7 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       plotDirection: plotDirection ?? this.plotDirection,
       soilSeries: soilSeries ?? this.soilSeries,
       plotNotes: plotNotes ?? this.plotNotes,
+      isGuardRow: isGuardRow ?? this.isGuardRow,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
@@ -6860,6 +6901,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     if (plotNotes.present) {
       map['plot_notes'] = Variable<String>(plotNotes.value);
     }
+    if (isGuardRow.present) {
+      map['is_guard_row'] = Variable<bool>(isGuardRow.value);
+    }
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
@@ -6897,6 +6941,7 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
           ..write('plotDirection: $plotDirection, ')
           ..write('soilSeries: $soilSeries, ')
           ..write('plotNotes: $plotNotes, ')
+          ..write('isGuardRow: $isGuardRow, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy')
@@ -22343,6 +22388,7 @@ typedef $$PlotsTableCreateCompanionBuilder = PlotsCompanion Function({
   Value<String?> plotDirection,
   Value<String?> soilSeries,
   Value<String?> plotNotes,
+  Value<bool> isGuardRow,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -22370,6 +22416,7 @@ typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<String?> plotDirection,
   Value<String?> soilSeries,
   Value<String?> plotNotes,
+  Value<bool> isGuardRow,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -22414,6 +22461,7 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<String?> plotDirection = const Value.absent(),
             Value<String?> soilSeries = const Value.absent(),
             Value<String?> plotNotes = const Value.absent(),
+            Value<bool> isGuardRow = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -22441,6 +22489,7 @@ class $$PlotsTableTableManager extends RootTableManager<
             plotDirection: plotDirection,
             soilSeries: soilSeries,
             plotNotes: plotNotes,
+            isGuardRow: isGuardRow,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -22468,6 +22517,7 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<String?> plotDirection = const Value.absent(),
             Value<String?> soilSeries = const Value.absent(),
             Value<String?> plotNotes = const Value.absent(),
+            Value<bool> isGuardRow = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -22495,6 +22545,7 @@ class $$PlotsTableTableManager extends RootTableManager<
             plotDirection: plotDirection,
             soilSeries: soilSeries,
             plotNotes: plotNotes,
+            isGuardRow: isGuardRow,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -22602,6 +22653,11 @@ class $$PlotsTableFilterComposer
 
   ColumnFilters<String> get plotNotes => $state.composableBuilder(
       column: $state.table.plotNotes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isGuardRow => $state.composableBuilder(
+      column: $state.table.isGuardRow,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -22884,6 +22940,11 @@ class $$PlotsTableOrderingComposer
 
   ColumnOrderings<String> get plotNotes => $state.composableBuilder(
       column: $state.table.plotNotes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isGuardRow => $state.composableBuilder(
+      column: $state.table.isGuardRow,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

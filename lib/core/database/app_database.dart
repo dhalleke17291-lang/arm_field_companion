@@ -195,6 +195,9 @@ class Plots extends Table {
   TextColumn get soilSeries => text().nullable()();
   TextColumn get plotNotes => text().nullable()();
 
+  /// Field layout: non-data / border plot (v1: display + flag only; no workflow change).
+  BoolColumn get isGuardRow => boolean().withDefault(const Constant(false))();
+
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
@@ -574,7 +577,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -831,6 +834,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(
                 ratingRecords, ratingRecords.lastEditedByUserId);
             await m.addColumn(ratingRecords, ratingRecords.lastEditedAt);
+          }
+          if (from < 28) {
+            await m.addColumn(plots, plots.isGuardRow);
           }
           await _createIndexes();
         },

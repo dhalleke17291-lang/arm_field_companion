@@ -189,6 +189,9 @@ class PlotDetailScreen extends ConsumerWidget {
                       StandardDetailRow(
                           label: 'Sort Index',
                           value: plotToShow.plotSortIndex.toString()),
+                    if (plotToShow.isGuardRow)
+                      const StandardDetailRow(
+                          label: 'Plot type', value: 'Guard row'),
                     StandardDetailRow(label: 'Trial', value: trial.name),
                     if (trial.plotDimensions != null ||
                         trial.plotRows != null ||
@@ -754,6 +757,8 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
   bool _plotAreaOverride = false;
   bool _harvestAreaOverride = false;
   bool _saving = false;
+  bool _isGuardRow = false;
+  bool _guardToggleBusy = false;
 
   @override
   void initState() {
@@ -766,7 +771,8 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.plot.id == widget.plot.id &&
         (oldWidget.plot.plotLengthM != widget.plot.plotLengthM ||
-            oldWidget.plot.plotNotes != widget.plot.plotNotes)) {
+            oldWidget.plot.plotNotes != widget.plot.plotNotes ||
+            oldWidget.plot.isGuardRow != widget.plot.isGuardRow)) {
       _syncFromPlot(widget.plot);
     }
   }
@@ -810,6 +816,7 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
         (plot.harvestAreaM2! -
                 (plot.harvestLengthM! * plot.harvestWidthM!))
             .abs() > 0.001;
+    _isGuardRow = plot.isGuardRow;
   }
 
   @override
@@ -930,6 +937,60 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+          dense: true,
+          title: const Text(
+            'Guard row',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            'Border or buffer plot (label only)',
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.2,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          value: _isGuardRow,
+          onChanged: _saving || _guardToggleBusy
+              ? null
+              : (v) async {
+                  setState(() {
+                    _isGuardRow = v;
+                    _guardToggleBusy = true;
+                  });
+                  try {
+                    await ref
+                        .read(plotRepositoryProvider)
+                        .updatePlotGuardRow(widget.plot.id, v);
+                    ref.invalidate(plotsForTrialProvider(widget.trial.id));
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          v ? 'Marked as guard row' : 'Guard row cleared',
+                        ),
+                      ),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    setState(() => _isGuardRow = !v);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Update failed: $e'),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.error,
+                      ),
+                    );
+                  } finally {
+                    if (context.mounted) {
+                      setState(() => _guardToggleBusy = false);
+                    }
+                  }
+                },
+        ),
+        const Divider(height: 1),
         ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),

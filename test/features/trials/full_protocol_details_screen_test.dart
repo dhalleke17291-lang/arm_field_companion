@@ -61,6 +61,7 @@ void main() {
         fieldColumn: null,
         assignmentSource: null,
         assignmentUpdatedAt: null,
+        isGuardRow: false,
         isDeleted: false,
       ),
     ];

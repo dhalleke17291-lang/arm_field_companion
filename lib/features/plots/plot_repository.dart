@@ -62,6 +62,7 @@ class PlotRepository {
     String? plotDirection,
     String? soilSeries,
     String? plotNotes,
+    bool isGuardRow = false,
   }) {
     return _db.into(_db.plots).insert(
           PlotsCompanion.insert(
@@ -81,8 +82,15 @@ class PlotRepository {
             plotDirection: Value(plotDirection),
             soilSeries: Value(soilSeries),
             plotNotes: Value(plotNotes),
+            isGuardRow: Value(isGuardRow),
           ),
         );
+  }
+
+  /// Guard row flag (v1: no workflow effect).
+  Future<void> updatePlotGuardRow(int plotPk, bool isGuardRow) async {
+    await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
+        .write(PlotsCompanion(isGuardRow: Value(isGuardRow)));
   }
 
   Future<void> insertPlotsBulk(List<PlotsCompanion> plots) async {
