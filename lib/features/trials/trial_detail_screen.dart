@@ -13,6 +13,7 @@ import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
 import '../sessions/create_session_screen.dart';
 import '../sessions/session_detail_screen.dart';
+import '../sessions/session_summary_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import 'full_protocol_details_screen.dart';
 import '../../core/providers.dart';
@@ -1858,6 +1859,136 @@ class SessionsView extends ConsumerWidget {
     }
   }
 
+  /// Matches plot-queue / session summary semantics for pre-close warning only.
+  _SessionCloseAttentionSummary _computeSessionCloseAttentionSummary({
+    required List<Plot> plots,
+    required Set<int> ratedPks,
+    required Set<int> flaggedIds,
+    required List<RatingRecord> ratings,
+    required Set<int> corrections,
+  }) {
+    final totalPlots = plots.length;
+    final ratedPlots = ratedPks.length;
+    final unratedPlots = plots.where((p) => !ratedPks.contains(p.id)).length;
+    final flaggedPlots = flaggedIds.length;
+    final ratingsByPlot = <int, List<RatingRecord>>{};
+    for (final r in ratings) {
+      ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
+    }
+    var issuesPlots = 0;
+    var editedPlots = 0;
+    for (final plot in plots) {
+      final pr = ratingsByPlot[plot.id] ?? [];
+      if (pr.any((r) => r.resultStatus != 'RECORDED')) {
+        issuesPlots++;
+      }
+      if (pr.any((r) => r.amended || (r.previousId != null)) ||
+          corrections.contains(plot.id)) {
+        editedPlots++;
+      }
+    }
+    return _SessionCloseAttentionSummary(
+      totalPlots: totalPlots,
+      ratedPlots: ratedPlots,
+      unratedPlots: unratedPlots,
+      flaggedPlots: flaggedPlots,
+      issuesPlots: issuesPlots,
+      editedPlots: editedPlots,
+    );
+  }
+
+  Future<_SessionCloseAttentionAction?> _showSessionCloseAttentionDialog(
+    BuildContext context,
+    Session session,
+    _SessionCloseAttentionSummary s,
+  ) {
+    final lines = <String>[
+      'Rated plots: ${s.ratedPlots} of ${s.totalPlots}',
+      if (s.unratedPlots > 0) 'Unrated plots: ${s.unratedPlots}',
+      if (s.flaggedPlots > 0) 'Flagged plots: ${s.flaggedPlots}',
+      if (s.issuesPlots > 0) 'Plots with issues: ${s.issuesPlots}',
+      if (s.editedPlots > 0) 'Edited plots: ${s.editedPlots}',
+    ];
+    return showDialog<_SessionCloseAttentionAction>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Close session?'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This session still has items you may want to review before closing.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              ...lines.map(
+                (line) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    line,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.start,
+        actionsOverflowAlignment: OverflowBarAlignment.start,
+        actionsOverflowDirection: VerticalDirection.down,
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(ctx, _SessionCloseAttentionAction.keepOpen),
+            child: const Text('Keep open'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(ctx, _SessionCloseAttentionAction.reviewSummary),
+            child: const Text('Review summary'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(ctx, _SessionCloseAttentionAction.plotQueue),
+            child: const Text('Open Plot Queue'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(ctx, _SessionCloseAttentionAction.closeAnyway),
+            child: const Text('Close anyway'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _runCloseSessionUseCase(
+    BuildContext context,
+    WidgetRef ref,
+    Session session,
+  ) async {
+    final userId = await ref.read(currentUserIdProvider.future);
+    final useCase = ref.read(closeSessionUseCaseProvider);
+    final result = await useCase.execute(
+      sessionId: session.id,
+      trialId: trial.id,
+      raterName: session.raterName,
+      closedByUserId: userId,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            result.success ? 'Session closed' : result.errorMessage ?? 'Error'),
+        backgroundColor: result.success ? Colors.green : Colors.red,
+      ));
+    }
+  }
+
   Future<void> _confirmCloseSession(
       BuildContext context, WidgetRef ref, Session session) async {
     final confirm = await showDialog<bool>(
@@ -1876,23 +2007,104 @@ class SessionsView extends ConsumerWidget {
         ],
       ),
     );
-    if (confirm != true) return;
-    final userId = await ref.read(currentUserIdProvider.future);
-    final useCase = ref.read(closeSessionUseCaseProvider);
-    final result = await useCase.execute(
-      sessionId: session.id,
-      trialId: trial.id,
-      raterName: session.raterName,
-      closedByUserId: userId,
-    );
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            result.success ? 'Session closed' : result.errorMessage ?? 'Error'),
-        backgroundColor: result.success ? Colors.green : Colors.red,
-      ));
+    if (confirm != true || !context.mounted) return;
+
+    _SessionCloseAttentionSummary? summary;
+    try {
+      final plots = await ref.read(plotsForTrialProvider(trial.id).future);
+      final ratedPks =
+          await ref.read(ratedPlotPksProvider(session.id).future);
+      final flaggedIds =
+          await ref.read(flaggedPlotIdsForSessionProvider(session.id).future);
+      final ratings =
+          await ref.read(sessionRatingsProvider(session.id).future);
+      final corrections =
+          await ref.read(plotPksWithCorrectionsForSessionProvider(session.id).future);
+      summary = _computeSessionCloseAttentionSummary(
+        plots: plots,
+        ratedPks: ratedPks,
+        flaggedIds: flaggedIds,
+        ratings: ratings,
+        corrections: corrections,
+      );
+    } catch (_) {
+      summary = null;
     }
+
+    if (!context.mounted) return;
+
+    if (summary != null && summary.needsAttention) {
+      final action = await _showSessionCloseAttentionDialog(
+        context,
+        session,
+        summary,
+      );
+      if (!context.mounted) return;
+      switch (action) {
+        case _SessionCloseAttentionAction.keepOpen:
+        case null:
+          return;
+        case _SessionCloseAttentionAction.reviewSummary:
+          await Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => SessionSummaryScreen(
+                trial: trial,
+                session: session,
+              ),
+            ),
+          );
+          return;
+        case _SessionCloseAttentionAction.plotQueue:
+          await Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => PlotQueueScreen(
+                trial: trial,
+                session: session,
+              ),
+            ),
+          );
+          return;
+        case _SessionCloseAttentionAction.closeAnyway:
+          break;
+      }
+    }
+
+    if (!context.mounted) return;
+    await _runCloseSessionUseCase(context, ref, session);
   }
+}
+
+class _SessionCloseAttentionSummary {
+  const _SessionCloseAttentionSummary({
+    required this.totalPlots,
+    required this.ratedPlots,
+    required this.unratedPlots,
+    required this.flaggedPlots,
+    required this.issuesPlots,
+    required this.editedPlots,
+  });
+
+  final int totalPlots;
+  final int ratedPlots;
+  final int unratedPlots;
+  final int flaggedPlots;
+  final int issuesPlots;
+  final int editedPlots;
+
+  bool get needsAttention =>
+      unratedPlots > 0 ||
+      flaggedPlots > 0 ||
+      issuesPlots > 0 ||
+      editedPlots > 0;
+}
+
+enum _SessionCloseAttentionAction {
+  keepOpen,
+  reviewSummary,
+  plotQueue,
+  closeAnyway,
 }
 
 class _TrialReadinessSheet extends StatelessWidget {
