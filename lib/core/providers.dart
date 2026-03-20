@@ -36,6 +36,8 @@ import '../features/export/domain/export_trial_closed_sessions_arm_xml_usecase.d
 import '../features/export/domain/export_deleted_session_recovery_zip_usecase.dart';
 import '../features/export/domain/export_deleted_trial_recovery_zip_usecase.dart';
 import '../features/export/export_trial_usecase.dart';
+import '../features/export/export_trial_pdf_report_usecase.dart';
+import '../features/export/report_data_assembly_service.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
@@ -514,6 +516,25 @@ final exportDeletedTrialRecoveryZipUsecaseProvider =
     sessionRepository: ref.watch(sessionRepositoryProvider),
     plotRepository: ref.watch(plotRepositoryProvider),
     ratingRepository: ref.watch(ratingRepositoryProvider),
+  );
+});
+
+final reportDataAssemblyServiceProvider =
+    Provider<ReportDataAssemblyService>((ref) {
+  return ReportDataAssemblyService(
+    plotRepository: ref.watch(plotRepositoryProvider),
+    treatmentRepository: ref.watch(treatmentRepositoryProvider),
+    applicationRepository: ref.watch(applicationRepositoryProvider),
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+    photoRepository: ref.watch(photoRepositoryProvider),
+  );
+});
+
+final exportTrialPdfReportUseCaseProvider =
+    Provider<ExportTrialPdfReportUseCase>((ref) {
+  return ExportTrialPdfReportUseCase(
+    assemblyService: ref.watch(reportDataAssemblyServiceProvider),
   );
 });
 
