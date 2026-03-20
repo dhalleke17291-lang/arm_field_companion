@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import 'session_export_trust_messaging.dart';
 
 /// Warning-only pre-export summary for session CSV / ARM XML. Does not block export.
 Future<bool> confirmSessionExportTrust({
@@ -37,54 +38,83 @@ Future<bool> confirmSessionExportTrust({
     }
   }
 
-  final lines = <String>[];
-  if (noRatings) {
-    lines.add('No ratings in this session');
-  } else {
-    if (unratedPlots > 0) {
-      lines.add('$unratedPlots plots not rated');
-    }
-    if (issuesPlotCount > 0) {
-      lines.add('$issuesPlotCount plots have issues');
-    }
-    if (editedPlotCount > 0) {
-      lines.add('$editedPlotCount plots edited');
-    }
-  }
-  if (lines.isEmpty) {
-    lines.add('No additional notes for this export');
-  }
+  final metricLines = sessionExportTrustDialogBodyLines(
+    noRatings: noRatings,
+    unratedPlots: unratedPlots,
+    issuesPlotCount: issuesPlotCount,
+    editedPlotCount: editedPlotCount,
+  );
 
   if (!context.mounted) return false;
   final go = await showDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Before you export'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: lines
-              .map(
-                (l) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(l, style: const TextStyle(fontSize: 14)),
+    builder: (ctx) {
+      final muted = Theme.of(ctx).colorScheme.onSurfaceVariant;
+      return AlertDialog(
+        title: const Text('Before you export'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                kSessionExportTrustDialogIntro,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.35,
+                  color: muted,
                 ),
-              )
-              .toList(),
+              ),
+              const SizedBox(height: 12),
+              ...metricLines.map(
+                (l) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 5, right: 8),
+                        child: Icon(
+                          Icons.circle,
+                          size: 6,
+                          color: muted.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          l,
+                          style: const TextStyle(fontSize: 14, height: 1.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                kSessionExportTrustEditedClarification,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.3,
+                  color: muted.withValues(alpha: 0.85),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Export anyway'),
-        ),
-      ],
-    ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Export anyway'),
+          ),
+        ],
+      );
+    },
   );
   return go == true;
 }

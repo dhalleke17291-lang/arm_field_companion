@@ -22,6 +22,7 @@ import 'rating_order_sheet.dart';
 import 'session_completeness_screen.dart';
 import 'session_summary_screen.dart';
 import 'session_export_trust_dialog.dart';
+import 'session_export_trust_messaging.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -1244,36 +1245,46 @@ class _SessionExportTrustCaption extends ConsumerWidget {
                 }
               }
 
-              final String line;
-              if (noRatings) {
-                line = 'No ratings in this session';
-              } else {
-                final parts = <String>[];
-                if (unratedPlots > 0) {
-                  parts.add('$unratedPlots plots not rated');
-                }
-                if (issuesPlotCount > 0) {
-                  parts.add('$issuesPlotCount plots have issues');
-                }
-                if (editedPlotCount > 0) {
-                  parts.add('$editedPlotCount plots edited');
-                }
-                line = parts.isEmpty
-                    ? 'No additional notes for this export'
-                    : parts.join(' · ');
-              }
+              final primary = sessionExportTrustCaptionPrimaryLine(
+                noRatings: noRatings,
+                unratedPlots: unratedPlots,
+                issuesPlotCount: issuesPlotCount,
+                editedPlotCount: editedPlotCount,
+              );
+              final baseStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
+                  );
+              final footStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    height: 1.25,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.45),
+                  );
 
-              return Text(
-                line,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.55),
-                    ),
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    primary,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: baseStyle,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    kSessionExportTrustEditedClarification,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: footStyle,
+                  ),
+                ],
               );
             },
           ),
