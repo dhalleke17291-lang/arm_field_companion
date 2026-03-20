@@ -106,6 +106,27 @@ class PhotoReportSummary {
   final int count;
 }
 
+/// One per-plot assessment result row for the report.
+class RatingResultRow {
+  final String plotId;
+  final int rep;
+  final String treatmentCode;
+  final String assessmentName;
+  final String unit;
+  final String value;
+  final String resultStatus;
+
+  const RatingResultRow({
+    required this.plotId,
+    required this.rep,
+    required this.treatmentCode,
+    required this.assessmentName,
+    required this.unit,
+    required this.value,
+    required this.resultStatus,
+  });
+}
+
 /// Full assembled report data for a trial.
 class StandaloneReportData {
   const StandaloneReportData({
@@ -115,6 +136,7 @@ class StandaloneReportData {
     required this.sessions,
     required this.applications,
     required this.photoCount,
+    this.ratings = const [],
   });
 
   final TrialReportSummary trial;
@@ -123,4 +145,5 @@ class StandaloneReportData {
   final List<SessionReportSummary> sessions;
   final ApplicationsReportSummary applications;
   final PhotoReportSummary photoCount;
+  final List<RatingResultRow> ratings;
 }

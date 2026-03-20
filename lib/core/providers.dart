@@ -532,6 +532,7 @@ final reportDataAssemblyServiceProvider =
     sessionRepository: ref.watch(sessionRepositoryProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     photoRepository: ref.watch(photoRepositoryProvider),
+    exportRepository: ref.watch(exportRepositoryProvider),
   );
 });
 

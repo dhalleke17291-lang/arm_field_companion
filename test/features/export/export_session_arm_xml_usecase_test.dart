@@ -24,6 +24,11 @@ class _MockExportRepository implements ExportRepository {
       {required int sessionId}) async {
     return [];
   }
+
+  @override
+  Future<List<Map<String, Object?>>> buildTrialExportRows({
+    required int trialId,
+  }) async => [];
 }
 
 class _FakePathProvider extends PathProviderPlatform {

@@ -125,6 +125,77 @@ class ExportRepository {
     }).toList();
   }
 
+  /// Exports all current ratings for a trial across all sessions.
+  /// Same join and sort as buildSessionExportRows but scoped to trialId.
+  Future<List<Map<String, Object?>>> buildTrialExportRows({
+    required int trialId,
+  }) async {
+    final rr = db.ratingRecords;
+    final p = db.plots;
+    final a = db.assessments;
+    final asg = db.assignments;
+    final t = db.treatments;
+
+    final query = db.select(rr).join([
+      drift.innerJoin(p, p.id.equalsExp(rr.plotPk)),
+      drift.innerJoin(a, a.id.equalsExp(rr.assessmentId)),
+      drift.leftOuterJoin(
+          asg,
+          asg.plotId.equalsExp(p.id) &
+              asg.trialId.equalsExp(p.trialId)),
+      drift.leftOuterJoin(t, t.id.equalsExp(asg.treatmentId)),
+    ])
+      ..where(rr.trialId.equals(trialId) &
+          rr.isCurrent.equals(true) &
+          rr.isDeleted.equals(false) &
+          p.isDeleted.equals(false))
+      ..orderBy([
+        drift.OrderingTerm.asc(p.rep),
+        drift.OrderingTerm.asc(p.plotSortIndex),
+        drift.OrderingTerm.asc(a.name),
+      ]);
+
+    final result = await query.get();
+    final ratingIds =
+        result.map((row) => row.readTable(rr).id).toList();
+
+    final corrections = ratingIds.isEmpty
+        ? <int, RatingCorrection>{}
+        : await _getLatestCorrectionsByRatingId(ratingIds);
+
+    return result.map((row) {
+      final rating = row.readTable(rr);
+      final plot = row.readTable(p);
+      final assessment = row.readTable(a);
+      final assignment = row.readTableOrNull(asg);
+      final treatment = row.readTableOrNull(t);
+      final correction = corrections[rating.id];
+
+      final effectiveNumeric =
+          correction?.newNumericValue ?? rating.numericValue;
+      final effectiveText =
+          correction?.newTextValue ?? rating.textValue;
+      final effectiveStatus =
+          correction?.newResultStatus ?? rating.resultStatus;
+
+      final value = effectiveNumeric != null
+          ? effectiveNumeric.toStringAsFixed(2)
+              .replaceAll(RegExp(r'\.?0+$'), '')
+          : (effectiveText ?? '-');
+
+      return <String, Object?>{
+        'plot_id': plot.plotId,
+        'rep': plot.rep ?? 0,
+        'treatment_code':
+            treatment?.code ?? assignment?.treatmentId?.toString() ?? '-',
+        'assessment_name': assessment.name,
+        'unit': assessment.unit ?? '',
+        'value': value,
+        'result_status': effectiveStatus,
+      };
+    }).toList();
+  }
+
   Future<Map<int, RatingCorrection>> _getLatestCorrectionsByRatingId(
       List<int> ratingIds) async {
     if (ratingIds.isEmpty) return {};

@@ -206,6 +206,20 @@ class ReportPdfBuilderService {
           ),
           pw.SizedBox(height: 16),
 
+          // ── Assessment Results ──────────────────────
+          if (data.ratings.isNotEmpty) ...[
+            pw.SizedBox(height: 16),
+            pw.Text(
+              'Assessment Results',
+              style: pw.TextStyle(
+                fontSize: 15,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            _buildResultsTable(data.ratings),
+          ],
+
           // Photos
           pw.Text(
             'Photos',
@@ -224,6 +238,64 @@ class ReportPdfBuilderService {
     );
 
     return pdf.save();
+  }
+
+  pw.Widget _buildResultsTable(List<RatingResultRow> ratings) {
+    // Group by assessment name for readability
+    final byAssessment = <String, List<RatingResultRow>>{};
+    for (final r in ratings) {
+      byAssessment.putIfAbsent(r.assessmentName, () => []).add(r);
+    }
+
+    final widgets = <pw.Widget>[];
+    for (final entry in byAssessment.entries) {
+      final name = entry.key;
+      final rows = entry.value;
+      final unit = rows.first.unit;
+      final label = unit.isNotEmpty ? '$name ($unit)' : name;
+
+      widgets.add(pw.Text(
+        label,
+        style: pw.TextStyle(
+          fontSize: 11,
+          fontWeight: pw.FontWeight.bold,
+        ),
+      ));
+      widgets.add(pw.SizedBox(height: 4));
+      widgets.add(pw.Table(
+        border: pw.TableBorder.all(
+            color: PdfColors.grey400, width: 0.5),
+        columnWidths: {
+          0: const pw.FlexColumnWidth(2),
+          1: const pw.FixedColumnWidth(32),
+          2: const pw.FlexColumnWidth(2),
+          3: const pw.FlexColumnWidth(2),
+        },
+        children: [
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(
+                color: PdfColors.grey200),
+            children: [
+              _tableHeaderCell('Plot', rightAlign: false),
+              _tableHeaderCell('Rep', rightAlign: true),
+              _tableHeaderCell('Treatment', rightAlign: false),
+              _tableHeaderCell('Value', rightAlign: true),
+            ],
+          ),
+          ...rows.map((r) => pw.TableRow(
+                children: [
+                  _tableCell(r.plotId),
+                  _tableCell(r.rep.toString(),
+                      rightAlign: true),
+                  _tableCell(r.treatmentCode),
+                  _tableCell(r.value, rightAlign: true),
+                ],
+              )),
+        ],
+      ));
+      widgets.add(pw.SizedBox(height: 12));
+    }
+    return pw.Column(children: widgets);
   }
 }
 

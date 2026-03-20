@@ -7,6 +7,7 @@ import 'package:arm_field_companion/features/photos/photo_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/data/repositories/application_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
+import 'package:arm_field_companion/features/export/data/export_repository.dart';
 
 Trial _trial({
   int id = 1,
@@ -485,6 +486,26 @@ class MockPhotoRepository implements PhotoRepository {
       throw UnimplementedError();
 }
 
+class _MockExportRepository implements ExportRepository {
+  @override
+  AppDatabase get db => throw UnimplementedError('not needed in tests');
+
+  @override
+  Future<List<Map<String, Object?>>> buildSessionExportRows(
+          {required int sessionId}) async =>
+      throw UnimplementedError('not needed in tests');
+
+  @override
+  Future<List<Map<String, Object?>>> buildTrialExportRows(
+          {required int trialId}) async =>
+      [];
+
+  @override
+  Future<List<Map<String, Object?>>> buildSessionAuditExportRows(
+          {required int sessionId}) async =>
+      throw UnimplementedError('not needed in tests');
+}
+
 void main() {
   late ReportDataAssemblyService service;
   late MockPlotRepository mockPlotRepo;
@@ -508,6 +529,7 @@ void main() {
       sessionRepository: mockSessionRepo,
       assignmentRepository: mockAssignmentRepo,
       photoRepository: mockPhotoRepo,
+      exportRepository: _MockExportRepository(),
     );
   });
 

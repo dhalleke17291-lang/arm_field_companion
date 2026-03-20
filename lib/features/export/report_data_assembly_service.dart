@@ -5,6 +5,7 @@ import '../photos/photo_repository.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../data/repositories/application_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
+import 'data/export_repository.dart';
 import 'standalone_report_data.dart';
 
 /// Assembles report-ready data for a trial from existing repositories.
@@ -18,12 +19,14 @@ class ReportDataAssemblyService {
     required SessionRepository sessionRepository,
     required AssignmentRepository assignmentRepository,
     required PhotoRepository photoRepository,
+    required ExportRepository exportRepository,
   })  : _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
         _applicationRepository = applicationRepository,
         _sessionRepository = sessionRepository,
         _assignmentRepository = assignmentRepository,
-        _photoRepository = photoRepository;
+        _photoRepository = photoRepository,
+        _exportRepository = exportRepository;
 
   final PlotRepository _plotRepository;
   final TreatmentRepository _treatmentRepository;
@@ -31,6 +34,7 @@ class ReportDataAssemblyService {
   final SessionRepository _sessionRepository;
   final AssignmentRepository _assignmentRepository;
   final PhotoRepository _photoRepository;
+  final ExportRepository _exportRepository;
 
   /// Assembles report data for the given trial.
   /// Trial must exist; returns assembled DTO or throws.
@@ -111,6 +115,21 @@ class ReportDataAssemblyService {
 
     final photoSummary = PhotoReportSummary(count: photos.length);
 
+    final rawRatings = await _exportRepository
+        .buildTrialExportRows(trialId: trialPk);
+
+    final ratingRows = rawRatings.map((r) {
+      return RatingResultRow(
+        plotId: r['plot_id'] as String? ?? '-',
+        rep: (r['rep'] as int?) ?? 0,
+        treatmentCode: r['treatment_code'] as String? ?? '-',
+        assessmentName: r['assessment_name'] as String? ?? '-',
+        unit: r['unit'] as String? ?? '',
+        value: r['value'] as String? ?? '-',
+        resultStatus: r['result_status'] as String? ?? 'RECORDED',
+      );
+    }).toList();
+
     return StandaloneReportData(
       trial: trialSummary,
       treatments: treatmentSummaries,
@@ -118,6 +137,7 @@ class ReportDataAssemblyService {
       sessions: sessionSummaries,
       applications: applicationsSummary,
       photoCount: photoSummary,
+      ratings: ratingRows,
     );
   }
 }
