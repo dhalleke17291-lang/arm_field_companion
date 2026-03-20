@@ -111,6 +111,7 @@ class FakeTrialRepository implements TrialRepository {
     String? crop,
     String? location,
     String? season,
+    String workspaceType = 'efficacy',
   }) async =>
       throw UnimplementedError();
 

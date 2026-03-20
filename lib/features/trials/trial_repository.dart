@@ -30,6 +30,7 @@ class TrialRepository {
     String? crop,
     String? location,
     String? season,
+    String workspaceType = 'efficacy',
   }) async {
     // Duplicate name check — silent overwrite forbidden per spec
     final existing = await (_db.select(_db.trials)
@@ -46,6 +47,7 @@ class TrialRepository {
             crop: Value(crop),
             location: Value(location),
             season: Value(season),
+            workspaceType: Value(workspaceType),
             status: const Value(kTrialStatusDraft),
           ),
         );

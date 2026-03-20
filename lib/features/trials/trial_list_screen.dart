@@ -12,6 +12,7 @@ import '../../core/session_resume_store.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/database/app_database.dart';
+import '../../core/workspace/workspace_config.dart';
 import '../../core/crop_icons.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../about/about_screen.dart';
@@ -323,23 +324,26 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                     AppDesignTokens.spacing16,
+                    10,
                     AppDesignTokens.spacing16,
-                    AppDesignTokens.spacing16,
-                    AppDesignTokens.spacing24),
+                    10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Row 1: title + actions
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'My Trials',
                           style: AppDesignTokens.headerTitleStyle(
-                            fontSize: 24,
+                            fontSize: 20,
                             color: Colors.white,
                           ),
                         ),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon:
@@ -380,79 +384,81 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                         ),
                       ],
                     ),
+                    // Row 2: compact stat chips (when trials exist)
                     trialsAsync.when(
-                      loading: () =>
-                          const SizedBox(height: AppDesignTokens.spacing12),
-                      error: (_, __) =>
-                          const SizedBox(height: AppDesignTokens.spacing12),
+                      loading: () => const SizedBox(height: 6),
+                      error: (_, __) => const SizedBox(height: 6),
                       data: (trials) {
-                        final active = trials
+                        if (trials.isEmpty) {
+                          return const SizedBox(height: 6);
+                        }
+                        final activeCount = trials
                             .where((t) => t.status.toLowerCase() == 'active')
                             .length;
                         return Padding(
-                          padding: const EdgeInsets.only(
-                              top: AppDesignTokens.spacing24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                      child: _summaryPill(context,
-                                          '${trials.length}', 'Trials')),
-                                  const SizedBox(
-                                      width: AppDesignTokens.spacing12),
-                                  Expanded(
-                                      child: _summaryPill(
-                                          context, '$active', 'Active')),
-                                ],
+                              _CompactCountPill(
+                                value: '${trials.length}',
+                                label: 'Trials',
                               ),
-                              if (trials.isNotEmpty) ...[
-                                const SizedBox(
-                                    height: AppDesignTokens.spacing12),
-                                TextField(
-                                  controller: _searchController,
-                                  focusNode: _searchFocusNode,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 15),
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        'Search name, crop, location, season…',
-                                    hintStyle: TextStyle(
-                                        color:
-                                            Colors.white.withValues(alpha: 0.7),
-                                        fontSize: 14),
-                                    prefixIcon: const Icon(Icons.search,
-                                        color: Colors.white70, size: 22),
-                                    suffixIcon:
-                                        _searchController.text.isNotEmpty
-                                            ? IconButton(
-                                                icon: const Icon(Icons.clear,
-                                                    color: Colors.white70,
-                                                    size: 20),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _searchController.clear();
-                                                    _searchQuery = '';
-                                                  });
-                                                },
-                                              )
-                                            : null,
-                                    filled: true,
-                                    fillColor:
-                                        Colors.white.withValues(alpha: 0.15),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 10),
-                                  ),
-                                  onChanged: (value) => setState(
-                                      () => _searchQuery = value.trim()),
-                                ),
-                              ],
+                              const SizedBox(width: 8),
+                              _CompactCountPill(
+                                value: '$activeCount',
+                                label: 'Active',
+                              ),
                             ],
+                          ),
+                        );
+                      },
+                    ),
+                    // Row 3: single search field
+                    trialsAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (trials) {
+                        if (trials.isEmpty) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Search name, crop, location, season…',
+                              hintStyle: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 13),
+                              prefixIcon: const Icon(Icons.search,
+                                  color: Colors.white70, size: 18),
+                              suffixIcon:
+                                  _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear,
+                                              color: Colors.white70, size: 18),
+                                          onPressed: () {
+                                            setState(() {
+                                              _searchController.clear();
+                                              _searchQuery = '';
+                                            });
+                                          },
+                                        )
+                                      : null,
+                              filled: true,
+                              fillColor:
+                                  Colors.white.withValues(alpha: 0.12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
+                            onChanged: (value) =>
+                                setState(() => _searchQuery = value.trim()),
                           ),
                         );
                       },
@@ -463,10 +469,10 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
             ),
           ),
           Container(
-            height: 20,
+            height: 12,
             decoration: const BoxDecoration(
               color: bgWarm,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
           ),
           Expanded(
@@ -492,51 +498,16 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                     noResultsMessage = 'No trials to show.';
                   }
                 }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppDesignTokens.spacing16,
-                        0,
-                        AppDesignTokens.spacing16,
-                        AppDesignTokens.spacing8,
-                      ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _buildStatusFilterChip(
-                                _TrialListStatusFilter.all, 'All'),
-                            const SizedBox(width: 6),
-                            _buildStatusFilterChip(
-                                _TrialListStatusFilter.active, 'Active'),
-                            const SizedBox(width: 6),
-                            _buildStatusFilterChip(
-                                _TrialListStatusFilter.draft, 'Draft'),
-                            const SizedBox(width: 6),
-                            _buildStatusFilterChip(
-                                _TrialListStatusFilter.closed, 'Closed'),
-                            const SizedBox(width: 6),
-                            _buildStatusFilterChip(
-                                _TrialListStatusFilter.archived, 'Archived'),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildTrialList(
-                        context,
-                        ref,
-                        displayed,
-                        sortMode: _sortMode,
-                        onSortChanged: (m) =>
-                            setState(() => _sortMode = m),
-                        noResultsMessage: noResultsMessage,
-                      ),
-                    ),
-                  ],
-                );
+                return _buildTrialList(
+                    context,
+                    ref,
+                    displayed,
+                    sortMode: _sortMode,
+                    onSortChanged: (m) =>
+                        setState(() => _sortMode = m),
+                    noResultsMessage: noResultsMessage,
+                    filterChipsRow: _buildFilterChipsRow(),
+                  );
               },
             ),
           ),
@@ -546,6 +517,38 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
         onPressed: () => _showCreateTrialDialog(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('New Trial'),
+      ),
+    );
+  }
+
+  Widget _buildFilterChipsRow() {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: 0,
+        right: 0,
+        top: 4,
+        bottom: 6,
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildStatusFilterChip(
+                _TrialListStatusFilter.all, 'All'),
+            const SizedBox(width: 6),
+            _buildStatusFilterChip(
+                _TrialListStatusFilter.active, 'Active'),
+            const SizedBox(width: 6),
+            _buildStatusFilterChip(
+                _TrialListStatusFilter.draft, 'Draft'),
+            const SizedBox(width: 6),
+            _buildStatusFilterChip(
+                _TrialListStatusFilter.closed, 'Closed'),
+            const SizedBox(width: 6),
+            _buildStatusFilterChip(
+                _TrialListStatusFilter.archived, 'Archived'),
+          ],
+        ),
       ),
     );
   }
@@ -577,6 +580,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _summaryPill(BuildContext context, String value, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppDesignTokens.spacing8),
@@ -650,6 +654,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     required _TrialListSortMode sortMode,
     required ValueChanged<_TrialListSortMode> onSortChanged,
     String? noResultsMessage,
+    required Widget filterChipsRow,
   }) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0,
@@ -659,56 +664,57 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
           onNavigate: (trial, session) =>
               _navigateToRatingForSession(context, ref, trial, session),
         ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
+        // Section header: label + sort (filters sit below as content controls)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Expanded(
                 child: Text(
                   'Recent Trials',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF4A6358),
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ),
-            ),
-            PopupMenuButton<_TrialListSortMode>(
-              tooltip: 'Sort: ${_sortModeLabel(sortMode)}',
-              onSelected: onSortChanged,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8, right: 4),
-                child: Icon(
-                  Icons.sort,
-                  size: 22,
-                  color: AppDesignTokens.primary.withValues(alpha: 0.85),
+              PopupMenuButton<_TrialListSortMode>(
+                tooltip: 'Sort: ${_sortModeLabel(sortMode)}',
+                onSelected: onSortChanged,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8, right: 4),
+                  child: Icon(
+                    Icons.sort,
+                    size: 20,
+                    color: AppDesignTokens.primary.withValues(alpha: 0.85),
+                  ),
                 ),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: _TrialListSortMode.newestCreated,
+                    child: Text(_sortModeLabel(_TrialListSortMode.newestCreated)),
+                  ),
+                  PopupMenuItem(
+                    value: _TrialListSortMode.oldestCreated,
+                    child: Text(_sortModeLabel(_TrialListSortMode.oldestCreated)),
+                  ),
+                  PopupMenuItem(
+                    value: _TrialListSortMode.nameAz,
+                    child: Text(_sortModeLabel(_TrialListSortMode.nameAz)),
+                  ),
+                  PopupMenuItem(
+                    value: _TrialListSortMode.nameZa,
+                    child: Text(_sortModeLabel(_TrialListSortMode.nameZa)),
+                  ),
+                ],
               ),
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: _TrialListSortMode.newestCreated,
-                  child: Text(_sortModeLabel(_TrialListSortMode.newestCreated)),
-                ),
-                PopupMenuItem(
-                  value: _TrialListSortMode.oldestCreated,
-                  child: Text(_sortModeLabel(_TrialListSortMode.oldestCreated)),
-                ),
-                PopupMenuItem(
-                  value: _TrialListSortMode.nameAz,
-                  child: Text(_sortModeLabel(_TrialListSortMode.nameAz)),
-                ),
-                PopupMenuItem(
-                  value: _TrialListSortMode.nameZa,
-                  child: Text(_sortModeLabel(_TrialListSortMode.nameZa)),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: AppDesignTokens.spacing16),
+        filterChipsRow,
         if (noResultsMessage != null)
           Padding(
             padding:
@@ -725,10 +731,15 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
             ),
           )
         else
-          ...trials.map(
-            (t) => Padding(
-              padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
-              child: _TrialCard(trial: t),
+          ...List.generate(
+            trials.length,
+            (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _CompactTrialRow(
+                trial: trials[i],
+                index: i + 1,
+                totalCount: trials.length,
+              ),
             ),
           ),
       ],
@@ -741,6 +752,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     final cropController = TextEditingController();
     final locationController = TextEditingController();
     final seasonController = TextEditingController();
+    WorkspaceType selectedWorkspaceType = WorkspaceType.efficacy;
 
     await showDialog(
       context: context,
@@ -750,6 +762,35 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            StatefulBuilder(
+              builder: (context, setLocalState) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Trial type',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: WorkspaceType.values.map((type) {
+                        final config = WorkspaceConfig.forType(type);
+                        final selected = selectedWorkspaceType == type;
+                        return ChoiceChip(
+                          label: Text(config.displayName),
+                          selected: selected,
+                          onSelected: (_) => setLocalState(
+                            () => selectedWorkspaceType = type,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+            ),
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
@@ -801,6 +842,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                 season: seasonController.text.isEmpty
                     ? null
                     : seasonController.text,
+                workspaceType: selectedWorkspaceType.name,
               ));
 
               if (context.mounted) {
@@ -900,38 +942,39 @@ class _ContinueLastSessionCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
           child: Container(
-            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border.all(color: const Color(0xFFE8E2D8)),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF16A34A).withValues(alpha: 0.12),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
+                  color: const Color(0xFF16A34A).withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.play_circle_filled,
                     color: Color(0xFF16A34A),
-                    size: 28,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(width: AppDesignTokens.spacing12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -940,17 +983,17 @@ class _ContinueLastSessionCard extends StatelessWidget {
                       const Text(
                         'Continue Last Session',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF16A34A),
-                          letterSpacing: 0.3,
+                          letterSpacing: 0.35,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         trial.name,
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1F2937),
                         ),
@@ -959,7 +1002,7 @@ class _ContinueLastSessionCard extends StatelessWidget {
                       Text(
                         '${_formatSessionDateForCard(session.sessionDateLocal)} · ${session.name}',
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           color: Color(0xFF6B7280),
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -967,7 +1010,7 @@ class _ContinueLastSessionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Color(0xFF8FA898)),
+                const Icon(Icons.chevron_right, color: Color(0xFF8FA898), size: 22),
               ],
             ),
           ),
@@ -977,6 +1020,201 @@ class _ContinueLastSessionCard extends StatelessWidget {
   }
 }
 
+/// Compact stat pill for header: value + label (e.g. "12" / "Trials").
+class _CompactCountPill extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _CompactCountPill({
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact, high-density trial row for field scanning.
+/// UI-only: index and totalCount for display only.
+class _CompactTrialRow extends StatelessWidget {
+  final Trial trial;
+  final int index;
+  final int totalCount;
+
+  const _CompactTrialRow({
+    required this.trial,
+    required this.index,
+    required this.totalCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final statusLower = trial.status.toLowerCase();
+    final isActive = statusLower == 'active';
+    final isDraft = statusLower == 'draft';
+    final badgeBg = isActive
+        ? const Color(0xFFE8F2EC)
+        : isDraft
+            ? const Color(0xFFFFF4DC)
+            : const Color(0xFFEFF6FF);
+    final badgeFg = isActive
+        ? const Color(0xFF3D7A57)
+        : isDraft
+            ? const Color(0xFFC97A0A)
+            : const Color(0xFF2563EB);
+
+    final metadata = [
+      if (trial.crop != null && trial.crop!.isNotEmpty) trial.crop!,
+      if (trial.location != null && trial.location!.isNotEmpty) trial.location!,
+      if (trial.season != null && trial.season!.isNotEmpty) trial.season!,
+    ].join(' • ');
+
+    final indexStr = index.toString().padLeft(2, '0');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEAECF0)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => TrialDetailScreen(trial: trial),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A2E20).withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        indexStr,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4A6358),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        trial.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A2E20),
+                          letterSpacing: -0.25,
+                        ),
+                      ),
+                    ),
+                    if (trial.status.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: badgeBg,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          trial.status,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: badgeFg,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (metadata.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    metadata,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppDesignTokens.secondaryText
+                          .withValues(alpha: 0.85),
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 3),
+                _TrialQuickActions(trial: trial, compact: true),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ignore: unused_element
 class _TrialCard extends StatelessWidget {
   final Trial trial;
 
@@ -1121,8 +1359,12 @@ class _TrialCard extends StatelessWidget {
 /// Quick actions row under each trial card: Continue, Quick Rate, Details.
 class _TrialQuickActions extends ConsumerWidget {
   final Trial trial;
+  final bool compact;
 
-  const _TrialQuickActions({required this.trial});
+  const _TrialQuickActions({
+    required this.trial,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1134,19 +1376,46 @@ class _TrialQuickActions extends ConsumerWidget {
       data: (openSession) {
         final hasOpenSession = openSession != null;
         return Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (hasOpenSession)
               TextButton.icon(
                 onPressed: () =>
                     _continueLastSession(context, ref, trial, openSession),
-                icon: const Icon(Icons.play_circle_outline, size: 18),
-                label: const Text('Continue Session'),
+                icon: Icon(
+                  Icons.play_circle_outline,
+                  size: compact ? 16 : 18,
+                ),
+                label: Text(
+                  'Continue Session',
+                  style: TextStyle(fontSize: compact ? 12 : 13),
+                ),
+                style: compact
+                    ? TextButton.styleFrom(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6),
+                        visualDensity: VisualDensity.compact,
+                      )
+                    : null,
               ),
             if (!hasOpenSession)
               TextButton.icon(
                 onPressed: () => _quickRate(context, ref, trial),
-                icon: const Icon(Icons.flash_on, size: 18),
-                label: const Text('Quick Rate'),
+                icon: Icon(
+                  Icons.flash_on,
+                  size: compact ? 16 : 18,
+                ),
+                label: Text(
+                  'Quick Rate',
+                  style: TextStyle(fontSize: compact ? 12 : 13),
+                ),
+                style: compact
+                    ? TextButton.styleFrom(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6),
+                        visualDensity: VisualDensity.compact,
+                      )
+                    : null,
               ),
           ],
         );

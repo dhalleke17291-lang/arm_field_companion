@@ -63,6 +63,10 @@ class Trials extends Table {
   DateTimeColumn get harvestDate => dateTime().nullable()();
   TextColumn get studyType => text().nullable()();
 
+  /// Workspace type: variety | efficacy | glp | standalone
+  TextColumn get workspaceType =>
+      text().withDefault(const Constant('efficacy'))();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -590,7 +594,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -860,6 +864,9 @@ SELECT id, product_name, rate, rate_unit, 0
 FROM trial_application_events
 WHERE product_name IS NOT NULL AND LENGTH(TRIM(product_name)) > 0
 ''');
+          }
+          if (from < 30) {
+            await m.addColumn(trials, trials.workspaceType);
           }
           await _createIndexes();
         },

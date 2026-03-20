@@ -18,6 +18,7 @@ class CreateTrialUseCase {
         crop: input.crop,
         location: input.location,
         season: input.season,
+        workspaceType: input.workspaceType,
       );
 
       final trial = await _trialRepository.getTrialById(trialId);
@@ -39,12 +40,14 @@ class CreateTrialInput {
   final String? crop;
   final String? location;
   final String? season;
+  final String workspaceType;
 
   const CreateTrialInput({
     required this.name,
     this.crop,
     this.location,
     this.season,
+    this.workspaceType = 'efficacy',
   });
 }
 

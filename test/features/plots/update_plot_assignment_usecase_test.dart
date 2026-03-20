@@ -136,6 +136,7 @@ Trial _trial({String status = 'ACTIVE'}) => Trial(
       id: 1,
       name: 'Test Trial',
       status: status,
+      workspaceType: 'efficacy',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       crop: null,

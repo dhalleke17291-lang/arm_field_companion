@@ -17,6 +17,7 @@ class MockTrialRepository implements TrialRepository {
     String? crop,
     String? location,
     String? season,
+    String workspaceType = 'efficacy',
   }) async {
     final existing = _trials.where((t) => t.name == name).firstOrNull;
     if (existing != null) throw DuplicateTrialException(name);
@@ -28,6 +29,7 @@ class MockTrialRepository implements TrialRepository {
       location: location,
       season: season,
       status: 'active',
+      workspaceType: workspaceType,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isDeleted: false,

@@ -115,6 +115,7 @@ class _FakeTrialRepository implements TrialRepository {
     String? crop,
     String? location,
     String? season,
+    String workspaceType = 'efficacy',
   }) async {
     throw UnimplementedError();
   }
@@ -464,6 +465,7 @@ void main() {
         location: null,
         season: null,
         status: 'active',
+        workspaceType: 'efficacy',
         createdAt: DateTime(2026, 1, 1),
         updatedAt: DateTime(2026, 1, 1),
         isDeleted: false,

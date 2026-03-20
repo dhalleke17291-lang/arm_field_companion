@@ -20,6 +20,7 @@ void main() {
       location: 'North Farm',
       season: '2026',
       status: 'active',
+      workspaceType: 'efficacy',
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
       isDeleted: false,

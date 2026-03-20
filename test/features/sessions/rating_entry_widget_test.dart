@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
+import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
 import 'package:arm_field_companion/features/ratings/rating_screen.dart';
 import 'package:arm_field_companion/features/sessions/session_detail_screen.dart';
 import 'package:arm_field_companion/features/sessions/usecases/start_or_continue_rating_usecase.dart';
@@ -30,6 +31,7 @@ void main() {
       location: null,
       season: null,
       status: 'active',
+      workspaceType: 'efficacy',
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
       isDeleted: false,
@@ -145,6 +147,13 @@ void main() {
             assessmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assessments)),
             sessionRepositoryProvider.overrideWithValue(fakeSessionRepo),
+            createSessionUseCaseProvider.overrideWith((ref) {
+              final sessionRepo = ref.watch(sessionRepositoryProvider);
+              return CreateSessionUseCase(
+                sessionRepo,
+                promoteTrialToActiveIfReady: (_) async {},
+              );
+            }),
             startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
           ],
           child: const MaterialApp(
