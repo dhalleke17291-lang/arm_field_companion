@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../shared/widgets/app_card.dart';
@@ -831,7 +832,7 @@ class _DeletedPlotsSection extends StatelessWidget {
                       ),
                       const SizedBox(height: AppDesignTokens.spacing12),
                     ],
-                    _PlotRecoveryRow(plot: plots[i]),
+                    _PlotRecoveryRow(plot: plots[i], sameTrialPlots: plots),
                   ],
                 ],
               );
@@ -844,9 +845,13 @@ class _DeletedPlotsSection extends StatelessWidget {
 }
 
 class _PlotRecoveryRow extends ConsumerWidget {
-  const _PlotRecoveryRow({required this.plot});
+  const _PlotRecoveryRow({
+    required this.plot,
+    required this.sameTrialPlots,
+  });
 
   final Plot plot;
+  final List<Plot> sameTrialPlots;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -858,6 +863,7 @@ class _PlotRecoveryRow extends ConsumerWidget {
       if (repPart != null) repPart,
       trialLabel,
     ].join(' · ');
+    final displayLabel = getDisplayPlotLabel(plot, sameTrialPlots);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -866,7 +872,7 @@ class _PlotRecoveryRow extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                plot.plotId,
+                displayLabel,
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,

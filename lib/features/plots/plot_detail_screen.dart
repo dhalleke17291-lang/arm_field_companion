@@ -131,7 +131,7 @@ class PlotDetailScreen extends ConsumerWidget {
             icon: const Icon(Icons.edit_note),
             tooltip: 'Notes',
             onPressed: () =>
-                showPlotNotesDialog(context, ref, plotToShow, trial),
+                showPlotNotesDialog(context, ref, plotToShow, trial, sameTrialPlots: plots),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -252,7 +252,7 @@ class PlotDetailScreen extends ConsumerWidget {
                           ? 'Edit Notes'
                           : 'Add Notes'),
                       onPressed: () =>
-                          showPlotNotesDialog(context, ref, plotToShow, trial),
+                          showPlotNotesDialog(context, ref, plotToShow, trial, sameTrialPlots: plots),
                     ),
                     const Divider(),
                     plotContextAsync.when(

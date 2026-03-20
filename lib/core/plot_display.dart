@@ -26,8 +26,28 @@ String getDisplayPlotNumberFallback(Plot plot) {
   return 'P${plot.id}';
 }
 
-/// Single label for UI: "101" or fallback (plotId / P{id}).
+/// Display label for guard rows: G{rep}-L → G{rep*100}, G{rep}-R → G{rep*100+10}.
+/// Returns null if [plot] is not a guard row or plotId does not match.
+String? getGuardDisplayLabel(Plot plot) {
+  if (!plot.isGuardRow || plot.plotId.isEmpty) return null;
+  final id = plot.plotId;
+  final leftMatch = RegExp(r'^G(\d+)-L$').firstMatch(id);
+  if (leftMatch != null) {
+    final rep = int.tryParse(leftMatch.group(1) ?? '') ?? 0;
+    return 'G${rep * 100}';
+  }
+  final rightMatch = RegExp(r'^G(\d+)-R$').firstMatch(id);
+  if (rightMatch != null) {
+    final rep = int.tryParse(rightMatch.group(1) ?? '') ?? 0;
+    return 'G${rep * 100 + 10}';
+  }
+  return null;
+}
+
+/// Single label for UI: for guard rows G100/G110; else "101" or fallback (plotId / P{id}).
 String getDisplayPlotLabel(Plot plot, List<Plot> sameTrialPlots) {
+  final guardLabel = getGuardDisplayLabel(plot);
+  if (guardLabel != null) return guardLabel;
   final n = getDisplayPlotNumber(plot, sameTrialPlots);
   return n != null ? '$n' : getDisplayPlotNumberFallback(plot);
 }

@@ -439,7 +439,7 @@ Widget _buildRatingsOverlay({
                                             MainAxisAlignment.center,
                                         children: [
                                           Text(
-                                            plot.plotId,
+                                            getDisplayPlotLabel(plot, plots),
                                             style: TextStyle(
                                               fontSize: 9,
                                               color: rating == null
@@ -2337,6 +2337,13 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         final sourceLabel = getAssignmentSourceLabel(
             treatmentId: effectiveTreatmentId,
             assignmentSource: effectiveSource);
+        final isGuardUnused = plot.isGuardRow && effectiveTreatmentId == null;
+        final leadingBg = isGuardUnused
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : AppDesignTokens.primary;
+        final leadingFg = isGuardUnused
+            ? AppDesignTokens.secondaryText
+            : Colors.white;
         return Container(
           margin: const EdgeInsets.only(
             left: AppDesignTokens.spacing16,
@@ -2369,23 +2376,25 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                   horizontal: AppDesignTokens.spacing8,
                   vertical: AppDesignTokens.spacing4),
               decoration: BoxDecoration(
-                color: AppDesignTokens.primary,
+                color: leadingBg,
                 borderRadius:
                     BorderRadius.circular(AppDesignTokens.radiusXSmall),
               ),
               child: Text(
                 displayNum,
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
-                    color: Colors.white),
+                    color: leadingFg),
               ),
             ),
             title: Text('Plot $displayNum',
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
-                    color: AppDesignTokens.primaryText)),
+                    color: isGuardUnused
+                        ? AppDesignTokens.secondaryText
+                        : AppDesignTokens.primaryText)),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Column(
@@ -2959,11 +2968,14 @@ class _PlotLayoutGrid extends StatelessWidget {
     );
   }
 
-  Color _tileColorFor(Plot plot) {
+  Color _tileColorFor(BuildContext context, Plot plot) {
+    final effectiveTid = plotIdToTreatmentId?[plot.id] ?? plot.treatmentId;
+    if (plot.isGuardRow && effectiveTid == null) {
+      return Theme.of(context).colorScheme.surfaceContainerHighest;
+    }
     if (layer == _LayoutLayer.applications) {
       // v1 model: green = treatment has application, grey = unassigned, else treatment color.
       if (plotPksWithTrialApplication != null) {
-        final effectiveTid = plotIdToTreatmentId?[plot.id] ?? plot.treatmentId;
         if (effectiveTid == null) return AppDesignTokens.unassignedColor;
         if (plotPksWithTrialApplication!.contains(plot.id)) {
           return AppDesignTokens.appliedColor;
@@ -2983,7 +2995,6 @@ class _PlotLayoutGrid extends StatelessWidget {
       if (record.status == 'missed') return AppDesignTokens.missedColor;
       return AppDesignTokens.noRecordColor;
     }
-    final effectiveTid = plotIdToTreatmentId?[plot.id] ?? plot.treatmentId;
     if (effectiveTid == null) return AppDesignTokens.unassignedColor;
     final treatmentIndex = treatments.indexWhere((t) => t.id == effectiveTid);
     return treatmentIndex >= 0
@@ -3136,7 +3147,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                                   treatments: treatments,
                                   trial: trial,
                                   tileColor:
-                                      _tileColorFor(repRow.plots[i]),
+                                      _tileColorFor(context, repRow.plots[i]),
                                   treatmentIdOverride:
                                       plotIdToTreatmentId?[
                                               repRow.plots[i].id] ??
@@ -3205,12 +3216,22 @@ class _PlotGridTile extends StatelessWidget {
     final effectiveTid = treatmentIdOverride ?? plot.treatmentId;
     final treatment = effectiveTid != null ? treatmentMap[effectiveTid] : null;
     final label = displayLabel ?? plot.plotId;
+    final isGuardUnused = plot.isGuardRow && effectiveTid == null;
+    final labelColor = isGuardUnused
+        ? AppDesignTokens.secondaryText
+        : Colors.white;
+    final subColor = isGuardUnused
+        ? AppDesignTokens.secondaryText.withValues(alpha: 0.8)
+        : Colors.white.withValues(alpha: 0.85);
+    final borderColor = isGuardUnused
+        ? AppDesignTokens.borderCrisp
+        : Colors.white.withValues(alpha: 0.2);
     return Container(
       decoration: BoxDecoration(
         color: tileColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: borderColor,
           width: 1,
         ),
         boxShadow: [
@@ -3244,8 +3265,8 @@ class _PlotGridTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: labelColor,
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                     letterSpacing: 0.3,
@@ -3256,9 +3277,9 @@ class _PlotGridTile extends StatelessWidget {
                 ),
                 if (plot.isGuardRow)
                   Text(
-                    'G',
+                    'Guard',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.75),
+                      color: subColor,
                       fontSize: 8,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.4,
@@ -3267,7 +3288,7 @@ class _PlotGridTile extends StatelessWidget {
                 Text(
                   treatment != null ? treatment.code : '',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: subColor,
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),
@@ -3779,6 +3800,13 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         final sourceLabel = getAssignmentSourceLabel(
             treatmentId: effectiveTreatmentId,
             assignmentSource: effectiveSource);
+        final isGuardUnused = plot.isGuardRow && effectiveTreatmentId == null;
+        final leadingBg = isGuardUnused
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Theme.of(context).colorScheme.primary;
+        final leadingFg = isGuardUnused
+            ? AppDesignTokens.secondaryText
+            : Colors.white;
         return AppCard(
           margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
           child: ListTile(
@@ -3789,19 +3817,23 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
             leading: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
+                color: leadingBg,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 displayNum,
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    color: Colors.white),
+                    color: leadingFg),
               ),
             ),
             title: Text('Plot $displayNum',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isGuardUnused
+                        ? AppDesignTokens.secondaryText
+                        : null)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,

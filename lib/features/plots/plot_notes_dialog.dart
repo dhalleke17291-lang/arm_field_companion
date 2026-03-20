@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../core/quick_note_templates.dart';
 
@@ -10,14 +11,17 @@ Future<void> showPlotNotesDialog(
   BuildContext context,
   WidgetRef ref,
   Plot plot,
-  Trial trial,
-) async {
+  Trial trial, {
+  List<Plot>? sameTrialPlots,
+}) async {
   final controller = TextEditingController(text: plot.notes ?? '');
+  final displayLabel =
+      getDisplayPlotLabel(plot, sameTrialPlots ?? [plot]);
   try {
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Notes — Plot ${plot.plotId}'),
+        title: Text('Notes — Plot $displayLabel'),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
