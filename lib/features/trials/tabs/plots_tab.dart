@@ -2818,6 +2818,39 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
       );
       return;
     }
+    final assignmentsList =
+        ref.read(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
+    final plotById = {for (final p in widget.plots) p.id: p};
+    final anyHasExistingAssignment = _selectedPlotIds.any((id) {
+      final assignment = assignmentByPlotId[id];
+      final plot = plotById[id];
+      final effectiveTreatmentId =
+          assignment?.treatmentId ?? plot?.treatmentId;
+      return effectiveTreatmentId != null;
+    });
+    if (anyHasExistingAssignment) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Overwrite assignments?'),
+          content: const Text(
+            'This will overwrite all existing assignments. Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true || !context.mounted) return;
+    }
     final plotPkToTreatmentId = {
       for (final id in _selectedPlotIds) id: _selectedTreatmentId
     };
