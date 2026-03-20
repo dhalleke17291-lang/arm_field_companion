@@ -16,6 +16,11 @@ String _formatMean(double v) {
   return v.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
 }
 
+String _safeTreatmentLabel(String? code) {
+  if (code == null || code.trim().isEmpty || code == '-') return 'Unassigned';
+  return code;
+}
+
 /// Builds a PDF document from assembled report data.
 /// Conservative layout; no ratings, derived stats, or photo embedding.
 class ReportPdfBuilderService {
@@ -307,6 +312,60 @@ class ReportPdfBuilderService {
         ));
       }
 
+      // Treatment summary table: only when numeric values exist
+      if (byTreatment.isNotEmpty) {
+        final summaryRows = <_TreatmentSummaryRow>[];
+        for (final e in byTreatment.entries) {
+          final vals = e.value;
+          if (vals.isEmpty) continue;
+          final mean = vals.reduce((a, b) => a + b) / vals.length;
+          final min = vals.reduce((a, b) => a < b ? a : b);
+          final max = vals.reduce((a, b) => a > b ? a : b);
+          summaryRows.add(_TreatmentSummaryRow(
+            treatment: _safeTreatmentLabel(e.key),
+            mean: mean,
+            min: min,
+            max: max,
+            n: vals.length,
+          ));
+        }
+        summaryRows.sort((a, b) => a.treatment.compareTo(b.treatment));
+        widgets.add(pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 6),
+          child: pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+            columnWidths: {
+              0: const pw.FlexColumnWidth(2),
+              1: const pw.FixedColumnWidth(48),
+              2: const pw.FixedColumnWidth(48),
+              3: const pw.FixedColumnWidth(48),
+              4: const pw.FixedColumnWidth(24),
+            },
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  _tableHeaderCell('Treatment'),
+                  _tableHeaderCell('Mean', rightAlign: true),
+                  _tableHeaderCell('Min', rightAlign: true),
+                  _tableHeaderCell('Max', rightAlign: true),
+                  _tableHeaderCell('n', rightAlign: true),
+                ],
+              ),
+              ...summaryRows.map((row) => pw.TableRow(
+                    children: [
+                      _tableCell(row.treatment),
+                      _tableCell(_formatMean(row.mean), rightAlign: true),
+                      _tableCell(_formatMean(row.min), rightAlign: true),
+                      _tableCell(_formatMean(row.max), rightAlign: true),
+                      _tableCell('${row.n}', rightAlign: true),
+                    ],
+                  )),
+            ],
+          ),
+        ));
+      }
+
       widgets.add(pw.Table(
         border: pw.TableBorder.all(
             color: PdfColors.grey400, width: 0.5),
@@ -369,6 +428,21 @@ pw.Widget _tableCell(String? text, {bool rightAlign = false}) {
           )
         : child,
   );
+}
+
+class _TreatmentSummaryRow {
+  const _TreatmentSummaryRow({
+    required this.treatment,
+    required this.mean,
+    required this.min,
+    required this.max,
+    required this.n,
+  });
+  final String treatment;
+  final double mean;
+  final double min;
+  final double max;
+  final int n;
 }
 
 pw.TableRow _row(String label, String value) => pw.TableRow(
