@@ -1086,6 +1086,8 @@ class ExportTrialUseCase {
     final archive = Archive();
     final tempDir = await getTemporaryDirectory();
     final date = DateFormat('yyyyMMdd').format(DateTime.now());
+    final timestamp =
+        DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
 
     final csvFiles = <String, String>{
       'observations.csv': bundle.observationsCsv,
@@ -1173,7 +1175,7 @@ class ExportTrialUseCase {
     final safeName =
         trial.name.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
     final zipFile =
-        File('${tempDir.path}/AGQ_${safeName}_$date.zip');
+        File('${tempDir.path}/AGQ_${safeName}_$timestamp.zip');
     await zipFile.writeAsBytes(zipBytes);
     return zipFile;
   }

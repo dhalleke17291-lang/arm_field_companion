@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:xml/xml.dart';
 
@@ -199,8 +200,10 @@ class ExportSessionArmXmlUsecase {
     final dir = await getApplicationDocumentsDirectory();
     final safeTrial = _safeFilePart(trialName);
     final safeSession = _safeFilePart(sessionName);
+    final timestamp =
+        DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
     final file = File(
-      '${dir.path}/AFC_arm_export_${safeTrial}_${safeSession}_session_$sessionId.xml',
+      '${dir.path}/AFC_arm_export_${safeTrial}_${safeSession}_session_${sessionId}_$timestamp.xml',
     );
     await file.writeAsString(xml, flush: true);
     return file.path;

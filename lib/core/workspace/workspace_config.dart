@@ -2,6 +2,8 @@
 // Used after completion of TreatmentComponents UI, bulk assignment, applications,
 // and export layer to drive variety / efficacy / GLP behavior.
 
+import 'package:arm_field_companion/features/export/export_format.dart';
+
 enum WorkspaceType { variety, efficacy, glp, standalone }
 
 enum TrialTab {
@@ -11,16 +13,6 @@ enum TrialTab {
   assessments,
   treatments,
   photos,
-}
-
-enum ExportFormat {
-  csv,
-  armXml,
-  glpPdf,
-  efficacyCombined,
-  varietyStats,
-  standaloneReport,
-  standaloneCsv,
 }
 
 enum ProtocolLockPolicy {
@@ -86,10 +78,10 @@ class WorkspaceConfig {
       TrialTab.photos,
     ],
     availableExports: [
-      ExportFormat.csv,
-      ExportFormat.varietyStats,
+      ExportFormat.flatCsv,
+      ExportFormat.pdfReport,
     ],
-    primaryExport: ExportFormat.varietyStats,
+    primaryExport: ExportFormat.pdfReport,
     lockPolicy: ProtocolLockPolicy.soft,
     requiredSections: [],
     requireCorrectionReason: false,
@@ -120,10 +112,12 @@ class WorkspaceConfig {
       TrialTab.photos,
     ],
     availableExports: [
-      ExportFormat.csv,
-      ExportFormat.efficacyCombined,
+      ExportFormat.flatCsv,
+      ExportFormat.armHandoff,
+      ExportFormat.zipBundle,
+      ExportFormat.pdfReport,
     ],
-    primaryExport: ExportFormat.efficacyCombined,
+    primaryExport: ExportFormat.armHandoff,
     lockPolicy: ProtocolLockPolicy.soft,
     requiredSections: [
       MandatorySection.applications,
@@ -156,10 +150,10 @@ class WorkspaceConfig {
       TrialTab.photos,
     ],
     availableExports: [
-      ExportFormat.armXml,
-      ExportFormat.glpPdf,
+      ExportFormat.armHandoff,
+      ExportFormat.pdfReport,
     ],
-    primaryExport: ExportFormat.glpPdf,
+    primaryExport: ExportFormat.armHandoff,
     lockPolicy: ProtocolLockPolicy.hard,
     requiredSections: [
       MandatorySection.seeding,
@@ -194,10 +188,9 @@ class WorkspaceConfig {
       TrialTab.photos,
     ],
     availableExports: [
-      ExportFormat.standaloneReport,
-      ExportFormat.standaloneCsv,
+      ExportFormat.flatCsv,
     ],
-    primaryExport: ExportFormat.standaloneReport,
+    primaryExport: ExportFormat.flatCsv,
     lockPolicy: ProtocolLockPolicy.soft,
     requiredSections: [],
     requireCorrectionReason: false,

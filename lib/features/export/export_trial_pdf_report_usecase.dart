@@ -34,8 +34,9 @@ class ExportTrialPdfReportUseCase {
     final dir = await getTemporaryDirectory();
     final safeName =
         trial.name.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-    final date = DateFormat('yyyyMMdd').format(DateTime.now());
-    final path = '${dir.path}/AGQ_${safeName}_$date.pdf';
+    final timestamp =
+        DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
+    final path = '${dir.path}/AGQ_${safeName}_$timestamp.pdf';
 
     await File(path).writeAsBytes(bytes);
     if (_shareOverride != null) {

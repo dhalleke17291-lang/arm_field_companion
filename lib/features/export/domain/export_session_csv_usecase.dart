@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:csv/csv.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/app_info.dart';
 import 'package:drift/drift.dart';
@@ -186,9 +187,11 @@ class ExportSessionCsvUsecase {
 
     final safeTrial = _safeFilePart(trialName);
     final safeSession = _safeFilePart(sessionName);
+    final timestamp =
+        DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
 
     final file = File(
-      '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_$sessionId.csv',
+      '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_${sessionId}_$timestamp.csv',
     );
 
     await file.writeAsString(csv, flush: true);
@@ -204,8 +207,10 @@ class ExportSessionCsvUsecase {
     final dir = await getApplicationDocumentsDirectory();
     final safeTrial = _safeFilePart(trialName);
     final safeSession = _safeFilePart(sessionName);
+    final timestamp =
+        DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
     final file = File(
-      '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_${sessionId}_audit.csv',
+      '${dir.path}/AFC_export_${safeTrial}_${safeSession}_session_${sessionId}_audit_$timestamp.csv',
     );
     await file.writeAsString(csv, flush: true);
     return file.path;
