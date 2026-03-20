@@ -7,7 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'standalone_report_data.dart';
 
 String _cell(String? value) {
-  if (value == null || value.isEmpty) return '—';
+  if (value == null || value.isEmpty) return '-';
   return value;
 }
 
@@ -26,20 +26,24 @@ class ReportPdfBuilderService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         build: (pw.Context context) => [
-          pw.Header(
-            level: 0,
-            child: pw.Text(
-              'PDF Field Report',
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
+          pw.Text(
+            'PDF Field Report',
+            style: pw.TextStyle(
+              fontSize: 20,
+              fontWeight: pw.FontWeight.bold,
             ),
           ),
-          pw.SizedBox(height: 16),
+          pw.SizedBox(height: 20),
 
           // Trial summary
-          pw.Header(level: 1, child: pw.Text('Trial Summary')),
+          pw.Text(
+            'Trial Summary',
+            style: pw.TextStyle(
+              fontSize: 15,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
           pw.Table(
             border: pw.TableBorder.all(width: 0.5),
             children: [
@@ -54,7 +58,14 @@ class ReportPdfBuilderService {
           pw.SizedBox(height: 16),
 
           // Treatments
-          pw.Header(level: 1, child: pw.Text('Treatments')),
+          pw.Text(
+            'Treatments',
+            style: pw.TextStyle(
+              fontSize: 15,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
           pw.Table(
             border: pw.TableBorder.all(width: 0.5),
             columnWidths: {
@@ -67,10 +78,10 @@ class ReportPdfBuilderService {
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey300),
                 children: [
-                  _tableCell('Code'),
-                  _tableCell('Name'),
-                  _tableCell('Type'),
-                  _tableCell('Components'),
+                  _tableHeaderCell('Code'),
+                  _tableHeaderCell('Name'),
+                  _tableHeaderCell('Type'),
+                  _tableHeaderCell('Components', rightAlign: true),
                 ],
               ),
               ...data.treatments.map((t) => pw.TableRow(
@@ -78,7 +89,7 @@ class ReportPdfBuilderService {
                       _tableCell(t.code),
                       _tableCell(t.name),
                       _tableCell(t.treatmentType),
-                      _tableCell('${t.componentCount}'),
+                      _tableCell('${t.componentCount}', rightAlign: true),
                     ],
                   )),
             ],
@@ -86,7 +97,14 @@ class ReportPdfBuilderService {
           pw.SizedBox(height: 16),
 
           // Plots
-          pw.Header(level: 1, child: pw.Text('Plots')),
+          pw.Text(
+            'Plots',
+            style: pw.TextStyle(
+              fontSize: 15,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
           pw.Table(
             border: pw.TableBorder.all(width: 0.5),
             columnWidths: {
@@ -98,15 +116,15 @@ class ReportPdfBuilderService {
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey300),
                 children: [
-                  _tableCell('Plot ID'),
-                  _tableCell('Rep'),
-                  _tableCell('Treatment'),
+                  _tableHeaderCell('Plot ID'),
+                  _tableHeaderCell('Rep', rightAlign: true),
+                  _tableHeaderCell('Treatment'),
                 ],
               ),
               ...data.plots.map((p) => pw.TableRow(
                     children: [
                       _tableCell(p.plotId),
-                      _tableCell(p.rep != null ? '${p.rep}' : '—'),
+                      _tableCell(p.rep != null ? '${p.rep}' : '-', rightAlign: true),
                       _tableCell(p.treatmentCode),
                     ],
                   )),
@@ -115,7 +133,14 @@ class ReportPdfBuilderService {
           pw.SizedBox(height: 16),
 
           // Sessions
-          pw.Header(level: 1, child: pw.Text('Sessions')),
+          pw.Text(
+            'Sessions',
+            style: pw.TextStyle(
+              fontSize: 15,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
           pw.Table(
             border: pw.TableBorder.all(width: 0.5),
             columnWidths: {
@@ -127,9 +152,9 @@ class ReportPdfBuilderService {
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey300),
                 children: [
-                  _tableCell('Name'),
-                  _tableCell('Date'),
-                  _tableCell('Status'),
+                  _tableHeaderCell('Name'),
+                  _tableHeaderCell('Date'),
+                  _tableHeaderCell('Status'),
                 ],
               ),
               ...data.sessions.map((s) => pw.TableRow(
@@ -144,10 +169,17 @@ class ReportPdfBuilderService {
           pw.SizedBox(height: 16),
 
           // Applications
-          pw.Header(level: 1, child: pw.Text('Applications')),
+          pw.Text(
+            'Applications',
+            style: pw.TextStyle(
+              fontSize: 15,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
           pw.Paragraph(
             text: 'Count: ${data.applications.count}',
-            style: const pw.TextStyle(fontSize: 10),
+            style: const pw.TextStyle(fontSize: 11),
           ),
           pw.SizedBox(height: 8),
           pw.Table(
@@ -160,8 +192,8 @@ class ReportPdfBuilderService {
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey300),
                 children: [
-                  _tableCell('Date'),
-                  _tableCell('Product'),
+                  _tableHeaderCell('Date'),
+                  _tableHeaderCell('Product'),
                 ],
               ),
               ...data.applications.events.map((a) => pw.TableRow(
@@ -175,10 +207,17 @@ class ReportPdfBuilderService {
           pw.SizedBox(height: 16),
 
           // Photos
-          pw.Header(level: 1, child: pw.Text('Photos')),
+          pw.Text(
+            'Photos',
+            style: pw.TextStyle(
+              fontSize: 15,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
           pw.Paragraph(
             text: 'Count: ${data.photoCount.count}',
-            style: const pw.TextStyle(fontSize: 10),
+            style: const pw.TextStyle(fontSize: 11),
           ),
         ],
       ),
@@ -188,20 +227,45 @@ class ReportPdfBuilderService {
   }
 }
 
-pw.Widget _tableCell(String? text) => pw.Padding(
-      padding: const pw.EdgeInsets.all(4),
-      child: pw.Text(_cell(text), style: const pw.TextStyle(fontSize: 9)),
-    );
+pw.Widget _tableHeaderCell(String text, {bool rightAlign = false}) {
+  final child = pw.Text(
+    text,
+    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+  );
+  return pw.Padding(
+    padding: const pw.EdgeInsets.all(6),
+    child: rightAlign
+        ? pw.Align(alignment: pw.Alignment.centerRight, child: child)
+        : child,
+  );
+}
+
+pw.Widget _tableCell(String? text, {bool rightAlign = false}) {
+  const style = pw.TextStyle(fontSize: 10);
+  final child = pw.Text(_cell(text), style: style, softWrap: true);
+  return pw.Padding(
+    padding: const pw.EdgeInsets.all(6),
+    child: rightAlign
+        ? pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: child,
+          )
+        : child,
+  );
+}
 
 pw.TableRow _row(String label, String value) => pw.TableRow(
       children: [
         pw.Padding(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(label, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Text(
+            label,
+            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+          ),
         ),
         pw.Padding(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(value, style: const pw.TextStyle(fontSize: 9)),
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Text(value, style: const pw.TextStyle(fontSize: 10)),
         ),
       ],
     );
