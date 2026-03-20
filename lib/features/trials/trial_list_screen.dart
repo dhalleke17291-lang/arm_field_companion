@@ -755,13 +755,82 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     );
   }
 
+  Widget _buildTrialTypeOption(
+    BuildContext context,
+    String title,
+    String description,
+    bool selected,
+    VoidCallback onTap,
+  ) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected
+                ? theme.colorScheme.primary
+                : const Color(0xFFE8E2D8),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: selected
+                    ? theme.colorScheme.primary
+                    : const Color(0xFF1A2E20),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProtocolSubtypeChip(
+    BuildContext context,
+    WorkspaceType type,
+    bool selected,
+    VoidCallback onSelected,
+  ) {
+    final config = WorkspaceConfig.forType(type);
+    return ChoiceChip(
+      label: Text(config.displayName),
+      selected: selected,
+      onSelected: (_) => onSelected(),
+    );
+  }
+
   Future<void> _showCreateTrialDialog(
       BuildContext context, WidgetRef ref) async {
     final nameController = TextEditingController();
     final cropController = TextEditingController();
     final locationController = TextEditingController();
     final seasonController = TextEditingController();
-    WorkspaceType selectedWorkspaceType = WorkspaceType.efficacy;
+    bool isCustomTrial = false;
+    WorkspaceType selectedProtocolSubtype = WorkspaceType.efficacy;
 
     await showDialog(
       context: context,
@@ -783,18 +852,46 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
-                      children: WorkspaceType.values.map((type) {
-                        final config = WorkspaceConfig.forType(type);
-                        final selected = selectedWorkspaceType == type;
-                        return ChoiceChip(
-                          label: Text(config.displayName),
-                          selected: selected,
-                          onSelected: (_) => setLocalState(
-                            () => selectedWorkspaceType = type,
-                          ),
-                        );
-                      }).toList(),
+                      runSpacing: 8,
+                      children: [
+                        _buildTrialTypeOption(
+                          context,
+                          'Custom Trials',
+                          'Flexible, user-defined trials without strict protocol structure',
+                          isCustomTrial,
+                          () => setLocalState(() => isCustomTrial = true),
+                        ),
+                        _buildTrialTypeOption(
+                          context,
+                          'Protocol Trials',
+                          'Structured trials based on standardized protocols (ARM-compatible)',
+                          !isCustomTrial,
+                          () =>
+                              setLocalState(() => isCustomTrial = false),
+                        ),
+                      ],
                     ),
+                    if (!isCustomTrial) ...[
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            for (final type
+                                in [WorkspaceType.variety, WorkspaceType.efficacy, WorkspaceType.glp])
+                              _buildProtocolSubtypeChip(
+                                context,
+                                type,
+                                selectedProtocolSubtype == type,
+                                () => setLocalState(
+                                    () => selectedProtocolSubtype = type),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                   ],
                 );
@@ -842,6 +939,9 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
           FilledButton(
             onPressed: () async {
               final useCase = ref.read(createTrialUseCaseProvider);
+              final workspaceType = isCustomTrial
+                  ? WorkspaceType.standalone
+                  : selectedProtocolSubtype;
               final result = await useCase.execute(CreateTrialInput(
                 name: nameController.text,
                 crop: cropController.text.isEmpty ? null : cropController.text,
@@ -851,7 +951,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                 season: seasonController.text.isEmpty
                     ? null
                     : seasonController.text,
-                workspaceType: selectedWorkspaceType.name,
+                workspaceType: workspaceType.name,
               ));
 
               if (context.mounted) {
