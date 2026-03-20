@@ -26,7 +26,10 @@ List<ExportFormat> allowedExportFormatsForWorkspace(String workspaceType) {
         ExportFormat.pdfReport,
       ];
     case 'standalone':
-      return [ExportFormat.flatCsv];
+      return [
+        ExportFormat.pdfReport,
+        ExportFormat.flatCsv,
+      ];
     default:
       return [
         ExportFormat.flatCsv,

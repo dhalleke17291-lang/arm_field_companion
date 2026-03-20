@@ -188,9 +188,10 @@ class WorkspaceConfig {
       TrialTab.photos,
     ],
     availableExports: [
+      ExportFormat.pdfReport,
       ExportFormat.flatCsv,
     ],
-    primaryExport: ExportFormat.flatCsv,
+    primaryExport: ExportFormat.pdfReport,
     lockPolicy: ProtocolLockPolicy.soft,
     requiredSections: [],
     requireCorrectionReason: false,
