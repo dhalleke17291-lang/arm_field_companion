@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/export_guard.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
@@ -474,14 +475,16 @@ Future<void> _runDeletedSessionRecoveryExport(
   WidgetRef ref,
   Session session,
 ) async {
-  final messenger = ScaffoldMessenger.of(context);
-  messenger.clearSnackBars();
-  messenger.showSnackBar(
-    const SnackBar(content: Text('Exporting recovery ZIP...')),
-  );
+  final guard = ref.read(exportGuardProvider);
+  final ran = await guard.runExclusive(() async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Exporting recovery ZIP...')),
+    );
 
-  final user = await ref.read(currentUserProvider.future);
-  final result = await ref
+    final user = await ref.read(currentUserProvider.future);
+    final result = await ref
       .read(exportDeletedSessionRecoveryZipUsecaseProvider)
       .execute(
         sessionId: session.id,
@@ -567,6 +570,12 @@ Future<void> _runDeletedSessionRecoveryExport(
       ],
     ),
   );
+  });
+  if (!ran && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(ExportGuard.busyMessage)),
+    );
+  }
 }
 
 Future<void> _runDeletedTrialRecoveryExport(
@@ -574,14 +583,16 @@ Future<void> _runDeletedTrialRecoveryExport(
   WidgetRef ref,
   Trial trial,
 ) async {
-  final messenger = ScaffoldMessenger.of(context);
-  messenger.clearSnackBars();
-  messenger.showSnackBar(
-    const SnackBar(content: Text('Exporting recovery ZIP...')),
-  );
+  final guard = ref.read(exportGuardProvider);
+  final ran = await guard.runExclusive(() async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Exporting recovery ZIP...')),
+    );
 
-  final user = await ref.read(currentUserProvider.future);
-  final result = await ref
+    final user = await ref.read(currentUserProvider.future);
+    final result = await ref
       .read(exportDeletedTrialRecoveryZipUsecaseProvider)
       .execute(
         trialId: trial.id,
@@ -667,6 +678,12 @@ Future<void> _runDeletedTrialRecoveryExport(
       ],
     ),
   );
+  });
+  if (!ran && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(ExportGuard.busyMessage)),
+    );
+  }
 }
 
 class _SessionRecoveryRow extends ConsumerWidget {

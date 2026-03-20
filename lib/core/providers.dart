@@ -50,7 +50,10 @@ import '../features/today/today_activity_repository.dart';
 import 'current_user.dart';
 import 'diagnostics/diagnostics_store.dart';
 import 'last_session_store.dart';
+import 'export_guard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+final exportGuardProvider = Provider<ExportGuard>((ref) => ExportGuard());
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();

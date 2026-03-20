@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/app_info.dart';
 import '../../core/config/app_info.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/export_guard.dart';
 import '../../core/providers.dart';
 import '../../core/last_session_store.dart';
 import '../../core/session_resume_store.dart';
@@ -220,13 +221,15 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
     }
     return;
   }
-  final useCase = ref.read(exportTrialClosedSessionsUsecaseProvider);
-  final user = await ref.read(currentUserProvider.future);
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Exporting all trials...')),
-  );
-  final files = <XFile>[];
+  final guard = ref.read(exportGuardProvider);
+  final ran = await guard.runExclusive(() async {
+    final useCase = ref.read(exportTrialClosedSessionsUsecaseProvider);
+    final user = await ref.read(currentUserProvider.future);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Exporting all trials...')),
+    );
+    final files = <XFile>[];
   int exportedCount = 0;
   for (final trial in trials) {
     if (!context.mounted) return;
@@ -275,6 +278,12 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
             content: Text('Export failed: $e'), backgroundColor: Colors.red),
       );
     }
+  }
+  });
+  if (!ran && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(ExportGuard.busyMessage)),
+    );
   }
 }
 

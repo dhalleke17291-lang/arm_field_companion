@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/app_info.dart';
+import '../../core/export_guard.dart';
 import '../../core/diagnostics/app_error.dart';
 import '../../core/diagnostics/diagnostics_store.dart';
 import '../../core/design/app_design_tokens.dart';
@@ -76,43 +77,51 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
   }
 
   Future<void> _exportReport(DiagnosticsStore store) async {
-    final buffer = StringBuffer();
-    buffer.writeln('Diagnostics Report');
-    buffer.writeln('App: $kAppVersion');
-    buffer.writeln('Date: ${DateTime.now().toIso8601String()}');
-    buffer.writeln('');
-    buffer.writeln(
-        'Integrity: ${_integrityIssues == null ? "Not run" : _integrityIssues!.isEmpty ? "OK" : "${_integrityIssues!.length} issue(s)"}');
-    if (_integrityIssues != null && _integrityIssues!.isNotEmpty) {
-      for (final i in _integrityIssues!) {
-        buffer.writeln(
-            '  - ${i.summary}: ${i.count}${i.detail != null ? " (${i.detail})" : ""}');
-      }
-    }
-    buffer.writeln('');
-    buffer.writeln('Recent errors: ${store.recentErrors.length}');
-    if (store.recentErrors.isNotEmpty) {
+    final guard = ref.read(exportGuardProvider);
+    final ran = await guard.runExclusive(() async {
+      final buffer = StringBuffer();
+      buffer.writeln('Diagnostics Report');
+      buffer.writeln('App: $kAppVersion');
+      buffer.writeln('Date: ${DateTime.now().toIso8601String()}');
+      buffer.writeln('');
       buffer.writeln(
-          store.recentErrors.map((e) => e.toCopyableReport()).join('\n---\n'));
-    }
-    try {
-      await Share.share(
-        buffer.toString(),
-        subject:
-            'Diagnostics report ${DateTime.now().toIso8601String().substring(0, 10)}',
+          'Integrity: ${_integrityIssues == null ? "Not run" : _integrityIssues!.isEmpty ? "OK" : "${_integrityIssues!.length} issue(s)"}');
+      if (_integrityIssues != null && _integrityIssues!.isNotEmpty) {
+        for (final i in _integrityIssues!) {
+          buffer.writeln(
+              '  - ${i.summary}: ${i.count}${i.detail != null ? " (${i.detail})" : ""}');
+        }
+      }
+      buffer.writeln('');
+      buffer.writeln('Recent errors: ${store.recentErrors.length}');
+      if (store.recentErrors.isNotEmpty) {
+        buffer.writeln(
+            store.recentErrors.map((e) => e.toCopyableReport()).join('\n---\n'));
+      }
+      try {
+        await Share.share(
+          buffer.toString(),
+          subject:
+              'Diagnostics report ${DateTime.now().toIso8601String().substring(0, 10)}',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Export opened')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Export failed: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    });
+    if (!ran && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(ExportGuard.busyMessage)),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Export opened')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Export failed: $e'), backgroundColor: Colors.red),
-        );
-      }
     }
   }
 

@@ -19,6 +19,7 @@ import 'full_protocol_details_screen.dart';
 import '../../core/providers.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../diagnostics/trial_readiness.dart';
+import '../../core/export_guard.dart';
 import '../export/export_format.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../shared/widgets/app_empty_state.dart';
@@ -153,14 +154,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   }
 
   Future<void> _runExport(ExportFormat format) async {
-    setState(() => _isExporting = true);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Exporting...')),
-      );
-    }
-    try {
-      if (format == ExportFormat.pdfReport) {
+    final guard = ref.read(exportGuardProvider);
+    final ran = await guard.runExclusive(() async {
+      setState(() => _isExporting = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Exporting...')),
+        );
+      }
+      try {
+        if (format == ExportFormat.pdfReport) {
         final useCase = ref.read(exportTrialPdfReportUseCaseProvider);
         await useCase.execute(trial: widget.trial);
         if (!mounted) return;
@@ -168,73 +171,82 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Export ready to share')),
         );
-        return;
-      }
-      final useCase = ref.read(exportTrialUseCaseProvider);
-      final bundle = await useCase.execute(
-        trial: widget.trial,
-        format: format,
-      );
-      if (!mounted) return;
-      // Flat CSV path unchanged: write files and share
-      if (format == ExportFormat.flatCsv) {
-        final trial = widget.trial;
-        final dir = await getTemporaryDirectory();
-        final base =
-            '${trial.name.replaceAll(RegExp(r'[^\w\s-]'), '_')}_export';
-        final files = <XFile>[];
-        final names = [
-          'observations',
-          'observations_arm_transfer',
-          'treatments',
-          'plot_assignments',
-          'applications',
-          'seeding',
-          'sessions',
-          'data_dictionary',
-        ];
-        final contents = [
-          bundle.observationsCsv,
-          bundle.observationsArmTransferCsv,
-          bundle.treatmentsCsv,
-          bundle.plotAssignmentsCsv,
-          bundle.applicationsCsv,
-          bundle.seedingCsv,
-          bundle.sessionsCsv,
-          bundle.dataDictionaryCsv,
-        ];
-        for (var i = 0; i < names.length; i++) {
-          final path = '${dir.path}/${base}_${names[i]}.csv';
-          await File(path).writeAsString(contents[i]);
-          files.add(XFile(path));
+          return;
+        }
+          final useCase = ref.read(exportTrialUseCaseProvider);
+        final bundle = await useCase.execute(
+          trial: widget.trial,
+          format: format,
+        );
+        if (!mounted) return;
+        // Flat CSV path unchanged: write files and share
+        if (format == ExportFormat.flatCsv) {
+          final trial = widget.trial;
+          final dir = await getTemporaryDirectory();
+          final safeBase =
+              trial.name.replaceAll(RegExp(r'[^\w\s-]'), '_');
+          final timestamp =
+              DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
+          final base = '${safeBase}_export_$timestamp';
+          final files = <XFile>[];
+          final names = [
+            'observations',
+            'observations_arm_transfer',
+            'treatments',
+            'plot_assignments',
+            'applications',
+            'seeding',
+            'sessions',
+            'data_dictionary',
+          ];
+          final contents = [
+            bundle.observationsCsv,
+            bundle.observationsArmTransferCsv,
+            bundle.treatmentsCsv,
+            bundle.plotAssignmentsCsv,
+            bundle.applicationsCsv,
+            bundle.seedingCsv,
+            bundle.sessionsCsv,
+            bundle.dataDictionaryCsv,
+          ];
+          for (var i = 0; i < names.length; i++) {
+            final path = '${dir.path}/${base}_${names[i]}.csv';
+            await File(path).writeAsString(contents[i]);
+            files.add(XFile(path));
+          }
+          if (!mounted) return;
+          final box = context.findRenderObject() as RenderBox?;
+          await Share.shareXFiles(
+            files,
+            text:
+                '${trial.name} – trial CSV bundle (${files.length} files; see data_dictionary.csv)',
+            sharePositionOrigin: box == null
+                ? const Rect.fromLTWH(0, 0, 100, 100)
+                : box.localToGlobal(Offset.zero) & box.size,
+          );
         }
         if (!mounted) return;
-        final box = context.findRenderObject() as RenderBox?;
-        await Share.shareXFiles(
-          files,
-          text:
-              '${trial.name} – trial CSV bundle (${files.length} files; see data_dictionary.csv)',
-          sharePositionOrigin: box == null
-              ? const Rect.fromLTWH(0, 0, 100, 100)
-              : box.localToGlobal(Offset.zero) & box.size,
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Export ready to share')),
         );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } finally {
+        if (mounted) setState(() => _isExporting = false);
       }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).clearSnackBars();
+    });
+    if (!ran && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export ready to share')),
+        const SnackBar(content: Text(ExportGuard.busyMessage)),
       );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Export failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isExporting = false);
     }
   }
 
@@ -1732,15 +1744,17 @@ class SessionsView extends ConsumerWidget {
                 icon: const Icon(Icons.download_for_offline),
                 tooltip: 'Export closed sessions (ZIP per session)',
                 onSelected: (value) async {
-                  final user = await ref.read(currentUserProvider.future);
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(value == 'arm_xml'
-                            ? 'Exporting ARM XML...'
-                            : 'Exporting...')),
-                  );
-                  final result = value == 'arm_xml'
+                  final guard = ref.read(exportGuardProvider);
+                  final ran = await guard.runExclusive(() async {
+                    final user = await ref.read(currentUserProvider.future);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(value == 'arm_xml'
+                              ? 'Exporting ARM XML...'
+                              : 'Exporting...')),
+                    );
+                    final result = value == 'arm_xml'
                       ? await ref
                           .read(exportTrialClosedSessionsArmXmlUsecaseProvider)
                           .execute(
@@ -1748,37 +1762,43 @@ class SessionsView extends ConsumerWidget {
                             trialName: trial.name,
                             exportedByDisplayName: user?.displayName,
                           )
-                      : await ref
-                          .read(exportTrialClosedSessionsUsecaseProvider)
-                          .execute(
-                            trialId: trial.id,
-                            trialName: trial.name,
-                            exportedByDisplayName: user?.displayName,
-                          );
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  if (result.success) {
-                    final box = context.findRenderObject() as RenderBox?;
-                    await Share.shareXFiles(
-                      [XFile(result.filePath!)],
-                      text:
-                          '${trial.name} – ${result.sessionCount} closed sessions',
-                      sharePositionOrigin: box == null
-                          ? const Rect.fromLTWH(0, 0, 100, 100)
-                          : box.localToGlobal(Offset.zero) & box.size,
-                    );
+                        : await ref
+                            .read(exportTrialClosedSessionsUsecaseProvider)
+                            .execute(
+                              trialId: trial.id,
+                              trialName: trial.name,
+                              exportedByDisplayName: user?.displayName,
+                            );
                     if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    if (result.success) {
+                      final box = context.findRenderObject() as RenderBox?;
+                      await Share.shareXFiles(
+                        [XFile(result.filePath!)],
+                        text:
+                            '${trial.name} – ${result.sessionCount} closed sessions',
+                        sharePositionOrigin: box == null
+                            ? const Rect.fromLTWH(0, 0, 100, 100)
+                            : box.localToGlobal(Offset.zero) & box.size,
+                      );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text('Exported ${result.sessionCount} sessions')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(result.errorMessage ?? 'Export failed'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  });
+                  if (!ran && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('Exported ${result.sessionCount} sessions')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(result.errorMessage ?? 'Export failed'),
-                        backgroundColor: Colors.red,
-                      ),
+                      const SnackBar(content: Text(ExportGuard.busyMessage)),
                     );
                   }
                 },

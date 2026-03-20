@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/edit_recency_display.dart';
 import '../../core/plot_display.dart';
+import '../../core/export_guard.dart';
 import '../../core/providers.dart';
 import '../../core/session_resume_store.dart';
 import '../ratings/rating_screen.dart';
@@ -702,12 +703,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                               sessionId: widget.session.id,
                             );
                             if (!proceed || !mounted) return;
-                            try {
-                              final usecase =
-                                  ref.read(exportSessionCsvUsecaseProvider);
-                              final currentUser =
-                                  await ref.read(currentUserProvider.future);
-                              final result = await usecase.exportSessionToCsv(
+                            final guard = ref.read(exportGuardProvider);
+                            final ran = await guard.runExclusive(() async {
+                              try {
+                                final usecase =
+                                    ref.read(exportSessionCsvUsecaseProvider);
+                                final currentUser =
+                                    await ref.read(currentUserProvider.future);
+                                final result = await usecase.exportSessionToCsv(
                                 sessionId: widget.session.id,
                                 trialId: widget.trial.id,
                                 trialName: widget.trial.name,
@@ -756,6 +759,13 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                                   content: Text('Export failed: $e'),
                                   backgroundColor: Colors.red,
                                 ),
+                              );
+                            }
+                            });
+                            if (!ran && mounted && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(ExportGuard.busyMessage)),
                               );
                             }
                           },

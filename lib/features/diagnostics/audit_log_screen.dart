@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/export_guard.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
@@ -104,43 +105,51 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
   }
 
   Future<void> _export(BuildContext context, List<AuditEvent> events) async {
-    final buffer = StringBuffer();
-    buffer.writeln('Audit Log');
-    buffer.writeln('Exported: ${DateTime.now().toIso8601String()}');
-    buffer.writeln('Rows: ${events.length}');
-    buffer.writeln('');
+    final guard = ref.read(exportGuardProvider);
+    final ran = await guard.runExclusive(() async {
+      final buffer = StringBuffer();
+      buffer.writeln('Audit Log');
+      buffer.writeln('Exported: ${DateTime.now().toIso8601String()}');
+      buffer.writeln('Rows: ${events.length}');
+      buffer.writeln('');
 
-    buffer.writeln(
-        'created_at,event_type,trial_id,session_id,plot_pk,performed_by,description');
-    for (final e in events) {
-      buffer.writeln(_csvRow([
-        e.createdAt.toIso8601String(),
-        e.eventType,
-        e.trialId?.toString() ?? '',
-        e.sessionId?.toString() ?? '',
-        e.plotPk?.toString() ?? '',
-        e.performedBy ?? '',
-        e.description,
-      ]));
-    }
-
-    try {
-      await Share.share(
-        buffer.toString(),
-        subject:
-            'Audit log ${DateTime.now().toIso8601String().substring(0, 10)}',
-      );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Export opened')));
+      buffer.writeln(
+          'created_at,event_type,trial_id,session_id,plot_pk,performed_by,description');
+      for (final e in events) {
+        buffer.writeln(_csvRow([
+          e.createdAt.toIso8601String(),
+          e.eventType,
+          e.trialId?.toString() ?? '',
+          e.sessionId?.toString() ?? '',
+          e.plotPk?.toString() ?? '',
+          e.performedBy ?? '',
+          e.description,
+        ]));
       }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Export failed: $e'), backgroundColor: Colors.red),
+
+      try {
+        await Share.share(
+          buffer.toString(),
+          subject:
+              'Audit log ${DateTime.now().toIso8601String().substring(0, 10)}',
         );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('Export opened')));
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Export failed: $e'), backgroundColor: Colors.red),
+          );
+        }
       }
+    });
+    if (!ran && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(ExportGuard.busyMessage)),
+      );
     }
   }
 
