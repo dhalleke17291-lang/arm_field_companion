@@ -38,6 +38,7 @@ import '../features/export/domain/export_deleted_trial_recovery_zip_usecase.dart
 import '../features/export/export_trial_usecase.dart';
 import '../features/export/export_trial_pdf_report_usecase.dart';
 import '../features/export/report_data_assembly_service.dart';
+import '../features/export/report_pdf_builder_service.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
@@ -531,10 +532,16 @@ final reportDataAssemblyServiceProvider =
   );
 });
 
+final reportPdfBuilderServiceProvider =
+    Provider<ReportPdfBuilderService>((ref) {
+  return ReportPdfBuilderService();
+});
+
 final exportTrialPdfReportUseCaseProvider =
     Provider<ExportTrialPdfReportUseCase>((ref) {
   return ExportTrialPdfReportUseCase(
     assemblyService: ref.watch(reportDataAssemblyServiceProvider),
+    pdfBuilder: ref.watch(reportPdfBuilderServiceProvider),
   );
 });
 
