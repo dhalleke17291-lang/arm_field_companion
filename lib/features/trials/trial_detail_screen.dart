@@ -137,7 +137,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     super.dispose();
   }
 
-  Future<ExportFormat?> _showExportSheet() async {
+  Future<ExportFormat?> _showExportSheet(List<ExportFormat> allowedFormats) async {
     return showModalBottomSheet<ExportFormat>(
       context: context,
       backgroundColor: Colors.white,
@@ -145,7 +145,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => _ExportFormatSheet(trial: widget.trial),
+      builder: (_) => _ExportFormatSheet(
+        trial: widget.trial,
+        allowedFormats: allowedFormats,
+      ),
     );
   }
 
@@ -227,6 +230,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
   Future<void> _onExportTapped(
       BuildContext context, WidgetRef ref, Trial trial) async {
+    final allowed = allowedExportFormatsForWorkspace(trial.workspaceType);
+    if (allowed.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No export options available for this trial.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
     final report = await ref.read(trialReadinessProvider(trial.id).future);
     if (!context.mounted) return;
     if (report.blockerCount > 0) {
@@ -237,7 +250,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       _showReadinessSheet(context, ref, trial, report, showExportAnyway: true);
       return;
     }
-    final format = await _showExportSheet();
+    final format = await _showExportSheet(allowed);
     if (!mounted || format == null) return;
     _runExport(format);
   }
@@ -262,6 +275,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     TrialReadinessReport report, {
     required bool showExportAnyway,
   }) {
+    final allowed = allowedExportFormatsForWorkspace(trial.workspaceType);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -270,7 +284,18 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         showExportAnyway: showExportAnyway,
         onExport: () async {
           Navigator.pop(ctx);
-          final format = await _showExportSheet();
+          if (allowed.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No export options available for this trial.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            return;
+          }
+          final format = await _showExportSheet(allowed);
           if (!mounted || format == null) return;
           _runExport(format);
         },
@@ -484,6 +509,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
   Widget _buildExportIconWithBadge(
       BuildContext context, WidgetRef ref, Trial trial) {
+    final allowed = allowedExportFormatsForWorkspace(trial.workspaceType);
+    if (allowed.isEmpty) return const SizedBox.shrink();
+
     final theme = Theme.of(context);
     final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
     final showBadge = readinessAsync.valueOrNull != null &&
@@ -2487,8 +2515,12 @@ class _ReadinessCheckRow extends StatelessWidget {
 }
 
 class _ExportFormatSheet extends ConsumerStatefulWidget {
-  const _ExportFormatSheet({required this.trial});
+  const _ExportFormatSheet({
+    required this.trial,
+    required this.allowedFormats,
+  });
   final Trial trial;
+  final List<ExportFormat> allowedFormats;
 
   @override
   ConsumerState<_ExportFormatSheet> createState() => _ExportFormatSheetState();
@@ -2498,7 +2530,51 @@ class _ExportFormatSheetState extends ConsumerState<_ExportFormatSheet> {
   ExportFormat _selected = ExportFormat.armHandoff;
 
   @override
+  void initState() {
+    super.initState();
+    _initSelected(widget.allowedFormats);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ExportFormatSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.allowedFormats != widget.allowedFormats) {
+      _initSelected(widget.allowedFormats);
+    }
+  }
+
+  void _initSelected(List<ExportFormat> allowed) {
+    if (allowed.isEmpty) {
+      _selected = ExportFormat.flatCsv;
+      return;
+    }
+    _selected = allowed.contains(_selected) ? _selected : allowed.first;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final allowed = widget.allowedFormats;
+    if (allowed.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'No export options available for this trial.',
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2528,7 +2604,7 @@ class _ExportFormatSheetState extends ConsumerState<_ExportFormatSheet> {
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
         ),
-        ...ExportFormat.values.map((format) {
+        ...allowed.map((format) {
           final isSelected = _selected == format;
           return InkWell(
             onTap: () => setState(() => _selected = format),

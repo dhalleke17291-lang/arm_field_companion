@@ -594,6 +594,14 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   late final GeneratedColumn<String> studyType = GeneratedColumn<String>(
       'study_type', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _workspaceTypeMeta =
+      const VerificationMeta('workspaceType');
+  @override
+  late final GeneratedColumn<String> workspaceType = GeneratedColumn<String>(
+      'workspace_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('efficacy'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -668,6 +676,7 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         soilPh,
         harvestDate,
         studyType,
+        workspaceType,
         createdAt,
         updatedAt,
         isDeleted,
@@ -853,6 +862,12 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       context.handle(_studyTypeMeta,
           studyType.isAcceptableOrUnknown(data['study_type']!, _studyTypeMeta));
     }
+    if (data.containsKey('workspace_type')) {
+      context.handle(
+          _workspaceTypeMeta,
+          workspaceType.isAcceptableOrUnknown(
+              data['workspace_type']!, _workspaceTypeMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -950,6 +965,8 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}harvest_date']),
       studyType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}study_type']),
+      workspaceType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}workspace_type'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -1010,6 +1027,9 @@ class Trial extends DataClass implements Insertable<Trial> {
   final double? soilPh;
   final DateTime? harvestDate;
   final String? studyType;
+
+  /// Workspace type: variety | efficacy | glp | standalone
+  final String workspaceType;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
@@ -1050,6 +1070,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.soilPh,
       this.harvestDate,
       this.studyType,
+      required this.workspaceType,
       required this.createdAt,
       required this.updatedAt,
       required this.isDeleted,
@@ -1154,6 +1175,7 @@ class Trial extends DataClass implements Insertable<Trial> {
     if (!nullToAbsent || studyType != null) {
       map['study_type'] = Variable<String>(studyType);
     }
+    map['workspace_type'] = Variable<String>(workspaceType);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['is_deleted'] = Variable<bool>(isDeleted);
@@ -1258,6 +1280,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       studyType: studyType == null && nullToAbsent
           ? const Value.absent()
           : Value(studyType),
+      workspaceType: Value(workspaceType),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       isDeleted: Value(isDeleted),
@@ -1309,6 +1332,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       soilPh: serializer.fromJson<double?>(json['soilPh']),
       harvestDate: serializer.fromJson<DateTime?>(json['harvestDate']),
       studyType: serializer.fromJson<String?>(json['studyType']),
+      workspaceType: serializer.fromJson<String>(json['workspaceType']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
@@ -1354,6 +1378,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       'soilPh': serializer.toJson<double?>(soilPh),
       'harvestDate': serializer.toJson<DateTime?>(harvestDate),
       'studyType': serializer.toJson<String?>(studyType),
+      'workspaceType': serializer.toJson<String>(workspaceType),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isDeleted': serializer.toJson<bool>(isDeleted),
@@ -1397,6 +1422,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<double?> soilPh = const Value.absent(),
           Value<DateTime?> harvestDate = const Value.absent(),
           Value<String?> studyType = const Value.absent(),
+          String? workspaceType,
           DateTime? createdAt,
           DateTime? updatedAt,
           bool? isDeleted,
@@ -1449,6 +1475,7 @@ class Trial extends DataClass implements Insertable<Trial> {
         soilPh: soilPh.present ? soilPh.value : this.soilPh,
         harvestDate: harvestDate.present ? harvestDate.value : this.harvestDate,
         studyType: studyType.present ? studyType.value : this.studyType,
+        workspaceType: workspaceType ?? this.workspaceType,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isDeleted: isDeleted ?? this.isDeleted,
@@ -1516,6 +1543,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       harvestDate:
           data.harvestDate.present ? data.harvestDate.value : this.harvestDate,
       studyType: data.studyType.present ? data.studyType.value : this.studyType,
+      workspaceType: data.workspaceType.present
+          ? data.workspaceType.value
+          : this.workspaceType,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
@@ -1561,6 +1591,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('soilPh: $soilPh, ')
           ..write('harvestDate: $harvestDate, ')
           ..write('studyType: $studyType, ')
+          ..write('workspaceType: $workspaceType, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -1606,6 +1637,7 @@ class Trial extends DataClass implements Insertable<Trial> {
         soilPh,
         harvestDate,
         studyType,
+        workspaceType,
         createdAt,
         updatedAt,
         isDeleted,
@@ -1650,6 +1682,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.soilPh == this.soilPh &&
           other.harvestDate == this.harvestDate &&
           other.studyType == this.studyType &&
+          other.workspaceType == this.workspaceType &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isDeleted == this.isDeleted &&
@@ -1692,6 +1725,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<double?> soilPh;
   final Value<DateTime?> harvestDate;
   final Value<String?> studyType;
+  final Value<String> workspaceType;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<bool> isDeleted;
@@ -1732,6 +1766,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.soilPh = const Value.absent(),
     this.harvestDate = const Value.absent(),
     this.studyType = const Value.absent(),
+    this.workspaceType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -1773,6 +1808,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.soilPh = const Value.absent(),
     this.harvestDate = const Value.absent(),
     this.studyType = const Value.absent(),
+    this.workspaceType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -1814,6 +1850,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<double>? soilPh,
     Expression<DateTime>? harvestDate,
     Expression<String>? studyType,
+    Expression<String>? workspaceType,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isDeleted,
@@ -1855,6 +1892,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (soilPh != null) 'soil_ph': soilPh,
       if (harvestDate != null) 'harvest_date': harvestDate,
       if (studyType != null) 'study_type': studyType,
+      if (workspaceType != null) 'workspace_type': workspaceType,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isDeleted != null) 'is_deleted': isDeleted,
@@ -1898,6 +1936,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<double?>? soilPh,
       Value<DateTime?>? harvestDate,
       Value<String?>? studyType,
+      Value<String>? workspaceType,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<bool>? isDeleted,
@@ -1938,6 +1977,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       soilPh: soilPh ?? this.soilPh,
       harvestDate: harvestDate ?? this.harvestDate,
       studyType: studyType ?? this.studyType,
+      workspaceType: workspaceType ?? this.workspaceType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -2051,6 +2091,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (studyType.present) {
       map['study_type'] = Variable<String>(studyType.value);
     }
+    if (workspaceType.present) {
+      map['workspace_type'] = Variable<String>(workspaceType.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2106,6 +2149,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('soilPh: $soilPh, ')
           ..write('harvestDate: $harvestDate, ')
           ..write('studyType: $studyType, ')
+          ..write('workspaceType: $workspaceType, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -20179,6 +20223,7 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<double?> soilPh,
   Value<DateTime?> harvestDate,
   Value<String?> studyType,
+  Value<String> workspaceType,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<bool> isDeleted,
@@ -20220,6 +20265,7 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<double?> soilPh,
   Value<DateTime?> harvestDate,
   Value<String?> studyType,
+  Value<String> workspaceType,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<bool> isDeleted,
@@ -20278,6 +20324,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<double?> soilPh = const Value.absent(),
             Value<DateTime?> harvestDate = const Value.absent(),
             Value<String?> studyType = const Value.absent(),
+            Value<String> workspaceType = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -20319,6 +20366,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             soilPh: soilPh,
             harvestDate: harvestDate,
             studyType: studyType,
+            workspaceType: workspaceType,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
@@ -20360,6 +20408,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<double?> soilPh = const Value.absent(),
             Value<DateTime?> harvestDate = const Value.absent(),
             Value<String?> studyType = const Value.absent(),
+            Value<String> workspaceType = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -20401,6 +20450,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             soilPh: soilPh,
             harvestDate: harvestDate,
             studyType: studyType,
+            workspaceType: workspaceType,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
@@ -20580,6 +20630,11 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<String> get studyType => $state.composableBuilder(
       column: $state.table.studyType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get workspaceType => $state.composableBuilder(
+      column: $state.table.workspaceType,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -21077,6 +21132,11 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<String> get studyType => $state.composableBuilder(
       column: $state.table.studyType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get workspaceType => $state.composableBuilder(
+      column: $state.table.workspaceType,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

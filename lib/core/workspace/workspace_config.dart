@@ -2,7 +2,7 @@
 // Used after completion of TreatmentComponents UI, bulk assignment, applications,
 // and export layer to drive variety / efficacy / GLP behavior.
 
-enum WorkspaceType { variety, efficacy, glp }
+enum WorkspaceType { variety, efficacy, glp, standalone }
 
 enum TrialTab {
   plots,
@@ -19,6 +19,8 @@ enum ExportFormat {
   glpPdf,
   efficacyCombined,
   varietyStats,
+  standaloneReport,
+  standaloneCsv,
 }
 
 enum ProtocolLockPolicy {
@@ -171,6 +173,40 @@ class WorkspaceConfig {
     csvAllowed: false,
   );
 
+  static const standalone = WorkspaceConfig(
+    type: WorkspaceType.standalone,
+    displayName: 'Standalone Trial',
+    shortDescription: 'Independent trial — no ARM required, PDF and CSV report',
+    visibleTabs: [
+      TrialTab.plots,
+      TrialTab.assessments,
+      TrialTab.treatments,
+      TrialTab.applications,
+      TrialTab.seeding,
+      TrialTab.photos,
+    ],
+    tabOrder: [
+      TrialTab.plots,
+      TrialTab.assessments,
+      TrialTab.treatments,
+      TrialTab.applications,
+      TrialTab.seeding,
+      TrialTab.photos,
+    ],
+    availableExports: [
+      ExportFormat.standaloneReport,
+      ExportFormat.standaloneCsv,
+    ],
+    primaryExport: ExportFormat.standaloneReport,
+    lockPolicy: ProtocolLockPolicy.soft,
+    requiredSections: [],
+    requireCorrectionReason: false,
+    allowProtocolEditAfterReady: true,
+    requireAmendmentWorkflow: false,
+    showComplianceWarnings: false,
+    csvAllowed: true,
+  );
+
   static WorkspaceConfig forType(WorkspaceType type) {
     switch (type) {
       case WorkspaceType.variety:
@@ -179,6 +215,8 @@ class WorkspaceConfig {
         return efficacy;
       case WorkspaceType.glp:
         return glp;
+      case WorkspaceType.standalone:
+        return standalone;
     }
   }
 }
