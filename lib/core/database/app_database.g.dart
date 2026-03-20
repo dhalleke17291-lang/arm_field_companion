@@ -3901,6 +3901,14 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
   late final GeneratedColumn<String> timingDescription =
       GeneratedColumn<String>('timing_description', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _resultDirectionMeta =
+      const VerificationMeta('resultDirection');
+  @override
+  late final GeneratedColumn<String> resultDirection = GeneratedColumn<String>(
+      'result_direction', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('neutral'));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3926,7 +3934,8 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
         validMax,
         eppoCode,
         cropPart,
-        timingDescription
+        timingDescription,
+        resultDirection
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4052,6 +4061,12 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
           timingDescription.isAcceptableOrUnknown(
               data['timing_description']!, _timingDescriptionMeta));
     }
+    if (data.containsKey('result_direction')) {
+      context.handle(
+          _resultDirectionMeta,
+          resultDirection.isAcceptableOrUnknown(
+              data['result_direction']!, _resultDirectionMeta));
+    }
     return context;
   }
 
@@ -4109,6 +4124,8 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
           .read(DriftSqlType.string, data['${effectivePrefix}crop_part']),
       timingDescription: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}timing_description']),
+      resultDirection: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}result_direction'])!,
     );
   }
 
@@ -4144,6 +4161,7 @@ class AssessmentDefinition extends DataClass
   final String? eppoCode;
   final String? cropPart;
   final String? timingDescription;
+  final String resultDirection;
   const AssessmentDefinition(
       {required this.id,
       required this.code,
@@ -4168,7 +4186,8 @@ class AssessmentDefinition extends DataClass
       this.validMax,
       this.eppoCode,
       this.cropPart,
-      this.timingDescription});
+      this.timingDescription,
+      required this.resultDirection});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4226,6 +4245,7 @@ class AssessmentDefinition extends DataClass
     if (!nullToAbsent || timingDescription != null) {
       map['timing_description'] = Variable<String>(timingDescription);
     }
+    map['result_direction'] = Variable<String>(resultDirection);
     return map;
   }
 
@@ -4281,6 +4301,7 @@ class AssessmentDefinition extends DataClass
       timingDescription: timingDescription == null && nullToAbsent
           ? const Value.absent()
           : Value(timingDescription),
+      resultDirection: Value(resultDirection),
     );
   }
 
@@ -4314,6 +4335,7 @@ class AssessmentDefinition extends DataClass
       cropPart: serializer.fromJson<String?>(json['cropPart']),
       timingDescription:
           serializer.fromJson<String?>(json['timingDescription']),
+      resultDirection: serializer.fromJson<String>(json['resultDirection']),
     );
   }
   @override
@@ -4344,6 +4366,7 @@ class AssessmentDefinition extends DataClass
       'eppoCode': serializer.toJson<String?>(eppoCode),
       'cropPart': serializer.toJson<String?>(cropPart),
       'timingDescription': serializer.toJson<String?>(timingDescription),
+      'resultDirection': serializer.toJson<String>(resultDirection),
     };
   }
 
@@ -4371,7 +4394,8 @@ class AssessmentDefinition extends DataClass
           Value<double?> validMax = const Value.absent(),
           Value<String?> eppoCode = const Value.absent(),
           Value<String?> cropPart = const Value.absent(),
-          Value<String?> timingDescription = const Value.absent()}) =>
+          Value<String?> timingDescription = const Value.absent(),
+          String? resultDirection}) =>
       AssessmentDefinition(
         id: id ?? this.id,
         code: code ?? this.code,
@@ -4405,6 +4429,7 @@ class AssessmentDefinition extends DataClass
         timingDescription: timingDescription.present
             ? timingDescription.value
             : this.timingDescription,
+        resultDirection: resultDirection ?? this.resultDirection,
       );
   AssessmentDefinition copyWithCompanion(AssessmentDefinitionsCompanion data) {
     return AssessmentDefinition(
@@ -4442,6 +4467,9 @@ class AssessmentDefinition extends DataClass
       timingDescription: data.timingDescription.present
           ? data.timingDescription.value
           : this.timingDescription,
+      resultDirection: data.resultDirection.present
+          ? data.resultDirection.value
+          : this.resultDirection,
     );
   }
 
@@ -4471,7 +4499,8 @@ class AssessmentDefinition extends DataClass
           ..write('validMax: $validMax, ')
           ..write('eppoCode: $eppoCode, ')
           ..write('cropPart: $cropPart, ')
-          ..write('timingDescription: $timingDescription')
+          ..write('timingDescription: $timingDescription, ')
+          ..write('resultDirection: $resultDirection')
           ..write(')'))
         .toString();
   }
@@ -4501,7 +4530,8 @@ class AssessmentDefinition extends DataClass
         validMax,
         eppoCode,
         cropPart,
-        timingDescription
+        timingDescription,
+        resultDirection
       ]);
   @override
   bool operator ==(Object other) =>
@@ -4530,7 +4560,8 @@ class AssessmentDefinition extends DataClass
           other.validMax == this.validMax &&
           other.eppoCode == this.eppoCode &&
           other.cropPart == this.cropPart &&
-          other.timingDescription == this.timingDescription);
+          other.timingDescription == this.timingDescription &&
+          other.resultDirection == this.resultDirection);
 }
 
 class AssessmentDefinitionsCompanion
@@ -4559,6 +4590,7 @@ class AssessmentDefinitionsCompanion
   final Value<String?> eppoCode;
   final Value<String?> cropPart;
   final Value<String?> timingDescription;
+  final Value<String> resultDirection;
   const AssessmentDefinitionsCompanion({
     this.id = const Value.absent(),
     this.code = const Value.absent(),
@@ -4584,6 +4616,7 @@ class AssessmentDefinitionsCompanion
     this.eppoCode = const Value.absent(),
     this.cropPart = const Value.absent(),
     this.timingDescription = const Value.absent(),
+    this.resultDirection = const Value.absent(),
   });
   AssessmentDefinitionsCompanion.insert({
     this.id = const Value.absent(),
@@ -4610,6 +4643,7 @@ class AssessmentDefinitionsCompanion
     this.eppoCode = const Value.absent(),
     this.cropPart = const Value.absent(),
     this.timingDescription = const Value.absent(),
+    this.resultDirection = const Value.absent(),
   })  : code = Value(code),
         name = Value(name),
         category = Value(category);
@@ -4638,6 +4672,7 @@ class AssessmentDefinitionsCompanion
     Expression<String>? eppoCode,
     Expression<String>? cropPart,
     Expression<String>? timingDescription,
+    Expression<String>? resultDirection,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -4666,6 +4701,7 @@ class AssessmentDefinitionsCompanion
       if (eppoCode != null) 'eppo_code': eppoCode,
       if (cropPart != null) 'crop_part': cropPart,
       if (timingDescription != null) 'timing_description': timingDescription,
+      if (resultDirection != null) 'result_direction': resultDirection,
     });
   }
 
@@ -4693,7 +4729,8 @@ class AssessmentDefinitionsCompanion
       Value<double?>? validMax,
       Value<String?>? eppoCode,
       Value<String?>? cropPart,
-      Value<String?>? timingDescription}) {
+      Value<String?>? timingDescription,
+      Value<String>? resultDirection}) {
     return AssessmentDefinitionsCompanion(
       id: id ?? this.id,
       code: code ?? this.code,
@@ -4719,6 +4756,7 @@ class AssessmentDefinitionsCompanion
       eppoCode: eppoCode ?? this.eppoCode,
       cropPart: cropPart ?? this.cropPart,
       timingDescription: timingDescription ?? this.timingDescription,
+      resultDirection: resultDirection ?? this.resultDirection,
     );
   }
 
@@ -4797,6 +4835,9 @@ class AssessmentDefinitionsCompanion
     if (timingDescription.present) {
       map['timing_description'] = Variable<String>(timingDescription.value);
     }
+    if (resultDirection.present) {
+      map['result_direction'] = Variable<String>(resultDirection.value);
+    }
     return map;
   }
 
@@ -4826,7 +4867,8 @@ class AssessmentDefinitionsCompanion
           ..write('validMax: $validMax, ')
           ..write('eppoCode: $eppoCode, ')
           ..write('cropPart: $cropPart, ')
-          ..write('timingDescription: $timingDescription')
+          ..write('timingDescription: $timingDescription, ')
+          ..write('resultDirection: $resultDirection')
           ..write(')'))
         .toString();
   }
@@ -21958,6 +22000,7 @@ typedef $$AssessmentDefinitionsTableCreateCompanionBuilder
   Value<String?> eppoCode,
   Value<String?> cropPart,
   Value<String?> timingDescription,
+  Value<String> resultDirection,
 });
 typedef $$AssessmentDefinitionsTableUpdateCompanionBuilder
     = AssessmentDefinitionsCompanion Function({
@@ -21985,6 +22028,7 @@ typedef $$AssessmentDefinitionsTableUpdateCompanionBuilder
   Value<String?> eppoCode,
   Value<String?> cropPart,
   Value<String?> timingDescription,
+  Value<String> resultDirection,
 });
 
 class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
@@ -22029,6 +22073,7 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             Value<String?> eppoCode = const Value.absent(),
             Value<String?> cropPart = const Value.absent(),
             Value<String?> timingDescription = const Value.absent(),
+            Value<String> resultDirection = const Value.absent(),
           }) =>
               AssessmentDefinitionsCompanion(
             id: id,
@@ -22055,6 +22100,7 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             eppoCode: eppoCode,
             cropPart: cropPart,
             timingDescription: timingDescription,
+            resultDirection: resultDirection,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -22081,6 +22127,7 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             Value<String?> eppoCode = const Value.absent(),
             Value<String?> cropPart = const Value.absent(),
             Value<String?> timingDescription = const Value.absent(),
+            Value<String> resultDirection = const Value.absent(),
           }) =>
               AssessmentDefinitionsCompanion.insert(
             id: id,
@@ -22107,6 +22154,7 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             eppoCode: eppoCode,
             cropPart: cropPart,
             timingDescription: timingDescription,
+            resultDirection: resultDirection,
           ),
         ));
 }
@@ -22231,6 +22279,11 @@ class $$AssessmentDefinitionsTableFilterComposer
 
   ColumnFilters<String> get timingDescription => $state.composableBuilder(
       column: $state.table.timingDescription,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get resultDirection => $state.composableBuilder(
+      column: $state.table.resultDirection,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -22369,6 +22422,11 @@ class $$AssessmentDefinitionsTableOrderingComposer
 
   ColumnOrderings<String> get timingDescription => $state.composableBuilder(
       column: $state.table.timingDescription,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get resultDirection => $state.composableBuilder(
+      column: $state.table.resultDirection,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }

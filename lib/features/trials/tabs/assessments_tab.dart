@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/assessment_result_direction.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
@@ -342,6 +343,7 @@ class AssessmentsTab extends ConsumerWidget {
     final scaleMinController = TextEditingController();
     final scaleMaxController = TextEditingController();
     String? selectedType;
+    String selectedResultDirection = AssessmentResultDirection.neutral;
 
     await showDialog<void>(
       context: context,
@@ -413,6 +415,28 @@ class AssessmentsTab extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: selectedResultDirection,
+                    decoration: _formDecoration('Result direction'),
+                    items: [
+                      DropdownMenuItem(
+                        value: AssessmentResultDirection.neutral,
+                        child: const Text('Neutral'),
+                      ),
+                      DropdownMenuItem(
+                        value: AssessmentResultDirection.higherBetter,
+                        child: const Text('Higher is better'),
+                      ),
+                      DropdownMenuItem(
+                        value: AssessmentResultDirection.lowerBetter,
+                        child: const Text('Lower is better'),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() {
+                      if (v != null) selectedResultDirection = v;
+                    }),
+                  ),
                 ],
               ),
             ),
@@ -455,6 +479,7 @@ class AssessmentsTab extends ConsumerWidget {
                     validMin: null,
                     validMax: null,
                     eppoCode: null,
+                    resultDirection: selectedResultDirection,
                   );
                   await ref.read(trialAssessmentRepositoryProvider).addToTrial(
                         trialId: trial.id,
@@ -524,6 +549,7 @@ class _CustomAssessmentFormDialogState
   String? _assessmentMethod;
   String? _cropPart;
   String? _timingCode;
+  String _resultDirection = AssessmentResultDirection.neutral;
   bool _saving = false;
 
   @override
@@ -549,6 +575,7 @@ class _CustomAssessmentFormDialogState
     _assessmentMethod = e?.assessmentMethod;
     _cropPart = e?.cropPart;
     _timingCode = e?.timingCode;
+    _resultDirection = e?.resultDirection ?? AssessmentResultDirection.neutral;
   }
 
   @override
@@ -606,6 +633,7 @@ class _CustomAssessmentFormDialogState
           eppoCode: _eppoCodeController.text.trim().isEmpty
               ? null
               : _eppoCodeController.text.trim(),
+          resultDirection: _resultDirection,
         );
         ref.invalidate(
             trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id));
@@ -633,6 +661,7 @@ class _CustomAssessmentFormDialogState
           eppoCode: _eppoCodeController.text.trim().isEmpty
               ? null
               : _eppoCodeController.text.trim(),
+          resultDirection: _resultDirection,
         );
         await ref.read(trialAssessmentRepositoryProvider).addToTrial(
               trialId: widget.trial.id,
@@ -758,29 +787,54 @@ class _CustomAssessmentFormDialogState
                             _fieldDecoration('Unit e.g. %, cm, kg/ha'),
                         onChanged: (_) => setState(() {}),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _scaleMinController,
-                              keyboardType: TextInputType.number,
-                              decoration: _fieldDecoration('Scale min'),
-                              onChanged: (_) => setState(() {}),
-                            ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _scaleMinController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: _fieldDecoration('Scale min'),
+                                  onChanged: (_) => setState(() {}),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _scaleMaxController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: _fieldDecoration('Scale max'),
+                                  onChanged: (_) => setState(() {}),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _scaleMaxController,
-                              keyboardType: TextInputType.number,
-                              decoration: _fieldDecoration('Scale max'),
-                              onChanged: (_) => setState(() {}),
-                            ),
+                          const SizedBox(height: 10),
+                          DropdownButtonFormField<String>(
+                            value: _resultDirection,
+                            decoration: _fieldDecoration('Result direction'),
+                            items: [
+                              DropdownMenuItem(
+                                value: AssessmentResultDirection.neutral,
+                                child: const Text('Neutral'),
+                              ),
+                              DropdownMenuItem(
+                                value: AssessmentResultDirection.higherBetter,
+                                child: const Text('Higher is better'),
+                              ),
+                              DropdownMenuItem(
+                                value: AssessmentResultDirection.lowerBetter,
+                                child: const Text('Lower is better'),
+                              ),
+                            ],
+                            onChanged: (v) {
+                              if (v != null) {
+                                setState(() => _resultDirection = v);
+                                setModalState(() {});
+                              }
+                            },
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                          const SizedBox(height: 20),
                     ],
                   ),
                 ),

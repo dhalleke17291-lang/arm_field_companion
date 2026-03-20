@@ -141,6 +141,8 @@ class AssessmentDefinitions extends Table {
   TextColumn get eppoCode => text().nullable()();
   TextColumn get cropPart => text().nullable()();
   TextColumn get timingDescription => text().nullable()();
+  TextColumn get resultDirection =>
+      text().withDefault(const Constant('neutral'))();
 }
 
 /// Trial-specific selection from library. Sessions only show assessments enabled here (or legacy Assessments).
@@ -594,7 +596,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -868,6 +870,10 @@ WHERE product_name IS NOT NULL AND LENGTH(TRIM(product_name)) > 0
           if (from < 30) {
             await m.addColumn(trials, trials.workspaceType);
           }
+          if (from < 31) {
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.resultDirection);
+          }
           await _createIndexes();
         },
       );
@@ -918,8 +924,8 @@ WHERE product_name IS NOT NULL AND LENGTH(TRIM(product_name)) > 0
     ];
     for (final r in rows) {
       await customStatement(
-        'INSERT INTO assessment_definitions (code, name, category, data_type, unit, scale_min, scale_max, is_system, is_active, created_at, updated_at) '
-        "VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, strftime('%s','now'), strftime('%s','now'))",
+        'INSERT INTO assessment_definitions (code, name, category, data_type, unit, scale_min, scale_max, result_direction, is_system, is_active, created_at, updated_at) '
+        "VALUES (?, ?, ?, ?, ?, ?, ?, 'neutral', 1, 1, strftime('%s','now'), strftime('%s','now'))",
         [r[0], r[1], r[2], r[3], r[4], r[5], r[6]],
       );
     }

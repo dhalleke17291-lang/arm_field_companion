@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../core/assessment_result_direction.dart';
 import '../../core/database/app_database.dart';
 
 /// Repository for the hidden master assessment library (AssessmentDefinitions).
@@ -80,6 +81,7 @@ class AssessmentDefinitionRepository {
     String? eppoCode,
     String? cropPart,
     String? timingDescription,
+    String resultDirection = AssessmentResultDirection.neutral,
   }) async {
     return _db.into(_db.assessmentDefinitions).insert(
           AssessmentDefinitionsCompanion.insert(
@@ -98,6 +100,7 @@ class AssessmentDefinitionRepository {
             eppoCode: Value(eppoCode),
             cropPart: Value(cropPart),
             timingDescription: Value(timingDescription),
+            resultDirection: Value(resultDirection),
             isSystem: const Value(false),
             isActive: const Value(true),
           ),
@@ -122,6 +125,7 @@ class AssessmentDefinitionRepository {
     String? eppoCode,
     String? cropPart,
     String? timingDescription,
+    String? resultDirection,
   }) async {
     await (_db.update(_db.assessmentDefinitions)
           ..where((d) => d.id.equals(id)))
@@ -148,6 +152,9 @@ class AssessmentDefinitionRepository {
         cropPart: cropPart != null ? Value(cropPart) : const Value.absent(),
         timingDescription: timingDescription != null
             ? Value(timingDescription)
+            : const Value.absent(),
+        resultDirection: resultDirection != null
+            ? Value(resultDirection)
             : const Value.absent(),
       ),
     );

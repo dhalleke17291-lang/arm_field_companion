@@ -115,6 +115,8 @@ class RatingResultRow {
   final String unit;
   final String value;
   final String resultStatus;
+  /// Result direction for numeric summary: higherBetter | lowerBetter | neutral.
+  final String resultDirection;
 
   const RatingResultRow({
     required this.plotId,
@@ -124,6 +126,7 @@ class RatingResultRow {
     required this.unit,
     required this.value,
     required this.resultStatus,
+    this.resultDirection = 'neutral',
   });
 }
 

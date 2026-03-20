@@ -127,6 +127,7 @@ class ReportDataAssemblyService {
         unit: r['unit'] as String? ?? '',
         value: r['value'] as String? ?? '-',
         resultStatus: r['result_status'] as String? ?? 'RECORDED',
+        resultDirection: r['result_direction'] as String? ?? 'neutral',
       );
     }).toList();
 

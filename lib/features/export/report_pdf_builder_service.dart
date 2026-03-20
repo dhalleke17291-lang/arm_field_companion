@@ -4,11 +4,16 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../core/assessment_result_direction.dart';
 import 'standalone_report_data.dart';
 
 String _cell(String? value) {
   if (value == null || value.isEmpty) return '-';
   return value;
+}
+
+String _formatMean(double v) {
+  return v.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
 }
 
 /// Builds a PDF document from assembled report data.
@@ -252,6 +257,8 @@ class ReportPdfBuilderService {
       final name = entry.key;
       final rows = entry.value;
       final unit = rows.first.unit;
+      final resultDirection =
+          rows.first.resultDirection;
       final label = unit.isNotEmpty ? '$name ($unit)' : name;
 
       widgets.add(pw.Text(
@@ -262,6 +269,44 @@ class ReportPdfBuilderService {
         ),
       ));
       widgets.add(pw.SizedBox(height: 4));
+
+      // Directional summary: only for numeric values
+      final byTreatment = <String, List<double>>{};
+      for (final r in rows) {
+        final v = double.tryParse(r.value);
+        if (v != null) {
+          byTreatment.putIfAbsent(r.treatmentCode, () => []).add(v);
+        }
+      }
+      if (byTreatment.isNotEmpty) {
+        final means = byTreatment.map(
+            (code, vals) =>
+                MapEntry(code, vals.reduce((a, b) => a + b) / vals.length));
+        final sorted = means.entries.toList()
+            ..sort((a, b) => a.value.compareTo(b.value));
+        final lowest = sorted.first;
+        final highest = sorted.last;
+        String bestLabel;
+        String worstLabel;
+        if (resultDirection == AssessmentResultDirection.higherBetter) {
+          bestLabel = 'Best Treatment: ${highest.key} (mean ${_formatMean(highest.value)})';
+          worstLabel = 'Lowest Treatment: ${lowest.key} (mean ${_formatMean(lowest.value)})';
+        } else if (resultDirection == AssessmentResultDirection.lowerBetter) {
+          bestLabel = 'Best Treatment: ${lowest.key} (mean ${_formatMean(lowest.value)})';
+          worstLabel = 'Highest Treatment: ${highest.key} (mean ${_formatMean(highest.value)})';
+        } else {
+          bestLabel = 'Highest treatment mean: ${highest.key} (${_formatMean(highest.value)})';
+          worstLabel = 'Lowest treatment mean: ${lowest.key} (${_formatMean(lowest.value)})';
+        }
+        widgets.add(pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 6),
+          child: pw.Text(
+            '$bestLabel · $worstLabel',
+            style: const pw.TextStyle(fontSize: 10),
+          ),
+        ));
+      }
+
       widgets.add(pw.Table(
         border: pw.TableBorder.all(
             color: PdfColors.grey400, width: 0.5),

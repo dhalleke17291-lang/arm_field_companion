@@ -127,6 +127,7 @@ class ExportRepository {
 
   /// Exports all current ratings for a trial across all sessions.
   /// Same join and sort as buildSessionExportRows but scoped to trialId.
+  /// Includes resultDirection from AssessmentDefinitions when trialAssessmentId present.
   Future<List<Map<String, Object?>>> buildTrialExportRows({
     required int trialId,
   }) async {
@@ -135,6 +136,8 @@ class ExportRepository {
     final a = db.assessments;
     final asg = db.assignments;
     final t = db.treatments;
+    final ta = db.trialAssessments;
+    final ad = db.assessmentDefinitions;
 
     final query = db.select(rr).join([
       drift.innerJoin(p, p.id.equalsExp(rr.plotPk)),
@@ -144,6 +147,8 @@ class ExportRepository {
           asg.plotId.equalsExp(p.id) &
               asg.trialId.equalsExp(p.trialId)),
       drift.leftOuterJoin(t, t.id.equalsExp(asg.treatmentId)),
+      drift.leftOuterJoin(ta, ta.id.equalsExp(rr.trialAssessmentId)),
+      drift.leftOuterJoin(ad, ad.id.equalsExp(ta.assessmentDefinitionId)),
     ])
       ..where(rr.trialId.equals(trialId) &
           rr.isCurrent.equals(true) &
@@ -169,6 +174,7 @@ class ExportRepository {
       final assessment = row.readTable(a);
       final assignment = row.readTableOrNull(asg);
       final treatment = row.readTableOrNull(t);
+      final definition = row.readTableOrNull(ad);
       final correction = corrections[rating.id];
 
       final effectiveNumeric =
@@ -192,6 +198,7 @@ class ExportRepository {
         'unit': assessment.unit ?? '',
         'value': value,
         'result_status': effectiveStatus,
+        'result_direction': definition?.resultDirection ?? 'neutral',
       };
     }).toList();
   }
