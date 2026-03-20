@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/app_database.dart';
 import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
+import '../../core/workspace/workspace_config.dart';
 import '../sessions/create_session_screen.dart';
 import '../sessions/session_detail_screen.dart';
 import '../sessions/session_summary_screen.dart';
@@ -36,6 +37,49 @@ import '../recovery/recovery_screen.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
+
+/// Resolves workspace type from stored string. Never throws; falls back to efficacy if invalid.
+WorkspaceType _safeWorkspaceType(String stored) {
+  try {
+    return WorkspaceType.values.byName(stored);
+  } catch (_) {
+    return WorkspaceType.efficacy;
+  }
+}
+
+/// Maps visible TrialTab values to their fixed IndexedStack indices.
+/// Excludes timeline and sessions.
+List<int> _visibleFixedIndices(WorkspaceConfig config) {
+  const tabToIndex = {
+    TrialTab.plots: 0,
+    TrialTab.seeding: 1,
+    TrialTab.applications: 2,
+    TrialTab.assessments: 3,
+    TrialTab.treatments: 4,
+    TrialTab.photos: 5,
+  };
+  return config.visibleTabs
+      .map((t) => tabToIndex[t])
+      .whereType<int>()
+      .toList();
+}
+
+/// Computes effective selected index: prefers candidate if visible, else first visible, else 0.
+int _effectiveSelectedIndex({
+  required int candidate,
+  required List<int> visibleIndices,
+}) {
+  if (visibleIndices.isEmpty) return 0;
+  if (visibleIndices.contains(candidate)) return candidate;
+  return visibleIndices.first;
+}
+
+/// Sanitizes a tab index for the given trial: ensures it points to a visible tab.
+int _sanitizeTabIndexForTrial(int index, Trial trial) {
+  final config = WorkspaceConfig.forType(_safeWorkspaceType(trial.workspaceType));
+  final visible = _visibleFixedIndices(config);
+  return _effectiveSelectedIndex(candidate: index, visibleIndices: visible);
+}
 
 class TrialDetailScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -861,18 +905,30 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           _buildTrialStatusBar(context, ref, currentTrial,
               displayStatus: effectiveStatus),
           const SizedBox(height: AppDesignTokens.spacing8),
-          SizedBox(
-            height: 110,
-            child: _TrialModuleHub(
-              scrollController: _hubScrollController,
-              selectedIndex: _selectedTabIndex == _sessionsIndex
-                  ? _previousTabIndex
-                  : _selectedTabIndex,
-              onSelected: (index) {
-                setState(() => _selectedTabIndex = index);
-              },
-              onUserScroll: _dismissHubHint,
-            ),
+          Builder(
+            builder: (_) {
+              final workspaceConfig = WorkspaceConfig.forType(
+                  _safeWorkspaceType(currentTrial.workspaceType));
+              final visibleIndices = _visibleFixedIndices(workspaceConfig);
+              final effectiveSelectedIndex = _effectiveSelectedIndex(
+                candidate: _selectedTabIndex == _sessionsIndex
+                    ? _previousTabIndex
+                    : _selectedTabIndex,
+                visibleIndices: visibleIndices,
+              );
+              return SizedBox(
+                height: 110,
+                child: _TrialModuleHub(
+                  scrollController: _hubScrollController,
+                  workspaceConfig: workspaceConfig,
+                  selectedIndex: effectiveSelectedIndex,
+                  onSelected: (index) {
+                    setState(() => _selectedTabIndex = index);
+                  },
+                  onUserScroll: _dismissHubHint,
+                ),
+              );
+            },
           ),
           const SizedBox(height: AppDesignTokens.spacing8),
           Padding(
@@ -904,6 +960,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   ) {
     final effectiveStatus =
         _effectiveTrialStatus(ref, currentTrial) ?? currentTrial.status;
+    final workspaceConfig = WorkspaceConfig.forType(
+        _safeWorkspaceType(currentTrial.workspaceType));
+    final visibleIndices = _visibleFixedIndices(workspaceConfig);
+    final effectiveSelectedIndex = _effectiveSelectedIndex(
+      candidate: _selectedTabIndex == _sessionsIndex
+          ? _previousTabIndex
+          : _selectedTabIndex,
+      visibleIndices: visibleIndices,
+    );
     return Column(
       children: [
         ConstrainedBox(
@@ -1041,9 +1106,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   height: 110,
                   child: _TrialModuleHub(
                     scrollController: _hubScrollController,
-                    selectedIndex: _selectedTabIndex == _sessionsIndex
-                        ? _previousTabIndex
-                        : _selectedTabIndex,
+                    workspaceConfig: workspaceConfig,
+                    selectedIndex: effectiveSelectedIndex,
                     onSelected: (index) {
                       setState(() => _selectedTabIndex = index);
                     },
@@ -1072,7 +1136,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         _buildTrialTrustSummaryCard(context, ref, currentTrial),
         Expanded(
           child: IndexedStack(
-            index: _selectedTabIndex,
+            index: _selectedTabIndex == _sessionsIndex
+                ? _sessionsIndex
+                : effectiveSelectedIndex,
             children: [
               PlotsTab(trial: currentTrial),
               SeedingTab(trial: currentTrial),
@@ -1083,8 +1149,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               TimelineTab(trial: currentTrial),
               SessionsView(
                 trial: currentTrial,
-                onBack: () =>
-                    setState(() => _selectedTabIndex = _previousTabIndex),
+                onBack: () => setState(() {
+                  _selectedTabIndex = _sanitizeTabIndexForTrial(
+                      _previousTabIndex, currentTrial);
+                }),
               ),
             ],
           ),
@@ -1521,12 +1589,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
 class _TrialModuleHub extends StatelessWidget {
   final ScrollController scrollController;
+  final WorkspaceConfig workspaceConfig;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final VoidCallback? onUserScroll;
 
   const _TrialModuleHub({
     required this.scrollController,
+    required this.workspaceConfig,
     required this.selectedIndex,
     required this.onSelected,
     this.onUserScroll,
@@ -1534,15 +1604,21 @@ class _TrialModuleHub extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      (0, Icons.grid_on, 'Plots'),
-      (1, Icons.agriculture, 'Seeding'),
-      (2, Icons.science, 'Applications'),
-      (3, Icons.assessment, 'Assessments'),
-      (4, Icons.science_outlined, 'Treatments'),
-      (5, Icons.photo_library, 'Photos'),
-      (6, Icons.timeline_outlined, 'Timeline'),
+    // All possible hub items mapped to their fixed IndexedStack index.
+    // Timeline (6) is intentionally excluded — it is not in any
+    // WorkspaceConfig.visibleTabs definition.
+    const allItems = [
+      (0, Icons.grid_on, 'Plots', TrialTab.plots),
+      (1, Icons.agriculture, 'Seeding', TrialTab.seeding),
+      (2, Icons.science, 'Applications', TrialTab.applications),
+      (3, Icons.assessment, 'Assessments', TrialTab.assessments),
+      (4, Icons.science_outlined, 'Treatments', TrialTab.treatments),
+      (5, Icons.photo_library, 'Photos', TrialTab.photos),
     ];
+
+    final items = allItems
+        .where((item) => workspaceConfig.visibleTabs.contains(item.$4))
+        .toList();
 
     final listView = ListView.separated(
       controller: scrollController,
