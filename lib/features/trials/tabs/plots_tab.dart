@@ -1668,8 +1668,11 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final sessions =
         ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
+            false;
     final assignmentsLocked =
-        isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
+        isAssignmentsLocked(widget.trial.status, hasSessionData);
     const double maxTopSectionHeight = 320;
     final topSection = Column(
       mainAxisSize: MainAxisSize.min,
@@ -1980,6 +1983,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
+  /// Legacy selector for application_events (slot-based). Hidden when empty.
   Widget _buildAppEventSelectorForDetails(BuildContext context, WidgetRef ref) {
     final eventsAsync =
         ref.watch(applicationsForTrialProvider(widget.trial.id));
@@ -1987,22 +1991,9 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
       loading: () => const SizedBox.shrink(),
       error: (e, _) => const SizedBox.shrink(),
       data: (events) {
-        if (events.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No application events recorded yet',
-                style: TextStyle(
-                    color: AppDesignTokens.secondaryText, fontSize: 13)),
-          );
-        }
         final completed = events.where((e) => e.status == 'completed').toList();
-        if (completed.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No completed application events yet',
-                style: TextStyle(
-                    color: AppDesignTokens.secondaryText, fontSize: 13)),
-          );
+        if (events.isEmpty || completed.isEmpty) {
+          return const SizedBox.shrink();
         }
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -2131,10 +2122,11 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
 
   Widget _buildPlotsHeaderForDetails(BuildContext context, WidgetRef ref,
       List<Plot> plots, bool assignmentsLocked) {
-    final sessions =
-        ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
+            false;
     final message =
-        getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
+        getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final assignmentsList =
         ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
@@ -2148,6 +2140,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         : unassignedCount == 0
             ? 'All $assignedCount assigned'
             : '$assignedCount assigned · $unassignedCount unassigned';
+
     return Container(
       margin: const EdgeInsets.symmetric(
           horizontal: AppDesignTokens.spacing16,
@@ -2169,138 +2162,120 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Row 1: primary info — plots count + lock chip
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppDesignTokens.spacing8),
-                    decoration: BoxDecoration(
-                      color: AppDesignTokens.sectionHeaderBg,
-                      borderRadius:
-                          BorderRadius.circular(AppDesignTokens.radiusXSmall),
-                    ),
-                    child: const Icon(Icons.grid_on,
-                        size: 20, color: AppDesignTokens.primary),
+              Flexible(
+                child: Text(
+                  '${plots.length} plots',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppDesignTokens.primaryText,
+                    letterSpacing: -0.2,
                   ),
-                  const SizedBox(width: AppDesignTokens.spacing12),
-                  Text(
-                    '${plots.length} plots',
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: AppDesignTokens.primaryText,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ],
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+                  border: Border.all(
+                    color: assignmentsLocked
+                        ? AppDesignTokens.secondaryText
+                        : AppDesignTokens.primary,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      assignmentsLocked
+                          ? Icons.lock_outlined
+                          : Icons.lock_open_outlined,
+                      size: 14,
+                      color: assignmentsLocked
+                          ? AppDesignTokens.secondaryText
+                          : AppDesignTokens.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      getAssignmentsLockLabel(
+                          widget.trial.status, hasSessionData),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                         color: assignmentsLocked
                             ? AppDesignTokens.secondaryText
                             : AppDesignTokens.primary,
-                        width: 1,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          assignmentsLocked
-                              ? Icons.lock_outlined
-                              : Icons.lock_open_outlined,
-                          size: 14,
-                          color: assignmentsLocked
-                              ? AppDesignTokens.secondaryText
-                              : AppDesignTokens.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          assignmentsLocked ? 'Locked' : 'Editable',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: assignmentsLocked
-                                ? AppDesignTokens.secondaryText
-                                : AppDesignTokens.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Tooltip(
-                    message: assignmentsLocked
-                        ? message
-                        : 'Assign treatments to multiple plots',
-                    child: OutlinedButton.icon(
-                      onPressed: assignmentsLocked
-                          ? null
-                          : () => _showBulkAssignSheet(
-                              context, ref, widget.trial, plots),
-                      icon: Icon(
-                        Icons.grid_view,
-                        size: 18,
-                        color: assignmentsLocked
-                            ? AppDesignTokens.iconSubtle
-                            : AppDesignTokens.primary,
-                      ),
-                      label: const Text('Bulk Assign'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: assignmentsLocked
-                            ? AppDesignTokens.secondaryText
-                            : AppDesignTokens.primary,
-                        side: BorderSide(
-                          color: assignmentsLocked
-                              ? AppDesignTokens.iconSubtle
-                              : AppDesignTokens.primary,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        textStyle: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+          // Row 2: explanation
           Text(
-            summaryLine,
+            assignmentsLocked && message.isNotEmpty ? message : summaryLine,
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: AppDesignTokens.secondaryText,
+              height: 1.3,
             ),
           ),
-          if (assignmentsLocked && message.isNotEmpty) ...[
-            const SizedBox(height: AppDesignTokens.spacing12),
-            Text(
-              message,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppDesignTokens.secondaryText,
-                height: 1.3,
+          const SizedBox(height: 10),
+          // Row 3: Bulk Assign button
+          Tooltip(
+            message: assignmentsLocked
+                ? message
+                : 'Assign treatments to multiple plots',
+            child: Opacity(
+              opacity: assignmentsLocked ? 0.6 : 1,
+              child: OutlinedButton.icon(
+                onPressed: assignmentsLocked
+                    ? null
+                    : () => _showBulkAssignSheet(
+                        context, ref, widget.trial, plots),
+                icon: Icon(
+                  Icons.grid_view,
+                  size: 18,
+                  color: assignmentsLocked
+                      ? AppDesignTokens.iconSubtle
+                      : AppDesignTokens.primary,
+                ),
+                label: const Text('Bulk Assign'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: assignmentsLocked
+                      ? AppDesignTokens.secondaryText
+                      : AppDesignTokens.primary,
+                  side: BorderSide(
+                    color: assignmentsLocked
+                        ? AppDesignTokens.iconSubtle
+                        : AppDesignTokens.primary,
+                    width: 1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+                  ),
+                  textStyle: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -2312,10 +2287,11 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
       List<Plot> visiblePlots,
       List<Plot> allPlots,
       bool assignmentsLocked) {
-    final sessions =
-        ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
+            false;
     final assignmentsLockMessage =
-        getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
+        getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
@@ -2763,10 +2739,10 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
               Row(
                 children: [
                   Expanded(
-                    flex: 2,
                     child: DropdownButtonFormField<int?>(
                       key: ValueKey<int?>(_selectedTreatmentId),
                       initialValue: _selectedTreatmentId,
+                      isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'Assign to selected',
                         border: OutlineInputBorder(),
@@ -2786,7 +2762,7 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   FilledButton(
                     onPressed: () => _applyManualSelection(
                         context, treatments, treatmentMap),
@@ -3465,10 +3441,14 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           if (plots.isEmpty) {
             return _PlotDetailsEmptyContent(trial: widget.trial);
           }
+          final hasSessionData =
+              ref.watch(trialHasSessionDataProvider(widget.trial.id))
+                      .valueOrNull ??
+                  false;
+          final assignmentsLocked =
+              isAssignmentsLocked(widget.trial.status, hasSessionData);
           final sessions =
               ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-          final assignmentsLocked =
-              isAssignmentsLocked(widget.trial.status, sessions.isNotEmpty);
           final displayPlots = _plotsVisibleInPlotsTab(plots);
           if (!widget.isLayoutView) {
             final scheme = Theme.of(context).colorScheme;
@@ -3739,6 +3719,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     );
   }
 
+  /// Legacy selector for application_events (slot-based). Hidden when empty.
   Widget _buildAppEventSelector(BuildContext context, WidgetRef ref) {
     final eventsAsync =
         ref.watch(applicationsForTrialProvider(widget.trial.id));
@@ -3747,13 +3728,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
       error: (e, _) => const SizedBox.shrink(),
       data: (events) {
         final completed = events.where((e) => e.status == 'completed').toList();
-        if (completed.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('No completed application events yet',
-                style: TextStyle(
-                    color: AppDesignTokens.secondaryText, fontSize: 13)),
-          );
+        if (events.isEmpty || completed.isEmpty) {
+          return const SizedBox.shrink();
         }
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -3807,10 +3783,11 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
       List<Plot> visiblePlots,
       List<Plot> allPlots,
       bool assignmentsLocked) {
-    final sessions =
-        ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
+            false;
     final assignmentsLockMessage =
-        getAssignmentsLockMessage(widget.trial.status, sessions.isNotEmpty);
+        getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
