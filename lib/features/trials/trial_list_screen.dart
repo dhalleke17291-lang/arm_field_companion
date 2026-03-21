@@ -25,21 +25,40 @@ import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
+/// Workspace filter for trial list. Client-side only; no repository changes.
+enum TrialListFilter {
+  all,
+  standaloneOnly,
+  protocolOnly,
+}
+
 enum _TrialListStatusFilter { all, active, draft, closed, archived }
 
 enum _TrialListSortMode { newestCreated, oldestCreated, nameAz, nameZa }
 
-/// Client-side only: search → status filter → sort. Does not mutate [trials].
+/// Client-side only: workspace filter → search → status filter → sort. Does not mutate [trials].
 List<Trial> _deriveDisplayedTrials({
   required List<Trial> trials,
   required String searchQuery,
   required _TrialListStatusFilter statusFilter,
   required _TrialListSortMode sortMode,
+  TrialListFilter workspaceFilter = TrialListFilter.all,
 }) {
+  var list = trials;
+  switch (workspaceFilter) {
+    case TrialListFilter.all:
+      break;
+    case TrialListFilter.standaloneOnly:
+      list = list.where((t) => t.workspaceType.toLowerCase() == 'standalone').toList();
+      break;
+    case TrialListFilter.protocolOnly:
+      list = list.where((t) => t.workspaceType.toLowerCase() != 'standalone').toList();
+      break;
+  }
   final q = searchQuery.trim().toLowerCase();
-  Iterable<Trial> afterSearch = trials;
+  Iterable<Trial> afterSearch = list;
   if (q.isNotEmpty) {
-    afterSearch = trials.where((t) {
+    afterSearch = list.where((t) {
       bool fieldContains(String? s) =>
           s != null && s.toLowerCase().contains(q);
       return t.name.toLowerCase().contains(q) ||
@@ -49,25 +68,25 @@ List<Trial> _deriveDisplayedTrials({
           t.status.toLowerCase().contains(q);
     });
   }
-  var list = afterSearch.toList();
+  var filtered = afterSearch.toList();
   switch (statusFilter) {
     case _TrialListStatusFilter.all:
       break;
     case _TrialListStatusFilter.active:
-      list = list
+      filtered = filtered
           .where((t) => t.status.toLowerCase() == 'active')
           .toList();
       break;
     case _TrialListStatusFilter.draft:
-      list =
-          list.where((t) => t.status.toLowerCase() == 'draft').toList();
+      filtered =
+          filtered.where((t) => t.status.toLowerCase() == 'draft').toList();
       break;
     case _TrialListStatusFilter.closed:
-      list =
-          list.where((t) => t.status.toLowerCase() == 'closed').toList();
+      filtered =
+          filtered.where((t) => t.status.toLowerCase() == 'closed').toList();
       break;
     case _TrialListStatusFilter.archived:
-      list = list
+      filtered = filtered
           .where((t) => t.status.toLowerCase() == 'archived')
           .toList();
       break;
@@ -80,27 +99,27 @@ List<Trial> _deriveDisplayedTrials({
 
   switch (sortMode) {
     case _TrialListSortMode.newestCreated:
-      list.sort((a, b) {
+      filtered.sort((a, b) {
         final c = b.createdAt.compareTo(a.createdAt);
         if (c != 0) return c;
         return b.id.compareTo(a.id);
       });
       break;
     case _TrialListSortMode.oldestCreated:
-      list.sort((a, b) {
+      filtered.sort((a, b) {
         final c = a.createdAt.compareTo(b.createdAt);
         if (c != 0) return c;
         return a.id.compareTo(b.id);
       });
       break;
     case _TrialListSortMode.nameAz:
-      list.sort(cmpNameCi);
+      filtered.sort(cmpNameCi);
       break;
     case _TrialListSortMode.nameZa:
-      list.sort((a, b) => cmpNameCi(b, a));
+      filtered.sort((a, b) => cmpNameCi(b, a));
       break;
   }
-  return list;
+  return filtered;
 }
 
 String _sortModeLabel(_TrialListSortMode m) {
@@ -288,7 +307,16 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
 }
 
 class TrialListScreen extends ConsumerStatefulWidget {
-  const TrialListScreen({super.key});
+  const TrialListScreen({
+    super.key,
+    this.workspaceFilter = TrialListFilter.all,
+    this.titleOverride,
+    this.onBackTap,
+  });
+
+  final TrialListFilter workspaceFilter;
+  final String? titleOverride;
+  final VoidCallback? onBackTap;
 
   @override
   ConsumerState<TrialListScreen> createState() => _TrialListScreenState();
@@ -344,12 +372,24 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'My Trials',
-                          style: AppDesignTokens.headerTitleStyle(
-                            fontSize: 20,
-                            color: Colors.white,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (widget.onBackTap != null)
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back,
+                                    color: Colors.white),
+                                tooltip: 'Back',
+                                onPressed: widget.onBackTap,
+                              ),
+                            Text(
+                              widget.titleOverride ?? 'My Trials',
+                              style: AppDesignTokens.headerTitleStyle(
+                                fontSize: 20,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -495,6 +535,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                   searchQuery: _searchQuery,
                   statusFilter: _statusFilter,
                   sortMode: _sortMode,
+                  workspaceFilter: widget.workspaceFilter,
                 );
                 String? noResultsMessage;
                 if (displayed.isEmpty) {
@@ -672,6 +713,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
         _ContinueLastSessionSection(
           onNavigate: (trial, session) =>
               _navigateToRatingForSession(context, ref, trial, session),
+          workspaceFilter: widget.workspaceFilter,
         ),
         // Section header: label + sort (filters sit below as content controls)
         Padding(
@@ -1003,12 +1045,29 @@ String _formatSessionDateForCard(String sessionDateLocal) {
   return '${d.day} $month ${d.year}';
 }
 
+/// Client-side: does [trial] match [workspaceFilter]? Same logic as _deriveDisplayedTrials.
+bool _trialMatchesWorkspaceFilter(Trial trial, TrialListFilter workspaceFilter) {
+  switch (workspaceFilter) {
+    case TrialListFilter.all:
+      return true;
+    case TrialListFilter.standaloneOnly:
+      return trial.workspaceType.toLowerCase() == 'standalone';
+    case TrialListFilter.protocolOnly:
+      return trial.workspaceType.toLowerCase() != 'standalone';
+  }
+}
+
 /// Persistent "Continue Last Session" card (survives app restarts).
 /// Isolate ref.watch(lastSessionContextProvider) so it disposes cleanly (avoids _dependents.isEmpty).
+/// Respects [workspaceFilter]: only shows when last session's trial matches the filter.
 class _ContinueLastSessionSection extends ConsumerWidget {
-  const _ContinueLastSessionSection({required this.onNavigate});
+  const _ContinueLastSessionSection({
+    required this.onNavigate,
+    required this.workspaceFilter,
+  });
 
   final void Function(Trial trial, Session session) onNavigate;
+  final TrialListFilter workspaceFilter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1018,6 +1077,9 @@ class _ContinueLastSessionSection extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (ctx) {
         if (ctx == null) return const SizedBox.shrink();
+        if (!_trialMatchesWorkspaceFilter(ctx.trial, workspaceFilter)) {
+          return const SizedBox.shrink();
+        }
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
