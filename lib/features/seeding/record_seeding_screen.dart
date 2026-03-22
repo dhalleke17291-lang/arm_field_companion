@@ -72,7 +72,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
 
   Future<void> _onSave() async {
     setState(() => _isSaving = true);
-    final db = ref.read(databaseProvider);
+    try {
+      final db = ref.read(databaseProvider);
     final operatorName = _operatorController.text.trim();
     final comments = _commentsController.text.trim();
 
@@ -248,13 +249,25 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
     ref.invalidate(todayActivityProvider);
     ref.invalidate(workLogDatesProvider);
 
-    if (!mounted) return;
-    setState(() => _isSaving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Seeding record added'), backgroundColor: Colors.green),
-    );
-    Navigator.pop(context);
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Seeding record added'), backgroundColor: Colors.green),
+      );
+      Navigator.pop(context);
+    } catch (e, st) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save seeding record'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      debugPrint('RecordSeedingScreen save error: $e');
+      debugPrintStack(stackTrace: st);
+    }
   }
 
   Widget _field(String label, TextEditingController controller,
