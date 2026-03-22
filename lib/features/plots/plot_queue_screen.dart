@@ -502,7 +502,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         const _PlotQueueDockBar(),
         const SizedBox(height: 4),
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+          padding: const EdgeInsets.fromLTRB(
+            AppDesignTokens.spacing16,
+            0,
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing4,
+          ),
           child: Text(
             contextLine,
             style: TextStyle(
@@ -513,9 +518,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+          padding: const EdgeInsets.fromLTRB(
+            AppDesignTokens.spacing16,
+            0,
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing8,
+          ),
           child: Text(
-            'Save & Next Plot on the rating screen keeps you in the walk order without returning here.',
+            'Save & Next Plot keeps you in walk order.',
             style: TextStyle(
               fontSize: 11,
               height: 1.3,
@@ -526,7 +536,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         ),
         // Section header (same as Trial Plots tab)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDesignTokens.spacing16,
+            vertical: AppDesignTokens.spacing8,
+          ),
           color: scheme.primaryContainer,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -608,7 +621,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         if (assessments.isNotEmpty) ...[
           const SizedBox(height: 6),
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 4, 8, 6),
+            padding: const EdgeInsets.fromLTRB(
+              AppDesignTokens.spacing16,
+              AppDesignTokens.spacing4,
+              AppDesignTokens.spacing8,
+              AppDesignTokens.spacing8,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -658,7 +676,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         ],
         if (_showEditedOnly)
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+            padding: const EdgeInsets.fromLTRB(
+              AppDesignTokens.spacing16,
+              AppDesignTokens.spacing4,
+              AppDesignTokens.spacing16,
+              AppDesignTokens.spacing8,
+            ),
             child: Text(
               'Edited = amended, corrected, or re-saved ratings',
               style: TextStyle(
@@ -1384,17 +1407,18 @@ class _PlotQueueTile extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.orange.shade100,
+                          color: AppDesignTokens.warningBg,
                           borderRadius:
                               BorderRadius.circular(AppDesignTokens.radiusChip),
-                          border: Border.all(color: Colors.orange.shade300),
+                          border:
+                              Border.all(color: AppDesignTokens.warningBorder),
                         ),
                         child: Text(
                           'Issues',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: Colors.orange.shade800,
+                            color: AppDesignTokens.warningFg,
                           ),
                         ),
                       ),
@@ -1406,18 +1430,17 @@ class _PlotQueueTile extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.blueGrey.shade50,
+                            color: AppDesignTokens.emptyBadgeBg,
                             borderRadius: BorderRadius.circular(
                                 AppDesignTokens.radiusChip),
-                            border:
-                                Border.all(color: Colors.blueGrey.shade200),
+                            border: Border.all(color: AppDesignTokens.borderCrisp),
                           ),
                           child: Text(
                             'Edited',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: Colors.blueGrey.shade800,
+                              color: AppDesignTokens.emptyBadgeFg,
                             ),
                           ),
                         ),
@@ -1427,16 +1450,18 @@ class _PlotQueueTile extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade100,
+                          color: AppDesignTokens.successBg,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.green.shade300),
+                          border: Border.all(
+                            color: AppDesignTokens.successFg.withValues(alpha: 0.35),
+                          ),
                         ),
                         child: Text(
                           'Rated',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Colors.green.shade800,
+                            color: AppDesignTokens.successFg,
                           ),
                         ),
                       ),
@@ -1487,7 +1512,10 @@ class _PlotQueueTile extends StatelessWidget {
       child: ListTile(
         dense: true,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing16,
+              vertical: 5,
+            ),
         leading: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -1587,7 +1615,9 @@ class _PlotQueueDockBar extends StatelessWidget {
       padding: const EdgeInsets.only(top: 6, bottom: 4),
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+        ),
         physics: const BouncingScrollPhysics(),
         children: const [
           _PlotQueueDockTile(
