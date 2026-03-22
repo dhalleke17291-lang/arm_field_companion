@@ -222,6 +222,32 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
           );
     }
 
+    // Bridge: upsert authoritative seeding_events so attention, timeline, DAS, export reflect completion
+    final op = _operatorController.text.trim();
+    final equipment = _equipmentController.text.trim();
+    final variety = _varietyController.text.trim();
+    final seedLot = _seedLotController.text.trim();
+    final rateUnit = _rateUnitController.text.trim();
+    final companion = SeedingEventsCompanion.insert(
+      trialId: widget.trial.id,
+      seedingDate: _seedingDate.value,
+      operatorName: drift.Value(op.isEmpty ? null : op),
+      seedLotNumber: drift.Value(seedLot.isEmpty ? null : seedLot),
+      seedingRate: drift.Value(double.tryParse(_seedingRateController.text.trim())),
+      seedingRateUnit: drift.Value(rateUnit.isEmpty ? null : rateUnit),
+      seedingDepth: drift.Value(double.tryParse(_seedingDepthController.text.trim())),
+      rowSpacing: drift.Value(double.tryParse(_rowSpacingController.text.trim())),
+      equipmentUsed: drift.Value(equipment.isEmpty ? null : equipment),
+      notes: drift.Value(comments.isEmpty ? null : comments),
+      variety: drift.Value(variety.isEmpty ? null : variety),
+      status: const drift.Value('completed'),
+      completedAt: drift.Value(_seedingDate.value),
+    );
+    await ref.read(seedingRepositoryProvider).upsertSeedingEvent(companion);
+    ref.invalidate(seedingEventForTrialProvider(widget.trial.id));
+    ref.invalidate(todayActivityProvider);
+    ref.invalidate(workLogDatesProvider);
+
     if (!mounted) return;
     setState(() => _isSaving = false);
     ScaffoldMessenger.of(context).showSnackBar(
