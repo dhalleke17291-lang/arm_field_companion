@@ -14,6 +14,7 @@ import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/database/app_database.dart';
 import '../../core/workspace/workspace_config.dart';
+import '../../core/workspace/workspace_filter.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../about/about_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
@@ -36,25 +37,14 @@ enum _TrialListStatusFilter { all, active, draft, closed, archived }
 
 enum _TrialListSortMode { newestCreated, oldestCreated, nameAz, nameZa }
 
-/// Client-side only: workspace filter → search → status filter → sort. Does not mutate [trials].
+/// Client-side only: search → status filter → sort. Assumes [trials] already filtered by provider.
 List<Trial> _deriveDisplayedTrials({
   required List<Trial> trials,
   required String searchQuery,
   required _TrialListStatusFilter statusFilter,
   required _TrialListSortMode sortMode,
-  TrialListFilter workspaceFilter = TrialListFilter.all,
 }) {
   var list = trials;
-  switch (workspaceFilter) {
-    case TrialListFilter.all:
-      break;
-    case TrialListFilter.standaloneOnly:
-      list = list.where((t) => t.workspaceType.toLowerCase() == 'standalone').toList();
-      break;
-    case TrialListFilter.protocolOnly:
-      list = list.where((t) => t.workspaceType.toLowerCase() != 'standalone').toList();
-      break;
-  }
   final q = searchQuery.trim().toLowerCase();
   Iterable<Trial> afterSearch = list;
   if (q.isNotEmpty) {
@@ -625,7 +615,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                   searchQuery: _searchQuery,
                   statusFilter: _statusFilter,
                   sortMode: _sortMode,
-                  workspaceFilter: widget.workspaceFilter,
                 );
                 String? noResultsMessage;
                 if (displayed.isEmpty) {
@@ -1165,15 +1154,15 @@ String _formatSessionDateForCard(String sessionDateLocal) {
   return '${d.day} $month ${d.year}';
 }
 
-/// Client-side: does [trial] match [workspaceFilter]? Same logic as _deriveDisplayedTrials.
+/// Client-side: does [trial] match [workspaceFilter]? Uses same helpers as providers.
 bool _trialMatchesWorkspaceFilter(Trial trial, TrialListFilter workspaceFilter) {
   switch (workspaceFilter) {
     case TrialListFilter.all:
       return true;
     case TrialListFilter.standaloneOnly:
-      return trial.workspaceType.toLowerCase() == 'standalone';
+      return isStandalone(trial.workspaceType);
     case TrialListFilter.protocolOnly:
-      return trial.workspaceType.toLowerCase() != 'standalone';
+      return isProtocol(trial.workspaceType);
   }
 }
 

@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/session_resume_store.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/last_session_store.dart';
+import '../../core/workspace/workspace_filter.dart';
 import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
 import '../derived/trial_attention_provider.dart';
@@ -478,8 +479,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
         ? ' (${_formatDuration(session.startedAt, session.endedAt!)})'
         : '';
 
-    final isCustom =
-        trial?.workspaceType.toLowerCase() == 'standalone';
+    final isCustom = isStandalone(trial?.workspaceType);
 
     return Material(
       color: Colors.transparent,

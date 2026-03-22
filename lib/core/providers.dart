@@ -51,6 +51,7 @@ import 'current_user.dart';
 import 'diagnostics/diagnostics_store.dart';
 import 'last_session_store.dart';
 import 'export_guard.dart';
+import 'workspace/workspace_filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final exportGuardProvider = Provider<ExportGuard>((ref) => ExportGuard());
@@ -280,21 +281,18 @@ final trialsStreamProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials();
 });
 
-/// Custom trials only (workspaceType == 'standalone'). For Custom Trials screen.
+/// Custom trials only (standalone workspace type). For Custom Trials screen.
 final customTrialsProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials().map((all) {
-    return all
-        .where((t) => t.workspaceType.toLowerCase() == 'standalone')
-        .toList();
+    return all.where((t) => isStandalone(t.workspaceType)).toList();
   });
 });
 
-/// Protocol trials only (workspaceType != 'standalone'). For Protocol Trials screen.
+/// Protocol trials only (variety, efficacy, glp). For Protocol Trials screen.
+/// Unknown workspace types are excluded.
 final protocolTrialsProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials().map((all) {
-    return all
-        .where((t) => t.workspaceType.toLowerCase() != 'standalone')
-        .toList();
+    return all.where((t) => isProtocol(t.workspaceType)).toList();
   });
 });
 
