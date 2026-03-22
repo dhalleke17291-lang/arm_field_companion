@@ -280,6 +280,24 @@ final trialsStreamProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials();
 });
 
+/// Custom trials only (workspaceType == 'standalone'). For Custom Trials screen.
+final customTrialsProvider = StreamProvider((ref) {
+  return ref.watch(trialRepositoryProvider).watchAllTrials().map((all) {
+    return all
+        .where((t) => t.workspaceType.toLowerCase() == 'standalone')
+        .toList();
+  });
+});
+
+/// Protocol trials only (workspaceType != 'standalone'). For Protocol Trials screen.
+final protocolTrialsProvider = StreamProvider((ref) {
+  return ref.watch(trialRepositoryProvider).watchAllTrials().map((all) {
+    return all
+        .where((t) => t.workspaceType.toLowerCase() != 'standalone')
+        .toList();
+  });
+});
+
 /// Current trial by id (e.g. for trial detail). Invalidate after status change.
 final trialProvider = FutureProvider.autoDispose.family<Trial?, int>((ref, id) {
   return ref.watch(trialRepositoryProvider).getTrialById(id);
@@ -321,6 +339,13 @@ final sessionsForTrialProvider =
         ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false))
         ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
       .watch();
+});
+
+/// True when any session for this trial has actual data (ratings, notes, photos, flags).
+/// Used for assignment lock: empty sessions do NOT lock. Auto-updates when data changes.
+final trialHasSessionDataProvider =
+    StreamProvider.autoDispose.family<bool, int>((ref, trialId) {
+  return ref.watch(sessionRepositoryProvider).watchTrialHasSessionData(trialId);
 });
 
 /// Soft-deleted trials (Recovery). Newest [deletedAt] first.
