@@ -17,6 +17,9 @@ class AppDesignTokens {
   /// Background surface (warm off-white).
   static const Color backgroundSurface = Color(0xFFF8F6F2);
 
+  /// Warm list background (Trial List, Plot Queue).
+  static const Color bgWarm = Color(0xFFF4F1EB);
+
   /// Card surface (white).
   static const Color cardSurface = Color(0xFFFFFFFF);
 

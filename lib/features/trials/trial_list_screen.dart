@@ -23,6 +23,8 @@ import 'trial_detail_screen.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
+import '../derived/trial_attention_provider.dart';
+import '../derived/trial_attention_service.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
 /// Workspace filter for trial list. Client-side only; no repository changes.
@@ -120,6 +122,34 @@ List<Trial> _deriveDisplayedTrials({
       break;
   }
   return filtered;
+}
+
+void _handleTrialListAttentionTap(
+  BuildContext context,
+  AttentionItem item,
+  Trial trial,
+) {
+  final tabIndex = switch (item.type) {
+    AttentionType.seedingMissing => 1,
+    AttentionType.seedingPending => 1,
+    AttentionType.applicationsPending => 2,
+    AttentionType.plotsUnassigned => 0,
+    AttentionType.setupIncomplete => 0,
+    AttentionType.plotsPartiallyRated => 0,
+    AttentionType.dataCollectionComplete => 0,
+    AttentionType.openSession => null,
+    AttentionType.noSessionsYet => null,
+  };
+  if (tabIndex == null) return;
+  Navigator.push(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => TrialDetailScreen(
+        trial: trial,
+        initialTabIndex: tabIndex,
+      ),
+    ),
+  );
 }
 
 String _sortModeLabel(_TrialListSortMode m) {
@@ -340,11 +370,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
   Widget build(BuildContext context) {
     final trialsAsync = ref.watch(trialsStreamProvider);
 
-    const g800 = Color(0xFF2D5A40);
-    const g700 = Color(0xFF3D7A57);
-    const bgWarm = Color(0xFFF4F1EB);
     return Scaffold(
-      backgroundColor: bgWarm,
+      backgroundColor: AppDesignTokens.bgWarm,
       body: Column(
         children: [
           Container(
@@ -353,7 +380,10 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [g800, g700],
+                colors: [
+                  AppDesignTokens.primary,
+                  AppDesignTokens.primaryLight,
+                ],
               ),
             ),
             child: SafeArea(
@@ -520,7 +550,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
           Container(
             height: 12,
             decoration: const BoxDecoration(
-              color: bgWarm,
+              color: AppDesignTokens.bgWarm,
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
           ),
@@ -574,9 +604,9 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
   Widget _buildFilterChipsRow() {
     return Padding(
       padding: const EdgeInsets.only(
-        left: 0,
-        right: 0,
-        top: 4,
+        left: AppDesignTokens.spacing16,
+        right: AppDesignTokens.spacing16,
+        top: AppDesignTokens.spacing4,
         bottom: 6,
       ),
       child: SingleChildScrollView(
@@ -1376,6 +1406,46 @@ class _CompactTrialRow extends StatelessWidget {
                 ],
                 const SizedBox(height: 3),
                 _TrialQuickActions(trial: trial, compact: true),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final attentionAsync = ref.watch(
+                      trialAttentionProvider(trial.id),
+                    );
+
+                    return attentionAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (items) {
+                        final visible = items
+                            .where((i) =>
+                                i.severity == AttentionSeverity.high ||
+                                i.severity == AttentionSeverity.medium)
+                            .take(2)
+                            .toList();
+
+                        if (visible.isEmpty) return const SizedBox.shrink();
+
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                              top: AppDesignTokens.spacing8),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: AppDesignTokens.spacing4,
+                            children: visible
+                                .map((item) => _AttentionChip(
+                                      item: item,
+                                      trial: trial,
+                                      onTap: () =>
+                                          _handleTrialListAttentionTap(
+                                              context, item, trial),
+                                    ))
+                                .toList(),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -1726,5 +1796,86 @@ class _TrialQuickActions extends ConsumerWidget {
       ),
       (route) => route.isFirst,
     );
+  }
+}
+
+class _AttentionChip extends StatelessWidget {
+  const _AttentionChip({
+    required this.item,
+    this.trial,
+    this.onTap,
+  });
+  final AttentionItem item;
+  final Trial? trial;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    final Color dot;
+
+    switch (item.severity) {
+      case AttentionSeverity.high:
+        bg = AppDesignTokens.warningBg;
+        fg = AppDesignTokens.warningFg;
+        dot = AppDesignTokens.flagColor;
+        break;
+      case AttentionSeverity.medium:
+        bg = AppDesignTokens.partialBg;
+        fg = AppDesignTokens.partialFg;
+        dot = AppDesignTokens.flagColor;
+        break;
+      case AttentionSeverity.low:
+        bg = AppDesignTokens.emptyBadgeBg;
+        fg = AppDesignTokens.emptyBadgeFg;
+        dot = AppDesignTokens.secondaryText;
+        break;
+      case AttentionSeverity.info:
+        bg = AppDesignTokens.successBg;
+        fg = AppDesignTokens.successFg;
+        dot = AppDesignTokens.appliedColor;
+        break;
+    }
+
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing8,
+        vertical: AppDesignTokens.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            item.label,
+            style: AppDesignTokens.headingStyle(
+              fontSize: 11,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+          child: chip,
+        ),
+      );
+    }
+    return chip;
   }
 }
