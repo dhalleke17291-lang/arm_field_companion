@@ -266,6 +266,22 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       });
     }
 
+    final seedingEvent = ref
+        .watch(seedingEventForTrialProvider(widget.trial.id))
+        .valueOrNull;
+    final int? dasDays = (seedingEvent != null &&
+            seedingEvent.status == 'completed')
+        ? widget.session.startedAt
+            .difference(seedingEvent.seedingDate)
+            .inDays
+        : null;
+    final ratedPks = ref.watch(ratedPlotPksProvider(widget.session.id)).valueOrNull ?? <int>{};
+    final totalPlots = widget.allPlots.length;
+    final ratedCount = ratedPks.length;
+    final contextLine = dasDays != null
+        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots rated'
+        : '$ratedCount / $totalPlots plots rated';
+
     return Theme(
       data: Theme.of(context).copyWith(
         inputDecorationTheme: const InputDecorationTheme(
@@ -350,6 +366,17 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           child: Column(
             children: [
               _buildWalkOrderBar(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                child: Text(
+                  contextLine,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
+                  ),
+                ),
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
