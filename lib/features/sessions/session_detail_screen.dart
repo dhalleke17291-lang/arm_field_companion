@@ -94,6 +94,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       final sessionId = widget.session.id;
       ref.invalidate(sessionsForTrialProvider(trialId));
       ref.invalidate(deletedSessionsProvider);
+      ref.invalidate(deletedSessionsForTrialRecoveryProvider(trialId));
       ref.invalidate(openSessionProvider(trialId));
       ref.invalidate(sessionRatingsProvider(sessionId));
       ref.invalidate(sessionAssessmentsProvider(sessionId));
@@ -211,7 +212,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             itemBuilder: (context) => const [
               PopupMenuItem<String>(
                 value: 'delete_session',
-                child: Text('Delete session'),
+                child: Text('Move to Recovery'),
               ),
             ],
           ),
@@ -308,6 +309,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       _buildRateTab(
                           context, ref, trial, session, plots, assessments),
                     ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Move to Recovery'),
+                    onPressed: () => _confirmAndSoftDeleteSession(context),
                   ),
                 ),
               ],
@@ -561,13 +570,15 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         child: Text('No assessments in this session.'),
       );
     }
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.edit_note,
+    return SingleChildScrollView(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.edit_note,
                 size: 64, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 16),
             Text(
@@ -617,6 +628,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

@@ -1429,7 +1429,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         clipBehavior: Clip.antiAlias,
         elevation: 0,
         child: Tooltip(
-          message: 'Tap to view sessions • Use ⋮ menu to delete',
+          message: 'Tap to view sessions • Use ⋮ to delete or recover sessions',
           child: InkWell(
             key: const Key('trial_detail_sessions_bar'),
             onTap: () => setState(() {
@@ -2185,7 +2185,7 @@ class SessionsView extends ConsumerWidget {
               itemBuilder: (context) => const [
                 PopupMenuItem<String>(
                   value: 'delete_session',
-                  child: Text('Delete session'),
+                  child: Text('Move to Recovery'),
                 ),
               ],
             ),

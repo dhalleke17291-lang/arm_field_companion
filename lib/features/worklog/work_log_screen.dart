@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/plot_sort.dart';
 import '../../core/providers.dart';
+import '../../core/session_resume_store.dart';
+import '../../core/session_walk_order_store.dart';
+import '../../core/last_session_store.dart';
+import '../derived/derived_snapshot_provider.dart'
+    show derivedSnapshotForSessionProvider;
+import '../sessions/session_detail_screen.dart';
+import '../sessions/usecases/start_or_continue_rating_usecase.dart';
+import '../ratings/rating_screen.dart';
 
 /// Wall-clock date string for "today" in local time (yyyy-MM-dd).
 String workLogTodayDateLocal() {
@@ -63,7 +73,13 @@ String _formatDuration(DateTime start, DateTime end) {
 }
 
 class WorkLogScreen extends ConsumerStatefulWidget {
-  const WorkLogScreen({super.key});
+  const WorkLogScreen({
+    super.key,
+    this.onGoToTrials,
+  });
+
+  /// Called when user taps "Go to Trials" in the empty state. Switches shell to Home tab.
+  final VoidCallback? onGoToTrials;
 
   @override
   ConsumerState<WorkLogScreen> createState() => _WorkLogScreenState();
@@ -151,7 +167,13 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (sessions) {
-                if (sessions.isEmpty) return _buildEmptyState();
+                if (sessions.isEmpty) {
+                  return _buildEmptyState(widget.onGoToTrials);
+                }
+                final openSessions =
+                    sessions.where((s) => s.endedAt == null).toList();
+                final closedSessions =
+                    sessions.where((s) => s.endedAt != null).toList();
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(
                     AppDesignTokens.spacing16,
@@ -159,9 +181,28 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                     AppDesignTokens.spacing16,
                     AppDesignTokens.spacing24,
                   ),
-                  children: sessions
-                      .map((s) => _buildSessionCard(context, s))
-                      .toList(),
+                  children: [
+                    if (openSessions.isNotEmpty) ...[
+                      _sectionHeader('Continue Working'),
+                      ...openSessions.map(
+                        (s) => _buildSessionCard(
+                          context,
+                          s,
+                          isResumable: true,
+                        ),
+                      ),
+                    ],
+                    if (closedSessions.isNotEmpty) ...[
+                      _sectionHeader('Recent Activity'),
+                      ...closedSessions.map(
+                        (s) => _buildSessionCard(
+                          context,
+                          s,
+                          isResumable: false,
+                        ),
+                      ),
+                    ],
+                  ],
                 );
               },
             ),
@@ -224,37 +265,173 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.event_note_outlined,
-            size: 64,
-            color: AppDesignTokens.secondaryText,
-          ),
-          SizedBox(height: AppDesignTokens.spacing16),
-          Text(
-            'No activity on this day',
-            style: TextStyle(
-              fontSize: 15,
+  Widget _buildEmptyState(VoidCallback? onGoToTrials) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing24,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_note_outlined,
+              size: 64,
               color: AppDesignTokens.secondaryText,
             ),
-          ),
-        ],
+            const SizedBox(height: AppDesignTokens.spacing16),
+            Text(
+              'No activity yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            Text(
+              'Start a trial or record your first session to see activity here',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            if (onGoToTrials != null) ...[
+              const SizedBox(height: AppDesignTokens.spacing24),
+              FilledButton.icon(
+                onPressed: onGoToTrials,
+                icon: const Icon(Icons.folder_outlined, size: 20),
+                label: const Text('Go to Trials'),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSessionCard(BuildContext context, Session session) {
+  Widget _sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        bottom: AppDesignTokens.spacing8,
+        top: AppDesignTokens.spacing8,
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: AppDesignTokens.secondaryText,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onSessionCardTap(
+    BuildContext context,
+    Session session,
+    bool isResumable,
+  ) async {
+    final trial = ref.read(trialProvider(session.trialId)).valueOrNull;
+    if (trial == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Loading trial…')),
+        );
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    if (isResumable) {
+      await _navigateToRatingForSession(context, trial, session);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SessionDetailScreen(trial: trial, session: session),
+        ),
+      );
+    }
+  }
+
+  Future<void> _navigateToRatingForSession(
+    BuildContext context,
+    Trial trial,
+    Session session,
+  ) async {
+    final useCase = ref.read(startOrContinueRatingUseCaseProvider);
+    final prefs = await SharedPreferences.getInstance();
+    final store = SessionWalkOrderStore(prefs);
+    final walkOrder = store.getMode(session.id);
+    final customIds =
+        walkOrder == WalkOrderMode.custom ? store.getCustomOrder(session.id) : null;
+    final result = await useCase.execute(StartOrContinueRatingInput(
+      sessionId: session.id,
+      walkOrderMode: walkOrder,
+      customPlotIds: customIds,
+    ));
+    if (!context.mounted) return;
+    if (!result.success ||
+        result.trial == null ||
+        result.session == null ||
+        result.allPlotsSerpentine == null ||
+        result.assessments == null ||
+        result.startPlotIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ??
+              'Unable to continue session for this trial.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final resolvedTrial = result.trial!;
+    final resolvedSession = result.session!;
+    final plots = result.allPlotsSerpentine!;
+    final assessments = result.assessments!;
+    int startIndex = result.startPlotIndex!;
+    int? initialAssessmentIndex;
+    final pos =
+        SessionResumeStore(prefs).getPosition(resolvedSession.id);
+    if (pos != null && pos.$1 >= 0 && pos.$1 < plots.length) {
+      startIndex = pos.$1;
+      initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
+    }
+    LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
+    if (!context.mounted) return;
+    // Use push (not pushAndRemoveUntil) to avoid disposing MainShell/Work Log
+    // while ref.watch dependents are still active; pop returns to Work Log.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RatingScreen(
+          trial: resolvedTrial,
+          session: resolvedSession,
+          plot: plots[startIndex],
+          assessments: assessments,
+          allPlots: plots,
+          currentPlotIndex: startIndex,
+          initialAssessmentIndex: initialAssessmentIndex,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionCard(
+    BuildContext context,
+    Session session, {
+    required bool isResumable,
+  }) {
     final trialAsync = ref.watch(trialProvider(session.trialId));
     final ratingCountAsync =
         ref.watch(ratingCountForSessionProvider(session.id));
     final flagCountAsync = ref.watch(flagCountForSessionProvider(session.id));
     final photoCountAsync = ref.watch(photoCountForSessionProvider(session.id));
 
-    final trialName = trialAsync.valueOrNull?.name ?? 'Trial';
+    final trial = trialAsync.valueOrNull;
+    final trialName = trial?.name ?? 'Trial';
     final isOpen = session.endedAt == null;
     final startStr = _formatTime(session.startedAt);
     final endStr =
@@ -263,16 +440,24 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
         ? ' (${_formatDuration(session.startedAt, session.endedAt!)})'
         : '';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
-      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-      decoration: BoxDecoration(
-        color: AppDesignTokens.cardSurface,
+    final isCustom =
+        trial?.workspaceType.toLowerCase() == 'standalone';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _onSessionCardTap(context, session, isResumable),
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-        border: Border.all(color: AppDesignTokens.borderCrisp),
-        boxShadow: AppDesignTokens.cardShadow,
-      ),
-      child: Column(
+        child: Container(
+          margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          decoration: BoxDecoration(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+            boxShadow: AppDesignTokens.cardShadow,
+          ),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -301,7 +486,34 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                   ],
                 ),
               ),
-              _buildOpenClosedBadge(isOpen),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (trial != null) _buildWorkspaceBadge(isCustom),
+                  const SizedBox(width: AppDesignTokens.spacing8),
+                  _buildOpenClosedBadge(isOpen),
+                  const SizedBox(width: AppDesignTokens.spacing4),
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 20,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                    tooltip: 'More actions',
+                    onSelected: (value) {
+                      if (value == 'delete_session') {
+                        _confirmAndSoftDeleteSession(context, session);
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem<String>(
+                        value: 'delete_session',
+                        child: Text('Move to Recovery'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: AppDesignTokens.spacing12),
@@ -319,6 +531,95 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
             photoCount: photoCountAsync.valueOrNull ?? 0,
           ),
         ],
+      ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmAndSoftDeleteSession(
+    BuildContext context,
+    Session session,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete session'),
+        content: const Text(
+          'This session moves to Recovery. Ratings in this session move to Recovery too. '
+          'The trial and its plots are unchanged. You can restore this session later from Recovery.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete session'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      final userId = await ref.read(currentUserIdProvider.future);
+      await ref.read(sessionRepositoryProvider).softDeleteSession(
+            session.id,
+            deletedBy: user?.displayName,
+            deletedByUserId: userId,
+          );
+      if (!context.mounted) return;
+      final trialId = session.trialId;
+      ref.invalidate(workLogSessionsProvider(_selectedDateLocal));
+      ref.invalidate(sessionsForTrialProvider(trialId));
+      ref.invalidate(deletedSessionsProvider);
+      ref.invalidate(deletedSessionsForTrialRecoveryProvider(trialId));
+      ref.invalidate(openSessionProvider(trialId));
+      ref.invalidate(sessionRatingsProvider(session.id));
+      ref.invalidate(sessionAssessmentsProvider(session.id));
+      ref.invalidate(ratedPlotPksProvider(session.id));
+      ref.invalidate(derivedSnapshotForSessionProvider(session.id));
+      ref.invalidate(lastSessionContextProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Session moved to Recovery')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Could not delete session'),
+          content: SelectableText('$e'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _buildWorkspaceBadge(bool isCustom) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing8,
+        vertical: AppDesignTokens.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.primaryTint.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        isCustom ? 'Custom' : 'Protocol',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppDesignTokens.primary,
+        ),
       ),
     );
   }
