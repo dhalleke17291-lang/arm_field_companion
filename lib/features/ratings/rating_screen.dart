@@ -367,7 +367,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             children: [
               _buildWalkOrderBar(context),
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                padding: const EdgeInsets.fromLTRB(
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing8,
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing4,
+                ),
                 child: Text(
                   contextLine,
                   style: TextStyle(
@@ -922,7 +927,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       if (widget.plot.rep != null) 'Rep ${widget.plot.rep}',
     ];
     final secondaryLine = secondaryParts.join(' · ');
-    final tertiaryLine = 'Session ${widget.session.id}';
+    final tertiaryLine = widget.session.name.trim().isNotEmpty
+        ? widget.session.name
+        : 'Session';
     final progressText =
         '${widget.currentPlotIndex + 1} of ${widget.allPlots.length}';
     final showFilteredChip = widget.isFilteredMode &&
