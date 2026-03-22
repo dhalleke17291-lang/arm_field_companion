@@ -34,6 +34,10 @@ import 'tabs/timeline_tab.dart';
 import 'trial_setup_screen.dart';
 import '../diagnostics/edited_items_screen.dart';
 import '../recovery/recovery_screen.dart';
+import '../derived/derived_snapshot_provider.dart'
+    show derivedSnapshotForSessionProvider;
+import '../derived/trial_attention_provider.dart';
+import '../derived/trial_attention_service.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -779,6 +783,50 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     return null;
   }
 
+  void _handleAttentionTap(AttentionItem item) {
+    switch (item.type) {
+      case AttentionType.openSession:
+        ref.read(sessionsForTrialProvider(widget.trial.id).future).then(
+            (sessions) {
+          final open =
+              sessions.where(isSessionOpenForFieldWork).toList();
+          if (open.isNotEmpty && mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => PlotQueueScreen(
+                  trial: widget.trial,
+                  session: open.first,
+                ),
+              ),
+            );
+          }
+        });
+        break;
+      case AttentionType.noSessionsYet:
+        Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => CreateSessionScreen(trial: widget.trial),
+          ),
+        );
+        break;
+      case AttentionType.seedingMissing:
+      case AttentionType.seedingPending:
+        setState(() => _selectedTabIndex = 1);
+        break;
+      case AttentionType.applicationsPending:
+        setState(() => _selectedTabIndex = 2);
+        break;
+      case AttentionType.plotsUnassigned:
+      case AttentionType.setupIncomplete:
+      case AttentionType.plotsPartiallyRated:
+      case AttentionType.dataCollectionComplete:
+        setState(() => _selectedTabIndex = 0);
+        break;
+    }
+  }
+
   Widget _buildUnifiedScrollBody(
       BuildContext context, WidgetRef ref, Trial currentTrial) {
     final effectiveStatus =
@@ -904,6 +952,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
           _buildTrialStatusBar(context, ref, currentTrial,
               displayStatus: effectiveStatus),
+          _TrialAttentionPanel(
+            trialId: currentTrial.id,
+            onAttentionTap: _handleAttentionTap,
+          ),
           const SizedBox(height: AppDesignTokens.spacing8),
           Builder(
             builder: (_) {
@@ -1101,6 +1153,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ),
                 _buildTrialStatusBar(context, ref, currentTrial,
                     displayStatus: effectiveStatus),
+                _TrialAttentionPanel(
+                  trialId: currentTrial.id,
+                  onAttentionTap: _handleAttentionTap,
+                ),
                 const SizedBox(height: AppDesignTokens.spacing8),
                 SizedBox(
                   height: 110,
@@ -1372,14 +1428,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
         clipBehavior: Clip.antiAlias,
         elevation: 0,
-        child: InkWell(
-          key: const Key('trial_detail_sessions_bar'),
-          onTap: () => setState(() {
-            _previousTabIndex = _selectedTabIndex;
-            _selectedTabIndex = _sessionsIndex;
-          }),
-          borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
-          child: Container(
+        child: Tooltip(
+          message: 'Tap to view sessions • Use ⋮ menu to delete',
+          child: InkWell(
+            key: const Key('trial_detail_sessions_bar'),
+            onTap: () => setState(() {
+              _previousTabIndex = _selectedTabIndex;
+              _selectedTabIndex = _sessionsIndex;
+            }),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+            child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppDesignTokens.spacing12,
               vertical: 8,
@@ -1437,9 +1495,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     : active.isEmpty
                         ? (sessions.length == 1 ? 'Open' : '${sessions.length} sessions')
                         : (active.length == 1 ? 'Open' : '${active.length} active');
+                final statusLabel = sessions.isEmpty
+                    ? 'Not started'
+                    : active.isNotEmpty
+                        ? 'Active'
+                        : 'Closed';
                 return _buildSessionStripRow(
                   context,
-                  statusLabel: isActive ? 'Active' : 'Closed',
+                  statusLabel: statusLabel,
                   sessionLabel: primary != null
                       ? _sessionDisplayLabel(primary)
                       : 'Sessions',
@@ -1453,6 +1516,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -2106,10 +2170,95 @@ class SessionsView extends ConsumerWidget {
               const SizedBox(width: AppDesignTokens.spacing8),
             ],
             _buildSessionTrailing(isOpen, needsAttention),
+            PopupMenuButton<String>(
+              icon: const Icon(
+                Icons.more_vert,
+                size: 20,
+                color: AppDesignTokens.secondaryText,
+              ),
+              tooltip: 'More actions',
+              onSelected: (value) {
+                if (value == 'delete_session') {
+                  _confirmAndSoftDeleteSession(context, ref, session);
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem<String>(
+                  value: 'delete_session',
+                  child: Text('Delete session'),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmAndSoftDeleteSession(
+    BuildContext context,
+    WidgetRef ref,
+    Session session,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete session'),
+        content: const Text(
+          'This session moves to Recovery. Ratings in this session move to Recovery too. '
+          'The trial and its plots are unchanged. You can restore this session later from Recovery.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete session'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      final userId = await ref.read(currentUserIdProvider.future);
+      await ref.read(sessionRepositoryProvider).softDeleteSession(
+            session.id,
+            deletedBy: user?.displayName,
+            deletedByUserId: userId,
+          );
+      if (!context.mounted) return;
+      final trialId = trial.id;
+      ref.invalidate(sessionsForTrialProvider(trialId));
+      ref.invalidate(deletedSessionsProvider);
+      ref.invalidate(deletedSessionsForTrialRecoveryProvider(trialId));
+      ref.invalidate(openSessionProvider(trialId));
+      ref.invalidate(sessionRatingsProvider(session.id));
+      ref.invalidate(sessionAssessmentsProvider(session.id));
+      ref.invalidate(ratedPlotPksProvider(session.id));
+      ref.invalidate(derivedSnapshotForSessionProvider(session.id));
+      ref.invalidate(lastSessionContextProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Session moved to Recovery')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Could not delete session'),
+          content: SelectableText('$e'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   /// Elegant trailing: Open pill, or Needs attention pill, or Closed.
@@ -2827,6 +2976,180 @@ class _ExportFormatSheetState extends ConsumerState<_ExportFormatSheet> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TrialAttentionPanel extends ConsumerWidget {
+  const _TrialAttentionPanel({
+    required this.trialId,
+    required this.onAttentionTap,
+  });
+
+  final int trialId;
+  final void Function(AttentionItem) onAttentionTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final attentionAsync = ref.watch(trialAttentionProvider(trialId));
+
+    return attentionAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+
+        final high = items
+            .where((i) => i.severity == AttentionSeverity.high)
+            .toList();
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing12,
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing4,
+          ),
+          decoration: BoxDecoration(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(
+              color: high.isNotEmpty
+                  ? AppDesignTokens.warningBorder
+                  : AppDesignTokens.borderCrisp,
+            ),
+            boxShadow: AppDesignTokens.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing12,
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing8,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: high.isNotEmpty
+                            ? AppDesignTokens.flagColor
+                            : AppDesignTokens.appliedColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: AppDesignTokens.spacing8),
+                    Text(
+                      high.isNotEmpty
+                          ? 'Needs attention'
+                          : 'Trial status',
+                      style: AppDesignTokens.headingStyle(
+                        fontSize: 13,
+                        color: high.isNotEmpty
+                            ? AppDesignTokens.warningFg
+                            : AppDesignTokens.successFg,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${items.length} item${items.length == 1 ? '' : 's'}',
+                      style: AppDesignTokens.bodyStyle(
+                        fontSize: 11,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppDesignTokens.divider,
+              ),
+              ...items.map((item) => _AttentionRow(
+                    item: item,
+                    onTap: () => onAttentionTap(item),
+                  )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AttentionRow extends StatelessWidget {
+  const _AttentionRow({
+    required this.item,
+    required this.onTap,
+  });
+
+  final AttentionItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color dot;
+    final Color label;
+
+    switch (item.severity) {
+      case AttentionSeverity.high:
+        dot = AppDesignTokens.flagColor;
+        label = AppDesignTokens.warningFg;
+        break;
+      case AttentionSeverity.medium:
+        dot = AppDesignTokens.flagColor;
+        label = AppDesignTokens.partialFg;
+        break;
+      case AttentionSeverity.low:
+        dot = AppDesignTokens.secondaryText;
+        label = AppDesignTokens.secondaryText;
+        break;
+      case AttentionSeverity.info:
+        dot = AppDesignTokens.appliedColor;
+        label = AppDesignTokens.successFg;
+        break;
+    }
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: AppDesignTokens.spacing8,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: dot,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: AppDesignTokens.spacing12),
+            Expanded(
+              child: Text(
+                item.label,
+                style: AppDesignTokens.bodyStyle(
+                  fontSize: 13,
+                  color: label,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: AppDesignTokens.iconSubtle,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
