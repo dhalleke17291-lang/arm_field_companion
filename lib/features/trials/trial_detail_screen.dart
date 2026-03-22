@@ -88,7 +88,14 @@ int _sanitizeTabIndexForTrial(int index, Trial trial) {
 class TrialDetailScreen extends ConsumerStatefulWidget {
   final Trial trial;
 
-  const TrialDetailScreen({super.key, required this.trial});
+  /// Optional tab to select on mount. Sanitized for trial's visible tabs.
+  final int? initialTabIndex;
+
+  const TrialDetailScreen({
+    super.key,
+    required this.trial,
+    this.initialTabIndex,
+  });
 
   @override
   ConsumerState<TrialDetailScreen> createState() => _TrialDetailScreenState();
@@ -113,6 +120,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialTabIndex != null) {
+      _selectedTabIndex = _sanitizeTabIndexForTrial(
+        widget.initialTabIndex!,
+        widget.trial,
+      );
+    }
     _hubScrollController = ScrollController();
     _hubScrollController.addListener(_onHubScroll);
     _scheduleHubHintOnce();

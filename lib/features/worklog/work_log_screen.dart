@@ -11,7 +11,10 @@ import '../../core/session_walk_order_store.dart';
 import '../../core/last_session_store.dart';
 import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
+import '../derived/trial_attention_provider.dart';
+import '../derived/trial_attention_service.dart';
 import '../sessions/session_detail_screen.dart';
+import '../trials/trial_detail_screen.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../ratings/rating_screen.dart';
 
@@ -429,6 +432,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
         ref.watch(ratingCountForSessionProvider(session.id));
     final flagCountAsync = ref.watch(flagCountForSessionProvider(session.id));
     final photoCountAsync = ref.watch(photoCountForSessionProvider(session.id));
+    final attentionAsync = ref.watch(trialAttentionProvider(session.trialId));
 
     final trial = trialAsync.valueOrNull;
     final trialName = trial?.name ?? 'Trial';
@@ -530,8 +534,78 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
             flagCount: flagCountAsync.valueOrNull ?? 0,
             photoCount: photoCountAsync.valueOrNull ?? 0,
           ),
+          _buildAttentionChips(
+            attentionAsync: attentionAsync,
+            trial: trial,
+          ),
         ],
       ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttentionChips({
+    required AsyncValue<List<AttentionItem>> attentionAsync,
+    required Trial? trial,
+  }) {
+    if (trial == null) return const SizedBox.shrink();
+    return attentionAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (items) {
+        final filtered = items
+            .where((i) =>
+                i.type != AttentionType.openSession &&
+                i.type != AttentionType.noSessionsYet &&
+                (i.severity == AttentionSeverity.high ||
+                    i.severity == AttentionSeverity.medium))
+            .take(2)
+            .toList();
+        if (filtered.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(
+            top: AppDesignTokens.spacing8,
+          ),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: AppDesignTokens.spacing4,
+            children: filtered
+                .map((item) => _WorkLogAttentionChip(
+                      item: item,
+                      trial: trial,
+                      onTap: () => _onAttentionChipTap(context, item, trial),
+                    ))
+                .toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _onAttentionChipTap(
+    BuildContext context,
+    AttentionItem item,
+    Trial trial,
+  ) {
+    final tabIndex = switch (item.type) {
+      AttentionType.seedingMissing => 1,
+      AttentionType.seedingPending => 1,
+      AttentionType.applicationsPending => 2,
+      AttentionType.plotsUnassigned => 0,
+      AttentionType.setupIncomplete => 0,
+      AttentionType.plotsPartiallyRated => 0,
+      AttentionType.dataCollectionComplete => 0,
+      AttentionType.openSession => null,
+      AttentionType.noSessionsYet => null,
+    };
+    if (tabIndex == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => TrialDetailScreen(
+          trial: trial,
+          initialTabIndex: tabIndex,
         ),
       ),
     );
@@ -702,6 +776,84 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: fg,
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkLogAttentionChip extends StatelessWidget {
+  const _WorkLogAttentionChip({
+    required this.item,
+    required this.trial,
+    required this.onTap,
+  });
+
+  final AttentionItem item;
+  final Trial trial;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    final Color dot;
+
+    switch (item.severity) {
+      case AttentionSeverity.high:
+        bg = AppDesignTokens.warningBg;
+        fg = AppDesignTokens.warningFg;
+        dot = AppDesignTokens.flagColor;
+        break;
+      case AttentionSeverity.medium:
+        bg = AppDesignTokens.partialBg;
+        fg = AppDesignTokens.partialFg;
+        dot = AppDesignTokens.flagColor;
+        break;
+      case AttentionSeverity.low:
+        bg = AppDesignTokens.emptyBadgeBg;
+        fg = AppDesignTokens.emptyBadgeFg;
+        dot = AppDesignTokens.secondaryText;
+        break;
+      case AttentionSeverity.info:
+        bg = AppDesignTokens.successBg;
+        fg = AppDesignTokens.successFg;
+        dot = AppDesignTokens.appliedColor;
+        break;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDesignTokens.spacing8,
+            vertical: AppDesignTokens.spacing4,
+          ),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                item.label,
+                style: AppDesignTokens.headingStyle(
+                  fontSize: 11,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
