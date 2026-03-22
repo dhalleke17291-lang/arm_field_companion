@@ -864,7 +864,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing12,
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing16,
+                ),
                 child: Row(
                   children: [
                     IconButton(
@@ -888,41 +893,48 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              if (currentTrial.crop != null)
+                          if (currentTrial.crop != null ||
+                              effectiveStatus.isNotEmpty)
+                            Row(
+                              children: [
                                 Expanded(
                                   child: Text(
-                                    currentTrial.crop!,
+                                    currentTrial.crop ?? '',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.white.withValues(alpha: 0.92),
+                                      color: Colors.white
+                                          .withValues(alpha: 0.92),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                    if (effectiveStatus.isNotEmpty)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    labelForTrialStatus(effectiveStatus),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      letterSpacing: 0.2,
+                                if (effectiveStatus.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white
+                                          .withValues(alpha: 0.15),
+                                      borderRadius:
+                                          BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      labelForTrialStatus(effectiveStatus),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.9),
+                                        letterSpacing: 0.2,
+                                      ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
+                                ],
+                              ],
+                            ),
                         ],
                       ),
                     ),
@@ -1057,7 +1069,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppDesignTokens.spacing16,
+                        AppDesignTokens.spacing12,
+                        AppDesignTokens.spacing16,
+                        AppDesignTokens.spacing16,
+                      ),
                       child: Row(
                         children: [
                           IconButton(
@@ -1083,12 +1100,13 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    if (currentTrial.crop != null)
+                                if (currentTrial.crop != null ||
+                                    effectiveStatus.isNotEmpty)
+                                  Row(
+                                    children: [
                                       Expanded(
                                         child: Text(
-                                          currentTrial.crop!,
+                                          currentTrial.crop ?? '',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
@@ -1099,30 +1117,34 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                    if (effectiveStatus.isNotEmpty)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.15),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          labelForTrialStatus(
-                                              effectiveStatus),
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w500,
+                                      if (effectiveStatus.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets
+                                              .symmetric(
+                                                  horizontal: 6,
+                                                  vertical: 2),
+                                          decoration: BoxDecoration(
                                             color: Colors.white
-                                                .withValues(alpha: 0.9),
-                                            letterSpacing: 0.2,
+                                                .withValues(alpha: 0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            labelForTrialStatus(
+                                                effectiveStatus),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.9),
+                                              letterSpacing: 0.2,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                  ],
-                                ),
+                                      ],
+                                    ],
+                                  ),
                               ],
                             ),
                           ),
@@ -3057,9 +3079,7 @@ class _TrialAttentionPanel extends ConsumerWidget {
                     ),
                     const SizedBox(width: AppDesignTokens.spacing8),
                     Text(
-                      high.isNotEmpty
-                          ? 'Needs attention'
-                          : 'Trial status',
+                      'Needs attention',
                       style: AppDesignTokens.headingStyle(
                         fontSize: 13,
                         color: high.isNotEmpty
@@ -3067,14 +3087,25 @@ class _TrialAttentionPanel extends ConsumerWidget {
                             : AppDesignTokens.successFg,
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${items.length} item${items.length == 1 ? '' : 's'}',
-                      style: AppDesignTokens.bodyStyle(
-                        fontSize: 11,
-                        color: AppDesignTokens.secondaryText,
+                    if (items.length > 2) ...[
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppDesignTokens.emptyBadgeBg,
+                          borderRadius:
+                              BorderRadius.circular(AppDesignTokens.radiusChip),
+                        ),
+                        child: Text(
+                          '${items.length}',
+                          style: AppDesignTokens.bodyStyle(
+                            fontSize: 11,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
