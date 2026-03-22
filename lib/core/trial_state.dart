@@ -82,14 +82,31 @@ String getProtocolLockMessage(String? status) {
 }
 
 /// True when plot assignments must not be edited (protocol lock or trial has session data).
-bool isAssignmentsLocked(String? status, bool hasSessions) {
-  return isProtocolLocked(status) || hasSessions;
+/// [hasSessionData] = true only when a session has actual data (ratings, notes, photos, flags).
+bool isAssignmentsLocked(String? status, bool hasSessionData) {
+  return isProtocolLocked(status) || hasSessionData;
+}
+
+/// Label for assignment lock chip in Plots UI.
+/// Distinguishes protocol lock ("locked") from session-data fixation ("fixed").
+/// Use this (not getProtocolLockLabel) when the chip reflects assignment state.
+String getAssignmentsLockLabel(String? status, bool hasSessionData) {
+  if (!isAssignmentsLocked(status, hasSessionData)) {
+    return 'Editable';
+  }
+  if (isProtocolLocked(status)) {
+    return 'Assignments locked';
+  }
+  if (hasSessionData) {
+    return 'Assignments fixed';
+  }
+  return 'Assignments locked';
 }
 
 /// Message when an assignment action is blocked.
-String getAssignmentsLockMessage(String? status, bool hasSessions) {
+String getAssignmentsLockMessage(String? status, bool hasSessionData) {
   if (isProtocolLocked(status)) return getProtocolLockMessage(status);
-  if (hasSessions) {
+  if (hasSessionData) {
     return 'Assignments are fixed because this trial has session data.';
   }
   return '';
