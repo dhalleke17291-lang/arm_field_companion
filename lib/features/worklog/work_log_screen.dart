@@ -177,34 +177,49 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                     sessions.where((s) => s.endedAt == null).toList();
                 final closedSessions =
                     sessions.where((s) => s.endedAt != null).toList();
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppDesignTokens.spacing16,
-                    AppDesignTokens.spacing12,
-                    AppDesignTokens.spacing16,
-                    AppDesignTokens.spacing24,
-                  ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (openSessions.isNotEmpty) ...[
-                      _sectionHeader('Continue Working'),
-                      ...openSessions.map(
-                        (s) => _buildSessionCard(
-                          context,
-                          s,
-                          isResumable: true,
-                        ),
+                    _TopAttentionStrip(
+                      trialIds: _orderedUniqueTrialIds(
+                        openSessions,
+                        closedSessions,
                       ),
-                    ],
-                    if (closedSessions.isNotEmpty) ...[
-                      _sectionHeader('Recent Activity'),
-                      ...closedSessions.map(
-                        (s) => _buildSessionCard(
-                          context,
-                          s,
-                          isResumable: false,
+                      onAttentionTap: (item, trial) =>
+                          _onAttentionChipTap(context, item, trial),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppDesignTokens.spacing16,
+                          AppDesignTokens.spacing12,
+                          AppDesignTokens.spacing16,
+                          AppDesignTokens.spacing24,
                         ),
+                        children: [
+                          if (openSessions.isNotEmpty) ...[
+                            _sectionHeader('Continue Working'),
+                            ...openSessions.map(
+                              (s) => _buildSessionCard(
+                                context,
+                                s,
+                                isResumable: true,
+                              ),
+                            ),
+                          ],
+                          if (closedSessions.isNotEmpty) ...[
+                            _sectionHeader('Recent Activity'),
+                            ...closedSessions.map(
+                              (s) => _buildSessionCard(
+                                context,
+                                s,
+                                isResumable: false,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
+                    ),
                   ],
                 );
               },
@@ -213,6 +228,20 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
         ],
       ),
     );
+  }
+
+  /// Ordered unique trial IDs: open sessions first, then closed. Preserves display order.
+  List<int> _orderedUniqueTrialIds(
+    List<Session> openSessions,
+    List<Session> closedSessions,
+  ) {
+    final ordered = [...openSessions, ...closedSessions];
+    final seen = <int>{};
+    final result = <int>[];
+    for (final s in ordered) {
+      if (seen.add(s.trialId)) result.add(s.trialId);
+    }
+    return result;
   }
 
   Widget _buildDateChips() {
@@ -778,6 +807,92 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
           color: fg,
         ),
       ),
+    );
+  }
+}
+
+/// Compact top strip: cross-trial summary of highest-priority attention items.
+/// Shows at most 3 items, one per trial, ranked by severity then trial order.
+class _TopAttentionStrip extends ConsumerWidget {
+  const _TopAttentionStrip({
+    required this.trialIds,
+    required this.onAttentionTap,
+  });
+
+  final List<int> trialIds;
+  final void Function(AttentionItem item, Trial trial) onAttentionTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stripItems = <({AttentionItem item, int trialId})>[];
+
+    for (final trialId in trialIds) {
+      final async = ref.watch(trialAttentionProvider(trialId));
+      final items = async.valueOrNull;
+      if (items == null) continue;
+      final filtered = items.where((i) =>
+          i.type != AttentionType.openSession &&
+          i.type != AttentionType.noSessionsYet &&
+          (i.severity == AttentionSeverity.high ||
+              i.severity == AttentionSeverity.medium));
+      if (filtered.isNotEmpty) {
+        stripItems.add((item: filtered.first, trialId: trialId));
+      }
+    }
+
+    stripItems.sort((a, b) {
+      final severityCompare =
+          a.item.severity.index.compareTo(b.item.severity.index);
+      if (severityCompare != 0) return severityCompare;
+      final indexA = trialIds.indexOf(a.trialId);
+      final indexB = trialIds.indexOf(b.trialId);
+      return indexA.compareTo(indexB);
+    });
+
+    final displayItems = stripItems.take(3).toList();
+    if (displayItems.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        0,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing8,
+      ),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: AppDesignTokens.spacing4,
+        children: displayItems
+            .map((e) => _TopAttentionStripChip(
+                  item: e.item,
+                  trialId: e.trialId,
+                  onAttentionTap: onAttentionTap,
+                ))
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _TopAttentionStripChip extends ConsumerWidget {
+  const _TopAttentionStripChip({
+    required this.item,
+    required this.trialId,
+    required this.onAttentionTap,
+  });
+
+  final AttentionItem item;
+  final int trialId;
+  final void Function(AttentionItem item, Trial trial) onAttentionTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trial = ref.watch(trialProvider(trialId)).valueOrNull;
+    if (trial == null) return const SizedBox.shrink();
+    return _WorkLogAttentionChip(
+      item: item,
+      trial: trial,
+      onTap: () => onAttentionTap(item, trial),
     );
   }
 }
