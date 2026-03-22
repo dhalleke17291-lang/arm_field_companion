@@ -421,6 +421,15 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                             flaggedPlotIdsForSessionProvider(widget.session.id))
                         .valueOrNull ??
                     <int>{};
+                final seedingEvent = ref
+                    .watch(seedingEventForTrialProvider(widget.trial.id))
+                    .valueOrNull;
+                final int? dasDays = (seedingEvent != null &&
+                        seedingEvent.status == 'completed')
+                    ? widget.session.startedAt
+                        .difference(seedingEvent.seedingDate)
+                        .inDays
+                    : null;
                 return _buildQueue(
                     context,
                     plots,
@@ -430,7 +439,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     treatmentById,
                     plotIdToTreatmentId,
                     flaggedIds,
-                    plotPksWithCorrections);
+                    plotPksWithCorrections,
+                    dasDays: dasDays);
               },
             ),
           ),
@@ -448,8 +458,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Map<int, Treatment> treatmentById,
     Map<int, int?> plotIdToTreatmentId,
     Set<int> flaggedIds,
-    Set<int> plotPksWithCorrections,
-  ) {
+    Set<int> plotPksWithCorrections, {
+    int? dasDays,
+  }) {
     final ratingsByPlot = <int, List<RatingRecord>>{};
     for (final r in ratings) {
       ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
@@ -479,15 +490,28 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
 
     final totalPlots = plots.length;
     final ratedCount = ratedPks.length;
-
     final scheme = Theme.of(context).colorScheme;
     final hasFieldRow = plots.any((p) => p.fieldRow != null);
     const serpentineGreen = Color(0xFF2D5A40);
+    final contextLine = dasDays != null
+        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots rated'
+        : '$ratedCount / $totalPlots plots rated';
 
     return Column(
       children: [
         const _PlotQueueDockBar(),
         const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+          child: Text(
+            contextLine,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface.withValues(alpha: 0.75),
+            ),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
           child: Text(
