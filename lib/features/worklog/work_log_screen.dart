@@ -198,7 +198,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                         ),
                         children: [
                           if (openSessions.isNotEmpty) ...[
-                            _sectionHeader('Continue Working'),
+                            _sectionHeader('Continue Working', isFirst: true),
                             ...openSessions.map(
                               (s) => _buildSessionCard(
                                 context,
@@ -208,7 +208,10 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                             ),
                           ],
                           if (closedSessions.isNotEmpty) ...[
-                            _sectionHeader('Recent Activity'),
+                            _sectionHeader(
+                              'Recent Activity',
+                              isFirst: openSessions.isEmpty,
+                            ),
                             ...closedSessions.map(
                               (s) => _buildSessionCard(
                                 context,
@@ -284,7 +287,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: selected
-                          ? Colors.white
+                          ? AppDesignTokens.onPrimary
                           : AppDesignTokens.secondaryText,
                     ),
                   ),
@@ -343,11 +346,13 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     );
   }
 
-  Widget _sectionHeader(String title) {
+  Widget _sectionHeader(String title, {bool isFirst = false}) {
     return Padding(
-      padding: const EdgeInsets.only(
+      padding: EdgeInsets.only(
         bottom: AppDesignTokens.spacing8,
-        top: AppDesignTokens.spacing8,
+        top: isFirst
+            ? AppDesignTokens.spacing12
+            : AppDesignTokens.spacing8,
       ),
       child: Text(
         title,
@@ -855,7 +860,7 @@ class _TopAttentionStrip extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDesignTokens.spacing16,
-        0,
+        AppDesignTokens.spacing8,
         AppDesignTokens.spacing16,
         AppDesignTokens.spacing8,
       ),

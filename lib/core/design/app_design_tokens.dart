@@ -11,6 +11,9 @@ class AppDesignTokens {
   /// Primary brand green.
   static const Color primary = Color(0xFF2D5A40);
 
+  /// Text/icon on primary background (e.g. app bar, selected chips).
+  static const Color onPrimary = Color(0xFFFFFFFF);
+
   /// Background surface (warm off-white).
   static const Color backgroundSurface = Color(0xFFF8F6F2);
 
@@ -111,11 +114,24 @@ class AppDesignTokens {
   /// Primary tint background (icon containers, hover).
   static const Color primaryTint = Color(0x1A2D5A40);
 
+  /// Soft blue accent for protocol/structured elements.
+  static const Color softBlueAccent = Color(0xFFE8F0F5);
+
+  /// Soft warm accent for custom/flexible elements.
+  static const Color softWarmAccent = Color(0xFFF5F2ED);
+
+  /// Glass surface — semi-transparent white for glassmorphism.
+  static const Color glassSurface = Color(0xE6FFFFFF);
+
+  /// Glass surface border — subtle edge for glass panels.
+  static const Color glassBorder = Color(0x1A000000);
+
   // ——— Spacing ———
   static const double spacing4 = 4;
   static const double spacing8 = 8;
   static const double spacing12 = 12;
   static const double spacing16 = 16;
+  static const double spacing20 = 20;
   static const double spacing24 = 24;
   static const double spacing32 = 32;
 
@@ -134,6 +150,9 @@ class AppDesignTokens {
 
   /// Large surfaces (sheets, dialogs).
   static const double radiusLarge = 16;
+
+  /// Premium selection tiles (Trials Hub, etc.).
+  static const double radiusTile = 20;
 
   /// Crisp border width for cards and surfaces.
   static const double borderWidthCrisp = 1.0;
@@ -166,6 +185,22 @@ class AppDesignTokens {
           blurRadius: 12,
           offset: const Offset(0, 3),
           spreadRadius: -2,
+        ),
+      ];
+
+  /// Premium tile shadow: soft, elevated, tactile.
+  static List<BoxShadow> get tileShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.03),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+          spreadRadius: 0,
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 6),
+          spreadRadius: -4,
         ),
       ];
 
