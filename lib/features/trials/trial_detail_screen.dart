@@ -42,13 +42,25 @@ import '../derived/trial_attention_service.dart';
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
 
+/// Parses [stored] to a [WorkspaceConfig]; never throws.
+///
+/// On invalid enum names, returns [WorkspaceConfig.efficacy] (unchanged behavior vs
+/// prior `_safeWorkspaceType` fallback).
+WorkspaceConfig safeConfigFromString(String stored) {
+  try {
+    return WorkspaceConfig.forType(WorkspaceType.values.byName(stored));
+  } catch (_) {
+    // Fallback uses efficacy preset:
+    // - protocol mode
+    // - efficacy study type
+    // This is a default workspace, not a generic "unknown" type.
+    return WorkspaceConfig.efficacy;
+  }
+}
+
 /// Resolves workspace type from stored string. Never throws; falls back to efficacy if invalid.
 WorkspaceType _safeWorkspaceType(String stored) {
-  try {
-    return WorkspaceType.values.byName(stored);
-  } catch (_) {
-    return WorkspaceType.efficacy;
-  }
+  return safeConfigFromString(stored).type;
 }
 
 /// Maps visible TrialTab values to their fixed IndexedStack indices.
