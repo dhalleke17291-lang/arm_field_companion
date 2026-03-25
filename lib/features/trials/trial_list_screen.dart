@@ -1153,20 +1153,22 @@ String _formatSessionDateForCard(String sessionDateLocal) {
   return '${d.day} $month ${d.year}';
 }
 
-/// Client-side: does [trial] match [workspaceFilter]? Same semantics as the
-/// workspace_filter helpers for known strings.
+/// Client-side: does [trial] match [workspaceFilter]? Matches workspace_filter
+/// policy: unknown or blank workspace type resolves to efficacy (protocol).
 bool _trialMatchesWorkspaceFilter(Trial trial, TrialListFilter workspaceFilter) {
   switch (workspaceFilter) {
     case TrialListFilter.all:
       return true;
     case TrialListFilter.standaloneOnly:
-      final t = workspaceTypeFromStringOrNull(trial.workspaceType);
-      return t != null &&
-          WorkspaceConfig.forType(t).mode == TrialMode.standalone;
+      final wt = workspaceTypeFromStringOrNull(trial.workspaceType);
+      final resolved = wt ?? WorkspaceType.efficacy;
+      final config = WorkspaceConfig.forType(resolved);
+      return config.mode == TrialMode.standalone;
     case TrialListFilter.protocolOnly:
-      final t = workspaceTypeFromStringOrNull(trial.workspaceType);
-      return t != null &&
-          WorkspaceConfig.forType(t).mode == TrialMode.protocol;
+      final wt = workspaceTypeFromStringOrNull(trial.workspaceType);
+      final resolved = wt ?? WorkspaceType.efficacy;
+      final config = WorkspaceConfig.forType(resolved);
+      return config.mode == TrialMode.protocol;
   }
 }
 
