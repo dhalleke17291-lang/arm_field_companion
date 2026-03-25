@@ -4,14 +4,23 @@
 import 'workspace_config.dart';
 
 /// Returns true when [workspaceType] is 'standalone' (custom trial).
+///
+/// Unknown, blank, or invalid values resolve to [WorkspaceType.efficacy] for
+/// filtering (protocol), matching export and trial detail policy.
 bool isStandalone(String? workspaceType) {
-  final t = workspaceTypeFromStringOrNull(workspaceType);
-  return t != null && WorkspaceConfig.forType(t).isStandalone;
+  final wt = workspaceTypeFromStringOrNull(workspaceType);
+  final resolved = wt ?? WorkspaceType.efficacy;
+  final config = WorkspaceConfig.forType(resolved);
+  return config.isStandalone;
 }
 
-/// Returns true when [workspaceType] is a known protocol type.
-/// Explicit allowlist: variety, efficacy, glp. Unknown values return false.
+/// Returns true when [workspaceType] is a protocol trial (variety, efficacy, glp).
+///
+/// Unknown, blank, or invalid values resolve to [WorkspaceType.efficacy], so
+/// they are treated as protocol.
 bool isProtocol(String? workspaceType) {
-  final t = workspaceTypeFromStringOrNull(workspaceType);
-  return t != null && WorkspaceConfig.forType(t).isProtocol;
+  final wt = workspaceTypeFromStringOrNull(workspaceType);
+  final resolved = wt ?? WorkspaceType.efficacy;
+  final config = WorkspaceConfig.forType(resolved);
+  return config.isProtocol;
 }
