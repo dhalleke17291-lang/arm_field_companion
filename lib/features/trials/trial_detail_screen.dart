@@ -44,11 +44,13 @@ const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
 
 /// Parses [stored] to a [WorkspaceConfig]; never throws.
 ///
-/// On invalid enum names, returns [WorkspaceConfig.efficacy] (unchanged behavior vs
-/// prior `_safeWorkspaceType` fallback).
+/// Normalizes with [String.trim] and case-insensitive enum name matching.
+/// On invalid or empty normalized names, returns [WorkspaceConfig.efficacy]
+/// (same fallback as before; only valid-name matching is more tolerant).
 WorkspaceConfig safeConfigFromString(String stored) {
+  final normalized = stored.trim().toLowerCase();
   try {
-    return WorkspaceConfig.forType(WorkspaceType.values.byName(stored));
+    return WorkspaceConfig.forType(WorkspaceType.values.byName(normalized));
   } catch (_) {
     // Fallback uses efficacy preset:
     // - protocol mode
