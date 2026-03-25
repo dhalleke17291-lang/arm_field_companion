@@ -60,12 +60,6 @@ WorkspaceConfig safeConfigFromString(String stored) {
   }
 }
 
-/// Resolves workspace type from stored string. Never throws; falls back to efficacy if invalid.
-// ignore: unused_element — Retained for follow-up refactors; same result as [safeConfigFromString].type.
-WorkspaceType _safeWorkspaceType(String stored) {
-  return safeConfigFromString(stored).type;
-}
-
 /// Maps visible TrialTab values to their fixed IndexedStack indices.
 /// Excludes timeline and sessions.
 List<int> _visibleFixedIndices(WorkspaceConfig config) {
