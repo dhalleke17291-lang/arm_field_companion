@@ -61,6 +61,7 @@ WorkspaceConfig safeConfigFromString(String stored) {
 }
 
 /// Resolves workspace type from stored string. Never throws; falls back to efficacy if invalid.
+// ignore: unused_element — Retained for follow-up refactors; same result as [safeConfigFromString].type.
 WorkspaceType _safeWorkspaceType(String stored) {
   return safeConfigFromString(stored).type;
 }
@@ -94,7 +95,7 @@ int _effectiveSelectedIndex({
 
 /// Sanitizes a tab index for the given trial: ensures it points to a visible tab.
 int _sanitizeTabIndexForTrial(int index, Trial trial) {
-  final config = WorkspaceConfig.forType(_safeWorkspaceType(trial.workspaceType));
+  final config = safeConfigFromString(trial.workspaceType);
   final visible = _visibleFixedIndices(config);
   return _effectiveSelectedIndex(candidate: index, visibleIndices: visible);
 }
@@ -998,8 +999,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           const SizedBox(height: AppDesignTokens.spacing8),
           Builder(
             builder: (_) {
-              final workspaceConfig = WorkspaceConfig.forType(
-                  _safeWorkspaceType(currentTrial.workspaceType));
+              final workspaceConfig =
+                  safeConfigFromString(currentTrial.workspaceType);
               final visibleIndices = _visibleFixedIndices(workspaceConfig);
               final effectiveSelectedIndex = _effectiveSelectedIndex(
                 candidate: _selectedTabIndex == _sessionsIndex
@@ -1051,8 +1052,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   ) {
     final effectiveStatus =
         _effectiveTrialStatus(ref, currentTrial) ?? currentTrial.status;
-    final workspaceConfig = WorkspaceConfig.forType(
-        _safeWorkspaceType(currentTrial.workspaceType));
+    final workspaceConfig =
+        safeConfigFromString(currentTrial.workspaceType);
     final visibleIndices = _visibleFixedIndices(workspaceConfig);
     final effectiveSelectedIndex = _effectiveSelectedIndex(
       candidate: _selectedTabIndex == _sessionsIndex
