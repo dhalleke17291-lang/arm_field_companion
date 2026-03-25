@@ -6,6 +6,44 @@ import 'package:arm_field_companion/features/export/export_format.dart';
 
 enum WorkspaceType { variety, efficacy, glp, standalone }
 
+enum TrialMode {
+  standalone,
+  protocol,
+}
+
+enum StudyType {
+  general,
+  variety,
+  efficacy,
+  glp,
+}
+
+extension WorkspaceTypeDecomposition on WorkspaceType {
+  TrialMode get trialMode {
+    switch (this) {
+      case WorkspaceType.standalone:
+        return TrialMode.standalone;
+      case WorkspaceType.variety:
+      case WorkspaceType.efficacy:
+      case WorkspaceType.glp:
+        return TrialMode.protocol;
+    }
+  }
+
+  StudyType get studyType {
+    switch (this) {
+      case WorkspaceType.variety:
+        return StudyType.variety;
+      case WorkspaceType.efficacy:
+        return StudyType.efficacy;
+      case WorkspaceType.glp:
+        return StudyType.glp;
+      case WorkspaceType.standalone:
+        return StudyType.general;
+    }
+  }
+}
+
 enum TrialTab {
   plots,
   seeding,
@@ -44,6 +82,9 @@ class WorkspaceConfig {
 
   bool get isStandalone => type == WorkspaceType.standalone;
   bool get isProtocol => !isStandalone;
+
+  TrialMode get mode => type.trialMode;
+  StudyType get studyType => type.studyType;
 
   const WorkspaceConfig({
     required this.type,

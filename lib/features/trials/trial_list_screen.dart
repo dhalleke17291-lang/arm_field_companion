@@ -14,7 +14,6 @@ import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/database/app_database.dart';
 import '../../core/workspace/workspace_config.dart';
-import '../../core/workspace/workspace_filter.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../about/about_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
@@ -1154,15 +1153,20 @@ String _formatSessionDateForCard(String sessionDateLocal) {
   return '${d.day} $month ${d.year}';
 }
 
-/// Client-side: does [trial] match [workspaceFilter]? Uses same helpers as providers.
+/// Client-side: does [trial] match [workspaceFilter]? Same semantics as the
+/// workspace_filter helpers for known strings.
 bool _trialMatchesWorkspaceFilter(Trial trial, TrialListFilter workspaceFilter) {
   switch (workspaceFilter) {
     case TrialListFilter.all:
       return true;
     case TrialListFilter.standaloneOnly:
-      return isStandalone(trial.workspaceType);
+      final t = workspaceTypeFromStringOrNull(trial.workspaceType);
+      return t != null &&
+          WorkspaceConfig.forType(t).mode == TrialMode.standalone;
     case TrialListFilter.protocolOnly:
-      return isProtocol(trial.workspaceType);
+      final t = workspaceTypeFromStringOrNull(trial.workspaceType);
+      return t != null &&
+          WorkspaceConfig.forType(t).mode == TrialMode.protocol;
   }
 }
 
