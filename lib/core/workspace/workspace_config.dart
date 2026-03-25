@@ -42,6 +42,9 @@ class WorkspaceConfig {
   final bool showComplianceWarnings;
   final bool csvAllowed;
 
+  bool get isStandalone => type == WorkspaceType.standalone;
+  bool get isProtocol => !isStandalone;
+
   const WorkspaceConfig({
     required this.type,
     required this.displayName,
@@ -216,6 +219,17 @@ class WorkspaceConfig {
       case WorkspaceType.standalone:
         return standalone;
     }
+  }
+}
+
+/// Parses non-empty [workspaceType] to a known enum, or null if blank/unknown.
+/// Used for standalone vs protocol filtering; unknown values are not treated as protocol.
+WorkspaceType? workspaceTypeFromStringOrNull(String? workspaceType) {
+  if (workspaceType == null || workspaceType.trim().isEmpty) return null;
+  try {
+    return WorkspaceType.values.byName(workspaceType.trim().toLowerCase());
+  } catch (_) {
+    return null;
   }
 }
 
