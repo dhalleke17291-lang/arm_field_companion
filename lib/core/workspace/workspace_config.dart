@@ -79,6 +79,8 @@ class WorkspaceConfig {
     ],
     availableExports: [
       ExportFormat.flatCsv,
+      ExportFormat.armHandoff,
+      ExportFormat.zipBundle,
       ExportFormat.pdfReport,
     ],
     primaryExport: ExportFormat.pdfReport,
@@ -150,7 +152,9 @@ class WorkspaceConfig {
       TrialTab.photos,
     ],
     availableExports: [
+      ExportFormat.flatCsv,
       ExportFormat.armHandoff,
+      ExportFormat.zipBundle,
       ExportFormat.pdfReport,
     ],
     primaryExport: ExportFormat.armHandoff,
@@ -213,4 +217,21 @@ class WorkspaceConfig {
         return standalone;
     }
   }
+}
+
+/// Parses stored workspace type for export rules; unknown values → [WorkspaceType.efficacy]
+/// (matches prior [allowedExportFormatsForWorkspace] default branch).
+WorkspaceType _workspaceTypeForExportList(String workspaceType) {
+  try {
+    return WorkspaceType.values.byName(workspaceType.trim().toLowerCase());
+  } catch (_) {
+    return WorkspaceType.efficacy;
+  }
+}
+
+/// Returns execution-layer export formats allowed for a trial's workspace type.
+/// Single source: [WorkspaceConfig.availableExports] via [WorkspaceConfig.forType].
+List<ExportFormat> allowedExportFormatsForWorkspace(String workspaceType) {
+  return WorkspaceConfig.forType(_workspaceTypeForExportList(workspaceType))
+      .availableExports;
 }

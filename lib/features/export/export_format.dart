@@ -1,45 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Returns execution-layer export formats allowed for a trial's workspace type.
-/// Conservative mapping based on currently working execution paths only.
-List<ExportFormat> allowedExportFormatsForWorkspace(String workspaceType) {
-  switch (workspaceType.toLowerCase()) {
-    case 'efficacy':
-      return [
-        ExportFormat.flatCsv,
-        ExportFormat.armHandoff,
-        ExportFormat.zipBundle,
-        ExportFormat.pdfReport,
-      ];
-    case 'variety':
-      return [
-        ExportFormat.flatCsv,
-        ExportFormat.armHandoff,
-        ExportFormat.zipBundle,
-        ExportFormat.pdfReport,
-      ];
-    case 'glp':
-      return [
-        ExportFormat.flatCsv,
-        ExportFormat.armHandoff,
-        ExportFormat.zipBundle,
-        ExportFormat.pdfReport,
-      ];
-    case 'standalone':
-      return [
-        ExportFormat.pdfReport,
-        ExportFormat.flatCsv,
-      ];
-    default:
-      return [
-        ExportFormat.flatCsv,
-        ExportFormat.armHandoff,
-        ExportFormat.zipBundle,
-        ExportFormat.pdfReport,
-      ];
-  }
-}
-
 enum ExportFormat {
   flatCsv,
   armHandoff,
