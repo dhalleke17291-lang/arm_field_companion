@@ -294,6 +294,34 @@ class SessionRepository {
       return SessionRestoreResult.ok();
     });
   }
+
+  /// True when this trial has any row in rating_records, notes, photos, or plot_flags.
+  Stream<bool> watchTrialHasSessionData(int trialId) {
+    final id = Variable<int>(trialId);
+    return _db
+        .customSelect(
+          '''
+SELECT EXISTS(
+  SELECT 1 FROM rating_records WHERE trial_id = ? LIMIT 1
+  UNION ALL
+  SELECT 1 FROM notes WHERE trial_id = ? LIMIT 1
+  UNION ALL
+  SELECT 1 FROM photos WHERE trial_id = ? LIMIT 1
+  UNION ALL
+  SELECT 1 FROM plot_flags WHERE trial_id = ? LIMIT 1
+) AS has_data
+''',
+          variables: <Variable>[id, id, id, id],
+          readsFrom: {
+            _db.ratingRecords,
+            _db.notes,
+            _db.photos,
+            _db.plotFlags,
+          },
+        )
+        .watchSingle()
+        .map((row) => row.read<bool>('has_data'));
+  }
 }
 
 /// Result of [SessionRepository.restoreSession].
