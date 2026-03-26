@@ -5,7 +5,8 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../more/more_screen.dart';
 import '../worklog/work_log_screen.dart';
-import '../trials/trial_list_screen.dart';
+import '../trials/trials_hub_screen.dart';
+import 'shell_providers.dart';
 
 /// Bottom nav: Home | Work Log | More. Used after splash when user is signed in.
 class MainShellScreen extends ConsumerStatefulWidget {
@@ -37,7 +38,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       body: IndexedStack(
         index: _currentIndex,
         children: const [
-          TrialListScreen(),
+          TrialsHubScreen(),
           WorkLogScreen(),
           MoreScreen(),
         ],
@@ -66,6 +67,9 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                       ref.invalidate(
                           workLogSessionsProvider(workLogTodayDateLocal()));
                       ref.invalidate(workLogDatesProvider);
+                    }
+                    if (i == 0) {
+                      ref.read(homeTabResetProvider.notifier).state++;
                     }
                     setState(() => _currentIndex = i);
                   },

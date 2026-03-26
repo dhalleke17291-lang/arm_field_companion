@@ -50,6 +50,7 @@ flutter:
   assets:
     - assets/icon/
     - assets/Branding/
+    - assets/images/trials/
 
 # Native splash: single screen, refined deep green, centered logo (no text).
 flutter_native_splash:
