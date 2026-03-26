@@ -1,6 +1,23 @@
 // Workspace configuration: trial tabs, exports, and lock policy by workspace type.
 // Used after completion of TreatmentComponents UI, bulk assignment, applications,
 // and export layer to drive variety / efficacy / GLP behavior.
+//
+// --- Workspace type string parsing (multiple paths by design) ---
+//
+// a) [workspaceTypeFromStringOrNull]: tolerant trim/lowercase [byName]; blank or
+//    unknown → null. Use when callers need to represent "unrecognized" without
+//    picking a preset (e.g. some UI conditions; input to code that applies its
+//    own default separately).
+//
+// b) [safeConfigFromString] (trial_detail_screen.dart): tolerant normalization;
+//    unknown or invalid → [WorkspaceConfig.efficacy]. Drives trial detail hub/tabs.
+//
+// c) [_workspaceTypeForExportList] and [allowedExportFormatsForWorkspace]: tolerant
+//    parse; unknown → [WorkspaceType.efficacy] then [WorkspaceConfig.forType] for
+//    [availableExports]. Export entry point.
+//
+// Falling back to efficacy is a safe protocol preset for continuity and stable
+// behavior — not semantic truth that the trial is an "efficacy" study.
 
 import 'package:arm_field_companion/features/export/export_format.dart';
 
@@ -286,6 +303,11 @@ WorkspaceType _workspaceTypeForExportList(String workspaceType) {
 
 /// Returns execution-layer export formats allowed for a trial's workspace type.
 /// Single source: [WorkspaceConfig.availableExports] via [WorkspaceConfig.forType].
+///
+/// Unknown or invalid [workspaceType] strings resolve to the efficacy preset (see
+/// [_workspaceTypeForExportList]) so export options stay valid, ARM-oriented paths
+/// remain available where configured, and users do not hit empty or broken export
+/// flows for bad data.
 List<ExportFormat> allowedExportFormatsForWorkspace(String workspaceType) {
   return WorkspaceConfig.forType(_workspaceTypeForExportList(workspaceType))
       .availableExports;

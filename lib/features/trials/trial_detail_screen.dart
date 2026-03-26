@@ -42,11 +42,12 @@ import '../derived/trial_attention_service.dart';
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
 
-/// Parses [stored] to a [WorkspaceConfig]; never throws.
+/// Parses a stored [workspaceType] string to a [WorkspaceConfig]; never throws.
 ///
-/// Normalizes with [String.trim] and case-insensitive enum name matching.
-/// On invalid or empty normalized names, returns [WorkspaceConfig.efficacy]
-/// (same fallback as before; only valid-name matching is more tolerant).
+/// Uses tolerant parsing: [String.trim] and lowercase before [WorkspaceType.values.byName].
+/// Malformed, empty-after-trim, or unknown names fall back to [WorkspaceConfig.efficacy]
+/// so the trial detail hub, tab visibility, and related UI stay stable and never lack
+/// a config — same preset as other "unknown → efficacy" paths, not a semantic label.
 WorkspaceConfig safeConfigFromString(String stored) {
   final normalized = stored.trim().toLowerCase();
   try {

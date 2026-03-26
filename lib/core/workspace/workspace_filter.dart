@@ -3,6 +3,11 @@
 
 import 'workspace_config.dart';
 
+// [isStandalone] / [isProtocol]: [workspaceTypeFromStringOrNull] may yield null for
+// unknown or blank values. These predicates coerce null to [WorkspaceType.efficacy]
+// before resolving [WorkspaceConfig], so trials are not excluded from *both*
+// custom-only and protocol-only provider streams — unknown rows count as protocol.
+
 /// Returns true when [workspaceType] is 'standalone' (custom trial).
 ///
 /// Unknown, blank, or invalid values resolve to [WorkspaceType.efficacy] for

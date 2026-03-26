@@ -69,6 +69,51 @@ class TrialAttentionService {
   final AssignmentRepository assignmentRepository;
   final RatingRepository ratingRepository;
 
+  AttentionSeverity _seedingPendingSeverity() => switch (studyType) {
+        StudyType.glp => AttentionSeverity.high,
+        StudyType.efficacy => AttentionSeverity.medium,
+        StudyType.variety => AttentionSeverity.medium,
+        StudyType.general => AttentionSeverity.low,
+      };
+
+  AttentionSeverity get _openSessionSeverity => AttentionSeverity.medium;
+
+  AttentionSeverity _noSessionsYetSeverity() => switch (studyType) {
+        StudyType.glp => AttentionSeverity.high,
+        StudyType.efficacy => AttentionSeverity.medium,
+        StudyType.variety => AttentionSeverity.medium,
+        StudyType.general => AttentionSeverity.low,
+      };
+
+  /// When [applicationsPending] is included (variety suppressed upstream).
+  AttentionSeverity _applicationsPendingSeverity() => switch (studyType) {
+        StudyType.glp => AttentionSeverity.high,
+        StudyType.efficacy => AttentionSeverity.high,
+        StudyType.general => AttentionSeverity.low,
+        StudyType.variety => AttentionSeverity.low,
+      };
+
+  AttentionSeverity _plotsUnassignedSeverity() => switch (studyType) {
+        StudyType.glp => AttentionSeverity.high,
+        StudyType.efficacy => AttentionSeverity.medium,
+        StudyType.variety => AttentionSeverity.medium,
+        StudyType.general => AttentionSeverity.low,
+      };
+
+  AttentionSeverity _plotsPartiallyRatedSeverity() => switch (studyType) {
+        StudyType.glp => AttentionSeverity.high,
+        StudyType.efficacy => AttentionSeverity.high,
+        StudyType.variety => AttentionSeverity.medium,
+        StudyType.general => AttentionSeverity.medium,
+      };
+
+  AttentionSeverity _setupIncompleteNoPlotsSeverity() => switch (studyType) {
+        StudyType.glp => AttentionSeverity.high,
+        StudyType.efficacy => AttentionSeverity.medium,
+        StudyType.variety => AttentionSeverity.low,
+        StudyType.general => AttentionSeverity.low,
+      };
+
   Future<List<AttentionItem>> getAttentionItems(int trialId) async {
     final items = <AttentionItem>[];
 
@@ -85,10 +130,10 @@ class TrialAttentionService {
         severity: seedingMissingSeverity,
       ));
     } else if (_seedingRecordedNeedsAttention(seedingEvent)) {
-      items.add(const AttentionItem(
+      items.add(AttentionItem(
         type: AttentionType.seedingPending,
         label: 'Seeding recorded — mark complete?',
-        severity: AttentionSeverity.high,
+        severity: _seedingPendingSeverity(),
       ));
     }
 
@@ -100,18 +145,18 @@ class TrialAttentionService {
         sessions.where((s) => s.endedAt != null).toList();
 
     if (openSessions.isNotEmpty) {
-      items.add(const AttentionItem(
+      items.add(AttentionItem(
         type: AttentionType.openSession,
         label: 'Session in progress — resume?',
-        severity: AttentionSeverity.high,
+        severity: _openSessionSeverity,
       ));
     }
 
     if (completedSessions.isEmpty && openSessions.isEmpty) {
-      items.add(const AttentionItem(
+      items.add(AttentionItem(
         type: AttentionType.noSessionsYet,
         label: 'No sessions started yet',
-        severity: AttentionSeverity.low,
+        severity: _noSessionsYetSeverity(),
       ));
     }
 
@@ -127,7 +172,7 @@ class TrialAttentionService {
           type: AttentionType.applicationsPending,
           label:
               '${pending.length} application${pending.length == 1 ? '' : 's'} pending',
-          severity: AttentionSeverity.high,
+          severity: _applicationsPendingSeverity(),
           count: pending.length,
         ));
       }
@@ -138,10 +183,10 @@ class TrialAttentionService {
     final totalPlotCount = plots.length;
 
     if (totalPlotCount == 0) {
-      items.add(const AttentionItem(
+      items.add(AttentionItem(
         type: AttentionType.setupIncomplete,
         label: 'No plots set up yet',
-        severity: AttentionSeverity.low,
+        severity: _setupIncompleteNoPlotsSeverity(),
       ));
     } else {
       final assignments =
@@ -154,7 +199,7 @@ class TrialAttentionService {
           type: AttentionType.plotsUnassigned,
           label:
               '$unassigned plot${unassigned == 1 ? '' : 's'} not assigned',
-          severity: AttentionSeverity.medium,
+          severity: _plotsUnassignedSeverity(),
           count: unassigned,
         ));
       }
@@ -167,7 +212,7 @@ class TrialAttentionService {
         items.add(AttentionItem(
           type: AttentionType.plotsPartiallyRated,
           label: '$ratedCount of $totalPlotCount plots rated',
-          severity: AttentionSeverity.medium,
+          severity: _plotsPartiallyRatedSeverity(),
           count: ratedCount,
         ));
       }
