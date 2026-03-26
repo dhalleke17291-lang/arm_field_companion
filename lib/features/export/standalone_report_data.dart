@@ -3,6 +3,15 @@
 /// Used by future PDF/report generation layer.
 library;
 
+/// Report layout/profile selection (PDF builder Pass 2).
+enum ReportProfile {
+  research,
+  fieldSummary,
+  interim,
+  glpAudit,
+  cooperator,
+}
+
 /// Trial-level summary for report header.
 class TrialReportSummary {
   const TrialReportSummary({
@@ -13,6 +22,32 @@ class TrialReportSummary {
     this.season,
     required this.status,
     required this.workspaceType,
+    this.sponsor,
+    this.protocolNumber,
+    this.investigatorName,
+    this.cooperatorName,
+    this.siteId,
+    this.fieldName,
+    this.county,
+    this.stateProvince,
+    this.country,
+    this.latitude,
+    this.longitude,
+    this.elevationM,
+    this.previousCrop,
+    this.tillage,
+    this.irrigated,
+    this.soilSeries,
+    this.soilTexture,
+    this.organicMatterPct,
+    this.soilPh,
+    this.experimentalDesign,
+    this.plotLengthM,
+    this.plotWidthM,
+    this.plotDimensions,
+    this.plotRows,
+    this.harvestDate,
+    this.createdAt,
   });
 
   final int id;
@@ -22,6 +57,63 @@ class TrialReportSummary {
   final String? season;
   final String status;
   final String workspaceType;
+
+  // Identity
+  final String? sponsor;
+  final String? protocolNumber;
+  final String? investigatorName;
+  final String? cooperatorName;
+  final String? siteId;
+  final String? fieldName;
+
+  // Location detail
+  final String? county;
+  final String? stateProvince;
+  final String? country;
+  final double? latitude;
+  final double? longitude;
+  final double? elevationM;
+
+  // Site conditions
+  final String? previousCrop;
+  final String? tillage;
+  final bool? irrigated;
+  final String? soilSeries;
+  final String? soilTexture;
+  final double? organicMatterPct;
+  final double? soilPh;
+
+  // Plot layout
+  final String? experimentalDesign;
+  final double? plotLengthM;
+  final double? plotWidthM;
+  final String? plotDimensions;
+  final int? plotRows;
+
+  // Dates
+  final DateTime? harvestDate;
+  final DateTime? createdAt;
+}
+
+/// One product row within a treatment for report tables.
+class TreatmentComponentSummary {
+  const TreatmentComponentSummary({
+    required this.productName,
+    this.rate,
+    this.rateUnit,
+    this.formulationType,
+    this.activeIngredientPct,
+    this.manufacturer,
+    this.applicationTiming,
+  });
+
+  final String productName;
+  final String? rate;
+  final String? rateUnit;
+  final String? formulationType;
+  final double? activeIngredientPct;
+  final String? manufacturer;
+  final String? applicationTiming;
 }
 
 /// Treatment summary for report.
@@ -32,6 +124,7 @@ class TreatmentReportSummary {
     required this.name,
     this.treatmentType,
     required this.componentCount,
+    required this.components,
   });
 
   final int id;
@@ -39,6 +132,7 @@ class TreatmentReportSummary {
   final String name;
   final String? treatmentType;
   final int componentCount;
+  final List<TreatmentComponentSummary> components;
 }
 
 /// Plot summary for report.

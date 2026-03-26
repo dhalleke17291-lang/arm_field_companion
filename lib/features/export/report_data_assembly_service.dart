@@ -67,6 +67,32 @@ class ReportDataAssemblyService {
       season: trial.season,
       status: trial.status,
       workspaceType: trial.workspaceType,
+      sponsor: trial.sponsor,
+      protocolNumber: trial.protocolNumber,
+      investigatorName: trial.investigatorName,
+      cooperatorName: trial.cooperatorName,
+      siteId: trial.siteId,
+      fieldName: trial.fieldName,
+      county: trial.county,
+      stateProvince: trial.stateProvince,
+      country: trial.country,
+      latitude: trial.latitude,
+      longitude: trial.longitude,
+      elevationM: trial.elevationM,
+      previousCrop: trial.previousCrop,
+      tillage: trial.tillage,
+      irrigated: trial.irrigated,
+      soilSeries: trial.soilSeries,
+      soilTexture: trial.soilTexture,
+      organicMatterPct: trial.organicMatterPct,
+      soilPh: trial.soilPh,
+      experimentalDesign: trial.experimentalDesign,
+      plotLengthM: trial.plotLengthM,
+      plotWidthM: trial.plotWidthM,
+      plotDimensions: trial.plotDimensions,
+      plotRows: trial.plotRows,
+      harvestDate: trial.harvestDate,
+      createdAt: trial.createdAt,
     );
 
     final treatmentSummaries = <TreatmentReportSummary>[];
@@ -79,6 +105,19 @@ class ReportDataAssemblyService {
         name: t.name,
         treatmentType: t.treatmentType,
         componentCount: components.length,
+        components: components
+            .map(
+              (c) => TreatmentComponentSummary(
+                productName: c.productName,
+                rate: c.rate,
+                rateUnit: c.rateUnit,
+                formulationType: c.formulationType,
+                activeIngredientPct: c.activeIngredientPct,
+                manufacturer: c.manufacturer,
+                applicationTiming: c.applicationTiming,
+              ),
+            )
+            .toList(),
       ));
     }
 

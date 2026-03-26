@@ -25,6 +25,7 @@ void main() {
             name: 'Control',
             treatmentType: 'control',
             componentCount: 0,
+            components: [],
           ),
         ],
         plots: [
@@ -70,6 +71,7 @@ void main() {
             name: 'Control',
             treatmentType: 'control',
             componentCount: 0,
+            components: [],
           ),
         ],
         plots: [],
