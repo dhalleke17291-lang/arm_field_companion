@@ -17971,6 +17971,19 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
   late final GeneratedColumn<String> plotsTreated = GeneratedColumn<String>(
       'plots_treated', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _appliedAtMeta =
+      const VerificationMeta('appliedAt');
+  @override
+  late final GeneratedColumn<DateTime> appliedAt = GeneratedColumn<DateTime>(
+      'applied_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -18019,6 +18032,8 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
         treatedArea,
         treatedAreaUnit,
         plotsTreated,
+        status,
+        appliedAt,
         createdAt
       ];
   @override
@@ -18245,6 +18260,14 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           plotsTreated.isAcceptableOrUnknown(
               data['plots_treated']!, _plotsTreatedMeta));
     }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('applied_at')) {
+      context.handle(_appliedAtMeta,
+          appliedAt.isAcceptableOrUnknown(data['applied_at']!, _appliedAtMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -18334,6 +18357,10 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           DriftSqlType.string, data['${effectivePrefix}treated_area_unit']),
       plotsTreated: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}plots_treated']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      appliedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}applied_at']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -18385,6 +18412,8 @@ class TrialApplicationEvent extends DataClass
   final double? treatedArea;
   final String? treatedAreaUnit;
   final String? plotsTreated;
+  final String status;
+  final DateTime? appliedAt;
   final DateTime createdAt;
   const TrialApplicationEvent(
       {required this.id,
@@ -18425,6 +18454,8 @@ class TrialApplicationEvent extends DataClass
       this.treatedArea,
       this.treatedAreaUnit,
       this.plotsTreated,
+      required this.status,
+      this.appliedAt,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -18537,6 +18568,10 @@ class TrialApplicationEvent extends DataClass
     if (!nullToAbsent || plotsTreated != null) {
       map['plots_treated'] = Variable<String>(plotsTreated);
     }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || appliedAt != null) {
+      map['applied_at'] = Variable<DateTime>(appliedAt);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -18648,6 +18683,10 @@ class TrialApplicationEvent extends DataClass
       plotsTreated: plotsTreated == null && nullToAbsent
           ? const Value.absent()
           : Value(plotsTreated),
+      status: Value(status),
+      appliedAt: appliedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(appliedAt),
       createdAt: Value(createdAt),
     );
   }
@@ -18696,6 +18735,8 @@ class TrialApplicationEvent extends DataClass
       treatedArea: serializer.fromJson<double?>(json['treatedArea']),
       treatedAreaUnit: serializer.fromJson<String?>(json['treatedAreaUnit']),
       plotsTreated: serializer.fromJson<String?>(json['plotsTreated']),
+      status: serializer.fromJson<String>(json['status']),
+      appliedAt: serializer.fromJson<DateTime?>(json['appliedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -18741,6 +18782,8 @@ class TrialApplicationEvent extends DataClass
       'treatedArea': serializer.toJson<double?>(treatedArea),
       'treatedAreaUnit': serializer.toJson<String?>(treatedAreaUnit),
       'plotsTreated': serializer.toJson<String?>(plotsTreated),
+      'status': serializer.toJson<String>(status),
+      'appliedAt': serializer.toJson<DateTime?>(appliedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -18784,6 +18827,8 @@ class TrialApplicationEvent extends DataClass
           Value<double?> treatedArea = const Value.absent(),
           Value<String?> treatedAreaUnit = const Value.absent(),
           Value<String?> plotsTreated = const Value.absent(),
+          String? status,
+          Value<DateTime?> appliedAt = const Value.absent(),
           DateTime? createdAt}) =>
       TrialApplicationEvent(
         id: id ?? this.id,
@@ -18855,6 +18900,8 @@ class TrialApplicationEvent extends DataClass
             : this.treatedAreaUnit,
         plotsTreated:
             plotsTreated.present ? plotsTreated.value : this.plotsTreated,
+        status: status ?? this.status,
+        appliedAt: appliedAt.present ? appliedAt.value : this.appliedAt,
         createdAt: createdAt ?? this.createdAt,
       );
   TrialApplicationEvent copyWithCompanion(
@@ -18949,6 +18996,8 @@ class TrialApplicationEvent extends DataClass
       plotsTreated: data.plotsTreated.present
           ? data.plotsTreated.value
           : this.plotsTreated,
+      status: data.status.present ? data.status.value : this.status,
+      appliedAt: data.appliedAt.present ? data.appliedAt.value : this.appliedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -18994,6 +19043,8 @@ class TrialApplicationEvent extends DataClass
           ..write('treatedArea: $treatedArea, ')
           ..write('treatedAreaUnit: $treatedAreaUnit, ')
           ..write('plotsTreated: $plotsTreated, ')
+          ..write('status: $status, ')
+          ..write('appliedAt: $appliedAt, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -19039,6 +19090,8 @@ class TrialApplicationEvent extends DataClass
         treatedArea,
         treatedAreaUnit,
         plotsTreated,
+        status,
+        appliedAt,
         createdAt
       ]);
   @override
@@ -19083,6 +19136,8 @@ class TrialApplicationEvent extends DataClass
           other.treatedArea == this.treatedArea &&
           other.treatedAreaUnit == this.treatedAreaUnit &&
           other.plotsTreated == this.plotsTreated &&
+          other.status == this.status &&
+          other.appliedAt == this.appliedAt &&
           other.createdAt == this.createdAt);
 }
 
@@ -19126,6 +19181,8 @@ class TrialApplicationEventsCompanion
   final Value<double?> treatedArea;
   final Value<String?> treatedAreaUnit;
   final Value<String?> plotsTreated;
+  final Value<String> status;
+  final Value<DateTime?> appliedAt;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const TrialApplicationEventsCompanion({
@@ -19167,6 +19224,8 @@ class TrialApplicationEventsCompanion
     this.treatedArea = const Value.absent(),
     this.treatedAreaUnit = const Value.absent(),
     this.plotsTreated = const Value.absent(),
+    this.status = const Value.absent(),
+    this.appliedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -19209,6 +19268,8 @@ class TrialApplicationEventsCompanion
     this.treatedArea = const Value.absent(),
     this.treatedAreaUnit = const Value.absent(),
     this.plotsTreated = const Value.absent(),
+    this.status = const Value.absent(),
+    this.appliedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
@@ -19252,6 +19313,8 @@ class TrialApplicationEventsCompanion
     Expression<double>? treatedArea,
     Expression<String>? treatedAreaUnit,
     Expression<String>? plotsTreated,
+    Expression<String>? status,
+    Expression<DateTime>? appliedAt,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -19294,6 +19357,8 @@ class TrialApplicationEventsCompanion
       if (treatedArea != null) 'treated_area': treatedArea,
       if (treatedAreaUnit != null) 'treated_area_unit': treatedAreaUnit,
       if (plotsTreated != null) 'plots_treated': plotsTreated,
+      if (status != null) 'status': status,
+      if (appliedAt != null) 'applied_at': appliedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -19338,6 +19403,8 @@ class TrialApplicationEventsCompanion
       Value<double?>? treatedArea,
       Value<String?>? treatedAreaUnit,
       Value<String?>? plotsTreated,
+      Value<String>? status,
+      Value<DateTime?>? appliedAt,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return TrialApplicationEventsCompanion(
@@ -19379,6 +19446,8 @@ class TrialApplicationEventsCompanion
       treatedArea: treatedArea ?? this.treatedArea,
       treatedAreaUnit: treatedAreaUnit ?? this.treatedAreaUnit,
       plotsTreated: plotsTreated ?? this.plotsTreated,
+      status: status ?? this.status,
+      appliedAt: appliedAt ?? this.appliedAt,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -19501,6 +19570,12 @@ class TrialApplicationEventsCompanion
     if (plotsTreated.present) {
       map['plots_treated'] = Variable<String>(plotsTreated.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (appliedAt.present) {
+      map['applied_at'] = Variable<DateTime>(appliedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -19551,6 +19626,8 @@ class TrialApplicationEventsCompanion
           ..write('treatedArea: $treatedArea, ')
           ..write('treatedAreaUnit: $treatedAreaUnit, ')
           ..write('plotsTreated: $plotsTreated, ')
+          ..write('status: $status, ')
+          ..write('appliedAt: $appliedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -28585,6 +28662,8 @@ typedef $$TrialApplicationEventsTableCreateCompanionBuilder
   Value<double?> treatedArea,
   Value<String?> treatedAreaUnit,
   Value<String?> plotsTreated,
+  Value<String> status,
+  Value<DateTime?> appliedAt,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -28628,6 +28707,8 @@ typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
   Value<double?> treatedArea,
   Value<String?> treatedAreaUnit,
   Value<String?> plotsTreated,
+  Value<String> status,
+  Value<DateTime?> appliedAt,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -28688,6 +28769,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<double?> treatedArea = const Value.absent(),
             Value<String?> treatedAreaUnit = const Value.absent(),
             Value<String?> plotsTreated = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime?> appliedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -28730,6 +28813,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             treatedArea: treatedArea,
             treatedAreaUnit: treatedAreaUnit,
             plotsTreated: plotsTreated,
+            status: status,
+            appliedAt: appliedAt,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -28772,6 +28857,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<double?> treatedArea = const Value.absent(),
             Value<String?> treatedAreaUnit = const Value.absent(),
             Value<String?> plotsTreated = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime?> appliedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -28814,6 +28901,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             treatedArea: treatedArea,
             treatedAreaUnit: treatedAreaUnit,
             plotsTreated: plotsTreated,
+            status: status,
+            appliedAt: appliedAt,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -29000,6 +29089,16 @@ class $$TrialApplicationEventsTableFilterComposer
 
   ColumnFilters<String> get plotsTreated => $state.composableBuilder(
       column: $state.table.plotsTreated,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get appliedAt => $state.composableBuilder(
+      column: $state.table.appliedAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -29231,6 +29330,16 @@ class $$TrialApplicationEventsTableOrderingComposer
 
   ColumnOrderings<String> get plotsTreated => $state.composableBuilder(
       column: $state.table.plotsTreated,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get appliedAt => $state.composableBuilder(
+      column: $state.table.appliedAt,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

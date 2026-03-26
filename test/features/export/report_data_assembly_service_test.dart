@@ -253,6 +253,13 @@ class MockApplicationRepository implements ApplicationRepository {
       throw UnimplementedError();
 
   @override
+  Future<void> markApplicationApplied({
+    required String id,
+    required DateTime appliedAt,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<void> deleteApplication(String id) async =>
       throw UnimplementedError();
 
@@ -606,6 +613,8 @@ void main() {
           trialId: 42,
           applicationDate: DateTime(2026, 3, 5),
           productName: 'Herbicide X',
+          status: 'applied',
+          appliedAt: DateTime(2026, 3, 5),
           createdAt: DateTime(2026, 3, 5),
         ),
       ];

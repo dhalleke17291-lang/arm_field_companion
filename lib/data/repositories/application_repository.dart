@@ -39,6 +39,19 @@ class ApplicationRepository {
         .write(full);
   }
 
+  /// Sets lifecycle to applied (trial application sheet workflow).
+  Future<void> markApplicationApplied({
+    required String id,
+    required DateTime appliedAt,
+  }) {
+    return (_db.update(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .write(TrialApplicationEventsCompanion(
+      status: const Value('applied'),
+      appliedAt: Value(appliedAt),
+    ));
+  }
+
   TrialApplicationEventsCompanion _withNewFields(
       TrialApplicationEventsCompanion c) {
     return c.copyWith(

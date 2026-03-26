@@ -541,6 +541,8 @@ class TrialApplicationEvents extends Table {
   RealColumn get treatedArea => real().nullable()();
   TextColumn get treatedAreaUnit => text().nullable()();
   TextColumn get plotsTreated => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  DateTimeColumn get appliedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -596,7 +598,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -873,6 +875,17 @@ WHERE product_name IS NOT NULL AND LENGTH(TRIM(product_name)) > 0
           if (from < 31) {
             await m.addColumn(
                 assessmentDefinitions, assessmentDefinitions.resultDirection);
+          }
+          if (from < 32) {
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.appliedAt);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.status);
+            await customStatement('''
+UPDATE trial_application_events
+SET status = 'applied',
+    applied_at = COALESCE(application_date, created_at)
+''');
           }
           await _createIndexes();
         },
