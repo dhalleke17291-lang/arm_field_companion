@@ -397,22 +397,205 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  /// Informational trust signals only; does not affect export or readiness logic.
-  Widget _buildTrialTrustSummaryCard(
-      BuildContext context, WidgetRef ref, Trial trial) {
+  /// Short line for collapsed Trial Readiness tile (field-style summary).
+  static String _readinessCollapsedSummary(TrialReadinessReport report) {
+    return switch (report.status) {
+      TrialReadinessStatus.ready => 'Ready',
+      TrialReadinessStatus.readyWithWarnings => 'Warnings',
+      TrialReadinessStatus.notReady => 'Needs attention',
+    };
+  }
+
+  static Color _readinessCollapsedSummaryColor(TrialReadinessReport report) {
+    return switch (report.status) {
+      TrialReadinessStatus.ready => AppDesignTokens.successFg,
+      TrialReadinessStatus.readyWithWarnings => AppDesignTokens.warningFg,
+      TrialReadinessStatus.notReady => AppDesignTokens.warningFg,
+    };
+  }
+
+  /// Expanded body: status pill, detail lines, actions (no duplicate section title).
+  Widget _readinessReportDetailColumn(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+    TrialReadinessReport report,
+  ) {
     final theme = Theme.of(context);
-    final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trial.id));
     final correctionsAsync =
         ref.watch(sessionIdsWithCorrectionsForTrialProvider(trial.id));
 
+    final ({Color bg, Color fg}) statusStyle = switch (report.status) {
+      TrialReadinessStatus.ready => (
+          bg: const Color(0xFFE8F5E9),
+          fg: const Color(0xFF2E7D32),
+        ),
+      TrialReadinessStatus.readyWithWarnings => (
+          bg: const Color(0xFFFFF8E6),
+          fg: const Color(0xFFB45309),
+        ),
+      TrialReadinessStatus.notReady => (
+          bg: theme.colorScheme.errorContainer,
+          fg: theme.colorScheme.onErrorContainer,
+        ),
+    };
+    final statusLabel = switch (report.status) {
+      TrialReadinessStatus.ready => 'Ready',
+      TrialReadinessStatus.readyWithWarnings => 'Ready with warnings',
+      TrialReadinessStatus.notReady => 'Not ready',
+    };
+
+    final totalPlots = plotsAsync.valueOrNull?.length;
+    final rated = ratedAsync.valueOrNull;
+    final int? unrated = totalPlots != null &&
+            rated != null &&
+            totalPlots > 0
+        ? (totalPlots - rated).clamp(0, totalPlots)
+        : null;
+
+    final corrections = correctionsAsync.valueOrNull?.length ?? 0;
+    final correctionsLoaded = correctionsAsync.hasValue;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: statusStyle.bg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                statusLabel,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: statusStyle.fg,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (unrated != null && unrated > 0) ...[
+          const SizedBox(height: 8),
+          Text(
+            '$unrated plot${unrated == 1 ? '' : 's'} without ratings',
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+        ],
+        if (correctionsLoaded && corrections > 0) ...[
+          const SizedBox(height: 6),
+          Text(
+            '$corrections session${corrections == 1 ? '' : 's'} with corrections',
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+        ],
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 4,
+          runSpacing: 0,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () => _openReadinessReview(context, ref, trial),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Review Readiness'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => EditedItemsScreen(trialId: trial.id),
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Edited Items'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => RecoveryScreen(trialId: trial.id),
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Recovery'),
+            ),
+          ],
+        ),
+        Text(
+          'Edited Items and Recovery are app-wide.',
+          style: TextStyle(
+            fontSize: 10,
+            height: 1.3,
+            color: AppDesignTokens.secondaryText.withValues(alpha: 0.85),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static const ListTileThemeData _twinExpanderTileTheme = ListTileThemeData(
+    visualDensity: VisualDensity(horizontal: 0, vertical: -4),
+    minVerticalPadding: 0,
+    contentPadding: EdgeInsets.zero,
+  );
+
+  /// Side-by-side compact tiles with chevron (expand for lists / readiness detail).
+  Widget _buildWorkflowReadinessTwinStrip(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+  ) {
+    final attentionAsync = ref.watch(trialAttentionProvider(trial.id));
+    final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
+
+    final borderRadius = BorderRadius.circular(AppDesignTokens.radiusCard);
+    const captionStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.4,
+      color: AppDesignTokens.secondaryText,
+    );
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing8,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing4,
+      ),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          borderRadius: borderRadius,
           border: Border.all(color: AppDesignTokens.borderCrisp),
           boxShadow: [
             BoxShadow(
@@ -422,178 +605,167 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-          child: readinessAsync.when(
-            loading: () => const Text(
-              'Updating trust summary…',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-            error: (_, __) => const Text(
-              'Trust summary unavailable.',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-            data: (report) {
-              final ({Color bg, Color fg}) statusStyle =
-                  switch (report.status) {
-                TrialReadinessStatus.ready => (
-                    bg: const Color(0xFFE8F5E9),
-                    fg: const Color(0xFF2E7D32),
-                  ),
-                TrialReadinessStatus.readyWithWarnings => (
-                    bg: const Color(0xFFFFF8E6),
-                    fg: const Color(0xFFB45309),
-                  ),
-                TrialReadinessStatus.notReady => (
-                    bg: theme.colorScheme.errorContainer,
-                    fg: theme.colorScheme.onErrorContainer,
-                  ),
-              };
-              final statusLabel = switch (report.status) {
-                TrialReadinessStatus.ready => 'Ready',
-                TrialReadinessStatus.readyWithWarnings =>
-                  'Ready with warnings',
-                TrialReadinessStatus.notReady => 'Not ready',
-              };
-
-              final totalPlots = plotsAsync.valueOrNull?.length;
-              final rated = ratedAsync.valueOrNull;
-              final int? unrated = totalPlots != null &&
-                      rated != null &&
-                      totalPlots > 0
-                  ? (totalPlots - rated).clamp(0, totalPlots)
-                  : null;
-
-              final corrections =
-                  correctionsAsync.valueOrNull?.length ?? 0;
-              final correctionsLoaded = correctionsAsync.hasValue;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            splashColor: Colors.transparent,
+            dividerColor: Colors.transparent,
+            listTileTheme: _twinExpanderTileTheme,
+          ),
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Trust summary',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                      color: AppDesignTokens.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: statusStyle.bg,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                  Expanded(
+                    child: attentionAsync.when(
+                      loading: () => const Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         child: Text(
-                          statusLabel,
+                          'Updating workflow…',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: statusStyle.fg,
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  if (unrated != null && unrated > 0) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '$unrated plot${unrated == 1 ? '' : 's'} without ratings',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: AppDesignTokens.primaryText,
+                      error: (_, __) => const Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        child: Text(
+                          'Workflow unavailable.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
                       ),
+                      data: (items) {
+                        final n = items.length;
+                        final summary = n == 0
+                            ? 'No items'
+                            : '$n ${n == 1 ? 'item' : 'items'}';
+                        return ExpansionTile(
+                          tilePadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          collapsedShape: const RoundedRectangleBorder(),
+                          shape: const RoundedRectangleBorder(),
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Workflow Status', style: captionStyle),
+                              const SizedBox(height: 3),
+                              Text(
+                                summary,
+                                style: AppDesignTokens.headingStyle(
+                                  fontSize: 14,
+                                  color: AppDesignTokens.primaryText,
+                                ),
+                              ),
+                            ],
+                          ),
+                          children: [
+                            if (items.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                child: Text(
+                                  'Nothing needs your attention for this trial right now.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    height: 1.35,
+                                    color: AppDesignTokens.secondaryText,
+                                  ),
+                                ),
+                              )
+                            else
+                              ...items.map(
+                                (item) => _AttentionRow(
+                                  item: item,
+                                  onTap: () => _handleAttentionTap(item),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
                     ),
-                  ],
-                  if (correctionsLoaded && corrections > 0) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      '$corrections session${corrections == 1 ? '' : 's'} with corrections',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: AppDesignTokens.primaryText,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 0,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      TextButton(
-                        onPressed: () =>
-                            _openReadinessReview(context, ref, trial),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text('Review Readiness'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push<void>(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  EditedItemsScreen(trialId: trial.id),
-                            ),
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text('Edited Items'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push<void>(
-                            MaterialPageRoute<void>(
-                              builder: (_) => RecoveryScreen(trialId: trial.id),
-                            ),
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text('Recovery'),
-                      ),
-                    ],
                   ),
-                  Text(
-                    'Edited Items and Recovery are app-wide.',
-                    style: TextStyle(
-                      fontSize: 10,
-                      height: 1.3,
-                      color: AppDesignTokens.secondaryText.withValues(
-                          alpha: 0.85),
+                  const VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: AppDesignTokens.divider,
+                  ),
+                  Expanded(
+                    child: readinessAsync.when(
+                      loading: () => const Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        child: Text(
+                          'Updating trial readiness…',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                      ),
+                      error: (_, __) => const Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        child: Text(
+                          'Trial readiness unavailable.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                      ),
+                      data: (report) {
+                        final summary =
+                            _readinessCollapsedSummary(report);
+                        final summaryColor =
+                            _readinessCollapsedSummaryColor(report);
+                        return ExpansionTile(
+                          tilePadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          collapsedShape: const RoundedRectangleBorder(),
+                          shape: const RoundedRectangleBorder(),
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Trial Readiness', style: captionStyle),
+                              const SizedBox(height: 3),
+                              Text(
+                                summary,
+                                style: AppDesignTokens.headingStyle(
+                                  fontSize: 14,
+                                  color: summaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          children: [
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                              child: _readinessReportDetailColumn(
+                                context,
+                                ref,
+                                trial,
+                                report,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],
-              );
-            },
+              ),
+            ),
           ),
         ),
       ),
@@ -987,10 +1159,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
           _buildTrialStatusBar(context, ref, currentTrial,
               displayStatus: effectiveStatus),
-          _TrialAttentionPanel(
-            trialId: currentTrial.id,
-            onAttentionTap: _handleAttentionTap,
-          ),
+          _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
           const SizedBox(height: AppDesignTokens.spacing8),
           Builder(
             builder: (_) {
@@ -1028,7 +1197,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               ref.watch(seedingEventForTrialProvider(widget.trial.id)),
             ),
           ),
-          _buildTrialTrustSummaryCard(context, ref, currentTrial),
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: PlotsTab(trial: currentTrial, embeddedInScroll: true),
@@ -1198,10 +1366,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ),
                 _buildTrialStatusBar(context, ref, currentTrial,
                     displayStatus: effectiveStatus),
-                _TrialAttentionPanel(
-                  trialId: currentTrial.id,
-                  onAttentionTap: _handleAttentionTap,
-                ),
+                _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
                 const SizedBox(height: AppDesignTokens.spacing8),
                 SizedBox(
                   height: 110,
@@ -1234,7 +1399,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
           ),
         ),
-        _buildTrialTrustSummaryCard(context, ref, currentTrial),
         Expanded(
           child: IndexedStack(
             index: _selectedTabIndex == _sessionsIndex
@@ -3021,117 +3185,6 @@ class _ExportFormatSheetState extends ConsumerState<_ExportFormatSheet> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TrialAttentionPanel extends ConsumerWidget {
-  const _TrialAttentionPanel({
-    required this.trialId,
-    required this.onAttentionTap,
-  });
-
-  final int trialId;
-  final void Function(AttentionItem) onAttentionTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final attentionAsync = ref.watch(trialAttentionProvider(trialId));
-
-    return attentionAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (items) {
-        if (items.isEmpty) return const SizedBox.shrink();
-
-        final high = items
-            .where((i) => i.severity == AttentionSeverity.high)
-            .toList();
-
-        return Container(
-          margin: const EdgeInsets.fromLTRB(
-            AppDesignTokens.spacing16,
-            AppDesignTokens.spacing12,
-            AppDesignTokens.spacing16,
-            AppDesignTokens.spacing4,
-          ),
-          decoration: BoxDecoration(
-            color: AppDesignTokens.cardSurface,
-            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-            border: Border.all(
-              color: high.isNotEmpty
-                  ? AppDesignTokens.warningBorder
-                  : AppDesignTokens.borderCrisp,
-            ),
-            boxShadow: AppDesignTokens.cardShadow,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDesignTokens.spacing16,
-                  AppDesignTokens.spacing12,
-                  AppDesignTokens.spacing16,
-                  AppDesignTokens.spacing8,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: high.isNotEmpty
-                            ? AppDesignTokens.flagColor
-                            : AppDesignTokens.appliedColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: AppDesignTokens.spacing8),
-                    Text(
-                      'Needs attention',
-                      style: AppDesignTokens.headingStyle(
-                        fontSize: 13,
-                        color: high.isNotEmpty
-                            ? AppDesignTokens.warningFg
-                            : AppDesignTokens.successFg,
-                      ),
-                    ),
-                    if (items.length > 2) ...[
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppDesignTokens.emptyBadgeBg,
-                          borderRadius:
-                              BorderRadius.circular(AppDesignTokens.radiusChip),
-                        ),
-                        child: Text(
-                          '${items.length}',
-                          style: AppDesignTokens.bodyStyle(
-                            fontSize: 11,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const Divider(
-                height: 1,
-                thickness: 1,
-                color: AppDesignTokens.divider,
-              ),
-              ...items.map((item) => _AttentionRow(
-                    item: item,
-                    onTap: () => onAttentionTap(item),
-                  )),
-            ],
-          ),
-        );
-      },
     );
   }
 }
