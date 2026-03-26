@@ -162,6 +162,12 @@ class ReportDataAssemblyService {
             status: seedingEvent.status,
             completedAt: seedingEvent.completedAt,
             operatorName: seedingEvent.operatorName,
+            variety: seedingEvent.variety,
+            seedLotNumber: seedingEvent.seedLotNumber,
+            seedingRate: seedingEvent.seedingRate,
+            seedingRateUnit: seedingEvent.seedingRateUnit,
+            plantingMethod: seedingEvent.plantingMethod,
+            emergenceDate: seedingEvent.emergenceDate,
           );
 
     final applicationsSummary = ApplicationsReportSummary(

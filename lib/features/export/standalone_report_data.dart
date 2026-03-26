@@ -193,12 +193,24 @@ class SeedingReportSummary {
     required this.status,
     this.completedAt,
     this.operatorName,
+    this.variety,
+    this.seedLotNumber,
+    this.seedingRate,
+    this.seedingRateUnit,
+    this.plantingMethod,
+    this.emergenceDate,
   });
 
   final DateTime seedingDate;
   final String status;
   final DateTime? completedAt;
   final String? operatorName;
+  final String? variety;
+  final String? seedLotNumber;
+  final double? seedingRate;
+  final String? seedingRateUnit;
+  final String? plantingMethod;
+  final DateTime? emergenceDate;
 }
 
 /// Applications section summary.
