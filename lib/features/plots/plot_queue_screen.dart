@@ -1413,7 +1413,7 @@ class _PlotQueueTile extends StatelessWidget {
                           border:
                               Border.all(color: AppDesignTokens.warningBorder),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Issues',
                           style: TextStyle(
                             fontSize: 10,
@@ -1435,7 +1435,7 @@ class _PlotQueueTile extends StatelessWidget {
                                 AppDesignTokens.radiusChip),
                             border: Border.all(color: AppDesignTokens.borderCrisp),
                           ),
-                          child: Text(
+                          child: const Text(
                             'Edited',
                             style: TextStyle(
                               fontSize: 10,
@@ -1456,7 +1456,7 @@ class _PlotQueueTile extends StatelessWidget {
                             color: AppDesignTokens.successFg.withValues(alpha: 0.35),
                           ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Rated',
                           style: TextStyle(
                             fontSize: 11,

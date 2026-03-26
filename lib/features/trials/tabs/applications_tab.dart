@@ -100,7 +100,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
       child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              const Text(
                 'No applications yet',
                 style: TextStyle(
                   fontSize: 14,
