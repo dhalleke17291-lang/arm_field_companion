@@ -77,10 +77,13 @@ class TrialAttentionService {
     final seedingEvent =
         await seedingRepository.getSeedingEventForTrial(trialId);
     if (seedingEvent == null) {
-      items.add(const AttentionItem(
+      final seedingMissingSeverity = studyType == StudyType.glp
+          ? AttentionSeverity.high
+          : AttentionSeverity.medium;
+      items.add(AttentionItem(
         type: AttentionType.seedingMissing,
         label: 'Seeding not recorded yet',
-        severity: AttentionSeverity.medium,
+        severity: seedingMissingSeverity,
       ));
     } else if (_seedingRecordedNeedsAttention(seedingEvent)) {
       items.add(const AttentionItem(
