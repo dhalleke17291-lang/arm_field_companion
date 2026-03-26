@@ -102,6 +102,9 @@ class _MockSessionRepository implements SessionRepository {
   Future<SessionRestoreResult> restoreSession(int sessionId,
           {String? restoredBy, int? restoredByUserId}) async =>
       SessionRestoreResult.failure('Not implemented');
+
+  @override
+  Stream<bool> watchTrialHasSessionData(int trialId) => Stream.value(false);
 }
 
 class _FakePathProvider extends PathProviderPlatform {

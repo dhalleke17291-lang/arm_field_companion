@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/repositories/seeding_repository.dart';
 import 'package:arm_field_companion/features/export/report_data_assembly_service.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
@@ -324,6 +325,25 @@ class MockApplicationRepository implements ApplicationRepository {
       throw UnimplementedError();
 }
 
+class MockSeedingRepository implements SeedingRepository {
+  SeedingEvent? seedingForTrial;
+
+  @override
+  Future<SeedingEvent?> getSeedingEventForTrial(int trialId) async =>
+      seedingForTrial;
+
+  @override
+  Future<void> markSeedingCompleted({
+    required String id,
+    required DateTime completedAt,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> upsertSeedingEvent(SeedingEventsCompanion companion) async =>
+      throw UnimplementedError();
+}
+
 class MockSessionRepository implements SessionRepository {
   List<Session> sessionsForTrial = [];
 
@@ -386,6 +406,9 @@ class MockSessionRepository implements SessionRepository {
   Future<SessionRestoreResult> restoreSession(int sessionId,
           {String? restoredBy, int? restoredByUserId}) async =>
       SessionRestoreResult.failure('Not implemented');
+
+  @override
+  Stream<bool> watchTrialHasSessionData(int trialId) => Stream.value(false);
 }
 
 class MockAssignmentRepository implements AssignmentRepository {
@@ -521,6 +544,7 @@ void main() {
   late MockSessionRepository mockSessionRepo;
   late MockAssignmentRepository mockAssignmentRepo;
   late MockPhotoRepository mockPhotoRepo;
+  late MockSeedingRepository mockSeedingRepo;
 
   setUp(() {
     mockPlotRepo = MockPlotRepository();
@@ -529,6 +553,7 @@ void main() {
     mockSessionRepo = MockSessionRepository();
     mockAssignmentRepo = MockAssignmentRepository();
     mockPhotoRepo = MockPhotoRepository();
+    mockSeedingRepo = MockSeedingRepository();
     service = ReportDataAssemblyService(
       plotRepository: mockPlotRepo,
       treatmentRepository: mockTreatmentRepo,
@@ -537,6 +562,7 @@ void main() {
       assignmentRepository: mockAssignmentRepo,
       photoRepository: mockPhotoRepo,
       exportRepository: _MockExportRepository(),
+      seedingRepository: mockSeedingRepo,
     );
   });
 
@@ -556,6 +582,7 @@ void main() {
       expect(result.applications.count, 0);
       expect(result.applications.events, isEmpty);
       expect(result.photoCount.count, 0);
+      expect(result.seeding, isNull);
     });
 
     test('SUCCESS: assembly with trial, plots, treatments, sessions, applications, photos', () async {
@@ -662,8 +689,11 @@ void main() {
       expect(result.applications.events[0].id, 'evt-1');
       expect(result.applications.events[0].applicationDate, DateTime(2026, 3, 5));
       expect(result.applications.events[0].productName, 'Herbicide X');
+      expect(result.applications.events[0].status, 'applied');
+      expect(result.applications.events[0].appliedAt, DateTime(2026, 3, 5));
 
       expect(result.photoCount.count, 1);
+      expect(result.seeding, isNull);
     });
 
     test('SUCCESS: treatment component count from getComponentsForTreatment', () async {

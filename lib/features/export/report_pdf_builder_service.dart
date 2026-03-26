@@ -21,6 +21,13 @@ String _safeTreatmentLabel(String? code) {
   return code;
 }
 
+String _capitalizeLifecycleStatus(String value) {
+  if (value.isEmpty) return value;
+  return '${value[0].toUpperCase()}${value.substring(1).toLowerCase()}';
+}
+
+const String _emDashPlaceholder = '—';
+
 /// Builds a PDF document from assembled report data.
 /// Conservative layout; no ratings, derived stats, or photo embedding.
 class ReportPdfBuilderService {
@@ -196,7 +203,9 @@ class ReportPdfBuilderService {
             border: pw.TableBorder.all(width: 0.5),
             columnWidths: {
               0: const pw.FlexColumnWidth(1),
-              1: const pw.FlexColumnWidth(2),
+              1: const pw.FlexColumnWidth(1.5),
+              2: const pw.FlexColumnWidth(0.9),
+              3: const pw.FlexColumnWidth(1.1),
             },
             children: [
               pw.TableRow(
@@ -204,16 +213,95 @@ class ReportPdfBuilderService {
                 children: [
                   _tableHeaderCell('Date'),
                   _tableHeaderCell('Product'),
+                  _tableHeaderCell('Status'),
+                  _tableHeaderCell('Applied At'),
                 ],
               ),
               ...data.applications.events.map((a) => pw.TableRow(
                     children: [
                       _tableCell(dateFormat.format(a.applicationDate)),
                       _tableCell(a.productName),
+                      _tableCell(_capitalizeLifecycleStatus(a.status)),
+                      _tableCell(
+                        a.appliedAt != null
+                            ? dateFormat.format(a.appliedAt!)
+                            : _emDashPlaceholder,
+                      ),
                     ],
                   )),
             ],
           ),
+          pw.SizedBox(height: 16),
+
+          // Seeding
+          pw.Text(
+            'Seeding',
+            style: pw.TextStyle(
+              fontSize: 15,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          if (data.seeding == null)
+            pw.Table(
+              border: pw.TableBorder.all(width: 0.5),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(1),
+              },
+              children: [
+                pw.TableRow(
+                  children: [
+                    _tableCell('Seeding not recorded'),
+                  ],
+                ),
+              ],
+            )
+          else
+            pw.Table(
+              border: pw.TableBorder.all(width: 0.5),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(1),
+                1: const pw.FlexColumnWidth(1.5),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                  children: [
+                    _tableHeaderCell('Field'),
+                    _tableHeaderCell('Value'),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _tableCell('Seeding Date'),
+                    _tableCell(dateFormat.format(data.seeding!.seedingDate)),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _tableCell('Status'),
+                    _tableCell(
+                        _capitalizeLifecycleStatus(data.seeding!.status)),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _tableCell('Completed At'),
+                    _tableCell(
+                      data.seeding!.completedAt != null
+                          ? dateFormat.format(data.seeding!.completedAt!)
+                          : _emDashPlaceholder,
+                    ),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _tableCell('Operator'),
+                    _tableCell(data.seeding!.operatorName ?? _emDashPlaceholder),
+                  ],
+                ),
+              ],
+            ),
           pw.SizedBox(height: 16),
 
           // ── Assessment Results ──────────────────────

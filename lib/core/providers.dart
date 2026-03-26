@@ -556,6 +556,7 @@ final reportDataAssemblyServiceProvider =
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     photoRepository: ref.watch(photoRepositoryProvider),
     exportRepository: ref.watch(exportRepositoryProvider),
+    seedingRepository: ref.watch(seedingRepositoryProvider),
   );
 });
 

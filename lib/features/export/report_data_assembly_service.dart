@@ -5,6 +5,7 @@ import '../photos/photo_repository.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../data/repositories/application_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
+import '../../data/repositories/seeding_repository.dart';
 import 'data/export_repository.dart';
 import 'standalone_report_data.dart';
 
@@ -20,13 +21,15 @@ class ReportDataAssemblyService {
     required AssignmentRepository assignmentRepository,
     required PhotoRepository photoRepository,
     required ExportRepository exportRepository,
+    required SeedingRepository seedingRepository,
   })  : _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
         _applicationRepository = applicationRepository,
         _sessionRepository = sessionRepository,
         _assignmentRepository = assignmentRepository,
         _photoRepository = photoRepository,
-        _exportRepository = exportRepository;
+        _exportRepository = exportRepository,
+        _seedingRepository = seedingRepository;
 
   final PlotRepository _plotRepository;
   final TreatmentRepository _treatmentRepository;
@@ -35,6 +38,7 @@ class ReportDataAssemblyService {
   final AssignmentRepository _assignmentRepository;
   final PhotoRepository _photoRepository;
   final ExportRepository _exportRepository;
+  final SeedingRepository _seedingRepository;
 
   /// Assembles report data for the given trial.
   /// Trial must exist; returns assembled DTO or throws.
@@ -49,6 +53,8 @@ class ReportDataAssemblyService {
         await _applicationRepository.getApplicationsForTrial(trialPk);
     final assignments = await _assignmentRepository.getForTrial(trialPk);
     final photos = await _photoRepository.getPhotosForTrial(trialPk);
+    final seedingEvent =
+        await _seedingRepository.getSeedingEventForTrial(trialPk);
 
     final treatmentMap = {for (final t in treatments) t.id: t};
     final assignmentByPlot = {for (final a in assignments) a.plotId: a};
@@ -105,8 +111,19 @@ class ReportDataAssemblyService {
               id: a.id,
               applicationDate: a.applicationDate,
               productName: a.productName,
+              status: a.status,
+              appliedAt: a.appliedAt,
             ))
         .toList();
+
+    final seedingSummary = seedingEvent == null
+        ? null
+        : SeedingReportSummary(
+            seedingDate: seedingEvent.seedingDate,
+            status: seedingEvent.status,
+            completedAt: seedingEvent.completedAt,
+            operatorName: seedingEvent.operatorName,
+          );
 
     final applicationsSummary = ApplicationsReportSummary(
       count: applications.length,
@@ -139,6 +156,7 @@ class ReportDataAssemblyService {
       applications: applicationsSummary,
       photoCount: photoSummary,
       ratings: ratingRows,
+      seeding: seedingSummary,
     );
   }
 }

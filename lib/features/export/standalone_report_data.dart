@@ -81,11 +81,30 @@ class ApplicationReportSummary {
     required this.id,
     required this.applicationDate,
     this.productName,
+    required this.status,
+    this.appliedAt,
   });
 
   final String id;
   final DateTime applicationDate;
   final String? productName;
+  final String status;
+  final DateTime? appliedAt;
+}
+
+/// Seeding event summary for standalone report.
+class SeedingReportSummary {
+  const SeedingReportSummary({
+    required this.seedingDate,
+    required this.status,
+    this.completedAt,
+    this.operatorName,
+  });
+
+  final DateTime seedingDate;
+  final String status;
+  final DateTime? completedAt;
+  final String? operatorName;
 }
 
 /// Applications section summary.
@@ -140,6 +159,7 @@ class StandaloneReportData {
     required this.applications,
     required this.photoCount,
     this.ratings = const [],
+    this.seeding,
   });
 
   final TrialReportSummary trial;
@@ -149,4 +169,5 @@ class StandaloneReportData {
   final ApplicationsReportSummary applications;
   final PhotoReportSummary photoCount;
   final List<RatingResultRow> ratings;
+  final SeedingReportSummary? seeding;
 }
