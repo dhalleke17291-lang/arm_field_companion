@@ -772,7 +772,26 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  Widget _buildExportIconWithBadge(
+  /// Crop / location • status for subtitle under trial name.
+  String _trialSubtitleLine(Trial trial, String effectiveStatus) {
+    final parts = <String>[];
+    if (trial.crop != null && trial.crop!.isNotEmpty) {
+      parts.add(trial.crop!);
+    }
+    if (trial.location != null && trial.location!.isNotEmpty) {
+      parts.add(trial.location!);
+    }
+    final left = parts.join(' • ');
+    final statusLabel =
+        effectiveStatus.isNotEmpty ? labelForTrialStatus(effectiveStatus) : '';
+    if (left.isEmpty && statusLabel.isEmpty) return '';
+    if (left.isEmpty) return statusLabel;
+    if (statusLabel.isEmpty) return left;
+    return '$left • $statusLabel';
+  }
+
+  /// Export control for the white toolbar under the green header (primary colors + badge).
+  Widget _buildExportToolbarControl(
       BuildContext context, WidgetRef ref, Trial trial) {
     final allowed = allowedExportFormatsForWorkspace(trial.workspaceType);
     if (allowed.isEmpty) return const SizedBox.shrink();
@@ -783,58 +802,146 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         (readinessAsync.value!.blockerCount > 0 ||
             readinessAsync.value!.warningCount > 0);
     final isBlocker = (readinessAsync.valueOrNull?.blockerCount ?? 0) > 0;
-    return Material(
-      color: Colors.transparent,
+
+    return Tooltip(
+      message: 'Export trial data (bundle or ARM package)',
       child: InkWell(
         onTap: _isExporting
             ? null
             : () => _onExportTapped(context, ref, trial),
-        borderRadius: BorderRadius.circular(20),
-        child: Tooltip(
-          message: 'Export trial data (bundle or ARM package)',
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(8, 5, 10, 5),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.25),
-                width: 1,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.ios_share_outlined,
+                size: 20,
+                color: AppDesignTokens.primary,
               ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.ios_share_outlined,
-                  color: Colors.white,
-                  size: 14,
+              const SizedBox(width: 6),
+              Text(
+                'Export',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primary,
                 ),
+              ),
+              if (showBadge) ...[
                 const SizedBox(width: 6),
-                const Text(
-                  'Export',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isBlocker
+                        ? theme.colorScheme.error
+                        : const Color(0xFFEF9F27),
                   ),
                 ),
-                if (showBadge) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isBlocker
-                          ? theme.colorScheme.error
-                          : const Color(0xFFEF9F27),
-                    ),
-                  ),
-                ],
               ],
-            ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// White bar: Add, Protocol, Export — keeps the green block for title + overflow only.
+  Widget _buildTrialDetailActionsBar(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+  ) {
+    final showExport =
+        allowedExportFormatsForWorkspace(trial.workspaceType).isNotEmpty;
+    return Material(
+      color: AppDesignTokens.cardSurface,
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => TrialSetupScreen(trial: trial),
+                  ),
+                ),
+                icon: Icon(
+                  Icons.add_circle_outline,
+                  size: 20,
+                  color: AppDesignTokens.primary,
+                ),
+                label: Text(
+                  'Add',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primary,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppDesignTokens.primary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                ),
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 28,
+              color: AppDesignTokens.divider,
+            ),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => FullProtocolDetailsScreen(trial: trial),
+                  ),
+                ),
+                icon: Icon(
+                  Icons.description_outlined,
+                  size: 20,
+                  color: AppDesignTokens.primary,
+                ),
+                label: Text(
+                  'Protocol',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primary,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppDesignTokens.primary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                ),
+              ),
+            ),
+            if (showExport) ...[
+              Container(
+                width: 1,
+                height: 28,
+                color: AppDesignTokens.divider,
+              ),
+              Expanded(
+                child: _buildExportToolbarControl(context, ref, trial),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -1031,131 +1138,88 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppDesignTokens.primary,
-                  AppDesignTokens.primaryLight,
-                ],
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDesignTokens.spacing16,
-                  AppDesignTokens.spacing12,
-                  AppDesignTokens.spacing16,
-                  AppDesignTokens.spacing16,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppDesignTokens.primary,
+                      AppDesignTokens.primaryLight,
+                    ],
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      tooltip: 'Back',
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDesignTokens.spacing16,
+                      AppDesignTokens.spacing12,
+                      AppDesignTokens.spacing16,
+                      AppDesignTokens.spacing12,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            currentTrial.name,
-                            style: AppDesignTokens.headerTitleStyle(
-                              fontSize: 18,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          if (currentTrial.crop != null ||
-                              effectiveStatus.isNotEmpty)
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    currentTrial.crop ?? '',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white
-                                          .withValues(alpha: 0.92),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        IconButton(
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          tooltip: 'Back',
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                currentTrial.name,
+                                style: AppDesignTokens.headerTitleStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
                                 ),
-                                if (effectiveStatus.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.15),
-                                      borderRadius:
-                                          BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      labelForTrialStatus(effectiveStatus),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.9),
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
+                                softWrap: true,
+                                maxLines: 4,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (_trialSubtitleLine(
+                                      currentTrial, effectiveStatus)
+                                  .isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _trialSubtitleLine(
+                                      currentTrial, effectiveStatus),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white
+                                        .withValues(alpha: 0.92),
                                   ),
-                                ],
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ],
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined,
-                          color: Colors.white, size: 22),
-                      iconSize: 22,
-                      padding: const EdgeInsets.all(8),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              TrialSetupScreen(trial: currentTrial),
+                            ],
+                          ),
                         ),
-                      ),
-                      tooltip: 'Trial setup',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.description_outlined,
-                          color: Colors.white, size: 22),
-                      iconSize: 22,
-                      padding: const EdgeInsets.all(8),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              FullProtocolDetailsScreen(trial: currentTrial),
+                        const SizedBox(width: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: _buildTrialOverflowMenu(
+                              context, currentTrial),
                         ),
-                      ),
-                      tooltip: 'View full protocol',
+                      ],
                     ),
-                    _buildExportIconWithBadge(context, ref, currentTrial),
-                    const SizedBox(width: 4),
-                    _buildTrialOverflowMenu(context, currentTrial),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              _buildTrialDetailActionsBar(context, ref, currentTrial),
+            ],
           ),
           _buildTrialStatusBar(context, ref, currentTrial,
               displayStatus: effectiveStatus),
@@ -1232,137 +1296,89 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppDesignTokens.primary,
-                        AppDesignTokens.primaryLight,
-                      ],
-                    ),
-                  ),
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppDesignTokens.spacing16,
-                        AppDesignTokens.spacing12,
-                        AppDesignTokens.spacing16,
-                        AppDesignTokens.spacing16,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppDesignTokens.primary,
+                            AppDesignTokens.primaryLight,
+                          ],
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back,
-                                color: Colors.white),
-                            onPressed: () =>
-                                Navigator.of(context).maybePop(),
-                            tooltip: 'Back',
+                      child: SafeArea(
+                        bottom: false,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppDesignTokens.spacing16,
+                            AppDesignTokens.spacing12,
+                            AppDesignTokens.spacing16,
+                            AppDesignTokens.spacing12,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  currentTrial.name,
-                                  style: AppDesignTokens.headerTitleStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                if (currentTrial.crop != null ||
-                                    effectiveStatus.isNotEmpty)
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          currentTrial.crop ?? '',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white
-                                                .withValues(alpha: 0.92),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back,
+                                    color: Colors.white),
+                                onPressed: () =>
+                                    Navigator.of(context).maybePop(),
+                                tooltip: 'Back',
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      currentTrial.name,
+                                      style: AppDesignTokens.headerTitleStyle(
+                                        fontSize: 18,
+                                        color: Colors.white,
                                       ),
-                                      if (effectiveStatus.isNotEmpty) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets
-                                              .symmetric(
-                                                  horizontal: 6,
-                                                  vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.15),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            labelForTrialStatus(
-                                                effectiveStatus),
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.9),
-                                              letterSpacing: 0.2,
-                                            ),
-                                          ),
+                                      softWrap: true,
+                                      maxLines: 4,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (_trialSubtitleLine(
+                                            currentTrial, effectiveStatus)
+                                        .isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _trialSubtitleLine(
+                                            currentTrial, effectiveStatus),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.92),
                                         ),
-                                      ],
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ],
-                                  ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined,
-                                color: Colors.white, size: 22),
-                            iconSize: 22,
-                            padding: const EdgeInsets.all(8),
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    TrialSetupScreen(trial: currentTrial),
+                                  ],
+                                ),
                               ),
-                            ),
-                            tooltip: 'Trial setup',
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.description_outlined,
-                                color: Colors.white, size: 22),
-                            iconSize: 22,
-                            padding: const EdgeInsets.all(8),
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) => FullProtocolDetailsScreen(
-                                    trial: currentTrial),
+                              const SizedBox(width: 4),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: _buildTrialOverflowMenu(
+                                    context, currentTrial),
                               ),
-                            ),
-                            tooltip: 'View full protocol',
+                            ],
                           ),
-                          _buildExportIconWithBadge(
-                              context, ref, currentTrial),
-                          const SizedBox(width: 4),
-                          _buildTrialOverflowMenu(context, currentTrial),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                    _buildTrialDetailActionsBar(context, ref, currentTrial),
+                  ],
                 ),
                 _buildTrialStatusBar(context, ref, currentTrial,
                     displayStatus: effectiveStatus),

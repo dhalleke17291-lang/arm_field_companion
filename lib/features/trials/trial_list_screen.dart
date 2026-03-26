@@ -401,97 +401,70 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
       TrialListFilter.all => ref.watch(trialsStreamProvider),
     };
 
-    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: AppDesignTokens.backgroundSurface,
       body: Column(
         children: [
           Container(
             width: double.infinity,
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppDesignTokens.primary,
-                  AppDesignTokens.primaryLight,
-                ],
-              ),
+              color: AppDesignTokens.primary,
             ),
             child: SafeArea(
               bottom: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                     AppDesignTokens.spacing16,
-                    10,
+                    12,
                     AppDesignTokens.spacing16,
-                    10),
+                    12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Row 1: title + actions
+                    // Row 1: title + grouped toolbar (search lives in field only)
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (widget.onBackTap != null)
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back,
-                                    color: Colors.white),
-                                tooltip: 'Back',
-                                onPressed: widget.onBackTap,
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (widget.onBackTap != null)
+                                IconButton(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 40,
+                                    minHeight: 40,
+                                  ),
+                                  icon: const Icon(Icons.arrow_back,
+                                      color: Colors.white),
+                                  tooltip: 'Back',
+                                  onPressed: widget.onBackTap,
+                                ),
+                              Flexible(
+                                child: Text(
+                                  widget.titleOverride ?? 'My Trials',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppDesignTokens.headerTitleStyle(
+                                    fontSize: 20,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
-                            Text(
-                              widget.titleOverride ?? 'My Trials',
-                              style: AppDesignTokens.headerTitleStyle(
-                                fontSize: 20,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon:
-                                  const Icon(Icons.search, color: Colors.white),
-                              tooltip: 'Search trials',
-                              onPressed: () {
-                                setState(() {
-                                  _searchQuery = '';
-                                  _searchController.clear();
-                                });
-                                _searchFocusNode.requestFocus();
-                              },
+                        _TrialListToolbarActions(
+                          onExport: () => _exportAllTrials(context, ref),
+                          onImport: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ProtocolImportScreen(),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.file_upload_outlined,
-                                  color: Colors.white),
-                              tooltip:
-                                  'Export closed sessions (ZIP per trial)',
-                              onPressed: () => _exportAllTrials(context, ref),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.file_download_outlined,
-                                  color: Colors.white),
-                              tooltip: 'Import Protocol',
-                              onPressed: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute<void>(
-                                      builder: (_) =>
-                                          const ProtocolImportScreen())),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.info_outline,
-                                  color: Colors.white),
-                              tooltip: 'About',
-                              onPressed: () => _showAppInfoDialog(context),
-                            ),
-                          ],
+                          ),
+                          onAbout: () => _showAppInfoDialog(context),
                         ),
                       ],
                     ),
@@ -531,40 +504,32 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                       data: (trials) {
                         if (trials.isEmpty) return const SizedBox.shrink();
                         return Padding(
-                          padding: const EdgeInsets.only(top: 6),
+                          padding: const EdgeInsets.only(top: 8),
                           child: TextField(
                             controller: _searchController,
                             focusNode: _searchFocusNode,
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface,
+                            style: const TextStyle(
+                              color: AppDesignTokens.primaryText,
                               fontSize: 14,
                             ),
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest,
-                              prefixIcon: Icon(
+                              fillColor: Colors.white,
+                              prefixIcon: const Icon(
                                 Icons.search,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                                size: 22,
+                                color: AppDesignTokens.secondaryText,
                               ),
                               hintText: 'Search trials',
                               hintStyle: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                                color: AppDesignTokens.secondaryText
+                                    .withValues(alpha: 0.85),
                               ),
                               suffixIcon: _searchController.text.isNotEmpty
                                   ? IconButton(
-                                      icon: Icon(
+                                      icon: const Icon(
                                         Icons.clear,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
+                                        color: AppDesignTokens.secondaryText,
                                       ),
                                       onPressed: () {
                                         setState(() {
@@ -596,9 +561,9 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
           ),
           Container(
             height: 8,
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
+            decoration: const BoxDecoration(
+              color: AppDesignTokens.backgroundSurface,
+              borderRadius: BorderRadius.vertical(
                 top: Radius.circular(14),
               ),
             ),
@@ -650,67 +615,63 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
   }
 
   Widget _buildFilterChipsRow() {
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: 0,
-        right: 0,
-        top: 4,
-        bottom: 6,
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _buildStatusFilterChip(
-                _TrialListStatusFilter.all, 'All'),
-            const SizedBox(width: 4),
-            _buildStatusFilterChip(
-                _TrialListStatusFilter.active, 'Active'),
-            const SizedBox(width: 4),
-            _buildStatusFilterChip(
-                _TrialListStatusFilter.draft, 'Draft'),
-            const SizedBox(width: 4),
-            _buildStatusFilterChip(
-                _TrialListStatusFilter.closed, 'Closed'),
-            const SizedBox(width: 4),
-            _buildStatusFilterChip(
-                _TrialListStatusFilter.archived, 'Archived'),
-          ],
-        ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildStatusFilterChip(_TrialListStatusFilter.all, 'All'),
+          const SizedBox(width: 6),
+          _buildStatusFilterChip(_TrialListStatusFilter.active, 'Active'),
+          const SizedBox(width: 6),
+          _buildStatusFilterChip(_TrialListStatusFilter.draft, 'Draft'),
+          const SizedBox(width: 6),
+          _buildStatusFilterChip(_TrialListStatusFilter.closed, 'Closed'),
+          const SizedBox(width: 6),
+          _buildStatusFilterChip(_TrialListStatusFilter.archived, 'Archived'),
+        ],
       ),
     );
   }
 
   Widget _buildStatusFilterChip(_TrialListStatusFilter value, String label) {
     final selected = _statusFilter == value;
-    final scheme = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => setState(() => _statusFilter = value),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: selected
-                ? scheme.primary.withValues(alpha: 0.12)
-                : scheme.surfaceContainerHigh.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(6),
+                ? AppDesignTokens.primary
+                : AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: selected
-                  ? scheme.primary.withValues(alpha: 0.25)
-                  : Colors.transparent,
+                  ? AppDesignTokens.primary
+                  : AppDesignTokens.borderCrisp,
               width: 1,
             ),
+            boxShadow: selected
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
           ),
           child: Text(
             label,
-            style: theme.textTheme.labelSmall?.copyWith(
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               color: selected
-                  ? scheme.primary
-                  : scheme.onSurfaceVariant,
-              fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
+                  ? AppDesignTokens.onPrimary
+                  : AppDesignTokens.secondaryText,
+              letterSpacing: 0.2,
             ),
           ),
         ),
@@ -805,63 +766,75 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
               _navigateToRatingForSession(context, ref, trial, session),
           workspaceFilter: widget.workspaceFilter,
         ),
-        // Section header: quiet label + sort
-        Padding(
-          padding: const EdgeInsets.only(top: 10, bottom: 6),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          decoration: BoxDecoration(
+            color: AppDesignTokens.bgWarm,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  'Trials',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w400,
-                      ) ??
-                      TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Trials',
+                        style: AppDesignTokens.bodyCrispStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppDesignTokens.secondaryText,
+                          letterSpacing: 0.6,
+                        ),
                       ),
+                    ),
+                    PopupMenuButton<_TrialListSortMode>(
+                      tooltip: 'Sort: ${_sortModeLabel(sortMode)}',
+                      onSelected: onSortChanged,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8, right: 4),
+                        child: Icon(
+                          Icons.sort,
+                          size: 20,
+                          color: AppDesignTokens.primary.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: _TrialListSortMode.newestCreated,
+                          child: Text(
+                              _sortModeLabel(_TrialListSortMode.newestCreated)),
+                        ),
+                        PopupMenuItem(
+                          value: _TrialListSortMode.oldestCreated,
+                          child: Text(
+                              _sortModeLabel(_TrialListSortMode.oldestCreated)),
+                        ),
+                        PopupMenuItem(
+                          value: _TrialListSortMode.nameAz,
+                          child:
+                              Text(_sortModeLabel(_TrialListSortMode.nameAz)),
+                        ),
+                        PopupMenuItem(
+                          value: _TrialListSortMode.nameZa,
+                          child:
+                              Text(_sortModeLabel(_TrialListSortMode.nameZa)),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              PopupMenuButton<_TrialListSortMode>(
-                tooltip: 'Sort: ${_sortModeLabel(sortMode)}',
-                onSelected: onSortChanged,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8, right: 4),
-                  child: Icon(
-                    Icons.sort,
-                    size: 18,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.8),
-                  ),
-                ),
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: _TrialListSortMode.newestCreated,
-                    child: Text(_sortModeLabel(_TrialListSortMode.newestCreated)),
-                  ),
-                  PopupMenuItem(
-                    value: _TrialListSortMode.oldestCreated,
-                    child: Text(_sortModeLabel(_TrialListSortMode.oldestCreated)),
-                  ),
-                  PopupMenuItem(
-                    value: _TrialListSortMode.nameAz,
-                    child: Text(_sortModeLabel(_TrialListSortMode.nameAz)),
-                  ),
-                  PopupMenuItem(
-                    value: _TrialListSortMode.nameZa,
-                    child: Text(_sortModeLabel(_TrialListSortMode.nameZa)),
-                  ),
-                ],
-              ),
+              filterChipsRow,
             ],
           ),
         ),
-        filterChipsRow,
         if (noResultsMessage != null)
           Padding(
             padding:
@@ -1315,6 +1288,82 @@ class _ContinueLastSessionCard extends StatelessWidget {
 }
 
 /// Compact stat pill for header: value + label (e.g. "12" / "Trials").
+/// Grouped header actions: export, import, about — single pill with separators.
+class _TrialListToolbarActions extends StatelessWidget {
+  const _TrialListToolbarActions({
+    required this.onExport,
+    required this.onImport,
+    required this.onAbout,
+  });
+
+  final VoidCallback onExport;
+  final VoidCallback onImport;
+  final VoidCallback onAbout;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget sep() => Container(
+          width: 1,
+          height: 22,
+          color: Colors.white.withValues(alpha: 0.28),
+        );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _TrialListToolbarIcon(
+            icon: Icons.file_upload_outlined,
+            tooltip: 'Export closed sessions (ZIP per trial)',
+            onPressed: onExport,
+          ),
+          sep(),
+          _TrialListToolbarIcon(
+            icon: Icons.file_download_outlined,
+            tooltip: 'Import Protocol',
+            onPressed: onImport,
+          ),
+          sep(),
+          _TrialListToolbarIcon(
+            icon: Icons.info_outline,
+            tooltip: 'About',
+            onPressed: onAbout,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrialListToolbarIcon extends StatelessWidget {
+  const _TrialListToolbarIcon({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      constraints: const BoxConstraints(minWidth: 40, minHeight: 36),
+      visualDensity: VisualDensity.compact,
+      icon: Icon(icon, color: Colors.white, size: 22),
+      tooltip: tooltip,
+      onPressed: onPressed,
+    );
+  }
+}
+
 class _CompactCountPill extends StatelessWidget {
   final String value;
   final String label;
