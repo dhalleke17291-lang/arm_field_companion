@@ -71,6 +71,17 @@ class SeedingTab extends ConsumerWidget {
             onEdit: () => _openSeedingEventSheet(context, ref, event),
             onRecordEmergence: () =>
                 _openEmergenceSheet(context, ref, event),
+            onMarkComplete: event.status == 'pending'
+                ? () async {
+                    await ref
+                        .read(seedingRepositoryProvider)
+                        .markSeedingCompleted(
+                          id: event.id,
+                          completedAt: DateTime.now(),
+                        );
+                    ref.invalidate(seedingEventForTrialProvider(trial.id));
+                  }
+                : null,
           ),
         );
       },
@@ -132,11 +143,13 @@ class _SeedingEventSummaryCard extends StatelessWidget {
   final SeedingEvent event;
   final VoidCallback onEdit;
   final VoidCallback? onRecordEmergence;
+  final Future<void> Function()? onMarkComplete;
 
   const _SeedingEventSummaryCard({
     required this.event,
     required this.onEdit,
     this.onRecordEmergence,
+    this.onMarkComplete,
   });
 
   @override
@@ -242,6 +255,17 @@ class _SeedingEventSummaryCard extends StatelessWidget {
                     if (event.notes != null &&
                         event.notes!.trim().isNotEmpty)
                       _summaryRow('Notes', event.notes!),
+                    if (onMarkComplete != null) ...[
+                      const SizedBox(height: AppDesignTokens.spacing12),
+                      FilledButton.icon(
+                        onPressed: () {
+                          final mark = onMarkComplete;
+                          if (mark != null) mark();
+                        },
+                        icon: const Icon(Icons.check_circle_outline, size: 18),
+                        label: const Text('Mark Complete'),
+                      ),
+                    ],
                     if (onRecordEmergence != null) ...[
                       const SizedBox(height: AppDesignTokens.spacing12),
                       OutlinedButton.icon(

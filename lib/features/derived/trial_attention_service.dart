@@ -9,12 +9,11 @@ import '../sessions/session_repository.dart';
 import '../plots/plot_repository.dart';
 import '../ratings/rating_repository.dart';
 
-/// [SeedingEvent] has no completion/status in drift yet.
-bool _seedingRecordedNeedsAttention(SeedingEvent e) => false;
+bool _seedingRecordedNeedsAttention(SeedingEvent e) =>
+    e.status == 'pending';
 
-/// [TrialApplicationEvent] has no `status` in drift yet; when added, align with
-/// [ApplicationsTab] pending vs applied. Until then, no row counts as pending.
-bool _trialApplicationIsPending(TrialApplicationEvent a) => false;
+bool _trialApplicationIsPending(TrialApplicationEvent a) =>
+    a.status == 'pending';
 
 /// Severity of an attention item.
 enum AttentionSeverity { high, medium, low, info }
