@@ -493,6 +493,8 @@ class SeedingEvents extends Table {
   DateTimeColumn get emergenceDate => dateTime().nullable()();
   RealColumn get emergencePct => real().nullable()();
   TextColumn get plantingMethod => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  DateTimeColumn get completedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -598,7 +600,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -885,6 +887,15 @@ WHERE product_name IS NOT NULL AND LENGTH(TRIM(product_name)) > 0
 UPDATE trial_application_events
 SET status = 'applied',
     applied_at = COALESCE(application_date, created_at)
+''');
+          }
+          if (from < 33) {
+            await m.addColumn(seedingEvents, seedingEvents.completedAt);
+            await m.addColumn(seedingEvents, seedingEvents.status);
+            await customStatement('''
+UPDATE seeding_events
+SET status = 'completed',
+    completed_at = COALESCE(seeding_date, created_at)
 ''');
           }
           await _createIndexes();

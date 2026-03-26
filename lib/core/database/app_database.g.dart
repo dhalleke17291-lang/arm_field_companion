@@ -16944,6 +16944,19 @@ class $SeedingEventsTable extends SeedingEvents
   late final GeneratedColumn<String> plantingMethod = GeneratedColumn<String>(
       'planting_method', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _completedAtMeta =
+      const VerificationMeta('completedAt');
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+      'completed_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -16971,6 +16984,8 @@ class $SeedingEventsTable extends SeedingEvents
         emergenceDate,
         emergencePct,
         plantingMethod,
+        status,
+        completedAt,
         createdAt
       ];
   @override
@@ -17080,6 +17095,16 @@ class $SeedingEventsTable extends SeedingEvents
           plantingMethod.isAcceptableOrUnknown(
               data['planting_method']!, _plantingMethodMeta));
     }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+          _completedAtMeta,
+          completedAt.isAcceptableOrUnknown(
+              data['completed_at']!, _completedAtMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -17127,6 +17152,10 @@ class $SeedingEventsTable extends SeedingEvents
           .read(DriftSqlType.double, data['${effectivePrefix}emergence_pct']),
       plantingMethod: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}planting_method']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      completedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -17156,6 +17185,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
   final DateTime? emergenceDate;
   final double? emergencePct;
   final String? plantingMethod;
+  final String status;
+  final DateTime? completedAt;
   final DateTime createdAt;
   const SeedingEvent(
       {required this.id,
@@ -17175,6 +17206,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       this.emergenceDate,
       this.emergencePct,
       this.plantingMethod,
+      required this.status,
+      this.completedAt,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -17223,6 +17256,10 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
     }
     if (!nullToAbsent || plantingMethod != null) {
       map['planting_method'] = Variable<String>(plantingMethod);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -17274,6 +17311,10 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       plantingMethod: plantingMethod == null && nullToAbsent
           ? const Value.absent()
           : Value(plantingMethod),
+      status: Value(status),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
       createdAt: Value(createdAt),
     );
   }
@@ -17299,6 +17340,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       emergenceDate: serializer.fromJson<DateTime?>(json['emergenceDate']),
       emergencePct: serializer.fromJson<double?>(json['emergencePct']),
       plantingMethod: serializer.fromJson<String?>(json['plantingMethod']),
+      status: serializer.fromJson<String>(json['status']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -17323,6 +17366,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       'emergenceDate': serializer.toJson<DateTime?>(emergenceDate),
       'emergencePct': serializer.toJson<double?>(emergencePct),
       'plantingMethod': serializer.toJson<String?>(plantingMethod),
+      'status': serializer.toJson<String>(status),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -17345,6 +17390,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           Value<DateTime?> emergenceDate = const Value.absent(),
           Value<double?> emergencePct = const Value.absent(),
           Value<String?> plantingMethod = const Value.absent(),
+          String? status,
+          Value<DateTime?> completedAt = const Value.absent(),
           DateTime? createdAt}) =>
       SeedingEvent(
         id: id ?? this.id,
@@ -17375,6 +17422,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
             emergencePct.present ? emergencePct.value : this.emergencePct,
         plantingMethod:
             plantingMethod.present ? plantingMethod.value : this.plantingMethod,
+        status: status ?? this.status,
+        completedAt: completedAt.present ? completedAt.value : this.completedAt,
         createdAt: createdAt ?? this.createdAt,
       );
   SeedingEvent copyWithCompanion(SeedingEventsCompanion data) {
@@ -17419,6 +17468,9 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       plantingMethod: data.plantingMethod.present
           ? data.plantingMethod.value
           : this.plantingMethod,
+      status: data.status.present ? data.status.value : this.status,
+      completedAt:
+          data.completedAt.present ? data.completedAt.value : this.completedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -17443,6 +17495,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           ..write('emergenceDate: $emergenceDate, ')
           ..write('emergencePct: $emergencePct, ')
           ..write('plantingMethod: $plantingMethod, ')
+          ..write('status: $status, ')
+          ..write('completedAt: $completedAt, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -17467,6 +17521,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       emergenceDate,
       emergencePct,
       plantingMethod,
+      status,
+      completedAt,
       createdAt);
   @override
   bool operator ==(Object other) =>
@@ -17489,6 +17545,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           other.emergenceDate == this.emergenceDate &&
           other.emergencePct == this.emergencePct &&
           other.plantingMethod == this.plantingMethod &&
+          other.status == this.status &&
+          other.completedAt == this.completedAt &&
           other.createdAt == this.createdAt);
 }
 
@@ -17510,6 +17568,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
   final Value<DateTime?> emergenceDate;
   final Value<double?> emergencePct;
   final Value<String?> plantingMethod;
+  final Value<String> status;
+  final Value<DateTime?> completedAt;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const SeedingEventsCompanion({
@@ -17530,6 +17590,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     this.emergenceDate = const Value.absent(),
     this.emergencePct = const Value.absent(),
     this.plantingMethod = const Value.absent(),
+    this.status = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -17551,6 +17613,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     this.emergenceDate = const Value.absent(),
     this.emergencePct = const Value.absent(),
     this.plantingMethod = const Value.absent(),
+    this.status = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
@@ -17573,6 +17637,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     Expression<DateTime>? emergenceDate,
     Expression<double>? emergencePct,
     Expression<String>? plantingMethod,
+    Expression<String>? status,
+    Expression<DateTime>? completedAt,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -17594,6 +17660,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       if (emergenceDate != null) 'emergence_date': emergenceDate,
       if (emergencePct != null) 'emergence_pct': emergencePct,
       if (plantingMethod != null) 'planting_method': plantingMethod,
+      if (status != null) 'status': status,
+      if (completedAt != null) 'completed_at': completedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -17617,6 +17685,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       Value<DateTime?>? emergenceDate,
       Value<double?>? emergencePct,
       Value<String?>? plantingMethod,
+      Value<String>? status,
+      Value<DateTime?>? completedAt,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return SeedingEventsCompanion(
@@ -17637,6 +17707,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       emergenceDate: emergenceDate ?? this.emergenceDate,
       emergencePct: emergencePct ?? this.emergencePct,
       plantingMethod: plantingMethod ?? this.plantingMethod,
+      status: status ?? this.status,
+      completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -17696,6 +17768,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     if (plantingMethod.present) {
       map['planting_method'] = Variable<String>(plantingMethod.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -17725,6 +17803,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
           ..write('emergenceDate: $emergenceDate, ')
           ..write('emergencePct: $emergencePct, ')
           ..write('plantingMethod: $plantingMethod, ')
+          ..write('status: $status, ')
+          ..write('completedAt: $completedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -28291,6 +28371,8 @@ typedef $$SeedingEventsTableCreateCompanionBuilder = SeedingEventsCompanion
   Value<DateTime?> emergenceDate,
   Value<double?> emergencePct,
   Value<String?> plantingMethod,
+  Value<String> status,
+  Value<DateTime?> completedAt,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -28313,6 +28395,8 @@ typedef $$SeedingEventsTableUpdateCompanionBuilder = SeedingEventsCompanion
   Value<DateTime?> emergenceDate,
   Value<double?> emergencePct,
   Value<String?> plantingMethod,
+  Value<String> status,
+  Value<DateTime?> completedAt,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -28351,6 +28435,8 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             Value<DateTime?> emergenceDate = const Value.absent(),
             Value<double?> emergencePct = const Value.absent(),
             Value<String?> plantingMethod = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -28372,6 +28458,8 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             emergenceDate: emergenceDate,
             emergencePct: emergencePct,
             plantingMethod: plantingMethod,
+            status: status,
+            completedAt: completedAt,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -28393,6 +28481,8 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             Value<DateTime?> emergenceDate = const Value.absent(),
             Value<double?> emergencePct = const Value.absent(),
             Value<String?> plantingMethod = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -28414,6 +28504,8 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             emergenceDate: emergenceDate,
             emergencePct: emergencePct,
             plantingMethod: plantingMethod,
+            status: status,
+            completedAt: completedAt,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -28500,6 +28592,16 @@ class $$SeedingEventsTableFilterComposer
 
   ColumnFilters<String> get plantingMethod => $state.composableBuilder(
       column: $state.table.plantingMethod,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get completedAt => $state.composableBuilder(
+      column: $state.table.completedAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -28601,6 +28703,16 @@ class $$SeedingEventsTableOrderingComposer
 
   ColumnOrderings<String> get plantingMethod => $state.composableBuilder(
       column: $state.table.plantingMethod,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get completedAt => $state.composableBuilder(
+      column: $state.table.completedAt,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

@@ -40,6 +40,19 @@ class SeedingRepository {
         );
   }
 
+  /// Sets lifecycle to completed (seeding workflow).
+  Future<void> markSeedingCompleted({
+    required String id,
+    required DateTime completedAt,
+  }) {
+    return (_db.update(_db.seedingEvents)..where((e) => e.id.equals(id))).write(
+          SeedingEventsCompanion(
+            status: const Value('completed'),
+            completedAt: Value(completedAt),
+          ),
+        );
+  }
+
   /// Returns the single seeding event for the trial, or null if none.
   Future<SeedingEvent?> getSeedingEventForTrial(int trialId) {
     return (_db.select(_db.seedingEvents)
