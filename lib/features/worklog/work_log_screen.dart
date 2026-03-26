@@ -479,8 +479,9 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
         ? ' (${_formatDuration(session.startedAt, session.endedAt!)})'
         : '';
 
-    final wt = workspaceTypeFromStringOrNull(trial?.workspaceType);
-    final isCustom = wt != null &&
+    final wt = workspaceTypeFromStringOrNull(trial?.workspaceType) ??
+        WorkspaceType.efficacy;
+    final isCustom =
         WorkspaceConfig.forType(wt).mode == TrialMode.standalone;
 
     return Material(
