@@ -1007,14 +1007,14 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                         _buildTrialTypeOption(
                           context,
                           'Custom Trials',
-                          'Flexible, user-defined trials without strict protocol structure',
+                          'Flexible, user-defined trials without strict protocol structure (standalone workspace)',
                           isCustomTrial,
                           () => setLocalState(() => isCustomTrial = true),
                         ),
                         _buildTrialTypeOption(
                           context,
                           'Protocol Trials',
-                          'Structured trials based on standardized protocols (ARM-compatible)',
+                          'Structured trials based on standardized research protocols. Supports ARM-compatible export where applicable.',
                           !isCustomTrial,
                           () =>
                               setLocalState(() => isCustomTrial = false),
@@ -1023,6 +1023,14 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                     ),
                     if (!isCustomTrial) ...[
                       const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Text(
+                          'Study template',
+                          style: Theme.of(context).textTheme.labelMedium,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.only(left: 4),
                         child: Wrap(
