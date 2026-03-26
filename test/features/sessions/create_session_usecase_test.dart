@@ -99,6 +99,10 @@ class MockSessionRepository implements SessionRepository {
   Future<Session?> getDeletedSessionById(int id) async => null;
 
   @override
+  Stream<bool> watchTrialHasSessionData(int trialId) =>
+      Stream.value(_sessions.any((s) => s.trialId == trialId));
+
+  @override
   Future<SessionRestoreResult> restoreSession(int sessionId,
           {String? restoredBy, int? restoredByUserId}) async =>
       SessionRestoreResult.failure('Not implemented');
