@@ -46,7 +46,10 @@ class FakeReportPdfBuilderService extends ReportPdfBuilderService {
   static final _pdfHeader = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
 
   @override
-  Future<Uint8List> build(StandaloneReportData data) async {
+  Future<Uint8List> build(
+    StandaloneReportData data, {
+    ReportProfile profile = ReportProfile.research,
+  }) async {
     lastBuilt = data;
     return Uint8List.fromList(_pdfHeader + List.filled(200, 0));
   }
