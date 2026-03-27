@@ -10,6 +10,7 @@ import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../derived/domain/trial_statistics.dart';
+import 'assessment_results_screen.dart';
 import '../assessment_library_picker_dialog.dart';
 
 const List<String> _assessmentMethods = [
@@ -532,8 +533,15 @@ class AssessmentsTab extends ConsumerWidget {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Coming soon')),
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => AssessmentResultsScreen(
+                        stat: stat,
+                        trialId: trial.id,
+                        trialName: trial.name,
+                      ),
+                    ),
                   );
                 },
                 child: const Text('Details →'),

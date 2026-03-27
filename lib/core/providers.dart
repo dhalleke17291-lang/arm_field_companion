@@ -180,6 +180,31 @@ final trialAssessmentStatisticsProvider = FutureProvider.autoDispose
   return result;
 });
 
+/// Raw rating rows for a trial as RatingResultRow list.
+/// Uses identical parsing to trialAssessmentStatisticsProvider
+/// to ensure stats and per-plot detail always agree.
+final trialRatingRowsProvider = FutureProvider.autoDispose
+    .family<List<RatingResultRow>, int>((ref, trialId) async {
+  final exportRepo = ref.read(exportRepositoryProvider);
+  final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
+  return rawRows
+      .map(
+        (r) => RatingResultRow(
+          plotId: (r['plot_id'] ?? '').toString(),
+          rep: (r['rep'] as int?) ?? 0,
+          treatmentCode: (r['treatment_code'] ?? '-').toString(),
+          assessmentName: (r['assessment_name'] ?? '').toString(),
+          unit: (r['unit'] ?? '').toString(),
+          value: (r['value'] ?? '').toString(),
+          resultStatus: (r['result_status'] ?? '').toString(),
+          resultDirection: _normalizeResultDirection(
+            (r['result_direction'] ?? 'neutral').toString(),
+          ),
+        ),
+      )
+      .toList();
+});
+
 final updatePlotAssignmentUseCaseProvider =
     Provider<UpdatePlotAssignmentUseCase>((ref) {
   return UpdatePlotAssignmentUseCase(
