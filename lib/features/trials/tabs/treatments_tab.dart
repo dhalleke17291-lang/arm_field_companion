@@ -139,11 +139,11 @@ class TreatmentsTab extends ConsumerWidget {
       icon: Icons.science_outlined,
       title: 'No Treatments Yet',
       subtitle: locked
-          ? getProtocolLockMessage(trial.status)
+          ? getModeLockMessage(trial.status, trial.workspaceType)
           : 'Add the treatment groups for this trial.',
-      action: locked && getProtocolLockMessage(trial.status).isNotEmpty
+      action: locked && getModeLockMessage(trial.status, trial.workspaceType).isNotEmpty
           ? Tooltip(
-              message: getProtocolLockMessage(trial.status), child: button)
+              message: getModeLockMessage(trial.status, trial.workspaceType), child: button)
           : button,
     );
   }
@@ -167,7 +167,7 @@ class TreatmentsTab extends ConsumerWidget {
                     ProtocolLockChip(isLocked: true, status: trial.status),
                     const SizedBox(height: 4),
                     Text(
-                      getProtocolLockMessage(trial.status),
+                      getModeLockMessage(trial.status, trial.workspaceType),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
@@ -198,10 +198,10 @@ class TreatmentsTab extends ConsumerWidget {
               ? GestureDetector(
                   onTap: () => ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(getProtocolLockMessage(trial.status))),
+                        content: Text(getModeLockMessage(trial.status, trial.workspaceType))),
                   ),
                   child: Tooltip(
-                    message: getProtocolLockMessage(trial.status),
+                    message: getModeLockMessage(trial.status, trial.workspaceType),
                     child: const FloatingActionButton.extended(
                       heroTag: 'add_treatment',
                       onPressed: null,

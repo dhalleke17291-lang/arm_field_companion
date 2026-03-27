@@ -1,3 +1,5 @@
+import 'workspace/workspace_config.dart';
+
 /// Trial lifecycle states (Constitution §9).
 /// Stored on [Trials.status] (`trials.status` TEXT). Values are lowercase strings
 /// defined below — use these constants only; do not invent alternate spellings.
@@ -79,6 +81,22 @@ String getProtocolLockMessage(String? status) {
   if (status == null || !isProtocolLocked(status)) return '';
   final label = labelForTrialStatus(status);
   return 'Protocol is locked because this trial is $label.';
+}
+
+/// Mode-aware lock message. Use when workspaceType is available.
+/// Standalone trials show a softer warning; protocol/GLP show strict lock.
+/// Falls back to [getProtocolLockMessage] when workspaceType is unknown.
+String getModeLockMessage(String? status, String? workspaceType) {
+  if (status == null || !isProtocolLocked(status)) return '';
+  final config = safeConfigFromString(workspaceType ?? '');
+  if (config.isStandalone) {
+    final label = labelForTrialStatus(status);
+    return 'This trial is $label. Structural changes may affect existing data.';
+  }
+  if (config.studyType == StudyType.glp) {
+    return 'GLP protocol is locked. Changes require a controlled amendment workflow.';
+  }
+  return 'Protocol is locked. Changes require protocol-controlled workflow.';
 }
 
 /// True when plot assignments must not be edited (protocol lock or trial has session data).

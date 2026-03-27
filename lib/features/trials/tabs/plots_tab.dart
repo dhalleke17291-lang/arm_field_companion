@@ -2872,7 +2872,7 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
           icon: Icons.grid_on,
           title: 'No Plots Yet',
           subtitle: locked
-              ? getProtocolLockMessage(trial.status)
+              ? getModeLockMessage(trial.status, trial.workspaceType)
               : 'Import plots via CSV or add test plots below.',
         ),
         if (!locked) ...[

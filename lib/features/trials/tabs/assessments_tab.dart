@@ -81,11 +81,11 @@ class AssessmentsTab extends ConsumerWidget {
         icon: Icons.assessment,
         title: 'No Assessments Yet',
         subtitle: locked
-            ? getProtocolLockMessage(trial.status)
+            ? getModeLockMessage(trial.status, trial.workspaceType)
             : 'Add from library or create a custom assessment.',
-        action: locked && getProtocolLockMessage(trial.status).isNotEmpty
+        action: locked && getModeLockMessage(trial.status, trial.workspaceType).isNotEmpty
             ? Tooltip(
-                message: getProtocolLockMessage(trial.status), child: button)
+                message: getModeLockMessage(trial.status, trial.workspaceType), child: button)
             : button,
       );
     }
@@ -123,7 +123,7 @@ class AssessmentsTab extends ConsumerWidget {
               const SizedBox(width: 8),
               Tooltip(
                 message: locked
-                    ? getProtocolLockMessage(trial.status)
+                    ? getModeLockMessage(trial.status, trial.workspaceType)
                     : 'Add assessment',
                 child: IconButton(
                   icon: const Icon(Icons.add),
@@ -136,7 +136,7 @@ class AssessmentsTab extends ConsumerWidget {
           ),
         ),
         if (locked)
-          ProtocolLockNotice(message: getProtocolLockMessage(trial.status)),
+          ProtocolLockNotice(message: getModeLockMessage(trial.status, trial.workspaceType)),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
