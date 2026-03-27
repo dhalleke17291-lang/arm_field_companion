@@ -417,20 +417,20 @@ class AssessmentsTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
-                    value: selectedResultDirection,
+                    initialValue: selectedResultDirection,
                     decoration: _formDecoration('Result direction'),
-                    items: [
+                    items: const [
                       DropdownMenuItem(
                         value: AssessmentResultDirection.neutral,
-                        child: const Text('Neutral'),
+                        child: Text('Neutral'),
                       ),
                       DropdownMenuItem(
                         value: AssessmentResultDirection.higherBetter,
-                        child: const Text('Higher is better'),
+                        child: Text('Higher is better'),
                       ),
                       DropdownMenuItem(
                         value: AssessmentResultDirection.lowerBetter,
-                        child: const Text('Lower is better'),
+                        child: Text('Lower is better'),
                       ),
                     ],
                     onChanged: (v) => setState(() {
@@ -811,20 +811,20 @@ class _CustomAssessmentFormDialogState
                           ),
                           const SizedBox(height: 10),
                           DropdownButtonFormField<String>(
-                            value: _resultDirection,
+                            initialValue: _resultDirection,
                             decoration: _fieldDecoration('Result direction'),
-                            items: [
+                            items: const [
                               DropdownMenuItem(
                                 value: AssessmentResultDirection.neutral,
-                                child: const Text('Neutral'),
+                                child: Text('Neutral'),
                               ),
                               DropdownMenuItem(
                                 value: AssessmentResultDirection.higherBetter,
-                                child: const Text('Higher is better'),
+                                child: Text('Higher is better'),
                               ),
                               DropdownMenuItem(
                                 value: AssessmentResultDirection.lowerBetter,
-                                child: const Text('Lower is better'),
+                                child: Text('Lower is better'),
                               ),
                             ],
                             onChanged: (v) {

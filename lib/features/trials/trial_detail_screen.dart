@@ -816,13 +816,13 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              const Icon(
                 Icons.ios_share_outlined,
                 size: 20,
                 color: AppDesignTokens.primary,
               ),
               const SizedBox(width: 6),
-              Text(
+              const Text(
                 'Export',
                 style: TextStyle(
                   fontSize: 13,
@@ -878,12 +878,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     builder: (_) => TrialSetupScreen(trial: trial),
                   ),
                 ),
-                icon: Icon(
+                icon: const Icon(
                   Icons.add_circle_outline,
                   size: 20,
                   color: AppDesignTokens.primary,
                 ),
-                label: Text(
+                label: const Text(
                   'Add',
                   style: TextStyle(
                     fontSize: 13,
@@ -911,12 +911,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     builder: (_) => FullProtocolDetailsScreen(trial: trial),
                   ),
                 ),
-                icon: Icon(
+                icon: const Icon(
                   Icons.description_outlined,
                   size: 20,
                   color: AppDesignTokens.primary,
                 ),
-                label: Text(
+                label: const Text(
                   'Protocol',
                   style: TextStyle(
                     fontSize: 13,

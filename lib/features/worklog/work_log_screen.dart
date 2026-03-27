@@ -310,13 +310,13 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.event_note_outlined,
               size: 64,
               color: AppDesignTokens.secondaryText,
             ),
             const SizedBox(height: AppDesignTokens.spacing16),
-            Text(
+            const Text(
               'No activity yet',
               style: TextStyle(
                 fontSize: 18,
@@ -325,7 +325,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
               ),
             ),
             const SizedBox(height: AppDesignTokens.spacing8),
-            Text(
+            const Text(
               'Start a trial or record your first session to see activity here',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -357,7 +357,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
       ),
       child: Text(
         title,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w700,
           color: AppDesignTokens.secondaryText,
@@ -535,7 +535,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                   _buildOpenClosedBadge(isOpen),
                   const SizedBox(width: AppDesignTokens.spacing4),
                   PopupMenuButton<String>(
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.more_vert,
                       size: 20,
                       color: AppDesignTokens.secondaryText,
@@ -726,7 +726,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
       ),
       child: Text(
         isCustom ? 'Custom' : 'Protocol',
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: AppDesignTokens.primary,
