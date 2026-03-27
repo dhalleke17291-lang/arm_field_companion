@@ -160,6 +160,8 @@ class ExportTrialUseCase {
     'humidity_pct',
     'notes',
     'days_after_seeding',
+    'application_status',
+    'applied_at',
     'export_timestamp',
   ];
 
@@ -173,6 +175,8 @@ class ExportTrialUseCase {
     'row_spacing_cm',
     'equipment_used',
     'notes',
+    'seeding_status',
+    'completed_at',
     'export_timestamp',
   ];
 
@@ -999,6 +1003,8 @@ class ExportTrialUseCase {
         _cell(a.humidity),
         _cell(a.notes),
         daysAfterSeeding != null ? _cell(daysAfterSeeding) : '',
+        a.status,
+        a.appliedAt != null ? _date(a.appliedAt!) : '',
         exportTimestamp,
       ];
       final prods = productsByEventId[a.id] ?? [];
@@ -1050,6 +1056,8 @@ class ExportTrialUseCase {
       _cell(seeding.rowSpacing),
       _cell(seeding.equipmentUsed),
       _cell(seeding.notes),
+      seeding.status,
+      seeding.completedAt != null ? _date(seeding.completedAt!) : '',
       exportTimestamp,
     ];
     return CsvExportService.buildCsv(
