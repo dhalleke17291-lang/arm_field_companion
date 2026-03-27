@@ -9,6 +9,7 @@ import '../../../core/trial_state.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import '../../derived/domain/trial_statistics.dart';
 import '../assessment_library_picker_dialog.dart';
 
 const List<String> _assessmentMethods = [
@@ -61,6 +62,8 @@ class AssessmentsTab extends ConsumerWidget {
     List<(TrialAssessment, AssessmentDefinition)> libraryList,
     List<Assessment> legacyList,
   ) {
+    final statsAsync = ref.watch(trialAssessmentStatisticsProvider(trial.id));
+    final stats = statsAsync.valueOrNull ?? {};
     final locked = isProtocolLocked(trial.status);
     final total = libraryList.length + legacyList.length;
     if (total == 0) {
@@ -221,6 +224,14 @@ class AssessmentsTab extends ConsumerWidget {
                                   ),
                                 ),
                               ),
+                            _buildAssessmentStatSlot(
+                              context,
+                              theme,
+                              statsAsync,
+                              stats,
+                              ta.id,
+                              null,
+                            ),
                           ],
                         ),
                       ),
@@ -286,13 +297,26 @@ class AssessmentsTab extends ConsumerWidget {
                         ),
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            '${assessment.dataType}${assessment.unit != null ? ' (${assessment.unit})' : ''}'
-                                '${assessment.minValue != null && assessment.maxValue != null ? ' · ${assessment.minValue}–${assessment.maxValue}' : ''}',
-                            style: const TextStyle(
-                              color: AppDesignTokens.secondaryText,
-                              fontSize: 12,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${assessment.dataType}${assessment.unit != null ? ' (${assessment.unit})' : ''}'
+                                    '${assessment.minValue != null && assessment.maxValue != null ? ' · ${assessment.minValue}–${assessment.maxValue}' : ''}',
+                                style: const TextStyle(
+                                  color: AppDesignTokens.secondaryText,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              _buildAssessmentStatSlot(
+                                context,
+                                theme,
+                                statsAsync,
+                                stats,
+                                null,
+                                assessment.name,
+                              ),
+                            ],
                           ),
                         ),
                         trailing: assessment.isActive
@@ -307,6 +331,217 @@ class AssessmentsTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Loading / error / lookup wrapper before the results block.
+  Widget _buildAssessmentStatSlot(
+    BuildContext context,
+    ThemeData theme,
+    AsyncValue<Map<int, AssessmentStatistics>> statsAsync,
+    Map<int, AssessmentStatistics> stats,
+    int? libraryTrialAssessmentId,
+    String? legacyAssessmentName,
+  ) {
+    if (statsAsync.isLoading) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppDesignTokens.primary,
+            ),
+          ),
+        ),
+      );
+    }
+    if (statsAsync.hasError) {
+      return const SizedBox.shrink();
+    }
+    AssessmentStatistics? stat;
+    if (libraryTrialAssessmentId != null) {
+      stat = stats[libraryTrialAssessmentId];
+    } else if (legacyAssessmentName != null) {
+      for (final s in stats.values) {
+        if (s.progress.assessmentName == legacyAssessmentName) {
+          stat = s;
+          break;
+        }
+      }
+    }
+    if (stat == null) return const SizedBox.shrink();
+    return _buildAssessmentResultsSection(context, stat, theme);
+  }
+
+  Widget _buildAssessmentResultsSection(
+    BuildContext context,
+    AssessmentStatistics stat,
+    ThemeData theme,
+  ) {
+    final p = stat.progress;
+    final completeness = p.completeness;
+    final pctComplete = p.totalPlots > 0
+        ? (100 * p.ratedPlots / p.totalPlots).round()
+        : 0;
+
+    late final double progressValue;
+    late final Color progressColor;
+    if (completeness == AssessmentCompleteness.noData || !stat.hasAnyData) {
+      progressValue = 0;
+      progressColor = AppDesignTokens.iconSubtle;
+    } else if (completeness == AssessmentCompleteness.inProgress) {
+      progressValue =
+          p.totalPlots > 0 ? p.ratedPlots / p.totalPlots : 0;
+      progressColor = AppDesignTokens.flagColor;
+    } else {
+      progressValue = 1.0;
+      progressColor = AppDesignTokens.successFg;
+    }
+
+    final unitSuffix = stat.unit.trim().isEmpty ? '' : ' ${stat.unit}';
+
+    List<TreatmentMean> orderedMeans;
+    if (stat.treatmentMeans.isEmpty) {
+      orderedMeans = [];
+    } else if (stat.isPreliminary) {
+      orderedMeans = List<TreatmentMean>.from(stat.treatmentMeans)
+        ..sort((a, b) => a.treatmentCode.compareTo(b.treatmentCode));
+    } else {
+      orderedMeans = sortTreatmentMeans(stat.treatmentMeans, stat.resultDirection);
+    }
+    final displayMeans = orderedMeans.take(3).toList();
+    final moreCount = orderedMeans.length - 3;
+
+    final showBest = !stat.isPreliminary &&
+        completeness == AssessmentCompleteness.complete &&
+        displayMeans.isNotEmpty &&
+        (stat.resultDirection == ResultDirection.higherIsBetter ||
+            stat.resultDirection == ResultDirection.lowerIsBetter);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progressValue,
+                    minHeight: 6,
+                    backgroundColor: AppDesignTokens.emptyBadgeBg,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(progressColor),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${p.ratedPlots} of ${p.totalPlots} plots',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ],
+          ),
+          if (completeness == AssessmentCompleteness.noData ||
+              !stat.hasAnyData) ...[
+            const SizedBox(height: 6),
+            const Text(
+              'No data yet',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ],
+          if (completeness == AssessmentCompleteness.inProgress &&
+              p.missingReps.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              p.missingReps.length == 1
+                  ? 'Rep ${p.missingReps.first} incomplete · $pctComplete% complete'
+                  : 'Reps ${p.missingReps.join(', ')} incomplete · $pctComplete% complete',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppDesignTokens.warningFg,
+              ),
+            ),
+          ],
+          if (stat.hasAnyData && displayMeans.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...displayMeans.asMap().entries.map((e) {
+              final i = e.key;
+              final m = e.value;
+              final prefix = stat.isPreliminary ? '~' : '';
+              final meanStr =
+                  '$prefix${m.mean.toStringAsFixed(1)}$unitSuffix';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${m.treatmentCode}: $meanStr',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                      ),
+                    ),
+                    if (showBest && i == 0)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: Text(
+                          'Best',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppDesignTokens.successFg,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
+            if (moreCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  'and $moreCount more…',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ),
+          ],
+          if (stat.hasAnyData) ...[
+            SizedBox(height: displayMeans.isNotEmpty ? 4 : 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Coming soon')),
+                  );
+                },
+                child: const Text('Details →'),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
