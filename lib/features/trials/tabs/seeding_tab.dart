@@ -179,6 +179,32 @@ class _SeedingEventSummaryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (event.status == 'completed')
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppDesignTokens.spacing16,
+                    AppDesignTokens.spacing12,
+                    AppDesignTokens.spacing16,
+                    0,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 14,
+                        color: AppDesignTokens.successFg,
+                      ),
+                      SizedBox(width: AppDesignTokens.spacing8),
+                      Text(
+                        'Completed',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppDesignTokens.successFg,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.all(AppDesignTokens.spacing16),
                 child: Row(
@@ -218,6 +244,35 @@ class _SeedingEventSummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (event.status == 'pending')
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: AppDesignTokens.spacing8,
+                        ),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppDesignTokens.spacing8,
+                              vertical: AppDesignTokens.spacing4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppDesignTokens.warningBg,
+                              borderRadius: BorderRadius.circular(
+                                AppDesignTokens.radiusXSmall,
+                              ),
+                            ),
+                            child: const Text(
+                              'Pending completion',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppDesignTokens.warningFg,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     _sectionHeader('Seed details'),
                     if (dateText.isNotEmpty) _summaryRow('Date', dateText),
                     if (event.plantingMethod != null &&
@@ -256,6 +311,17 @@ class _SeedingEventSummaryCard extends StatelessWidget {
                         event.notes!.trim().isNotEmpty)
                       _summaryRow('Notes', event.notes!),
                     if (onMarkComplete != null) ...[
+                      const Padding(
+                        padding:
+                            EdgeInsets.only(bottom: AppDesignTokens.spacing4),
+                        child: Text(
+                          'Seeding saved. Confirm when field work is complete.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppDesignTokens.warningFg,
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: AppDesignTokens.spacing12),
                       FilledButton.icon(
                         onPressed: () {
@@ -263,7 +329,7 @@ class _SeedingEventSummaryCard extends StatelessWidget {
                           if (mark != null) mark();
                         },
                         icon: const Icon(Icons.check_circle_outline, size: 18),
-                        label: const Text('Mark Complete'),
+                        label: const Text('Confirm Seeding Complete'),
                       ),
                     ],
                     if (onRecordEmergence != null) ...[
