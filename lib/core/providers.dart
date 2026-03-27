@@ -38,7 +38,9 @@ import '../features/export/domain/export_deleted_trial_recovery_zip_usecase.dart
 import '../features/export/export_trial_usecase.dart';
 import '../features/export/export_trial_pdf_report_usecase.dart';
 import '../features/export/report_data_assembly_service.dart';
+import '../features/export/standalone_report_data.dart';
 import '../features/export/report_pdf_builder_service.dart';
+import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
@@ -107,6 +109,75 @@ final trialAssessmentsWithDefinitionsForTrialProvider =
   return ref
       .watch(trialAssessmentRepositoryProvider)
       .watchForTrialWithDefinitions(trialId);
+});
+
+String _normalizeResultDirection(String? value) {
+  switch (value) {
+    case 'higherBetter':
+    case 'higher_is_better':
+      return 'higherBetter';
+    case 'lowerBetter':
+    case 'lower_is_better':
+      return 'lowerBetter';
+    default:
+      return 'neutral';
+  }
+}
+
+/// Statistics for all assessments in a trial, keyed by assessmentId.
+/// Returns an empty map if no rating data or assessments exist.
+/// Invalidate this provider after new ratings are saved to refresh results.
+final trialAssessmentStatisticsProvider = FutureProvider.autoDispose
+    .family<Map<int, AssessmentStatistics>, int>((ref, trialId) async {
+  // Use existing providers for cached, consistent data
+  final plots = await ref.watch(plotsForTrialProvider(trialId).future);
+  final assessmentPairs = await ref.watch(
+    trialAssessmentsWithDefinitionsForTrialProvider(trialId).future,
+  );
+
+  if (plots.isEmpty || assessmentPairs.isEmpty) return {};
+
+  // Export rows are not available as a stream provider — use repo directly
+  final exportRepo = ref.read(exportRepositoryProvider);
+  final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
+
+  // Map raw export rows to RatingResultRow — use safe toString() on all values
+  final ratingRows = rawRows
+      .map(
+        (r) => RatingResultRow(
+          plotId: (r['plot_id'] ?? '').toString(),
+          rep: (r['rep'] as int?) ?? 0,
+          treatmentCode: (r['treatment_code'] ?? '-').toString(),
+          assessmentName: (r['assessment_name'] ?? '').toString(),
+          unit: (r['unit'] ?? '').toString(),
+          value: (r['value'] ?? '').toString(),
+          resultStatus: (r['result_status'] ?? '').toString(),
+          resultDirection: (r['result_direction'] ?? 'neutral').toString(),
+        ),
+      )
+      .toList();
+
+  final totalPlots = plots.length;
+  final allReps = plots.map((p) => p.rep).whereType<int>().toSet();
+
+  final result = <int, AssessmentStatistics>{};
+  for (final pair in assessmentPairs) {
+    final ta = pair.$1;
+    final def = pair.$2;
+    final name = ta.displayNameOverride ?? def.name;
+    final unit = def.unit ?? '';
+    final direction = _normalizeResultDirection(def.resultDirection);
+    result[ta.id] = computeAssessmentStatistics(
+      ratingRows,
+      name,
+      ta.id,
+      unit,
+      direction,
+      totalPlots,
+      allReps,
+    );
+  }
+  return result;
 });
 
 final updatePlotAssignmentUseCaseProvider =
