@@ -65,9 +65,13 @@ class TimelineTab extends ConsumerWidget {
         final sessions = sessionsAsync.valueOrNull ?? [];
         final seedingDate = seedingEvent?.seedingDate;
 
-        final DateTime? firstApplicationDate = applications.isEmpty
+        // "Before first application" warning uses first APPLIED date only.
+        // A session before a pending (planned) application is not a problem.
+        final appliedApplications =
+            applications.where((a) => a.status == 'applied').toList();
+        final DateTime? firstApplicationDate = appliedApplications.isEmpty
             ? null
-            : applications
+            : appliedApplications
                 .map((a) => a.applicationDate)
                 .reduce((a, b) => a.isBefore(b) ? a : b);
 

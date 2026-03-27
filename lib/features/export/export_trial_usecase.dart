@@ -205,9 +205,13 @@ class ExportTrialUseCase {
     final assignmentByPlot = {for (final a in assignments) a.plotId: a};
 
     final DateTime? seedingDate = seeding?.seedingDate;
-    final DateTime? firstAppDate = applications.isEmpty
+    // DAS uses first APPLIED application only — pending applications
+    // are planned but not executed and must not affect DAS calculations.
+    final appliedApplications =
+        applications.where((e) => e.status == 'applied').toList();
+    final DateTime? firstAppDate = appliedApplications.isEmpty
         ? null
-        : applications
+        : appliedApplications
             .map((e) => e.applicationDate)
             .reduce((a, b) => a.isBefore(b) ? a : b);
 

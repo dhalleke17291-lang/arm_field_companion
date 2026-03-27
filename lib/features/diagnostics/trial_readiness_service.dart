@@ -155,9 +155,13 @@ class TrialReadinessService {
       ));
     }
 
-    final firstAppDate = applications.isEmpty
+    // Only applied applications define the execution timeline.
+    // Pending applications are planned but not yet executed.
+    final appliedApplications =
+        applications.where((a) => a.status == 'applied').toList();
+    final firstAppDate = appliedApplications.isEmpty
         ? null
-        : applications
+        : appliedApplications
             .map((e) => e.applicationDate)
             .reduce((a, b) => a.isBefore(b) ? a : b);
     if (firstAppDate != null) {
