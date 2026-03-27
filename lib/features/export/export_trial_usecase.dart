@@ -204,7 +204,13 @@ class ExportTrialUseCase {
     final assignments = await _assignmentRepository.getForTrial(trialPk);
     final assignmentByPlot = {for (final a in assignments) a.plotId: a};
 
-    final DateTime? seedingDate = seeding?.seedingDate;
+    // DAS uses completed seeding only — matches plot_queue and
+    // rating_screen which both gate on status == 'completed'.
+    // Pending seeding is recorded but not yet executed in the field.
+    final DateTime? seedingDate =
+        (seeding != null && seeding.status == 'completed')
+            ? seeding.seedingDate
+            : null;
     // DAS uses first APPLIED application only — pending applications
     // are planned but not executed and must not affect DAS calculations.
     final appliedApplications =
