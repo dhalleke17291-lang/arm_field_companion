@@ -9,7 +9,7 @@
 //    picking a preset (e.g. some UI conditions; input to code that applies its
 //    own default separately).
 //
-// b) [safeConfigFromString] (trial_detail_screen.dart): tolerant normalization;
+// b) [safeConfigFromString] (this file): tolerant normalization;
 //    unknown or invalid → [WorkspaceConfig.efficacy]. Drives trial detail hub/tabs.
 //
 // c) [_workspaceTypeForExportList] and [allowedExportFormatsForWorkspace]: tolerant
@@ -311,4 +311,23 @@ WorkspaceType _workspaceTypeForExportList(String workspaceType) {
 List<ExportFormat> allowedExportFormatsForWorkspace(String workspaceType) {
   return WorkspaceConfig.forType(_workspaceTypeForExportList(workspaceType))
       .availableExports;
+}
+
+/// Parses a stored [workspaceType] string to a [WorkspaceConfig].
+/// Unknown or invalid values fall back to [WorkspaceConfig.efficacy]
+/// as a safe protocol preset.
+///
+/// IMPORTANT: This fallback is a safe default for export and backend logic.
+/// UI callers must not assume that a fallback result means the trial is
+/// genuinely a protocol/efficacy trial — it only means the type was
+/// unrecognized. Use config.isStandalone and config.studyType for
+/// display decisions, but be aware that unknown types resolve to
+/// protocol-like behavior, not standalone.
+WorkspaceConfig safeConfigFromString(String stored) {
+  try {
+    final type = WorkspaceType.values.byName(stored.trim().toLowerCase());
+    return WorkspaceConfig.forType(type);
+  } catch (_) {
+    return WorkspaceConfig.efficacy;
+  }
 }

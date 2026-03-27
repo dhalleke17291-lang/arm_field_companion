@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/trial_state.dart';
+import '../../../core/workspace/workspace_config.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -65,6 +66,9 @@ class AssessmentsTab extends ConsumerWidget {
   ) {
     final statsAsync = ref.watch(trialAssessmentStatisticsProvider(trial.id));
     final stats = statsAsync.valueOrNull ?? {};
+    final config = safeConfigFromString(trial.workspaceType);
+    final isStandalone = config.isStandalone;
+    final isGlp = config.studyType == StudyType.glp;
     final locked = isProtocolLocked(trial.status);
     final total = libraryList.length + legacyList.length;
     if (total == 0) {
@@ -232,6 +236,8 @@ class AssessmentsTab extends ConsumerWidget {
                               stats,
                               ta.id,
                               null,
+                              isStandalone,
+                              isGlp,
                             ),
                           ],
                         ),
@@ -316,6 +322,8 @@ class AssessmentsTab extends ConsumerWidget {
                                 stats,
                                 null,
                                 assessment.name,
+                                isStandalone,
+                                isGlp,
                               ),
                             ],
                           ),
@@ -343,6 +351,8 @@ class AssessmentsTab extends ConsumerWidget {
     Map<int, AssessmentStatistics> stats,
     int? libraryTrialAssessmentId,
     String? legacyAssessmentName,
+    bool isStandalone,
+    bool isGlp,
   ) {
     if (statsAsync.isLoading) {
       return const Padding(
@@ -375,13 +385,39 @@ class AssessmentsTab extends ConsumerWidget {
       }
     }
     if (stat == null) return const SizedBox.shrink();
-    return _buildAssessmentResultsSection(context, stat, theme);
+    return _buildAssessmentResultsSection(
+      stat,
+      theme,
+      context,
+      isStandalone,
+      isGlp,
+    );
+  }
+
+  String _assessmentPreliminaryNotice(bool isStandalone, bool isGlp) {
+    if (isStandalone) return 'Still collecting data — results may change';
+    if (isGlp) {
+      return 'Preliminary — do not use for regulatory conclusions';
+    }
+    return 'Preliminary — data collection in progress.\nDo not use for conclusions.';
+  }
+
+  String _assessmentFooterNote(bool isStandalone, bool isGlp) {
+    if (isStandalone) {
+      return 'More results available when data collection is complete';
+    }
+    if (isGlp) {
+      return 'Full statistical analysis required for GLP submission';
+    }
+    return 'Full statistical analysis available when data collection is complete';
   }
 
   Widget _buildAssessmentResultsSection(
-    BuildContext context,
     AssessmentStatistics stat,
     ThemeData theme,
+    BuildContext context,
+    bool isStandalone,
+    bool isGlp,
   ) {
     final p = stat.progress;
     final completeness = p.completeness;
@@ -422,6 +458,9 @@ class AssessmentsTab extends ConsumerWidget {
         displayMeans.isNotEmpty &&
         (stat.resultDirection == ResultDirection.higherIsBetter ||
             stat.resultDirection == ResultDirection.lowerIsBetter);
+
+    final showFooterNote = stat.isPreliminary ||
+        completeness == AssessmentCompleteness.noData;
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -479,6 +518,25 @@ class AssessmentsTab extends ConsumerWidget {
           ],
           if (stat.hasAnyData && displayMeans.isNotEmpty) ...[
             const SizedBox(height: 8),
+            if (stat.isPreliminary) ...[
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppDesignTokens.warningBg,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _assessmentPreliminaryNotice(isStandalone, isGlp),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.warningFg,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             ...displayMeans.asMap().entries.map((e) {
               final i = e.key;
               final m = e.value;
@@ -491,26 +549,74 @@ class AssessmentsTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
+                      flex: 25,
                       child: Text(
-                        '${m.treatmentCode}: $meanStr',
+                        m.treatmentCode,
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppDesignTokens.primaryText,
                         ),
                       ),
                     ),
-                    if (showBest && i == 0)
-                      const Padding(
-                        padding: EdgeInsets.only(left: 6),
+                    Expanded(
+                      flex: 10,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              meanStr,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: showBest && i == 0
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                                color: stat.isPreliminary
+                                    ? AppDesignTokens.secondaryText
+                                    : (showBest && i == 0
+                                        ? AppDesignTokens.successFg
+                                        : AppDesignTokens.primaryText),
+                              ),
+                            ),
+                          ),
+                          if (showBest && i == 0)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 4),
+                              child: Text(
+                                'Best',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppDesignTokens.successFg,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (!isStandalone) ...[
+                      Expanded(
+                        flex: 10,
                         child: Text(
-                          'Best',
-                          style: TextStyle(
+                          m.standardDeviation.toStringAsFixed(1),
+                          style: const TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppDesignTokens.successFg,
+                            color: AppDesignTokens.secondaryText,
                           ),
                         ),
                       ),
+                      Expanded(
+                        flex: 6,
+                        child: Text(
+                          '${m.n}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               );
@@ -527,6 +633,20 @@ class AssessmentsTab extends ConsumerWidget {
                 ),
               ),
           ],
+          if (showFooterNote) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                _assessmentFooterNote(isStandalone, isGlp),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ),
+          ],
           if (stat.hasAnyData) ...[
             SizedBox(height: displayMeans.isNotEmpty ? 4 : 8),
             Align(
@@ -540,6 +660,7 @@ class AssessmentsTab extends ConsumerWidget {
                         stat: stat,
                         trialId: trial.id,
                         trialName: trial.name,
+                        workspaceType: trial.workspaceType,
                       ),
                     ),
                   );

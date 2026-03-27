@@ -4,8 +4,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/assessment_result_direction.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
+import '../../../core/workspace/workspace_config.dart';
 import '../../derived/domain/trial_statistics.dart';
 import '../../export/standalone_report_data.dart';
+
+String _resultsPreliminaryBanner(bool isStandalone, bool isGlp) {
+  if (isStandalone) return 'Still collecting data — results may change';
+  if (isGlp) return 'Preliminary — do not use for regulatory conclusions';
+  return 'Preliminary — data collection in progress.\nDo not use for conclusions.';
+}
+
+String _resultsFooterNote(bool isStandalone, bool isGlp) {
+  if (isStandalone) {
+    return 'More results available when data collection is complete';
+  }
+  if (isGlp) {
+    return 'Full statistical analysis required for GLP submission';
+  }
+  return 'Full statistical analysis available when data collection is complete';
+}
 
 /// Full-screen assessment statistics and per-plot ratings for one trial assessment.
 class AssessmentResultsScreen extends ConsumerWidget {
@@ -14,17 +31,22 @@ class AssessmentResultsScreen extends ConsumerWidget {
     required this.stat,
     required this.trialId,
     required this.trialName,
+    required this.workspaceType,
   });
 
   final AssessmentStatistics stat;
   final int trialId;
   final String trialName;
+  final String workspaceType;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rowsAsync = ref.watch(trialRatingRowsProvider(trialId));
     final p = stat.progress;
     final completeness = p.completeness;
+    final config = safeConfigFromString(workspaceType);
+    final isStandalone = config.isStandalone;
+    final isGlp = config.studyType == StudyType.glp;
 
     final sortedTreatmentMeans = stat.isPreliminary
         ? sortTreatmentMeans(stat.treatmentMeans, ResultDirection.neutral)
@@ -69,6 +91,8 @@ class AssessmentResultsScreen extends ConsumerWidget {
               _TreatmentResultsSection(
                 stat: stat,
                 sortedMeans: sortedTreatmentMeans,
+                isStandalone: isStandalone,
+                isGlp: isGlp,
               ),
               const SizedBox(height: 20),
             ],
@@ -78,11 +102,11 @@ class AssessmentResultsScreen extends ConsumerWidget {
             ),
             if (showFooter) ...[
               const SizedBox(height: 16),
-              const Center(
+              Center(
                 child: Text(
-                  'Full statistical analysis available when data collection is complete',
+                  _resultsFooterNote(isStandalone, isGlp),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
                     color: AppDesignTokens.secondaryText,
@@ -212,10 +236,14 @@ class _TreatmentResultsSection extends StatelessWidget {
   const _TreatmentResultsSection({
     required this.stat,
     required this.sortedMeans,
+    required this.isStandalone,
+    required this.isGlp,
   });
 
   final AssessmentStatistics stat;
   final List<TreatmentMean> sortedMeans;
+  final bool isStandalone;
+  final bool isGlp;
 
   @override
   Widget build(BuildContext context) {
@@ -244,10 +272,9 @@ class _TreatmentResultsSection extends StatelessWidget {
               color: AppDesignTokens.warningBg,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Text(
-              'Preliminary — data collection in progress. '
-              'Do not use for conclusions.',
-              style: TextStyle(
+            child: Text(
+              _resultsPreliminaryBanner(isStandalone, isGlp),
+              style: const TextStyle(
                 fontSize: 12,
                 color: AppDesignTokens.warningFg,
               ),
@@ -259,6 +286,7 @@ class _TreatmentResultsSection extends StatelessWidget {
           sortedMeans: sortedMeans,
           stat: stat,
           showStar: showStar,
+          showSdN: !isStandalone,
         ),
       ],
     );
@@ -270,11 +298,13 @@ class _TreatmentTable extends StatelessWidget {
     required this.sortedMeans,
     required this.stat,
     required this.showStar,
+    required this.showSdN,
   });
 
   final List<TreatmentMean> sortedMeans;
   final AssessmentStatistics stat;
   final bool showStar;
+  final bool showSdN;
 
   @override
   Widget build(BuildContext context) {
@@ -292,10 +322,10 @@ class _TreatmentTable extends StatelessWidget {
               color: AppDesignTokens.sectionHeaderBg,
               borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Expanded(
-                  flex: 3,
+                const Expanded(
+                  flex: 25,
                   child: Text(
                     'Treatment',
                     style: TextStyle(
@@ -305,8 +335,8 @@ class _TreatmentTable extends StatelessWidget {
                     ),
                   ),
                 ),
-                Expanded(
-                  flex: 2,
+                const Expanded(
+                  flex: 10,
                   child: Text(
                     'Mean',
                     style: TextStyle(
@@ -316,29 +346,31 @@ class _TreatmentTable extends StatelessWidget {
                     ),
                   ),
                 ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'SD',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppDesignTokens.secondaryText,
+                if (showSdN) ...[
+                  const Expanded(
+                    flex: 10,
+                    child: Text(
+                      'SD',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.secondaryText,
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    'n',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppDesignTokens.secondaryText,
+                  const Expanded(
+                    flex: 6,
+                    child: Text(
+                      'n',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.secondaryText,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -349,6 +381,7 @@ class _TreatmentTable extends StatelessWidget {
               isWinner: showStar && i == 0,
               alternate: i.isOdd,
               isLast: i == sortedMeans.length - 1,
+              showSdN: showSdN,
             ),
         ],
       ),
@@ -363,6 +396,7 @@ class _TreatmentDataRow extends StatelessWidget {
     required this.isWinner,
     required this.alternate,
     required this.isLast,
+    required this.showSdN,
   });
 
   final TreatmentMean mean;
@@ -370,6 +404,7 @@ class _TreatmentDataRow extends StatelessWidget {
   final bool isWinner;
   final bool alternate;
   final bool isLast;
+  final bool showSdN;
 
   @override
   Widget build(BuildContext context) {
@@ -395,7 +430,7 @@ class _TreatmentDataRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            flex: 3,
+            flex: 25,
             child: Text(
               mean.treatmentCode,
               style: const TextStyle(
@@ -405,7 +440,7 @@ class _TreatmentDataRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 2,
+            flex: 10,
             child: Text(
               meanText,
               style: TextStyle(
@@ -419,27 +454,29 @@ class _TreatmentDataRow extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              mean.standardDeviation.toStringAsFixed(1),
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppDesignTokens.secondaryText,
+          if (showSdN) ...[
+            Expanded(
+              flex: 10,
+              child: Text(
+                mean.standardDeviation.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppDesignTokens.secondaryText,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              '${mean.n}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppDesignTokens.secondaryText,
+            Expanded(
+              flex: 6,
+              child: Text(
+                '${mean.n}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppDesignTokens.secondaryText,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
