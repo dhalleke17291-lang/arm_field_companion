@@ -64,8 +64,6 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                 return InkWell(
                   onTap: () {
                     if (i == _workLogTabIndex) {
-                      ref.invalidate(
-                          workLogSessionsProvider(workLogTodayDateLocal()));
                       ref.invalidate(workLogDatesProvider);
                     }
                     if (i == 0) {

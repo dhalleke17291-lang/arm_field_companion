@@ -1062,6 +1062,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       case AttentionType.dataCollectionComplete:
         setState(() => _selectedTabIndex = 0);
         break;
+      case AttentionType.statisticalAnalysisPending:
+        setState(() => _selectedTabIndex = 3);
+        break;
     }
   }
 

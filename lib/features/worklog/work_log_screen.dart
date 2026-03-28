@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +20,29 @@ import '../sessions/session_detail_screen.dart';
 import '../trials/trial_detail_screen.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../ratings/rating_screen.dart';
+
+/// Same filter as [workLogSessionsProvider], but backed by Drift [watch] so the
+/// list updates when sessions change without manual invalidation.
+final _workLogSessionsStreamProvider = StreamProvider.autoDispose
+    .family<List<Session>, String>((ref, dateLocal) {
+  final db = ref.watch(databaseProvider);
+  return ref.watch(currentUserIdProvider).when(
+        data: (userId) => (db.select(db.sessions)
+              ..where((s) {
+                var pred = s.sessionDateLocal.equals(dateLocal) &
+                    s.isDeleted.equals(false);
+                if (userId != null) {
+                  pred = pred & s.createdByUserId.equals(userId);
+                }
+                return pred;
+              })
+              ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
+            .watch(),
+        loading: () => Stream.value(<Session>[]),
+        error: (e, st) =>
+            Stream<List<Session>>.fromFuture(Future<List<Session>>.error(e, st)),
+      );
+});
 
 /// Wall-clock date string for "today" in local time (yyyy-MM-dd).
 String workLogTodayDateLocal() {
@@ -132,7 +156,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
   @override
   Widget build(BuildContext context) {
     final sessionsAsync =
-        ref.watch(workLogSessionsProvider(_selectedDateLocal));
+        ref.watch(_workLogSessionsStreamProvider(_selectedDateLocal));
     final subtitle = formatWorkLogSubtitle(_selectedDateLocal);
 
     return Scaffold(
@@ -712,6 +736,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
       AttentionType.setupIncomplete => 0,
       AttentionType.plotsPartiallyRated => 0,
       AttentionType.dataCollectionComplete => 0,
+      AttentionType.statisticalAnalysisPending => 3,
       AttentionType.openSession => null,
       AttentionType.noSessionsYet => null,
     };
@@ -762,7 +787,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
           );
       if (!context.mounted) return;
       final trialId = session.trialId;
-      ref.invalidate(workLogSessionsProvider(_selectedDateLocal));
+      ref.invalidate(_workLogSessionsStreamProvider(_selectedDateLocal));
       ref.invalidate(sessionsForTrialProvider(trialId));
       ref.invalidate(deletedSessionsProvider);
       ref.invalidate(deletedSessionsForTrialRecoveryProvider(trialId));

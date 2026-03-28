@@ -160,71 +160,89 @@ class AssessmentsTab extends ConsumerWidget {
                       ],
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppDesignTokens.spacing16,
-                        vertical: AppDesignTokens.spacing8,
-                      ),
-                      leading: TrialItemNumberBadge(number: displayNumber),
-                      title: Text(
-                        name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppDesignTokens.primaryText,
-                        ),
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${def.dataType}${def.unit != null ? ' (${def.unit})' : ''}'
-                                  '${def.scaleMin != null && def.scaleMax != null ? ' · ${def.scaleMin}–${def.scaleMax}' : ''}',
-                              style: const TextStyle(
-                                color: AppDesignTokens.secondaryText,
-                                fontSize: 12,
-                              ),
-                            ),
-                            if (def.timingCode != null &&
-                                def.timingCode!.trim().isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: scheme.outline.withValues(alpha: 0.6)),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    def.timingCode!,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: scheme.onSurfaceVariant,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TrialItemNumberBadge(number: displayNumber),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppDesignTokens.primaryText,
+                                        ),
+                                      ),
                                     ),
+                                    if (ta.isActive)
+                                      const Icon(
+                                        Icons.check_circle_outline,
+                                        size: 20,
+                                        color: AppDesignTokens.primary,
+                                      )
+                                    else
+                                      const Icon(
+                                        Icons.chevron_right,
+                                        size: 20,
+                                        color: AppDesignTokens.iconSubtle,
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${def.dataType}${def.unit != null ? ' (${def.unit})' : ''}'
+                                      '${def.scaleMin != null && def.scaleMax != null ? ' · ${def.scaleMin}–${def.scaleMax}' : ''}',
+                                  style: const TextStyle(
+                                    color: AppDesignTokens.secondaryText,
+                                    fontSize: 12,
                                   ),
                                 ),
-                              ),
-                            _buildAssessmentStatSlot(
-                              context,
-                              theme,
-                              statsAsync,
-                              stats,
-                              ta.id,
-                              null,
-                              isStandalone,
-                              isGlp,
+                                if (def.timingCode != null &&
+                                    def.timingCode!.trim().isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                            color: scheme.outline
+                                                .withValues(alpha: 0.6)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        def.timingCode!,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: scheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                _buildAssessmentStatSlot(
+                                  context,
+                                  theme,
+                                  statsAsync,
+                                  stats,
+                                  ta.id,
+                                  null,
+                                  isStandalone,
+                                  isGlp,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      trailing: ta.isActive
-                          ? const Icon(Icons.check_circle_outline,
-                              size: 20, color: AppDesignTokens.primary)
-                          : const Icon(Icons.chevron_right,
-                              size: 20, color: AppDesignTokens.iconSubtle),
                     ),
                   );
                 }),
@@ -260,50 +278,68 @@ class AssessmentsTab extends ConsumerWidget {
                         ],
                       ),
                       clipBehavior: Clip.antiAlias,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppDesignTokens.spacing16,
-                          vertical: AppDesignTokens.spacing8,
-                        ),
-                        leading: TrialItemNumberBadge(number: displayNumber),
-                        title: Text(
-                          assessment.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppDesignTokens.primaryText,
-                          ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${assessment.dataType}${assessment.unit != null ? ' (${assessment.unit})' : ''}'
-                                    '${assessment.minValue != null && assessment.maxValue != null ? ' · ${assessment.minValue}–${assessment.maxValue}' : ''}',
-                                style: const TextStyle(
-                                  color: AppDesignTokens.secondaryText,
-                                  fontSize: 12,
-                                ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TrialItemNumberBadge(number: displayNumber),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          assessment.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppDesignTokens.primaryText,
+                                          ),
+                                        ),
+                                      ),
+                                      if (assessment.isActive)
+                                        const Icon(
+                                          Icons.check_circle_outline,
+                                          size: 20,
+                                          color: AppDesignTokens.primary,
+                                        )
+                                      else
+                                        const Icon(
+                                          Icons.chevron_right,
+                                          size: 20,
+                                          color: AppDesignTokens.iconSubtle,
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${assessment.dataType}${assessment.unit != null ? ' (${assessment.unit})' : ''}'
+                                        '${assessment.minValue != null && assessment.maxValue != null ? ' · ${assessment.minValue}–${assessment.maxValue}' : ''}',
+                                    style: const TextStyle(
+                                      color: AppDesignTokens.secondaryText,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  _buildAssessmentStatSlot(
+                                    context,
+                                    theme,
+                                    statsAsync,
+                                    stats,
+                                    null,
+                                    assessment.name,
+                                    isStandalone,
+                                    isGlp,
+                                  ),
+                                ],
                               ),
-                              _buildAssessmentStatSlot(
-                                context,
-                                theme,
-                                statsAsync,
-                                stats,
-                                null,
-                                assessment.name,
-                                isStandalone,
-                                isGlp,
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        trailing: assessment.isActive
-                            ? const Icon(Icons.check_circle_outline,
-                                size: 20, color: AppDesignTokens.primary)
-                            : const Icon(Icons.chevron_right,
-                                size: 20, color: AppDesignTokens.iconSubtle),
                       ),
                     );
                 }),
@@ -389,7 +425,7 @@ class AssessmentsTab extends ConsumerWidget {
     if (isGlp) {
       return 'Full statistical analysis required for GLP submission';
     }
-    return 'Full statistical analysis available when data collection is complete';
+    return '';
   }
 
   Widget _buildAssessmentResultsSection(
@@ -441,6 +477,7 @@ class AssessmentsTab extends ConsumerWidget {
 
     final showFooterNote = stat.isPreliminary ||
         completeness == AssessmentCompleteness.noData;
+    final footerNote = _assessmentFooterNote(isStandalone, isGlp);
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -613,11 +650,11 @@ class AssessmentsTab extends ConsumerWidget {
                 ),
               ),
           ],
-          if (showFooterNote) ...[
+          if (showFooterNote && footerNote.isNotEmpty) ...[
             const SizedBox(height: 8),
             Center(
               child: Text(
-                _assessmentFooterNote(isStandalone, isGlp),
+                footerNote,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 11,

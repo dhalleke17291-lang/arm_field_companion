@@ -29,6 +29,7 @@ enum AttentionType {
   plotsPartiallyRated,
   setupIncomplete,
   dataCollectionComplete,
+  statisticalAnalysisPending,
 }
 
 /// A single attention item for a trial.
@@ -59,6 +60,7 @@ class TrialAttentionService {
     required this.plotRepository,
     required this.assignmentRepository,
     required this.ratingRepository,
+    required this.db,
   });
 
   final StudyType studyType;
@@ -68,6 +70,7 @@ class TrialAttentionService {
   final PlotRepository plotRepository;
   final AssignmentRepository assignmentRepository;
   final RatingRepository ratingRepository;
+  final AppDatabase db;
 
   AttentionSeverity _seedingPendingSeverity() => switch (studyType) {
         StudyType.glp => AttentionSeverity.high,
@@ -207,6 +210,26 @@ class TrialAttentionService {
       // RATINGS
       final ratedCount =
           await ratingRepository.getRatedPlotCountForTrial(trialId);
+
+      final trialAssessRows = await (db.select(db.trialAssessments)
+            ..where((t) => t.trialId.equals(trialId)))
+          .get();
+      final legacyAssessRows = await (db.select(db.assessments)
+            ..where((a) => a.trialId.equals(trialId)))
+          .get();
+      final hasAssessmentsConfigured =
+          trialAssessRows.isNotEmpty || legacyAssessRows.isNotEmpty;
+      if (hasAssessmentsConfigured &&
+          ratedCount == 0 &&
+          totalPlotCount > 0 &&
+          completedSessions.isEmpty) {
+        items.add(const AttentionItem(
+          type: AttentionType.statisticalAnalysisPending,
+          label:
+              'Statistical analysis will generate once plot ratings are complete.',
+          severity: AttentionSeverity.info,
+        ));
+      }
 
       if (ratedCount < totalPlotCount && completedSessions.isNotEmpty) {
         items.add(AttentionItem(

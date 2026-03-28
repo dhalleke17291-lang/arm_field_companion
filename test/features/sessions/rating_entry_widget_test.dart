@@ -190,9 +190,9 @@ void main() {
         ProviderScope(
           overrides: [
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            sessionRatingsProvider(10).overrideWith((ref) => Future.value([])),
+            sessionRatingsProvider(10).overrideWith((ref) => Stream.value([])),
             sessionAssessmentsProvider(10)
-                .overrideWith((ref) => Future.value(assessments)),
+                .overrideWith((ref) => Stream.value(assessments)),
             treatmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value([])),
             assignmentsForTrialProvider(1)
@@ -230,9 +230,9 @@ void main() {
         ProviderScope(
           overrides: [
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            sessionRatingsProvider(10).overrideWith((ref) => Future.value([])),
+            sessionRatingsProvider(10).overrideWith((ref) => Stream.value([])),
             sessionAssessmentsProvider(10)
-                .overrideWith((ref) => Future.value(assessments)),
+                .overrideWith((ref) => Stream.value(assessments)),
             treatmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value([])),
             assignmentsForTrialProvider(1)

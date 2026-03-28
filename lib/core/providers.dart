@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import "../data/repositories/treatment_repository.dart";
 import "../data/repositories/assignment_repository.dart";
 import "../data/repositories/assessment_definition_repository.dart";
@@ -10,6 +12,7 @@ import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
+import 'trial_operational_watch_merge.dart';
 import 'session_state.dart';
 import 'trial_state.dart';
 import '../features/trials/trial_repository.dart';
@@ -127,83 +130,86 @@ String _normalizeResultDirection(String? value) {
 
 /// Statistics for all assessments in a trial, keyed by assessmentId.
 /// Returns an empty map if no rating data or assessments exist.
-/// Invalidate this provider after new ratings are saved to refresh results.
-final trialAssessmentStatisticsProvider = FutureProvider.autoDispose
-    .family<Map<int, AssessmentStatistics>, int>((ref, trialId) async {
-  // Use existing providers for cached, consistent data
-  final plots = await ref.watch(plotsForTrialProvider(trialId).future);
-  final assessmentPairs = await ref.watch(
-    trialAssessmentsWithDefinitionsForTrialProvider(trialId).future,
-  );
-
-  if (plots.isEmpty || assessmentPairs.isEmpty) return {};
-
-  // Export rows are not available as a stream provider — use repo directly
-  final exportRepo = ref.read(exportRepositoryProvider);
-  final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
-
-  // Map raw export rows to RatingResultRow — use safe toString() on all values
-  final ratingRows = rawRows
-      .map(
-        (r) => RatingResultRow(
-          plotId: (r['plot_id'] ?? '').toString(),
-          rep: (r['rep'] as int?) ?? 0,
-          treatmentCode: (r['treatment_code'] ?? '-').toString(),
-          assessmentName: (r['assessment_name'] ?? '').toString(),
-          unit: (r['unit'] ?? '').toString(),
-          value: (r['value'] ?? '').toString(),
-          resultStatus: (r['result_status'] ?? '').toString(),
-          resultDirection: (r['result_direction'] ?? 'neutral').toString(),
-        ),
-      )
-      .toList();
-
-  final totalPlots = plots.length;
-  final allReps = plots.map((p) => p.rep).whereType<int>().toSet();
-
-  final result = <int, AssessmentStatistics>{};
-  for (final pair in assessmentPairs) {
-    final ta = pair.$1;
-    final def = pair.$2;
-    final name = ta.displayNameOverride ?? def.name;
-    final unit = def.unit ?? '';
-    final direction = _normalizeResultDirection(def.resultDirection);
-    result[ta.id] = computeAssessmentStatistics(
-      ratingRows,
-      name,
-      ta.id,
-      unit,
-      direction,
-      totalPlots,
-      allReps,
+/// Recomputes when operational trial data changes.
+final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
+    .family<Map<int, AssessmentStatistics>, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) async {
+    final plots = await ref.watch(plotsForTrialProvider(trialId).future);
+    final assessmentPairs = await ref.watch(
+      trialAssessmentsWithDefinitionsForTrialProvider(trialId).future,
     );
-  }
-  return result;
+
+    if (plots.isEmpty || assessmentPairs.isEmpty) return {};
+
+    final exportRepo = ref.read(exportRepositoryProvider);
+    final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
+
+    final ratingRows = rawRows
+        .map(
+          (r) => RatingResultRow(
+            plotId: (r['plot_id'] ?? '').toString(),
+            rep: (r['rep'] as int?) ?? 0,
+            treatmentCode: (r['treatment_code'] ?? '-').toString(),
+            assessmentName: (r['assessment_name'] ?? '').toString(),
+            unit: (r['unit'] ?? '').toString(),
+            value: (r['value'] ?? '').toString(),
+            resultStatus: (r['result_status'] ?? '').toString(),
+            resultDirection: (r['result_direction'] ?? 'neutral').toString(),
+          ),
+        )
+        .toList();
+
+    final totalPlots = plots.length;
+    final allReps = plots.map((p) => p.rep).whereType<int>().toSet();
+
+    final result = <int, AssessmentStatistics>{};
+    for (final pair in assessmentPairs) {
+      final ta = pair.$1;
+      final def = pair.$2;
+      final name = ta.displayNameOverride ?? def.name;
+      final unit = def.unit ?? '';
+      final direction = _normalizeResultDirection(def.resultDirection);
+      result[ta.id] = computeAssessmentStatistics(
+        ratingRows,
+        name,
+        ta.id,
+        unit,
+        direction,
+        totalPlots,
+        allReps,
+      );
+    }
+    return result;
+  });
 });
 
 /// Raw rating rows for a trial as RatingResultRow list.
 /// Uses identical parsing to trialAssessmentStatisticsProvider
 /// to ensure stats and per-plot detail always agree.
-final trialRatingRowsProvider = FutureProvider.autoDispose
-    .family<List<RatingResultRow>, int>((ref, trialId) async {
-  final exportRepo = ref.read(exportRepositoryProvider);
-  final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
-  return rawRows
-      .map(
-        (r) => RatingResultRow(
-          plotId: (r['plot_id'] ?? '').toString(),
-          rep: (r['rep'] as int?) ?? 0,
-          treatmentCode: (r['treatment_code'] ?? '-').toString(),
-          assessmentName: (r['assessment_name'] ?? '').toString(),
-          unit: (r['unit'] ?? '').toString(),
-          value: (r['value'] ?? '').toString(),
-          resultStatus: (r['result_status'] ?? '').toString(),
-          resultDirection: _normalizeResultDirection(
-            (r['result_direction'] ?? 'neutral').toString(),
+final trialRatingRowsProvider = StreamProvider.autoDispose
+    .family<List<RatingResultRow>, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) async {
+    final exportRepo = ref.read(exportRepositoryProvider);
+    final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
+    return rawRows
+        .map(
+          (r) => RatingResultRow(
+            plotId: (r['plot_id'] ?? '').toString(),
+            rep: (r['rep'] as int?) ?? 0,
+            treatmentCode: (r['treatment_code'] ?? '-').toString(),
+            assessmentName: (r['assessment_name'] ?? '').toString(),
+            unit: (r['unit'] ?? '').toString(),
+            value: (r['value'] ?? '').toString(),
+            resultStatus: (r['result_status'] ?? '').toString(),
+            resultDirection: _normalizeResultDirection(
+              (r['result_direction'] ?? 'neutral').toString(),
+            ),
           ),
-        ),
-      )
-      .toList();
+        )
+        .toList();
+  });
 });
 
 final updatePlotAssignmentUseCaseProvider =
@@ -253,21 +259,37 @@ final todayActivityRepositoryProvider =
   return TodayActivityRepository(ref.watch(databaseProvider));
 });
 
-/// Activity events for a given day (wall-clock date "yyyy-MM-dd"). AutoDispose, refresh on read.
-final todayActivityProvider = FutureProvider.autoDispose
-    .family<List<ActivityEvent>, String>((ref, dateLocal) async {
-  final repo = ref.watch(todayActivityRepositoryProvider);
-  final userId = await ref.watch(currentUserIdProvider.future);
-  return repo.getActivityForDate(dateLocal, currentUserId: userId);
+/// Activity events for a given day (wall-clock date "yyyy-MM-dd").
+/// Recomputes when operational tables used by [TodayActivityRepository] change.
+final todayActivityProvider = StreamProvider.autoDispose
+    .family<List<ActivityEvent>, String>((ref, dateLocal) {
+  final db = ref.watch(databaseProvider);
+  return ref.watch(currentUserIdProvider).when(
+        data: (userId) => mergeTodayActivityTableWatches(db).asyncMap((_) async {
+          final repo = ref.read(todayActivityRepositoryProvider);
+          return repo.getActivityForDate(dateLocal, currentUserId: userId);
+        }),
+        loading: () => Stream.value(<ActivityEvent>[]),
+        error: (e, st) => Stream<List<ActivityEvent>>.error(e, st),
+      );
 });
 
 /// Days with at least one activity (empty days excluded), with event count. For work log history.
 final workLogDatesProvider =
-    FutureProvider.autoDispose<List<({String dateLocal, int eventCount})>>(
-        (ref) async {
-  final repo = ref.watch(todayActivityRepositoryProvider);
-  final userId = await ref.watch(currentUserIdProvider.future);
-  return repo.getDatesWithActivity(currentUserId: userId);
+    StreamProvider.autoDispose<List<({String dateLocal, int eventCount})>>(
+        (ref) {
+  final db = ref.watch(databaseProvider);
+  return ref.watch(currentUserIdProvider).when(
+        data: (userId) => mergeTodayActivityTableWatches(db).asyncMap((_) async {
+          final repo = ref.read(todayActivityRepositoryProvider);
+          return repo.getDatesWithActivity(currentUserId: userId);
+        }),
+        loading: () => Stream.value([]),
+        error: (e, st) => Stream<List<({String dateLocal, int eventCount})>>.error(
+              e,
+              st,
+            ),
+      );
 });
 
 /// Sessions for work log: filter by date (sessionDateLocal) and optionally current user (createdByUserId).
@@ -295,8 +317,11 @@ final flagCountForSessionProvider =
 
 /// Number of photos in this session.
 final photoCountForSessionProvider =
-    FutureProvider.autoDispose.family<int, int>((ref, sessionId) {
-  return ref.read(photoRepositoryProvider).getPhotoCountForSession(sessionId);
+    StreamProvider.autoDispose.family<int, int>((ref, sessionId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.photos)..where((p) => p.sessionId.equals(sessionId)))
+      .watch()
+      .map((list) => list.length);
 });
 
 final activeUsersProvider = StreamProvider<List<User>>((ref) {
@@ -393,15 +418,18 @@ final protocolTrialsProvider = StreamProvider((ref) {
   });
 });
 
-/// Current trial by id (e.g. for trial detail). Invalidate after status change.
-final trialProvider = FutureProvider.autoDispose.family<Trial?, int>((ref, id) {
-  return ref.watch(trialRepositoryProvider).getTrialById(id);
+/// Current trial by id (e.g. for trial detail). Updates when the trial row changes.
+final trialProvider = StreamProvider.autoDispose.family<Trial?, int>((ref, id) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.trials)..where((t) => t.id.equals(id))).watchSingleOrNull();
 });
 
-/// Trial setup fields (protocol, location, plot dimensions, soil, etc.). Watch for setup screen; invalidate after update.
+/// Trial setup fields (protocol, location, plot dimensions, soil, etc.). Watch for setup screen.
 final trialSetupProvider =
-    FutureProvider.autoDispose.family<Trial?, int>((ref, trialId) {
-  return ref.watch(trialRepositoryProvider).getTrialById(trialId);
+    StreamProvider.autoDispose.family<Trial?, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+      .watchSingleOrNull();
 });
 
 /// Trial name for Recovery session/plot rows: active trial, else soft-deleted, else fallback.
@@ -474,14 +502,14 @@ final deletedPlotsForTrialRecoveryProvider =
   return ref.watch(plotRepositoryProvider).getDeletedPlotsForTrial(trialId);
 });
 
-/// Seeding records for a trial (for Seeding tab). Invalidate after add/edit/delete.
-final seedingRecordsForTrialProvider = FutureProvider.autoDispose
-    .family<List<SeedingRecord>, int>((ref, trialId) async {
+/// Seeding records for a trial (for Seeding tab).
+final seedingRecordsForTrialProvider = StreamProvider.autoDispose
+    .family<List<SeedingRecord>, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.seedingRecords)
         ..where((t) => t.trialId.equals(trialId))
         ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
-      .get();
+      .watch();
 });
 
 final openSessionProvider =
@@ -529,8 +557,17 @@ final lastSessionContextProvider =
 });
 
 final sessionAssessmentsProvider =
-    FutureProvider.family<List<Assessment>, int>((ref, sessionId) {
-  return ref.watch(sessionRepositoryProvider).getSessionAssessments(sessionId);
+    StreamProvider.family<List<Assessment>, int>((ref, sessionId) {
+  final db = ref.watch(databaseProvider);
+  final sessionRepo = ref.watch(sessionRepositoryProvider);
+  return (db.select(db.sessionAssessments)
+        ..where((sa) => sa.sessionId.equals(sessionId))
+        ..orderBy([
+          (sa) => drift.OrderingTerm.asc(sa.sortOrder),
+          (sa) => drift.OrderingTerm.asc(sa.id),
+        ]))
+      .watch()
+      .asyncMap((_) => sessionRepo.getSessionAssessments(sessionId));
 });
 
 final ratedPlotPksProvider =
@@ -581,10 +618,14 @@ final currentRatingProvider =
 });
 
 final sessionRatingsProvider =
-    FutureProvider.family<List<RatingRecord>, int>((ref, sessionId) {
-  return ref
-      .watch(ratingRepositoryProvider)
-      .getCurrentRatingsForSession(sessionId);
+    StreamProvider.family<List<RatingRecord>, int>((ref, sessionId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.ratingRecords)
+        ..where((r) =>
+            r.sessionId.equals(sessionId) &
+            r.isCurrent.equals(true) &
+            r.isDeleted.equals(false)))
+      .watch();
 });
 
 /// Session IDs among the trial's sessions that have any rating correction (one batch per trial).
@@ -599,10 +640,13 @@ final sessionIdsWithCorrectionsForTrialProvider =
 
 /// Plot PKs with at least one correction in the given session (single query per session).
 final plotPksWithCorrectionsForSessionProvider =
-    FutureProvider.autoDispose.family<Set<int>, int>((ref, sessionId) {
-  return ref
-      .read(ratingRepositoryProvider)
-      .getPlotPksWithCorrectionsForSession(sessionId);
+    StreamProvider.autoDispose.family<Set<int>, int>((ref, sessionId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.ratingCorrections)
+        ..where((c) =>
+            c.sessionId.equals(sessionId) & c.plotPk.isNotNull()))
+      .watch()
+      .map((rows) => {for (final c in rows) if (c.plotPk != null) c.plotPk!});
 });
 
 // ===== Export (CSV) =====
@@ -700,15 +744,19 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
 });
 
 /// Trial readiness checks for pre-export diagnostics. AutoDispose, family by trialId.
-final trialDiagnosticsProvider = FutureProvider.autoDispose
+final trialDiagnosticsProvider = StreamProvider.autoDispose
     .family<TrialReadinessResult, int>((ref, trialId) {
-  return TrialDiagnosticsService().runChecks(trialId.toString(), ref);
+  final db = ref.watch(databaseProvider);
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) =>
+      TrialDiagnosticsService().runChecks(trialId.toString(), ref));
 });
 
 /// Unified trial readiness report (blockers, warnings, passes). Used for readiness card and export gating.
-final trialReadinessProvider = FutureProvider.autoDispose
+final trialReadinessProvider = StreamProvider.autoDispose
     .family<TrialReadinessReport, int>((ref, trialId) {
-  return TrialReadinessService().runChecks(trialId.toString(), ref);
+  final db = ref.watch(databaseProvider);
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) =>
+      TrialReadinessService().runChecks(trialId.toString(), ref));
 });
 
 /// Latest protocol import event for a trial (for opening saved CSV reference).
@@ -778,11 +826,11 @@ final photosForPlotProvider =
       );
 });
 
-/// One-shot fetch of photos for a plot in a session.
+/// Photos for a plot in a session (live updates).
 final photosForPlotInSessionProvider =
-    FutureProvider.autoDispose.family<List<Photo>, PhotosForPlotParams>(
+    StreamProvider.autoDispose.family<List<Photo>, PhotosForPlotParams>(
         (ref, params) {
-  return ref.read(photoRepositoryProvider).getPhotosForPlotInSession(
+  return ref.watch(photoRepositoryProvider).watchPhotosForPlot(
         trialId: params.trialId,
         plotPk: params.plotPk,
         sessionId: params.sessionId,
@@ -837,12 +885,14 @@ final treatmentsForTrialProvider =
       .watchTreatmentsForTrial(trialId);
 });
 
-/// Components for a single treatment (for Treatments tab expandable list). Invalidate after add/delete.
-final treatmentComponentsForTreatmentProvider = FutureProvider.autoDispose
+/// Components for a single treatment (for Treatments tab expandable list).
+final treatmentComponentsForTreatmentProvider = StreamProvider.autoDispose
     .family<List<TreatmentComponent>, int>((ref, treatmentId) {
-  return ref
-      .watch(treatmentRepositoryProvider)
-      .getComponentsForTreatment(treatmentId);
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.treatmentComponents)
+        ..where((c) => c.treatmentId.equals(treatmentId))
+        ..orderBy([(c) => drift.OrderingTerm.asc(c.sortOrder)]))
+      .watch();
 });
 
 final assignmentsForTrialProvider =
@@ -852,20 +902,30 @@ final assignmentsForTrialProvider =
 
 /// Total count of treatment components across all treatments for a trial (Trial Summary).
 final treatmentComponentsCountForTrialProvider =
-    FutureProvider.autoDispose.family<int, int>((ref, trialId) async {
-  final repo = ref.watch(treatmentRepositoryProvider);
-  final treatments = await repo.getTreatmentsForTrial(trialId);
-  int count = 0;
-  for (final t in treatments) {
-    count += (await repo.getComponentsForTreatment(t.id)).length;
-  }
-  return count;
+    StreamProvider.autoDispose.family<int, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) async {
+    final repo = ref.read(treatmentRepositoryProvider);
+    final treatments = await repo.getTreatmentsForTrial(trialId);
+    var count = 0;
+    for (final t in treatments) {
+      count += (await repo.getComponentsForTreatment(t.id)).length;
+    }
+    return count;
+  });
 });
 
 /// Count of distinct plots with at least one current rating for this trial (Trial Summary).
 final ratedPlotsCountForTrialProvider =
-    FutureProvider.autoDispose.family<int, int>((ref, trialId) {
-  return ref.read(ratingRepositoryProvider).getRatedPlotCountForTrial(trialId);
+    StreamProvider.autoDispose.family<int, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.ratingRecords)
+        ..where((r) =>
+            r.trialId.equals(trialId) &
+            r.isCurrent.equals(true) &
+            r.isDeleted.equals(false)))
+      .watch()
+      .map((rows) => rows.map((r) => r.plotPk).toSet().length);
 });
 
 final resolvePlotTreatmentProvider = Provider<ResolvePlotTreatment>((ref) {
@@ -906,8 +966,10 @@ final seedingRepositoryProvider = Provider<SeedingRepository>((ref) {
 
 /// Seeding event for a trial (one per trial). AutoDispose, family keyed by trialId.
 final seedingEventForTrialProvider =
-    FutureProvider.autoDispose.family<SeedingEvent?, int>((ref, trialId) {
-  return ref.read(seedingRepositoryProvider).getSeedingEventForTrial(trialId);
+    StreamProvider.autoDispose.family<SeedingEvent?, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.seedingEvents)..where((s) => s.trialId.equals(trialId)))
+      .watchSingleOrNull();
 });
 
 /// Trial-level application events (trial_application_events), ordered by application_date ascending.
@@ -919,12 +981,12 @@ final trialApplicationsForTrialProvider = StreamProvider.autoDispose
 });
 
 /// Latest application event for a trial (most recent application_date). Null if none.
-final latestApplicationForTrialProvider = FutureProvider.autoDispose
-    .family<TrialApplicationEvent?, int>((ref, trialId) async {
-  final list = await ref
+final latestApplicationForTrialProvider = StreamProvider.autoDispose
+    .family<TrialApplicationEvent?, int>((ref, trialId) {
+  return ref
       .watch(applicationRepositoryProvider)
-      .getApplicationsForTrial(trialId);
-  return list.isEmpty ? null : list.last;
+      .watchApplicationsForTrial(trialId)
+      .map((list) => list.isEmpty ? null : list.last);
 });
 
 /// Slot-based application events (application_events table). Legacy Applications tab and event selector.
