@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import 'application_sheet_content.dart';
 
 /// Applications tab for trial detail: list and add/edit application events.
@@ -95,25 +96,14 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'No applications yet',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => _showApplicationSheet(context, ref, null),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Application'),
-          ),
-        ],
+    return AppEmptyState(
+      icon: Icons.opacity,
+      title: 'No application event yet',
+      subtitle: 'Record an application for this trial',
+      action: FilledButton.icon(
+        onPressed: () => _showApplicationSheet(context, ref, null),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Application'),
       ),
     );
   }
