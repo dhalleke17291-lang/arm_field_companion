@@ -600,7 +600,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 33;
+  int get schemaVersion => 34;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -981,6 +981,9 @@ SET status = 'completed',
       CREATE INDEX IF NOT EXISTS idx_audit_events
       ON audit_events(trial_id, created_at)
     ''');
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_seeding_events_trial ON seeding_events(trial_id)',
+    );
   }
 }
 

@@ -800,6 +800,15 @@ class _SeedingEventFormSheetState
     try {
       await ref.read(seedingRepositoryProvider).upsertSeedingEvent(baseCompanion);
       if (mounted) widget.onSaved();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save seeding: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
