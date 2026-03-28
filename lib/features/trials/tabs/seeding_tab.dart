@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -54,15 +55,21 @@ class SeedingTab extends ConsumerWidget {
       ),
       data: (event) {
         if (event == null) {
-          return AppEmptyState(
-            icon: Icons.agriculture,
-            title: 'No Seeding Event Yet',
-            subtitle: 'Record the seeding operation for this trial',
-            action: FilledButton.icon(
-              onPressed: () => _openSeedingEventSheet(context, ref, null),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Seeding Event'),
-            ),
+          return Column(
+            children: [
+              const Expanded(
+                child: AppEmptyState(
+                  icon: Icons.agriculture,
+                  title: 'No Seeding Event Yet',
+                  subtitle: 'Record the seeding operation for this trial',
+                  action: null,
+                ),
+              ),
+              TabListBottomAddButton(
+                label: 'Add Seeding Event',
+                onPressed: () => _openSeedingEventSheet(context, ref, null),
+              ),
+            ],
           );
         }
         return SingleChildScrollView(

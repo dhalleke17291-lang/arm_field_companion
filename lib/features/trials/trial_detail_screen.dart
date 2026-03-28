@@ -395,38 +395,17 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     };
   }
 
-  /// Expanded body: status pill, detail lines, actions (no duplicate section title).
+  /// Expanded body: detail lines and actions (summary stays on tile title; no duplicate status pill).
   Widget _readinessReportDetailColumn(
     BuildContext context,
     WidgetRef ref,
     Trial trial,
     TrialReadinessReport report,
   ) {
-    final theme = Theme.of(context);
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trial.id));
     final correctionsAsync =
         ref.watch(sessionIdsWithCorrectionsForTrialProvider(trial.id));
-
-    final ({Color bg, Color fg}) statusStyle = switch (report.status) {
-      TrialReadinessStatus.ready => (
-          bg: const Color(0xFFE8F5E9),
-          fg: const Color(0xFF2E7D32),
-        ),
-      TrialReadinessStatus.readyWithWarnings => (
-          bg: const Color(0xFFFFF8E6),
-          fg: const Color(0xFFB45309),
-        ),
-      TrialReadinessStatus.notReady => (
-          bg: theme.colorScheme.errorContainer,
-          fg: theme.colorScheme.onErrorContainer,
-        ),
-    };
-    final statusLabel = switch (report.status) {
-      TrialReadinessStatus.ready => 'Ready',
-      TrialReadinessStatus.readyWithWarnings => 'Ready with warnings',
-      TrialReadinessStatus.notReady => 'Not ready',
-    };
 
     final totalPlots = plotsAsync.valueOrNull?.length;
     final rated = ratedAsync.valueOrNull;
@@ -438,32 +417,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
     final corrections = correctionsAsync.valueOrNull?.length ?? 0;
     final correctionsLoaded = correctionsAsync.hasValue;
+    final hasPlotOrCorrectionLines = (unrated != null && unrated > 0) ||
+        (correctionsLoaded && corrections > 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: statusStyle.bg,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                statusLabel,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: statusStyle.fg,
-                ),
-              ),
-            ),
-          ],
-        ),
         if (unrated != null && unrated > 0) ...[
-          const SizedBox(height: 8),
           Text(
             '$unrated plot${unrated == 1 ? '' : 's'} without ratings',
             style: const TextStyle(
@@ -474,7 +435,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
         ],
         if (correctionsLoaded && corrections > 0) ...[
-          const SizedBox(height: 6),
+          if (unrated != null && unrated > 0) const SizedBox(height: 6),
           Text(
             '$corrections session${corrections == 1 ? '' : 's'} with corrections',
             style: const TextStyle(
@@ -484,7 +445,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
           ),
         ],
-        const SizedBox(height: 10),
+        if (hasPlotOrCorrectionLines) const SizedBox(height: 10),
         Wrap(
           spacing: 4,
           runSpacing: 0,
@@ -753,8 +714,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  /// Crop / location • status for subtitle under trial name.
-  String _trialSubtitleLine(Trial trial, String effectiveStatus) {
+  /// Crop • location only under trial name (lifecycle status is on Trial status strip).
+  String _trialSubtitleLine(Trial trial) {
     final parts = <String>[];
     if (trial.crop != null && trial.crop!.isNotEmpty) {
       parts.add(trial.crop!);
@@ -762,13 +723,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     if (trial.location != null && trial.location!.isNotEmpty) {
       parts.add(trial.location!);
     }
-    final left = parts.join(' • ');
-    final statusLabel =
-        effectiveStatus.isNotEmpty ? labelForTrialStatus(effectiveStatus) : '';
-    if (left.isEmpty && statusLabel.isEmpty) return '';
-    if (left.isEmpty) return statusLabel;
-    if (statusLabel.isEmpty) return left;
-    return '$left • $statusLabel';
+    return parts.join(' • ');
   }
 
   /// Export control for the white toolbar under the green header (primary colors + badge).
@@ -1168,13 +1123,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                 maxLines: 4,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              if (_trialSubtitleLine(
-                                      currentTrial, effectiveStatus)
+                              if (_trialSubtitleLine(currentTrial)
                                   .isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Text(
-                                  _trialSubtitleLine(
-                                      currentTrial, effectiveStatus),
+                                  _trialSubtitleLine(currentTrial),
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
@@ -1327,13 +1280,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                       maxLines: 4,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    if (_trialSubtitleLine(
-                                            currentTrial, effectiveStatus)
+                                    if (_trialSubtitleLine(currentTrial)
                                         .isNotEmpty) ...[
                                       const SizedBox(height: 4),
                                       Text(
-                                        _trialSubtitleLine(
-                                            currentTrial, effectiveStatus),
+                                        _trialSubtitleLine(currentTrial),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -2311,6 +2262,10 @@ class SessionsView extends ConsumerWidget {
             (r) => r.amended || (r.previousId != null)) ||
         correctionSessionIds.contains(session.id);
 
+    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        );
+
     return Container(
       margin: const EdgeInsets.symmetric(
           horizontal: AppDesignTokens.spacing16, vertical: 4),
@@ -2324,81 +2279,157 @@ class SessionsView extends ConsumerWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        onTap: () {
-          if (isOpen) {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) =>
-                        PlotQueueScreen(trial: trial, session: session)));
-          } else {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) =>
-                        SessionDetailScreen(trial: trial, session: session)));
-          }
-        },
-        onLongPress:
-            isOpen ? () => _confirmCloseSession(context, ref, session) : null,
-        leading: Container(
-          padding: const EdgeInsets.all(AppDesignTokens.spacing8),
-          decoration: BoxDecoration(
-            color: isOpen
-                ? AppDesignTokens.openSessionBgLight
-                : AppDesignTokens.emptyBadgeBg,
-            borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
-          ),
-          child: Icon(
-            isOpen ? Icons.play_circle : Icons.check_circle,
-            color: isOpen
-                ? AppDesignTokens.openSessionBg
-                : AppDesignTokens.emptyBadgeFg,
-            size: 20,
-          ),
-        ),
-        title: Text(_shortSessionName(session.name, session.sessionDateLocal),
-            style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-                color: AppDesignTokens.primaryText)),
-        subtitle: Text(_formatSessionTimes(session)),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hasEdited) ...[
-              const _SessionPill(
-                label: 'Edited',
-                backgroundColor: AppDesignTokens.sectionHeaderBg,
-                foregroundColor: AppDesignTokens.secondaryText,
-              ),
-              const SizedBox(width: AppDesignTokens.spacing8),
-            ],
-            _buildSessionTrailing(isOpen, needsAttention),
-            PopupMenuButton<String>(
-              icon: const Icon(
-                Icons.more_vert,
-                size: 20,
-                color: AppDesignTokens.secondaryText,
-              ),
-              tooltip: 'More actions',
-              onSelected: (value) {
-                if (value == 'delete_session') {
-                  _confirmAndSoftDeleteSession(context, ref, session);
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem<String>(
-                  value: 'delete_session',
-                  child: Text('Move to Recovery'),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (isOpen) {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          PlotQueueScreen(trial: trial, session: session)));
+            } else {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          SessionDetailScreen(trial: trial, session: session)));
+            }
+          },
+          onLongPress:
+              isOpen ? () => _confirmCloseSession(context, ref, session) : null,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+                  decoration: BoxDecoration(
+                    color: isOpen
+                        ? AppDesignTokens.openSessionBgLight
+                        : AppDesignTokens.emptyBadgeBg,
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                  ),
+                  child: Icon(
+                    isOpen ? Icons.play_circle : Icons.check_circle,
+                    color: isOpen
+                        ? AppDesignTokens.openSessionBg
+                        : AppDesignTokens.emptyBadgeFg,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _shortSessionName(session.name, session.sessionDateLocal),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatSessionTimes(session),
+                        style: subtitleStyle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: AppDesignTokens.spacing8,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (hasEdited)
+                            const _SessionPill(
+                              label: 'Edited',
+                              backgroundColor: AppDesignTokens.sectionHeaderBg,
+                              foregroundColor: AppDesignTokens.secondaryText,
+                            ),
+                          ..._sessionStatusChips(isOpen, needsAttention),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    size: 20,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                  tooltip: 'More actions',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  onSelected: (value) {
+                    if (value == 'delete_session') {
+                      _confirmAndSoftDeleteSession(context, ref, session);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem<String>(
+                      value: 'delete_session',
+                      child: Text('Move to Recovery'),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  List<Widget> _sessionStatusChips(bool isOpen, bool needsAttention) {
+    if (isOpen && !needsAttention) {
+      return const [
+        _SessionPill(
+          label: 'Open',
+          backgroundColor: AppDesignTokens.openSessionBg,
+          foregroundColor: Colors.white,
+        ),
+      ];
+    }
+    if (needsAttention) {
+      return [
+        if (isOpen)
+          const _SessionPill(
+            label: 'Open',
+            backgroundColor: AppDesignTokens.openSessionBg,
+            foregroundColor: Colors.white,
+          ),
+        const _SessionPill(
+          label: 'Needs attention',
+          backgroundColor: AppDesignTokens.warningBg,
+          foregroundColor: AppDesignTokens.warningFg,
+          icon: Icons.info_outline_rounded,
+        ),
+      ];
+    }
+    return [
+      const Text(
+        'Closed',
+        style: TextStyle(
+          color: AppDesignTokens.secondaryText,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ];
   }
 
   Future<void> _confirmAndSoftDeleteSession(
@@ -2465,46 +2496,6 @@ class SessionsView extends ConsumerWidget {
         ),
       );
     }
-  }
-
-  /// Elegant trailing: Open pill, or Needs attention pill, or Closed.
-  Widget _buildSessionTrailing(bool isOpen, bool needsAttention) {
-    if (isOpen && !needsAttention) {
-      return const _SessionPill(
-        label: 'Open',
-        backgroundColor: AppDesignTokens.openSessionBg,
-        foregroundColor: Colors.white,
-      );
-    }
-    if (needsAttention) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isOpen) ...[
-            const _SessionPill(
-              label: 'Open',
-              backgroundColor: AppDesignTokens.openSessionBg,
-              foregroundColor: Colors.white,
-            ),
-            const SizedBox(width: AppDesignTokens.spacing8),
-          ],
-          const _SessionPill(
-            label: 'Needs attention',
-            backgroundColor: AppDesignTokens.warningBg,
-            foregroundColor: AppDesignTokens.warningFg,
-            icon: Icons.info_outline_rounded,
-          ),
-        ],
-      );
-    }
-    return const Text(
-      'Closed',
-      style: TextStyle(
-        color: AppDesignTokens.secondaryText,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
-    );
   }
 
   String _formatSessionTimes(Session session) {
