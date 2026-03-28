@@ -7,6 +7,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_sort.dart';
 import '../../core/providers.dart';
 import '../../core/session_resume_store.dart';
+import '../../core/trial_state.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/last_session_store.dart';
 import '../../core/workspace/workspace_config.dart';
@@ -172,7 +173,12 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (sessions) {
                 if (sessions.isEmpty) {
-                  return _buildEmptyState(widget.onGoToTrials);
+                  return _buildSmartEmptyState(
+                    context,
+                    isToday:
+                        _selectedDateLocal == workLogTodayDateLocal(),
+                    onGoToTrials: widget.onGoToTrials,
+                  );
                 }
                 final openSessions =
                     sessions.where((s) => s.endedAt == null).toList();
@@ -301,40 +307,113 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     );
   }
 
-  Widget _buildEmptyState(VoidCallback? onGoToTrials) {
+  Widget _buildSmartEmptyState(
+    BuildContext context, {
+    required bool isToday,
+    VoidCallback? onGoToTrials,
+  }) {
+    final allTrialsAsync = ref.watch(trialsStreamProvider);
+    final activeTrials = allTrialsAsync.valueOrNull
+            ?.where((t) => t.status == kTrialStatusActive)
+            .toList() ??
+        [];
+
+    final subtext = isToday
+        ? 'Start a session to begin field work'
+        : 'No sessions were recorded on this date';
+
+    Widget? sectionB;
+    if (isToday && activeTrials.isNotEmpty) {
+      final trialIds = activeTrials.map((t) => t.id).toList();
+      final displayItems = _topAttentionStripDisplayItems(ref, trialIds);
+      if (displayItems.isEmpty) {
+        sectionB = const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 18,
+              color: AppDesignTokens.successFg,
+            ),
+            SizedBox(width: AppDesignTokens.spacing8),
+            Expanded(
+              child: Text(
+                'All active trials are on track',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.successFg,
+                ),
+              ),
+            ),
+          ],
+        );
+      } else {
+        sectionB = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(
+                bottom: AppDesignTokens.spacing8,
+              ),
+              child: Text(
+                "Today's focus",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText,
+                ),
+              ),
+            ),
+            _TopAttentionStrip(
+              trialIds: trialIds,
+              onAttentionTap: (item, trial) =>
+                  _onAttentionChipTap(context, item, trial),
+            ),
+          ],
+        );
+      }
+    }
+
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppDesignTokens.spacing24,
+          vertical: AppDesignTokens.spacing16,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
               Icons.event_note_outlined,
-              size: 64,
+              size: 48,
               color: AppDesignTokens.secondaryText,
             ),
             const SizedBox(height: AppDesignTokens.spacing16),
             const Text(
-              'No activity yet',
+              'Nothing recorded today',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: AppDesignTokens.primaryText,
               ),
             ),
             const SizedBox(height: AppDesignTokens.spacing8),
-            const Text(
-              'Start a trial or record your first session to see activity here',
+            Text(
+              subtext,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
+              style: const TextStyle(
+                fontSize: 13,
                 color: AppDesignTokens.secondaryText,
               ),
             ),
-            if (onGoToTrials != null) ...[
+            const SizedBox(height: AppDesignTokens.spacing24),
+            if (sectionB != null) ...[
+              sectionB,
               const SizedBox(height: AppDesignTokens.spacing24),
+            ],
+            if (onGoToTrials != null) ...[
               FilledButton.icon(
                 onPressed: onGoToTrials,
                 icon: const Icon(Icons.folder_outlined, size: 20),
@@ -819,6 +898,39 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
   }
 }
 
+/// Same filter/rank as [_TopAttentionStrip] for empty-state "all on track" check.
+List<({AttentionItem item, int trialId})> _topAttentionStripDisplayItems(
+  WidgetRef ref,
+  List<int> trialIds,
+) {
+  final stripItems = <({AttentionItem item, int trialId})>[];
+
+  for (final trialId in trialIds) {
+    final async = ref.watch(trialAttentionProvider(trialId));
+    final items = async.valueOrNull;
+    if (items == null) continue;
+    final filtered = items.where((i) =>
+        i.type != AttentionType.openSession &&
+        i.type != AttentionType.noSessionsYet &&
+        (i.severity == AttentionSeverity.high ||
+            i.severity == AttentionSeverity.medium));
+    if (filtered.isNotEmpty) {
+      stripItems.add((item: filtered.first, trialId: trialId));
+    }
+  }
+
+  stripItems.sort((a, b) {
+    final severityCompare =
+        a.item.severity.index.compareTo(b.item.severity.index);
+    if (severityCompare != 0) return severityCompare;
+    final indexA = trialIds.indexOf(a.trialId);
+    final indexB = trialIds.indexOf(b.trialId);
+    return indexA.compareTo(indexB);
+  });
+
+  return stripItems.take(3).toList();
+}
+
 /// Compact top strip: cross-trial summary of highest-priority attention items.
 /// Shows at most 3 items, one per trial, ranked by severity then trial order.
 class _TopAttentionStrip extends ConsumerWidget {
@@ -832,32 +944,7 @@ class _TopAttentionStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stripItems = <({AttentionItem item, int trialId})>[];
-
-    for (final trialId in trialIds) {
-      final async = ref.watch(trialAttentionProvider(trialId));
-      final items = async.valueOrNull;
-      if (items == null) continue;
-      final filtered = items.where((i) =>
-          i.type != AttentionType.openSession &&
-          i.type != AttentionType.noSessionsYet &&
-          (i.severity == AttentionSeverity.high ||
-              i.severity == AttentionSeverity.medium));
-      if (filtered.isNotEmpty) {
-        stripItems.add((item: filtered.first, trialId: trialId));
-      }
-    }
-
-    stripItems.sort((a, b) {
-      final severityCompare =
-          a.item.severity.index.compareTo(b.item.severity.index);
-      if (severityCompare != 0) return severityCompare;
-      final indexA = trialIds.indexOf(a.trialId);
-      final indexB = trialIds.indexOf(b.trialId);
-      return indexA.compareTo(indexB);
-    });
-
-    final displayItems = stripItems.take(3).toList();
+    final displayItems = _topAttentionStripDisplayItems(ref, trialIds);
     if (displayItems.isEmpty) return const SizedBox.shrink();
 
     return Padding(
