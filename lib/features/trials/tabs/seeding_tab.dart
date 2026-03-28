@@ -7,6 +7,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
+import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 
 const List<String> _kSeedingRateUnits = ['seeds/m²', 'kg/ha', 'lbs/ac'];
@@ -93,25 +94,31 @@ class SeedingTab extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: false,
+      useSafeArea: true,
       backgroundColor: AppDesignTokens.cardSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppDesignTokens.radiusLarge)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (sheetContext) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.4,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, scrollController) => _SeedingEventFormSheet(
-          trial: trial,
-          existing: existing,
-          scrollController: scrollController,
-          onSaved: () {
-            ref.invalidate(seedingEventForTrialProvider(trial.id));
-            if (context.mounted) Navigator.pop(sheetContext);
-          },
+      clipBehavior: Clip.antiAlias,
+      showDragHandle: false,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) => _SeedingEventFormSheet(
+            trial: trial,
+            existing: existing,
+            scrollController: scrollController,
+            onSaved: () {
+              ref.invalidate(seedingEventForTrialProvider(trial.id));
+              if (context.mounted) Navigator.pop(sheetContext);
+            },
+          ),
         ),
       ),
     );
@@ -122,18 +129,32 @@ class SeedingTab extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppDesignTokens.cardSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppDesignTokens.radiusLarge)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (sheetContext) => _EmergenceOnlySheet(
-        trial: trial,
-        existing: event,
-        onSaved: () {
-          ref.invalidate(seedingEventForTrialProvider(trial.id));
-          if (context.mounted) Navigator.pop(sheetContext);
-        },
+      clipBehavior: Clip.antiAlias,
+      showDragHandle: false,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) => _EmergenceOnlySheet(
+            trial: trial,
+            existing: event,
+            scrollController: scrollController,
+            onSaved: () {
+              ref.invalidate(seedingEventForTrialProvider(trial.id));
+              if (context.mounted) Navigator.pop(sheetContext);
+            },
+          ),
+        ),
       ),
     );
   }
@@ -469,11 +490,13 @@ class _EstablishmentCard extends StatelessWidget {
 class _EmergenceOnlySheet extends ConsumerStatefulWidget {
   final Trial trial;
   final SeedingEvent existing;
+  final ScrollController scrollController;
   final VoidCallback onSaved;
 
   const _EmergenceOnlySheet({
     required this.trial,
     required this.existing,
+    required this.scrollController,
     required this.onSaved,
   });
 
@@ -553,67 +576,57 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
-              decoration: BoxDecoration(
-                color: AppDesignTokens.dragHandle,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Text(
-              'Record emergence',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppDesignTokens.primaryText),
-            ),
-            const SizedBox(height: AppDesignTokens.spacing16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Emergence date',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppDesignTokens.primaryText)),
-              subtitle: Text(
-                _emergenceDate == null
-                    ? 'Tap to select'
-                    : _emergenceDate!.toLocal().toString().split(' ')[0],
-                style: const TextStyle(
-                    color: AppDesignTokens.primary,
-                    fontWeight: FontWeight.w500),
-              ),
-              trailing: const Icon(Icons.calendar_today_outlined,
-                  color: AppDesignTokens.primary, size: 20),
-              onTap: _pickDate,
-            ),
-            const SizedBox(height: AppDesignTokens.spacing12),
-            TextField(
-              controller: _emergencePctController,
-              decoration: const InputDecoration(
-                labelText: 'Emergence % (optional)',
-                suffixText: '%',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: AppDesignTokens.spacing24),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: Text(_saving ? 'Saving…' : 'Save'),
-            ),
-          ],
+    return StandardFormBottomSheetLayout(
+      title: 'Record emergence',
+      onCancel: () => Navigator.pop(context),
+      onSave: _save,
+      saveEnabled: !_saving,
+      saveLabel: _saving ? 'Saving…' : 'Save',
+      body: ListView(
+        controller: widget.scrollController,
+        padding: const EdgeInsets.fromLTRB(
+          FormStyles.formSheetHorizontalPadding,
+          0,
+          FormStyles.formSheetHorizontalPadding,
+          FormStyles.formSheetSectionSpacing,
         ),
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'Emergence date',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+            subtitle: Text(
+              _emergenceDate == null
+                  ? 'Tap to select'
+                  : _emergenceDate!.toLocal().toString().split(' ')[0],
+              style: const TextStyle(
+                color: AppDesignTokens.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            trailing: const Icon(
+              Icons.calendar_today_outlined,
+              color: AppDesignTokens.primary,
+              size: 20,
+            ),
+            onTap: _pickDate,
+          ),
+          const SizedBox(height: FormStyles.formSheetFieldSpacing),
+          TextField(
+            controller: _emergencePctController,
+            decoration: FormStyles.inputDecoration(
+              labelText: 'Emergence % (optional)',
+              suffixText: '%',
+            ),
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+          ),
+        ],
       ),
     );
   }
@@ -787,40 +800,23 @@ class _SeedingEventFormSheetState
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return StandardFormBottomSheetLayout(
+      title: widget.existing == null
+          ? 'Add Seeding Event'
+          : 'Edit Seeding Event',
+      onCancel: () => Navigator.pop(context),
+      onSave: _save,
+      saveEnabled: !_saving,
+      saveLabel: _saving ? 'Saving…' : 'Save',
+      body: ListView(
+        controller: widget.scrollController,
+        padding: const EdgeInsets.fromLTRB(
+          FormStyles.formSheetHorizontalPadding,
+          0,
+          FormStyles.formSheetHorizontalPadding,
+          FormStyles.formSheetSectionSpacing,
+        ),
         children: [
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(top: 8, bottom: 4),
-            decoration: BoxDecoration(
-              color: AppDesignTokens.dragHandle,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppDesignTokens.spacing16),
-            child: Text(
-              widget.existing == null
-                  ? 'Add Seeding Event'
-                  : 'Edit Seeding Event',
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppDesignTokens.primaryText),
-            ),
-          ),
-          const SizedBox(height: AppDesignTokens.spacing16),
-          Expanded(
-            child: ListView(
-              controller: widget.scrollController,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppDesignTokens.spacing16),
-              children: [
                 _sectionHeader('Seed details'),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -838,7 +834,7 @@ class _SeedingEventFormSheetState
                       color: AppDesignTokens.primary, size: 20),
                   onTap: _pickDate,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 DropdownButtonFormField<String?>(
                   key: ValueKey<String?>(_plantingMethod),
                   initialValue: _plantingMethod,
@@ -853,7 +849,7 @@ class _SeedingEventFormSheetState
                   ],
                   onChanged: (v) => setState(() => _plantingMethod = v),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 TextField(
                   controller: _varietyController,
                   decoration: FormStyles.inputDecoration(
@@ -862,13 +858,13 @@ class _SeedingEventFormSheetState
                   ),
                   textCapitalization: TextCapitalization.words,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 TextField(
                   controller: _seedLotController,
                   decoration: FormStyles.inputDecoration(
                       labelText: 'Seed lot number (optional)'),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: FormStyles.formSheetSectionSpacing),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
                   childrenPadding: const EdgeInsets.only(bottom: 8),
@@ -890,7 +886,7 @@ class _SeedingEventFormSheetState
                             ),
                             textCapitalization: TextCapitalization.words,
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _germinationPctController,
                             decoration: FormStyles.inputDecoration(
@@ -948,7 +944,7 @@ class _SeedingEventFormSheetState
                             keyboardType: const TextInputType
                                 .numberWithOptions(decimal: true),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _depthController,
                             decoration: FormStyles.inputDecoration(
@@ -956,7 +952,7 @@ class _SeedingEventFormSheetState
                             keyboardType: const TextInputType
                                 .numberWithOptions(decimal: true),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _rowSpacingController,
                             decoration: FormStyles.inputDecoration(
@@ -964,14 +960,14 @@ class _SeedingEventFormSheetState
                             keyboardType: const TextInputType
                                 .numberWithOptions(decimal: true),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _equipmentController,
                             decoration: FormStyles.inputDecoration(
                                 labelText: 'Equipment used (optional)'),
                             textCapitalization: TextCapitalization.words,
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _operatorController,
                             decoration: FormStyles.inputDecoration(
@@ -1017,7 +1013,7 @@ class _SeedingEventFormSheetState
                                 color: AppDesignTokens.primary, size: 20),
                             onTap: _pickEmergenceDate,
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _emergencePctController,
                             decoration: FormStyles.inputDecoration(
@@ -1026,7 +1022,7 @@ class _SeedingEventFormSheetState
                             keyboardType: const TextInputType
                                 .numberWithOptions(decimal: true),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _notesController,
                             decoration: FormStyles.inputDecoration(
@@ -1039,27 +1035,8 @@ class _SeedingEventFormSheetState
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: FormStyles.buttonHeight,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: FormStyles.primaryButton,
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(FormStyles.buttonRadius)),
-                    ),
-                    onPressed: _saving ? null : _save,
-                    child: Text(_saving ? 'Saving…' : 'Save'),
-                  ),
-                ),
-                const SizedBox(height: 14),
               ],
-            ),
-          ),
-        ],
-      ),
+        ),
     );
   }
 }

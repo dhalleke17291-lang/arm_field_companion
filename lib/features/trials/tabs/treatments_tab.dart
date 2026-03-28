@@ -10,6 +10,7 @@ import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import 'add_treatment_sheet.dart';
 
 /// Builds a single-line formula string for a treatment from its components (paper-protocol style).
 /// Includes formulation type when present (e.g. "Headline SC 1.0 L/ha").
@@ -131,94 +132,82 @@ class TreatmentsTab extends ConsumerWidget {
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
     final locked = isProtocolLocked(trial.status);
-    final button = FilledButton(
-      onPressed: locked ? null : () => _showAddTreatmentDialog(context, ref),
-      child: const Text('Add Treatment'),
-    );
-    return AppEmptyState(
-      icon: Icons.science_outlined,
-      title: 'No Treatments Yet',
-      subtitle: locked
-          ? getModeLockMessage(trial.status, trial.workspaceType)
-          : 'Add the treatment groups for this trial.',
-      action: locked && getModeLockMessage(trial.status, trial.workspaceType).isNotEmpty
-          ? Tooltip(
-              message: getModeLockMessage(trial.status, trial.workspaceType), child: button)
-          : button,
+    return Column(
+      children: [
+        Expanded(
+          child: AppEmptyState(
+            icon: Icons.science_outlined,
+            title: 'No Treatments Yet',
+            subtitle: locked
+                ? getModeLockMessage(trial.status, trial.workspaceType)
+                : 'Add the treatment groups for this trial.',
+            action: null,
+          ),
+        ),
+        TabListBottomAddButton(
+          label: 'Add Treatment',
+          onPressed:
+              locked ? null : () => _showAddTreatmentDialog(context, ref),
+          disabledTooltip:
+              locked ? getModeLockMessage(trial.status, trial.workspaceType) : null,
+        ),
+      ],
     );
   }
 
   Widget _buildList(
       BuildContext context, WidgetRef ref, List<Treatment> treatments) {
     final locked = isProtocolLocked(trial.status);
-    return Stack(
+    return Column(
       children: [
-        ListView.builder(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
-          itemCount: treatments.length + (locked ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (locked && index == 0) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ProtocolLockChip(isLocked: true, status: trial.status),
-                    const SizedBox(height: 4),
-                    Text(
-                      getModeLockMessage(trial.status, trial.workspaceType),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            itemCount: treatments.length + (locked ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (locked && index == 0) {
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ProtocolLockChip(isLocked: true, status: trial.status),
+                      const SizedBox(height: 4),
+                      Text(
+                        getModeLockMessage(trial.status, trial.workspaceType),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              final i = locked ? index - 1 : index;
+              final t = treatments[i];
+              return _TreatmentExpansionTile(
+                trial: trial,
+                treatment: t,
+                locked: locked,
+                onEdit: () => _showEditTreatmentDialog(context, ref, trial, t),
+                onDelete: () =>
+                    _showDeleteTreatmentDialog(context, ref, trial, t),
+                onAddComponent: () => _showAddComponentSheet(context, ref, t),
+                onOpenSheet: () => _showTreatmentComponents(context, ref, t),
               );
-            }
-            final i = locked ? index - 1 : index;
-            final t = treatments[i];
-            return _TreatmentExpansionTile(
-              trial: trial,
-              treatment: t,
-              locked: locked,
-              onEdit: () => _showEditTreatmentDialog(context, ref, trial, t),
-              onDelete: () =>
-                  _showDeleteTreatmentDialog(context, ref, trial, t),
-              onAddComponent: () => _showAddComponentSheet(context, ref, t),
-              onOpenSheet: () => _showTreatmentComponents(context, ref, t),
-            );
-          },
+            },
+          ),
         ),
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: locked
-              ? GestureDetector(
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(getModeLockMessage(trial.status, trial.workspaceType))),
-                  ),
-                  child: Tooltip(
-                    message: getModeLockMessage(trial.status, trial.workspaceType),
-                    child: const FloatingActionButton.extended(
-                      heroTag: 'add_treatment',
-                      onPressed: null,
-                      icon: Icon(Icons.add),
-                      label: Text('Add Treatment'),
-                    ),
-                  ),
-                )
-              : Tooltip(
-                  message: 'Add treatment',
-                  child: FloatingActionButton.extended(
-                    heroTag: 'add_treatment',
-                    onPressed: () => _showAddTreatmentDialog(context, ref),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Treatment'),
-                  ),
-                ),
+        TabListBottomAddButton(
+          label: 'Add Treatment',
+          onPressed:
+              locked ? null : () => _showAddTreatmentDialog(context, ref),
+          disabledTooltip:
+              locked ? getModeLockMessage(trial.status, trial.workspaceType) : null,
         ),
       ],
     );
@@ -441,121 +430,7 @@ class TreatmentsTab extends ConsumerWidget {
 
   Future<void> _showAddTreatmentDialog(
       BuildContext context, WidgetRef ref) async {
-    final codeController = TextEditingController();
-    final nameController = TextEditingController();
-    final descController = TextEditingController();
-    final eppoController = TextEditingController();
-    String? treatmentType;
-    String? timingCode;
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AppDialog(
-          title: 'Add Treatment',
-          scrollable: true,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: codeController,
-                decoration: FormStyles.inputDecoration(
-                  labelText: 'Code (e.g. T1, T2)',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: FormStyles.inputDecoration(
-                  labelText: 'Name',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                maxLines: 2,
-                decoration: FormStyles.inputDecoration(
-                  labelText: 'Description (optional)',
-                ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String?>(
-                key: ValueKey('add_type_$treatmentType'),
-                initialValue: treatmentType,
-                decoration: FormStyles.inputDecoration(
-                  labelText: 'Treatment type',
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                      value: null, child: Text('—')),
-                  ..._treatmentTypes.map((s) =>
-                      DropdownMenuItem<String?>(value: s, child: Text(s))),
-                ],
-                onChanged: (v) => setState(() => treatmentType = v),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String?>(
-                key: ValueKey('add_timing_$timingCode'),
-                initialValue: timingCode,
-                decoration: FormStyles.inputDecoration(
-                  labelText: 'Timing code',
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                      value: null, child: Text('—')),
-                  ..._timingCodes.map((s) =>
-                      DropdownMenuItem<String?>(value: s, child: Text(s))),
-                ],
-                onChanged: (v) => setState(() => timingCode = v),
-              ),
-              const SizedBox(height: 12),
-              ExpansionTile(
-                title: const Text('Regulatory details'),
-                initiallyExpanded: false,
-                children: [
-                  TextField(
-                    controller: eppoController,
-decoration: FormStyles.inputDecoration(
-                labelText: 'EPPO code',
-                ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                if (codeController.text.trim().isEmpty ||
-                    nameController.text.trim().isEmpty) {
-                  return;
-                }
-                final repo = ref.read(treatmentRepositoryProvider);
-                await repo.insertTreatment(
-                  trialId: trial.id,
-                  code: codeController.text.trim(),
-                  name: nameController.text.trim(),
-                  description: descController.text.trim().isEmpty
-                      ? null
-                      : descController.text.trim(),
-                  treatmentType: treatmentType,
-                  timingCode: timingCode,
-                  eppoCode: eppoController.text.trim().isEmpty
-                      ? null
-                      : eppoController.text.trim(),
-                );
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-      ),
-    );
+    await showAddTreatmentSheet(context, ref, trial: trial);
   }
 }
 

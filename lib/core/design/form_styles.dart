@@ -87,6 +87,15 @@ class FormStyles {
   static const double fieldSpacing = 10;
   static const double sectionSpacing = 14;
 
+  /// Form bottom sheets: horizontal padding for scroll body (matches app standard).
+  static const double formSheetHorizontalPadding = 24;
+
+  /// Vertical gap between consecutive fields in form bottom sheets.
+  static const double formSheetFieldSpacing = 16;
+
+  /// Vertical gap before a new section (after expansion tiles, major blocks).
+  static const double formSheetSectionSpacing = 24;
+
   /// Primary green for Save button.
   static const Color primaryButton = Color(0xFF2D5A40);
 

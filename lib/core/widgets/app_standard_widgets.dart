@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/app_design_tokens.dart';
 import '../trial_state.dart';
 
 /// App-wide UI standards for consistent look and behavior.
@@ -133,6 +134,58 @@ class StandardSectionAddButton extends StatelessWidget {
       return Tooltip(message: disabledTooltip!, child: widget);
     }
     return widget;
+  }
+}
+
+/// Bottom-anchored primary add CTA for list-based trial tabs: full width, fixed height, [Icons.add].
+/// Use under an [Expanded] list or empty state so the bar stays at the bottom of the tab.
+class TabListBottomAddButton extends StatelessWidget {
+  const TabListBottomAddButton({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.disabledTooltip,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final String? disabledTooltip;
+
+  static const double _height = 50;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing8,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing16,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: _height,
+        child: FilledButton.icon(
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(double.infinity, _height),
+            maximumSize: const Size(double.infinity, _height),
+          ),
+          onPressed: onPressed,
+          icon: const Icon(Icons.add),
+          label: Text(label),
+        ),
+      ),
+    );
+    final wrapped = SafeArea(
+      top: false,
+      child: button,
+    );
+    if (onPressed == null &&
+        disabledTooltip != null &&
+        disabledTooltip!.isNotEmpty) {
+      return Tooltip(message: disabledTooltip!, child: wrapped);
+    }
+    return wrapped;
   }
 }
 
