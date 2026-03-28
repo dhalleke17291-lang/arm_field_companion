@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import 'application_sheet_content.dart';
@@ -88,23 +90,29 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
       ),
       data: (list) {
         final sorted = _sorted(list);
-        return list.isEmpty
-            ? _buildEmpty(context, ref)
-            : _buildList(context, ref, sorted);
+        return Column(
+          children: [
+            Expanded(
+              child: list.isEmpty
+                  ? _buildEmpty(context, ref)
+                  : _buildList(context, ref, sorted),
+            ),
+            TabListBottomAddButton(
+              label: 'Add Application',
+              onPressed: () => _showApplicationSheet(context, ref, null),
+            ),
+          ],
+        );
       },
     );
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return AppEmptyState(
+    return const AppEmptyState(
       icon: Icons.opacity,
       title: 'No application event yet',
       subtitle: 'Record an application for this trial',
-      action: FilledButton.icon(
-        onPressed: () => _showApplicationSheet(context, ref, null),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Application'),
-      ),
+      action: null,
     );
   }
 
@@ -236,6 +244,13 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppDesignTokens.cardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      showDragHandle: false,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -246,18 +261,22 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(ctx).viewInsets.bottom,
               ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  FormStyles.formSheetHorizontalPadding,
+                  FormStyles.formSheetFieldSpacing,
+                  FormStyles.formSheetHorizontalPadding,
+                  FormStyles.formSheetSectionSpacing,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                       Text(
                         'Mark as applied',
                         style: Theme.of(ctx).textTheme.titleMedium,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: FormStyles.formSheetFieldSpacing),
                       Row(
                         children: [
                           Expanded(
@@ -297,7 +316,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: FormStyles.formSheetSectionSpacing),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -307,13 +326,20 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                           ),
                           const SizedBox(width: 8),
                           FilledButton(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(0, FormStyles.buttonHeight),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  FormStyles.buttonRadius,
+                                ),
+                              ),
+                            ),
                             onPressed: () => Navigator.pop(ctx, true),
                             child: const Text('Save'),
                           ),
                         ],
                       ),
                     ],
-                  ),
                 ),
               ),
             );
@@ -347,69 +373,55 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
 
   Widget _buildList(
       BuildContext context, WidgetRef ref, List<TrialApplicationEvent> list) {
-    return Stack(
-      children: [
-        ListView.builder(
-          padding: const EdgeInsets.fromLTRB(
-            0,
-            AppDesignTokens.spacing12,
-            0,
-            80,
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(
+        0,
+        AppDesignTokens.spacing12,
+        0,
+        AppDesignTokens.spacing8,
+      ),
+      itemCount: list.length,
+      itemBuilder: (context, index) {
+        final e = list[index];
+        return Dismissible(
+          key: Key(e.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
+            color: Colors.red,
+            child: const Icon(Icons.delete, color: Colors.white),
           ),
-          itemCount: list.length,
-          itemBuilder: (context, index) {
-            final e = list[index];
-            return Dismissible(
-              key: Key(e.id),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 16),
-                color: Colors.red,
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-              confirmDismiss: (direction) async {
-                return await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Delete Application?'),
-                    content: const Text(
-                      'This application will be permanently deleted.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancel'),
-                      ),
-                      FilledButton(
-                        style:
-                            FilledButton.styleFrom(backgroundColor: Colors.red),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
+          confirmDismiss: (direction) async {
+            return await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Delete Application?'),
+                content: const Text(
+                  'This application will be permanently deleted.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
                   ),
-                );
-              },
-              onDismissed: (_) {
-                ref.read(applicationRepositoryProvider).deleteApplication(e.id);
-                ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
-              },
-              child: _buildApplicationTile(context, ref, e, index),
+                  FilledButton(
+                    style:
+                        FilledButton.styleFrom(backgroundColor: Colors.red),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
             );
           },
-        ),
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'add_application',
-            onPressed: () => _showApplicationSheet(context, ref, null),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Application'),
-          ),
-        ),
-      ],
+          onDismissed: (_) {
+            ref.read(applicationRepositoryProvider).deleteApplication(e.id);
+            ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
+          },
+          child: _buildApplicationTile(context, ref, e, index),
+        );
+      },
     );
   }
 
@@ -423,16 +435,19 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: AppDesignTokens.cardSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      clipBehavior: Clip.antiAlias,
+      showDragHandle: false,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(ctx).viewInsets.bottom,
         ),
         child: DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.4,
+          initialChildSize: 0.75,
+          minChildSize: 0.45,
           maxChildSize: 0.95,
           expand: false,
           builder: (_, scrollController) => ApplicationSheetContent(

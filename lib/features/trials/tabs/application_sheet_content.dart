@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
+import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../../core/plot_display.dart';
 import '../../../core/providers.dart';
 
@@ -483,18 +484,18 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
         ref.watch(plotsForTrialProvider(widget.trial.id)).value ?? [];
     final dateLabel = DateFormat('MMM d, yyyy').format(_date);
 
-    return SingleChildScrollView(
-      controller: widget.scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return StandardFormBottomSheetLayout(
+      title: widget.existing == null ? 'Add Application' : 'Edit Application',
+      customFooter: _buildApplicationSheetFooter(context),
+      body: ListView(
+        controller: widget.scrollController,
+        padding: const EdgeInsets.fromLTRB(
+          FormStyles.formSheetHorizontalPadding,
+          0,
+          FormStyles.formSheetHorizontalPadding,
+          FormStyles.formSheetSectionSpacing,
+        ),
         children: [
-          Text(
-            widget.existing == null ? 'Add Application' : 'Edit Application',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 14),
           // Section 1 — Core (always visible)
           const Padding(
             padding: FormStyles.sectionLabelPadding,
@@ -505,13 +506,13 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
             icon: const Icon(Icons.calendar_today, size: 18),
             label: Text('Date: $dateLabel'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: FormStyles.formSheetFieldSpacing),
           OutlinedButton.icon(
             onPressed: _pickTime,
             icon: const Icon(Icons.access_time, size: 18),
             label: Text('Time: ${_timeStr ?? '—'}'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: FormStyles.formSheetFieldSpacing),
           DropdownButtonFormField<int?>(
             key: ValueKey<int?>(_treatmentId),
             initialValue: _treatmentId,
@@ -523,7 +524,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
             ],
             onChanged: (v) => setState(() => _treatmentId = v),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: FormStyles.formSheetFieldSpacing),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -532,7 +533,6 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Add Product'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppDesignTokens.primary,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 onPressed: () => setState(() {
@@ -543,7 +543,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: FormStyles.formSheetFieldSpacing),
           ...List.generate(_productControllers.length, (i) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -584,7 +584,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 ],
                 TextField(
                   controller: _productControllers[i],
@@ -593,7 +593,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 TextField(
                   controller: _rateControllers[i],
                   keyboardType: const TextInputType.numberWithOptions(
@@ -630,7 +630,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: FormStyles.formSheetFieldSpacing),
               ],
             );
           }),
@@ -646,7 +646,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
             ],
             onChanged: (v) => setState(() => _applicationMethod = v),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: FormStyles.formSheetSectionSpacing),
           // Section 2 — Equipment
           ExpansionTile(
             initiallyExpanded: _initialExpandedEquip,
@@ -1002,7 +1002,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 ],
                 onChanged: (v) => setState(() => _soilMoisture = v),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: FormStyles.formSheetFieldSpacing),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1146,7 +1146,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 keyboardType: TextInputType.text,
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: FormStyles.formSheetFieldSpacing),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1212,20 +1212,18 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.only(top: 10, bottom: 6),
+                              padding: const EdgeInsets.only(
+                                top: FormStyles.formSheetFieldSpacing,
+                                bottom: AppDesignTokens.spacing8,
+                              ),
                               child: Text(
                                 'Rep ${rep ?? '?'}',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.grey.shade400,
-                                  letterSpacing: 0.6,
-                                ),
+                                style: FormStyles.sectionLabelStyle,
                               ),
                             ),
                             Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
+                              spacing: AppDesignTokens.spacing8,
+                              runSpacing: AppDesignTokens.spacing8,
                               children: repPlots.map((plot) {
                                 final displayLabel =
                                     getDisplayPlotLabel(plot, plots);
@@ -1283,7 +1281,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                   );
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: FormStyles.formSheetFieldSpacing),
               TextField(
                 controller: _notesController,
                 maxLines: 3,
@@ -1292,76 +1290,78 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              if (widget.onDelete != null) ...[
-                TextButton(
-                  onPressed: _saving
-                      ? null
-                      : () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (d) {
-                              final theme = Theme.of(d);
-                              return AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16)),
-                                title: const Text('Delete Application?'),
-                                content: Text(
-                                  'This application will be permanently deleted.',
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                      color: theme.colorScheme.onSurfaceVariant),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(d, false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  FilledButton(
-                                    style: FilledButton.styleFrom(
-                                        backgroundColor: theme.colorScheme.error),
-                                    onPressed: () => Navigator.pop(d, true),
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
-                              );
-                            },
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApplicationSheetFooter(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FormStyles.formSheetHorizontalPadding,
+        AppDesignTokens.spacing12,
+        FormStyles.formSheetHorizontalPadding,
+        AppDesignTokens.spacing16,
+      ),
+      child: Row(
+        children: [
+          if (widget.onDelete != null) ...[
+            TextButton(
+              onPressed: _saving
+                  ? null
+                  : () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (d) {
+                          final theme = Theme.of(d);
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                            title: const Text('Delete Application?'),
+                            content: Text(
+                              'This application will be permanently deleted.',
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(d, false),
+                                child: const Text('Cancel'),
+                              ),
+                              FilledButton(
+                                style: FilledButton.styleFrom(
+                                    backgroundColor: theme.colorScheme.error),
+                                onPressed: () => Navigator.pop(d, true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
                           );
-                          if (confirm == true && mounted) widget.onDelete!();
                         },
-                  child: const Text('Delete'),
-                ),
-                const SizedBox(width: 8),
-              ],
-              const Spacer(),
-              TextButton(
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(0, FormStyles.buttonHeight),
-                  shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(FormStyles.buttonRadius)),
-                ),
-                onPressed: _saving ? null : () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: FormStyles.primaryButton,
-                  minimumSize: const Size(0, FormStyles.buttonHeight),
-                  shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(FormStyles.buttonRadius)),
-                ),
-                onPressed: _saving ? null : _save,
-                child:
-                    Text(_saving ? 'Saving…' : 'Save'),
-              ),
-            ],
+                      );
+                      if (confirm == true && mounted) widget.onDelete!();
+                    },
+              child: const Text('Delete'),
+            ),
+            const SizedBox(width: 8),
+          ],
+          const Spacer(),
+          TextButton(
+            onPressed: _saving ? null : () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(width: 8),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, FormStyles.buttonHeight),
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(FormStyles.buttonRadius),
+              ),
+            ),
+            onPressed: _saving ? null : _save,
+            child: Text(_saving ? 'Saving…' : 'Save'),
+          ),
         ],
       ),
     );
@@ -1369,7 +1369,9 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
 
   Widget _field(String label, TextEditingController controller) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(
+        bottom: FormStyles.formSheetFieldSpacing,
+      ),
       child: TextField(
         controller: controller,
         decoration: FormStyles.inputDecoration(labelText: label),
