@@ -474,3 +474,33 @@ class ProtocolLockChip extends StatelessWidget {
     return chip;
   }
 }
+
+/// 1-based index for trial protocol lists (same chip styling as treatment codes T1 / T2).
+class TrialItemNumberBadge extends StatelessWidget {
+  const TrialItemNumberBadge({super.key, required this.number});
+
+  final int number;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing8,
+        vertical: AppDesignTokens.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.primary,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+      ),
+      child: Text(
+        '$number',
+        style: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 13,
+          color: Colors.white,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+}

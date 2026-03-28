@@ -116,13 +116,6 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     );
   }
 
-  static String _applicationLabel(int index) {
-    if (index < 26) return String.fromCharCode(65 + index);
-    final q = index ~/ 26;
-    final r = index % 26;
-    return '${String.fromCharCode(64 + q)}${String.fromCharCode(65 + r)}';
-  }
-
   Widget _buildApplicationTile(
     BuildContext context,
     WidgetRef ref,
@@ -130,7 +123,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     int index,
   ) {
     final isPending = e.status == 'pending';
-    final label = _applicationLabel(index);
+    final displayNumber = index + 1;
     final plannedDateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
     final productsAsync =
         ref.watch(trialApplicationProductsForEventProvider(e.id));
@@ -166,66 +159,76 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      primaryLine,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: AppDesignTokens.primaryText,
-                      ),
+              TrialItemNumberBadge(number: displayNumber),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            primaryLine,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: AppDesignTokens.primaryText,
+                            ),
+                          ),
+                        ),
+                        _StatusChip(isPending: isPending),
+                      ],
                     ),
-                  ),
-                  _StatusChip(isPending: isPending),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '$label · $plannedDateStr',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
-              if (rateLine != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  rateLine,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (isPending)
-                    FilledButton.tonal(
-                      onPressed: () => _showApplySheet(context, ref, e),
-                      child: const Text('Apply Now'),
-                    )
-                  else
+                    const SizedBox(height: 4),
                     Text(
-                      appliedAtStr != null
-                          ? 'Applied on $appliedAtStr'
-                          : 'Applied',
+                      plannedDateStr,
                       style: const TextStyle(
                         fontSize: 13,
-                        color: AppDesignTokens.successFg,
+                        color: AppDesignTokens.secondaryText,
                       ),
                     ),
-                  TextButton(
-                    onPressed: () => _showApplicationSheet(context, ref, e),
-                    child: const Text('Edit'),
-                  ),
-                ],
+                    if (rateLine != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        rateLine,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (isPending)
+                          FilledButton.tonal(
+                            onPressed: () => _showApplySheet(context, ref, e),
+                            child: const Text('Apply Now'),
+                          )
+                        else
+                          Text(
+                            appliedAtStr != null
+                                ? 'Applied on $appliedAtStr'
+                                : 'Applied',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppDesignTokens.successFg,
+                            ),
+                          ),
+                        TextButton(
+                          onPressed: () =>
+                              _showApplicationSheet(context, ref, e),
+                          child: const Text('Edit'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

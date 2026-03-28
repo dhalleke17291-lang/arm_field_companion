@@ -138,9 +138,10 @@ class AssessmentsTab extends ConsumerWidget {
                     ),
                   ),
                 ),
-                ...libraryList.map((pair) {
-                  final ta = pair.$1;
-                  final def = pair.$2;
+                ...libraryList.asMap().entries.map((entry) {
+                  final displayNumber = entry.key + 1;
+                  final ta = entry.value.$1;
+                  final def = entry.value.$2;
                   final name = ta.displayNameOverride ?? def.name;
                   return Container(
                     margin:
@@ -164,16 +165,7 @@ class AssessmentsTab extends ConsumerWidget {
                         horizontal: AppDesignTokens.spacing16,
                         vertical: AppDesignTokens.spacing8,
                       ),
-                      leading: Container(
-                        padding: const EdgeInsets.all(AppDesignTokens.spacing8),
-                        decoration: BoxDecoration(
-                          color: AppDesignTokens.sectionHeaderBg,
-                          borderRadius: BorderRadius.circular(
-                              AppDesignTokens.radiusXSmall),
-                        ),
-                        child: const Icon(Icons.analytics_outlined,
-                            size: 20, color: AppDesignTokens.primary),
-                      ),
+                      leading: TrialItemNumberBadge(number: displayNumber),
                       title: Text(
                         name,
                         style: const TextStyle(
@@ -248,7 +240,10 @@ class AssessmentsTab extends ConsumerWidget {
                     ),
                   ),
                 ),
-                ...legacyList.map((assessment) => Container(
+                ...legacyList.asMap().entries.map((entry) {
+                  final displayNumber = libraryList.length + entry.key + 1;
+                  final assessment = entry.value;
+                  return Container(
                       margin: const EdgeInsets.only(
                           bottom: AppDesignTokens.spacing8),
                       decoration: BoxDecoration(
@@ -270,17 +265,7 @@ class AssessmentsTab extends ConsumerWidget {
                           horizontal: AppDesignTokens.spacing16,
                           vertical: AppDesignTokens.spacing8,
                         ),
-                        leading: Container(
-                          padding:
-                              const EdgeInsets.all(AppDesignTokens.spacing8),
-                          decoration: BoxDecoration(
-                            color: AppDesignTokens.sectionHeaderBg,
-                            borderRadius: BorderRadius.circular(
-                                AppDesignTokens.radiusXSmall),
-                          ),
-                          child: const Icon(Icons.analytics_outlined,
-                              size: 20, color: AppDesignTokens.primary),
-                        ),
+                        leading: TrialItemNumberBadge(number: displayNumber),
                         title: Text(
                           assessment.name,
                           style: const TextStyle(
@@ -320,7 +305,8 @@ class AssessmentsTab extends ConsumerWidget {
                             : const Icon(Icons.chevron_right,
                                 size: 20, color: AppDesignTokens.iconSubtle),
                       ),
-                    )),
+                    );
+                }),
               ],
             ],
           ),
