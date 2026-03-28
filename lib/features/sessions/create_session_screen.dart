@@ -35,16 +35,14 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     final dateStr =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    // Count existing sessions today for this trial
+    // Next session number for this trial (monotonic across all dates, not per day).
     final db = ref.read(databaseProvider);
     final allSessions = await (db.select(db.sessions)
           ..where((s) =>
               s.trialId.equals(widget.trial.id) & s.isDeleted.equals(false)))
         .get();
-    final todaySessions =
-        allSessions.where((s) => s.sessionDateLocal == dateStr).toList();
 
-    final count = todaySessions.length + 1;
+    final count = allSessions.length + 1;
     if (mounted) {
       _nameController.text = '$dateStr Session $count';
     }
