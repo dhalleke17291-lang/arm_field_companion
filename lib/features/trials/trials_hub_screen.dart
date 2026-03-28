@@ -81,6 +81,10 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
     return 'Good evening — select a trial type to begin';
   }
 
+  /// Hub footer total line — matches trial list “N Trials” (includes Draft / Ready).
+  static String _trialTotalLabel(int count) =>
+      count == 1 ? '1 Trial' : '$count Trials';
+
   Widget _buildHubView() {
     final statsAsync = ref.watch(trialsHubStatsProvider);
     final stats = statsAsync.valueOrNull ?? TrialsHubStats.zero;
@@ -115,6 +119,7 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                           ? '1 Crop'
                           : '${stats.customCropCount} Crops',
                       footerStats: [
+                        _trialTotalLabel(stats.customTrialCount),
                         '${stats.customActiveCount} Active',
                         '${stats.customCompleteCount} Complete',
                       ],
@@ -138,6 +143,7 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                           ? '1 Protocol'
                           : '${stats.protocolTrialCount} Protocols',
                       footerStats: [
+                        _trialTotalLabel(stats.protocolTrialCount),
                         '${stats.protocolActiveCount} Active',
                         '${stats.protocolCompleteCount} Complete',
                       ],
@@ -513,15 +519,19 @@ class _AgTrialCardState extends State<_AgTrialCard>
                           const SizedBox(height: 20),
                           Row(
                             children: [
-                              _FooterStat(
-                                label: widget.footerStats[0],
-                                dotColor: widget.footerDotColor,
-                              ),
-                              const SizedBox(width: AppDesignTokens.spacing20),
-                              _FooterStat(
-                                label: widget.footerStats[1],
-                                dotColor: _HubPalette.mutedGrey,
-                              ),
+                              for (var i = 0;
+                                  i < widget.footerStats.length;
+                                  i++) ...[
+                                if (i > 0)
+                                  const SizedBox(
+                                      width: AppDesignTokens.spacing20),
+                                _FooterStat(
+                                  label: widget.footerStats[i],
+                                  dotColor: i < 2
+                                      ? widget.footerDotColor
+                                      : _HubPalette.mutedGrey,
+                                ),
+                              ],
                             ],
                           ),
                         ],
