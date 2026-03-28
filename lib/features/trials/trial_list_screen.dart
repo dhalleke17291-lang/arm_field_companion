@@ -19,6 +19,8 @@ import '../../core/widgets/app_dialog.dart';
 import '../about/about_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
 import 'usecases/create_trial_usecase.dart';
+import '../derived/trial_attention_provider.dart';
+import '../derived/trial_attention_service.dart';
 import 'trial_detail_screen.dart';
 import 'widgets/trial_card.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
@@ -868,12 +870,24 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
             trials.length,
             (i) {
               final t = trials[i];
+              final attentionAsync = ref.watch(trialAttentionProvider(t.id));
+              final topUrgent = attentionAsync.valueOrNull
+                  ?.where(
+                    (item) =>
+                        item.severity == AttentionSeverity.high &&
+                        item.type != AttentionType.openSession,
+                  )
+                  .firstOrNull;
+              final attentionSummary = t.status == kTrialStatusActive
+                  ? topUrgent?.label
+                  : null;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: TrialCard(
                   trial: t,
                   index: i + 1,
                   totalCount: trials.length,
+                  attentionSummary: attentionSummary,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute<void>(

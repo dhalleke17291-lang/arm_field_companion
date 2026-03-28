@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/session_state.dart';
 import '../../../core/trial_state.dart';
@@ -35,6 +36,7 @@ class TrialCard extends ConsumerWidget {
     required this.onTap,
     required this.onContinueSession,
     required this.onQuickRate,
+    this.attentionSummary,
   });
 
   final Trial trial;
@@ -43,6 +45,8 @@ class TrialCard extends ConsumerWidget {
   final VoidCallback onTap;
   final void Function(Session session) onContinueSession;
   final VoidCallback onQuickRate;
+  /// Most urgent HIGH attention line for active trials; null hides the row.
+  final String? attentionSummary;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -183,6 +187,31 @@ class TrialCard extends ConsumerWidget {
                       ),
                       height: 1.4,
                     ),
+                  ),
+                ],
+                if (attentionSummary != null) ...[
+                  const SizedBox(height: AppDesignTokens.spacing8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        size: 13,
+                        color: AppDesignTokens.warningFg,
+                      ),
+                      const SizedBox(width: AppDesignTokens.spacing4),
+                      Expanded(
+                        child: Text(
+                          attentionSummary!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppDesignTokens.warningFg,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 10),
