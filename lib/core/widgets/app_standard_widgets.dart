@@ -475,7 +475,8 @@ class ProtocolLockChip extends StatelessWidget {
   }
 }
 
-/// 1-based index for trial protocol lists (same chip styling as treatment codes T1 / T2).
+/// 1-based index for Applications / Assessments lists — matches [TrialCard] index chip
+/// (Protocol / Custom trials: light pill, two-digit label, primary-colored text).
 class TrialItemNumberBadge extends StatelessWidget {
   const TrialItemNumberBadge({super.key, required this.number});
 
@@ -483,22 +484,26 @@ class TrialItemNumberBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final indexStr = number.toString().padLeft(2, '0');
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDesignTokens.spacing8,
-        vertical: AppDesignTokens.spacing4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: AppDesignTokens.primary,
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        color: colorScheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.12),
+          width: 1,
+        ),
       ),
       child: Text(
-        '$number',
-        style: const TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 13,
-          color: Colors.white,
-          letterSpacing: 0.2,
+        indexStr,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          fontFeatures: const [FontFeature.tabularFigures()],
+          color: colorScheme.primary,
+          letterSpacing: 0.5,
         ),
       ),
     );

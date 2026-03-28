@@ -12,6 +12,7 @@ import '../../core/last_session_store.dart';
 import '../../core/session_resume_store.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
+import '../../core/trial_state.dart';
 import '../../core/database/app_database.dart';
 import '../../core/workspace/workspace_config.dart';
 import '../../core/widgets/app_dialog.dart';
@@ -42,6 +43,7 @@ List<Trial> _deriveDisplayedTrials({
   required String searchQuery,
   required _TrialListStatusFilter statusFilter,
   required _TrialListSortMode sortMode,
+  required Set<int> trialIdsWithOpenFieldSession,
 }) {
   var list = trials;
   final q = searchQuery.trim().toLowerCase();
@@ -63,7 +65,11 @@ List<Trial> _deriveDisplayedTrials({
       break;
     case _TrialListStatusFilter.active:
       filtered = filtered
-          .where((t) => t.status.toLowerCase() == 'active')
+          .where((t) => trialIsListedAsActive(
+                trialStatus: t.status,
+                hasOpenFieldSession:
+                    trialIdsWithOpenFieldSession.contains(t.id),
+              ))
           .toList();
       break;
     case _TrialListStatusFilter.draft:
@@ -400,6 +406,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
       TrialListFilter.protocolOnly => ref.watch(protocolTrialsProvider),
       TrialListFilter.all => ref.watch(trialsStreamProvider),
     };
+    final openTrialIds =
+        ref.watch(openTrialIdsForFieldWorkProvider).valueOrNull ?? <int>{};
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
@@ -477,7 +485,11 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                           return const SizedBox(height: 6);
                         }
                         final activeCount = trials
-                            .where((t) => t.status.toLowerCase() == 'active')
+                            .where((t) => trialIsListedAsActive(
+                                  trialStatus: t.status,
+                                  hasOpenFieldSession:
+                                      openTrialIds.contains(t.id),
+                                ))
                             .length;
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
@@ -579,6 +591,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                   searchQuery: _searchQuery,
                   statusFilter: _statusFilter,
                   sortMode: _sortMode,
+                  trialIdsWithOpenFieldSession: openTrialIds,
                 );
                 String? noResultsMessage;
                 if (displayed.isEmpty) {

@@ -10,6 +10,7 @@ import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
+import 'session_state.dart';
 import 'trial_state.dart';
 import '../features/trials/trial_repository.dart';
 import '../features/plots/plot_repository.dart';
@@ -486,6 +487,19 @@ final seedingRecordsForTrialProvider = FutureProvider.autoDispose
 final openSessionProvider =
     StreamProvider.family<Session?, int>((ref, trialId) {
   return ref.watch(sessionRepositoryProvider).watchOpenSession(trialId);
+});
+
+/// Trial IDs with at least one open field session. Used for trial list Active
+/// counts/filters so they match trial detail effective "Active" when DB status is still draft.
+final openTrialIdsForFieldWorkProvider = StreamProvider<Set<int>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.sessions)
+        ..where((s) => s.endedAt.isNull() & s.isDeleted.equals(false)))
+      .watch()
+      .map((sessions) => sessions
+          .where(isSessionOpenForFieldWork)
+          .map((s) => s.trialId)
+          .toSet());
 });
 
 /// Resolved trial + session for "Continue Last Session" home card.

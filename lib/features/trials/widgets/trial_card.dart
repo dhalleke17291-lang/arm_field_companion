@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/providers.dart';
+import '../../../core/session_state.dart';
+import '../../../core/trial_state.dart';
 
 String _trialStatusDisplay(String statusLower) {
   switch (statusLower) {
@@ -45,7 +47,14 @@ class TrialCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final statusLower = trial.status.toLowerCase();
+    final openSession = ref.watch(openSessionProvider(trial.id)).valueOrNull;
+    final hasOpenFieldSession = openSession != null &&
+        isSessionOpenForFieldWork(openSession);
+    final displayStatus = effectiveTrialStatusForListDisplay(
+      trialStatus: trial.status,
+      hasOpenFieldSession: hasOpenFieldSession,
+    );
+    final statusLower = displayStatus.toLowerCase();
     final isActive = statusLower == 'active';
     final isDraft = statusLower == 'draft';
     final badgeFg = isActive

@@ -35,6 +35,34 @@ bool isProtocolLocked(String? status) {
       status == kTrialStatusArchived;
 }
 
+/// Whether a trial counts for the list header "Active" pill and Active filter:
+/// [kTrialStatusActive] or [kTrialStatusReady] (same as hub stats), or an open
+/// field session while not closed/archived (matches trial detail effective status).
+bool trialIsListedAsActive({
+  required String trialStatus,
+  required bool hasOpenFieldSession,
+}) {
+  final s = trialStatus.toLowerCase();
+  if (s == kTrialStatusClosed || s == kTrialStatusArchived) return false;
+  if (s == kTrialStatusActive || s == kTrialStatusReady) return true;
+  return hasOpenFieldSession;
+}
+
+/// Stored status adjusted for list badges when an open session implies "Active"
+/// (aligned with trial detail [TrialDetailScreen] effective status strip).
+String effectiveTrialStatusForListDisplay({
+  required String trialStatus,
+  required bool hasOpenFieldSession,
+}) {
+  final s = trialStatus.toLowerCase();
+  if (s != kTrialStatusClosed &&
+      s != kTrialStatusArchived &&
+      hasOpenFieldSession) {
+    return kTrialStatusActive;
+  }
+  return trialStatus;
+}
+
 /// Display label for status.
 String labelForTrialStatus(String? status) {
   switch (status) {
