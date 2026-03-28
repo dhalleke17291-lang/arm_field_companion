@@ -1079,6 +1079,23 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
             ),
           ],
+          // Thin progress bar — last child inside card, zero external layout impact
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: widget.allPlots.isEmpty
+                  ? 0
+                  : (widget.currentPlotIndex + 1) / widget.allPlots.length,
+              minHeight: 2,
+              backgroundColor: AppDesignTokens.borderCrisp,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                widget.currentPlotIndex >= widget.allPlots.length - 1
+                    ? AppDesignTokens.successFg
+                    : AppDesignTokens.primary,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -3069,6 +3086,42 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         }
         if (isLastInRep) {
           HapticFeedback.mediumImpact();
+          if (context.mounted) {
+            final repLabel = 'Rep $currentRep';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: AppDesignTokens.onPrimary,
+                      size: 16,
+                    ),
+                    const SizedBox(width: AppDesignTokens.spacing8),
+                    Text(
+                      '$repLabel complete',
+                      style: const TextStyle(
+                        color: AppDesignTokens.onPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                duration: const Duration(milliseconds: 1500),
+                backgroundColor: AppDesignTokens.successFg,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.fromLTRB(
+                  AppDesignTokens.spacing16,
+                  0,
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
         }
       }
     }
