@@ -37,6 +37,21 @@ String buildTreatmentFormula(List<TreatmentComponent> components) {
   return '${one(components.first)} + ${components.length - 1} more';
 }
 
+String _inlineRateUnit(TreatmentComponent c) {
+  final r = c.rate?.trim();
+  final u = c.rateUnit?.trim();
+  if (r != null && r.isNotEmpty) {
+    if (u != null && u.isNotEmpty) {
+      return '  $r $u';
+    }
+    return '  $r';
+  }
+  if (u != null && u.isNotEmpty) {
+    return '  $u';
+  }
+  return '';
+}
+
 const List<String> _treatmentTypes = [
   'Chemical',
   'Biological',
@@ -196,7 +211,8 @@ class TreatmentsTab extends ConsumerWidget {
                 onEdit: () => _showEditTreatmentDialog(context, ref, trial, t),
                 onDelete: () =>
                     _showDeleteTreatmentDialog(context, ref, trial, t),
-                onAddComponent: () => _showAddComponentSheet(context, ref, t),
+                onOpenComponentSheet: (existing) =>
+                    _showAddComponentSheet(context, ref, t, existing: existing),
                 onOpenSheet: () => _showTreatmentComponents(context, ref, t),
               );
             },
@@ -214,7 +230,11 @@ class TreatmentsTab extends ConsumerWidget {
   }
 
   Future<void> _showAddComponentSheet(
-      BuildContext context, WidgetRef ref, Treatment treatment) async {
+    BuildContext context,
+    WidgetRef ref,
+    Treatment treatment, {
+    TreatmentComponent? existing,
+  }) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -225,6 +245,7 @@ class TreatmentsTab extends ConsumerWidget {
         trial: trial,
         treatment: treatment,
         ref: ref,
+        existingComponent: existing,
         onSaved: () {
           ref.invalidate(treatmentComponentsForTreatmentProvider(treatment.id));
           ref.invalidate(treatmentComponentsCountForTrialProvider(trial.id));
@@ -440,7 +461,7 @@ class _TreatmentExpansionTile extends ConsumerStatefulWidget {
   final bool locked;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final VoidCallback onAddComponent;
+  final Future<void> Function(TreatmentComponent? existing) onOpenComponentSheet;
   final VoidCallback onOpenSheet;
 
   const _TreatmentExpansionTile({
@@ -449,7 +470,7 @@ class _TreatmentExpansionTile extends ConsumerStatefulWidget {
     required this.locked,
     required this.onEdit,
     required this.onDelete,
-    required this.onAddComponent,
+    required this.onOpenComponentSheet,
     required this.onOpenSheet,
   });
 
@@ -460,8 +481,6 @@ class _TreatmentExpansionTile extends ConsumerStatefulWidget {
 
 class _TreatmentExpansionTileState
     extends ConsumerState<_TreatmentExpansionTile> {
-  bool _expanded = false;
-
   @override
   Widget build(BuildContext context) {
     final treatment = widget.treatment;
@@ -473,10 +492,7 @@ class _TreatmentExpansionTileState
         color: AppDesignTokens.cardSurface,
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
         border: Border.all(color: AppDesignTokens.borderCrisp),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
-        ],
+        boxShadow: AppDesignTokens.cardShadow,
       ),
       child: componentsAsync.when(
         loading: () =>
@@ -496,13 +512,11 @@ class _TreatmentExpansionTileState
     List<TreatmentComponent>? components,
   }) {
     final theme = Theme.of(context);
-    final formula = buildTreatmentFormula(components ?? []);
     return ExpansionTile(
       initiallyExpanded: false,
       tilePadding: const EdgeInsets.symmetric(
           horizontal: AppDesignTokens.spacing16, vertical: 8),
       childrenPadding: const EdgeInsets.fromLTRB(32, 0, 16, 8),
-      onExpansionChanged: (v) => setState(() => _expanded = v),
       leading: Container(
         padding: const EdgeInsets.symmetric(
             horizontal: AppDesignTokens.spacing8,
@@ -578,17 +592,97 @@ class _TreatmentExpansionTileState
               ],
             ),
           ],
-          if (!_expanded) ...[
-            const SizedBox(height: 2),
+          const SizedBox(height: 2),
+          if (components == null)
+            const SizedBox.shrink()
+          else if (components.isEmpty)
             Text(
-              formula,
+              'No components defined',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
+            )
+          else
+            ...components.map(
+              (c) => Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '· ${c.productName}${_inlineRateUnit(c)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    if (!widget.locked)
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          size: 18,
+                          color: AppDesignTokens.iconSubtle,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 32,
+                        ),
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            await widget.onOpenComponentSheet(c);
+                          } else if (value == 'delete') {
+                            final ok = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete this component?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (ok == true && context.mounted) {
+                              final repo =
+                                  ref.read(treatmentRepositoryProvider);
+                              await repo.deleteComponent(c.id);
+                              ref.invalidate(
+                                treatmentComponentsForTreatmentProvider(
+                                    widget.treatment.id),
+                              );
+                              ref.invalidate(
+                                treatmentComponentsCountForTrialProvider(
+                                    widget.trial.id),
+                              );
+                            }
+                          }
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Edit'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Delete'),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ],
         ],
       ),
       trailing: Row(
@@ -598,7 +692,7 @@ class _TreatmentExpansionTileState
             IconButton(
               icon: const Icon(Icons.add, size: 20),
               tooltip: 'Add Component',
-              onPressed: widget.onAddComponent,
+              onPressed: () => widget.onOpenComponentSheet(null),
             ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert,
@@ -624,118 +718,17 @@ class _TreatmentExpansionTileState
       children: [
         if (!widget.locked)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: widget.onAddComponent,
+                onPressed: () => widget.onOpenComponentSheet(null),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add Component'),
               ),
             ),
           ),
-        if (components == null || components.isEmpty)
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Text(
-              'No components yet. Tap Add Component to add products and rates.',
-              style:
-                  TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
-            ),
-          )
-        else
-          ...components.map((c) => _ComponentListTile(
-                trial: widget.trial,
-                treatment: widget.treatment,
-                component: c,
-                onDelete: () async {
-                  final repo = ref.read(treatmentRepositoryProvider);
-                  await repo.deleteComponent(c.id);
-                  ref.invalidate(treatmentComponentsForTreatmentProvider(
-                      widget.treatment.id));
-                  ref.invalidate(treatmentComponentsCountForTrialProvider(
-                      widget.trial.id));
-                },
-              )),
       ],
-    );
-  }
-}
-
-class _ComponentListTile extends StatelessWidget {
-  final Trial trial;
-  final Treatment treatment;
-  final TreatmentComponent component;
-  final VoidCallback onDelete;
-
-  const _ComponentListTile({
-    required this.trial,
-    required this.treatment,
-    required this.component,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final ratePart = (component.rate != null &&
-            component.rate!.isNotEmpty &&
-            component.rateUnit != null)
-        ? '${component.rate} ${component.rateUnit}'
-        : null;
-    final formulationPart = component.applicationTiming;
-    return Dismissible(
-      key: Key('component_${component.id}'),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      confirmDismiss: (direction) async {
-        return await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Remove Component?'),
-            content: Text(
-              'Remove "${component.productName}" from ${treatment.code}?',
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel')),
-              FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Remove')),
-            ],
-          ),
-        );
-      },
-      onDismissed: (_) => onDelete(),
-      child: ListTile(
-        title: Text(
-          component.productName,
-          style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: AppDesignTokens.primaryText),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (ratePart != null)
-              Text(ratePart,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppDesignTokens.secondaryText)),
-            if (formulationPart != null && formulationPart.isNotEmpty)
-              Text(formulationPart,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppDesignTokens.secondaryText)),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -754,12 +747,14 @@ class _AddComponentBottomSheet extends StatefulWidget {
   final Treatment treatment;
   final WidgetRef ref;
   final VoidCallback onSaved;
+  final TreatmentComponent? existingComponent;
 
   const _AddComponentBottomSheet({
     required this.trial,
     required this.treatment,
     required this.ref,
     required this.onSaved,
+    this.existingComponent,
   });
 
   @override
@@ -778,6 +773,33 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
   final _eppoController = TextEditingController();
   String _rateUnit = _componentRateUnits.first;
   String? _formulationType;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existingComponent;
+    if (e != null) {
+      _productController.text = e.productName;
+      _rateController.text = e.rate ?? '';
+      final u = e.rateUnit?.trim();
+      if (u != null &&
+          u.isNotEmpty &&
+          _componentRateUnits.contains(u)) {
+        _rateUnit = u;
+      }
+      _formulationController.text = e.applicationTiming ?? '';
+      _notesController.text = e.notes ?? '';
+      final pct = e.activeIngredientPct;
+      if (pct != null) {
+        _activeIngredientPctController.text =
+            pct == pct.roundToDouble() ? '${pct.round()}' : '$pct';
+      }
+      _manufacturerController.text = e.manufacturer ?? '';
+      _registrationNumberController.text = e.registrationNumber ?? '';
+      _eppoController.text = e.eppoCode ?? '';
+      _formulationType = e.formulationType;
+    }
+  }
 
   @override
   void dispose() {
@@ -811,7 +833,9 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Add Component — ${widget.treatment.code}',
+                widget.existingComponent == null
+                    ? 'Add Component — ${widget.treatment.code}'
+                    : 'Edit Component — ${widget.treatment.code}',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
@@ -826,7 +850,6 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
               Row(
                 children: [
                   Expanded(
-                    flex: 2,
                     child: TextFormField(
                       controller: _rateController,
                       keyboardType:
@@ -836,10 +859,11 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    flex: 1,
+                  SizedBox(
+                    width: 100,
                     child: DropdownButtonFormField<String>(
                       key: ValueKey('sheet_rate_unit_$_rateUnit'),
+                      isExpanded: true,
                       initialValue: _rateUnit,
                       decoration: FormStyles.inputDecoration(
                           labelText: 'Unit'),
@@ -892,24 +916,24 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                 children: [
                   TextField(
                     controller: _manufacturerController,
-decoration: FormStyles.inputDecoration(
-                labelText: 'Manufacturer',
-                ),
+                    decoration: FormStyles.inputDecoration(
+                      labelText: 'Manufacturer',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _registrationNumberController,
-decoration: FormStyles.inputDecoration(
-                labelText: 'Registration number',
-                ),
+                    decoration: FormStyles.inputDecoration(
+                      labelText: 'Registration number',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _eppoController,
-decoration: FormStyles.inputDecoration(
-                labelText: 'EPPO code',
+                    decoration: FormStyles.inputDecoration(
+                      labelText: 'EPPO code',
                       hintText: 'e.g. 1BAS5B4048',
-                ),
+                    ),
                   ),
                 ],
               ),
@@ -935,6 +959,10 @@ decoration: FormStyles.inputDecoration(
                       final name = _productController.text.trim();
                       if (name.isEmpty) return;
                       final repo = widget.ref.read(treatmentRepositoryProvider);
+                      final existing = widget.existingComponent;
+                      if (existing != null) {
+                        await repo.deleteComponent(existing.id);
+                      }
                       await repo.insertComponent(
                         treatmentId: widget.treatment.id,
                         trialId: widget.trial.id,
@@ -950,6 +978,7 @@ decoration: FormStyles.inputDecoration(
                         notes: _notesController.text.trim().isEmpty
                             ? null
                             : _notesController.text.trim(),
+                        sortOrder: existing?.sortOrder ?? 0,
                         activeIngredientPct: _parseActiveIngredientPct(),
                         formulationType: _formulationType,
                         manufacturer: _manufacturerController.text.trim().isEmpty
