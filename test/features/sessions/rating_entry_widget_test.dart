@@ -179,6 +179,11 @@ void main() {
   group('Rating entry from SessionDetail', () {
     testWidgets('Start Rating success: use case called, RatingScreen pushed',
         (WidgetTester tester) async {
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+      await tester.binding.setSurfaceSize(const Size(800, 1400));
+
       fakeUseCase.result = StartOrContinueRatingResult.success(
         trial: trial,
         session: session,
@@ -215,7 +220,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      await tester.tap(find.text('Start Rating'));
+      final startRatingFinder = find.text('Start Rating');
+      await tester.ensureVisible(startRatingFinder);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(startRatingFinder, warnIfMissed: false);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(seconds: 1));
@@ -225,6 +234,11 @@ void main() {
 
     testWidgets('Start Rating failure: error dialog shown',
         (WidgetTester tester) async {
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+      await tester.binding.setSurfaceSize(const Size(800, 1400));
+
       fakeUseCase.result =
           StartOrContinueRatingResult.failure('No plots in trial.');
 
@@ -255,8 +269,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      await tester.tap(find.text('Start Rating'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      final startRatingFinder = find.text('Start Rating');
+      await tester.ensureVisible(startRatingFinder);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(startRatingFinder, warnIfMissed: false);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
 
       expect(find.byType(RatingScreen), findsNothing);
       expect(find.text('Cannot Start Rating'), findsOneWidget);
