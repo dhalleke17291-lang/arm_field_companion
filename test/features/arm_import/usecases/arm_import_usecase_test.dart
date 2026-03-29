@@ -1,5 +1,7 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
+import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_csv_parser.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_report_builder.dart';
@@ -21,6 +23,8 @@ ArmImportUseCase _makeUseCase(
     db,
     TrialRepository(db),
     TreatmentRepository(db),
+    PlotRepository(db),
+    AssignmentRepository(db),
     ArmCsvParser(),
     ArmImportSnapshotService(),
     CompatibilityProfileBuilder(),
@@ -208,6 +212,99 @@ void main() {
     expect(comps, isEmpty);
   });
 
+  test('plots inserted with correct plotId and rep', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'plots_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Plot No.,trt,reps\n101,1,1\n102,2,1\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final plots = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid) & p.isDeleted.equals(false))
+          ..orderBy([(p) => OrderingTerm.asc(p.id)]))
+        .get();
+    expect(plots, hasLength(2));
+    expect(plots.map((p) => p.plotId).toList(), ['101', '102']);
+    expect(plots.map((p) => p.rep).toList(), [1, 1]);
+  });
+
+  test('assignments map plot PK to treatment id', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'assign_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Plot No.,trt,reps\n101,1,1\n102,2,1\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final plots = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid))
+          ..orderBy([(p) => OrderingTerm.asc(p.id)]))
+        .get();
+    final t1 = await (db.select(db.treatments)
+          ..where((t) => t.trialId.equals(tid) & t.code.equals('1')))
+        .getSingle();
+    final t2 = await (db.select(db.treatments)
+          ..where((t) => t.trialId.equals(tid) & t.code.equals('2')))
+        .getSingle();
+
+    final assigns =
+        await (db.select(db.assignments)..where((a) => a.trialId.equals(tid)))
+            .get();
+    expect(assigns, hasLength(2));
+    expect(
+      assigns.firstWhere((a) => a.plotId == plots[0].id).treatmentId,
+      t1.id,
+    );
+    expect(
+      assigns.firstWhere((a) => a.plotId == plots[1].id).treatmentId,
+      t2.id,
+    );
+  });
+
+  test('assignment skipped when trt empty (no treatment id mapping)', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'skip_trt_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Plot No.,trt,reps\n101,1,1\n102,,1\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final assigns =
+        await (db.select(db.assignments)..where((a) => a.trialId.equals(tid)))
+            .get();
+    expect(assigns, hasLength(1));
+  });
+
+  test('duplicate plot business ids both inserted with two assignments', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'dup_plot_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Plot No.,trt,reps\n101,1,1\n101,1,1\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final plots = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid))
+          ..orderBy([(p) => OrderingTerm.asc(p.id)]))
+        .get();
+    expect(plots, hasLength(2));
+    expect(plots.every((p) => p.plotId == '101'), isTrue);
+
+    final assigns =
+        await (db.select(db.assignments)..where((a) => a.trialId.equals(tid)))
+            .get();
+    expect(assigns, hasLength(2));
+  });
+
   test('transaction rolls back when persistence fails mid-flight', () async {
     final trialsBefore = await db.select(db.trials).get();
 
@@ -215,6 +312,8 @@ void main() {
       db,
       TrialRepository(db),
       TreatmentRepository(db),
+      PlotRepository(db),
+      AssignmentRepository(db),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),

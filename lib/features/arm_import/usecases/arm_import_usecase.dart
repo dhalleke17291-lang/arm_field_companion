@@ -1,8 +1,11 @@
 import 'package:csv/csv.dart';
+import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/database/app_database.dart';
+import '../../../data/repositories/assignment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
+import '../../plots/plot_repository.dart';
 import '../../trials/trial_repository.dart';
 import '../data/arm_csv_parser.dart';
 import '../data/arm_import_persistence_repository.dart';
@@ -19,6 +22,8 @@ class ArmImportUseCase {
     this._db,
     this._trialRepository,
     this._treatmentRepository,
+    this._plotRepository,
+    this._assignmentRepository,
     this._parser,
     this._snapshotService,
     this._profileBuilder,
@@ -29,6 +34,8 @@ class ArmImportUseCase {
   final AppDatabase _db;
   final TrialRepository _trialRepository;
   final TreatmentRepository _treatmentRepository;
+  final PlotRepository _plotRepository;
+  final AssignmentRepository _assignmentRepository;
   final ArmCsvParser _parser;
   final ArmImportSnapshotService _snapshotService;
   final CompatibilityProfileBuilder _profileBuilder;
@@ -101,6 +108,12 @@ class ArmImportUseCase {
         }
         assert(treatmentCodeToId.length == treatments.length);
 
+        await _insertPlotsAndAssignments(
+          parsed: parsed,
+          trialId: trialId,
+          treatmentCodeToId: treatmentCodeToId,
+        );
+
         final snapshotId = await _persistence.insertImportSnapshot(
           snapshotPayload,
           trialId: trialId,
@@ -129,6 +142,84 @@ class ArmImportUseCase {
       return ArmImportResult.failure('ARM import failed: $e');
     } catch (e) {
       return ArmImportResult.failure('ARM import failed: $e');
+    }
+  }
+
+  /// Inserts one plot per data row (no deduplication). Assignments use plot PKs in
+  /// [Plots.id] insertion order, aligned with rows that produced each companion.
+  Future<void> _insertPlotsAndAssignments({
+    required ParsedArmCsv parsed,
+    required int trialId,
+    required Map<String, int> treatmentCodeToId,
+  }) async {
+    final plotHeader = _findHeaderByRole(parsed.columns, 'plotNumber');
+    final repHeader = _findHeaderByRole(parsed.columns, 'rep');
+    final trtHeader = _findHeaderByRole(parsed.columns, 'treatmentNumber');
+
+    if (plotHeader == null || repHeader == null) {
+      return;
+    }
+
+    final companions = <PlotsCompanion>[];
+    final insertedRowIndices = <int>[];
+
+    for (var i = 0; i < parsed.dataRows.length; i++) {
+      final row = parsed.dataRows[i];
+      final pv = row[plotHeader];
+      if (pv == null || pv.trim().isEmpty) continue;
+
+      final repRaw = row[repHeader];
+      final rep = int.tryParse(repRaw ?? '');
+
+      companions.add(
+        PlotsCompanion.insert(
+          trialId: trialId,
+          plotId: pv.trim(),
+          plotSortIndex: Value(i + 1),
+          rep: Value(rep),
+        ),
+      );
+      insertedRowIndices.add(i);
+    }
+
+    if (companions.isEmpty) {
+      return;
+    }
+
+    await _plotRepository.insertPlotsBulk(companions);
+
+    if (trtHeader == null) {
+      return;
+    }
+
+    final plotRows = await (_db.select(_db.plots)
+          ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false))
+          ..orderBy([(p) => OrderingTerm.asc(p.id)]))
+        .get();
+
+    if (plotRows.length != companions.length) {
+      throw StateError(
+        'Plot insert count ${plotRows.length} does not match companions ${companions.length}.',
+      );
+    }
+
+    for (var j = 0; j < plotRows.length; j++) {
+      final plot = plotRows[j];
+      final row = parsed.dataRows[insertedRowIndices[j]];
+      final trtRaw = row[trtHeader];
+      if (trtRaw == null || trtRaw.trim().isEmpty) continue;
+
+      final code = trtRaw.trim();
+      final tid = treatmentCodeToId[code];
+      if (tid == null) continue;
+
+      await _assignmentRepository.upsert(
+        trialId: trialId,
+        plotId: plot.id,
+        treatmentId: tid,
+        assignmentSource: 'imported',
+        assignedAt: DateTime.now().toUtc(),
+      );
     }
   }
 }
