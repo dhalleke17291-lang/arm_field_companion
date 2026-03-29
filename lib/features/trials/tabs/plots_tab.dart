@@ -10,6 +10,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/plot_display.dart';
 import '../../../core/providers.dart';
+import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/trial_state.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../shared/widgets/app_card.dart';
@@ -29,7 +30,16 @@ Future<void> _runGenerateRepGuardPlots(
   int trialId,
 ) async {
   final uc = ref.read(generateRepGuardPlotsUseCaseProvider);
-  final n = await uc.countToInsert(trialId);
+  final int n;
+  try {
+    n = await uc.countToInsert(trialId);
+  } on ProtocolEditBlockedException catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+    return;
+  }
   if (!context.mounted) return;
   if (n == 0) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -63,7 +73,16 @@ Future<void> _runGenerateRepGuardPlots(
     ),
   );
   if (confirmed != true || !context.mounted) return;
-  final added = await uc.execute(trialId);
+  final int added;
+  try {
+    added = await uc.execute(trialId);
+  } on ProtocolEditBlockedException catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+    return;
+  }
   ref.invalidate(plotsForTrialProvider(trialId));
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(

@@ -17,6 +17,7 @@ Trial _trial({int id = 1, String name = 'Test Trial'}) => Trial(
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isDeleted: false,
+      isArmLinked: false,
     );
 
 class MockReportDataAssemblyService implements ReportDataAssemblyService {

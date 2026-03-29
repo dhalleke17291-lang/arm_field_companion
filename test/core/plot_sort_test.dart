@@ -27,6 +27,7 @@ Plot _plot({
       assignmentUpdatedAt: null,
       isGuardRow: false,
       isDeleted: false,
+      excludeFromAnalysis: false,
     );
 
 void main() {

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import '../../core/trial_state.dart';
 import 'assignment_repository.dart';
 
 class TreatmentRepository {
@@ -58,7 +59,8 @@ class TreatmentRepository {
     String? treatmentType,
     String? timingCode,
     String? eppoCode,
-  }) {
+  }) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.into(_db.treatments).insert(
           TreatmentsCompanion.insert(
             trialId: trialId,

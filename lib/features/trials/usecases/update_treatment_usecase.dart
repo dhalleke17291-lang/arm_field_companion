@@ -18,9 +18,8 @@ class UpdateTreatmentUseCase {
     String? timingCode,
     String? eppoCode,
   }) async {
-    if (isProtocolLocked(trial.status)) {
-      return UpdateTreatmentResult.failure(
-          getProtocolLockMessage(trial.status));
+    if (!canEditProtocol(trial)) {
+      return UpdateTreatmentResult.failure(protocolEditBlockedMessage(trial));
     }
     final trimmedCode = code.trim();
     final trimmedName = name.trim();

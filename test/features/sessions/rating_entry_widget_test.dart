@@ -35,6 +35,7 @@ void main() {
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
       isDeleted: false,
+      isArmLinked: false,
     );
     session = Session(
       id: 10,
@@ -65,6 +66,7 @@ void main() {
         assignmentUpdatedAt: null,
         isGuardRow: false,
         isDeleted: false,
+        excludeFromAnalysis: false,
       ),
     ];
     assessments = [

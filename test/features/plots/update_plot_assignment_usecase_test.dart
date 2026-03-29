@@ -147,6 +147,7 @@ Trial _trial({String status = 'ACTIVE'}) => Trial(
       location: null,
       season: null,
       isDeleted: false,
+      isArmLinked: false,
     );
 
 void main() {

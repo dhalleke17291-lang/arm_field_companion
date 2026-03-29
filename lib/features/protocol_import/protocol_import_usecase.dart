@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/trial_state.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
 import '../plots/plot_repository.dart';
@@ -272,13 +273,23 @@ class ProtocolImportUseCase {
     bool isProtocolLocked = false,
     String? protocolLockMessage,
   }) async {
-    if (isProtocolLocked) {
-      return ProtocolImportExecuteResult.failure(protocolLockMessage ??
-          'Protocol is locked. Change trial status to import.');
-    }
     if (!review.canProceed) {
       return ProtocolImportExecuteResult.failure(
           'Import has errors. Resolve Must Fix items before importing.');
+    }
+
+    if (existingTrialId != null) {
+      final trial = await _trialRepository.getTrialById(existingTrialId);
+      if (trial == null) {
+        return ProtocolImportExecuteResult.failure('Trial not found.');
+      }
+      if (!canEditProtocol(trial)) {
+        return ProtocolImportExecuteResult.failure(
+            protocolEditBlockedMessage(trial));
+      }
+    } else if (isProtocolLocked) {
+      return ProtocolImportExecuteResult.failure(protocolLockMessage ??
+          'Protocol is locked. Change trial status to import.');
     }
 
     try {

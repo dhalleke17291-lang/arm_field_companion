@@ -640,6 +640,34 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
       'deleted_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isArmLinkedMeta =
+      const VerificationMeta('isArmLinked');
+  @override
+  late final GeneratedColumn<bool> isArmLinked = GeneratedColumn<bool>(
+      'is_arm_linked', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_arm_linked" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _armImportedAtMeta =
+      const VerificationMeta('armImportedAt');
+  @override
+  late final GeneratedColumn<DateTime> armImportedAt =
+      GeneratedColumn<DateTime>('arm_imported_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _armSourceFileMeta =
+      const VerificationMeta('armSourceFile');
+  @override
+  late final GeneratedColumn<String> armSourceFile = GeneratedColumn<String>(
+      'arm_source_file', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armVersionMeta =
+      const VerificationMeta('armVersion');
+  @override
+  late final GeneratedColumn<String> armVersion = GeneratedColumn<String>(
+      'arm_version', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -681,7 +709,11 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         updatedAt,
         isDeleted,
         deletedAt,
-        deletedBy
+        deletedBy,
+        isArmLinked,
+        armImportedAt,
+        armSourceFile,
+        armVersion
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -888,6 +920,30 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       context.handle(_deletedByMeta,
           deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
     }
+    if (data.containsKey('is_arm_linked')) {
+      context.handle(
+          _isArmLinkedMeta,
+          isArmLinked.isAcceptableOrUnknown(
+              data['is_arm_linked']!, _isArmLinkedMeta));
+    }
+    if (data.containsKey('arm_imported_at')) {
+      context.handle(
+          _armImportedAtMeta,
+          armImportedAt.isAcceptableOrUnknown(
+              data['arm_imported_at']!, _armImportedAtMeta));
+    }
+    if (data.containsKey('arm_source_file')) {
+      context.handle(
+          _armSourceFileMeta,
+          armSourceFile.isAcceptableOrUnknown(
+              data['arm_source_file']!, _armSourceFileMeta));
+    }
+    if (data.containsKey('arm_version')) {
+      context.handle(
+          _armVersionMeta,
+          armVersion.isAcceptableOrUnknown(
+              data['arm_version']!, _armVersionMeta));
+    }
     return context;
   }
 
@@ -977,6 +1033,14 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
       deletedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
+      isArmLinked: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_arm_linked'])!,
+      armImportedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}arm_imported_at']),
+      armSourceFile: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}arm_source_file']),
+      armVersion: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}arm_version']),
     );
   }
 
@@ -1035,6 +1099,10 @@ class Trial extends DataClass implements Insertable<Trial> {
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
+  final bool isArmLinked;
+  final DateTime? armImportedAt;
+  final String? armSourceFile;
+  final String? armVersion;
   const Trial(
       {required this.id,
       required this.name,
@@ -1075,7 +1143,11 @@ class Trial extends DataClass implements Insertable<Trial> {
       required this.updatedAt,
       required this.isDeleted,
       this.deletedAt,
-      this.deletedBy});
+      this.deletedBy,
+      required this.isArmLinked,
+      this.armImportedAt,
+      this.armSourceFile,
+      this.armVersion});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1185,6 +1257,16 @@ class Trial extends DataClass implements Insertable<Trial> {
     if (!nullToAbsent || deletedBy != null) {
       map['deleted_by'] = Variable<String>(deletedBy);
     }
+    map['is_arm_linked'] = Variable<bool>(isArmLinked);
+    if (!nullToAbsent || armImportedAt != null) {
+      map['arm_imported_at'] = Variable<DateTime>(armImportedAt);
+    }
+    if (!nullToAbsent || armSourceFile != null) {
+      map['arm_source_file'] = Variable<String>(armSourceFile);
+    }
+    if (!nullToAbsent || armVersion != null) {
+      map['arm_version'] = Variable<String>(armVersion);
+    }
     return map;
   }
 
@@ -1290,6 +1372,16 @@ class Trial extends DataClass implements Insertable<Trial> {
       deletedBy: deletedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedBy),
+      isArmLinked: Value(isArmLinked),
+      armImportedAt: armImportedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armImportedAt),
+      armSourceFile: armSourceFile == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armSourceFile),
+      armVersion: armVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armVersion),
     );
   }
 
@@ -1338,6 +1430,10 @@ class Trial extends DataClass implements Insertable<Trial> {
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
+      isArmLinked: serializer.fromJson<bool>(json['isArmLinked']),
+      armImportedAt: serializer.fromJson<DateTime?>(json['armImportedAt']),
+      armSourceFile: serializer.fromJson<String?>(json['armSourceFile']),
+      armVersion: serializer.fromJson<String?>(json['armVersion']),
     );
   }
   @override
@@ -1384,6 +1480,10 @@ class Trial extends DataClass implements Insertable<Trial> {
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
+      'isArmLinked': serializer.toJson<bool>(isArmLinked),
+      'armImportedAt': serializer.toJson<DateTime?>(armImportedAt),
+      'armSourceFile': serializer.toJson<String?>(armSourceFile),
+      'armVersion': serializer.toJson<String?>(armVersion),
     };
   }
 
@@ -1427,7 +1527,11 @@ class Trial extends DataClass implements Insertable<Trial> {
           DateTime? updatedAt,
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
-          Value<String?> deletedBy = const Value.absent()}) =>
+          Value<String?> deletedBy = const Value.absent(),
+          bool? isArmLinked,
+          Value<DateTime?> armImportedAt = const Value.absent(),
+          Value<String?> armSourceFile = const Value.absent(),
+          Value<String?> armVersion = const Value.absent()}) =>
       Trial(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -1481,6 +1585,12 @@ class Trial extends DataClass implements Insertable<Trial> {
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
+        isArmLinked: isArmLinked ?? this.isArmLinked,
+        armImportedAt:
+            armImportedAt.present ? armImportedAt.value : this.armImportedAt,
+        armSourceFile:
+            armSourceFile.present ? armSourceFile.value : this.armSourceFile,
+        armVersion: armVersion.present ? armVersion.value : this.armVersion,
       );
   Trial copyWithCompanion(TrialsCompanion data) {
     return Trial(
@@ -1551,6 +1661,16 @@ class Trial extends DataClass implements Insertable<Trial> {
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
+      isArmLinked:
+          data.isArmLinked.present ? data.isArmLinked.value : this.isArmLinked,
+      armImportedAt: data.armImportedAt.present
+          ? data.armImportedAt.value
+          : this.armImportedAt,
+      armSourceFile: data.armSourceFile.present
+          ? data.armSourceFile.value
+          : this.armSourceFile,
+      armVersion:
+          data.armVersion.present ? data.armVersion.value : this.armVersion,
     );
   }
 
@@ -1596,7 +1716,11 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('isArmLinked: $isArmLinked, ')
+          ..write('armImportedAt: $armImportedAt, ')
+          ..write('armSourceFile: $armSourceFile, ')
+          ..write('armVersion: $armVersion')
           ..write(')'))
         .toString();
   }
@@ -1642,7 +1766,11 @@ class Trial extends DataClass implements Insertable<Trial> {
         updatedAt,
         isDeleted,
         deletedAt,
-        deletedBy
+        deletedBy,
+        isArmLinked,
+        armImportedAt,
+        armSourceFile,
+        armVersion
       ]);
   @override
   bool operator ==(Object other) =>
@@ -1687,7 +1815,11 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.updatedAt == this.updatedAt &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
-          other.deletedBy == this.deletedBy);
+          other.deletedBy == this.deletedBy &&
+          other.isArmLinked == this.isArmLinked &&
+          other.armImportedAt == this.armImportedAt &&
+          other.armSourceFile == this.armSourceFile &&
+          other.armVersion == this.armVersion);
 }
 
 class TrialsCompanion extends UpdateCompanion<Trial> {
@@ -1731,6 +1863,10 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
+  final Value<bool> isArmLinked;
+  final Value<DateTime?> armImportedAt;
+  final Value<String?> armSourceFile;
+  final Value<String?> armVersion;
   const TrialsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -1772,6 +1908,10 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.isArmLinked = const Value.absent(),
+    this.armImportedAt = const Value.absent(),
+    this.armSourceFile = const Value.absent(),
+    this.armVersion = const Value.absent(),
   });
   TrialsCompanion.insert({
     this.id = const Value.absent(),
@@ -1814,6 +1954,10 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.isArmLinked = const Value.absent(),
+    this.armImportedAt = const Value.absent(),
+    this.armSourceFile = const Value.absent(),
+    this.armVersion = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Trial> custom({
     Expression<int>? id,
@@ -1856,6 +2000,10 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
+    Expression<bool>? isArmLinked,
+    Expression<DateTime>? armImportedAt,
+    Expression<String>? armSourceFile,
+    Expression<String>? armVersion,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1898,6 +2046,10 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
+      if (isArmLinked != null) 'is_arm_linked': isArmLinked,
+      if (armImportedAt != null) 'arm_imported_at': armImportedAt,
+      if (armSourceFile != null) 'arm_source_file': armSourceFile,
+      if (armVersion != null) 'arm_version': armVersion,
     });
   }
 
@@ -1941,7 +2093,11 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<DateTime>? updatedAt,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
-      Value<String?>? deletedBy}) {
+      Value<String?>? deletedBy,
+      Value<bool>? isArmLinked,
+      Value<DateTime?>? armImportedAt,
+      Value<String?>? armSourceFile,
+      Value<String?>? armVersion}) {
     return TrialsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -1983,6 +2139,10 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      isArmLinked: isArmLinked ?? this.isArmLinked,
+      armImportedAt: armImportedAt ?? this.armImportedAt,
+      armSourceFile: armSourceFile ?? this.armSourceFile,
+      armVersion: armVersion ?? this.armVersion,
     );
   }
 
@@ -2109,6 +2269,18 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (deletedBy.present) {
       map['deleted_by'] = Variable<String>(deletedBy.value);
     }
+    if (isArmLinked.present) {
+      map['is_arm_linked'] = Variable<bool>(isArmLinked.value);
+    }
+    if (armImportedAt.present) {
+      map['arm_imported_at'] = Variable<DateTime>(armImportedAt.value);
+    }
+    if (armSourceFile.present) {
+      map['arm_source_file'] = Variable<String>(armSourceFile.value);
+    }
+    if (armVersion.present) {
+      map['arm_version'] = Variable<String>(armVersion.value);
+    }
     return map;
   }
 
@@ -2154,7 +2326,11 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('isArmLinked: $isArmLinked, ')
+          ..write('armImportedAt: $armImportedAt, ')
+          ..write('armSourceFile: $armSourceFile, ')
+          ..write('armVersion: $armVersion')
           ..write(')'))
         .toString();
   }
@@ -5032,6 +5208,36 @@ class $TrialAssessmentsTable extends TrialAssessments
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _pestCodeMeta =
+      const VerificationMeta('pestCode');
+  @override
+  late final GeneratedColumn<String> pestCode = GeneratedColumn<String>(
+      'pest_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pestNameMeta =
+      const VerificationMeta('pestName');
+  @override
+  late final GeneratedColumn<String> pestName = GeneratedColumn<String>(
+      'pest_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _eppoCodeLocalMeta =
+      const VerificationMeta('eppoCodeLocal');
+  @override
+  late final GeneratedColumn<String> eppoCodeLocal = GeneratedColumn<String>(
+      'eppo_code_local', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _bbchScaleMeta =
+      const VerificationMeta('bbchScale');
+  @override
+  late final GeneratedColumn<String> bbchScale = GeneratedColumn<String>(
+      'bbch_scale', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cropStageAtAssessmentMeta =
+      const VerificationMeta('cropStageAtAssessment');
+  @override
+  late final GeneratedColumn<String> cropStageAtAssessment =
+      GeneratedColumn<String>('crop_stage_at_assessment', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -5052,7 +5258,12 @@ class $TrialAssessmentsTable extends TrialAssessments
         isActive,
         legacyAssessmentId,
         createdAt,
-        updatedAt
+        updatedAt,
+        pestCode,
+        pestName,
+        eppoCodeLocal,
+        bbchScale,
+        cropStageAtAssessment
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5167,6 +5378,30 @@ class $TrialAssessmentsTable extends TrialAssessments
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
     }
+    if (data.containsKey('pest_code')) {
+      context.handle(_pestCodeMeta,
+          pestCode.isAcceptableOrUnknown(data['pest_code']!, _pestCodeMeta));
+    }
+    if (data.containsKey('pest_name')) {
+      context.handle(_pestNameMeta,
+          pestName.isAcceptableOrUnknown(data['pest_name']!, _pestNameMeta));
+    }
+    if (data.containsKey('eppo_code_local')) {
+      context.handle(
+          _eppoCodeLocalMeta,
+          eppoCodeLocal.isAcceptableOrUnknown(
+              data['eppo_code_local']!, _eppoCodeLocalMeta));
+    }
+    if (data.containsKey('bbch_scale')) {
+      context.handle(_bbchScaleMeta,
+          bbchScale.isAcceptableOrUnknown(data['bbch_scale']!, _bbchScaleMeta));
+    }
+    if (data.containsKey('crop_stage_at_assessment')) {
+      context.handle(
+          _cropStageAtAssessmentMeta,
+          cropStageAtAssessment.isAcceptableOrUnknown(
+              data['crop_stage_at_assessment']!, _cropStageAtAssessmentMeta));
+    }
     return context;
   }
 
@@ -5215,6 +5450,17 @@ class $TrialAssessmentsTable extends TrialAssessments
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      pestCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pest_code']),
+      pestName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pest_name']),
+      eppoCodeLocal: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}eppo_code_local']),
+      bbchScale: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bbch_scale']),
+      cropStageAtAssessment: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}crop_stage_at_assessment']),
     );
   }
 
@@ -5244,6 +5490,11 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
   final int? legacyAssessmentId;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? pestCode;
+  final String? pestName;
+  final String? eppoCodeLocal;
+  final String? bbchScale;
+  final String? cropStageAtAssessment;
   const TrialAssessment(
       {required this.id,
       required this.trialId,
@@ -5263,7 +5514,12 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       required this.isActive,
       this.legacyAssessmentId,
       required this.createdAt,
-      required this.updatedAt});
+      required this.updatedAt,
+      this.pestCode,
+      this.pestName,
+      this.eppoCodeLocal,
+      this.bbchScale,
+      this.cropStageAtAssessment});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5302,6 +5558,21 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || pestCode != null) {
+      map['pest_code'] = Variable<String>(pestCode);
+    }
+    if (!nullToAbsent || pestName != null) {
+      map['pest_name'] = Variable<String>(pestName);
+    }
+    if (!nullToAbsent || eppoCodeLocal != null) {
+      map['eppo_code_local'] = Variable<String>(eppoCodeLocal);
+    }
+    if (!nullToAbsent || bbchScale != null) {
+      map['bbch_scale'] = Variable<String>(bbchScale);
+    }
+    if (!nullToAbsent || cropStageAtAssessment != null) {
+      map['crop_stage_at_assessment'] = Variable<String>(cropStageAtAssessment);
+    }
     return map;
   }
 
@@ -5342,6 +5613,21 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           : Value(legacyAssessmentId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      pestCode: pestCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pestCode),
+      pestName: pestName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pestName),
+      eppoCodeLocal: eppoCodeLocal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eppoCodeLocal),
+      bbchScale: bbchScale == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bbchScale),
+      cropStageAtAssessment: cropStageAtAssessment == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropStageAtAssessment),
     );
   }
 
@@ -5372,6 +5658,12 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       legacyAssessmentId: serializer.fromJson<int?>(json['legacyAssessmentId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      pestCode: serializer.fromJson<String?>(json['pestCode']),
+      pestName: serializer.fromJson<String?>(json['pestName']),
+      eppoCodeLocal: serializer.fromJson<String?>(json['eppoCodeLocal']),
+      bbchScale: serializer.fromJson<String?>(json['bbchScale']),
+      cropStageAtAssessment:
+          serializer.fromJson<String?>(json['cropStageAtAssessment']),
     );
   }
   @override
@@ -5397,6 +5689,12 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       'legacyAssessmentId': serializer.toJson<int?>(legacyAssessmentId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'pestCode': serializer.toJson<String?>(pestCode),
+      'pestName': serializer.toJson<String?>(pestName),
+      'eppoCodeLocal': serializer.toJson<String?>(eppoCodeLocal),
+      'bbchScale': serializer.toJson<String?>(bbchScale),
+      'cropStageAtAssessment':
+          serializer.toJson<String?>(cropStageAtAssessment),
     };
   }
 
@@ -5419,7 +5717,12 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           bool? isActive,
           Value<int?> legacyAssessmentId = const Value.absent(),
           DateTime? createdAt,
-          DateTime? updatedAt}) =>
+          DateTime? updatedAt,
+          Value<String?> pestCode = const Value.absent(),
+          Value<String?> pestName = const Value.absent(),
+          Value<String?> eppoCodeLocal = const Value.absent(),
+          Value<String?> bbchScale = const Value.absent(),
+          Value<String?> cropStageAtAssessment = const Value.absent()}) =>
       TrialAssessment(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -5452,6 +5755,14 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
             : this.legacyAssessmentId,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        pestCode: pestCode.present ? pestCode.value : this.pestCode,
+        pestName: pestName.present ? pestName.value : this.pestName,
+        eppoCodeLocal:
+            eppoCodeLocal.present ? eppoCodeLocal.value : this.eppoCodeLocal,
+        bbchScale: bbchScale.present ? bbchScale.value : this.bbchScale,
+        cropStageAtAssessment: cropStageAtAssessment.present
+            ? cropStageAtAssessment.value
+            : this.cropStageAtAssessment,
       );
   TrialAssessment copyWithCompanion(TrialAssessmentsCompanion data) {
     return TrialAssessment(
@@ -5496,6 +5807,15 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           : this.legacyAssessmentId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      pestCode: data.pestCode.present ? data.pestCode.value : this.pestCode,
+      pestName: data.pestName.present ? data.pestName.value : this.pestName,
+      eppoCodeLocal: data.eppoCodeLocal.present
+          ? data.eppoCodeLocal.value
+          : this.eppoCodeLocal,
+      bbchScale: data.bbchScale.present ? data.bbchScale.value : this.bbchScale,
+      cropStageAtAssessment: data.cropStageAtAssessment.present
+          ? data.cropStageAtAssessment.value
+          : this.cropStageAtAssessment,
     );
   }
 
@@ -5520,32 +5840,43 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           ..write('isActive: $isActive, ')
           ..write('legacyAssessmentId: $legacyAssessmentId, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('pestCode: $pestCode, ')
+          ..write('pestName: $pestName, ')
+          ..write('eppoCodeLocal: $eppoCodeLocal, ')
+          ..write('bbchScale: $bbchScale, ')
+          ..write('cropStageAtAssessment: $cropStageAtAssessment')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      trialId,
-      assessmentDefinitionId,
-      displayNameOverride,
-      required,
-      selectedFromProtocol,
-      selectedManually,
-      defaultInSessions,
-      sortOrder,
-      timingMode,
-      daysAfterPlanting,
-      daysAfterTreatment,
-      growthStage,
-      methodOverride,
-      instructionOverride,
-      isActive,
-      legacyAssessmentId,
-      createdAt,
-      updatedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        trialId,
+        assessmentDefinitionId,
+        displayNameOverride,
+        required,
+        selectedFromProtocol,
+        selectedManually,
+        defaultInSessions,
+        sortOrder,
+        timingMode,
+        daysAfterPlanting,
+        daysAfterTreatment,
+        growthStage,
+        methodOverride,
+        instructionOverride,
+        isActive,
+        legacyAssessmentId,
+        createdAt,
+        updatedAt,
+        pestCode,
+        pestName,
+        eppoCodeLocal,
+        bbchScale,
+        cropStageAtAssessment
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5568,7 +5899,12 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           other.isActive == this.isActive &&
           other.legacyAssessmentId == this.legacyAssessmentId &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.pestCode == this.pestCode &&
+          other.pestName == this.pestName &&
+          other.eppoCodeLocal == this.eppoCodeLocal &&
+          other.bbchScale == this.bbchScale &&
+          other.cropStageAtAssessment == this.cropStageAtAssessment);
 }
 
 class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
@@ -5591,6 +5927,11 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
   final Value<int?> legacyAssessmentId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<String?> pestCode;
+  final Value<String?> pestName;
+  final Value<String?> eppoCodeLocal;
+  final Value<String?> bbchScale;
+  final Value<String?> cropStageAtAssessment;
   const TrialAssessmentsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -5611,6 +5952,11 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.legacyAssessmentId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.pestCode = const Value.absent(),
+    this.pestName = const Value.absent(),
+    this.eppoCodeLocal = const Value.absent(),
+    this.bbchScale = const Value.absent(),
+    this.cropStageAtAssessment = const Value.absent(),
   });
   TrialAssessmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -5632,6 +5978,11 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.legacyAssessmentId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.pestCode = const Value.absent(),
+    this.pestName = const Value.absent(),
+    this.eppoCodeLocal = const Value.absent(),
+    this.bbchScale = const Value.absent(),
+    this.cropStageAtAssessment = const Value.absent(),
   })  : trialId = Value(trialId),
         assessmentDefinitionId = Value(assessmentDefinitionId);
   static Insertable<TrialAssessment> custom({
@@ -5654,6 +6005,11 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     Expression<int>? legacyAssessmentId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<String>? pestCode,
+    Expression<String>? pestName,
+    Expression<String>? eppoCodeLocal,
+    Expression<String>? bbchScale,
+    Expression<String>? cropStageAtAssessment,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5681,6 +6037,12 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
         'legacy_assessment_id': legacyAssessmentId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (pestCode != null) 'pest_code': pestCode,
+      if (pestName != null) 'pest_name': pestName,
+      if (eppoCodeLocal != null) 'eppo_code_local': eppoCodeLocal,
+      if (bbchScale != null) 'bbch_scale': bbchScale,
+      if (cropStageAtAssessment != null)
+        'crop_stage_at_assessment': cropStageAtAssessment,
     });
   }
 
@@ -5703,7 +6065,12 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       Value<bool>? isActive,
       Value<int?>? legacyAssessmentId,
       Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt}) {
+      Value<DateTime>? updatedAt,
+      Value<String?>? pestCode,
+      Value<String?>? pestName,
+      Value<String?>? eppoCodeLocal,
+      Value<String?>? bbchScale,
+      Value<String?>? cropStageAtAssessment}) {
     return TrialAssessmentsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -5725,6 +6092,12 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       legacyAssessmentId: legacyAssessmentId ?? this.legacyAssessmentId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      pestCode: pestCode ?? this.pestCode,
+      pestName: pestName ?? this.pestName,
+      eppoCodeLocal: eppoCodeLocal ?? this.eppoCodeLocal,
+      bbchScale: bbchScale ?? this.bbchScale,
+      cropStageAtAssessment:
+          cropStageAtAssessment ?? this.cropStageAtAssessment,
     );
   }
 
@@ -5791,6 +6164,22 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (pestCode.present) {
+      map['pest_code'] = Variable<String>(pestCode.value);
+    }
+    if (pestName.present) {
+      map['pest_name'] = Variable<String>(pestName.value);
+    }
+    if (eppoCodeLocal.present) {
+      map['eppo_code_local'] = Variable<String>(eppoCodeLocal.value);
+    }
+    if (bbchScale.present) {
+      map['bbch_scale'] = Variable<String>(bbchScale.value);
+    }
+    if (cropStageAtAssessment.present) {
+      map['crop_stage_at_assessment'] =
+          Variable<String>(cropStageAtAssessment.value);
+    }
     return map;
   }
 
@@ -5815,7 +6204,12 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
           ..write('isActive: $isActive, ')
           ..write('legacyAssessmentId: $legacyAssessmentId, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('pestCode: $pestCode, ')
+          ..write('pestName: $pestName, ')
+          ..write('eppoCodeLocal: $eppoCodeLocal, ')
+          ..write('bbchScale: $bbchScale, ')
+          ..write('cropStageAtAssessment: $cropStageAtAssessment')
           ..write(')'))
         .toString();
   }
@@ -5997,6 +6391,28 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
       'deleted_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _excludeFromAnalysisMeta =
+      const VerificationMeta('excludeFromAnalysis');
+  @override
+  late final GeneratedColumn<bool> excludeFromAnalysis = GeneratedColumn<bool>(
+      'exclude_from_analysis', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("exclude_from_analysis" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _exclusionReasonMeta =
+      const VerificationMeta('exclusionReason');
+  @override
+  late final GeneratedColumn<String> exclusionReason = GeneratedColumn<String>(
+      'exclusion_reason', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _damageTypeMeta =
+      const VerificationMeta('damageType');
+  @override
+  late final GeneratedColumn<String> damageType = GeneratedColumn<String>(
+      'damage_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -6024,7 +6440,10 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
         isGuardRow,
         isDeleted,
         deletedAt,
-        deletedBy
+        deletedBy,
+        excludeFromAnalysis,
+        exclusionReason,
+        damageType
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6171,6 +6590,24 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
       context.handle(_deletedByMeta,
           deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
     }
+    if (data.containsKey('exclude_from_analysis')) {
+      context.handle(
+          _excludeFromAnalysisMeta,
+          excludeFromAnalysis.isAcceptableOrUnknown(
+              data['exclude_from_analysis']!, _excludeFromAnalysisMeta));
+    }
+    if (data.containsKey('exclusion_reason')) {
+      context.handle(
+          _exclusionReasonMeta,
+          exclusionReason.isAcceptableOrUnknown(
+              data['exclusion_reason']!, _exclusionReasonMeta));
+    }
+    if (data.containsKey('damage_type')) {
+      context.handle(
+          _damageTypeMeta,
+          damageType.isAcceptableOrUnknown(
+              data['damage_type']!, _damageTypeMeta));
+    }
     return context;
   }
 
@@ -6233,6 +6670,12 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
       deletedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
+      excludeFromAnalysis: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}exclude_from_analysis'])!,
+      exclusionReason: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}exclusion_reason']),
+      damageType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}damage_type']),
     );
   }
 
@@ -6273,6 +6716,9 @@ class Plot extends DataClass implements Insertable<Plot> {
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
+  final bool excludeFromAnalysis;
+  final String? exclusionReason;
+  final String? damageType;
   const Plot(
       {required this.id,
       required this.trialId,
@@ -6299,7 +6745,10 @@ class Plot extends DataClass implements Insertable<Plot> {
       required this.isGuardRow,
       required this.isDeleted,
       this.deletedAt,
-      this.deletedBy});
+      this.deletedBy,
+      required this.excludeFromAnalysis,
+      this.exclusionReason,
+      this.damageType});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -6371,6 +6820,13 @@ class Plot extends DataClass implements Insertable<Plot> {
     if (!nullToAbsent || deletedBy != null) {
       map['deleted_by'] = Variable<String>(deletedBy);
     }
+    map['exclude_from_analysis'] = Variable<bool>(excludeFromAnalysis);
+    if (!nullToAbsent || exclusionReason != null) {
+      map['exclusion_reason'] = Variable<String>(exclusionReason);
+    }
+    if (!nullToAbsent || damageType != null) {
+      map['damage_type'] = Variable<String>(damageType);
+    }
     return map;
   }
 
@@ -6438,6 +6894,13 @@ class Plot extends DataClass implements Insertable<Plot> {
       deletedBy: deletedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedBy),
+      excludeFromAnalysis: Value(excludeFromAnalysis),
+      exclusionReason: exclusionReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exclusionReason),
+      damageType: damageType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(damageType),
     );
   }
 
@@ -6472,6 +6935,10 @@ class Plot extends DataClass implements Insertable<Plot> {
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
+      excludeFromAnalysis:
+          serializer.fromJson<bool>(json['excludeFromAnalysis']),
+      exclusionReason: serializer.fromJson<String?>(json['exclusionReason']),
+      damageType: serializer.fromJson<String?>(json['damageType']),
     );
   }
   @override
@@ -6504,6 +6971,9 @@ class Plot extends DataClass implements Insertable<Plot> {
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
+      'excludeFromAnalysis': serializer.toJson<bool>(excludeFromAnalysis),
+      'exclusionReason': serializer.toJson<String?>(exclusionReason),
+      'damageType': serializer.toJson<String?>(damageType),
     };
   }
 
@@ -6533,7 +7003,10 @@ class Plot extends DataClass implements Insertable<Plot> {
           bool? isGuardRow,
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
-          Value<String?> deletedBy = const Value.absent()}) =>
+          Value<String?> deletedBy = const Value.absent(),
+          bool? excludeFromAnalysis,
+          Value<String?> exclusionReason = const Value.absent(),
+          Value<String?> damageType = const Value.absent()}) =>
       Plot(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -6570,6 +7043,11 @@ class Plot extends DataClass implements Insertable<Plot> {
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
+        excludeFromAnalysis: excludeFromAnalysis ?? this.excludeFromAnalysis,
+        exclusionReason: exclusionReason.present
+            ? exclusionReason.value
+            : this.exclusionReason,
+        damageType: damageType.present ? damageType.value : this.damageType,
       );
   Plot copyWithCompanion(PlotsCompanion data) {
     return Plot(
@@ -6620,6 +7098,14 @@ class Plot extends DataClass implements Insertable<Plot> {
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
+      excludeFromAnalysis: data.excludeFromAnalysis.present
+          ? data.excludeFromAnalysis.value
+          : this.excludeFromAnalysis,
+      exclusionReason: data.exclusionReason.present
+          ? data.exclusionReason.value
+          : this.exclusionReason,
+      damageType:
+          data.damageType.present ? data.damageType.value : this.damageType,
     );
   }
 
@@ -6651,7 +7137,10 @@ class Plot extends DataClass implements Insertable<Plot> {
           ..write('isGuardRow: $isGuardRow, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('excludeFromAnalysis: $excludeFromAnalysis, ')
+          ..write('exclusionReason: $exclusionReason, ')
+          ..write('damageType: $damageType')
           ..write(')'))
         .toString();
   }
@@ -6683,7 +7172,10 @@ class Plot extends DataClass implements Insertable<Plot> {
         isGuardRow,
         isDeleted,
         deletedAt,
-        deletedBy
+        deletedBy,
+        excludeFromAnalysis,
+        exclusionReason,
+        damageType
       ]);
   @override
   bool operator ==(Object other) =>
@@ -6714,7 +7206,10 @@ class Plot extends DataClass implements Insertable<Plot> {
           other.isGuardRow == this.isGuardRow &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
-          other.deletedBy == this.deletedBy);
+          other.deletedBy == this.deletedBy &&
+          other.excludeFromAnalysis == this.excludeFromAnalysis &&
+          other.exclusionReason == this.exclusionReason &&
+          other.damageType == this.damageType);
 }
 
 class PlotsCompanion extends UpdateCompanion<Plot> {
@@ -6744,6 +7239,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
+  final Value<bool> excludeFromAnalysis;
+  final Value<String?> exclusionReason;
+  final Value<String?> damageType;
   const PlotsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -6771,6 +7269,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.excludeFromAnalysis = const Value.absent(),
+    this.exclusionReason = const Value.absent(),
+    this.damageType = const Value.absent(),
   });
   PlotsCompanion.insert({
     this.id = const Value.absent(),
@@ -6799,6 +7300,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.excludeFromAnalysis = const Value.absent(),
+    this.exclusionReason = const Value.absent(),
+    this.damageType = const Value.absent(),
   })  : trialId = Value(trialId),
         plotId = Value(plotId);
   static Insertable<Plot> custom({
@@ -6828,6 +7332,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
+    Expression<bool>? excludeFromAnalysis,
+    Expression<String>? exclusionReason,
+    Expression<String>? damageType,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6857,6 +7364,10 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
+      if (excludeFromAnalysis != null)
+        'exclude_from_analysis': excludeFromAnalysis,
+      if (exclusionReason != null) 'exclusion_reason': exclusionReason,
+      if (damageType != null) 'damage_type': damageType,
     });
   }
 
@@ -6886,7 +7397,10 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       Value<bool>? isGuardRow,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
-      Value<String?>? deletedBy}) {
+      Value<String?>? deletedBy,
+      Value<bool>? excludeFromAnalysis,
+      Value<String?>? exclusionReason,
+      Value<String?>? damageType}) {
     return PlotsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -6914,6 +7428,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      excludeFromAnalysis: excludeFromAnalysis ?? this.excludeFromAnalysis,
+      exclusionReason: exclusionReason ?? this.exclusionReason,
+      damageType: damageType ?? this.damageType,
     );
   }
 
@@ -6999,6 +7516,15 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     if (deletedBy.present) {
       map['deleted_by'] = Variable<String>(deletedBy.value);
     }
+    if (excludeFromAnalysis.present) {
+      map['exclude_from_analysis'] = Variable<bool>(excludeFromAnalysis.value);
+    }
+    if (exclusionReason.present) {
+      map['exclusion_reason'] = Variable<String>(exclusionReason.value);
+    }
+    if (damageType.present) {
+      map['damage_type'] = Variable<String>(damageType.value);
+    }
     return map;
   }
 
@@ -7030,7 +7556,10 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
           ..write('isGuardRow: $isGuardRow, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('excludeFromAnalysis: $excludeFromAnalysis, ')
+          ..write('exclusionReason: $exclusionReason, ')
+          ..write('damageType: $damageType')
           ..write(')'))
         .toString();
   }
@@ -20074,6 +20603,3796 @@ class TrialApplicationProductsCompanion
   }
 }
 
+class $ImportSnapshotsTable extends ImportSnapshots
+    with TableInfo<$ImportSnapshotsTable, ImportSnapshot> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ImportSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _sourceFileMeta =
+      const VerificationMeta('sourceFile');
+  @override
+  late final GeneratedColumn<String> sourceFile = GeneratedColumn<String>(
+      'source_file', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sourceRouteMeta =
+      const VerificationMeta('sourceRoute');
+  @override
+  late final GeneratedColumn<String> sourceRoute = GeneratedColumn<String>(
+      'source_route', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _armVersionMeta =
+      const VerificationMeta('armVersion');
+  @override
+  late final GeneratedColumn<String> armVersion = GeneratedColumn<String>(
+      'arm_version', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _rawHeadersMeta =
+      const VerificationMeta('rawHeaders');
+  @override
+  late final GeneratedColumn<String> rawHeaders = GeneratedColumn<String>(
+      'raw_headers', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _columnOrderMeta =
+      const VerificationMeta('columnOrder');
+  @override
+  late final GeneratedColumn<String> columnOrder = GeneratedColumn<String>(
+      'column_order', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _rowTypePatternsMeta =
+      const VerificationMeta('rowTypePatterns');
+  @override
+  late final GeneratedColumn<String> rowTypePatterns = GeneratedColumn<String>(
+      'row_type_patterns', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _plotCountMeta =
+      const VerificationMeta('plotCount');
+  @override
+  late final GeneratedColumn<int> plotCount = GeneratedColumn<int>(
+      'plot_count', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _treatmentCountMeta =
+      const VerificationMeta('treatmentCount');
+  @override
+  late final GeneratedColumn<int> treatmentCount = GeneratedColumn<int>(
+      'treatment_count', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _assessmentCountMeta =
+      const VerificationMeta('assessmentCount');
+  @override
+  late final GeneratedColumn<int> assessmentCount = GeneratedColumn<int>(
+      'assessment_count', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _identityColumnsMeta =
+      const VerificationMeta('identityColumns');
+  @override
+  late final GeneratedColumn<String> identityColumns = GeneratedColumn<String>(
+      'identity_columns', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _assessmentTokensMeta =
+      const VerificationMeta('assessmentTokens');
+  @override
+  late final GeneratedColumn<String> assessmentTokens = GeneratedColumn<String>(
+      'assessment_tokens', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _treatmentTokensMeta =
+      const VerificationMeta('treatmentTokens');
+  @override
+  late final GeneratedColumn<String> treatmentTokens = GeneratedColumn<String>(
+      'treatment_tokens', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _plotTokensMeta =
+      const VerificationMeta('plotTokens');
+  @override
+  late final GeneratedColumn<String> plotTokens = GeneratedColumn<String>(
+      'plot_tokens', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _unknownPatternsMeta =
+      const VerificationMeta('unknownPatterns');
+  @override
+  late final GeneratedColumn<String> unknownPatterns = GeneratedColumn<String>(
+      'unknown_patterns', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _hasSubsamplesMeta =
+      const VerificationMeta('hasSubsamples');
+  @override
+  late final GeneratedColumn<bool> hasSubsamples = GeneratedColumn<bool>(
+      'has_subsamples', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("has_subsamples" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _hasMultiApplicationMeta =
+      const VerificationMeta('hasMultiApplication');
+  @override
+  late final GeneratedColumn<bool> hasMultiApplication = GeneratedColumn<bool>(
+      'has_multi_application', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("has_multi_application" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _hasSparseDataMeta =
+      const VerificationMeta('hasSparseData');
+  @override
+  late final GeneratedColumn<bool> hasSparseData = GeneratedColumn<bool>(
+      'has_sparse_data', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("has_sparse_data" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _hasRepeatedCodesMeta =
+      const VerificationMeta('hasRepeatedCodes');
+  @override
+  late final GeneratedColumn<bool> hasRepeatedCodes = GeneratedColumn<bool>(
+      'has_repeated_codes', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("has_repeated_codes" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _rawFileChecksumMeta =
+      const VerificationMeta('rawFileChecksum');
+  @override
+  late final GeneratedColumn<String> rawFileChecksum = GeneratedColumn<String>(
+      'raw_file_checksum', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _capturedAtMeta =
+      const VerificationMeta('capturedAt');
+  @override
+  late final GeneratedColumn<DateTime> capturedAt = GeneratedColumn<DateTime>(
+      'captured_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        sourceFile,
+        sourceRoute,
+        armVersion,
+        rawHeaders,
+        columnOrder,
+        rowTypePatterns,
+        plotCount,
+        treatmentCount,
+        assessmentCount,
+        identityColumns,
+        assessmentTokens,
+        treatmentTokens,
+        plotTokens,
+        unknownPatterns,
+        hasSubsamples,
+        hasMultiApplication,
+        hasSparseData,
+        hasRepeatedCodes,
+        rawFileChecksum,
+        capturedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'import_snapshots';
+  @override
+  VerificationContext validateIntegrity(Insertable<ImportSnapshot> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('source_file')) {
+      context.handle(
+          _sourceFileMeta,
+          sourceFile.isAcceptableOrUnknown(
+              data['source_file']!, _sourceFileMeta));
+    } else if (isInserting) {
+      context.missing(_sourceFileMeta);
+    }
+    if (data.containsKey('source_route')) {
+      context.handle(
+          _sourceRouteMeta,
+          sourceRoute.isAcceptableOrUnknown(
+              data['source_route']!, _sourceRouteMeta));
+    } else if (isInserting) {
+      context.missing(_sourceRouteMeta);
+    }
+    if (data.containsKey('arm_version')) {
+      context.handle(
+          _armVersionMeta,
+          armVersion.isAcceptableOrUnknown(
+              data['arm_version']!, _armVersionMeta));
+    }
+    if (data.containsKey('raw_headers')) {
+      context.handle(
+          _rawHeadersMeta,
+          rawHeaders.isAcceptableOrUnknown(
+              data['raw_headers']!, _rawHeadersMeta));
+    } else if (isInserting) {
+      context.missing(_rawHeadersMeta);
+    }
+    if (data.containsKey('column_order')) {
+      context.handle(
+          _columnOrderMeta,
+          columnOrder.isAcceptableOrUnknown(
+              data['column_order']!, _columnOrderMeta));
+    } else if (isInserting) {
+      context.missing(_columnOrderMeta);
+    }
+    if (data.containsKey('row_type_patterns')) {
+      context.handle(
+          _rowTypePatternsMeta,
+          rowTypePatterns.isAcceptableOrUnknown(
+              data['row_type_patterns']!, _rowTypePatternsMeta));
+    } else if (isInserting) {
+      context.missing(_rowTypePatternsMeta);
+    }
+    if (data.containsKey('plot_count')) {
+      context.handle(_plotCountMeta,
+          plotCount.isAcceptableOrUnknown(data['plot_count']!, _plotCountMeta));
+    } else if (isInserting) {
+      context.missing(_plotCountMeta);
+    }
+    if (data.containsKey('treatment_count')) {
+      context.handle(
+          _treatmentCountMeta,
+          treatmentCount.isAcceptableOrUnknown(
+              data['treatment_count']!, _treatmentCountMeta));
+    } else if (isInserting) {
+      context.missing(_treatmentCountMeta);
+    }
+    if (data.containsKey('assessment_count')) {
+      context.handle(
+          _assessmentCountMeta,
+          assessmentCount.isAcceptableOrUnknown(
+              data['assessment_count']!, _assessmentCountMeta));
+    } else if (isInserting) {
+      context.missing(_assessmentCountMeta);
+    }
+    if (data.containsKey('identity_columns')) {
+      context.handle(
+          _identityColumnsMeta,
+          identityColumns.isAcceptableOrUnknown(
+              data['identity_columns']!, _identityColumnsMeta));
+    } else if (isInserting) {
+      context.missing(_identityColumnsMeta);
+    }
+    if (data.containsKey('assessment_tokens')) {
+      context.handle(
+          _assessmentTokensMeta,
+          assessmentTokens.isAcceptableOrUnknown(
+              data['assessment_tokens']!, _assessmentTokensMeta));
+    } else if (isInserting) {
+      context.missing(_assessmentTokensMeta);
+    }
+    if (data.containsKey('treatment_tokens')) {
+      context.handle(
+          _treatmentTokensMeta,
+          treatmentTokens.isAcceptableOrUnknown(
+              data['treatment_tokens']!, _treatmentTokensMeta));
+    } else if (isInserting) {
+      context.missing(_treatmentTokensMeta);
+    }
+    if (data.containsKey('plot_tokens')) {
+      context.handle(
+          _plotTokensMeta,
+          plotTokens.isAcceptableOrUnknown(
+              data['plot_tokens']!, _plotTokensMeta));
+    } else if (isInserting) {
+      context.missing(_plotTokensMeta);
+    }
+    if (data.containsKey('unknown_patterns')) {
+      context.handle(
+          _unknownPatternsMeta,
+          unknownPatterns.isAcceptableOrUnknown(
+              data['unknown_patterns']!, _unknownPatternsMeta));
+    } else if (isInserting) {
+      context.missing(_unknownPatternsMeta);
+    }
+    if (data.containsKey('has_subsamples')) {
+      context.handle(
+          _hasSubsamplesMeta,
+          hasSubsamples.isAcceptableOrUnknown(
+              data['has_subsamples']!, _hasSubsamplesMeta));
+    }
+    if (data.containsKey('has_multi_application')) {
+      context.handle(
+          _hasMultiApplicationMeta,
+          hasMultiApplication.isAcceptableOrUnknown(
+              data['has_multi_application']!, _hasMultiApplicationMeta));
+    }
+    if (data.containsKey('has_sparse_data')) {
+      context.handle(
+          _hasSparseDataMeta,
+          hasSparseData.isAcceptableOrUnknown(
+              data['has_sparse_data']!, _hasSparseDataMeta));
+    }
+    if (data.containsKey('has_repeated_codes')) {
+      context.handle(
+          _hasRepeatedCodesMeta,
+          hasRepeatedCodes.isAcceptableOrUnknown(
+              data['has_repeated_codes']!, _hasRepeatedCodesMeta));
+    }
+    if (data.containsKey('raw_file_checksum')) {
+      context.handle(
+          _rawFileChecksumMeta,
+          rawFileChecksum.isAcceptableOrUnknown(
+              data['raw_file_checksum']!, _rawFileChecksumMeta));
+    } else if (isInserting) {
+      context.missing(_rawFileChecksumMeta);
+    }
+    if (data.containsKey('captured_at')) {
+      context.handle(
+          _capturedAtMeta,
+          capturedAt.isAcceptableOrUnknown(
+              data['captured_at']!, _capturedAtMeta));
+    } else if (isInserting) {
+      context.missing(_capturedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ImportSnapshot map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ImportSnapshot(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      sourceFile: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_file'])!,
+      sourceRoute: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_route'])!,
+      armVersion: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}arm_version']),
+      rawHeaders: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}raw_headers'])!,
+      columnOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}column_order'])!,
+      rowTypePatterns: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}row_type_patterns'])!,
+      plotCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}plot_count'])!,
+      treatmentCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}treatment_count'])!,
+      assessmentCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}assessment_count'])!,
+      identityColumns: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}identity_columns'])!,
+      assessmentTokens: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}assessment_tokens'])!,
+      treatmentTokens: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}treatment_tokens'])!,
+      plotTokens: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plot_tokens'])!,
+      unknownPatterns: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}unknown_patterns'])!,
+      hasSubsamples: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}has_subsamples'])!,
+      hasMultiApplication: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}has_multi_application'])!,
+      hasSparseData: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}has_sparse_data'])!,
+      hasRepeatedCodes: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}has_repeated_codes'])!,
+      rawFileChecksum: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}raw_file_checksum'])!,
+      capturedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}captured_at'])!,
+    );
+  }
+
+  @override
+  $ImportSnapshotsTable createAlias(String alias) {
+    return $ImportSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class ImportSnapshot extends DataClass implements Insertable<ImportSnapshot> {
+  final int id;
+  final int trialId;
+  final String sourceFile;
+  final String sourceRoute;
+  final String? armVersion;
+  final String rawHeaders;
+  final String columnOrder;
+  final String rowTypePatterns;
+  final int plotCount;
+  final int treatmentCount;
+  final int assessmentCount;
+  final String identityColumns;
+  final String assessmentTokens;
+  final String treatmentTokens;
+  final String plotTokens;
+  final String unknownPatterns;
+  final bool hasSubsamples;
+  final bool hasMultiApplication;
+  final bool hasSparseData;
+  final bool hasRepeatedCodes;
+  final String rawFileChecksum;
+  final DateTime capturedAt;
+  const ImportSnapshot(
+      {required this.id,
+      required this.trialId,
+      required this.sourceFile,
+      required this.sourceRoute,
+      this.armVersion,
+      required this.rawHeaders,
+      required this.columnOrder,
+      required this.rowTypePatterns,
+      required this.plotCount,
+      required this.treatmentCount,
+      required this.assessmentCount,
+      required this.identityColumns,
+      required this.assessmentTokens,
+      required this.treatmentTokens,
+      required this.plotTokens,
+      required this.unknownPatterns,
+      required this.hasSubsamples,
+      required this.hasMultiApplication,
+      required this.hasSparseData,
+      required this.hasRepeatedCodes,
+      required this.rawFileChecksum,
+      required this.capturedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['source_file'] = Variable<String>(sourceFile);
+    map['source_route'] = Variable<String>(sourceRoute);
+    if (!nullToAbsent || armVersion != null) {
+      map['arm_version'] = Variable<String>(armVersion);
+    }
+    map['raw_headers'] = Variable<String>(rawHeaders);
+    map['column_order'] = Variable<String>(columnOrder);
+    map['row_type_patterns'] = Variable<String>(rowTypePatterns);
+    map['plot_count'] = Variable<int>(plotCount);
+    map['treatment_count'] = Variable<int>(treatmentCount);
+    map['assessment_count'] = Variable<int>(assessmentCount);
+    map['identity_columns'] = Variable<String>(identityColumns);
+    map['assessment_tokens'] = Variable<String>(assessmentTokens);
+    map['treatment_tokens'] = Variable<String>(treatmentTokens);
+    map['plot_tokens'] = Variable<String>(plotTokens);
+    map['unknown_patterns'] = Variable<String>(unknownPatterns);
+    map['has_subsamples'] = Variable<bool>(hasSubsamples);
+    map['has_multi_application'] = Variable<bool>(hasMultiApplication);
+    map['has_sparse_data'] = Variable<bool>(hasSparseData);
+    map['has_repeated_codes'] = Variable<bool>(hasRepeatedCodes);
+    map['raw_file_checksum'] = Variable<String>(rawFileChecksum);
+    map['captured_at'] = Variable<DateTime>(capturedAt);
+    return map;
+  }
+
+  ImportSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return ImportSnapshotsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      sourceFile: Value(sourceFile),
+      sourceRoute: Value(sourceRoute),
+      armVersion: armVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armVersion),
+      rawHeaders: Value(rawHeaders),
+      columnOrder: Value(columnOrder),
+      rowTypePatterns: Value(rowTypePatterns),
+      plotCount: Value(plotCount),
+      treatmentCount: Value(treatmentCount),
+      assessmentCount: Value(assessmentCount),
+      identityColumns: Value(identityColumns),
+      assessmentTokens: Value(assessmentTokens),
+      treatmentTokens: Value(treatmentTokens),
+      plotTokens: Value(plotTokens),
+      unknownPatterns: Value(unknownPatterns),
+      hasSubsamples: Value(hasSubsamples),
+      hasMultiApplication: Value(hasMultiApplication),
+      hasSparseData: Value(hasSparseData),
+      hasRepeatedCodes: Value(hasRepeatedCodes),
+      rawFileChecksum: Value(rawFileChecksum),
+      capturedAt: Value(capturedAt),
+    );
+  }
+
+  factory ImportSnapshot.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ImportSnapshot(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      sourceFile: serializer.fromJson<String>(json['sourceFile']),
+      sourceRoute: serializer.fromJson<String>(json['sourceRoute']),
+      armVersion: serializer.fromJson<String?>(json['armVersion']),
+      rawHeaders: serializer.fromJson<String>(json['rawHeaders']),
+      columnOrder: serializer.fromJson<String>(json['columnOrder']),
+      rowTypePatterns: serializer.fromJson<String>(json['rowTypePatterns']),
+      plotCount: serializer.fromJson<int>(json['plotCount']),
+      treatmentCount: serializer.fromJson<int>(json['treatmentCount']),
+      assessmentCount: serializer.fromJson<int>(json['assessmentCount']),
+      identityColumns: serializer.fromJson<String>(json['identityColumns']),
+      assessmentTokens: serializer.fromJson<String>(json['assessmentTokens']),
+      treatmentTokens: serializer.fromJson<String>(json['treatmentTokens']),
+      plotTokens: serializer.fromJson<String>(json['plotTokens']),
+      unknownPatterns: serializer.fromJson<String>(json['unknownPatterns']),
+      hasSubsamples: serializer.fromJson<bool>(json['hasSubsamples']),
+      hasMultiApplication:
+          serializer.fromJson<bool>(json['hasMultiApplication']),
+      hasSparseData: serializer.fromJson<bool>(json['hasSparseData']),
+      hasRepeatedCodes: serializer.fromJson<bool>(json['hasRepeatedCodes']),
+      rawFileChecksum: serializer.fromJson<String>(json['rawFileChecksum']),
+      capturedAt: serializer.fromJson<DateTime>(json['capturedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'sourceFile': serializer.toJson<String>(sourceFile),
+      'sourceRoute': serializer.toJson<String>(sourceRoute),
+      'armVersion': serializer.toJson<String?>(armVersion),
+      'rawHeaders': serializer.toJson<String>(rawHeaders),
+      'columnOrder': serializer.toJson<String>(columnOrder),
+      'rowTypePatterns': serializer.toJson<String>(rowTypePatterns),
+      'plotCount': serializer.toJson<int>(plotCount),
+      'treatmentCount': serializer.toJson<int>(treatmentCount),
+      'assessmentCount': serializer.toJson<int>(assessmentCount),
+      'identityColumns': serializer.toJson<String>(identityColumns),
+      'assessmentTokens': serializer.toJson<String>(assessmentTokens),
+      'treatmentTokens': serializer.toJson<String>(treatmentTokens),
+      'plotTokens': serializer.toJson<String>(plotTokens),
+      'unknownPatterns': serializer.toJson<String>(unknownPatterns),
+      'hasSubsamples': serializer.toJson<bool>(hasSubsamples),
+      'hasMultiApplication': serializer.toJson<bool>(hasMultiApplication),
+      'hasSparseData': serializer.toJson<bool>(hasSparseData),
+      'hasRepeatedCodes': serializer.toJson<bool>(hasRepeatedCodes),
+      'rawFileChecksum': serializer.toJson<String>(rawFileChecksum),
+      'capturedAt': serializer.toJson<DateTime>(capturedAt),
+    };
+  }
+
+  ImportSnapshot copyWith(
+          {int? id,
+          int? trialId,
+          String? sourceFile,
+          String? sourceRoute,
+          Value<String?> armVersion = const Value.absent(),
+          String? rawHeaders,
+          String? columnOrder,
+          String? rowTypePatterns,
+          int? plotCount,
+          int? treatmentCount,
+          int? assessmentCount,
+          String? identityColumns,
+          String? assessmentTokens,
+          String? treatmentTokens,
+          String? plotTokens,
+          String? unknownPatterns,
+          bool? hasSubsamples,
+          bool? hasMultiApplication,
+          bool? hasSparseData,
+          bool? hasRepeatedCodes,
+          String? rawFileChecksum,
+          DateTime? capturedAt}) =>
+      ImportSnapshot(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        sourceFile: sourceFile ?? this.sourceFile,
+        sourceRoute: sourceRoute ?? this.sourceRoute,
+        armVersion: armVersion.present ? armVersion.value : this.armVersion,
+        rawHeaders: rawHeaders ?? this.rawHeaders,
+        columnOrder: columnOrder ?? this.columnOrder,
+        rowTypePatterns: rowTypePatterns ?? this.rowTypePatterns,
+        plotCount: plotCount ?? this.plotCount,
+        treatmentCount: treatmentCount ?? this.treatmentCount,
+        assessmentCount: assessmentCount ?? this.assessmentCount,
+        identityColumns: identityColumns ?? this.identityColumns,
+        assessmentTokens: assessmentTokens ?? this.assessmentTokens,
+        treatmentTokens: treatmentTokens ?? this.treatmentTokens,
+        plotTokens: plotTokens ?? this.plotTokens,
+        unknownPatterns: unknownPatterns ?? this.unknownPatterns,
+        hasSubsamples: hasSubsamples ?? this.hasSubsamples,
+        hasMultiApplication: hasMultiApplication ?? this.hasMultiApplication,
+        hasSparseData: hasSparseData ?? this.hasSparseData,
+        hasRepeatedCodes: hasRepeatedCodes ?? this.hasRepeatedCodes,
+        rawFileChecksum: rawFileChecksum ?? this.rawFileChecksum,
+        capturedAt: capturedAt ?? this.capturedAt,
+      );
+  ImportSnapshot copyWithCompanion(ImportSnapshotsCompanion data) {
+    return ImportSnapshot(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      sourceFile:
+          data.sourceFile.present ? data.sourceFile.value : this.sourceFile,
+      sourceRoute:
+          data.sourceRoute.present ? data.sourceRoute.value : this.sourceRoute,
+      armVersion:
+          data.armVersion.present ? data.armVersion.value : this.armVersion,
+      rawHeaders:
+          data.rawHeaders.present ? data.rawHeaders.value : this.rawHeaders,
+      columnOrder:
+          data.columnOrder.present ? data.columnOrder.value : this.columnOrder,
+      rowTypePatterns: data.rowTypePatterns.present
+          ? data.rowTypePatterns.value
+          : this.rowTypePatterns,
+      plotCount: data.plotCount.present ? data.plotCount.value : this.plotCount,
+      treatmentCount: data.treatmentCount.present
+          ? data.treatmentCount.value
+          : this.treatmentCount,
+      assessmentCount: data.assessmentCount.present
+          ? data.assessmentCount.value
+          : this.assessmentCount,
+      identityColumns: data.identityColumns.present
+          ? data.identityColumns.value
+          : this.identityColumns,
+      assessmentTokens: data.assessmentTokens.present
+          ? data.assessmentTokens.value
+          : this.assessmentTokens,
+      treatmentTokens: data.treatmentTokens.present
+          ? data.treatmentTokens.value
+          : this.treatmentTokens,
+      plotTokens:
+          data.plotTokens.present ? data.plotTokens.value : this.plotTokens,
+      unknownPatterns: data.unknownPatterns.present
+          ? data.unknownPatterns.value
+          : this.unknownPatterns,
+      hasSubsamples: data.hasSubsamples.present
+          ? data.hasSubsamples.value
+          : this.hasSubsamples,
+      hasMultiApplication: data.hasMultiApplication.present
+          ? data.hasMultiApplication.value
+          : this.hasMultiApplication,
+      hasSparseData: data.hasSparseData.present
+          ? data.hasSparseData.value
+          : this.hasSparseData,
+      hasRepeatedCodes: data.hasRepeatedCodes.present
+          ? data.hasRepeatedCodes.value
+          : this.hasRepeatedCodes,
+      rawFileChecksum: data.rawFileChecksum.present
+          ? data.rawFileChecksum.value
+          : this.rawFileChecksum,
+      capturedAt:
+          data.capturedAt.present ? data.capturedAt.value : this.capturedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportSnapshot(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('sourceFile: $sourceFile, ')
+          ..write('sourceRoute: $sourceRoute, ')
+          ..write('armVersion: $armVersion, ')
+          ..write('rawHeaders: $rawHeaders, ')
+          ..write('columnOrder: $columnOrder, ')
+          ..write('rowTypePatterns: $rowTypePatterns, ')
+          ..write('plotCount: $plotCount, ')
+          ..write('treatmentCount: $treatmentCount, ')
+          ..write('assessmentCount: $assessmentCount, ')
+          ..write('identityColumns: $identityColumns, ')
+          ..write('assessmentTokens: $assessmentTokens, ')
+          ..write('treatmentTokens: $treatmentTokens, ')
+          ..write('plotTokens: $plotTokens, ')
+          ..write('unknownPatterns: $unknownPatterns, ')
+          ..write('hasSubsamples: $hasSubsamples, ')
+          ..write('hasMultiApplication: $hasMultiApplication, ')
+          ..write('hasSparseData: $hasSparseData, ')
+          ..write('hasRepeatedCodes: $hasRepeatedCodes, ')
+          ..write('rawFileChecksum: $rawFileChecksum, ')
+          ..write('capturedAt: $capturedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        id,
+        trialId,
+        sourceFile,
+        sourceRoute,
+        armVersion,
+        rawHeaders,
+        columnOrder,
+        rowTypePatterns,
+        plotCount,
+        treatmentCount,
+        assessmentCount,
+        identityColumns,
+        assessmentTokens,
+        treatmentTokens,
+        plotTokens,
+        unknownPatterns,
+        hasSubsamples,
+        hasMultiApplication,
+        hasSparseData,
+        hasRepeatedCodes,
+        rawFileChecksum,
+        capturedAt
+      ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ImportSnapshot &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.sourceFile == this.sourceFile &&
+          other.sourceRoute == this.sourceRoute &&
+          other.armVersion == this.armVersion &&
+          other.rawHeaders == this.rawHeaders &&
+          other.columnOrder == this.columnOrder &&
+          other.rowTypePatterns == this.rowTypePatterns &&
+          other.plotCount == this.plotCount &&
+          other.treatmentCount == this.treatmentCount &&
+          other.assessmentCount == this.assessmentCount &&
+          other.identityColumns == this.identityColumns &&
+          other.assessmentTokens == this.assessmentTokens &&
+          other.treatmentTokens == this.treatmentTokens &&
+          other.plotTokens == this.plotTokens &&
+          other.unknownPatterns == this.unknownPatterns &&
+          other.hasSubsamples == this.hasSubsamples &&
+          other.hasMultiApplication == this.hasMultiApplication &&
+          other.hasSparseData == this.hasSparseData &&
+          other.hasRepeatedCodes == this.hasRepeatedCodes &&
+          other.rawFileChecksum == this.rawFileChecksum &&
+          other.capturedAt == this.capturedAt);
+}
+
+class ImportSnapshotsCompanion extends UpdateCompanion<ImportSnapshot> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<String> sourceFile;
+  final Value<String> sourceRoute;
+  final Value<String?> armVersion;
+  final Value<String> rawHeaders;
+  final Value<String> columnOrder;
+  final Value<String> rowTypePatterns;
+  final Value<int> plotCount;
+  final Value<int> treatmentCount;
+  final Value<int> assessmentCount;
+  final Value<String> identityColumns;
+  final Value<String> assessmentTokens;
+  final Value<String> treatmentTokens;
+  final Value<String> plotTokens;
+  final Value<String> unknownPatterns;
+  final Value<bool> hasSubsamples;
+  final Value<bool> hasMultiApplication;
+  final Value<bool> hasSparseData;
+  final Value<bool> hasRepeatedCodes;
+  final Value<String> rawFileChecksum;
+  final Value<DateTime> capturedAt;
+  const ImportSnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.sourceFile = const Value.absent(),
+    this.sourceRoute = const Value.absent(),
+    this.armVersion = const Value.absent(),
+    this.rawHeaders = const Value.absent(),
+    this.columnOrder = const Value.absent(),
+    this.rowTypePatterns = const Value.absent(),
+    this.plotCount = const Value.absent(),
+    this.treatmentCount = const Value.absent(),
+    this.assessmentCount = const Value.absent(),
+    this.identityColumns = const Value.absent(),
+    this.assessmentTokens = const Value.absent(),
+    this.treatmentTokens = const Value.absent(),
+    this.plotTokens = const Value.absent(),
+    this.unknownPatterns = const Value.absent(),
+    this.hasSubsamples = const Value.absent(),
+    this.hasMultiApplication = const Value.absent(),
+    this.hasSparseData = const Value.absent(),
+    this.hasRepeatedCodes = const Value.absent(),
+    this.rawFileChecksum = const Value.absent(),
+    this.capturedAt = const Value.absent(),
+  });
+  ImportSnapshotsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required String sourceFile,
+    required String sourceRoute,
+    this.armVersion = const Value.absent(),
+    required String rawHeaders,
+    required String columnOrder,
+    required String rowTypePatterns,
+    required int plotCount,
+    required int treatmentCount,
+    required int assessmentCount,
+    required String identityColumns,
+    required String assessmentTokens,
+    required String treatmentTokens,
+    required String plotTokens,
+    required String unknownPatterns,
+    this.hasSubsamples = const Value.absent(),
+    this.hasMultiApplication = const Value.absent(),
+    this.hasSparseData = const Value.absent(),
+    this.hasRepeatedCodes = const Value.absent(),
+    required String rawFileChecksum,
+    required DateTime capturedAt,
+  })  : trialId = Value(trialId),
+        sourceFile = Value(sourceFile),
+        sourceRoute = Value(sourceRoute),
+        rawHeaders = Value(rawHeaders),
+        columnOrder = Value(columnOrder),
+        rowTypePatterns = Value(rowTypePatterns),
+        plotCount = Value(plotCount),
+        treatmentCount = Value(treatmentCount),
+        assessmentCount = Value(assessmentCount),
+        identityColumns = Value(identityColumns),
+        assessmentTokens = Value(assessmentTokens),
+        treatmentTokens = Value(treatmentTokens),
+        plotTokens = Value(plotTokens),
+        unknownPatterns = Value(unknownPatterns),
+        rawFileChecksum = Value(rawFileChecksum),
+        capturedAt = Value(capturedAt);
+  static Insertable<ImportSnapshot> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<String>? sourceFile,
+    Expression<String>? sourceRoute,
+    Expression<String>? armVersion,
+    Expression<String>? rawHeaders,
+    Expression<String>? columnOrder,
+    Expression<String>? rowTypePatterns,
+    Expression<int>? plotCount,
+    Expression<int>? treatmentCount,
+    Expression<int>? assessmentCount,
+    Expression<String>? identityColumns,
+    Expression<String>? assessmentTokens,
+    Expression<String>? treatmentTokens,
+    Expression<String>? plotTokens,
+    Expression<String>? unknownPatterns,
+    Expression<bool>? hasSubsamples,
+    Expression<bool>? hasMultiApplication,
+    Expression<bool>? hasSparseData,
+    Expression<bool>? hasRepeatedCodes,
+    Expression<String>? rawFileChecksum,
+    Expression<DateTime>? capturedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (sourceFile != null) 'source_file': sourceFile,
+      if (sourceRoute != null) 'source_route': sourceRoute,
+      if (armVersion != null) 'arm_version': armVersion,
+      if (rawHeaders != null) 'raw_headers': rawHeaders,
+      if (columnOrder != null) 'column_order': columnOrder,
+      if (rowTypePatterns != null) 'row_type_patterns': rowTypePatterns,
+      if (plotCount != null) 'plot_count': plotCount,
+      if (treatmentCount != null) 'treatment_count': treatmentCount,
+      if (assessmentCount != null) 'assessment_count': assessmentCount,
+      if (identityColumns != null) 'identity_columns': identityColumns,
+      if (assessmentTokens != null) 'assessment_tokens': assessmentTokens,
+      if (treatmentTokens != null) 'treatment_tokens': treatmentTokens,
+      if (plotTokens != null) 'plot_tokens': plotTokens,
+      if (unknownPatterns != null) 'unknown_patterns': unknownPatterns,
+      if (hasSubsamples != null) 'has_subsamples': hasSubsamples,
+      if (hasMultiApplication != null)
+        'has_multi_application': hasMultiApplication,
+      if (hasSparseData != null) 'has_sparse_data': hasSparseData,
+      if (hasRepeatedCodes != null) 'has_repeated_codes': hasRepeatedCodes,
+      if (rawFileChecksum != null) 'raw_file_checksum': rawFileChecksum,
+      if (capturedAt != null) 'captured_at': capturedAt,
+    });
+  }
+
+  ImportSnapshotsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<String>? sourceFile,
+      Value<String>? sourceRoute,
+      Value<String?>? armVersion,
+      Value<String>? rawHeaders,
+      Value<String>? columnOrder,
+      Value<String>? rowTypePatterns,
+      Value<int>? plotCount,
+      Value<int>? treatmentCount,
+      Value<int>? assessmentCount,
+      Value<String>? identityColumns,
+      Value<String>? assessmentTokens,
+      Value<String>? treatmentTokens,
+      Value<String>? plotTokens,
+      Value<String>? unknownPatterns,
+      Value<bool>? hasSubsamples,
+      Value<bool>? hasMultiApplication,
+      Value<bool>? hasSparseData,
+      Value<bool>? hasRepeatedCodes,
+      Value<String>? rawFileChecksum,
+      Value<DateTime>? capturedAt}) {
+    return ImportSnapshotsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      sourceFile: sourceFile ?? this.sourceFile,
+      sourceRoute: sourceRoute ?? this.sourceRoute,
+      armVersion: armVersion ?? this.armVersion,
+      rawHeaders: rawHeaders ?? this.rawHeaders,
+      columnOrder: columnOrder ?? this.columnOrder,
+      rowTypePatterns: rowTypePatterns ?? this.rowTypePatterns,
+      plotCount: plotCount ?? this.plotCount,
+      treatmentCount: treatmentCount ?? this.treatmentCount,
+      assessmentCount: assessmentCount ?? this.assessmentCount,
+      identityColumns: identityColumns ?? this.identityColumns,
+      assessmentTokens: assessmentTokens ?? this.assessmentTokens,
+      treatmentTokens: treatmentTokens ?? this.treatmentTokens,
+      plotTokens: plotTokens ?? this.plotTokens,
+      unknownPatterns: unknownPatterns ?? this.unknownPatterns,
+      hasSubsamples: hasSubsamples ?? this.hasSubsamples,
+      hasMultiApplication: hasMultiApplication ?? this.hasMultiApplication,
+      hasSparseData: hasSparseData ?? this.hasSparseData,
+      hasRepeatedCodes: hasRepeatedCodes ?? this.hasRepeatedCodes,
+      rawFileChecksum: rawFileChecksum ?? this.rawFileChecksum,
+      capturedAt: capturedAt ?? this.capturedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (sourceFile.present) {
+      map['source_file'] = Variable<String>(sourceFile.value);
+    }
+    if (sourceRoute.present) {
+      map['source_route'] = Variable<String>(sourceRoute.value);
+    }
+    if (armVersion.present) {
+      map['arm_version'] = Variable<String>(armVersion.value);
+    }
+    if (rawHeaders.present) {
+      map['raw_headers'] = Variable<String>(rawHeaders.value);
+    }
+    if (columnOrder.present) {
+      map['column_order'] = Variable<String>(columnOrder.value);
+    }
+    if (rowTypePatterns.present) {
+      map['row_type_patterns'] = Variable<String>(rowTypePatterns.value);
+    }
+    if (plotCount.present) {
+      map['plot_count'] = Variable<int>(plotCount.value);
+    }
+    if (treatmentCount.present) {
+      map['treatment_count'] = Variable<int>(treatmentCount.value);
+    }
+    if (assessmentCount.present) {
+      map['assessment_count'] = Variable<int>(assessmentCount.value);
+    }
+    if (identityColumns.present) {
+      map['identity_columns'] = Variable<String>(identityColumns.value);
+    }
+    if (assessmentTokens.present) {
+      map['assessment_tokens'] = Variable<String>(assessmentTokens.value);
+    }
+    if (treatmentTokens.present) {
+      map['treatment_tokens'] = Variable<String>(treatmentTokens.value);
+    }
+    if (plotTokens.present) {
+      map['plot_tokens'] = Variable<String>(plotTokens.value);
+    }
+    if (unknownPatterns.present) {
+      map['unknown_patterns'] = Variable<String>(unknownPatterns.value);
+    }
+    if (hasSubsamples.present) {
+      map['has_subsamples'] = Variable<bool>(hasSubsamples.value);
+    }
+    if (hasMultiApplication.present) {
+      map['has_multi_application'] = Variable<bool>(hasMultiApplication.value);
+    }
+    if (hasSparseData.present) {
+      map['has_sparse_data'] = Variable<bool>(hasSparseData.value);
+    }
+    if (hasRepeatedCodes.present) {
+      map['has_repeated_codes'] = Variable<bool>(hasRepeatedCodes.value);
+    }
+    if (rawFileChecksum.present) {
+      map['raw_file_checksum'] = Variable<String>(rawFileChecksum.value);
+    }
+    if (capturedAt.present) {
+      map['captured_at'] = Variable<DateTime>(capturedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportSnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('sourceFile: $sourceFile, ')
+          ..write('sourceRoute: $sourceRoute, ')
+          ..write('armVersion: $armVersion, ')
+          ..write('rawHeaders: $rawHeaders, ')
+          ..write('columnOrder: $columnOrder, ')
+          ..write('rowTypePatterns: $rowTypePatterns, ')
+          ..write('plotCount: $plotCount, ')
+          ..write('treatmentCount: $treatmentCount, ')
+          ..write('assessmentCount: $assessmentCount, ')
+          ..write('identityColumns: $identityColumns, ')
+          ..write('assessmentTokens: $assessmentTokens, ')
+          ..write('treatmentTokens: $treatmentTokens, ')
+          ..write('plotTokens: $plotTokens, ')
+          ..write('unknownPatterns: $unknownPatterns, ')
+          ..write('hasSubsamples: $hasSubsamples, ')
+          ..write('hasMultiApplication: $hasMultiApplication, ')
+          ..write('hasSparseData: $hasSparseData, ')
+          ..write('hasRepeatedCodes: $hasRepeatedCodes, ')
+          ..write('rawFileChecksum: $rawFileChecksum, ')
+          ..write('capturedAt: $capturedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CompatibilityProfilesTable extends CompatibilityProfiles
+    with TableInfo<$CompatibilityProfilesTable, CompatibilityProfile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CompatibilityProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _snapshotIdMeta =
+      const VerificationMeta('snapshotId');
+  @override
+  late final GeneratedColumn<int> snapshotId = GeneratedColumn<int>(
+      'snapshot_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES import_snapshots (id)'));
+  static const VerificationMeta _exportRouteMeta =
+      const VerificationMeta('exportRoute');
+  @override
+  late final GeneratedColumn<String> exportRoute = GeneratedColumn<String>(
+      'export_route', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _columnMapMeta =
+      const VerificationMeta('columnMap');
+  @override
+  late final GeneratedColumn<String> columnMap = GeneratedColumn<String>(
+      'column_map', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _plotMapMeta =
+      const VerificationMeta('plotMap');
+  @override
+  late final GeneratedColumn<String> plotMap = GeneratedColumn<String>(
+      'plot_map', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _treatmentMapMeta =
+      const VerificationMeta('treatmentMap');
+  @override
+  late final GeneratedColumn<String> treatmentMap = GeneratedColumn<String>(
+      'treatment_map', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _dataStartRowMeta =
+      const VerificationMeta('dataStartRow');
+  @override
+  late final GeneratedColumn<int> dataStartRow = GeneratedColumn<int>(
+      'data_start_row', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _headerEndRowMeta =
+      const VerificationMeta('headerEndRow');
+  @override
+  late final GeneratedColumn<int> headerEndRow = GeneratedColumn<int>(
+      'header_end_row', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _identityRowMarkersMeta =
+      const VerificationMeta('identityRowMarkers');
+  @override
+  late final GeneratedColumn<String> identityRowMarkers =
+      GeneratedColumn<String>('identity_row_markers', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _columnOrderOnExportMeta =
+      const VerificationMeta('columnOrderOnExport');
+  @override
+  late final GeneratedColumn<String> columnOrderOnExport =
+      GeneratedColumn<String>('column_order_on_export', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _identityFieldOrderMeta =
+      const VerificationMeta('identityFieldOrder');
+  @override
+  late final GeneratedColumn<String> identityFieldOrder =
+      GeneratedColumn<String>('identity_field_order', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _knownUnsupportedMeta =
+      const VerificationMeta('knownUnsupported');
+  @override
+  late final GeneratedColumn<String> knownUnsupported = GeneratedColumn<String>(
+      'known_unsupported', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _exportConfidenceMeta =
+      const VerificationMeta('exportConfidence');
+  @override
+  late final GeneratedColumn<String> exportConfidence = GeneratedColumn<String>(
+      'export_confidence', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _exportBlockReasonMeta =
+      const VerificationMeta('exportBlockReason');
+  @override
+  late final GeneratedColumn<String> exportBlockReason =
+      GeneratedColumn<String>('export_block_reason', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _roundTripValidatedMeta =
+      const VerificationMeta('roundTripValidated');
+  @override
+  late final GeneratedColumn<bool> roundTripValidated = GeneratedColumn<bool>(
+      'round_trip_validated', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("round_trip_validated" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _roundTripValidatedAtMeta =
+      const VerificationMeta('roundTripValidatedAt');
+  @override
+  late final GeneratedColumn<DateTime> roundTripValidatedAt =
+      GeneratedColumn<DateTime>('round_trip_validated_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _lastValidatedAtMeta =
+      const VerificationMeta('lastValidatedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastValidatedAt =
+      GeneratedColumn<DateTime>('last_validated_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        snapshotId,
+        exportRoute,
+        columnMap,
+        plotMap,
+        treatmentMap,
+        dataStartRow,
+        headerEndRow,
+        identityRowMarkers,
+        columnOrderOnExport,
+        identityFieldOrder,
+        knownUnsupported,
+        exportConfidence,
+        exportBlockReason,
+        roundTripValidated,
+        roundTripValidatedAt,
+        createdAt,
+        lastValidatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'compatibility_profiles';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<CompatibilityProfile> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('snapshot_id')) {
+      context.handle(
+          _snapshotIdMeta,
+          snapshotId.isAcceptableOrUnknown(
+              data['snapshot_id']!, _snapshotIdMeta));
+    } else if (isInserting) {
+      context.missing(_snapshotIdMeta);
+    }
+    if (data.containsKey('export_route')) {
+      context.handle(
+          _exportRouteMeta,
+          exportRoute.isAcceptableOrUnknown(
+              data['export_route']!, _exportRouteMeta));
+    } else if (isInserting) {
+      context.missing(_exportRouteMeta);
+    }
+    if (data.containsKey('column_map')) {
+      context.handle(_columnMapMeta,
+          columnMap.isAcceptableOrUnknown(data['column_map']!, _columnMapMeta));
+    } else if (isInserting) {
+      context.missing(_columnMapMeta);
+    }
+    if (data.containsKey('plot_map')) {
+      context.handle(_plotMapMeta,
+          plotMap.isAcceptableOrUnknown(data['plot_map']!, _plotMapMeta));
+    } else if (isInserting) {
+      context.missing(_plotMapMeta);
+    }
+    if (data.containsKey('treatment_map')) {
+      context.handle(
+          _treatmentMapMeta,
+          treatmentMap.isAcceptableOrUnknown(
+              data['treatment_map']!, _treatmentMapMeta));
+    } else if (isInserting) {
+      context.missing(_treatmentMapMeta);
+    }
+    if (data.containsKey('data_start_row')) {
+      context.handle(
+          _dataStartRowMeta,
+          dataStartRow.isAcceptableOrUnknown(
+              data['data_start_row']!, _dataStartRowMeta));
+    } else if (isInserting) {
+      context.missing(_dataStartRowMeta);
+    }
+    if (data.containsKey('header_end_row')) {
+      context.handle(
+          _headerEndRowMeta,
+          headerEndRow.isAcceptableOrUnknown(
+              data['header_end_row']!, _headerEndRowMeta));
+    } else if (isInserting) {
+      context.missing(_headerEndRowMeta);
+    }
+    if (data.containsKey('identity_row_markers')) {
+      context.handle(
+          _identityRowMarkersMeta,
+          identityRowMarkers.isAcceptableOrUnknown(
+              data['identity_row_markers']!, _identityRowMarkersMeta));
+    } else if (isInserting) {
+      context.missing(_identityRowMarkersMeta);
+    }
+    if (data.containsKey('column_order_on_export')) {
+      context.handle(
+          _columnOrderOnExportMeta,
+          columnOrderOnExport.isAcceptableOrUnknown(
+              data['column_order_on_export']!, _columnOrderOnExportMeta));
+    } else if (isInserting) {
+      context.missing(_columnOrderOnExportMeta);
+    }
+    if (data.containsKey('identity_field_order')) {
+      context.handle(
+          _identityFieldOrderMeta,
+          identityFieldOrder.isAcceptableOrUnknown(
+              data['identity_field_order']!, _identityFieldOrderMeta));
+    } else if (isInserting) {
+      context.missing(_identityFieldOrderMeta);
+    }
+    if (data.containsKey('known_unsupported')) {
+      context.handle(
+          _knownUnsupportedMeta,
+          knownUnsupported.isAcceptableOrUnknown(
+              data['known_unsupported']!, _knownUnsupportedMeta));
+    } else if (isInserting) {
+      context.missing(_knownUnsupportedMeta);
+    }
+    if (data.containsKey('export_confidence')) {
+      context.handle(
+          _exportConfidenceMeta,
+          exportConfidence.isAcceptableOrUnknown(
+              data['export_confidence']!, _exportConfidenceMeta));
+    } else if (isInserting) {
+      context.missing(_exportConfidenceMeta);
+    }
+    if (data.containsKey('export_block_reason')) {
+      context.handle(
+          _exportBlockReasonMeta,
+          exportBlockReason.isAcceptableOrUnknown(
+              data['export_block_reason']!, _exportBlockReasonMeta));
+    }
+    if (data.containsKey('round_trip_validated')) {
+      context.handle(
+          _roundTripValidatedMeta,
+          roundTripValidated.isAcceptableOrUnknown(
+              data['round_trip_validated']!, _roundTripValidatedMeta));
+    }
+    if (data.containsKey('round_trip_validated_at')) {
+      context.handle(
+          _roundTripValidatedAtMeta,
+          roundTripValidatedAt.isAcceptableOrUnknown(
+              data['round_trip_validated_at']!, _roundTripValidatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('last_validated_at')) {
+      context.handle(
+          _lastValidatedAtMeta,
+          lastValidatedAt.isAcceptableOrUnknown(
+              data['last_validated_at']!, _lastValidatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CompatibilityProfile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CompatibilityProfile(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      snapshotId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}snapshot_id'])!,
+      exportRoute: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}export_route'])!,
+      columnMap: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}column_map'])!,
+      plotMap: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plot_map'])!,
+      treatmentMap: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}treatment_map'])!,
+      dataStartRow: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}data_start_row'])!,
+      headerEndRow: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}header_end_row'])!,
+      identityRowMarkers: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}identity_row_markers'])!,
+      columnOrderOnExport: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}column_order_on_export'])!,
+      identityFieldOrder: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}identity_field_order'])!,
+      knownUnsupported: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}known_unsupported'])!,
+      exportConfidence: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}export_confidence'])!,
+      exportBlockReason: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}export_block_reason']),
+      roundTripValidated: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}round_trip_validated'])!,
+      roundTripValidatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}round_trip_validated_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      lastValidatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_validated_at']),
+    );
+  }
+
+  @override
+  $CompatibilityProfilesTable createAlias(String alias) {
+    return $CompatibilityProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class CompatibilityProfile extends DataClass
+    implements Insertable<CompatibilityProfile> {
+  final int id;
+  final int trialId;
+  final int snapshotId;
+  final String exportRoute;
+  final String columnMap;
+  final String plotMap;
+  final String treatmentMap;
+  final int dataStartRow;
+  final int headerEndRow;
+  final String identityRowMarkers;
+  final String columnOrderOnExport;
+  final String identityFieldOrder;
+  final String knownUnsupported;
+  final String exportConfidence;
+  final String? exportBlockReason;
+  final bool roundTripValidated;
+  final DateTime? roundTripValidatedAt;
+  final DateTime createdAt;
+  final DateTime? lastValidatedAt;
+  const CompatibilityProfile(
+      {required this.id,
+      required this.trialId,
+      required this.snapshotId,
+      required this.exportRoute,
+      required this.columnMap,
+      required this.plotMap,
+      required this.treatmentMap,
+      required this.dataStartRow,
+      required this.headerEndRow,
+      required this.identityRowMarkers,
+      required this.columnOrderOnExport,
+      required this.identityFieldOrder,
+      required this.knownUnsupported,
+      required this.exportConfidence,
+      this.exportBlockReason,
+      required this.roundTripValidated,
+      this.roundTripValidatedAt,
+      required this.createdAt,
+      this.lastValidatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['snapshot_id'] = Variable<int>(snapshotId);
+    map['export_route'] = Variable<String>(exportRoute);
+    map['column_map'] = Variable<String>(columnMap);
+    map['plot_map'] = Variable<String>(plotMap);
+    map['treatment_map'] = Variable<String>(treatmentMap);
+    map['data_start_row'] = Variable<int>(dataStartRow);
+    map['header_end_row'] = Variable<int>(headerEndRow);
+    map['identity_row_markers'] = Variable<String>(identityRowMarkers);
+    map['column_order_on_export'] = Variable<String>(columnOrderOnExport);
+    map['identity_field_order'] = Variable<String>(identityFieldOrder);
+    map['known_unsupported'] = Variable<String>(knownUnsupported);
+    map['export_confidence'] = Variable<String>(exportConfidence);
+    if (!nullToAbsent || exportBlockReason != null) {
+      map['export_block_reason'] = Variable<String>(exportBlockReason);
+    }
+    map['round_trip_validated'] = Variable<bool>(roundTripValidated);
+    if (!nullToAbsent || roundTripValidatedAt != null) {
+      map['round_trip_validated_at'] = Variable<DateTime>(roundTripValidatedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || lastValidatedAt != null) {
+      map['last_validated_at'] = Variable<DateTime>(lastValidatedAt);
+    }
+    return map;
+  }
+
+  CompatibilityProfilesCompanion toCompanion(bool nullToAbsent) {
+    return CompatibilityProfilesCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      snapshotId: Value(snapshotId),
+      exportRoute: Value(exportRoute),
+      columnMap: Value(columnMap),
+      plotMap: Value(plotMap),
+      treatmentMap: Value(treatmentMap),
+      dataStartRow: Value(dataStartRow),
+      headerEndRow: Value(headerEndRow),
+      identityRowMarkers: Value(identityRowMarkers),
+      columnOrderOnExport: Value(columnOrderOnExport),
+      identityFieldOrder: Value(identityFieldOrder),
+      knownUnsupported: Value(knownUnsupported),
+      exportConfidence: Value(exportConfidence),
+      exportBlockReason: exportBlockReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exportBlockReason),
+      roundTripValidated: Value(roundTripValidated),
+      roundTripValidatedAt: roundTripValidatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(roundTripValidatedAt),
+      createdAt: Value(createdAt),
+      lastValidatedAt: lastValidatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastValidatedAt),
+    );
+  }
+
+  factory CompatibilityProfile.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CompatibilityProfile(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      snapshotId: serializer.fromJson<int>(json['snapshotId']),
+      exportRoute: serializer.fromJson<String>(json['exportRoute']),
+      columnMap: serializer.fromJson<String>(json['columnMap']),
+      plotMap: serializer.fromJson<String>(json['plotMap']),
+      treatmentMap: serializer.fromJson<String>(json['treatmentMap']),
+      dataStartRow: serializer.fromJson<int>(json['dataStartRow']),
+      headerEndRow: serializer.fromJson<int>(json['headerEndRow']),
+      identityRowMarkers:
+          serializer.fromJson<String>(json['identityRowMarkers']),
+      columnOrderOnExport:
+          serializer.fromJson<String>(json['columnOrderOnExport']),
+      identityFieldOrder:
+          serializer.fromJson<String>(json['identityFieldOrder']),
+      knownUnsupported: serializer.fromJson<String>(json['knownUnsupported']),
+      exportConfidence: serializer.fromJson<String>(json['exportConfidence']),
+      exportBlockReason:
+          serializer.fromJson<String?>(json['exportBlockReason']),
+      roundTripValidated: serializer.fromJson<bool>(json['roundTripValidated']),
+      roundTripValidatedAt:
+          serializer.fromJson<DateTime?>(json['roundTripValidatedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastValidatedAt: serializer.fromJson<DateTime?>(json['lastValidatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'snapshotId': serializer.toJson<int>(snapshotId),
+      'exportRoute': serializer.toJson<String>(exportRoute),
+      'columnMap': serializer.toJson<String>(columnMap),
+      'plotMap': serializer.toJson<String>(plotMap),
+      'treatmentMap': serializer.toJson<String>(treatmentMap),
+      'dataStartRow': serializer.toJson<int>(dataStartRow),
+      'headerEndRow': serializer.toJson<int>(headerEndRow),
+      'identityRowMarkers': serializer.toJson<String>(identityRowMarkers),
+      'columnOrderOnExport': serializer.toJson<String>(columnOrderOnExport),
+      'identityFieldOrder': serializer.toJson<String>(identityFieldOrder),
+      'knownUnsupported': serializer.toJson<String>(knownUnsupported),
+      'exportConfidence': serializer.toJson<String>(exportConfidence),
+      'exportBlockReason': serializer.toJson<String?>(exportBlockReason),
+      'roundTripValidated': serializer.toJson<bool>(roundTripValidated),
+      'roundTripValidatedAt':
+          serializer.toJson<DateTime?>(roundTripValidatedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastValidatedAt': serializer.toJson<DateTime?>(lastValidatedAt),
+    };
+  }
+
+  CompatibilityProfile copyWith(
+          {int? id,
+          int? trialId,
+          int? snapshotId,
+          String? exportRoute,
+          String? columnMap,
+          String? plotMap,
+          String? treatmentMap,
+          int? dataStartRow,
+          int? headerEndRow,
+          String? identityRowMarkers,
+          String? columnOrderOnExport,
+          String? identityFieldOrder,
+          String? knownUnsupported,
+          String? exportConfidence,
+          Value<String?> exportBlockReason = const Value.absent(),
+          bool? roundTripValidated,
+          Value<DateTime?> roundTripValidatedAt = const Value.absent(),
+          DateTime? createdAt,
+          Value<DateTime?> lastValidatedAt = const Value.absent()}) =>
+      CompatibilityProfile(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        snapshotId: snapshotId ?? this.snapshotId,
+        exportRoute: exportRoute ?? this.exportRoute,
+        columnMap: columnMap ?? this.columnMap,
+        plotMap: plotMap ?? this.plotMap,
+        treatmentMap: treatmentMap ?? this.treatmentMap,
+        dataStartRow: dataStartRow ?? this.dataStartRow,
+        headerEndRow: headerEndRow ?? this.headerEndRow,
+        identityRowMarkers: identityRowMarkers ?? this.identityRowMarkers,
+        columnOrderOnExport: columnOrderOnExport ?? this.columnOrderOnExport,
+        identityFieldOrder: identityFieldOrder ?? this.identityFieldOrder,
+        knownUnsupported: knownUnsupported ?? this.knownUnsupported,
+        exportConfidence: exportConfidence ?? this.exportConfidence,
+        exportBlockReason: exportBlockReason.present
+            ? exportBlockReason.value
+            : this.exportBlockReason,
+        roundTripValidated: roundTripValidated ?? this.roundTripValidated,
+        roundTripValidatedAt: roundTripValidatedAt.present
+            ? roundTripValidatedAt.value
+            : this.roundTripValidatedAt,
+        createdAt: createdAt ?? this.createdAt,
+        lastValidatedAt: lastValidatedAt.present
+            ? lastValidatedAt.value
+            : this.lastValidatedAt,
+      );
+  CompatibilityProfile copyWithCompanion(CompatibilityProfilesCompanion data) {
+    return CompatibilityProfile(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      snapshotId:
+          data.snapshotId.present ? data.snapshotId.value : this.snapshotId,
+      exportRoute:
+          data.exportRoute.present ? data.exportRoute.value : this.exportRoute,
+      columnMap: data.columnMap.present ? data.columnMap.value : this.columnMap,
+      plotMap: data.plotMap.present ? data.plotMap.value : this.plotMap,
+      treatmentMap: data.treatmentMap.present
+          ? data.treatmentMap.value
+          : this.treatmentMap,
+      dataStartRow: data.dataStartRow.present
+          ? data.dataStartRow.value
+          : this.dataStartRow,
+      headerEndRow: data.headerEndRow.present
+          ? data.headerEndRow.value
+          : this.headerEndRow,
+      identityRowMarkers: data.identityRowMarkers.present
+          ? data.identityRowMarkers.value
+          : this.identityRowMarkers,
+      columnOrderOnExport: data.columnOrderOnExport.present
+          ? data.columnOrderOnExport.value
+          : this.columnOrderOnExport,
+      identityFieldOrder: data.identityFieldOrder.present
+          ? data.identityFieldOrder.value
+          : this.identityFieldOrder,
+      knownUnsupported: data.knownUnsupported.present
+          ? data.knownUnsupported.value
+          : this.knownUnsupported,
+      exportConfidence: data.exportConfidence.present
+          ? data.exportConfidence.value
+          : this.exportConfidence,
+      exportBlockReason: data.exportBlockReason.present
+          ? data.exportBlockReason.value
+          : this.exportBlockReason,
+      roundTripValidated: data.roundTripValidated.present
+          ? data.roundTripValidated.value
+          : this.roundTripValidated,
+      roundTripValidatedAt: data.roundTripValidatedAt.present
+          ? data.roundTripValidatedAt.value
+          : this.roundTripValidatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastValidatedAt: data.lastValidatedAt.present
+          ? data.lastValidatedAt.value
+          : this.lastValidatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompatibilityProfile(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('snapshotId: $snapshotId, ')
+          ..write('exportRoute: $exportRoute, ')
+          ..write('columnMap: $columnMap, ')
+          ..write('plotMap: $plotMap, ')
+          ..write('treatmentMap: $treatmentMap, ')
+          ..write('dataStartRow: $dataStartRow, ')
+          ..write('headerEndRow: $headerEndRow, ')
+          ..write('identityRowMarkers: $identityRowMarkers, ')
+          ..write('columnOrderOnExport: $columnOrderOnExport, ')
+          ..write('identityFieldOrder: $identityFieldOrder, ')
+          ..write('knownUnsupported: $knownUnsupported, ')
+          ..write('exportConfidence: $exportConfidence, ')
+          ..write('exportBlockReason: $exportBlockReason, ')
+          ..write('roundTripValidated: $roundTripValidated, ')
+          ..write('roundTripValidatedAt: $roundTripValidatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastValidatedAt: $lastValidatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      snapshotId,
+      exportRoute,
+      columnMap,
+      plotMap,
+      treatmentMap,
+      dataStartRow,
+      headerEndRow,
+      identityRowMarkers,
+      columnOrderOnExport,
+      identityFieldOrder,
+      knownUnsupported,
+      exportConfidence,
+      exportBlockReason,
+      roundTripValidated,
+      roundTripValidatedAt,
+      createdAt,
+      lastValidatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompatibilityProfile &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.snapshotId == this.snapshotId &&
+          other.exportRoute == this.exportRoute &&
+          other.columnMap == this.columnMap &&
+          other.plotMap == this.plotMap &&
+          other.treatmentMap == this.treatmentMap &&
+          other.dataStartRow == this.dataStartRow &&
+          other.headerEndRow == this.headerEndRow &&
+          other.identityRowMarkers == this.identityRowMarkers &&
+          other.columnOrderOnExport == this.columnOrderOnExport &&
+          other.identityFieldOrder == this.identityFieldOrder &&
+          other.knownUnsupported == this.knownUnsupported &&
+          other.exportConfidence == this.exportConfidence &&
+          other.exportBlockReason == this.exportBlockReason &&
+          other.roundTripValidated == this.roundTripValidated &&
+          other.roundTripValidatedAt == this.roundTripValidatedAt &&
+          other.createdAt == this.createdAt &&
+          other.lastValidatedAt == this.lastValidatedAt);
+}
+
+class CompatibilityProfilesCompanion
+    extends UpdateCompanion<CompatibilityProfile> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int> snapshotId;
+  final Value<String> exportRoute;
+  final Value<String> columnMap;
+  final Value<String> plotMap;
+  final Value<String> treatmentMap;
+  final Value<int> dataStartRow;
+  final Value<int> headerEndRow;
+  final Value<String> identityRowMarkers;
+  final Value<String> columnOrderOnExport;
+  final Value<String> identityFieldOrder;
+  final Value<String> knownUnsupported;
+  final Value<String> exportConfidence;
+  final Value<String?> exportBlockReason;
+  final Value<bool> roundTripValidated;
+  final Value<DateTime?> roundTripValidatedAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> lastValidatedAt;
+  const CompatibilityProfilesCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.snapshotId = const Value.absent(),
+    this.exportRoute = const Value.absent(),
+    this.columnMap = const Value.absent(),
+    this.plotMap = const Value.absent(),
+    this.treatmentMap = const Value.absent(),
+    this.dataStartRow = const Value.absent(),
+    this.headerEndRow = const Value.absent(),
+    this.identityRowMarkers = const Value.absent(),
+    this.columnOrderOnExport = const Value.absent(),
+    this.identityFieldOrder = const Value.absent(),
+    this.knownUnsupported = const Value.absent(),
+    this.exportConfidence = const Value.absent(),
+    this.exportBlockReason = const Value.absent(),
+    this.roundTripValidated = const Value.absent(),
+    this.roundTripValidatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastValidatedAt = const Value.absent(),
+  });
+  CompatibilityProfilesCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required int snapshotId,
+    required String exportRoute,
+    required String columnMap,
+    required String plotMap,
+    required String treatmentMap,
+    required int dataStartRow,
+    required int headerEndRow,
+    required String identityRowMarkers,
+    required String columnOrderOnExport,
+    required String identityFieldOrder,
+    required String knownUnsupported,
+    required String exportConfidence,
+    this.exportBlockReason = const Value.absent(),
+    this.roundTripValidated = const Value.absent(),
+    this.roundTripValidatedAt = const Value.absent(),
+    required DateTime createdAt,
+    this.lastValidatedAt = const Value.absent(),
+  })  : trialId = Value(trialId),
+        snapshotId = Value(snapshotId),
+        exportRoute = Value(exportRoute),
+        columnMap = Value(columnMap),
+        plotMap = Value(plotMap),
+        treatmentMap = Value(treatmentMap),
+        dataStartRow = Value(dataStartRow),
+        headerEndRow = Value(headerEndRow),
+        identityRowMarkers = Value(identityRowMarkers),
+        columnOrderOnExport = Value(columnOrderOnExport),
+        identityFieldOrder = Value(identityFieldOrder),
+        knownUnsupported = Value(knownUnsupported),
+        exportConfidence = Value(exportConfidence),
+        createdAt = Value(createdAt);
+  static Insertable<CompatibilityProfile> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? snapshotId,
+    Expression<String>? exportRoute,
+    Expression<String>? columnMap,
+    Expression<String>? plotMap,
+    Expression<String>? treatmentMap,
+    Expression<int>? dataStartRow,
+    Expression<int>? headerEndRow,
+    Expression<String>? identityRowMarkers,
+    Expression<String>? columnOrderOnExport,
+    Expression<String>? identityFieldOrder,
+    Expression<String>? knownUnsupported,
+    Expression<String>? exportConfidence,
+    Expression<String>? exportBlockReason,
+    Expression<bool>? roundTripValidated,
+    Expression<DateTime>? roundTripValidatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? lastValidatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (snapshotId != null) 'snapshot_id': snapshotId,
+      if (exportRoute != null) 'export_route': exportRoute,
+      if (columnMap != null) 'column_map': columnMap,
+      if (plotMap != null) 'plot_map': plotMap,
+      if (treatmentMap != null) 'treatment_map': treatmentMap,
+      if (dataStartRow != null) 'data_start_row': dataStartRow,
+      if (headerEndRow != null) 'header_end_row': headerEndRow,
+      if (identityRowMarkers != null)
+        'identity_row_markers': identityRowMarkers,
+      if (columnOrderOnExport != null)
+        'column_order_on_export': columnOrderOnExport,
+      if (identityFieldOrder != null)
+        'identity_field_order': identityFieldOrder,
+      if (knownUnsupported != null) 'known_unsupported': knownUnsupported,
+      if (exportConfidence != null) 'export_confidence': exportConfidence,
+      if (exportBlockReason != null) 'export_block_reason': exportBlockReason,
+      if (roundTripValidated != null)
+        'round_trip_validated': roundTripValidated,
+      if (roundTripValidatedAt != null)
+        'round_trip_validated_at': roundTripValidatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastValidatedAt != null) 'last_validated_at': lastValidatedAt,
+    });
+  }
+
+  CompatibilityProfilesCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int>? snapshotId,
+      Value<String>? exportRoute,
+      Value<String>? columnMap,
+      Value<String>? plotMap,
+      Value<String>? treatmentMap,
+      Value<int>? dataStartRow,
+      Value<int>? headerEndRow,
+      Value<String>? identityRowMarkers,
+      Value<String>? columnOrderOnExport,
+      Value<String>? identityFieldOrder,
+      Value<String>? knownUnsupported,
+      Value<String>? exportConfidence,
+      Value<String?>? exportBlockReason,
+      Value<bool>? roundTripValidated,
+      Value<DateTime?>? roundTripValidatedAt,
+      Value<DateTime>? createdAt,
+      Value<DateTime?>? lastValidatedAt}) {
+    return CompatibilityProfilesCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      snapshotId: snapshotId ?? this.snapshotId,
+      exportRoute: exportRoute ?? this.exportRoute,
+      columnMap: columnMap ?? this.columnMap,
+      plotMap: plotMap ?? this.plotMap,
+      treatmentMap: treatmentMap ?? this.treatmentMap,
+      dataStartRow: dataStartRow ?? this.dataStartRow,
+      headerEndRow: headerEndRow ?? this.headerEndRow,
+      identityRowMarkers: identityRowMarkers ?? this.identityRowMarkers,
+      columnOrderOnExport: columnOrderOnExport ?? this.columnOrderOnExport,
+      identityFieldOrder: identityFieldOrder ?? this.identityFieldOrder,
+      knownUnsupported: knownUnsupported ?? this.knownUnsupported,
+      exportConfidence: exportConfidence ?? this.exportConfidence,
+      exportBlockReason: exportBlockReason ?? this.exportBlockReason,
+      roundTripValidated: roundTripValidated ?? this.roundTripValidated,
+      roundTripValidatedAt: roundTripValidatedAt ?? this.roundTripValidatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      lastValidatedAt: lastValidatedAt ?? this.lastValidatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (snapshotId.present) {
+      map['snapshot_id'] = Variable<int>(snapshotId.value);
+    }
+    if (exportRoute.present) {
+      map['export_route'] = Variable<String>(exportRoute.value);
+    }
+    if (columnMap.present) {
+      map['column_map'] = Variable<String>(columnMap.value);
+    }
+    if (plotMap.present) {
+      map['plot_map'] = Variable<String>(plotMap.value);
+    }
+    if (treatmentMap.present) {
+      map['treatment_map'] = Variable<String>(treatmentMap.value);
+    }
+    if (dataStartRow.present) {
+      map['data_start_row'] = Variable<int>(dataStartRow.value);
+    }
+    if (headerEndRow.present) {
+      map['header_end_row'] = Variable<int>(headerEndRow.value);
+    }
+    if (identityRowMarkers.present) {
+      map['identity_row_markers'] = Variable<String>(identityRowMarkers.value);
+    }
+    if (columnOrderOnExport.present) {
+      map['column_order_on_export'] =
+          Variable<String>(columnOrderOnExport.value);
+    }
+    if (identityFieldOrder.present) {
+      map['identity_field_order'] = Variable<String>(identityFieldOrder.value);
+    }
+    if (knownUnsupported.present) {
+      map['known_unsupported'] = Variable<String>(knownUnsupported.value);
+    }
+    if (exportConfidence.present) {
+      map['export_confidence'] = Variable<String>(exportConfidence.value);
+    }
+    if (exportBlockReason.present) {
+      map['export_block_reason'] = Variable<String>(exportBlockReason.value);
+    }
+    if (roundTripValidated.present) {
+      map['round_trip_validated'] = Variable<bool>(roundTripValidated.value);
+    }
+    if (roundTripValidatedAt.present) {
+      map['round_trip_validated_at'] =
+          Variable<DateTime>(roundTripValidatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (lastValidatedAt.present) {
+      map['last_validated_at'] = Variable<DateTime>(lastValidatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompatibilityProfilesCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('snapshotId: $snapshotId, ')
+          ..write('exportRoute: $exportRoute, ')
+          ..write('columnMap: $columnMap, ')
+          ..write('plotMap: $plotMap, ')
+          ..write('treatmentMap: $treatmentMap, ')
+          ..write('dataStartRow: $dataStartRow, ')
+          ..write('headerEndRow: $headerEndRow, ')
+          ..write('identityRowMarkers: $identityRowMarkers, ')
+          ..write('columnOrderOnExport: $columnOrderOnExport, ')
+          ..write('identityFieldOrder: $identityFieldOrder, ')
+          ..write('knownUnsupported: $knownUnsupported, ')
+          ..write('exportConfidence: $exportConfidence, ')
+          ..write('exportBlockReason: $exportBlockReason, ')
+          ..write('roundTripValidated: $roundTripValidated, ')
+          ..write('roundTripValidatedAt: $roundTripValidatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastValidatedAt: $lastValidatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CropDescriptionsTable extends CropDescriptions
+    with TableInfo<$CropDescriptionsTable, CropDescription> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CropDescriptionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('UNIQUE REFERENCES trials (id)'));
+  static const VerificationMeta _plantingDateMeta =
+      const VerificationMeta('plantingDate');
+  @override
+  late final GeneratedColumn<DateTime> plantingDate = GeneratedColumn<DateTime>(
+      'planting_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _transplantingDateMeta =
+      const VerificationMeta('transplantingDate');
+  @override
+  late final GeneratedColumn<DateTime> transplantingDate =
+      GeneratedColumn<DateTime>('transplanting_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _emergenceDateMeta =
+      const VerificationMeta('emergenceDate');
+  @override
+  late final GeneratedColumn<DateTime> emergenceDate =
+      GeneratedColumn<DateTime>('emergence_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _harvestDateMeta =
+      const VerificationMeta('harvestDate');
+  @override
+  late final GeneratedColumn<DateTime> harvestDate = GeneratedColumn<DateTime>(
+      'harvest_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _varietyOrHybridMeta =
+      const VerificationMeta('varietyOrHybrid');
+  @override
+  late final GeneratedColumn<String> varietyOrHybrid = GeneratedColumn<String>(
+      'variety_or_hybrid', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _seedLotMeta =
+      const VerificationMeta('seedLot');
+  @override
+  late final GeneratedColumn<String> seedLot = GeneratedColumn<String>(
+      'seed_lot', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _seedbedPreparationMeta =
+      const VerificationMeta('seedbedPreparation');
+  @override
+  late final GeneratedColumn<String> seedbedPreparation =
+      GeneratedColumn<String>('seedbed_preparation', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tillageTypeMeta =
+      const VerificationMeta('tillageType');
+  @override
+  late final GeneratedColumn<String> tillageType = GeneratedColumn<String>(
+      'tillage_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _standardMoistureMeta =
+      const VerificationMeta('standardMoisture');
+  @override
+  late final GeneratedColumn<double> standardMoisture = GeneratedColumn<double>(
+      'standard_moisture', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _moistureAtHarvestMeta =
+      const VerificationMeta('moistureAtHarvest');
+  @override
+  late final GeneratedColumn<double> moistureAtHarvest =
+      GeneratedColumn<double>('moisture_at_harvest', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _createdByMeta =
+      const VerificationMeta('createdBy');
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+      'created_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        plantingDate,
+        transplantingDate,
+        emergenceDate,
+        harvestDate,
+        varietyOrHybrid,
+        seedLot,
+        seedbedPreparation,
+        tillageType,
+        standardMoisture,
+        moistureAtHarvest,
+        createdAt,
+        createdBy
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'crop_descriptions';
+  @override
+  VerificationContext validateIntegrity(Insertable<CropDescription> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('planting_date')) {
+      context.handle(
+          _plantingDateMeta,
+          plantingDate.isAcceptableOrUnknown(
+              data['planting_date']!, _plantingDateMeta));
+    }
+    if (data.containsKey('transplanting_date')) {
+      context.handle(
+          _transplantingDateMeta,
+          transplantingDate.isAcceptableOrUnknown(
+              data['transplanting_date']!, _transplantingDateMeta));
+    }
+    if (data.containsKey('emergence_date')) {
+      context.handle(
+          _emergenceDateMeta,
+          emergenceDate.isAcceptableOrUnknown(
+              data['emergence_date']!, _emergenceDateMeta));
+    }
+    if (data.containsKey('harvest_date')) {
+      context.handle(
+          _harvestDateMeta,
+          harvestDate.isAcceptableOrUnknown(
+              data['harvest_date']!, _harvestDateMeta));
+    }
+    if (data.containsKey('variety_or_hybrid')) {
+      context.handle(
+          _varietyOrHybridMeta,
+          varietyOrHybrid.isAcceptableOrUnknown(
+              data['variety_or_hybrid']!, _varietyOrHybridMeta));
+    }
+    if (data.containsKey('seed_lot')) {
+      context.handle(_seedLotMeta,
+          seedLot.isAcceptableOrUnknown(data['seed_lot']!, _seedLotMeta));
+    }
+    if (data.containsKey('seedbed_preparation')) {
+      context.handle(
+          _seedbedPreparationMeta,
+          seedbedPreparation.isAcceptableOrUnknown(
+              data['seedbed_preparation']!, _seedbedPreparationMeta));
+    }
+    if (data.containsKey('tillage_type')) {
+      context.handle(
+          _tillageTypeMeta,
+          tillageType.isAcceptableOrUnknown(
+              data['tillage_type']!, _tillageTypeMeta));
+    }
+    if (data.containsKey('standard_moisture')) {
+      context.handle(
+          _standardMoistureMeta,
+          standardMoisture.isAcceptableOrUnknown(
+              data['standard_moisture']!, _standardMoistureMeta));
+    }
+    if (data.containsKey('moisture_at_harvest')) {
+      context.handle(
+          _moistureAtHarvestMeta,
+          moistureAtHarvest.isAcceptableOrUnknown(
+              data['moisture_at_harvest']!, _moistureAtHarvestMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(_createdByMeta,
+          createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CropDescription map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CropDescription(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      plantingDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}planting_date']),
+      transplantingDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}transplanting_date']),
+      emergenceDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}emergence_date']),
+      harvestDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}harvest_date']),
+      varietyOrHybrid: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}variety_or_hybrid']),
+      seedLot: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}seed_lot']),
+      seedbedPreparation: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}seedbed_preparation']),
+      tillageType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tillage_type']),
+      standardMoisture: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}standard_moisture']),
+      moistureAtHarvest: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}moisture_at_harvest']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      createdBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_by']),
+    );
+  }
+
+  @override
+  $CropDescriptionsTable createAlias(String alias) {
+    return $CropDescriptionsTable(attachedDatabase, alias);
+  }
+}
+
+class CropDescription extends DataClass implements Insertable<CropDescription> {
+  final int id;
+  final int trialId;
+  final DateTime? plantingDate;
+  final DateTime? transplantingDate;
+  final DateTime? emergenceDate;
+  final DateTime? harvestDate;
+  final String? varietyOrHybrid;
+  final String? seedLot;
+  final String? seedbedPreparation;
+  final String? tillageType;
+  final double? standardMoisture;
+  final double? moistureAtHarvest;
+  final DateTime createdAt;
+  final String? createdBy;
+  const CropDescription(
+      {required this.id,
+      required this.trialId,
+      this.plantingDate,
+      this.transplantingDate,
+      this.emergenceDate,
+      this.harvestDate,
+      this.varietyOrHybrid,
+      this.seedLot,
+      this.seedbedPreparation,
+      this.tillageType,
+      this.standardMoisture,
+      this.moistureAtHarvest,
+      required this.createdAt,
+      this.createdBy});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    if (!nullToAbsent || plantingDate != null) {
+      map['planting_date'] = Variable<DateTime>(plantingDate);
+    }
+    if (!nullToAbsent || transplantingDate != null) {
+      map['transplanting_date'] = Variable<DateTime>(transplantingDate);
+    }
+    if (!nullToAbsent || emergenceDate != null) {
+      map['emergence_date'] = Variable<DateTime>(emergenceDate);
+    }
+    if (!nullToAbsent || harvestDate != null) {
+      map['harvest_date'] = Variable<DateTime>(harvestDate);
+    }
+    if (!nullToAbsent || varietyOrHybrid != null) {
+      map['variety_or_hybrid'] = Variable<String>(varietyOrHybrid);
+    }
+    if (!nullToAbsent || seedLot != null) {
+      map['seed_lot'] = Variable<String>(seedLot);
+    }
+    if (!nullToAbsent || seedbedPreparation != null) {
+      map['seedbed_preparation'] = Variable<String>(seedbedPreparation);
+    }
+    if (!nullToAbsent || tillageType != null) {
+      map['tillage_type'] = Variable<String>(tillageType);
+    }
+    if (!nullToAbsent || standardMoisture != null) {
+      map['standard_moisture'] = Variable<double>(standardMoisture);
+    }
+    if (!nullToAbsent || moistureAtHarvest != null) {
+      map['moisture_at_harvest'] = Variable<double>(moistureAtHarvest);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    return map;
+  }
+
+  CropDescriptionsCompanion toCompanion(bool nullToAbsent) {
+    return CropDescriptionsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      plantingDate: plantingDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plantingDate),
+      transplantingDate: transplantingDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transplantingDate),
+      emergenceDate: emergenceDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(emergenceDate),
+      harvestDate: harvestDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(harvestDate),
+      varietyOrHybrid: varietyOrHybrid == null && nullToAbsent
+          ? const Value.absent()
+          : Value(varietyOrHybrid),
+      seedLot: seedLot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedLot),
+      seedbedPreparation: seedbedPreparation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seedbedPreparation),
+      tillageType: tillageType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tillageType),
+      standardMoisture: standardMoisture == null && nullToAbsent
+          ? const Value.absent()
+          : Value(standardMoisture),
+      moistureAtHarvest: moistureAtHarvest == null && nullToAbsent
+          ? const Value.absent()
+          : Value(moistureAtHarvest),
+      createdAt: Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+    );
+  }
+
+  factory CropDescription.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CropDescription(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      plantingDate: serializer.fromJson<DateTime?>(json['plantingDate']),
+      transplantingDate:
+          serializer.fromJson<DateTime?>(json['transplantingDate']),
+      emergenceDate: serializer.fromJson<DateTime?>(json['emergenceDate']),
+      harvestDate: serializer.fromJson<DateTime?>(json['harvestDate']),
+      varietyOrHybrid: serializer.fromJson<String?>(json['varietyOrHybrid']),
+      seedLot: serializer.fromJson<String?>(json['seedLot']),
+      seedbedPreparation:
+          serializer.fromJson<String?>(json['seedbedPreparation']),
+      tillageType: serializer.fromJson<String?>(json['tillageType']),
+      standardMoisture: serializer.fromJson<double?>(json['standardMoisture']),
+      moistureAtHarvest:
+          serializer.fromJson<double?>(json['moistureAtHarvest']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'plantingDate': serializer.toJson<DateTime?>(plantingDate),
+      'transplantingDate': serializer.toJson<DateTime?>(transplantingDate),
+      'emergenceDate': serializer.toJson<DateTime?>(emergenceDate),
+      'harvestDate': serializer.toJson<DateTime?>(harvestDate),
+      'varietyOrHybrid': serializer.toJson<String?>(varietyOrHybrid),
+      'seedLot': serializer.toJson<String?>(seedLot),
+      'seedbedPreparation': serializer.toJson<String?>(seedbedPreparation),
+      'tillageType': serializer.toJson<String?>(tillageType),
+      'standardMoisture': serializer.toJson<double?>(standardMoisture),
+      'moistureAtHarvest': serializer.toJson<double?>(moistureAtHarvest),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+    };
+  }
+
+  CropDescription copyWith(
+          {int? id,
+          int? trialId,
+          Value<DateTime?> plantingDate = const Value.absent(),
+          Value<DateTime?> transplantingDate = const Value.absent(),
+          Value<DateTime?> emergenceDate = const Value.absent(),
+          Value<DateTime?> harvestDate = const Value.absent(),
+          Value<String?> varietyOrHybrid = const Value.absent(),
+          Value<String?> seedLot = const Value.absent(),
+          Value<String?> seedbedPreparation = const Value.absent(),
+          Value<String?> tillageType = const Value.absent(),
+          Value<double?> standardMoisture = const Value.absent(),
+          Value<double?> moistureAtHarvest = const Value.absent(),
+          DateTime? createdAt,
+          Value<String?> createdBy = const Value.absent()}) =>
+      CropDescription(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        plantingDate:
+            plantingDate.present ? plantingDate.value : this.plantingDate,
+        transplantingDate: transplantingDate.present
+            ? transplantingDate.value
+            : this.transplantingDate,
+        emergenceDate:
+            emergenceDate.present ? emergenceDate.value : this.emergenceDate,
+        harvestDate: harvestDate.present ? harvestDate.value : this.harvestDate,
+        varietyOrHybrid: varietyOrHybrid.present
+            ? varietyOrHybrid.value
+            : this.varietyOrHybrid,
+        seedLot: seedLot.present ? seedLot.value : this.seedLot,
+        seedbedPreparation: seedbedPreparation.present
+            ? seedbedPreparation.value
+            : this.seedbedPreparation,
+        tillageType: tillageType.present ? tillageType.value : this.tillageType,
+        standardMoisture: standardMoisture.present
+            ? standardMoisture.value
+            : this.standardMoisture,
+        moistureAtHarvest: moistureAtHarvest.present
+            ? moistureAtHarvest.value
+            : this.moistureAtHarvest,
+        createdAt: createdAt ?? this.createdAt,
+        createdBy: createdBy.present ? createdBy.value : this.createdBy,
+      );
+  CropDescription copyWithCompanion(CropDescriptionsCompanion data) {
+    return CropDescription(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      plantingDate: data.plantingDate.present
+          ? data.plantingDate.value
+          : this.plantingDate,
+      transplantingDate: data.transplantingDate.present
+          ? data.transplantingDate.value
+          : this.transplantingDate,
+      emergenceDate: data.emergenceDate.present
+          ? data.emergenceDate.value
+          : this.emergenceDate,
+      harvestDate:
+          data.harvestDate.present ? data.harvestDate.value : this.harvestDate,
+      varietyOrHybrid: data.varietyOrHybrid.present
+          ? data.varietyOrHybrid.value
+          : this.varietyOrHybrid,
+      seedLot: data.seedLot.present ? data.seedLot.value : this.seedLot,
+      seedbedPreparation: data.seedbedPreparation.present
+          ? data.seedbedPreparation.value
+          : this.seedbedPreparation,
+      tillageType:
+          data.tillageType.present ? data.tillageType.value : this.tillageType,
+      standardMoisture: data.standardMoisture.present
+          ? data.standardMoisture.value
+          : this.standardMoisture,
+      moistureAtHarvest: data.moistureAtHarvest.present
+          ? data.moistureAtHarvest.value
+          : this.moistureAtHarvest,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CropDescription(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('plantingDate: $plantingDate, ')
+          ..write('transplantingDate: $transplantingDate, ')
+          ..write('emergenceDate: $emergenceDate, ')
+          ..write('harvestDate: $harvestDate, ')
+          ..write('varietyOrHybrid: $varietyOrHybrid, ')
+          ..write('seedLot: $seedLot, ')
+          ..write('seedbedPreparation: $seedbedPreparation, ')
+          ..write('tillageType: $tillageType, ')
+          ..write('standardMoisture: $standardMoisture, ')
+          ..write('moistureAtHarvest: $moistureAtHarvest, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      plantingDate,
+      transplantingDate,
+      emergenceDate,
+      harvestDate,
+      varietyOrHybrid,
+      seedLot,
+      seedbedPreparation,
+      tillageType,
+      standardMoisture,
+      moistureAtHarvest,
+      createdAt,
+      createdBy);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CropDescription &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.plantingDate == this.plantingDate &&
+          other.transplantingDate == this.transplantingDate &&
+          other.emergenceDate == this.emergenceDate &&
+          other.harvestDate == this.harvestDate &&
+          other.varietyOrHybrid == this.varietyOrHybrid &&
+          other.seedLot == this.seedLot &&
+          other.seedbedPreparation == this.seedbedPreparation &&
+          other.tillageType == this.tillageType &&
+          other.standardMoisture == this.standardMoisture &&
+          other.moistureAtHarvest == this.moistureAtHarvest &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy);
+}
+
+class CropDescriptionsCompanion extends UpdateCompanion<CropDescription> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<DateTime?> plantingDate;
+  final Value<DateTime?> transplantingDate;
+  final Value<DateTime?> emergenceDate;
+  final Value<DateTime?> harvestDate;
+  final Value<String?> varietyOrHybrid;
+  final Value<String?> seedLot;
+  final Value<String?> seedbedPreparation;
+  final Value<String?> tillageType;
+  final Value<double?> standardMoisture;
+  final Value<double?> moistureAtHarvest;
+  final Value<DateTime> createdAt;
+  final Value<String?> createdBy;
+  const CropDescriptionsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.plantingDate = const Value.absent(),
+    this.transplantingDate = const Value.absent(),
+    this.emergenceDate = const Value.absent(),
+    this.harvestDate = const Value.absent(),
+    this.varietyOrHybrid = const Value.absent(),
+    this.seedLot = const Value.absent(),
+    this.seedbedPreparation = const Value.absent(),
+    this.tillageType = const Value.absent(),
+    this.standardMoisture = const Value.absent(),
+    this.moistureAtHarvest = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+  });
+  CropDescriptionsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    this.plantingDate = const Value.absent(),
+    this.transplantingDate = const Value.absent(),
+    this.emergenceDate = const Value.absent(),
+    this.harvestDate = const Value.absent(),
+    this.varietyOrHybrid = const Value.absent(),
+    this.seedLot = const Value.absent(),
+    this.seedbedPreparation = const Value.absent(),
+    this.tillageType = const Value.absent(),
+    this.standardMoisture = const Value.absent(),
+    this.moistureAtHarvest = const Value.absent(),
+    required DateTime createdAt,
+    this.createdBy = const Value.absent(),
+  })  : trialId = Value(trialId),
+        createdAt = Value(createdAt);
+  static Insertable<CropDescription> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<DateTime>? plantingDate,
+    Expression<DateTime>? transplantingDate,
+    Expression<DateTime>? emergenceDate,
+    Expression<DateTime>? harvestDate,
+    Expression<String>? varietyOrHybrid,
+    Expression<String>? seedLot,
+    Expression<String>? seedbedPreparation,
+    Expression<String>? tillageType,
+    Expression<double>? standardMoisture,
+    Expression<double>? moistureAtHarvest,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (plantingDate != null) 'planting_date': plantingDate,
+      if (transplantingDate != null) 'transplanting_date': transplantingDate,
+      if (emergenceDate != null) 'emergence_date': emergenceDate,
+      if (harvestDate != null) 'harvest_date': harvestDate,
+      if (varietyOrHybrid != null) 'variety_or_hybrid': varietyOrHybrid,
+      if (seedLot != null) 'seed_lot': seedLot,
+      if (seedbedPreparation != null) 'seedbed_preparation': seedbedPreparation,
+      if (tillageType != null) 'tillage_type': tillageType,
+      if (standardMoisture != null) 'standard_moisture': standardMoisture,
+      if (moistureAtHarvest != null) 'moisture_at_harvest': moistureAtHarvest,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+    });
+  }
+
+  CropDescriptionsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<DateTime?>? plantingDate,
+      Value<DateTime?>? transplantingDate,
+      Value<DateTime?>? emergenceDate,
+      Value<DateTime?>? harvestDate,
+      Value<String?>? varietyOrHybrid,
+      Value<String?>? seedLot,
+      Value<String?>? seedbedPreparation,
+      Value<String?>? tillageType,
+      Value<double?>? standardMoisture,
+      Value<double?>? moistureAtHarvest,
+      Value<DateTime>? createdAt,
+      Value<String?>? createdBy}) {
+    return CropDescriptionsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      plantingDate: plantingDate ?? this.plantingDate,
+      transplantingDate: transplantingDate ?? this.transplantingDate,
+      emergenceDate: emergenceDate ?? this.emergenceDate,
+      harvestDate: harvestDate ?? this.harvestDate,
+      varietyOrHybrid: varietyOrHybrid ?? this.varietyOrHybrid,
+      seedLot: seedLot ?? this.seedLot,
+      seedbedPreparation: seedbedPreparation ?? this.seedbedPreparation,
+      tillageType: tillageType ?? this.tillageType,
+      standardMoisture: standardMoisture ?? this.standardMoisture,
+      moistureAtHarvest: moistureAtHarvest ?? this.moistureAtHarvest,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (plantingDate.present) {
+      map['planting_date'] = Variable<DateTime>(plantingDate.value);
+    }
+    if (transplantingDate.present) {
+      map['transplanting_date'] = Variable<DateTime>(transplantingDate.value);
+    }
+    if (emergenceDate.present) {
+      map['emergence_date'] = Variable<DateTime>(emergenceDate.value);
+    }
+    if (harvestDate.present) {
+      map['harvest_date'] = Variable<DateTime>(harvestDate.value);
+    }
+    if (varietyOrHybrid.present) {
+      map['variety_or_hybrid'] = Variable<String>(varietyOrHybrid.value);
+    }
+    if (seedLot.present) {
+      map['seed_lot'] = Variable<String>(seedLot.value);
+    }
+    if (seedbedPreparation.present) {
+      map['seedbed_preparation'] = Variable<String>(seedbedPreparation.value);
+    }
+    if (tillageType.present) {
+      map['tillage_type'] = Variable<String>(tillageType.value);
+    }
+    if (standardMoisture.present) {
+      map['standard_moisture'] = Variable<double>(standardMoisture.value);
+    }
+    if (moistureAtHarvest.present) {
+      map['moisture_at_harvest'] = Variable<double>(moistureAtHarvest.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CropDescriptionsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('plantingDate: $plantingDate, ')
+          ..write('transplantingDate: $transplantingDate, ')
+          ..write('emergenceDate: $emergenceDate, ')
+          ..write('harvestDate: $harvestDate, ')
+          ..write('varietyOrHybrid: $varietyOrHybrid, ')
+          ..write('seedLot: $seedLot, ')
+          ..write('seedbedPreparation: $seedbedPreparation, ')
+          ..write('tillageType: $tillageType, ')
+          ..write('standardMoisture: $standardMoisture, ')
+          ..write('moistureAtHarvest: $moistureAtHarvest, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TrialContactsTable extends TrialContacts
+    with TableInfo<$TrialContactsTable, TrialContact> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrialContactsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('UNIQUE REFERENCES trials (id)'));
+  static const VerificationMeta _trialDirectorMeta =
+      const VerificationMeta('trialDirector');
+  @override
+  late final GeneratedColumn<String> trialDirector = GeneratedColumn<String>(
+      'trial_director', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cooperatorMeta =
+      const VerificationMeta('cooperator');
+  @override
+  late final GeneratedColumn<String> cooperator = GeneratedColumn<String>(
+      'cooperator', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sponsorMeta =
+      const VerificationMeta('sponsor');
+  @override
+  late final GeneratedColumn<String> sponsor = GeneratedColumn<String>(
+      'sponsor', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _applicatorMeta =
+      const VerificationMeta('applicator');
+  @override
+  late final GeneratedColumn<String> applicator = GeneratedColumn<String>(
+      'applicator', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _assessorMeta =
+      const VerificationMeta('assessor');
+  @override
+  late final GeneratedColumn<String> assessor = GeneratedColumn<String>(
+      'assessor', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _createdByMeta =
+      const VerificationMeta('createdBy');
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+      'created_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        trialDirector,
+        cooperator,
+        sponsor,
+        applicator,
+        assessor,
+        createdAt,
+        createdBy
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trial_contacts';
+  @override
+  VerificationContext validateIntegrity(Insertable<TrialContact> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('trial_director')) {
+      context.handle(
+          _trialDirectorMeta,
+          trialDirector.isAcceptableOrUnknown(
+              data['trial_director']!, _trialDirectorMeta));
+    }
+    if (data.containsKey('cooperator')) {
+      context.handle(
+          _cooperatorMeta,
+          cooperator.isAcceptableOrUnknown(
+              data['cooperator']!, _cooperatorMeta));
+    }
+    if (data.containsKey('sponsor')) {
+      context.handle(_sponsorMeta,
+          sponsor.isAcceptableOrUnknown(data['sponsor']!, _sponsorMeta));
+    }
+    if (data.containsKey('applicator')) {
+      context.handle(
+          _applicatorMeta,
+          applicator.isAcceptableOrUnknown(
+              data['applicator']!, _applicatorMeta));
+    }
+    if (data.containsKey('assessor')) {
+      context.handle(_assessorMeta,
+          assessor.isAcceptableOrUnknown(data['assessor']!, _assessorMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(_createdByMeta,
+          createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TrialContact map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrialContact(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      trialDirector: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}trial_director']),
+      cooperator: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cooperator']),
+      sponsor: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sponsor']),
+      applicator: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}applicator']),
+      assessor: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assessor']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      createdBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_by']),
+    );
+  }
+
+  @override
+  $TrialContactsTable createAlias(String alias) {
+    return $TrialContactsTable(attachedDatabase, alias);
+  }
+}
+
+class TrialContact extends DataClass implements Insertable<TrialContact> {
+  final int id;
+  final int trialId;
+  final String? trialDirector;
+  final String? cooperator;
+  final String? sponsor;
+  final String? applicator;
+  final String? assessor;
+  final DateTime createdAt;
+  final String? createdBy;
+  const TrialContact(
+      {required this.id,
+      required this.trialId,
+      this.trialDirector,
+      this.cooperator,
+      this.sponsor,
+      this.applicator,
+      this.assessor,
+      required this.createdAt,
+      this.createdBy});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    if (!nullToAbsent || trialDirector != null) {
+      map['trial_director'] = Variable<String>(trialDirector);
+    }
+    if (!nullToAbsent || cooperator != null) {
+      map['cooperator'] = Variable<String>(cooperator);
+    }
+    if (!nullToAbsent || sponsor != null) {
+      map['sponsor'] = Variable<String>(sponsor);
+    }
+    if (!nullToAbsent || applicator != null) {
+      map['applicator'] = Variable<String>(applicator);
+    }
+    if (!nullToAbsent || assessor != null) {
+      map['assessor'] = Variable<String>(assessor);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    return map;
+  }
+
+  TrialContactsCompanion toCompanion(bool nullToAbsent) {
+    return TrialContactsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      trialDirector: trialDirector == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trialDirector),
+      cooperator: cooperator == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cooperator),
+      sponsor: sponsor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sponsor),
+      applicator: applicator == null && nullToAbsent
+          ? const Value.absent()
+          : Value(applicator),
+      assessor: assessor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assessor),
+      createdAt: Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+    );
+  }
+
+  factory TrialContact.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrialContact(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      trialDirector: serializer.fromJson<String?>(json['trialDirector']),
+      cooperator: serializer.fromJson<String?>(json['cooperator']),
+      sponsor: serializer.fromJson<String?>(json['sponsor']),
+      applicator: serializer.fromJson<String?>(json['applicator']),
+      assessor: serializer.fromJson<String?>(json['assessor']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'trialDirector': serializer.toJson<String?>(trialDirector),
+      'cooperator': serializer.toJson<String?>(cooperator),
+      'sponsor': serializer.toJson<String?>(sponsor),
+      'applicator': serializer.toJson<String?>(applicator),
+      'assessor': serializer.toJson<String?>(assessor),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+    };
+  }
+
+  TrialContact copyWith(
+          {int? id,
+          int? trialId,
+          Value<String?> trialDirector = const Value.absent(),
+          Value<String?> cooperator = const Value.absent(),
+          Value<String?> sponsor = const Value.absent(),
+          Value<String?> applicator = const Value.absent(),
+          Value<String?> assessor = const Value.absent(),
+          DateTime? createdAt,
+          Value<String?> createdBy = const Value.absent()}) =>
+      TrialContact(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        trialDirector:
+            trialDirector.present ? trialDirector.value : this.trialDirector,
+        cooperator: cooperator.present ? cooperator.value : this.cooperator,
+        sponsor: sponsor.present ? sponsor.value : this.sponsor,
+        applicator: applicator.present ? applicator.value : this.applicator,
+        assessor: assessor.present ? assessor.value : this.assessor,
+        createdAt: createdAt ?? this.createdAt,
+        createdBy: createdBy.present ? createdBy.value : this.createdBy,
+      );
+  TrialContact copyWithCompanion(TrialContactsCompanion data) {
+    return TrialContact(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      trialDirector: data.trialDirector.present
+          ? data.trialDirector.value
+          : this.trialDirector,
+      cooperator:
+          data.cooperator.present ? data.cooperator.value : this.cooperator,
+      sponsor: data.sponsor.present ? data.sponsor.value : this.sponsor,
+      applicator:
+          data.applicator.present ? data.applicator.value : this.applicator,
+      assessor: data.assessor.present ? data.assessor.value : this.assessor,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialContact(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('trialDirector: $trialDirector, ')
+          ..write('cooperator: $cooperator, ')
+          ..write('sponsor: $sponsor, ')
+          ..write('applicator: $applicator, ')
+          ..write('assessor: $assessor, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, trialId, trialDirector, cooperator,
+      sponsor, applicator, assessor, createdAt, createdBy);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrialContact &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.trialDirector == this.trialDirector &&
+          other.cooperator == this.cooperator &&
+          other.sponsor == this.sponsor &&
+          other.applicator == this.applicator &&
+          other.assessor == this.assessor &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy);
+}
+
+class TrialContactsCompanion extends UpdateCompanion<TrialContact> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<String?> trialDirector;
+  final Value<String?> cooperator;
+  final Value<String?> sponsor;
+  final Value<String?> applicator;
+  final Value<String?> assessor;
+  final Value<DateTime> createdAt;
+  final Value<String?> createdBy;
+  const TrialContactsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.trialDirector = const Value.absent(),
+    this.cooperator = const Value.absent(),
+    this.sponsor = const Value.absent(),
+    this.applicator = const Value.absent(),
+    this.assessor = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+  });
+  TrialContactsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    this.trialDirector = const Value.absent(),
+    this.cooperator = const Value.absent(),
+    this.sponsor = const Value.absent(),
+    this.applicator = const Value.absent(),
+    this.assessor = const Value.absent(),
+    required DateTime createdAt,
+    this.createdBy = const Value.absent(),
+  })  : trialId = Value(trialId),
+        createdAt = Value(createdAt);
+  static Insertable<TrialContact> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<String>? trialDirector,
+    Expression<String>? cooperator,
+    Expression<String>? sponsor,
+    Expression<String>? applicator,
+    Expression<String>? assessor,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (trialDirector != null) 'trial_director': trialDirector,
+      if (cooperator != null) 'cooperator': cooperator,
+      if (sponsor != null) 'sponsor': sponsor,
+      if (applicator != null) 'applicator': applicator,
+      if (assessor != null) 'assessor': assessor,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+    });
+  }
+
+  TrialContactsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<String?>? trialDirector,
+      Value<String?>? cooperator,
+      Value<String?>? sponsor,
+      Value<String?>? applicator,
+      Value<String?>? assessor,
+      Value<DateTime>? createdAt,
+      Value<String?>? createdBy}) {
+    return TrialContactsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      trialDirector: trialDirector ?? this.trialDirector,
+      cooperator: cooperator ?? this.cooperator,
+      sponsor: sponsor ?? this.sponsor,
+      applicator: applicator ?? this.applicator,
+      assessor: assessor ?? this.assessor,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (trialDirector.present) {
+      map['trial_director'] = Variable<String>(trialDirector.value);
+    }
+    if (cooperator.present) {
+      map['cooperator'] = Variable<String>(cooperator.value);
+    }
+    if (sponsor.present) {
+      map['sponsor'] = Variable<String>(sponsor.value);
+    }
+    if (applicator.present) {
+      map['applicator'] = Variable<String>(applicator.value);
+    }
+    if (assessor.present) {
+      map['assessor'] = Variable<String>(assessor.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialContactsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('trialDirector: $trialDirector, ')
+          ..write('cooperator: $cooperator, ')
+          ..write('sponsor: $sponsor, ')
+          ..write('applicator: $applicator, ')
+          ..write('assessor: $assessor, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $YieldDetailsTable extends YieldDetails
+    with TableInfo<$YieldDetailsTable, YieldDetail> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $YieldDetailsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _plotIdMeta = const VerificationMeta('plotId');
+  @override
+  late final GeneratedColumn<int> plotId = GeneratedColumn<int>(
+      'plot_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES plots (id)'));
+  static const VerificationMeta _trialAssessmentIdMeta =
+      const VerificationMeta('trialAssessmentId');
+  @override
+  late final GeneratedColumn<int> trialAssessmentId = GeneratedColumn<int>(
+      'trial_assessment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trial_assessments (id)'));
+  static const VerificationMeta _harvestWeightMeta =
+      const VerificationMeta('harvestWeight');
+  @override
+  late final GeneratedColumn<double> harvestWeight = GeneratedColumn<double>(
+      'harvest_weight', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _harvestMoistureMeta =
+      const VerificationMeta('harvestMoisture');
+  @override
+  late final GeneratedColumn<double> harvestMoisture = GeneratedColumn<double>(
+      'harvest_moisture', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _harvestedAreaMeta =
+      const VerificationMeta('harvestedArea');
+  @override
+  late final GeneratedColumn<double> harvestedArea = GeneratedColumn<double>(
+      'harvested_area', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _convertedYieldMeta =
+      const VerificationMeta('convertedYield');
+  @override
+  late final GeneratedColumn<double> convertedYield = GeneratedColumn<double>(
+      'converted_yield', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _standardMoistureUsedMeta =
+      const VerificationMeta('standardMoistureUsed');
+  @override
+  late final GeneratedColumn<double> standardMoistureUsed =
+      GeneratedColumn<double>('standard_moisture_used', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _createdByMeta =
+      const VerificationMeta('createdBy');
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+      'created_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        plotId,
+        trialAssessmentId,
+        harvestWeight,
+        harvestMoisture,
+        harvestedArea,
+        convertedYield,
+        standardMoistureUsed,
+        createdAt,
+        createdBy
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'yield_details';
+  @override
+  VerificationContext validateIntegrity(Insertable<YieldDetail> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('plot_id')) {
+      context.handle(_plotIdMeta,
+          plotId.isAcceptableOrUnknown(data['plot_id']!, _plotIdMeta));
+    }
+    if (data.containsKey('trial_assessment_id')) {
+      context.handle(
+          _trialAssessmentIdMeta,
+          trialAssessmentId.isAcceptableOrUnknown(
+              data['trial_assessment_id']!, _trialAssessmentIdMeta));
+    }
+    if (data.containsKey('harvest_weight')) {
+      context.handle(
+          _harvestWeightMeta,
+          harvestWeight.isAcceptableOrUnknown(
+              data['harvest_weight']!, _harvestWeightMeta));
+    }
+    if (data.containsKey('harvest_moisture')) {
+      context.handle(
+          _harvestMoistureMeta,
+          harvestMoisture.isAcceptableOrUnknown(
+              data['harvest_moisture']!, _harvestMoistureMeta));
+    }
+    if (data.containsKey('harvested_area')) {
+      context.handle(
+          _harvestedAreaMeta,
+          harvestedArea.isAcceptableOrUnknown(
+              data['harvested_area']!, _harvestedAreaMeta));
+    }
+    if (data.containsKey('converted_yield')) {
+      context.handle(
+          _convertedYieldMeta,
+          convertedYield.isAcceptableOrUnknown(
+              data['converted_yield']!, _convertedYieldMeta));
+    }
+    if (data.containsKey('standard_moisture_used')) {
+      context.handle(
+          _standardMoistureUsedMeta,
+          standardMoistureUsed.isAcceptableOrUnknown(
+              data['standard_moisture_used']!, _standardMoistureUsedMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(_createdByMeta,
+          createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  YieldDetail map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return YieldDetail(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      plotId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}plot_id']),
+      trialAssessmentId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}trial_assessment_id']),
+      harvestWeight: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}harvest_weight']),
+      harvestMoisture: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}harvest_moisture']),
+      harvestedArea: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}harvested_area']),
+      convertedYield: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}converted_yield']),
+      standardMoistureUsed: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}standard_moisture_used']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      createdBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_by']),
+    );
+  }
+
+  @override
+  $YieldDetailsTable createAlias(String alias) {
+    return $YieldDetailsTable(attachedDatabase, alias);
+  }
+}
+
+class YieldDetail extends DataClass implements Insertable<YieldDetail> {
+  final int id;
+  final int trialId;
+  final int? plotId;
+  final int? trialAssessmentId;
+  final double? harvestWeight;
+  final double? harvestMoisture;
+  final double? harvestedArea;
+  final double? convertedYield;
+  final double? standardMoistureUsed;
+  final DateTime createdAt;
+  final String? createdBy;
+  const YieldDetail(
+      {required this.id,
+      required this.trialId,
+      this.plotId,
+      this.trialAssessmentId,
+      this.harvestWeight,
+      this.harvestMoisture,
+      this.harvestedArea,
+      this.convertedYield,
+      this.standardMoistureUsed,
+      required this.createdAt,
+      this.createdBy});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    if (!nullToAbsent || plotId != null) {
+      map['plot_id'] = Variable<int>(plotId);
+    }
+    if (!nullToAbsent || trialAssessmentId != null) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId);
+    }
+    if (!nullToAbsent || harvestWeight != null) {
+      map['harvest_weight'] = Variable<double>(harvestWeight);
+    }
+    if (!nullToAbsent || harvestMoisture != null) {
+      map['harvest_moisture'] = Variable<double>(harvestMoisture);
+    }
+    if (!nullToAbsent || harvestedArea != null) {
+      map['harvested_area'] = Variable<double>(harvestedArea);
+    }
+    if (!nullToAbsent || convertedYield != null) {
+      map['converted_yield'] = Variable<double>(convertedYield);
+    }
+    if (!nullToAbsent || standardMoistureUsed != null) {
+      map['standard_moisture_used'] = Variable<double>(standardMoistureUsed);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    return map;
+  }
+
+  YieldDetailsCompanion toCompanion(bool nullToAbsent) {
+    return YieldDetailsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      plotId:
+          plotId == null && nullToAbsent ? const Value.absent() : Value(plotId),
+      trialAssessmentId: trialAssessmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trialAssessmentId),
+      harvestWeight: harvestWeight == null && nullToAbsent
+          ? const Value.absent()
+          : Value(harvestWeight),
+      harvestMoisture: harvestMoisture == null && nullToAbsent
+          ? const Value.absent()
+          : Value(harvestMoisture),
+      harvestedArea: harvestedArea == null && nullToAbsent
+          ? const Value.absent()
+          : Value(harvestedArea),
+      convertedYield: convertedYield == null && nullToAbsent
+          ? const Value.absent()
+          : Value(convertedYield),
+      standardMoistureUsed: standardMoistureUsed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(standardMoistureUsed),
+      createdAt: Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+    );
+  }
+
+  factory YieldDetail.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return YieldDetail(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      plotId: serializer.fromJson<int?>(json['plotId']),
+      trialAssessmentId: serializer.fromJson<int?>(json['trialAssessmentId']),
+      harvestWeight: serializer.fromJson<double?>(json['harvestWeight']),
+      harvestMoisture: serializer.fromJson<double?>(json['harvestMoisture']),
+      harvestedArea: serializer.fromJson<double?>(json['harvestedArea']),
+      convertedYield: serializer.fromJson<double?>(json['convertedYield']),
+      standardMoistureUsed:
+          serializer.fromJson<double?>(json['standardMoistureUsed']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'plotId': serializer.toJson<int?>(plotId),
+      'trialAssessmentId': serializer.toJson<int?>(trialAssessmentId),
+      'harvestWeight': serializer.toJson<double?>(harvestWeight),
+      'harvestMoisture': serializer.toJson<double?>(harvestMoisture),
+      'harvestedArea': serializer.toJson<double?>(harvestedArea),
+      'convertedYield': serializer.toJson<double?>(convertedYield),
+      'standardMoistureUsed': serializer.toJson<double?>(standardMoistureUsed),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+    };
+  }
+
+  YieldDetail copyWith(
+          {int? id,
+          int? trialId,
+          Value<int?> plotId = const Value.absent(),
+          Value<int?> trialAssessmentId = const Value.absent(),
+          Value<double?> harvestWeight = const Value.absent(),
+          Value<double?> harvestMoisture = const Value.absent(),
+          Value<double?> harvestedArea = const Value.absent(),
+          Value<double?> convertedYield = const Value.absent(),
+          Value<double?> standardMoistureUsed = const Value.absent(),
+          DateTime? createdAt,
+          Value<String?> createdBy = const Value.absent()}) =>
+      YieldDetail(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        plotId: plotId.present ? plotId.value : this.plotId,
+        trialAssessmentId: trialAssessmentId.present
+            ? trialAssessmentId.value
+            : this.trialAssessmentId,
+        harvestWeight:
+            harvestWeight.present ? harvestWeight.value : this.harvestWeight,
+        harvestMoisture: harvestMoisture.present
+            ? harvestMoisture.value
+            : this.harvestMoisture,
+        harvestedArea:
+            harvestedArea.present ? harvestedArea.value : this.harvestedArea,
+        convertedYield:
+            convertedYield.present ? convertedYield.value : this.convertedYield,
+        standardMoistureUsed: standardMoistureUsed.present
+            ? standardMoistureUsed.value
+            : this.standardMoistureUsed,
+        createdAt: createdAt ?? this.createdAt,
+        createdBy: createdBy.present ? createdBy.value : this.createdBy,
+      );
+  YieldDetail copyWithCompanion(YieldDetailsCompanion data) {
+    return YieldDetail(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      plotId: data.plotId.present ? data.plotId.value : this.plotId,
+      trialAssessmentId: data.trialAssessmentId.present
+          ? data.trialAssessmentId.value
+          : this.trialAssessmentId,
+      harvestWeight: data.harvestWeight.present
+          ? data.harvestWeight.value
+          : this.harvestWeight,
+      harvestMoisture: data.harvestMoisture.present
+          ? data.harvestMoisture.value
+          : this.harvestMoisture,
+      harvestedArea: data.harvestedArea.present
+          ? data.harvestedArea.value
+          : this.harvestedArea,
+      convertedYield: data.convertedYield.present
+          ? data.convertedYield.value
+          : this.convertedYield,
+      standardMoistureUsed: data.standardMoistureUsed.present
+          ? data.standardMoistureUsed.value
+          : this.standardMoistureUsed,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('YieldDetail(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('plotId: $plotId, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('harvestWeight: $harvestWeight, ')
+          ..write('harvestMoisture: $harvestMoisture, ')
+          ..write('harvestedArea: $harvestedArea, ')
+          ..write('convertedYield: $convertedYield, ')
+          ..write('standardMoistureUsed: $standardMoistureUsed, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      plotId,
+      trialAssessmentId,
+      harvestWeight,
+      harvestMoisture,
+      harvestedArea,
+      convertedYield,
+      standardMoistureUsed,
+      createdAt,
+      createdBy);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is YieldDetail &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.plotId == this.plotId &&
+          other.trialAssessmentId == this.trialAssessmentId &&
+          other.harvestWeight == this.harvestWeight &&
+          other.harvestMoisture == this.harvestMoisture &&
+          other.harvestedArea == this.harvestedArea &&
+          other.convertedYield == this.convertedYield &&
+          other.standardMoistureUsed == this.standardMoistureUsed &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy);
+}
+
+class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int?> plotId;
+  final Value<int?> trialAssessmentId;
+  final Value<double?> harvestWeight;
+  final Value<double?> harvestMoisture;
+  final Value<double?> harvestedArea;
+  final Value<double?> convertedYield;
+  final Value<double?> standardMoistureUsed;
+  final Value<DateTime> createdAt;
+  final Value<String?> createdBy;
+  const YieldDetailsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.plotId = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
+    this.harvestWeight = const Value.absent(),
+    this.harvestMoisture = const Value.absent(),
+    this.harvestedArea = const Value.absent(),
+    this.convertedYield = const Value.absent(),
+    this.standardMoistureUsed = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+  });
+  YieldDetailsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    this.plotId = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
+    this.harvestWeight = const Value.absent(),
+    this.harvestMoisture = const Value.absent(),
+    this.harvestedArea = const Value.absent(),
+    this.convertedYield = const Value.absent(),
+    this.standardMoistureUsed = const Value.absent(),
+    required DateTime createdAt,
+    this.createdBy = const Value.absent(),
+  })  : trialId = Value(trialId),
+        createdAt = Value(createdAt);
+  static Insertable<YieldDetail> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? plotId,
+    Expression<int>? trialAssessmentId,
+    Expression<double>? harvestWeight,
+    Expression<double>? harvestMoisture,
+    Expression<double>? harvestedArea,
+    Expression<double>? convertedYield,
+    Expression<double>? standardMoistureUsed,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (plotId != null) 'plot_id': plotId,
+      if (trialAssessmentId != null) 'trial_assessment_id': trialAssessmentId,
+      if (harvestWeight != null) 'harvest_weight': harvestWeight,
+      if (harvestMoisture != null) 'harvest_moisture': harvestMoisture,
+      if (harvestedArea != null) 'harvested_area': harvestedArea,
+      if (convertedYield != null) 'converted_yield': convertedYield,
+      if (standardMoistureUsed != null)
+        'standard_moisture_used': standardMoistureUsed,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+    });
+  }
+
+  YieldDetailsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int?>? plotId,
+      Value<int?>? trialAssessmentId,
+      Value<double?>? harvestWeight,
+      Value<double?>? harvestMoisture,
+      Value<double?>? harvestedArea,
+      Value<double?>? convertedYield,
+      Value<double?>? standardMoistureUsed,
+      Value<DateTime>? createdAt,
+      Value<String?>? createdBy}) {
+    return YieldDetailsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      plotId: plotId ?? this.plotId,
+      trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
+      harvestWeight: harvestWeight ?? this.harvestWeight,
+      harvestMoisture: harvestMoisture ?? this.harvestMoisture,
+      harvestedArea: harvestedArea ?? this.harvestedArea,
+      convertedYield: convertedYield ?? this.convertedYield,
+      standardMoistureUsed: standardMoistureUsed ?? this.standardMoistureUsed,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (plotId.present) {
+      map['plot_id'] = Variable<int>(plotId.value);
+    }
+    if (trialAssessmentId.present) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId.value);
+    }
+    if (harvestWeight.present) {
+      map['harvest_weight'] = Variable<double>(harvestWeight.value);
+    }
+    if (harvestMoisture.present) {
+      map['harvest_moisture'] = Variable<double>(harvestMoisture.value);
+    }
+    if (harvestedArea.present) {
+      map['harvested_area'] = Variable<double>(harvestedArea.value);
+    }
+    if (convertedYield.present) {
+      map['converted_yield'] = Variable<double>(convertedYield.value);
+    }
+    if (standardMoistureUsed.present) {
+      map['standard_moisture_used'] =
+          Variable<double>(standardMoistureUsed.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('YieldDetailsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('plotId: $plotId, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('harvestWeight: $harvestWeight, ')
+          ..write('harvestMoisture: $harvestMoisture, ')
+          ..write('harvestedArea: $harvestedArea, ')
+          ..write('convertedYield: $convertedYield, ')
+          ..write('standardMoistureUsed: $standardMoistureUsed, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -20117,6 +24436,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TrialApplicationEventsTable(this);
   late final $TrialApplicationProductsTable trialApplicationProducts =
       $TrialApplicationProductsTable(this);
+  late final $ImportSnapshotsTable importSnapshots =
+      $ImportSnapshotsTable(this);
+  late final $CompatibilityProfilesTable compatibilityProfiles =
+      $CompatibilityProfilesTable(this);
+  late final $CropDescriptionsTable cropDescriptions =
+      $CropDescriptionsTable(this);
+  late final $TrialContactsTable trialContacts = $TrialContactsTable(this);
+  late final $YieldDetailsTable yieldDetails = $YieldDetailsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -20149,7 +24476,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         importEvents,
         seedingEvents,
         trialApplicationEvents,
-        trialApplicationProducts
+        trialApplicationProducts,
+        importSnapshots,
+        compatibilityProfiles,
+        cropDescriptions,
+        trialContacts,
+        yieldDetails
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -20428,6 +24760,10 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<bool> isArmLinked,
+  Value<DateTime?> armImportedAt,
+  Value<String?> armSourceFile,
+  Value<String?> armVersion,
 });
 typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<int> id,
@@ -20470,6 +24806,10 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<bool> isArmLinked,
+  Value<DateTime?> armImportedAt,
+  Value<String?> armSourceFile,
+  Value<String?> armVersion,
 });
 
 class $$TrialsTableTableManager extends RootTableManager<
@@ -20529,6 +24869,10 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<bool> isArmLinked = const Value.absent(),
+            Value<DateTime?> armImportedAt = const Value.absent(),
+            Value<String?> armSourceFile = const Value.absent(),
+            Value<String?> armVersion = const Value.absent(),
           }) =>
               TrialsCompanion(
             id: id,
@@ -20571,6 +24915,10 @@ class $$TrialsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            isArmLinked: isArmLinked,
+            armImportedAt: armImportedAt,
+            armSourceFile: armSourceFile,
+            armVersion: armVersion,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -20613,6 +24961,10 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<bool> isArmLinked = const Value.absent(),
+            Value<DateTime?> armImportedAt = const Value.absent(),
+            Value<String?> armSourceFile = const Value.absent(),
+            Value<String?> armVersion = const Value.absent(),
           }) =>
               TrialsCompanion.insert(
             id: id,
@@ -20655,6 +25007,10 @@ class $$TrialsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            isArmLinked: isArmLinked,
+            armImportedAt: armImportedAt,
+            armSourceFile: armSourceFile,
+            armVersion: armVersion,
           ),
         ));
 }
@@ -20859,6 +25215,26 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<String> get deletedBy => $state.composableBuilder(
       column: $state.table.deletedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isArmLinked => $state.composableBuilder(
+      column: $state.table.isArmLinked,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get armImportedAt => $state.composableBuilder(
+      column: $state.table.armImportedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armSourceFile => $state.composableBuilder(
+      column: $state.table.armSourceFile,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armVersion => $state.composableBuilder(
+      column: $state.table.armVersion,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -21159,6 +25535,78 @@ class $$TrialsTableFilterComposer
                     parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter importSnapshotsRefs(
+      ComposableFilter Function($$ImportSnapshotsTableFilterComposer f) f) {
+    final $$ImportSnapshotsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.importSnapshots,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ImportSnapshotsTableFilterComposer(ComposerState($state.db,
+                    $state.db.importSnapshots, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter compatibilityProfilesRefs(
+      ComposableFilter Function($$CompatibilityProfilesTableFilterComposer f)
+          f) {
+    final $$CompatibilityProfilesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.compatibilityProfiles,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$CompatibilityProfilesTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.compatibilityProfiles,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter cropDescriptionsRefs(
+      ComposableFilter Function($$CropDescriptionsTableFilterComposer f) f) {
+    final $$CropDescriptionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.cropDescriptions,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$CropDescriptionsTableFilterComposer(ComposerState($state.db,
+                    $state.db.cropDescriptions, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter trialContactsRefs(
+      ComposableFilter Function($$TrialContactsTableFilterComposer f) f) {
+    final $$TrialContactsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.trialContacts,
+        getReferencedColumn: (t) => t.trialId,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialContactsTableFilterComposer(ComposerState($state.db,
+                $state.db.trialContacts, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter yieldDetailsRefs(
+      ComposableFilter Function($$YieldDetailsTableFilterComposer f) f) {
+    final $$YieldDetailsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.yieldDetails,
+        getReferencedColumn: (t) => t.trialId,
+        builder: (joinBuilder, parentComposers) =>
+            $$YieldDetailsTableFilterComposer(ComposerState($state.db,
+                $state.db.yieldDetails, joinBuilder, parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialsTableOrderingComposer
@@ -21361,6 +25809,26 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<String> get deletedBy => $state.composableBuilder(
       column: $state.table.deletedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isArmLinked => $state.composableBuilder(
+      column: $state.table.isArmLinked,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get armImportedAt => $state.composableBuilder(
+      column: $state.table.armImportedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armSourceFile => $state.composableBuilder(
+      column: $state.table.armSourceFile,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armVersion => $state.composableBuilder(
+      column: $state.table.armVersion,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
@@ -22609,6 +27077,11 @@ typedef $$TrialAssessmentsTableCreateCompanionBuilder
   Value<int?> legacyAssessmentId,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
+  Value<String?> pestCode,
+  Value<String?> pestName,
+  Value<String?> eppoCodeLocal,
+  Value<String?> bbchScale,
+  Value<String?> cropStageAtAssessment,
 });
 typedef $$TrialAssessmentsTableUpdateCompanionBuilder
     = TrialAssessmentsCompanion Function({
@@ -22631,6 +27104,11 @@ typedef $$TrialAssessmentsTableUpdateCompanionBuilder
   Value<int?> legacyAssessmentId,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
+  Value<String?> pestCode,
+  Value<String?> pestName,
+  Value<String?> eppoCodeLocal,
+  Value<String?> bbchScale,
+  Value<String?> cropStageAtAssessment,
 });
 
 class $$TrialAssessmentsTableTableManager extends RootTableManager<
@@ -22670,6 +27148,11 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<int?> legacyAssessmentId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
+            Value<String?> pestCode = const Value.absent(),
+            Value<String?> pestName = const Value.absent(),
+            Value<String?> eppoCodeLocal = const Value.absent(),
+            Value<String?> bbchScale = const Value.absent(),
+            Value<String?> cropStageAtAssessment = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion(
             id: id,
@@ -22691,6 +27174,11 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             legacyAssessmentId: legacyAssessmentId,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            pestCode: pestCode,
+            pestName: pestName,
+            eppoCodeLocal: eppoCodeLocal,
+            bbchScale: bbchScale,
+            cropStageAtAssessment: cropStageAtAssessment,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -22712,6 +27200,11 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<int?> legacyAssessmentId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
+            Value<String?> pestCode = const Value.absent(),
+            Value<String?> pestName = const Value.absent(),
+            Value<String?> eppoCodeLocal = const Value.absent(),
+            Value<String?> bbchScale = const Value.absent(),
+            Value<String?> cropStageAtAssessment = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion.insert(
             id: id,
@@ -22733,6 +27226,11 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             legacyAssessmentId: legacyAssessmentId,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            pestCode: pestCode,
+            pestName: pestName,
+            eppoCodeLocal: eppoCodeLocal,
+            bbchScale: bbchScale,
+            cropStageAtAssessment: cropStageAtAssessment,
           ),
         ));
 }
@@ -22820,6 +27318,31 @@ class $$TrialAssessmentsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ColumnFilters<String> get pestCode => $state.composableBuilder(
+      column: $state.table.pestCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get pestName => $state.composableBuilder(
+      column: $state.table.pestName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get eppoCodeLocal => $state.composableBuilder(
+      column: $state.table.eppoCodeLocal,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get bbchScale => $state.composableBuilder(
+      column: $state.table.bbchScale,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cropStageAtAssessment => $state.composableBuilder(
+      column: $state.table.cropStageAtAssessment,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
   $$TrialsTableFilterComposer get trialId {
     final $$TrialsTableFilterComposer composer = $state.composerBuilder(
         composer: this,
@@ -22887,6 +27410,19 @@ class $$TrialAssessmentsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$RatingRecordsTableFilterComposer(ComposerState($state.db,
                 $state.db.ratingRecords, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter yieldDetailsRefs(
+      ComposableFilter Function($$YieldDetailsTableFilterComposer f) f) {
+    final $$YieldDetailsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.yieldDetails,
+        getReferencedColumn: (t) => t.trialAssessmentId,
+        builder: (joinBuilder, parentComposers) =>
+            $$YieldDetailsTableFilterComposer(ComposerState($state.db,
+                $state.db.yieldDetails, joinBuilder, parentComposers)));
     return f(composer);
   }
 }
@@ -22974,6 +27510,31 @@ class $$TrialAssessmentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<String> get pestCode => $state.composableBuilder(
+      column: $state.table.pestCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get pestName => $state.composableBuilder(
+      column: $state.table.pestName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get eppoCodeLocal => $state.composableBuilder(
+      column: $state.table.eppoCodeLocal,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get bbchScale => $state.composableBuilder(
+      column: $state.table.bbchScale,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cropStageAtAssessment => $state.composableBuilder(
+      column: $state.table.cropStageAtAssessment,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -23042,6 +27603,9 @@ typedef $$PlotsTableCreateCompanionBuilder = PlotsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<bool> excludeFromAnalysis,
+  Value<String?> exclusionReason,
+  Value<String?> damageType,
 });
 typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<int> id,
@@ -23070,6 +27634,9 @@ typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<bool> excludeFromAnalysis,
+  Value<String?> exclusionReason,
+  Value<String?> damageType,
 });
 
 class $$PlotsTableTableManager extends RootTableManager<
@@ -23115,6 +27682,9 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<bool> excludeFromAnalysis = const Value.absent(),
+            Value<String?> exclusionReason = const Value.absent(),
+            Value<String?> damageType = const Value.absent(),
           }) =>
               PlotsCompanion(
             id: id,
@@ -23143,6 +27713,9 @@ class $$PlotsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            excludeFromAnalysis: excludeFromAnalysis,
+            exclusionReason: exclusionReason,
+            damageType: damageType,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -23171,6 +27744,9 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<bool> excludeFromAnalysis = const Value.absent(),
+            Value<String?> exclusionReason = const Value.absent(),
+            Value<String?> damageType = const Value.absent(),
           }) =>
               PlotsCompanion.insert(
             id: id,
@@ -23199,6 +27775,9 @@ class $$PlotsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            excludeFromAnalysis: excludeFromAnalysis,
+            exclusionReason: exclusionReason,
+            damageType: damageType,
           ),
         ));
 }
@@ -23323,6 +27902,21 @@ class $$PlotsTableFilterComposer
 
   ColumnFilters<String> get deletedBy => $state.composableBuilder(
       column: $state.table.deletedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get excludeFromAnalysis => $state.composableBuilder(
+      column: $state.table.excludeFromAnalysis,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get exclusionReason => $state.composableBuilder(
+      column: $state.table.exclusionReason,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get damageType => $state.composableBuilder(
+      column: $state.table.damageType,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -23488,6 +28082,19 @@ class $$PlotsTableFilterComposer
                 $state.db.auditEvents, joinBuilder, parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter yieldDetailsRefs(
+      ComposableFilter Function($$YieldDetailsTableFilterComposer f) f) {
+    final $$YieldDetailsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.yieldDetails,
+        getReferencedColumn: (t) => t.plotId,
+        builder: (joinBuilder, parentComposers) =>
+            $$YieldDetailsTableFilterComposer(ComposerState($state.db,
+                $state.db.yieldDetails, joinBuilder, parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$PlotsTableOrderingComposer
@@ -23610,6 +28217,21 @@ class $$PlotsTableOrderingComposer
 
   ColumnOrderings<String> get deletedBy => $state.composableBuilder(
       column: $state.table.deletedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get excludeFromAnalysis => $state.composableBuilder(
+      column: $state.table.excludeFromAnalysis,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get exclusionReason => $state.composableBuilder(
+      column: $state.table.exclusionReason,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get damageType => $state.composableBuilder(
+      column: $state.table.damageType,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -29646,6 +34268,1554 @@ class $$TrialApplicationProductsTableOrderingComposer
   }
 }
 
+typedef $$ImportSnapshotsTableCreateCompanionBuilder = ImportSnapshotsCompanion
+    Function({
+  Value<int> id,
+  required int trialId,
+  required String sourceFile,
+  required String sourceRoute,
+  Value<String?> armVersion,
+  required String rawHeaders,
+  required String columnOrder,
+  required String rowTypePatterns,
+  required int plotCount,
+  required int treatmentCount,
+  required int assessmentCount,
+  required String identityColumns,
+  required String assessmentTokens,
+  required String treatmentTokens,
+  required String plotTokens,
+  required String unknownPatterns,
+  Value<bool> hasSubsamples,
+  Value<bool> hasMultiApplication,
+  Value<bool> hasSparseData,
+  Value<bool> hasRepeatedCodes,
+  required String rawFileChecksum,
+  required DateTime capturedAt,
+});
+typedef $$ImportSnapshotsTableUpdateCompanionBuilder = ImportSnapshotsCompanion
+    Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<String> sourceFile,
+  Value<String> sourceRoute,
+  Value<String?> armVersion,
+  Value<String> rawHeaders,
+  Value<String> columnOrder,
+  Value<String> rowTypePatterns,
+  Value<int> plotCount,
+  Value<int> treatmentCount,
+  Value<int> assessmentCount,
+  Value<String> identityColumns,
+  Value<String> assessmentTokens,
+  Value<String> treatmentTokens,
+  Value<String> plotTokens,
+  Value<String> unknownPatterns,
+  Value<bool> hasSubsamples,
+  Value<bool> hasMultiApplication,
+  Value<bool> hasSparseData,
+  Value<bool> hasRepeatedCodes,
+  Value<String> rawFileChecksum,
+  Value<DateTime> capturedAt,
+});
+
+class $$ImportSnapshotsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ImportSnapshotsTable,
+    ImportSnapshot,
+    $$ImportSnapshotsTableFilterComposer,
+    $$ImportSnapshotsTableOrderingComposer,
+    $$ImportSnapshotsTableCreateCompanionBuilder,
+    $$ImportSnapshotsTableUpdateCompanionBuilder> {
+  $$ImportSnapshotsTableTableManager(
+      _$AppDatabase db, $ImportSnapshotsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$ImportSnapshotsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$ImportSnapshotsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<String> sourceFile = const Value.absent(),
+            Value<String> sourceRoute = const Value.absent(),
+            Value<String?> armVersion = const Value.absent(),
+            Value<String> rawHeaders = const Value.absent(),
+            Value<String> columnOrder = const Value.absent(),
+            Value<String> rowTypePatterns = const Value.absent(),
+            Value<int> plotCount = const Value.absent(),
+            Value<int> treatmentCount = const Value.absent(),
+            Value<int> assessmentCount = const Value.absent(),
+            Value<String> identityColumns = const Value.absent(),
+            Value<String> assessmentTokens = const Value.absent(),
+            Value<String> treatmentTokens = const Value.absent(),
+            Value<String> plotTokens = const Value.absent(),
+            Value<String> unknownPatterns = const Value.absent(),
+            Value<bool> hasSubsamples = const Value.absent(),
+            Value<bool> hasMultiApplication = const Value.absent(),
+            Value<bool> hasSparseData = const Value.absent(),
+            Value<bool> hasRepeatedCodes = const Value.absent(),
+            Value<String> rawFileChecksum = const Value.absent(),
+            Value<DateTime> capturedAt = const Value.absent(),
+          }) =>
+              ImportSnapshotsCompanion(
+            id: id,
+            trialId: trialId,
+            sourceFile: sourceFile,
+            sourceRoute: sourceRoute,
+            armVersion: armVersion,
+            rawHeaders: rawHeaders,
+            columnOrder: columnOrder,
+            rowTypePatterns: rowTypePatterns,
+            plotCount: plotCount,
+            treatmentCount: treatmentCount,
+            assessmentCount: assessmentCount,
+            identityColumns: identityColumns,
+            assessmentTokens: assessmentTokens,
+            treatmentTokens: treatmentTokens,
+            plotTokens: plotTokens,
+            unknownPatterns: unknownPatterns,
+            hasSubsamples: hasSubsamples,
+            hasMultiApplication: hasMultiApplication,
+            hasSparseData: hasSparseData,
+            hasRepeatedCodes: hasRepeatedCodes,
+            rawFileChecksum: rawFileChecksum,
+            capturedAt: capturedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required String sourceFile,
+            required String sourceRoute,
+            Value<String?> armVersion = const Value.absent(),
+            required String rawHeaders,
+            required String columnOrder,
+            required String rowTypePatterns,
+            required int plotCount,
+            required int treatmentCount,
+            required int assessmentCount,
+            required String identityColumns,
+            required String assessmentTokens,
+            required String treatmentTokens,
+            required String plotTokens,
+            required String unknownPatterns,
+            Value<bool> hasSubsamples = const Value.absent(),
+            Value<bool> hasMultiApplication = const Value.absent(),
+            Value<bool> hasSparseData = const Value.absent(),
+            Value<bool> hasRepeatedCodes = const Value.absent(),
+            required String rawFileChecksum,
+            required DateTime capturedAt,
+          }) =>
+              ImportSnapshotsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            sourceFile: sourceFile,
+            sourceRoute: sourceRoute,
+            armVersion: armVersion,
+            rawHeaders: rawHeaders,
+            columnOrder: columnOrder,
+            rowTypePatterns: rowTypePatterns,
+            plotCount: plotCount,
+            treatmentCount: treatmentCount,
+            assessmentCount: assessmentCount,
+            identityColumns: identityColumns,
+            assessmentTokens: assessmentTokens,
+            treatmentTokens: treatmentTokens,
+            plotTokens: plotTokens,
+            unknownPatterns: unknownPatterns,
+            hasSubsamples: hasSubsamples,
+            hasMultiApplication: hasMultiApplication,
+            hasSparseData: hasSparseData,
+            hasRepeatedCodes: hasRepeatedCodes,
+            rawFileChecksum: rawFileChecksum,
+            capturedAt: capturedAt,
+          ),
+        ));
+}
+
+class $$ImportSnapshotsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ImportSnapshotsTable> {
+  $$ImportSnapshotsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sourceFile => $state.composableBuilder(
+      column: $state.table.sourceFile,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sourceRoute => $state.composableBuilder(
+      column: $state.table.sourceRoute,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armVersion => $state.composableBuilder(
+      column: $state.table.armVersion,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get rawHeaders => $state.composableBuilder(
+      column: $state.table.rawHeaders,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get columnOrder => $state.composableBuilder(
+      column: $state.table.columnOrder,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get rowTypePatterns => $state.composableBuilder(
+      column: $state.table.rowTypePatterns,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get plotCount => $state.composableBuilder(
+      column: $state.table.plotCount,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get treatmentCount => $state.composableBuilder(
+      column: $state.table.treatmentCount,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get assessmentCount => $state.composableBuilder(
+      column: $state.table.assessmentCount,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get identityColumns => $state.composableBuilder(
+      column: $state.table.identityColumns,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get assessmentTokens => $state.composableBuilder(
+      column: $state.table.assessmentTokens,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get treatmentTokens => $state.composableBuilder(
+      column: $state.table.treatmentTokens,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plotTokens => $state.composableBuilder(
+      column: $state.table.plotTokens,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get unknownPatterns => $state.composableBuilder(
+      column: $state.table.unknownPatterns,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get hasSubsamples => $state.composableBuilder(
+      column: $state.table.hasSubsamples,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get hasMultiApplication => $state.composableBuilder(
+      column: $state.table.hasMultiApplication,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get hasSparseData => $state.composableBuilder(
+      column: $state.table.hasSparseData,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get hasRepeatedCodes => $state.composableBuilder(
+      column: $state.table.hasRepeatedCodes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get rawFileChecksum => $state.composableBuilder(
+      column: $state.table.rawFileChecksum,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get capturedAt => $state.composableBuilder(
+      column: $state.table.capturedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  ComposableFilter compatibilityProfilesRefs(
+      ComposableFilter Function($$CompatibilityProfilesTableFilterComposer f)
+          f) {
+    final $$CompatibilityProfilesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.compatibilityProfiles,
+            getReferencedColumn: (t) => t.snapshotId,
+            builder: (joinBuilder, parentComposers) =>
+                $$CompatibilityProfilesTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.compatibilityProfiles,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$ImportSnapshotsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ImportSnapshotsTable> {
+  $$ImportSnapshotsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get sourceFile => $state.composableBuilder(
+      column: $state.table.sourceFile,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get sourceRoute => $state.composableBuilder(
+      column: $state.table.sourceRoute,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armVersion => $state.composableBuilder(
+      column: $state.table.armVersion,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get rawHeaders => $state.composableBuilder(
+      column: $state.table.rawHeaders,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get columnOrder => $state.composableBuilder(
+      column: $state.table.columnOrder,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get rowTypePatterns => $state.composableBuilder(
+      column: $state.table.rowTypePatterns,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get plotCount => $state.composableBuilder(
+      column: $state.table.plotCount,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get treatmentCount => $state.composableBuilder(
+      column: $state.table.treatmentCount,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get assessmentCount => $state.composableBuilder(
+      column: $state.table.assessmentCount,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get identityColumns => $state.composableBuilder(
+      column: $state.table.identityColumns,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get assessmentTokens => $state.composableBuilder(
+      column: $state.table.assessmentTokens,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get treatmentTokens => $state.composableBuilder(
+      column: $state.table.treatmentTokens,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plotTokens => $state.composableBuilder(
+      column: $state.table.plotTokens,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get unknownPatterns => $state.composableBuilder(
+      column: $state.table.unknownPatterns,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get hasSubsamples => $state.composableBuilder(
+      column: $state.table.hasSubsamples,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get hasMultiApplication => $state.composableBuilder(
+      column: $state.table.hasMultiApplication,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get hasSparseData => $state.composableBuilder(
+      column: $state.table.hasSparseData,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get hasRepeatedCodes => $state.composableBuilder(
+      column: $state.table.hasRepeatedCodes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get rawFileChecksum => $state.composableBuilder(
+      column: $state.table.rawFileChecksum,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get capturedAt => $state.composableBuilder(
+      column: $state.table.capturedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$CompatibilityProfilesTableCreateCompanionBuilder
+    = CompatibilityProfilesCompanion Function({
+  Value<int> id,
+  required int trialId,
+  required int snapshotId,
+  required String exportRoute,
+  required String columnMap,
+  required String plotMap,
+  required String treatmentMap,
+  required int dataStartRow,
+  required int headerEndRow,
+  required String identityRowMarkers,
+  required String columnOrderOnExport,
+  required String identityFieldOrder,
+  required String knownUnsupported,
+  required String exportConfidence,
+  Value<String?> exportBlockReason,
+  Value<bool> roundTripValidated,
+  Value<DateTime?> roundTripValidatedAt,
+  required DateTime createdAt,
+  Value<DateTime?> lastValidatedAt,
+});
+typedef $$CompatibilityProfilesTableUpdateCompanionBuilder
+    = CompatibilityProfilesCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int> snapshotId,
+  Value<String> exportRoute,
+  Value<String> columnMap,
+  Value<String> plotMap,
+  Value<String> treatmentMap,
+  Value<int> dataStartRow,
+  Value<int> headerEndRow,
+  Value<String> identityRowMarkers,
+  Value<String> columnOrderOnExport,
+  Value<String> identityFieldOrder,
+  Value<String> knownUnsupported,
+  Value<String> exportConfidence,
+  Value<String?> exportBlockReason,
+  Value<bool> roundTripValidated,
+  Value<DateTime?> roundTripValidatedAt,
+  Value<DateTime> createdAt,
+  Value<DateTime?> lastValidatedAt,
+});
+
+class $$CompatibilityProfilesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CompatibilityProfilesTable,
+    CompatibilityProfile,
+    $$CompatibilityProfilesTableFilterComposer,
+    $$CompatibilityProfilesTableOrderingComposer,
+    $$CompatibilityProfilesTableCreateCompanionBuilder,
+    $$CompatibilityProfilesTableUpdateCompanionBuilder> {
+  $$CompatibilityProfilesTableTableManager(
+      _$AppDatabase db, $CompatibilityProfilesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$CompatibilityProfilesTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$CompatibilityProfilesTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int> snapshotId = const Value.absent(),
+            Value<String> exportRoute = const Value.absent(),
+            Value<String> columnMap = const Value.absent(),
+            Value<String> plotMap = const Value.absent(),
+            Value<String> treatmentMap = const Value.absent(),
+            Value<int> dataStartRow = const Value.absent(),
+            Value<int> headerEndRow = const Value.absent(),
+            Value<String> identityRowMarkers = const Value.absent(),
+            Value<String> columnOrderOnExport = const Value.absent(),
+            Value<String> identityFieldOrder = const Value.absent(),
+            Value<String> knownUnsupported = const Value.absent(),
+            Value<String> exportConfidence = const Value.absent(),
+            Value<String?> exportBlockReason = const Value.absent(),
+            Value<bool> roundTripValidated = const Value.absent(),
+            Value<DateTime?> roundTripValidatedAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime?> lastValidatedAt = const Value.absent(),
+          }) =>
+              CompatibilityProfilesCompanion(
+            id: id,
+            trialId: trialId,
+            snapshotId: snapshotId,
+            exportRoute: exportRoute,
+            columnMap: columnMap,
+            plotMap: plotMap,
+            treatmentMap: treatmentMap,
+            dataStartRow: dataStartRow,
+            headerEndRow: headerEndRow,
+            identityRowMarkers: identityRowMarkers,
+            columnOrderOnExport: columnOrderOnExport,
+            identityFieldOrder: identityFieldOrder,
+            knownUnsupported: knownUnsupported,
+            exportConfidence: exportConfidence,
+            exportBlockReason: exportBlockReason,
+            roundTripValidated: roundTripValidated,
+            roundTripValidatedAt: roundTripValidatedAt,
+            createdAt: createdAt,
+            lastValidatedAt: lastValidatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required int snapshotId,
+            required String exportRoute,
+            required String columnMap,
+            required String plotMap,
+            required String treatmentMap,
+            required int dataStartRow,
+            required int headerEndRow,
+            required String identityRowMarkers,
+            required String columnOrderOnExport,
+            required String identityFieldOrder,
+            required String knownUnsupported,
+            required String exportConfidence,
+            Value<String?> exportBlockReason = const Value.absent(),
+            Value<bool> roundTripValidated = const Value.absent(),
+            Value<DateTime?> roundTripValidatedAt = const Value.absent(),
+            required DateTime createdAt,
+            Value<DateTime?> lastValidatedAt = const Value.absent(),
+          }) =>
+              CompatibilityProfilesCompanion.insert(
+            id: id,
+            trialId: trialId,
+            snapshotId: snapshotId,
+            exportRoute: exportRoute,
+            columnMap: columnMap,
+            plotMap: plotMap,
+            treatmentMap: treatmentMap,
+            dataStartRow: dataStartRow,
+            headerEndRow: headerEndRow,
+            identityRowMarkers: identityRowMarkers,
+            columnOrderOnExport: columnOrderOnExport,
+            identityFieldOrder: identityFieldOrder,
+            knownUnsupported: knownUnsupported,
+            exportConfidence: exportConfidence,
+            exportBlockReason: exportBlockReason,
+            roundTripValidated: roundTripValidated,
+            roundTripValidatedAt: roundTripValidatedAt,
+            createdAt: createdAt,
+            lastValidatedAt: lastValidatedAt,
+          ),
+        ));
+}
+
+class $$CompatibilityProfilesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $CompatibilityProfilesTable> {
+  $$CompatibilityProfilesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get exportRoute => $state.composableBuilder(
+      column: $state.table.exportRoute,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get columnMap => $state.composableBuilder(
+      column: $state.table.columnMap,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plotMap => $state.composableBuilder(
+      column: $state.table.plotMap,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get treatmentMap => $state.composableBuilder(
+      column: $state.table.treatmentMap,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get dataStartRow => $state.composableBuilder(
+      column: $state.table.dataStartRow,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get headerEndRow => $state.composableBuilder(
+      column: $state.table.headerEndRow,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get identityRowMarkers => $state.composableBuilder(
+      column: $state.table.identityRowMarkers,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get columnOrderOnExport => $state.composableBuilder(
+      column: $state.table.columnOrderOnExport,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get identityFieldOrder => $state.composableBuilder(
+      column: $state.table.identityFieldOrder,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get knownUnsupported => $state.composableBuilder(
+      column: $state.table.knownUnsupported,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get exportConfidence => $state.composableBuilder(
+      column: $state.table.exportConfidence,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get exportBlockReason => $state.composableBuilder(
+      column: $state.table.exportBlockReason,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get roundTripValidated => $state.composableBuilder(
+      column: $state.table.roundTripValidated,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get roundTripValidatedAt => $state.composableBuilder(
+      column: $state.table.roundTripValidatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get lastValidatedAt => $state.composableBuilder(
+      column: $state.table.lastValidatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$ImportSnapshotsTableFilterComposer get snapshotId {
+    final $$ImportSnapshotsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.snapshotId,
+            referencedTable: $state.db.importSnapshots,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$ImportSnapshotsTableFilterComposer(ComposerState($state.db,
+                    $state.db.importSnapshots, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$CompatibilityProfilesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $CompatibilityProfilesTable> {
+  $$CompatibilityProfilesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get exportRoute => $state.composableBuilder(
+      column: $state.table.exportRoute,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get columnMap => $state.composableBuilder(
+      column: $state.table.columnMap,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plotMap => $state.composableBuilder(
+      column: $state.table.plotMap,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get treatmentMap => $state.composableBuilder(
+      column: $state.table.treatmentMap,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get dataStartRow => $state.composableBuilder(
+      column: $state.table.dataStartRow,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get headerEndRow => $state.composableBuilder(
+      column: $state.table.headerEndRow,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get identityRowMarkers => $state.composableBuilder(
+      column: $state.table.identityRowMarkers,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get columnOrderOnExport => $state.composableBuilder(
+      column: $state.table.columnOrderOnExport,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get identityFieldOrder => $state.composableBuilder(
+      column: $state.table.identityFieldOrder,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get knownUnsupported => $state.composableBuilder(
+      column: $state.table.knownUnsupported,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get exportConfidence => $state.composableBuilder(
+      column: $state.table.exportConfidence,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get exportBlockReason => $state.composableBuilder(
+      column: $state.table.exportBlockReason,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get roundTripValidated => $state.composableBuilder(
+      column: $state.table.roundTripValidated,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get roundTripValidatedAt =>
+      $state.composableBuilder(
+          column: $state.table.roundTripValidatedAt,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get lastValidatedAt => $state.composableBuilder(
+      column: $state.table.lastValidatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$ImportSnapshotsTableOrderingComposer get snapshotId {
+    final $$ImportSnapshotsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.snapshotId,
+            referencedTable: $state.db.importSnapshots,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$ImportSnapshotsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.importSnapshots, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$CropDescriptionsTableCreateCompanionBuilder
+    = CropDescriptionsCompanion Function({
+  Value<int> id,
+  required int trialId,
+  Value<DateTime?> plantingDate,
+  Value<DateTime?> transplantingDate,
+  Value<DateTime?> emergenceDate,
+  Value<DateTime?> harvestDate,
+  Value<String?> varietyOrHybrid,
+  Value<String?> seedLot,
+  Value<String?> seedbedPreparation,
+  Value<String?> tillageType,
+  Value<double?> standardMoisture,
+  Value<double?> moistureAtHarvest,
+  required DateTime createdAt,
+  Value<String?> createdBy,
+});
+typedef $$CropDescriptionsTableUpdateCompanionBuilder
+    = CropDescriptionsCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<DateTime?> plantingDate,
+  Value<DateTime?> transplantingDate,
+  Value<DateTime?> emergenceDate,
+  Value<DateTime?> harvestDate,
+  Value<String?> varietyOrHybrid,
+  Value<String?> seedLot,
+  Value<String?> seedbedPreparation,
+  Value<String?> tillageType,
+  Value<double?> standardMoisture,
+  Value<double?> moistureAtHarvest,
+  Value<DateTime> createdAt,
+  Value<String?> createdBy,
+});
+
+class $$CropDescriptionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CropDescriptionsTable,
+    CropDescription,
+    $$CropDescriptionsTableFilterComposer,
+    $$CropDescriptionsTableOrderingComposer,
+    $$CropDescriptionsTableCreateCompanionBuilder,
+    $$CropDescriptionsTableUpdateCompanionBuilder> {
+  $$CropDescriptionsTableTableManager(
+      _$AppDatabase db, $CropDescriptionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$CropDescriptionsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$CropDescriptionsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<DateTime?> plantingDate = const Value.absent(),
+            Value<DateTime?> transplantingDate = const Value.absent(),
+            Value<DateTime?> emergenceDate = const Value.absent(),
+            Value<DateTime?> harvestDate = const Value.absent(),
+            Value<String?> varietyOrHybrid = const Value.absent(),
+            Value<String?> seedLot = const Value.absent(),
+            Value<String?> seedbedPreparation = const Value.absent(),
+            Value<String?> tillageType = const Value.absent(),
+            Value<double?> standardMoisture = const Value.absent(),
+            Value<double?> moistureAtHarvest = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> createdBy = const Value.absent(),
+          }) =>
+              CropDescriptionsCompanion(
+            id: id,
+            trialId: trialId,
+            plantingDate: plantingDate,
+            transplantingDate: transplantingDate,
+            emergenceDate: emergenceDate,
+            harvestDate: harvestDate,
+            varietyOrHybrid: varietyOrHybrid,
+            seedLot: seedLot,
+            seedbedPreparation: seedbedPreparation,
+            tillageType: tillageType,
+            standardMoisture: standardMoisture,
+            moistureAtHarvest: moistureAtHarvest,
+            createdAt: createdAt,
+            createdBy: createdBy,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            Value<DateTime?> plantingDate = const Value.absent(),
+            Value<DateTime?> transplantingDate = const Value.absent(),
+            Value<DateTime?> emergenceDate = const Value.absent(),
+            Value<DateTime?> harvestDate = const Value.absent(),
+            Value<String?> varietyOrHybrid = const Value.absent(),
+            Value<String?> seedLot = const Value.absent(),
+            Value<String?> seedbedPreparation = const Value.absent(),
+            Value<String?> tillageType = const Value.absent(),
+            Value<double?> standardMoisture = const Value.absent(),
+            Value<double?> moistureAtHarvest = const Value.absent(),
+            required DateTime createdAt,
+            Value<String?> createdBy = const Value.absent(),
+          }) =>
+              CropDescriptionsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            plantingDate: plantingDate,
+            transplantingDate: transplantingDate,
+            emergenceDate: emergenceDate,
+            harvestDate: harvestDate,
+            varietyOrHybrid: varietyOrHybrid,
+            seedLot: seedLot,
+            seedbedPreparation: seedbedPreparation,
+            tillageType: tillageType,
+            standardMoisture: standardMoisture,
+            moistureAtHarvest: moistureAtHarvest,
+            createdAt: createdAt,
+            createdBy: createdBy,
+          ),
+        ));
+}
+
+class $$CropDescriptionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $CropDescriptionsTable> {
+  $$CropDescriptionsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get plantingDate => $state.composableBuilder(
+      column: $state.table.plantingDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get transplantingDate => $state.composableBuilder(
+      column: $state.table.transplantingDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get emergenceDate => $state.composableBuilder(
+      column: $state.table.emergenceDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get harvestDate => $state.composableBuilder(
+      column: $state.table.harvestDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get varietyOrHybrid => $state.composableBuilder(
+      column: $state.table.varietyOrHybrid,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get seedLot => $state.composableBuilder(
+      column: $state.table.seedLot,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get seedbedPreparation => $state.composableBuilder(
+      column: $state.table.seedbedPreparation,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get tillageType => $state.composableBuilder(
+      column: $state.table.tillageType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get standardMoisture => $state.composableBuilder(
+      column: $state.table.standardMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get moistureAtHarvest => $state.composableBuilder(
+      column: $state.table.moistureAtHarvest,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get createdBy => $state.composableBuilder(
+      column: $state.table.createdBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$CropDescriptionsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $CropDescriptionsTable> {
+  $$CropDescriptionsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get plantingDate => $state.composableBuilder(
+      column: $state.table.plantingDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get transplantingDate => $state.composableBuilder(
+      column: $state.table.transplantingDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get emergenceDate => $state.composableBuilder(
+      column: $state.table.emergenceDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get harvestDate => $state.composableBuilder(
+      column: $state.table.harvestDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get varietyOrHybrid => $state.composableBuilder(
+      column: $state.table.varietyOrHybrid,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get seedLot => $state.composableBuilder(
+      column: $state.table.seedLot,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get seedbedPreparation => $state.composableBuilder(
+      column: $state.table.seedbedPreparation,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get tillageType => $state.composableBuilder(
+      column: $state.table.tillageType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get standardMoisture => $state.composableBuilder(
+      column: $state.table.standardMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get moistureAtHarvest => $state.composableBuilder(
+      column: $state.table.moistureAtHarvest,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get createdBy => $state.composableBuilder(
+      column: $state.table.createdBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$TrialContactsTableCreateCompanionBuilder = TrialContactsCompanion
+    Function({
+  Value<int> id,
+  required int trialId,
+  Value<String?> trialDirector,
+  Value<String?> cooperator,
+  Value<String?> sponsor,
+  Value<String?> applicator,
+  Value<String?> assessor,
+  required DateTime createdAt,
+  Value<String?> createdBy,
+});
+typedef $$TrialContactsTableUpdateCompanionBuilder = TrialContactsCompanion
+    Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<String?> trialDirector,
+  Value<String?> cooperator,
+  Value<String?> sponsor,
+  Value<String?> applicator,
+  Value<String?> assessor,
+  Value<DateTime> createdAt,
+  Value<String?> createdBy,
+});
+
+class $$TrialContactsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TrialContactsTable,
+    TrialContact,
+    $$TrialContactsTableFilterComposer,
+    $$TrialContactsTableOrderingComposer,
+    $$TrialContactsTableCreateCompanionBuilder,
+    $$TrialContactsTableUpdateCompanionBuilder> {
+  $$TrialContactsTableTableManager(_$AppDatabase db, $TrialContactsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$TrialContactsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$TrialContactsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<String?> trialDirector = const Value.absent(),
+            Value<String?> cooperator = const Value.absent(),
+            Value<String?> sponsor = const Value.absent(),
+            Value<String?> applicator = const Value.absent(),
+            Value<String?> assessor = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> createdBy = const Value.absent(),
+          }) =>
+              TrialContactsCompanion(
+            id: id,
+            trialId: trialId,
+            trialDirector: trialDirector,
+            cooperator: cooperator,
+            sponsor: sponsor,
+            applicator: applicator,
+            assessor: assessor,
+            createdAt: createdAt,
+            createdBy: createdBy,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            Value<String?> trialDirector = const Value.absent(),
+            Value<String?> cooperator = const Value.absent(),
+            Value<String?> sponsor = const Value.absent(),
+            Value<String?> applicator = const Value.absent(),
+            Value<String?> assessor = const Value.absent(),
+            required DateTime createdAt,
+            Value<String?> createdBy = const Value.absent(),
+          }) =>
+              TrialContactsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            trialDirector: trialDirector,
+            cooperator: cooperator,
+            sponsor: sponsor,
+            applicator: applicator,
+            assessor: assessor,
+            createdAt: createdAt,
+            createdBy: createdBy,
+          ),
+        ));
+}
+
+class $$TrialContactsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $TrialContactsTable> {
+  $$TrialContactsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get trialDirector => $state.composableBuilder(
+      column: $state.table.trialDirector,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cooperator => $state.composableBuilder(
+      column: $state.table.cooperator,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sponsor => $state.composableBuilder(
+      column: $state.table.sponsor,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get applicator => $state.composableBuilder(
+      column: $state.table.applicator,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get assessor => $state.composableBuilder(
+      column: $state.table.assessor,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get createdBy => $state.composableBuilder(
+      column: $state.table.createdBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$TrialContactsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $TrialContactsTable> {
+  $$TrialContactsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get trialDirector => $state.composableBuilder(
+      column: $state.table.trialDirector,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cooperator => $state.composableBuilder(
+      column: $state.table.cooperator,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get sponsor => $state.composableBuilder(
+      column: $state.table.sponsor,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get applicator => $state.composableBuilder(
+      column: $state.table.applicator,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get assessor => $state.composableBuilder(
+      column: $state.table.assessor,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get createdBy => $state.composableBuilder(
+      column: $state.table.createdBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$YieldDetailsTableCreateCompanionBuilder = YieldDetailsCompanion
+    Function({
+  Value<int> id,
+  required int trialId,
+  Value<int?> plotId,
+  Value<int?> trialAssessmentId,
+  Value<double?> harvestWeight,
+  Value<double?> harvestMoisture,
+  Value<double?> harvestedArea,
+  Value<double?> convertedYield,
+  Value<double?> standardMoistureUsed,
+  required DateTime createdAt,
+  Value<String?> createdBy,
+});
+typedef $$YieldDetailsTableUpdateCompanionBuilder = YieldDetailsCompanion
+    Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int?> plotId,
+  Value<int?> trialAssessmentId,
+  Value<double?> harvestWeight,
+  Value<double?> harvestMoisture,
+  Value<double?> harvestedArea,
+  Value<double?> convertedYield,
+  Value<double?> standardMoistureUsed,
+  Value<DateTime> createdAt,
+  Value<String?> createdBy,
+});
+
+class $$YieldDetailsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $YieldDetailsTable,
+    YieldDetail,
+    $$YieldDetailsTableFilterComposer,
+    $$YieldDetailsTableOrderingComposer,
+    $$YieldDetailsTableCreateCompanionBuilder,
+    $$YieldDetailsTableUpdateCompanionBuilder> {
+  $$YieldDetailsTableTableManager(_$AppDatabase db, $YieldDetailsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$YieldDetailsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$YieldDetailsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int?> plotId = const Value.absent(),
+            Value<int?> trialAssessmentId = const Value.absent(),
+            Value<double?> harvestWeight = const Value.absent(),
+            Value<double?> harvestMoisture = const Value.absent(),
+            Value<double?> harvestedArea = const Value.absent(),
+            Value<double?> convertedYield = const Value.absent(),
+            Value<double?> standardMoistureUsed = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> createdBy = const Value.absent(),
+          }) =>
+              YieldDetailsCompanion(
+            id: id,
+            trialId: trialId,
+            plotId: plotId,
+            trialAssessmentId: trialAssessmentId,
+            harvestWeight: harvestWeight,
+            harvestMoisture: harvestMoisture,
+            harvestedArea: harvestedArea,
+            convertedYield: convertedYield,
+            standardMoistureUsed: standardMoistureUsed,
+            createdAt: createdAt,
+            createdBy: createdBy,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            Value<int?> plotId = const Value.absent(),
+            Value<int?> trialAssessmentId = const Value.absent(),
+            Value<double?> harvestWeight = const Value.absent(),
+            Value<double?> harvestMoisture = const Value.absent(),
+            Value<double?> harvestedArea = const Value.absent(),
+            Value<double?> convertedYield = const Value.absent(),
+            Value<double?> standardMoistureUsed = const Value.absent(),
+            required DateTime createdAt,
+            Value<String?> createdBy = const Value.absent(),
+          }) =>
+              YieldDetailsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            plotId: plotId,
+            trialAssessmentId: trialAssessmentId,
+            harvestWeight: harvestWeight,
+            harvestMoisture: harvestMoisture,
+            harvestedArea: harvestedArea,
+            convertedYield: convertedYield,
+            standardMoistureUsed: standardMoistureUsed,
+            createdAt: createdAt,
+            createdBy: createdBy,
+          ),
+        ));
+}
+
+class $$YieldDetailsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $YieldDetailsTable> {
+  $$YieldDetailsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get harvestWeight => $state.composableBuilder(
+      column: $state.table.harvestWeight,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get harvestMoisture => $state.composableBuilder(
+      column: $state.table.harvestMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get harvestedArea => $state.composableBuilder(
+      column: $state.table.harvestedArea,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get convertedYield => $state.composableBuilder(
+      column: $state.table.convertedYield,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get standardMoistureUsed => $state.composableBuilder(
+      column: $state.table.standardMoistureUsed,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get createdBy => $state.composableBuilder(
+      column: $state.table.createdBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableFilterComposer get plotId {
+    final $$PlotsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotId,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableFilterComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$YieldDetailsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $YieldDetailsTable> {
+  $$YieldDetailsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get harvestWeight => $state.composableBuilder(
+      column: $state.table.harvestWeight,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get harvestMoisture => $state.composableBuilder(
+      column: $state.table.harvestMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get harvestedArea => $state.composableBuilder(
+      column: $state.table.harvestedArea,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get convertedYield => $state.composableBuilder(
+      column: $state.table.convertedYield,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get standardMoistureUsed => $state.composableBuilder(
+      column: $state.table.standardMoistureUsed,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get createdBy => $state.composableBuilder(
+      column: $state.table.createdBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableOrderingComposer get plotId {
+    final $$PlotsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotId,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableOrderingComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -29708,4 +35878,14 @@ class $AppDatabaseManager {
   $$TrialApplicationProductsTableTableManager get trialApplicationProducts =>
       $$TrialApplicationProductsTableTableManager(
           _db, _db.trialApplicationProducts);
+  $$ImportSnapshotsTableTableManager get importSnapshots =>
+      $$ImportSnapshotsTableTableManager(_db, _db.importSnapshots);
+  $$CompatibilityProfilesTableTableManager get compatibilityProfiles =>
+      $$CompatibilityProfilesTableTableManager(_db, _db.compatibilityProfiles);
+  $$CropDescriptionsTableTableManager get cropDescriptions =>
+      $$CropDescriptionsTableTableManager(_db, _db.cropDescriptions);
+  $$TrialContactsTableTableManager get trialContacts =>
+      $$TrialContactsTableTableManager(_db, _db.trialContacts);
+  $$YieldDetailsTableTableManager get yieldDetails =>
+      $$YieldDetailsTableTableManager(_db, _db.yieldDetails);
 }

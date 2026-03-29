@@ -36,6 +36,7 @@ Plot _p(
     isDeleted: false,
     deletedAt: null,
     deletedBy: null,
+    excludeFromAnalysis: false,
   );
 }
 

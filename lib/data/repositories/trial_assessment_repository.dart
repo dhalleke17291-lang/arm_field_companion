@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import '../../core/trial_state.dart';
 
 /// Trial-specific selection from the assessment library.
 /// Sessions only show assessments enabled here (or legacy Assessments).
@@ -62,6 +63,7 @@ class TrialAssessmentRepository {
     int sortOrder = 0,
     bool isActive = true,
   }) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.into(_db.trialAssessments).insert(
           TrialAssessmentsCompanion.insert(
             trialId: trialId,
@@ -92,6 +94,10 @@ class TrialAssessmentRepository {
     String? instructionOverride,
     bool? isActive,
   }) async {
+    final existing = await getById(id);
+    if (existing == null) return;
+    await assertCanEditProtocolForTrialId(_db, existing.trialId);
+
     final companion = TrialAssessmentsCompanion(
       id: Value(id),
       displayNameOverride: displayNameOverride == null
@@ -124,6 +130,10 @@ class TrialAssessmentRepository {
   }
 
   Future<void> setSortOrder(int id, int sortOrder) async {
+    final existing = await getById(id);
+    if (existing == null) return;
+    await assertCanEditProtocolForTrialId(_db, existing.trialId);
+
     await (_db.update(_db.trialAssessments)..where((t) => t.id.equals(id)))
         .write(
       TrialAssessmentsCompanion(
@@ -133,6 +143,10 @@ class TrialAssessmentRepository {
   }
 
   Future<void> delete(int id) async {
+    final existing = await getById(id);
+    if (existing == null) return;
+    await assertCanEditProtocolForTrialId(_db, existing.trialId);
+
     await (_db.delete(_db.trialAssessments)..where((t) => t.id.equals(id)))
         .go();
   }

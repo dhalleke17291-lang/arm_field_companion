@@ -13,9 +13,8 @@ class DeleteTreatmentUseCase {
     required Trial trial,
     required int treatmentId,
   }) async {
-    if (isProtocolLocked(trial.status)) {
-      return DeleteTreatmentResult.failure(
-          getProtocolLockMessage(trial.status));
+    if (!canEditProtocol(trial)) {
+      return DeleteTreatmentResult.failure(protocolEditBlockedMessage(trial));
     }
     try {
       await _repository.deleteTreatment(treatmentId);

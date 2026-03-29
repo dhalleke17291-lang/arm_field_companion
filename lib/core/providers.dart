@@ -78,7 +78,10 @@ final plotRepositoryProvider = Provider<PlotRepository>((ref) {
 
 final generateRepGuardPlotsUseCaseProvider =
     Provider<GenerateRepGuardPlotsUseCase>((ref) {
-  return GenerateRepGuardPlotsUseCase(ref.watch(plotRepositoryProvider));
+  return GenerateRepGuardPlotsUseCase(
+    ref.watch(plotRepositoryProvider),
+    ref.watch(trialRepositoryProvider),
+  );
 });
 
 final assignmentRepositoryProvider = Provider<AssignmentRepository>((ref) {

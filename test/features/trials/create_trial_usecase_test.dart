@@ -33,6 +33,7 @@ class MockTrialRepository implements TrialRepository {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isDeleted: false,
+      isArmLinked: false,
     );
     _trials.add(trial);
     return trial.id;

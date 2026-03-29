@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import '../../core/trial_state.dart';
 import 'rep_guard_plot_plan.dart';
 
 class PlotRepository {
@@ -64,7 +65,8 @@ class PlotRepository {
     String? soilSeries,
     String? plotNotes,
     bool isGuardRow = false,
-  }) {
+  }) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.into(_db.plots).insert(
           PlotsCompanion.insert(
             trialId: trialId,
@@ -110,6 +112,7 @@ class PlotRepository {
 
   /// Inserts missing rep flank guards; idempotent by plotId. Does not update existing plots.
   Future<int> insertRepGuardPlotsIfNeeded(int trialId) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
     final plots = await getPlotsForTrial(trialId);
     final plans = planRepGuardPlotInserts(plots);
     if (plans.isEmpty) return 0;
@@ -257,6 +260,10 @@ class PlotRepository {
   /// [deletedByUserId] optional; stored on audit event as [performedByUserId].
   Future<void> softDeletePlot(int plotPk,
       {String? deletedBy, int? deletedByUserId}) async {
+    final plotPre = await getPlotByPk(plotPk);
+    if (plotPre == null) return;
+    await assertCanEditProtocolForTrialId(_db, plotPre.trialId);
+
     final now = DateTime.now().toUtc();
     await _db.transaction(() async {
       final plot = await (_db.select(_db.plots)
@@ -335,6 +342,9 @@ class PlotRepository {
         return PlotRestoreResult.failure(
           'Restore the trial from Recovery before restoring this plot.',
         );
+      }
+      if (!canEditProtocol(trial)) {
+        return PlotRestoreResult.failure(protocolEditBlockedMessage(trial));
       }
 
       final conflictingActive = await (_db.select(_db.plots)

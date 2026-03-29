@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import '../plot_repository.dart';
 import '../../trials/trial_repository.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/protocol_edit_blocked_exception.dart';
+import '../../../core/trial_state.dart';
 
 /// Charter PART 16: Import status categories for transparency.
 enum ImportStatusCategory {
@@ -140,6 +142,14 @@ class ImportPlotsUseCase {
 
   /// Protocol Model Integration — run after user approval. Uses rows from review (canonical keys).
   Future<ImportPlotsResult> execute(ImportPlotsInput input) async {
+    final trial = await _trialRepository.getTrialById(input.trialId);
+    if (trial == null) {
+      return ImportPlotsResult.failure('Trial not found.');
+    }
+    if (!canEditProtocol(trial)) {
+      return ImportPlotsResult.failure(protocolEditBlockedMessage(trial));
+    }
+
     final warnings = <String>[];
     final validPlots = <PlotsCompanion>[];
     final seenPlotIds = <String>{};
@@ -201,13 +211,14 @@ class ImportPlotsUseCase {
 
     try {
       await _plotRepository.insertPlotsBulk(validPlots);
-      await _trialRepository.getTrialById(input.trialId);
 
       return ImportPlotsResult.success(
         rowsImported: validPlots.length,
         rowsSkipped: input.rows.length - validPlots.length,
         warnings: warnings,
       );
+    } on ProtocolEditBlockedException catch (e) {
+      return ImportPlotsResult.failure(e.message);
     } catch (e) {
       return ImportPlotsResult.failure('Import failed, rolled back: $e');
     }

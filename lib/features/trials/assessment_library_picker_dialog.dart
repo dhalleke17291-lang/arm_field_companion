@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_design_tokens.dart';
+import '../../core/protocol_edit_blocked_exception.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 
@@ -46,12 +47,23 @@ class _AssessmentLibraryPickerDialogState
   Future<void> _saveSelected() async {
     if (_selectedIds.isEmpty) return;
     final repo = ref.read(trialAssessmentRepositoryProvider);
-    for (final id in _selectedIds) {
-      await repo.addToTrial(
-        trialId: widget.trialId,
-        assessmentDefinitionId: id,
-        selectedManually: true,
+    try {
+      for (final id in _selectedIds) {
+        await repo.addToTrial(
+          trialId: widget.trialId,
+          assessmentDefinitionId: id,
+          selectedManually: true,
+        );
+      }
+    } on ProtocolEditBlockedException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
+      return;
     }
     if (mounted) Navigator.of(context).pop();
   }

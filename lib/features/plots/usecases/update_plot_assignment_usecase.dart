@@ -20,6 +20,9 @@ class UpdatePlotAssignmentUseCase {
     required int plotPk,
     required int? treatmentId,
   }) async {
+    if (!canEditProtocol(trial)) {
+      return UpdateAssignmentResult.failure(protocolEditBlockedMessage(trial));
+    }
     final sessions = await _sessionRepository.getSessionsForTrial(trial.id);
     if (isAssignmentsLocked(trial.status, sessions.isNotEmpty)) {
       return UpdateAssignmentResult.failure(
@@ -45,6 +48,9 @@ class UpdatePlotAssignmentUseCase {
     required Trial trial,
     required Map<int, int?> plotPkToTreatmentId,
   }) async {
+    if (!canEditProtocol(trial)) {
+      return UpdateAssignmentResult.failure(protocolEditBlockedMessage(trial));
+    }
     final sessions = await _sessionRepository.getSessionsForTrial(trial.id);
     if (isAssignmentsLocked(trial.status, sessions.isNotEmpty)) {
       return UpdateAssignmentResult.failure(

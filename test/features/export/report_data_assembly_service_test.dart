@@ -30,6 +30,7 @@ Trial _trial({
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isDeleted: false,
+      isArmLinked: false,
     );
 
 class MockPlotRepository implements PlotRepository {
@@ -603,6 +604,7 @@ void main() {
           treatmentId: 10,
           isGuardRow: false,
           isDeleted: false,
+          excludeFromAnalysis: false,
         ),
       ];
       mockTreatmentRepo.treatmentsForTrial = [
@@ -728,6 +730,7 @@ void main() {
           treatmentId: null,
           isGuardRow: false,
           isDeleted: false,
+          excludeFromAnalysis: false,
         ),
       ];
       mockTreatmentRepo.treatmentsForTrial = [

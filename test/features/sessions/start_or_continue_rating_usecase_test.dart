@@ -473,6 +473,7 @@ void main() {
         createdAt: DateTime(2026, 1, 1),
         updatedAt: DateTime(2026, 1, 1),
         isDeleted: false,
+        isArmLinked: false,
       );
 
       session = Session(
@@ -506,6 +507,7 @@ void main() {
           assignmentUpdatedAt: null,
           isGuardRow: false,
           isDeleted: false,
+          excludeFromAnalysis: false,
         ),
         Plot(
           id: 102,
@@ -523,6 +525,7 @@ void main() {
           assignmentUpdatedAt: null,
           isGuardRow: false,
           isDeleted: false,
+          excludeFromAnalysis: false,
         ),
         Plot(
           id: 103,
@@ -540,6 +543,7 @@ void main() {
           assignmentUpdatedAt: null,
           isGuardRow: false,
           isDeleted: false,
+          excludeFromAnalysis: false,
         ),
       ];
 

@@ -1,3 +1,7 @@
+import 'package:drift/drift.dart';
+
+import 'database/app_database.dart';
+import 'protocol_edit_blocked_exception.dart';
 import 'workspace/workspace_config.dart';
 
 /// Trial lifecycle states (Constitution §9).
@@ -164,6 +168,39 @@ String getProtocolLockExplanation(String? status) {
   if (status == null || !isProtocolLocked(status)) return '';
   return "When locked you cannot add or edit: treatments, plots, assessments, or plot assignments. "
       "You can still: run sessions, record ratings, add plot notes, and export.";
+}
+
+/// True when trial protocol structure (treatments, plots, assessments, assignments) may be edited.
+bool canEditProtocol(Trial trial) {
+  if (trial.isArmLinked) return false;
+  return !isProtocolLocked(trial.status);
+}
+
+String getArmProtocolLockMessage() {
+  return 'This is an ARM-linked trial. Structure cannot be edited.';
+}
+
+/// User-facing message when [canEditProtocol] is false (ARM-linked or lifecycle-locked).
+String protocolEditBlockedMessage(Trial trial) {
+  if (trial.isArmLinked) return getArmProtocolLockMessage();
+  return getProtocolLockMessage(trial.status);
+}
+
+Future<Trial?> loadTrialForProtocolCheck(AppDatabase db, int trialId) {
+  return (db.select(db.trials)
+        ..where((t) => t.id.equals(trialId) & t.isDeleted.equals(false)))
+      .getSingleOrNull();
+}
+
+/// Throws [ProtocolEditBlockedException] when structure edits are not allowed.
+Future<void> assertCanEditProtocolForTrialId(AppDatabase db, int trialId) async {
+  final trial = await loadTrialForProtocolCheck(db, trialId);
+  if (trial == null) {
+    throw StateError('Trial not found');
+  }
+  if (!canEditProtocol(trial)) {
+    throw ProtocolEditBlockedException(protocolEditBlockedMessage(trial));
+  }
 }
 
 /// Next status(es) allowed from current (for UI transitions).
