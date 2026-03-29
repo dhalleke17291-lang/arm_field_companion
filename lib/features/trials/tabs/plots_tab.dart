@@ -2883,18 +2883,20 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final locked = isProtocolLocked(trial.status);
+    final canEditStructure = canEditProtocol(trial);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         AppEmptyState(
           icon: Icons.grid_on,
           title: 'No Plots Yet',
-          subtitle: locked
-              ? getModeLockMessage(trial.status, trial.workspaceType)
-              : 'Import plots via CSV or add test plots below.',
+          subtitle: canEditStructure
+              ? 'Import plots via CSV or add test plots below.'
+              : (trial.isArmLinked
+                  ? getArmProtocolLockMessage()
+                  : getModeLockMessage(trial.status, trial.workspaceType)),
         ),
-        if (!locked) ...[
+        if (canEditStructure) ...[
           const SizedBox(height: 24),
           _AddTestPlotsButton(trial: trial),
         ],

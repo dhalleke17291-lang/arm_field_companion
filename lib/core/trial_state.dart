@@ -171,13 +171,27 @@ String getProtocolLockExplanation(String? status) {
 }
 
 /// True when trial protocol structure (treatments, plots, assessments, assignments) may be edited.
+/// Structure mutations must use [assertCanEditProtocolForTrialId] (or this predicate) at repository/use-case layer.
 bool canEditProtocol(Trial trial) {
-  if (trial.isArmLinked) return false;
+  if (trial.isArmLinked == true) return false;
   return !isProtocolLocked(trial.status);
 }
 
-String getArmProtocolLockMessage() {
-  return 'This is an ARM-linked trial. Structure cannot be edited.';
+/// Single user-facing message when protocol structure edits are blocked for ARM-linked trials.
+const String kArmProtocolStructureLockMessage =
+    'This is an ARM-linked trial. Structure cannot be edited.';
+
+String getArmProtocolLockMessage() => kArmProtocolStructureLockMessage;
+
+/// Plot table notes: allowed when protocol is lifecycle-locked (e.g. active) but blocked for ARM-linked trials.
+Future<void> assertPlotNotesEditableForTrialId(AppDatabase db, int trialId) async {
+  final trial = await loadTrialForProtocolCheck(db, trialId);
+  if (trial == null) {
+    throw StateError('Trial not found');
+  }
+  if (trial.isArmLinked == true) {
+    throw ProtocolEditBlockedException(getArmProtocolLockMessage());
+  }
 }
 
 /// User-facing message when [canEditProtocol] is false (ARM-linked or lifecycle-locked).

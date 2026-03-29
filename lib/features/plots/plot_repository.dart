@@ -92,11 +92,26 @@ class PlotRepository {
 
   /// Guard row flag (v1: no workflow effect).
   Future<void> updatePlotGuardRow(int plotPk, bool isGuardRow) async {
+    final plot = await getPlotByPk(plotPk);
+    if (plot == null) return;
+    await assertCanEditProtocolForTrialId(_db, plot.trialId);
     await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
         .write(PlotsCompanion(isGuardRow: Value(isGuardRow)));
   }
 
   Future<void> insertPlotsBulk(List<PlotsCompanion> plots) async {
+    if (plots.isEmpty) return;
+    final trialIds = <int>{};
+    for (final p in plots) {
+      if (!p.trialId.present) {
+        throw StateError('Each plot companion must include trialId');
+      }
+      trialIds.add(p.trialId.value);
+    }
+    if (trialIds.length != 1) {
+      throw StateError('insertPlotsBulk requires all plots for the same trial');
+    }
+    await assertCanEditProtocolForTrialId(_db, trialIds.single);
     await _db.transaction(() async {
       for (final plot in plots) {
         await _db.into(_db.plots).insert(plot);
@@ -167,6 +182,9 @@ class PlotRepository {
 
   /// Updates notes for a single plot.
   Future<void> updatePlotNotes(int plotPk, String? notes) async {
+    final plot = await getPlotByPk(plotPk);
+    if (plot == null) return;
+    await assertPlotNotesEditableForTrialId(_db, plot.trialId);
     await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
         .write(PlotsCompanion(notes: Value(notes)));
   }
@@ -184,6 +202,9 @@ class PlotRepository {
     String? soilSeries,
     String? plotNotes,
   }) async {
+    final plot = await getPlotByPk(plotPk);
+    if (plot == null) return;
+    await assertCanEditProtocolForTrialId(_db, plot.trialId);
     await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
       PlotsCompanion(
         plotLengthM: plotLengthM != null ? Value(plotLengthM) : const Value.absent(),
@@ -218,6 +239,9 @@ class PlotRepository {
     String? assignmentSource,
     DateTime? assignmentUpdatedAt,
   }) async {
+    final plot = await getPlotByPk(plotPk);
+    if (plot == null) return;
+    await assertCanEditProtocolForTrialId(_db, plot.trialId);
     await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
       PlotsCompanion(
         treatmentId: Value(treatmentId),
@@ -240,6 +264,21 @@ class PlotRepository {
     String? assignmentSource,
     DateTime? assignmentUpdatedAt,
   }) async {
+    if (plotPkToTreatmentId.isEmpty) return;
+    final trialIds = <int>{};
+    for (final plotPk in plotPkToTreatmentId.keys) {
+      final plot = await getPlotByPk(plotPk);
+      if (plot == null) {
+        throw StateError('Plot not found: $plotPk');
+      }
+      trialIds.add(plot.trialId);
+    }
+    if (trialIds.length != 1) {
+      throw StateError(
+        'updatePlotsTreatmentsBulk requires all plots in the same trial',
+      );
+    }
+    await assertCanEditProtocolForTrialId(_db, trialIds.single);
     final at = assignmentUpdatedAt ?? DateTime.now().toUtc();
     await _db.transaction(() async {
       for (final entry in plotPkToTreatmentId.entries) {

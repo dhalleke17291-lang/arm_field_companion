@@ -1,4 +1,5 @@
 import '../../../core/database/app_database.dart';
+import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/trial_state.dart';
 import '../../../data/repositories/assignment_repository.dart';
 import '../../sessions/session_repository.dart';
@@ -37,6 +38,8 @@ class UpdatePlotAssignmentUseCase {
         assignedAt: DateTime.now().toUtc(),
       );
       return UpdateAssignmentResult.success();
+    } on ProtocolEditBlockedException catch (e) {
+      return UpdateAssignmentResult.failure(e.message);
     } catch (e) {
       return UpdateAssignmentResult.failure('Update failed: $e');
     }
@@ -67,6 +70,8 @@ class UpdatePlotAssignmentUseCase {
         assignedAt: DateTime.now().toUtc(),
       );
       return UpdateAssignmentResult.success();
+    } on ProtocolEditBlockedException catch (e) {
+      return UpdateAssignmentResult.failure(e.message);
     } catch (e) {
       return UpdateAssignmentResult.failure('Update failed: $e');
     }

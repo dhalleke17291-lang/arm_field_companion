@@ -44,6 +44,14 @@ import '../features/export/export_trial_pdf_report_usecase.dart';
 import '../features/export/report_data_assembly_service.dart';
 import '../features/export/standalone_report_data.dart';
 import '../features/export/report_pdf_builder_service.dart';
+import '../features/arm_import/data/arm_assessment_definition_resolver.dart';
+import '../features/arm_import/data/arm_csv_parser.dart';
+import '../features/arm_import/data/arm_import_persistence_repository.dart';
+import '../features/arm_import/data/arm_import_report_builder.dart';
+import '../features/arm_import/data/arm_import_snapshot_service.dart';
+import '../features/arm_import/data/arm_plot_insert_service.dart';
+import '../features/arm_import/data/compatibility_profile_builder.dart';
+import '../features/arm_import/usecases/arm_import_usecase.dart';
 import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
@@ -96,6 +104,48 @@ final assessmentDefinitionRepositoryProvider =
 final trialAssessmentRepositoryProvider =
     Provider<TrialAssessmentRepository>((ref) {
   return TrialAssessmentRepository(ref.watch(databaseProvider));
+});
+
+final armImportPersistenceRepositoryProvider =
+    Provider<ArmImportPersistenceRepository>((ref) {
+  return ArmImportPersistenceRepository(ref.watch(databaseProvider));
+});
+
+final armCsvParserProvider = Provider<ArmCsvParser>((ref) => ArmCsvParser());
+
+final armImportSnapshotServiceProvider =
+    Provider<ArmImportSnapshotService>((ref) => ArmImportSnapshotService());
+
+final compatibilityProfileBuilderProvider =
+    Provider<CompatibilityProfileBuilder>((ref) => CompatibilityProfileBuilder());
+
+final armImportReportBuilderProvider =
+    Provider<ArmImportReportBuilder>((ref) => ArmImportReportBuilder());
+
+final armImportUseCaseProvider = Provider<ArmImportUseCase>((ref) {
+  return ArmImportUseCase(
+    ref.watch(databaseProvider),
+    ref.watch(trialRepositoryProvider),
+    ref.watch(armCsvParserProvider),
+    ref.watch(armImportSnapshotServiceProvider),
+    ref.watch(compatibilityProfileBuilderProvider),
+    ref.watch(armImportPersistenceRepositoryProvider),
+    ref.watch(armImportReportBuilderProvider),
+  );
+});
+
+final armAssessmentDefinitionResolverProvider =
+    Provider<ArmAssessmentDefinitionResolver>((ref) {
+  return ArmAssessmentDefinitionResolver(
+    ref.watch(assessmentDefinitionRepositoryProvider),
+  );
+});
+
+final armPlotInsertServiceProvider = Provider<ArmPlotInsertService>((ref) {
+  return ArmPlotInsertService(
+    ref.watch(plotRepositoryProvider),
+    ref.watch(trialRepositoryProvider),
+  );
 });
 
 final assessmentDefinitionsProvider =

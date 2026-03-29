@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/protocol_edit_blocked_exception.dart';
 import '../../core/trial_state.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
@@ -369,6 +370,8 @@ class ProtocolImportUseCase {
         treatmentsImported: review.normalizedTreatments.length,
         plotsImported: review.normalizedPlots.length,
       );
+    } on ProtocolEditBlockedException catch (e) {
+      return ProtocolImportExecuteResult.failure(e.message);
     } catch (e) {
       return ProtocolImportExecuteResult.failure('Import failed: $e');
     }

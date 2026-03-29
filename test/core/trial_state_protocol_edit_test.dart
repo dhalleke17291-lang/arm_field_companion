@@ -50,6 +50,7 @@ void main() {
         isArmLinked: true,
       ));
       expect(m, getArmProtocolLockMessage());
+      expect(m, kArmProtocolStructureLockMessage);
     });
   });
 }

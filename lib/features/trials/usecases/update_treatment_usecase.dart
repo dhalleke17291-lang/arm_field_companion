@@ -1,4 +1,5 @@
 import '../../../core/database/app_database.dart';
+import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/trial_state.dart';
 import '../../../data/repositories/treatment_repository.dart';
 
@@ -42,6 +43,8 @@ class UpdateTreatmentUseCase {
       return UpdateTreatmentResult.success();
     } on TreatmentNotFoundException {
       return UpdateTreatmentResult.failure('Treatment not found.');
+    } on ProtocolEditBlockedException catch (e) {
+      return UpdateTreatmentResult.failure(e.message);
     } catch (e) {
       return UpdateTreatmentResult.failure('Update failed: $e');
     }

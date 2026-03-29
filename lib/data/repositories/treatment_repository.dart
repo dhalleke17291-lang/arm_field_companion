@@ -83,6 +83,11 @@ class TreatmentRepository {
     String? timingCode,
     String? eppoCode,
   }) async {
+    final existing = await getTreatmentById(id);
+    if (existing == null) {
+      throw TreatmentNotFoundException(id);
+    }
+    await assertCanEditProtocolForTrialId(_db, existing.trialId);
     await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
       TreatmentsCompanion(
         code: code != null ? Value(code) : const Value.absent(),
@@ -101,6 +106,11 @@ class TreatmentRepository {
 
   /// Deletes treatment and its components; clears plot/assignment references.
   Future<void> deleteTreatment(int id) async {
+    final existing = await getTreatmentById(id);
+    if (existing == null) {
+      throw TreatmentNotFoundException(id);
+    }
+    await assertCanEditProtocolForTrialId(_db, existing.trialId);
     await (_db.delete(_db.treatmentComponents)
           ..where((c) => c.treatmentId.equals(id)))
         .go();
@@ -125,7 +135,8 @@ class TreatmentRepository {
     String? manufacturer,
     String? registrationNumber,
     String? eppoCode,
-  }) {
+  }) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.into(_db.treatmentComponents).insert(
           TreatmentComponentsCompanion.insert(
             treatmentId: treatmentId,
@@ -146,6 +157,11 @@ class TreatmentRepository {
   }
 
   Future<void> deleteComponent(int componentId) async {
+    final row = await (_db.select(_db.treatmentComponents)
+          ..where((c) => c.id.equals(componentId)))
+        .getSingleOrNull();
+    if (row == null) return;
+    await assertCanEditProtocolForTrialId(_db, row.trialId);
     await (_db.delete(_db.treatmentComponents)
           ..where((c) => c.id.equals(componentId)))
         .go();

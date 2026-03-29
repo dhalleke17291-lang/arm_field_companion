@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import '../../core/trial_state.dart';
 
 /// Repository for the Assignments table (protocol-to-field mapping layer).
 /// Resolution: Plot → Assignment → Treatment.
@@ -52,6 +53,7 @@ class AssignmentRepository {
     int? assignedBy,
     String? notes,
   }) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
     final existing = await getForTrialAndPlot(trialId, plotId);
     final now = DateTime.now().toUtc();
     if (existing != null) {
@@ -112,6 +114,7 @@ class AssignmentRepository {
     String? assignmentSource,
     DateTime? assignedAt,
   }) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
     final at = assignedAt ?? DateTime.now().toUtc();
     await _db.transaction(() async {
       for (final entry in plotPkToTreatmentId.entries) {

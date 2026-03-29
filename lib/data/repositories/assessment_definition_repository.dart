@@ -49,6 +49,13 @@ class AssessmentDefinitionRepository {
         .getSingleOrNull();
   }
 
+  /// Lookup by stable library [AssessmentDefinitions.code].
+  Future<AssessmentDefinition?> getByCode(String code) async {
+    return (_db.select(_db.assessmentDefinitions)
+          ..where((d) => d.code.equals(code)))
+        .getSingleOrNull();
+  }
+
   /// Distinct categories present in the library (for grouping the picker).
   Future<List<String>> getCategories() async {
     final rows = await (_db.selectOnly(_db.assessmentDefinitions)

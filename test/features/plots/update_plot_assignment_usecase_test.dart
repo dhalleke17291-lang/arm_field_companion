@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/trial_state.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/features/plots/usecases/update_plot_assignment_usecase.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
@@ -150,6 +151,20 @@ Trial _trial({String status = 'ACTIVE'}) => Trial(
       isArmLinked: false,
     );
 
+Trial _trialArmLinkedDraft() => Trial(
+      id: 1,
+      name: 'Test Trial',
+      status: kTrialStatusDraft,
+      workspaceType: 'efficacy',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      crop: null,
+      location: null,
+      season: null,
+      isDeleted: false,
+      isArmLinked: true,
+    );
+
 void main() {
   late UpdatePlotAssignmentUseCase useCase;
   late MockAssignmentRepository mockRepo;
@@ -202,6 +217,17 @@ void main() {
         treatmentId: 5,
       );
       expect(result.success, false);
+      expect(mockRepo.upserted, isEmpty);
+    });
+
+    test('LOCK: ARM-linked draft returns ARM protocol message', () async {
+      final result = await useCase.updateOne(
+        trial: _trialArmLinkedDraft(),
+        plotPk: 10,
+        treatmentId: 5,
+      );
+      expect(result.success, false);
+      expect(result.errorMessage, kArmProtocolStructureLockMessage);
       expect(mockRepo.upserted, isEmpty);
     });
 
@@ -267,6 +293,16 @@ void main() {
         plotPkToTreatmentId: {1: 10, 2: 20},
       );
       expect(result.success, false);
+      expect(mockRepo.upserted, isEmpty);
+    });
+
+    test('LOCK: ARM-linked draft bulk returns ARM protocol message', () async {
+      final result = await useCase.updateBulk(
+        trial: _trialArmLinkedDraft(),
+        plotPkToTreatmentId: {1: 10, 2: 20},
+      );
+      expect(result.success, false);
+      expect(result.errorMessage, kArmProtocolStructureLockMessage);
       expect(mockRepo.upserted, isEmpty);
     });
 

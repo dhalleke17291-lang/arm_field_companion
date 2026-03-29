@@ -1,4 +1,5 @@
 import '../../../core/database/app_database.dart';
+import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/trial_state.dart';
 import '../../../data/repositories/treatment_repository.dart';
 
@@ -21,6 +22,8 @@ class DeleteTreatmentUseCase {
       return DeleteTreatmentResult.success();
     } on TreatmentNotFoundException {
       return DeleteTreatmentResult.failure('Treatment not found.');
+    } on ProtocolEditBlockedException catch (e) {
+      return DeleteTreatmentResult.failure(e.message);
     } catch (e) {
       return DeleteTreatmentResult.failure('Delete failed: $e');
     }
