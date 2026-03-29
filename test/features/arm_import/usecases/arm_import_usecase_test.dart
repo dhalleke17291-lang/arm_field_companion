@@ -1,4 +1,5 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_csv_parser.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_report_builder.dart';
@@ -8,6 +9,7 @@ import 'package:arm_field_companion/features/arm_import/domain/models/compatibil
 import 'package:arm_field_companion/features/arm_import/usecases/arm_import_usecase.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:csv/csv.dart';
+import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,6 +20,7 @@ ArmImportUseCase _makeUseCase(
   return ArmImportUseCase(
     db,
     TrialRepository(db),
+    TreatmentRepository(db),
     ArmCsvParser(),
     ArmImportSnapshotService(),
     CompatibilityProfileBuilder(),
@@ -110,12 +113,108 @@ void main() {
     expect(profiles, hasLength(1));
   });
 
+  test('minimal treatment insertion', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'minimal_trt_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Plot No.,trt,reps\n101,1,1\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final trts = await (db.select(db.treatments)
+          ..where((t) => t.trialId.equals(tid)))
+        .get();
+    expect(trts, hasLength(1));
+    expect(trts.single.code, '1');
+    expect(trts.single.name, 'Treatment 1');
+  });
+
+  test('multiple treatments deduplicated', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'dedup_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Plot No.,trt,reps\n101,1,1\n102,2,1\n103,1,2\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final trts = await (db.select(db.treatments)
+          ..where((t) => t.trialId.equals(tid))
+          ..orderBy([(t) => OrderingTerm.asc(t.code)]))
+        .get();
+    expect(trts, hasLength(2));
+    expect(trts.map((t) => t.code).toList(), ['1', '2']);
+  });
+
+  test('treatment name used when present', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'names_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,Treatment Name\n101,1,1,Check\n102,2,1,Product X\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final trts = await (db.select(db.treatments)
+          ..where((t) => t.trialId.equals(tid))
+          ..orderBy([(t) => OrderingTerm.asc(t.code)]))
+        .get();
+    expect(trts, hasLength(2));
+    expect(trts.firstWhere((t) => t.code == '1').name, 'Check');
+    expect(trts.firstWhere((t) => t.code == '2').name, 'Product X');
+  });
+
+  test('optional treatment type persists when present', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'ttype_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Plot No.,trt,reps, Type\n101,1,1,Herbicide\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final trt = await (db.select(db.treatments)
+          ..where((t) => t.trialId.equals(tid)))
+        .getSingle();
+    expect(trt.treatmentType, 'Herbicide');
+  });
+
+  test('no component rows inserted when rate headers present', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'no_comp_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,Treatment Name, Rate,Rate Unit,Appl Code\n101,1,1,Check,1.0,L/ha,A\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final trts = await (db.select(db.treatments)
+          ..where((t) => t.trialId.equals(tid)))
+        .get();
+    expect(trts, hasLength(1));
+    expect(trts.single.name, 'Check');
+
+    final comps = await (db.select(db.treatmentComponents)
+          ..where((c) => c.trialId.equals(tid)))
+        .get();
+    expect(comps, isEmpty);
+  });
+
   test('transaction rolls back when persistence fails mid-flight', () async {
     final trialsBefore = await db.select(db.trials).get();
 
     final uc = ArmImportUseCase(
       db,
       TrialRepository(db),
+      TreatmentRepository(db),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
