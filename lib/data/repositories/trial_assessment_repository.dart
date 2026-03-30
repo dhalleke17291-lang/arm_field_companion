@@ -51,6 +51,19 @@ class TrialAssessmentRepository {
         .getSingleOrNull();
   }
 
+  /// First trial assessment for this trial and library definition, if any.
+  Future<TrialAssessment?> getByTrialAndDefinition(
+    int trialId,
+    int assessmentDefinitionId,
+  ) async {
+    return (_db.select(_db.trialAssessments)
+          ..where((t) =>
+              t.trialId.equals(trialId) &
+              t.assessmentDefinitionId.equals(assessmentDefinitionId))
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   /// Add a library definition to this trial (manual or protocol-driven).
   Future<int> addToTrial({
     required int trialId,

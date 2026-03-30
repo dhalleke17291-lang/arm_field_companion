@@ -342,6 +342,13 @@ class ArmImportUseCase {
         linkWarnings.add('Assessment could not be linked: $key');
         continue;
       }
+      final existing = await _trialAssessmentRepository.getByTrialAndDefinition(
+        trialId,
+        defId,
+      );
+      if (existing != null) {
+        continue;
+      }
       await _trialAssessmentRepository.addToTrial(
         trialId: trialId,
         assessmentDefinitionId: defId,
