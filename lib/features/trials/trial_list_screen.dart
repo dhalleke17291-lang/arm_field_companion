@@ -17,6 +17,7 @@ import '../../core/database/app_database.dart';
 import '../../core/workspace/workspace_config.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../about/about_screen.dart';
+import '../arm_import/arm_import_screen.dart';
 import '../protocol_import/protocol_import_screen.dart';
 import 'usecases/create_trial_usecase.dart';
 import '../derived/trial_attention_provider.dart';
@@ -472,6 +473,12 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                             context,
                             MaterialPageRoute<void>(
                               builder: (_) => const ProtocolImportScreen(),
+                            ),
+                          ),
+                          onArmImport: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ArmImportScreen(),
                             ),
                           ),
                           onAbout: () => _showAppInfoDialog(context),
@@ -1320,11 +1327,13 @@ class _TrialListToolbarActions extends StatelessWidget {
   const _TrialListToolbarActions({
     required this.onExport,
     required this.onImport,
+    required this.onArmImport,
     required this.onAbout,
   });
 
   final VoidCallback onExport;
   final VoidCallback onImport;
+  final VoidCallback onArmImport;
   final VoidCallback onAbout;
 
   @override
@@ -1354,6 +1363,12 @@ class _TrialListToolbarActions extends StatelessWidget {
             icon: Icons.file_download_outlined,
             tooltip: 'Import Protocol',
             onPressed: onImport,
+          ),
+          sep(),
+          _TrialListToolbarIcon(
+            icon: Icons.table_chart_outlined,
+            tooltip: 'Import ARM Trial',
+            onPressed: onArmImport,
           ),
           sep(),
           _TrialListToolbarIcon(

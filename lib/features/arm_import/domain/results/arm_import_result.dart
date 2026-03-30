@@ -14,6 +14,9 @@ class ArmImportResult {
     this.unknownPatterns = const [],
     this.duplicateDetected = false,
     this.priorTrialIds = const [],
+    this.plotCount,
+    this.treatmentCount,
+    this.assessmentCount,
   });
 
   final bool success;
@@ -24,6 +27,11 @@ class ArmImportResult {
   final String? errorMessage;
   final List<String> warnings;
   final List<UnknownPatternFlag> unknownPatterns;
+
+  /// From import snapshot (parser-detected counts); null on failure.
+  final int? plotCount;
+  final int? treatmentCount;
+  final int? assessmentCount;
 
   /// True when this file's checksum matched a prior [ImportSnapshots.rawFileChecksum] row
   /// before this run completed (structured companion to the duplicate warning string).
@@ -41,6 +49,9 @@ class ArmImportResult {
     List<UnknownPatternFlag> unknownPatterns = const [],
     bool duplicateDetected = false,
     List<int> priorTrialIds = const [],
+    int? plotCount,
+    int? treatmentCount,
+    int? assessmentCount,
   }) {
     return ArmImportResult._(
       success: true,
@@ -51,6 +62,9 @@ class ArmImportResult {
       unknownPatterns: unknownPatterns,
       duplicateDetected: duplicateDetected,
       priorTrialIds: priorTrialIds,
+      plotCount: plotCount,
+      treatmentCount: treatmentCount,
+      assessmentCount: assessmentCount,
     );
   }
 
@@ -70,6 +84,9 @@ class ArmImportResult {
       unknownPatterns: unknownPatterns,
       duplicateDetected: duplicateDetected,
       priorTrialIds: priorTrialIds,
+      plotCount: null,
+      treatmentCount: null,
+      assessmentCount: null,
     );
   }
 }

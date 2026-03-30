@@ -205,6 +205,9 @@ class ArmImportUseCase {
         unknownPatterns: mergedUnknownPatterns,
         duplicateDetected: duplicateDetected,
         priorTrialIds: priorTrialIds,
+        plotCount: snapshotPayload.plotCount,
+        treatmentCount: snapshotPayload.treatmentCount,
+        assessmentCount: snapshotPayload.assessmentCount,
       );
     } on DuplicateTrialException catch (e) {
       return ArmImportResult.failure('ARM import failed: $e');
