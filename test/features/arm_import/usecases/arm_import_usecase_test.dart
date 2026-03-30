@@ -563,6 +563,43 @@ void main() {
     expect(linked, isEmpty);
   });
 
+  const kDuplicateChecksumWarning =
+      'This file appears to have been imported before. Proceed with caution.';
+
+  test('duplicate checksum adds warning on second import with same content',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
+
+    final r1 = await uc.execute(content, sourceFileName: 'first_$unique.csv');
+    expect(r1.success, true);
+    expect(r1.warnings, isNot(contains(kDuplicateChecksumWarning)));
+
+    final r2 = await uc.execute(content, sourceFileName: 'second_$unique.csv');
+    expect(r2.success, true);
+    expect(r2.warnings, contains(kDuplicateChecksumWarning));
+  });
+
+  test('different file content does not add duplicate checksum warning',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final uc = _makeUseCase(db);
+    const content1 =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
+    const content2 =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,6\n';
+
+    final r1 = await uc.execute(content1, sourceFileName: 'a_$unique.csv');
+    expect(r1.success, true);
+    expect(r1.warnings, isNot(contains(kDuplicateChecksumWarning)));
+
+    final r2 = await uc.execute(content2, sourceFileName: 'b_$unique.csv');
+    expect(r2.success, true);
+    expect(r2.warnings, isNot(contains(kDuplicateChecksumWarning)));
+  });
+
   test('import persists numeric rating via SaveRatingUseCase', () async {
     final unique = DateTime.now().microsecondsSinceEpoch;
     final fileName = 'rating_num_$unique.csv';

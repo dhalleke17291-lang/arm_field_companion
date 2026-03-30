@@ -92,6 +92,10 @@ class ArmImportUseCase {
         rawCsv: content,
       );
 
+      final duplicateDetected = await _persistence.existsByChecksum(
+        snapshotPayload.rawFileChecksum,
+      );
+
       final profilePayload = _profileBuilder.build(
         parsed: parsed,
         snapshot: snapshotPayload,
@@ -173,11 +177,15 @@ class ArmImportUseCase {
         );
       }
 
-      final mergedWarnings = _mergeWarningsInOrder(
-        report.warnings,
-        resolvedAssessments.warnings,
-        linkWarnings,
-      );
+      final mergedWarnings = [
+        ..._mergeWarningsInOrder(
+          report.warnings,
+          resolvedAssessments.warnings,
+          linkWarnings,
+        ),
+        if (duplicateDetected)
+          'This file appears to have been imported before. Proceed with caution.',
+      ];
       final mergedUnknownPatterns = _mergeUnknownPatterns(
         parsed.unknownPatterns,
         resolvedAssessments.unknownPatterns,

@@ -12,6 +12,15 @@ class ArmImportPersistenceRepository {
 
   final AppDatabase _db;
 
+  Future<bool> existsByChecksum(String checksum) async {
+    final query = _db.select(_db.importSnapshots)
+      ..where((s) => s.rawFileChecksum.equals(checksum))
+      ..limit(1);
+
+    final result = await query.get();
+    return result.isNotEmpty;
+  }
+
   Future<int> insertImportSnapshot(
     ImportSnapshotPayload payload, {
     required int trialId,
