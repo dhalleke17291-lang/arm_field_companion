@@ -49,6 +49,9 @@ void main() {
         .where((d) => d.code.startsWith('ARM_ZZ_UNIQUE'))
         .toList();
     expect(rows.length, 2);
+    final pct = rows.firstWhere((d) => d.unit == '%');
+    expect(pct.scaleMin, 0);
+    expect(pct.scaleMax, 100);
   });
 
   test('duplicate assessmentKeys do not create duplicate definitions', () async {

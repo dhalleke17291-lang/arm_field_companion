@@ -56,13 +56,21 @@ class AssessmentsTab extends ConsumerWidget {
     List<(TrialAssessment, AssessmentDefinition)> libraryList,
     List<Assessment> legacyList,
   ) {
+    final linkedLegacyIds = libraryList
+        .map((e) => e.$1.legacyAssessmentId)
+        .whereType<int>()
+        .toSet();
+    final customLegacyList = legacyList
+        .where((a) => !linkedLegacyIds.contains(a.id))
+        .toList();
+
     final statsAsync = ref.watch(trialAssessmentStatisticsProvider(trial.id));
     final stats = statsAsync.valueOrNull ?? {};
     final config = safeConfigFromString(trial.workspaceType);
     final isStandalone = config.isStandalone;
     final isGlp = config.studyType == StudyType.glp;
     final locked = isProtocolLocked(trial.status);
-    final total = libraryList.length + legacyList.length;
+    final total = libraryList.length + customLegacyList.length;
     if (total == 0) {
       return Column(
         children: [
@@ -247,7 +255,7 @@ class AssessmentsTab extends ConsumerWidget {
                   );
                 }),
               ],
-              if (legacyList.isNotEmpty) ...[
+              if (customLegacyList.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.only(left: 4, top: 16, bottom: 6),
                   child: Text(
@@ -258,7 +266,7 @@ class AssessmentsTab extends ConsumerWidget {
                     ),
                   ),
                 ),
-                ...legacyList.asMap().entries.map((entry) {
+                ...customLegacyList.asMap().entries.map((entry) {
                   final displayNumber = libraryList.length + entry.key + 1;
                   final assessment = entry.value;
                   return Container(

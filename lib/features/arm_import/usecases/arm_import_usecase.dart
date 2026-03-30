@@ -132,6 +132,14 @@ class ArmImportUseCase {
           workspaceType: 'efficacy',
         );
 
+        final trialLocation = _firstTrialLocationFromRows(parsed);
+        if (trialLocation != null && trialLocation.isNotEmpty) {
+          await _trialRepository.updateTrialSetup(
+            trialId,
+            TrialsCompanion(location: Value(trialLocation)),
+          );
+        }
+
         final treatments = _collectUniqueTreatments(parsed);
         final treatmentCodeToId = <String, int>{};
         for (final treatment in treatments) {
@@ -543,6 +551,23 @@ String? _findHeaderByRole(
 ) {
   for (final c in columns) {
     if (c.identityRole == role) return c.header;
+  }
+  return null;
+}
+
+/// First non-empty [ERA] cell, else first non-empty [TL] (see [ArmCsvParser] roles).
+String? _firstTrialLocationFromRows(ParsedArmCsv parsed) {
+  final eraHeader = _findHeaderByRole(parsed.columns, 'era');
+  final tlHeader = _findHeaderByRole(parsed.columns, 'tl');
+  for (final row in parsed.dataRows) {
+    if (eraHeader != null) {
+      final v = row[eraHeader]?.trim();
+      if (v != null && v.isNotEmpty) return v;
+    }
+    if (tlHeader != null) {
+      final v = row[tlHeader]?.trim();
+      if (v != null && v.isNotEmpty) return v;
+    }
   }
   return null;
 }

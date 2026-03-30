@@ -140,6 +140,22 @@ void main() {
     expect(profiles, hasLength(1));
   });
 
+  test('ERA column sets trial location', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'era_loc_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,ERA,AVEFA 1-Jul-26 CONTRO %\n101,1,1,Elm Creek,5\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final trial = await (db.select(db.trials)..where((t) => t.id.equals(tid)))
+        .getSingle();
+    expect(trial.location, 'Elm Creek');
+  });
+
   test('minimal treatment insertion', () async {
     final unique = DateTime.now().microsecondsSinceEpoch;
     final fileName = 'minimal_trt_$unique.csv';

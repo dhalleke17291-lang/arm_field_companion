@@ -19,6 +19,8 @@ class ArmCsvParser {
 
   static const Map<String, String> _treatmentHeaderRoles = {
     'Trial ID': 'trialId',
+    'ERA': 'era',
+    'TL': 'tl',
     'Treatment Name': 'treatmentName',
     'Form Conc': 'formConc',
     'Form Unit': 'formUnit',
@@ -100,11 +102,11 @@ class ArmCsvParser {
       }
     }
 
-    if (!RegExp(r'^[A-Z]{3,10}$').hasMatch(armCode)) return null;
+    if (!RegExp(r'^[A-Za-z]{3,10}$').hasMatch(armCode)) return null;
 
     return AssessmentToken(
       rawHeader: header,
-      armCode: armCode,
+      armCode: armCode.toUpperCase(),
       timingCode: timingCode,
       unit: unit,
       ratingDate: ratingDate,

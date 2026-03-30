@@ -57,13 +57,16 @@ class ArmAssessmentDefinitionResolver {
 
       if (def == null) {
         final name = '${token.armCode.trim()} (${token.timingCode.trim()})';
+        final unitStr = token.unit.trim();
         try {
           final id = await _definitions.insertCustom(
             code: code,
             name: name.length > 255 ? name.substring(0, 255) : name,
             category: 'custom',
             dataType: 'numeric',
-            unit: token.unit.trim().isEmpty ? null : token.unit.trim(),
+            unit: unitStr.isEmpty ? null : unitStr,
+            scaleMin: _scaleMinForUnit(token.unit),
+            scaleMax: _scaleMaxForUnit(token.unit),
             timingCode: token.timingCode.trim().isEmpty
                 ? null
                 : token.timingCode.trim(),
@@ -90,5 +93,22 @@ class ArmAssessmentDefinitionResolver {
       warnings: warnings,
       unknownPatterns: unknownPatterns,
     );
+  }
+
+  static double _scaleMinForUnit(String unit) => 0;
+
+  static double _scaleMaxForUnit(String unit) {
+    final u = unit.trim().toUpperCase();
+    if (u.isEmpty || u == 'NUMBER') return 9999;
+    switch (u) {
+      case '%':
+        return 100;
+      case 'BU/AC':
+      case 'T/HA':
+      case 'KG/HA':
+        return 9999;
+      default:
+        return 999;
+    }
   }
 }

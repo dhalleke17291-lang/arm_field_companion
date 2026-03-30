@@ -81,6 +81,14 @@ void main() {
     expect(parsed.importConfidence, ImportConfidence.blocked);
   });
 
+  test('tryParseAssessmentToken accepts mixed-case Yield; armCode YIELD unit bu/ac', () {
+    final t = parser.tryParseAssessmentToken(' 1-Sep-26 Yield bu/ac');
+    expect(t, isNotNull);
+    expect(t!.armCode, 'YIELD');
+    expect(t.unit, 'bu/ac');
+    expect(t.timingCode, '1-Sep-26');
+  });
+
   test('missing rep column — identity incomplete — blocked', () {
     final headers = [
       'Plot No.',
