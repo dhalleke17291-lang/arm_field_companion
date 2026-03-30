@@ -710,6 +710,23 @@ class _TreatmentExpansionTileState
                 const PopupMenuItem(value: 'delete', child: Text('Delete')),
               ],
             ),
+          ] else if (widget.trial.isArmLinked) ...[
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert,
+                  size: 20, color: AppDesignTokens.iconSubtle),
+              tooltip: 'View components',
+              onSelected: (value) {
+                if (value == 'sheet') widget.onOpenSheet();
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'sheet',
+                  child: Text('View Components'),
+                ),
+              ],
+            ),
+            const Icon(Icons.expand_more,
+                size: 20, color: AppDesignTokens.iconSubtle),
           ] else
             const Icon(Icons.expand_more,
                 size: 20, color: AppDesignTokens.iconSubtle),
