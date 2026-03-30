@@ -102,6 +102,7 @@ class TrialRepository {
   }
 
   /// Soft-delete trial and cascade: sessions, plots, and all rating_records for the trial.
+  /// Hard-deletes [trialAssessments] for the trial (no soft-delete column); clears FK refs first.
   /// [deletedByUserId] optional; stored on audit event as [performedByUserId].
   Future<void> softDeleteTrial(int trialId,
       {String? deletedBy, int? deletedByUserId}) async {
@@ -126,7 +127,19 @@ class TrialRepository {
         isDeleted: const Value(true),
         deletedAt: Value(now),
         deletedBy: Value(deletedBy),
+        trialAssessmentId: const Value(null),
       ));
+      final sessionIds = await (_db.select(_db.sessions)
+            ..where((s) => s.trialId.equals(trialId)))
+          .map((s) => s.id)
+          .get();
+      if (sessionIds.isNotEmpty) {
+        await (_db.update(_db.sessionAssessments)
+              ..where((sa) => sa.sessionId.isIn(sessionIds)))
+            .write(const SessionAssessmentsCompanion(
+          trialAssessmentId: Value(null),
+        ));
+      }
       await (_db.update(_db.sessions)..where((s) => s.trialId.equals(trialId)))
           .write(SessionsCompanion(
         isDeleted: const Value(true),
@@ -139,6 +152,9 @@ class TrialRepository {
         deletedAt: Value(now),
         deletedBy: Value(deletedBy),
       ));
+      await (_db.delete(_db.trialAssessments)
+            ..where((ta) => ta.trialId.equals(trialId)))
+          .go();
       await (_db.update(_db.trials)..where((t) => t.id.equals(trialId)))
           .write(TrialsCompanion(
         isDeleted: const Value(true),
