@@ -1,13 +1,18 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/repositories/assessment_definition_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
+import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
+import 'package:arm_field_companion/features/arm_import/data/arm_assessment_definition_resolver.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_csv_parser.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_report_builder.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_snapshot_service.dart';
 import 'package:arm_field_companion/features/arm_import/data/compatibility_profile_builder.dart';
+import 'package:arm_field_companion/features/arm_import/domain/models/assessment_token.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
+import 'package:arm_field_companion/features/arm_import/domain/models/resolved_arm_assessment_definitions.dart';
 import 'package:arm_field_companion/features/arm_import/usecases/arm_import_usecase.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:csv/csv.dart';
@@ -25,6 +30,8 @@ ArmImportUseCase _makeUseCase(
     TreatmentRepository(db),
     PlotRepository(db),
     AssignmentRepository(db),
+    ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
+    TrialAssessmentRepository(db),
     ArmCsvParser(),
     ArmImportSnapshotService(),
     CompatibilityProfileBuilder(),
@@ -99,8 +106,15 @@ void main() {
     expect(r.success, true);
     expect(r.trialId, isNotNull);
     expect(r.confidence, parsed.importConfidence);
-    expect(r.warnings, expectedReport.warnings);
-    expect(r.unknownPatterns, parsed.unknownPatterns);
+    expect(r.warnings.length, greaterThanOrEqualTo(expectedReport.warnings.length));
+    for (var i = 0; i < expectedReport.warnings.length; i++) {
+      expect(r.warnings[i], expectedReport.warnings[i]);
+    }
+    expect(r.unknownPatterns.length,
+        greaterThanOrEqualTo(parsed.unknownPatterns.length));
+    for (var i = 0; i < parsed.unknownPatterns.length; i++) {
+      expect(r.unknownPatterns[i], parsed.unknownPatterns[i]);
+    }
 
     final tid = r.trialId!;
     final trial = await (db.select(db.trials)..where((t) => t.id.equals(tid)))
@@ -305,6 +319,132 @@ void main() {
     expect(assigns, hasLength(2));
   });
 
+  test('assessment columns create trial assessments', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'ta_one_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final tas = await (db.select(db.trialAssessments)
+          ..where((t) => t.trialId.equals(tid))
+          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
+        .get();
+    expect(tas, hasLength(1));
+    expect(tas.single.selectedFromProtocol, true);
+    expect(tas.single.selectedManually, false);
+  });
+
+  test('multiple assessment columns preserve sort order', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'ta_order_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %,AVEFA 7-Jul-26 PHYGEN %\n101,1,1,5,9\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final tas = await (db.select(db.trialAssessments)
+          ..where((t) => t.trialId.equals(tid))
+          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
+        .get();
+    expect(tas, hasLength(2));
+    expect(tas[0].sortOrder, 0);
+    expect(tas[1].sortOrder, 1);
+  });
+
+  test('duplicate assessment key does not create duplicate trial assessments',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'ta_dupkey_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5,6\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final tas = await (db.select(db.trialAssessments)
+          ..where((t) => t.trialId.equals(tid)))
+        .get();
+    expect(tas, hasLength(1));
+  });
+
+  test(
+      'unresolved assessment definition yields warning but import succeeds',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'ta_unresolved_$unique.csv';
+    final uc = ArmImportUseCase(
+      db,
+      TrialRepository(db),
+      TreatmentRepository(db),
+      PlotRepository(db),
+      AssignmentRepository(db),
+      _OmitFirstKeyResolver(AssessmentDefinitionRepository(db)),
+      TrialAssessmentRepository(db),
+      ArmCsvParser(),
+      ArmImportSnapshotService(),
+      CompatibilityProfileBuilder(),
+      ArmImportPersistenceRepository(db),
+      ArmImportReportBuilder(),
+    );
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    expect(
+      r.warnings.any((w) => w.startsWith('Assessment could not be linked:')),
+      isTrue,
+    );
+    final tid = r.trialId!;
+    final tas = await (db.select(db.trialAssessments)
+          ..where((t) => t.trialId.equals(tid)))
+        .get();
+    expect(tas, isEmpty);
+  });
+
+  test('resolver failure causes transaction rollback', () async {
+    final trialsBefore = await db.select(db.trials).get();
+
+    final uc = ArmImportUseCase(
+      db,
+      TrialRepository(db),
+      TreatmentRepository(db),
+      PlotRepository(db),
+      AssignmentRepository(db),
+      _ThrowingResolver(AssessmentDefinitionRepository(db)),
+      TrialAssessmentRepository(db),
+      ArmCsvParser(),
+      ArmImportSnapshotService(),
+      CompatibilityProfileBuilder(),
+      ArmImportPersistenceRepository(db),
+      ArmImportReportBuilder(),
+    );
+
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final r = await uc.execute(
+      'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n',
+      sourceFileName: 'resolver_throw_$unique.csv',
+    );
+
+    expect(r.success, false);
+    expect(r.errorMessage, contains('ARM import failed:'));
+    expect(r.errorMessage, contains('resolver boom'));
+
+    final trialsAfter = await db.select(db.trials).get();
+    expect(trialsAfter.length, trialsBefore.length);
+  });
+
   test('transaction rolls back when persistence fails mid-flight', () async {
     final trialsBefore = await db.select(db.trials).get();
 
@@ -314,6 +454,8 @@ void main() {
       TreatmentRepository(db),
       PlotRepository(db),
       AssignmentRepository(db),
+      ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
+      TrialAssessmentRepository(db),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -339,6 +481,42 @@ void main() {
         .get();
     expect(linked, isEmpty);
   });
+}
+
+class _OmitFirstKeyResolver extends ArmAssessmentDefinitionResolver {
+  _OmitFirstKeyResolver(AssessmentDefinitionRepository def) : super(def);
+
+  @override
+  Future<ResolvedArmAssessmentDefinitions> resolveAll({
+    required int trialId,
+    required List<AssessmentToken> assessments,
+  }) async {
+    final base = await super.resolveAll(
+      trialId: trialId,
+      assessments: assessments,
+    );
+    if (base.assessmentKeyToDefinitionId.isEmpty) return base;
+    final firstKey = base.assessmentKeyToDefinitionId.keys.first;
+    final m = Map<String, int>.from(base.assessmentKeyToDefinitionId)
+      ..remove(firstKey);
+    return ResolvedArmAssessmentDefinitions(
+      assessmentKeyToDefinitionId: m,
+      warnings: base.warnings,
+      unknownPatterns: base.unknownPatterns,
+    );
+  }
+}
+
+class _ThrowingResolver extends ArmAssessmentDefinitionResolver {
+  _ThrowingResolver(AssessmentDefinitionRepository def) : super(def);
+
+  @override
+  Future<ResolvedArmAssessmentDefinitions> resolveAll({
+    required int trialId,
+    required List<AssessmentToken> assessments,
+  }) async {
+    throw StateError('resolver boom');
+  }
 }
 
 class _ThrowOnProfileInsert extends ArmImportPersistenceRepository {

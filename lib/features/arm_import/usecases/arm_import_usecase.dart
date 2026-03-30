@@ -4,9 +4,11 @@ import 'package:path/path.dart' as p;
 
 import '../../../core/database/app_database.dart';
 import '../../../data/repositories/assignment_repository.dart';
+import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../plots/plot_repository.dart';
 import '../../trials/trial_repository.dart';
+import '../data/arm_assessment_definition_resolver.dart';
 import '../data/arm_csv_parser.dart';
 import '../data/arm_import_persistence_repository.dart';
 import '../data/arm_import_report_builder.dart';
@@ -14,6 +16,8 @@ import '../data/arm_import_snapshot_service.dart';
 import '../data/compatibility_profile_builder.dart';
 import '../domain/models/arm_column_classification.dart';
 import '../domain/models/parsed_arm_csv.dart';
+import '../domain/models/resolved_arm_assessment_definitions.dart';
+import '../domain/models/unknown_pattern_flag.dart';
 import '../domain/results/arm_import_result.dart';
 
 /// Orchestrates ARM CSV import: parse → snapshot/profile/report → persist (metadata only in this step).
@@ -24,6 +28,8 @@ class ArmImportUseCase {
     this._treatmentRepository,
     this._plotRepository,
     this._assignmentRepository,
+    this._assessmentDefinitionResolver,
+    this._trialAssessmentRepository,
     this._parser,
     this._snapshotService,
     this._profileBuilder,
@@ -36,6 +42,8 @@ class ArmImportUseCase {
   final TreatmentRepository _treatmentRepository;
   final PlotRepository _plotRepository;
   final AssignmentRepository _assignmentRepository;
+  final ArmAssessmentDefinitionResolver _assessmentDefinitionResolver;
+  final TrialAssessmentRepository _trialAssessmentRepository;
   final ArmCsvParser _parser;
   final ArmImportSnapshotService _snapshotService;
   final CompatibilityProfileBuilder _profileBuilder;
@@ -88,6 +96,8 @@ class ArmImportUseCase {
       final trialName = _trialNameFromSourceFile(sourceFileName);
 
       late int trialId;
+      late ResolvedArmAssessmentDefinitions resolvedAssessments;
+      late List<String> linkWarnings;
 
       await _db.transaction(() async {
         trialId = await _trialRepository.createTrial(
@@ -114,6 +124,18 @@ class ArmImportUseCase {
           treatmentCodeToId: treatmentCodeToId,
         );
 
+        resolvedAssessments = await _assessmentDefinitionResolver.resolveAll(
+          trialId: trialId,
+          assessments: parsed.assessments,
+        );
+
+        linkWarnings = await _insertTrialAssessmentsFromResolved(
+          parsed: parsed,
+          trialId: trialId,
+          assessmentKeyToDefinitionId:
+              resolvedAssessments.assessmentKeyToDefinitionId,
+        );
+
         final snapshotId = await _persistence.insertImportSnapshot(
           snapshotPayload,
           trialId: trialId,
@@ -132,11 +154,21 @@ class ArmImportUseCase {
         );
       });
 
+      final mergedWarnings = _mergeWarningsInOrder(
+        report.warnings,
+        resolvedAssessments.warnings,
+        linkWarnings,
+      );
+      final mergedUnknownPatterns = _mergeUnknownPatterns(
+        parsed.unknownPatterns,
+        resolvedAssessments.unknownPatterns,
+      );
+
       return ArmImportResult.success(
         trialId: trialId,
         confidence: parsed.importConfidence,
-        warnings: report.warnings,
-        unknownPatterns: parsed.unknownPatterns,
+        warnings: mergedWarnings,
+        unknownPatterns: mergedUnknownPatterns,
       );
     } on DuplicateTrialException catch (e) {
       return ArmImportResult.failure('ARM import failed: $e');
@@ -222,6 +254,40 @@ class ArmImportUseCase {
       );
     }
   }
+
+  /// One [TrialAssessment] per unique [AssessmentToken.assessmentKey], column order.
+  Future<List<String>> _insertTrialAssessmentsFromResolved({
+    required ParsedArmCsv parsed,
+    required int trialId,
+    required Map<String, int> assessmentKeyToDefinitionId,
+  }) async {
+    final linkWarnings = <String>[];
+    final seenKeys = <String>{};
+    var sortOrder = 0;
+    for (final token in parsed.assessments) {
+      final key = token.assessmentKey;
+      if (seenKeys.contains(key)) continue;
+      seenKeys.add(key);
+      final defId = assessmentKeyToDefinitionId[key];
+      if (defId == null) {
+        linkWarnings.add('Assessment could not be linked: $key');
+        continue;
+      }
+      await _trialAssessmentRepository.addToTrial(
+        trialId: trialId,
+        assessmentDefinitionId: defId,
+        displayNameOverride: null,
+        required_: false,
+        selectedFromProtocol: true,
+        selectedManually: false,
+        defaultInSessions: true,
+        sortOrder: sortOrder,
+        isActive: true,
+      );
+      sortOrder++;
+    }
+    return linkWarnings;
+  }
 }
 
 String? _findHeaderByRole(
@@ -299,4 +365,46 @@ String _trialNameFromSourceFile(String sourceFileName) {
   final dot = base.lastIndexOf('.');
   if (dot <= 0) return base;
   return base.substring(0, dot);
+}
+
+List<String> _mergeWarningsInOrder(
+  List<String> reportWarnings,
+  List<String> resolverWarnings,
+  List<String> linkWarnings,
+) {
+  final seen = <String>{};
+  final out = <String>[];
+  void addAll(Iterable<String> items) {
+    for (final w in items) {
+      if (seen.add(w)) out.add(w);
+    }
+  }
+
+  addAll(reportWarnings);
+  addAll(resolverWarnings);
+  addAll(linkWarnings);
+  return out;
+}
+
+String _unknownPatternKey(UnknownPatternFlag f) =>
+    '${f.type}|${f.severity}|${f.affectsExport}|${f.rawValue}';
+
+List<UnknownPatternFlag> _mergeUnknownPatterns(
+  List<UnknownPatternFlag> parsed,
+  List<UnknownPatternFlag> resolver,
+) {
+  final seen = <String>{};
+  final out = <UnknownPatternFlag>[];
+  for (final f in parsed) {
+    final k = _unknownPatternKey(f);
+    seen.add(k);
+    out.add(f);
+  }
+  for (final f in resolver) {
+    final k = _unknownPatternKey(f);
+    if (seen.contains(k)) continue;
+    seen.add(k);
+    out.add(f);
+  }
+  return out;
 }
