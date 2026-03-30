@@ -41,6 +41,7 @@ import '../features/export/domain/export_deleted_session_recovery_zip_usecase.da
 import '../features/export/domain/export_deleted_trial_recovery_zip_usecase.dart';
 import '../features/export/export_trial_usecase.dart';
 import '../features/export/export_trial_pdf_report_usecase.dart';
+import '../features/export/domain/export_arm_rating_shell_usecase.dart';
 import '../features/export/report_data_assembly_service.dart';
 import '../features/export/standalone_report_data.dart';
 import '../features/export/report_pdf_builder_service.dart';
@@ -804,6 +805,18 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     photoRepository: ref.watch(photoRepositoryProvider),
     armImportPersistenceRepository:
         ref.watch(armImportPersistenceRepositoryProvider),
+  );
+});
+
+final exportArmRatingShellUseCaseProvider =
+    Provider<ExportArmRatingShellUseCase>((ref) {
+  return ExportArmRatingShellUseCase(
+    db: ref.watch(databaseProvider),
+    plotRepository: ref.watch(plotRepositoryProvider),
+    treatmentRepository: ref.watch(treatmentRepositoryProvider),
+    trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+    persistence: ref.watch(armImportPersistenceRepositoryProvider),
   );
 });
 

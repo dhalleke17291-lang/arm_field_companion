@@ -62,6 +62,8 @@ class TrialAssessmentRepository {
     bool defaultInSessions = true,
     int sortOrder = 0,
     bool isActive = true,
+    /// ARM assessment code (e.g. CONTRO, AVEFA); stored in [TrialAssessments.pestCode].
+    String? pestCode,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.into(_db.trialAssessments).insert(
@@ -75,6 +77,7 @@ class TrialAssessmentRepository {
             defaultInSessions: Value(defaultInSessions),
             sortOrder: Value(sortOrder),
             isActive: Value(isActive),
+            pestCode: Value(pestCode),
           ),
         );
   }

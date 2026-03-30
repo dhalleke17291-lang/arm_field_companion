@@ -319,6 +319,7 @@ class ArmImportUseCase {
         defaultInSessions: true,
         sortOrder: sortOrder,
         isActive: true,
+        pestCode: token.armCode,
       );
       sortOrder++;
     }
