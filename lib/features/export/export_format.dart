@@ -5,6 +5,8 @@ enum ExportFormat {
   armHandoff,
   zipBundle,
   pdfReport,
+  /// Excel rating shell for ARM data collector; handled by [ExportArmRatingShellUseCase].
+  armRatingShell,
 }
 
 extension ExportFormatDetails on ExportFormat {
@@ -18,6 +20,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'ZIP bundle with photos';
       case ExportFormat.pdfReport:
         return 'PDF field report';
+      case ExportFormat.armRatingShell:
+        return 'ARM Rating Shell';
     }
   }
 
@@ -31,6 +35,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'All CSV files plus photos packaged in one ZIP file';
       case ExportFormat.pdfReport:
         return 'Plot-by-plot report with embedded photos for sponsor or GLP submission';
+      case ExportFormat.armRatingShell:
+        return 'Export as Excel file for ARM data collector';
     }
   }
 
@@ -44,6 +50,8 @@ extension ExportFormatDetails on ExportFormat {
         return Icons.folder_zip_outlined;
       case ExportFormat.pdfReport:
         return Icons.picture_as_pdf_outlined;
+      case ExportFormat.armRatingShell:
+        return Icons.table_chart_outlined;
     }
   }
 
@@ -51,6 +59,8 @@ extension ExportFormatDetails on ExportFormat {
     switch (this) {
       case ExportFormat.armHandoff:
         return 'Recommended';
+      case ExportFormat.armRatingShell:
+        return '';
       default:
         return '';
     }

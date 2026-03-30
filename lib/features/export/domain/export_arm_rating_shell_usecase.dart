@@ -45,6 +45,8 @@ class ExportArmRatingShellUseCase {
 
   Future<ArmRatingShellResult> execute({
     required Trial trial,
+    /// When true, file is written but [Share] / [shareOverride] are skipped (UI shares with sheet origin).
+    bool suppressShare = false,
   }) async {
     final profile = await _persistence.getLatestCompatibilityProfileForTrial(
       trial.id,
@@ -237,13 +239,15 @@ class ExportArmRatingShellUseCase {
     }
     await File(filePath).writeAsBytes(fileBytes);
 
-    if (shareOverride != null) {
-      await shareOverride!(filePath);
-    } else {
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        text: '${trial.name} – ARM Rating Shell',
-      );
+    if (!suppressShare) {
+      if (shareOverride != null) {
+        await shareOverride!(filePath);
+      } else {
+        await Share.shareXFiles(
+          [XFile(filePath)],
+          text: '${trial.name} – ARM Rating Shell',
+        );
+      }
     }
 
     return ArmRatingShellResult.ok(

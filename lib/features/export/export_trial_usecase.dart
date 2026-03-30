@@ -196,6 +196,11 @@ class ExportTrialUseCase {
   ];
 
   Future<TrialExportBundle> execute({required Trial trial, required ExportFormat format}) async {
+    if (format == ExportFormat.armRatingShell) {
+      throw ArgumentError(
+        'ARM Rating Shell must use ExportArmRatingShellUseCase, not ExportTrialUseCase.',
+      );
+    }
     final profile = await _armImportPersistenceRepository
         .getLatestCompatibilityProfileForTrial(trial.id);
     final gate = gateFromConfidence(profile?.exportConfidence);

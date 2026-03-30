@@ -206,6 +206,18 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   }
 
   Future<void> _runExport(ExportFormat format) async {
+    if (format == ExportFormat.armRatingShell && !widget.trial.isArmLinked) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This trial was not imported from ARM. Rating Shell export is only available for ARM trials.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     final guard = ref.read(exportGuardProvider);
     final ran = await guard.runExclusive(() async {
       setState(() => _isExporting = true);
@@ -215,6 +227,54 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         );
       }
       try {
+        if (format == ExportFormat.armRatingShell) {
+          final useCase = ref.read(exportArmRatingShellUseCaseProvider);
+          final result = await useCase.execute(
+            trial: widget.trial,
+            suppressShare: true,
+          );
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          if (!result.success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.errorMessage ?? 'Export failed'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          final path = result.filePath;
+          if (path == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Export failed: missing file path'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          final box = context.findRenderObject() as RenderBox?;
+          await Share.shareXFiles(
+            [XFile(path)],
+            text: '${widget.trial.name} – ARM Rating Shell',
+            sharePositionOrigin: box == null
+                ? const Rect.fromLTWH(0, 0, 100, 100)
+                : box.localToGlobal(Offset.zero) & box.size,
+          );
+          if (!mounted) return;
+          final warn = result.warningMessage?.trim();
+          if (warn != null && warn.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(warn)),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Export ready to share')),
+            );
+          }
+          return;
+        }
         if (format == ExportFormat.pdfReport) {
         final useCase = ref.read(exportTrialPdfReportUseCaseProvider);
         await useCase.execute(trial: widget.trial);
@@ -304,8 +364,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
   Future<void> _onExportTapped(
       BuildContext context, WidgetRef ref, Trial trial) async {
-    final allowed = allowedExportFormatsForWorkspace(trial.workspaceType);
-    if (allowed.isEmpty) {
+    final sheetFormats = exportFormatsForTrialSheet(trial.workspaceType);
+    if (sheetFormats.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No export options available for this trial.'),
@@ -324,7 +384,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       _showReadinessSheet(context, ref, trial, report, showExportAnyway: true);
       return;
     }
-    final format = await _showExportSheet(allowed);
+    final format = await _showExportSheet(sheetFormats);
     if (!mounted || format == null) return;
     _runExport(format);
   }
@@ -349,7 +409,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     TrialReadinessReport report, {
     required bool showExportAnyway,
   }) {
-    final allowed = allowedExportFormatsForWorkspace(trial.workspaceType);
+    final sheetFormats = exportFormatsForTrialSheet(trial.workspaceType);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -358,7 +418,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         showExportAnyway: showExportAnyway,
         onExport: () async {
           Navigator.pop(ctx);
-          if (allowed.isEmpty) {
+          if (sheetFormats.isEmpty) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -369,7 +429,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             }
             return;
           }
-          final format = await _showExportSheet(allowed);
+          final format = await _showExportSheet(sheetFormats);
           if (!mounted || format == null) return;
           _runExport(format);
         },
@@ -729,8 +789,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   /// Export control for the white toolbar under the green header (primary colors + badge).
   Widget _buildExportToolbarControl(
       BuildContext context, WidgetRef ref, Trial trial) {
-    final allowed = allowedExportFormatsForWorkspace(trial.workspaceType);
-    if (allowed.isEmpty) return const SizedBox.shrink();
+    final sheetFormats = exportFormatsForTrialSheet(trial.workspaceType);
+    if (sheetFormats.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
@@ -793,7 +853,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     Trial trial,
   ) {
     final showExport =
-        allowedExportFormatsForWorkspace(trial.workspaceType).isNotEmpty;
+        exportFormatsForTrialSheet(trial.workspaceType).isNotEmpty;
     return Material(
       color: AppDesignTokens.cardSurface,
       child: Container(

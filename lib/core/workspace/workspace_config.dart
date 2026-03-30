@@ -313,6 +313,13 @@ List<ExportFormat> allowedExportFormatsForWorkspace(String workspaceType) {
       .availableExports;
 }
 
+/// Trial export sheet: workspace formats plus [ExportFormat.armRatingShell] when not already listed.
+List<ExportFormat> exportFormatsForTrialSheet(String workspaceType) {
+  final allowed = allowedExportFormatsForWorkspace(workspaceType);
+  if (allowed.contains(ExportFormat.armRatingShell)) return allowed;
+  return [...allowed, ExportFormat.armRatingShell];
+}
+
 /// Parses a stored [workspaceType] string to a [WorkspaceConfig].
 /// Unknown or invalid values fall back to [WorkspaceConfig.efficacy]
 /// as a safe protocol preset.
