@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 
 import '../domain/enums/arm_column_kind.dart';
 import '../domain/models/arm_column_classification.dart';
@@ -161,13 +162,22 @@ class ArmCsvParser {
   ) {
     final result = <Map<String, String?>>[];
 
-    for (final row in rows) {
+    for (var i = 0; i < rows.length; i++) {
+      final row = rows[i];
       final rowMap = <String, String?>{};
 
       for (final col in columns) {
         final value = col.index < row.length ? row[col.index] : null;
         final stringValue = value?.toString();
         rowMap[col.header] = _parseNullableCell(stringValue);
+      }
+
+      final plotCol =
+          columns.firstWhereOrNull((c) => c.identityRole == 'plotNumber');
+      if (plotCol != null && kDebugMode) {
+        debugPrint(
+          'Parser row $i plotId cell: "${rowMap[plotCol.header]}"',
+        );
       }
 
       result.add(rowMap);

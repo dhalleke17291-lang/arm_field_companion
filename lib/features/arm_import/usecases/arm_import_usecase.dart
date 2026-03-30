@@ -1,5 +1,6 @@
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/database/app_database.dart';
@@ -66,9 +67,18 @@ class ArmImportUseCase {
         return ArmImportResult.failure('Import file is empty or invalid.');
       }
 
+      // Normalize newlines so Windows CRLF / old Mac CR do not leave stray \r in
+      // header/cell strings (which breaks role matching and can mis-align rows).
+      final csvTextForParse = content
+          .replaceAll('\r\n', '\n')
+          .replaceAll('\r', '\n');
+
       List<List<dynamic>> table;
       try {
-        table = const CsvToListConverter(eol: '\n').convert(content);
+        table = const CsvToListConverter(
+          eol: '\n',
+          shouldParseNumbers: false,
+        ).convert(csvTextForParse);
       } catch (_) {
         return ArmImportResult.failure('Import file is empty or invalid.');
       }
@@ -237,7 +247,19 @@ class ArmImportUseCase {
     for (var i = 0; i < parsed.dataRows.length; i++) {
       final row = parsed.dataRows[i];
       final pv = row[plotHeader];
-      if (pv == null || pv.trim().isEmpty) continue;
+      if (kDebugMode) {
+        debugPrint(
+          'ARM import plot row $i: plotId="$pv" raw="${row[plotHeader]}"',
+        );
+      }
+      if (pv == null || pv.trim().isEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            'ARM import SKIPPED row $i: plotId raw="${row[plotHeader]}"',
+          );
+        }
+        continue;
+      }
 
       final repRaw = row[repHeader];
       final rep = int.tryParse(repRaw ?? '');

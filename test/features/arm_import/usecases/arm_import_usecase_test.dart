@@ -97,7 +97,10 @@ void main() {
     final uc = _makeUseCase(db);
     const content = 'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
 
-    final table = const CsvToListConverter(eol: '\n').convert(content);
+    final table = const CsvToListConverter(
+      eol: '\n',
+      shouldParseNumbers: false,
+    ).convert(content);
     final headers = table.first.map((c) => c.toString()).toList();
     final dataRows = table.skip(1).toList();
     final parsed = ArmCsvParser().parse(
@@ -249,6 +252,38 @@ void main() {
     expect(plots, hasLength(2));
     expect(plots.map((p) => p.plotId).toList(), ['101', '102']);
     expect(plots.map((p) => p.rep).toList(), [1, 1]);
+  });
+
+  test('sixteen plots with CRLF line endings all inserted', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'sixteen_crlf_$unique.csv';
+    final uc = _makeUseCase(db);
+    final buf = StringBuffer()..write('Plot No.,trt,reps');
+    for (var i = 0; i < 16; i++) {
+      buf.write('\r\n${101 + i},1,1');
+    }
+    final r = await uc.execute(buf.toString(), sourceFileName: fileName);
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final plots = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid) & p.isDeleted.equals(false)))
+        .get();
+    expect(plots.length, 16);
+  });
+
+  test('plot 104 with unquoted decimal assessment cell inserts plot', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'decimal_rate_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Trial ID,trt,reps,Plot No.,AVEFA 1-Jul-26 CONTRO %\n'
+        'AgQuest,4,1,104,.5\n';
+    final r = await uc.execute(content, sourceFileName: fileName);
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final plots = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid) & p.isDeleted.equals(false)))
+        .get();
+    expect(plots.single.plotId, '104');
   });
 
   test('assignments map plot PK to treatment id', () async {
