@@ -7,6 +7,7 @@ import '../../../data/repositories/assignment_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../plots/plot_repository.dart';
+import '../../ratings/usecases/save_rating_usecase.dart';
 import '../../sessions/session_repository.dart';
 import '../../trials/trial_repository.dart';
 import '../data/arm_assessment_definition_resolver.dart';
@@ -32,6 +33,7 @@ class ArmImportUseCase {
     this._assessmentDefinitionResolver,
     this._trialAssessmentRepository,
     this._sessionRepository,
+    this._saveRatingUseCase,
     this._parser,
     this._snapshotService,
     this._profileBuilder,
@@ -47,6 +49,7 @@ class ArmImportUseCase {
   final ArmAssessmentDefinitionResolver _assessmentDefinitionResolver;
   final TrialAssessmentRepository _trialAssessmentRepository;
   final SessionRepository _sessionRepository;
+  final SaveRatingUseCase _saveRatingUseCase;
   final ArmCsvParser _parser;
   final ArmImportSnapshotService _snapshotService;
   final CompatibilityProfileBuilder _profileBuilder;
@@ -159,6 +162,16 @@ class ArmImportUseCase {
           armVersion: snapshotPayload.armVersion,
         );
       });
+
+      if (importSessionId != null) {
+        await _importRatingsFromParsedCsv(
+          parsed: parsed,
+          trialId: trialId,
+          importSessionId: importSessionId!,
+          assessmentKeyToDefinitionId:
+              resolvedAssessments.assessmentKeyToDefinitionId,
+        );
+      }
 
       final mergedWarnings = _mergeWarningsInOrder(
         report.warnings,
@@ -334,6 +347,150 @@ class ArmImportUseCase {
       final existing = await _sessionRepository.getOpenSession(e.trialId);
       if (existing == null) rethrow;
       return existing.id;
+    }
+  }
+
+  /// Row index in [ParsedArmCsv.dataRows] → [Plots.id] for rows that produced a plot
+  /// companion (same alignment as [_insertPlotsAndAssignments]).
+  Future<Map<int, int>> _buildRowIndexToPlotPk({
+    required ParsedArmCsv parsed,
+    required int trialId,
+  }) async {
+    final plotHeader = _findHeaderByRole(parsed.columns, 'plotNumber');
+    final repHeader = _findHeaderByRole(parsed.columns, 'rep');
+    if (plotHeader == null || repHeader == null) {
+      return {};
+    }
+    final insertedRowIndices = <int>[];
+    for (var i = 0; i < parsed.dataRows.length; i++) {
+      final row = parsed.dataRows[i];
+      final pv = row[plotHeader];
+      if (pv == null || pv.trim().isEmpty) continue;
+      insertedRowIndices.add(i);
+    }
+    if (insertedRowIndices.isEmpty) {
+      return {};
+    }
+    final plotRows = await (_db.select(_db.plots)
+          ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false))
+          ..orderBy([(p) => OrderingTerm.asc(p.id)]))
+        .get();
+    if (plotRows.length != insertedRowIndices.length) {
+      throw StateError(
+        'Plot count ${plotRows.length} does not match inserted rows '
+        '${insertedRowIndices.length}.',
+      );
+    }
+    final out = <int, int>{};
+    for (var k = 0; k < plotRows.length; k++) {
+      out[insertedRowIndices[k]] = plotRows[k].id;
+    }
+    return out;
+  }
+
+  /// [AssessmentToken.assessmentKey] → legacy [Assessments.id] for rating rows.
+  Future<Map<String, int>> _buildAssessmentKeyToLegacyAssessmentId({
+    required int trialId,
+    required ParsedArmCsv parsed,
+    required Map<String, int> assessmentKeyToDefinitionId,
+  }) async {
+    final trialAssessments = await _trialAssessmentRepository.getForTrial(trialId);
+    final out = <String, int>{};
+    final seenKeys = <String>{};
+    for (final token in parsed.assessments) {
+      final key = token.assessmentKey;
+      if (seenKeys.contains(key)) continue;
+      seenKeys.add(key);
+      final defId = assessmentKeyToDefinitionId[key];
+      if (defId == null) continue;
+      TrialAssessment? trialAssess;
+      for (final t in trialAssessments) {
+        if (t.assessmentDefinitionId == defId) {
+          trialAssess = t;
+          break;
+        }
+      }
+      if (trialAssess == null) continue;
+      final ids = await _trialAssessmentRepository
+          .getOrCreateLegacyAssessmentIdsForTrialAssessments(
+        trialId,
+        [trialAssess.id],
+      );
+      if (ids.length == 1) {
+        out[key] = ids.first;
+      }
+    }
+    return out;
+  }
+
+  Future<void> _importRatingsFromParsedCsv({
+    required ParsedArmCsv parsed,
+    required int trialId,
+    required int importSessionId,
+    required Map<String, int> assessmentKeyToDefinitionId,
+  }) async {
+    final rowIndexToPlotPk = await _buildRowIndexToPlotPk(
+      parsed: parsed,
+      trialId: trialId,
+    );
+    if (rowIndexToPlotPk.isEmpty) {
+      return;
+    }
+    final assessmentKeyToLegacy = await _buildAssessmentKeyToLegacyAssessmentId(
+      trialId: trialId,
+      parsed: parsed,
+      assessmentKeyToDefinitionId: assessmentKeyToDefinitionId,
+    );
+    if (assessmentKeyToLegacy.isEmpty) {
+      return;
+    }
+
+    final assessmentColumns =
+        parsed.columns.where((c) => c.assessmentToken != null).toList();
+    for (var j = 0; j < parsed.dataRows.length; j++) {
+      final plotPk = rowIndexToPlotPk[j];
+      if (plotPk == null) {
+        continue;
+      }
+      final row = parsed.dataRows[j];
+      for (final col in assessmentColumns) {
+        final token = col.assessmentToken!;
+        final key = token.assessmentKey;
+        final legacyId = assessmentKeyToLegacy[key];
+        if (legacyId == null) {
+          continue;
+        }
+        final raw = row[col.header];
+        if (raw == null || raw.trim().isEmpty) {
+          continue;
+        }
+        final cellValue = raw.trim();
+        double? numericValue;
+        String? textValue;
+        final numeric = double.tryParse(cellValue);
+        if (numeric != null) {
+          numericValue = numeric;
+          textValue = null;
+        } else {
+          numericValue = null;
+          textValue = cellValue;
+        }
+        final result = await _saveRatingUseCase.execute(
+          SaveRatingInput(
+            trialId: trialId,
+            plotPk: plotPk,
+            assessmentId: legacyId,
+            sessionId: importSessionId,
+            resultStatus: 'RECORDED',
+            numericValue: numericValue,
+            textValue: textValue,
+            isSessionClosed: false,
+          ),
+        );
+        if (!result.isSuccess) {
+          throw StateError(result.errorMessage ?? 'Rating save failed');
+        }
+      }
     }
   }
 }

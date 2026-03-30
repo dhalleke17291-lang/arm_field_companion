@@ -132,6 +132,7 @@ final armImportUseCaseProvider = Provider<ArmImportUseCase>((ref) {
     ref.watch(armAssessmentDefinitionResolverProvider),
     ref.watch(trialAssessmentRepositoryProvider),
     ref.watch(sessionRepositoryProvider),
+    ref.watch(saveRatingUseCaseProvider),
     ref.watch(armCsvParserProvider),
     ref.watch(armImportSnapshotServiceProvider),
     ref.watch(compatibilityProfileBuilderProvider),

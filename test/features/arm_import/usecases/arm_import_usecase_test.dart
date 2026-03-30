@@ -14,10 +14,12 @@ import 'package:arm_field_companion/features/arm_import/domain/models/assessment
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/resolved_arm_assessment_definitions.dart';
 import 'package:arm_field_companion/features/arm_import/usecases/arm_import_usecase.dart';
+import 'package:arm_field_companion/features/ratings/rating_repository.dart';
+import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:csv/csv.dart';
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -34,6 +36,7 @@ ArmImportUseCase _makeUseCase(
     ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
     TrialAssessmentRepository(db),
     SessionRepository(db),
+    SaveRatingUseCase(RatingRepository(db)),
     ArmCsvParser(),
     ArmImportSnapshotService(),
     CompatibilityProfileBuilder(),
@@ -463,6 +466,7 @@ void main() {
       _OmitFirstKeyResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
       SessionRepository(db),
+      SaveRatingUseCase(RatingRepository(db)),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -498,6 +502,7 @@ void main() {
       _ThrowingResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
       SessionRepository(db),
+      SaveRatingUseCase(RatingRepository(db)),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -531,6 +536,7 @@ void main() {
       ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
       SessionRepository(db),
+      SaveRatingUseCase(RatingRepository(db)),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -555,6 +561,149 @@ void main() {
           ..where((t) => t.isArmLinked.equals(true)))
         .get();
     expect(linked, isEmpty);
+  });
+
+  test('import persists numeric rating via SaveRatingUseCase', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'rating_num_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    expect(r.importSessionId, isNotNull);
+    final sid = r.importSessionId!;
+
+    final ratings = await (db.select(db.ratingRecords)
+          ..where((rr) => rr.trialId.equals(tid) & rr.sessionId.equals(sid)))
+        .get();
+    expect(ratings, hasLength(1));
+    expect(ratings.single.numericValue, 5.0);
+    expect(ratings.single.textValue, isNull);
+    expect(ratings.single.isCurrent, isTrue);
+  });
+
+  test('import persists text rating when cell is non-numeric', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'rating_txt_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,low\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final sid = r.importSessionId!;
+
+    final ratings = await (db.select(db.ratingRecords)
+          ..where((rr) => rr.trialId.equals(tid) & rr.sessionId.equals(sid)))
+        .get();
+    expect(ratings, hasLength(1));
+    expect(ratings.single.numericValue, isNull);
+    expect(ratings.single.textValue, 'low');
+    expect(ratings.single.isCurrent, isTrue);
+  });
+
+  test('blank assessment cell is skipped (no rating row)', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'rating_blank_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %,AVEFA 7-Jul-26 PHYGEN %\n101,1,1,5,\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final sid = r.importSessionId!;
+
+    final ratings = await (db.select(db.ratingRecords)
+          ..where((rr) => rr.trialId.equals(tid) & rr.sessionId.equals(sid)))
+        .get();
+    expect(ratings, hasLength(1));
+    expect(ratings.single.numericValue, 5.0);
+  });
+
+  test('multiple plots and assessment columns produce expected rating count',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'rating_multi_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %,AVEFA 7-Jul-26 PHYGEN %\n101,1,1,1,2\n102,1,1,3,4\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final sid = r.importSessionId!;
+
+    final ratings = await (db.select(db.ratingRecords)
+          ..where((rr) => rr.trialId.equals(tid) & rr.sessionId.equals(sid)))
+        .get();
+    expect(ratings, hasLength(4));
+    expect(ratings.where((rr) => rr.isCurrent).length, 4);
+  });
+
+  test('second save for same plot/assessment/session updates isCurrent chain',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'rating_version_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    final sid = r.importSessionId!;
+
+    final plots = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid) & p.isDeleted.equals(false))
+          ..orderBy([(p) => OrderingTerm.asc(p.id)]))
+        .get();
+    final plotPk = plots.single.id;
+
+    final first = await (db.select(db.ratingRecords)
+          ..where((rr) =>
+              rr.trialId.equals(tid) &
+              rr.sessionId.equals(sid) &
+              rr.plotPk.equals(plotPk)))
+        .get();
+    expect(first, hasLength(1));
+    final assessmentId = first.single.assessmentId;
+
+    final save = SaveRatingUseCase(RatingRepository(db));
+    final second = await save.execute(
+      SaveRatingInput(
+        trialId: tid,
+        plotPk: plotPk,
+        assessmentId: assessmentId,
+        sessionId: sid,
+        resultStatus: 'RECORDED',
+        numericValue: 7.0,
+        textValue: null,
+        isSessionClosed: false,
+      ),
+    );
+    expect(second.isSuccess, isTrue);
+
+    final chain = await (db.select(db.ratingRecords)
+          ..where((rr) =>
+              rr.trialId.equals(tid) &
+              rr.sessionId.equals(sid) &
+              rr.plotPk.equals(plotPk) &
+              rr.assessmentId.equals(assessmentId)))
+        .get();
+    expect(chain, hasLength(2));
+    expect(chain.where((rr) => rr.isCurrent).length, 1);
+    expect(chain.where((rr) => rr.isCurrent).single.numericValue, 7.0);
+    expect(chain.where((rr) => !rr.isCurrent).single.numericValue, 5.0);
   });
 }
 
