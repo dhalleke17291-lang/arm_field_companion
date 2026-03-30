@@ -189,6 +189,23 @@ String _normalizeResultDirection(String? value) {
   }
 }
 
+/// Matches [TrialAssessmentRepository.getOrCreateLegacyAssessmentIdsForTrialAssessments]
+/// legacy row naming and [ExportRepository.buildTrialExportRows] `assessment_name`.
+Future<String> _assessmentNameForTrialStatistics(
+  AppDatabase db,
+  TrialAssessment ta,
+  AssessmentDefinition def,
+) async {
+  final displayBase = ta.displayNameOverride ?? def.name;
+  if (ta.legacyAssessmentId != null) {
+    final legacy = await (db.select(db.assessments)
+          ..where((a) => a.id.equals(ta.legacyAssessmentId!)))
+        .getSingleOrNull();
+    if (legacy != null) return legacy.name;
+  }
+  return '$displayBase — TA${ta.id}';
+}
+
 /// Statistics for all assessments in a trial, keyed by assessmentId.
 /// Returns an empty map if no rating data or assessments exist.
 /// Recomputes when operational trial data changes.
@@ -228,7 +245,8 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
     for (final pair in assessmentPairs) {
       final ta = pair.$1;
       final def = pair.$2;
-      final name = ta.displayNameOverride ?? def.name;
+      final name =
+          await _assessmentNameForTrialStatistics(db, ta, def);
       final unit = def.unit ?? '';
       final direction = _normalizeResultDirection(def.resultDirection);
       result[ta.id] = computeAssessmentStatistics(
