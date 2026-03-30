@@ -784,6 +784,8 @@ final exportTrialPdfReportUseCaseProvider =
   return ExportTrialPdfReportUseCase(
     assemblyService: ref.watch(reportDataAssemblyServiceProvider),
     pdfBuilder: ref.watch(reportPdfBuilderServiceProvider),
+    armImportPersistenceRepository:
+        ref.watch(armImportPersistenceRepositoryProvider),
   );
 });
 
@@ -800,6 +802,8 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     ratingRepository: ref.watch(ratingRepositoryProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     photoRepository: ref.watch(photoRepositoryProvider),
+    armImportPersistenceRepository:
+        ref.watch(armImportPersistenceRepositoryProvider),
   );
 });
 

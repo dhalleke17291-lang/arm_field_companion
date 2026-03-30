@@ -9,7 +9,11 @@ class TrialExportBundle {
     required this.seedingCsv,
     required this.sessionsCsv,
     required this.dataDictionaryCsv,
+    this.warningMessage,
   });
+
+  /// Set when import compatibility confidence was low (warn path).
+  final String? warningMessage;
 
   final String observationsCsv;
   /// ARM-aligned manual-transfer companion; does not replace observations.csv.

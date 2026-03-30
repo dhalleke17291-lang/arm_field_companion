@@ -124,6 +124,97 @@ void main() {
     expect(row.createdAt, isNotNull);
   });
 
+  test('getLatestExportConfidenceForTrial returns newest compatibility row',
+      () async {
+    final trialId =
+        await trialRepo.createTrial(name: 'T_latest', workspaceType: 'efficacy');
+    const snapPayload = ImportSnapshotPayload(
+      sourceFile: 'c.csv',
+      sourceRoute: 'arm_csv_v1',
+      armVersion: null,
+      rawHeaders: [],
+      columnOrder: [],
+      rowTypePatterns: [],
+      plotCount: 0,
+      treatmentCount: 0,
+      assessmentCount: 0,
+      identityColumns: [],
+      assessmentTokens: [],
+      treatmentTokens: [],
+      plotTokens: [],
+      unknownPatterns: [],
+      hasSubsamples: false,
+      hasMultiApplication: false,
+      hasSparseData: false,
+      hasRepeatedCodes: false,
+      rawFileChecksum: 'c1',
+    );
+    final snap1 = await repo.insertImportSnapshot(snapPayload, trialId: trialId);
+    await repo.insertCompatibilityProfile(
+      const CompatibilityProfilePayload(
+        exportRoute: 'r',
+        columnMap: {},
+        plotMap: {},
+        treatmentMap: {},
+        dataStartRow: 1,
+        headerEndRow: 1,
+        identityRowMarkers: [],
+        columnOrderOnExport: [],
+        identityFieldOrder: [],
+        knownUnsupported: [],
+        exportConfidence: ImportConfidence.low,
+      ),
+      trialId: trialId,
+      snapshotId: snap1,
+    );
+    const snapPayload2 = ImportSnapshotPayload(
+      sourceFile: 'd.csv',
+      sourceRoute: 'arm_csv_v1',
+      armVersion: null,
+      rawHeaders: [],
+      columnOrder: [],
+      rowTypePatterns: [],
+      plotCount: 0,
+      treatmentCount: 0,
+      assessmentCount: 0,
+      identityColumns: [],
+      assessmentTokens: [],
+      treatmentTokens: [],
+      plotTokens: [],
+      unknownPatterns: [],
+      hasSubsamples: false,
+      hasMultiApplication: false,
+      hasSparseData: false,
+      hasRepeatedCodes: false,
+      rawFileChecksum: 'c2',
+    );
+    final snap2 = await repo.insertImportSnapshot(snapPayload2, trialId: trialId);
+    await repo.insertCompatibilityProfile(
+      const CompatibilityProfilePayload(
+        exportRoute: 'r',
+        columnMap: {},
+        plotMap: {},
+        treatmentMap: {},
+        dataStartRow: 1,
+        headerEndRow: 1,
+        identityRowMarkers: [],
+        columnOrderOnExport: [],
+        identityFieldOrder: [],
+        knownUnsupported: [],
+        exportConfidence: ImportConfidence.high,
+      ),
+      trialId: trialId,
+      snapshotId: snap2,
+    );
+
+    expect((await repo.getLatestExportConfidenceForTrial(trialId)),
+        ImportConfidence.high.name);
+    expect(
+      await repo.getLatestExportBlockReasonForTrial(trialId),
+      isNull,
+    );
+  });
+
   test('markTrialAsArmLinked updates trial flags', () async {
     final trialId =
         await trialRepo.createTrial(name: 'T3', workspaceType: 'efficacy');

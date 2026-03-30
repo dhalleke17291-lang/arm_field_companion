@@ -21,6 +21,28 @@ class ArmImportPersistenceRepository {
     return result.isNotEmpty;
   }
 
+  /// Latest [CompatibilityProfiles] row for [trialId] by descending [CompatibilityProfiles.id].
+  Future<CompatibilityProfile?> getLatestCompatibilityProfileForTrial(
+    int trialId,
+  ) async {
+    final query = _db.select(_db.compatibilityProfiles)
+      ..where((p) => p.trialId.equals(trialId))
+      ..orderBy([(p) => OrderingTerm.desc(p.id)])
+      ..limit(1);
+
+    return query.getSingleOrNull();
+  }
+
+  Future<String?> getLatestExportConfidenceForTrial(int trialId) async {
+    final row = await getLatestCompatibilityProfileForTrial(trialId);
+    return row?.exportConfidence;
+  }
+
+  Future<String?> getLatestExportBlockReasonForTrial(int trialId) async {
+    final row = await getLatestCompatibilityProfileForTrial(trialId);
+    return row?.exportBlockReason;
+  }
+
   Future<int> insertImportSnapshot(
     ImportSnapshotPayload payload, {
     required int trialId,

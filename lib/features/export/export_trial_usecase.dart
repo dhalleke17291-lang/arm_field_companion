@@ -9,7 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
+import '../arm_import/data/arm_import_persistence_repository.dart';
 import '../plots/plot_repository.dart';
+import 'export_confidence_policy.dart';
 import 'arm_field_mapping.dart';
 import 'export_format.dart';
 import 'export_validation_service.dart' as export_validation;
@@ -38,6 +40,7 @@ class ExportTrialUseCase {
     required RatingRepository ratingRepository,
     required AssignmentRepository assignmentRepository,
     required PhotoRepository photoRepository,
+    required ArmImportPersistenceRepository armImportPersistenceRepository,
   })  : _trialRepository = trialRepository,
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
@@ -47,7 +50,8 @@ class ExportTrialUseCase {
         _sessionRepository = sessionRepository,
         _ratingRepository = ratingRepository,
         _assignmentRepository = assignmentRepository,
-        _photoRepository = photoRepository;
+        _photoRepository = photoRepository,
+        _armImportPersistenceRepository = armImportPersistenceRepository;
 
   // Kept for API consistency; trial is passed into execute().
   // ignore: unused_field
@@ -61,6 +65,7 @@ class ExportTrialUseCase {
   final RatingRepository _ratingRepository;
   final AssignmentRepository _assignmentRepository;
   final PhotoRepository _photoRepository;
+  final ArmImportPersistenceRepository _armImportPersistenceRepository;
 
   static const List<String> _observationsHeaders = [
     'trial_id',
@@ -191,6 +196,22 @@ class ExportTrialUseCase {
   ];
 
   Future<TrialExportBundle> execute({required Trial trial, required ExportFormat format}) async {
+    final profile = await _armImportPersistenceRepository
+        .getLatestCompatibilityProfileForTrial(trial.id);
+    final gate = gateFromConfidence(profile?.exportConfidence);
+    if (gate == ExportGate.block) {
+      var msg = kBlockedExportMessage;
+      final reason = profile?.exportBlockReason;
+      if (reason != null && reason.trim().isNotEmpty) {
+        msg = '$msg Reason: $reason';
+      }
+      throw ExportBlockedByConfidenceException(msg);
+    }
+    String? confidenceWarningMessage;
+    if (gate == ExportGate.warn) {
+      confidenceWarningMessage = kWarnExportMessage;
+    }
+
     final exportTimestamp = DateTime.now().toUtc().toIso8601String();
     final trialPk = trial.id;
     final armAligned =
@@ -294,6 +315,7 @@ class ExportTrialUseCase {
       seedingCsv: seedingCsv,
       sessionsCsv: sessionsCsv,
       dataDictionaryCsv: dataDictionaryCsv,
+      warningMessage: confidenceWarningMessage,
     );
 
     if (armAligned) {

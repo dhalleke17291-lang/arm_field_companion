@@ -1,13 +1,70 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
+import 'package:arm_field_companion/features/arm_import/domain/enums/import_confidence.dart';
+import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
+import 'package:arm_field_companion/features/arm_import/domain/models/import_snapshot_payload.dart';
+import 'package:arm_field_companion/features/export/export_confidence_policy.dart';
 import 'package:arm_field_companion/features/export/export_trial_pdf_report_usecase.dart';
 import 'package:arm_field_companion/features/export/report_data_assembly_service.dart';
 import 'package:arm_field_companion/features/export/report_pdf_builder_service.dart';
 import 'package:arm_field_companion/features/export/standalone_report_data.dart';
+import 'package:arm_field_companion/features/trials/trial_repository.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+
+Future<void> _insertCompatibilityProfile({
+  required AppDatabase db,
+  required int trialId,
+  required ImportConfidence exportConfidence,
+  String? exportBlockReason,
+}) async {
+  final repo = ArmImportPersistenceRepository(db);
+  const snapPayload = ImportSnapshotPayload(
+    sourceFile: 't.csv',
+    sourceRoute: 'arm_csv_v1',
+    armVersion: null,
+    rawHeaders: [],
+    columnOrder: [],
+    rowTypePatterns: [],
+    plotCount: 0,
+    treatmentCount: 0,
+    assessmentCount: 0,
+    identityColumns: [],
+    assessmentTokens: [],
+    treatmentTokens: [],
+    plotTokens: [],
+    unknownPatterns: [],
+    hasSubsamples: false,
+    hasMultiApplication: false,
+    hasSparseData: false,
+    hasRepeatedCodes: false,
+    rawFileChecksum: 'chk',
+  );
+  final snapshotId = await repo.insertImportSnapshot(snapPayload, trialId: trialId);
+  final profilePayload = CompatibilityProfilePayload(
+    exportRoute: 'arm_xml_v1',
+    columnMap: {},
+    plotMap: {},
+    treatmentMap: {},
+    dataStartRow: 2,
+    headerEndRow: 1,
+    identityRowMarkers: const [],
+    columnOrderOnExport: const [],
+    identityFieldOrder: const [],
+    knownUnsupported: const [],
+    exportConfidence: exportConfidence,
+    exportBlockReason: exportBlockReason,
+  );
+  await repo.insertCompatibilityProfile(
+    profilePayload,
+    trialId: trialId,
+    snapshotId: snapshotId,
+  );
+}
 
 Trial _trial({int id = 1, String name = 'Test Trial'}) => Trial(
       id: id,
@@ -75,6 +132,7 @@ void main() {
   late ExportTrialPdfReportUseCase useCase;
   late MockReportDataAssemblyService mockAssembly;
   late FakeReportPdfBuilderService fakePdfBuilder;
+  late AppDatabase db;
   late String tempPath;
 
   setUpAll(() async {
@@ -84,21 +142,28 @@ void main() {
   });
 
   setUp(() {
+    db = AppDatabase.forTesting(NativeDatabase.memory());
     mockAssembly = MockReportDataAssemblyService();
     fakePdfBuilder = FakeReportPdfBuilderService();
     useCase = ExportTrialPdfReportUseCase(
       assemblyService: mockAssembly,
       pdfBuilder: fakePdfBuilder,
+      armImportPersistenceRepository: ArmImportPersistenceRepository(db),
       shareOverride: (files, {String? text}) async {},
     );
+  });
+
+  tearDown(() async {
+    await db.close();
   });
 
   group('ExportTrialPdfReportUseCase', () {
     test('SUCCESS: assembles, builds, writes, and shares', () async {
       final trial = _trial(name: 'Canola 2026');
 
-      await useCase.execute(trial: trial);
+      final result = await useCase.execute(trial: trial);
 
+      expect(result.warningMessage, isNull);
       expect(mockAssembly.lastAssembled, isNotNull);
       expect(mockAssembly.lastAssembled!.trial.name, 'Canola 2026');
       expect(fakePdfBuilder.lastBuilt, isNotNull);
@@ -119,8 +184,9 @@ void main() {
     test('SUCCESS: assembly is invoked before build', () async {
       final trial = _trial(name: 'Wheat Trial');
 
-      await useCase.execute(trial: trial);
+      final result = await useCase.execute(trial: trial);
 
+      expect(result.warningMessage, isNull);
       expect(mockAssembly.lastAssembled, isNotNull);
       expect(mockAssembly.lastAssembled!.trial.name, 'Wheat Trial');
       expect(fakePdfBuilder.lastBuilt!.trial.name, 'Wheat Trial');
@@ -129,8 +195,9 @@ void main() {
     test('SUCCESS: filename uses safe name pattern', () async {
       final trial = _trial(name: 'Trial With Spaces & Special!');
 
-      await useCase.execute(trial: trial);
+      final result = await useCase.execute(trial: trial);
 
+      expect(result.warningMessage, isNull);
       final files = Directory(tempPath)
           .listSync()
           .whereType<File>()
@@ -140,6 +207,62 @@ void main() {
         files.any((f) => f.path.contains('AGQ_') && f.path.contains('.pdf')),
         isTrue,
       );
+    });
+
+    test('blocked confidence prevents PDF export', () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'PdfBlock', workspaceType: 'efficacy');
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.blocked,
+        exportBlockReason: 'schema mismatch',
+      );
+      final trial = _trial(id: trialId, name: 'PdfBlock');
+
+      try {
+        await useCase.execute(trial: trial);
+        fail('expected ExportBlockedByConfidenceException');
+      } on ExportBlockedByConfidenceException catch (e) {
+        expect(e.toString(), contains(kBlockedExportMessage));
+        expect(e.toString(), contains('Reason: schema mismatch'));
+      }
+      expect(mockAssembly.lastAssembled, isNull);
+    });
+
+    test('low confidence allows PDF export and returns warning', () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'PdfLow', workspaceType: 'efficacy');
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.low,
+      );
+      final trial = _trial(id: trialId, name: 'PdfLow');
+
+      final result = await useCase.execute(trial: trial);
+
+      expect(result.warningMessage, kWarnExportMessage);
+      expect(mockAssembly.lastAssembled, isNotNull);
+    });
+
+    test('high confidence allows PDF export without confidence warning', () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'PdfHigh', workspaceType: 'efficacy');
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+      );
+      final trial = _trial(id: trialId, name: 'PdfHigh');
+
+      final result = await useCase.execute(trial: trial);
+
+      expect(result.warningMessage, isNull);
+      expect(mockAssembly.lastAssembled, isNotNull);
     });
   });
 }
