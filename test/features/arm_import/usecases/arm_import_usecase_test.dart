@@ -14,6 +14,7 @@ import 'package:arm_field_companion/features/arm_import/domain/models/assessment
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/resolved_arm_assessment_definitions.dart';
 import 'package:arm_field_companion/features/arm_import/usecases/arm_import_usecase.dart';
+import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart' hide isNotNull;
@@ -32,6 +33,7 @@ ArmImportUseCase _makeUseCase(
     AssignmentRepository(db),
     ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
     TrialAssessmentRepository(db),
+    SessionRepository(db),
     ArmCsvParser(),
     ArmImportSnapshotService(),
     CompatibilityProfileBuilder(),
@@ -377,6 +379,76 @@ void main() {
     expect(tas, hasLength(1));
   });
 
+  test('import creates session and session_assessments for legacy assessments',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'sess_import_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %,AVEFA 7-Jul-26 PHYGEN %\n101,1,1,5,9\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    expect(r.importSessionId, isNotNull);
+    final sid = r.importSessionId!;
+
+    final trialTas = await (db.select(db.trialAssessments)
+          ..where((t) => t.trialId.equals(tid)))
+        .get();
+    expect(trialTas, hasLength(2));
+
+    final sess = await (db.select(db.sessions)
+          ..where((s) => s.id.equals(sid)))
+        .getSingle();
+    expect(sess.name, 'ARM Import Session');
+    expect(sess.trialId, tid);
+
+    final sas = await (db.select(db.sessionAssessments)
+          ..where((sa) => sa.sessionId.equals(sid)))
+        .get();
+    expect(sas, hasLength(2));
+  });
+
+  test(
+      'open session prevents second createSession; getOpenSession matches import',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'sess_reuse_$unique.csv';
+    final uc = _makeUseCase(db);
+    final sessionRepo = SessionRepository(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, true);
+    final tid = r.trialId!;
+    expect(r.importSessionId, isNotNull);
+
+    final open = await sessionRepo.getOpenSession(tid);
+    expect(open, isNotNull);
+    expect(open!.id, r.importSessionId);
+
+    final sas = await (db.select(db.sessionAssessments)
+          ..where((sa) => sa.sessionId.equals(r.importSessionId!)))
+        .get();
+    final assessmentIds = sas.map((e) => e.assessmentId).toList();
+
+    expect(
+      () => sessionRepo.createSession(
+        trialId: tid,
+        name: 'Another Session',
+        sessionDateLocal: '2026-06-15',
+        assessmentIds: assessmentIds,
+      ),
+      throwsA(isA<OpenSessionExistsException>()),
+    );
+
+    expect((await sessionRepo.getOpenSession(tid))!.id, r.importSessionId);
+  });
+
   test(
       'unresolved assessment definition yields warning but import succeeds',
       () async {
@@ -390,6 +462,7 @@ void main() {
       AssignmentRepository(db),
       _OmitFirstKeyResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
+      SessionRepository(db),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -424,6 +497,7 @@ void main() {
       AssignmentRepository(db),
       _ThrowingResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
+      SessionRepository(db),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -456,6 +530,7 @@ void main() {
       AssignmentRepository(db),
       ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
+      SessionRepository(db),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),

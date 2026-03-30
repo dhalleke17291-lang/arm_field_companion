@@ -7,6 +7,7 @@ class ArmImportResult {
   const ArmImportResult._({
     required this.success,
     this.trialId,
+    this.importSessionId,
     required this.confidence,
     this.errorMessage,
     this.warnings = const [],
@@ -15,6 +16,8 @@ class ArmImportResult {
 
   final bool success;
   final int? trialId;
+  /// Session created (or reused) for later rating import; null when no trial assessments.
+  final int? importSessionId;
   final ImportConfidence confidence;
   final String? errorMessage;
   final List<String> warnings;
@@ -22,6 +25,7 @@ class ArmImportResult {
 
   factory ArmImportResult.success({
     int? trialId,
+    int? importSessionId,
     ImportConfidence confidence = ImportConfidence.high,
     List<String> warnings = const [],
     List<UnknownPatternFlag> unknownPatterns = const [],
@@ -29,6 +33,7 @@ class ArmImportResult {
     return ArmImportResult._(
       success: true,
       trialId: trialId,
+      importSessionId: importSessionId,
       confidence: confidence,
       warnings: warnings,
       unknownPatterns: unknownPatterns,

@@ -7,6 +7,7 @@ import '../../../data/repositories/assignment_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../plots/plot_repository.dart';
+import '../../sessions/session_repository.dart';
 import '../../trials/trial_repository.dart';
 import '../data/arm_assessment_definition_resolver.dart';
 import '../data/arm_csv_parser.dart';
@@ -30,6 +31,7 @@ class ArmImportUseCase {
     this._assignmentRepository,
     this._assessmentDefinitionResolver,
     this._trialAssessmentRepository,
+    this._sessionRepository,
     this._parser,
     this._snapshotService,
     this._profileBuilder,
@@ -44,6 +46,7 @@ class ArmImportUseCase {
   final AssignmentRepository _assignmentRepository;
   final ArmAssessmentDefinitionResolver _assessmentDefinitionResolver;
   final TrialAssessmentRepository _trialAssessmentRepository;
+  final SessionRepository _sessionRepository;
   final ArmCsvParser _parser;
   final ArmImportSnapshotService _snapshotService;
   final CompatibilityProfileBuilder _profileBuilder;
@@ -98,6 +101,7 @@ class ArmImportUseCase {
       late int trialId;
       late ResolvedArmAssessmentDefinitions resolvedAssessments;
       late List<String> linkWarnings;
+      late int? importSessionId;
 
       await _db.transaction(() async {
         trialId = await _trialRepository.createTrial(
@@ -136,6 +140,8 @@ class ArmImportUseCase {
               resolvedAssessments.assessmentKeyToDefinitionId,
         );
 
+        importSessionId = await _createOrReuseImportSession(trialId: trialId);
+
         final snapshotId = await _persistence.insertImportSnapshot(
           snapshotPayload,
           trialId: trialId,
@@ -166,6 +172,7 @@ class ArmImportUseCase {
 
       return ArmImportResult.success(
         trialId: trialId,
+        importSessionId: importSessionId,
         confidence: parsed.importConfidence,
         warnings: mergedWarnings,
         unknownPatterns: mergedUnknownPatterns,
@@ -288,6 +295,47 @@ class ArmImportUseCase {
     }
     return linkWarnings;
   }
+
+  /// Creates [Sessions] + [SessionAssessments] for legacy [Assessments] rows, or
+  /// reuses an existing open session when [OpenSessionExistsException] is thrown.
+  Future<int?> _createOrReuseImportSession({required int trialId}) async {
+    final trialAssessments = await _trialAssessmentRepository.getForTrial(trialId);
+    final trialAssessmentIdToLegacyAssessmentId = <int, int>{};
+    final legacyAssessmentIds = <int>[];
+    for (final ta in trialAssessments) {
+      final ids =
+          await _trialAssessmentRepository.getOrCreateLegacyAssessmentIdsForTrialAssessments(
+        trialId,
+        [ta.id],
+      );
+      if (ids.length == 1) {
+        trialAssessmentIdToLegacyAssessmentId[ta.id] = ids.first;
+        legacyAssessmentIds.add(ids.first);
+      }
+    }
+    assert(
+      trialAssessmentIdToLegacyAssessmentId.length == legacyAssessmentIds.length,
+    );
+    if (legacyAssessmentIds.isEmpty) {
+      return null;
+    }
+
+    try {
+      final session = await _sessionRepository.createSession(
+        trialId: trialId,
+        name: 'ARM Import Session',
+        sessionDateLocal: _sessionDateLocalToday(),
+        assessmentIds: legacyAssessmentIds,
+        raterName: null,
+        createdByUserId: null,
+      );
+      return session.id;
+    } on OpenSessionExistsException catch (e) {
+      final existing = await _sessionRepository.getOpenSession(e.trialId);
+      if (existing == null) rethrow;
+      return existing.id;
+    }
+  }
 }
 
 String? _findHeaderByRole(
@@ -365,6 +413,13 @@ String _trialNameFromSourceFile(String sourceFileName) {
   final dot = base.lastIndexOf('.');
   if (dot <= 0) return base;
   return base.substring(0, dot);
+}
+
+String _sessionDateLocalToday() {
+  final d = DateTime.now();
+  return '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 }
 
 List<String> _mergeWarningsInOrder(
