@@ -295,6 +295,41 @@ class SessionRepository {
     });
   }
 
+  /// Prefer [ArmImportUseCase] session (name contains `'ARM Import'`, see
+  /// `'ARM Import Session'`) for ARM-linked trials; else closest [Session.startedAt]
+  /// to [Trial.armImportedAt]; else most recent non-deleted session.
+  Future<int?> resolveSessionIdForRatingShell(Trial trial) async {
+    final sessions = await (_db.select(_db.sessions)
+          ..where((s) => s.trialId.equals(trial.id) & s.isDeleted.equals(false))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
+        .get();
+    if (sessions.isEmpty) return null;
+
+    if (trial.isArmLinked) {
+      for (final s in sessions) {
+        if (s.name.contains('ARM Import')) {
+          return s.id;
+        }
+      }
+      final anchor = trial.armImportedAt;
+      if (anchor != null) {
+        Session? best;
+        var bestDelta = 9223372036854775807;
+        for (final s in sessions) {
+          final d = (s.startedAt.millisecondsSinceEpoch -
+                  anchor.millisecondsSinceEpoch)
+              .abs();
+          if (d < bestDelta) {
+            bestDelta = d;
+            best = s;
+          }
+        }
+        return best?.id;
+      }
+    }
+    return sessions.first.id;
+  }
+
   /// True when this trial has any row in rating_records, notes, photos, or plot_flags.
   Stream<bool> watchTrialHasSessionData(int trialId) {
     final id = Variable<int>(trialId);

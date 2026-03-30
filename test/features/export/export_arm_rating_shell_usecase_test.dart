@@ -10,6 +10,7 @@ import 'package:arm_field_companion/features/arm_import/domain/models/import_sna
 import 'package:arm_field_companion/features/export/domain/export_arm_rating_shell_usecase.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
+import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
@@ -69,7 +70,13 @@ Future<void> _insertCompatibilityProfile({
   );
 }
 
-Trial _trial({required int id, String name = 'Test Trial'}) => Trial(
+Trial _trial({
+  required int id,
+  String name = 'Test Trial',
+  bool isArmLinked = false,
+  DateTime? armImportedAt,
+}) =>
+    Trial(
       id: id,
       name: name,
       status: 'active',
@@ -77,7 +84,8 @@ Trial _trial({required int id, String name = 'Test Trial'}) => Trial(
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isDeleted: false,
-      isArmLinked: false,
+      isArmLinked: isArmLinked,
+      armImportedAt: armImportedAt,
     );
 
 CellValue? _cell(Sheet sheet, int row, int col) {
@@ -139,6 +147,7 @@ void main() {
         treatmentRepository: TreatmentRepository(db),
         trialAssessmentRepository: TrialAssessmentRepository(db),
         ratingRepository: RatingRepository(db),
+        sessionRepository: SessionRepository(db),
         persistence: ArmImportPersistenceRepository(db),
         shareOverride: (_) async {},
       );
@@ -619,6 +628,122 @@ void main() {
       final sheet = excel['Sheet1'];
       expect(_cellNum(sheet, 2, 4), 7.0);
       expect(_cellNum(sheet, 2, 5), 3.0);
+    });
+
+    test('ARM-linked trial uses ARM Import Session for ratings not newest session',
+        () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'ArmSess', workspaceType: 'efficacy');
+
+      final trtId = await TreatmentRepository(db).insertTreatment(
+        trialId: trialId,
+        code: '1',
+        name: 'Check',
+      );
+      final plotPk = await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: '101',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 1,
+      );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'AVEFA',
+              name: 'A',
+              category: 'pest',
+              timingCode: const Value('1-Jul-26'),
+            ),
+          );
+      final legacyAsmId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: 'Legacy A',
+            ),
+          );
+      await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              legacyAssessmentId: Value(legacyAsmId),
+              sortOrder: const Value(0),
+              pestCode: const Value('AVEFA'),
+            ),
+          );
+      final armT = DateTime.utc(2026, 3, 1, 12);
+      final laterT = DateTime.utc(2026, 3, 3, 12);
+      final armSessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'ARM Import Session',
+              sessionDateLocal: '2026-03-01',
+              startedAt: Value(armT),
+            ),
+          );
+      await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'Newer session',
+              sessionDateLocal: '2026-03-03',
+              startedAt: Value(laterT),
+            ),
+          );
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: trialId,
+              plotPk: plotPk,
+              assessmentId: legacyAsmId,
+              sessionId: armSessionId,
+              resultStatus: const Value('RECORDED'),
+              numericValue: const Value(77.0),
+              isCurrent: const Value(true),
+            ),
+          );
+
+      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
+        TrialsCompanion(
+          isArmLinked: const Value(true),
+          armImportedAt: Value(DateTime.utc(2026, 3, 1, 12)),
+        ),
+      );
+      final trialRow =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
+
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+        columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+        assessmentTokens: [
+          {
+            'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+            'armCode': 'AVEFA',
+            'timingCode': '1-Jul-26',
+            'unit': '%',
+            'ratingDate': null,
+            'assessmentKey': 'k',
+          },
+        ],
+      );
+
+      final uc = makeUc();
+      final r = await uc.execute(trial: trialRow);
+      expect(r.success, true);
+      final pathArm = r.filePath;
+      if (pathArm == null) fail('expected file path');
+      final bytes = await File(pathArm).readAsBytes();
+      final excel = Excel.decodeBytes(bytes);
+      final sheet = excel['Sheet1'];
+      final v = _cell(sheet, 2, 4);
+      if (v is DoubleCellValue) {
+        expect(v.value, 77.0);
+      } else if (v is IntCellValue) {
+        expect(v.value, 77);
+      } else {
+        fail('expected numeric cell, got $v');
+      }
     });
 
     test('null pestCode falls back to definition code with warning', () async {

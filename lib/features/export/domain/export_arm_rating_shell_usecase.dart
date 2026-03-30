@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 import 'package:excel/excel.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -13,6 +14,7 @@ import '../../../data/repositories/treatment_repository.dart';
 import '../../arm_import/data/arm_import_persistence_repository.dart';
 import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
+import '../../sessions/session_repository.dart';
 import '../export_confidence_policy.dart';
 import 'arm_rating_shell_result.dart';
 
@@ -25,6 +27,7 @@ class ExportArmRatingShellUseCase {
   final TreatmentRepository _treatmentRepository;
   final TrialAssessmentRepository _trialAssessmentRepository;
   final RatingRepository _ratingRepository;
+  final SessionRepository _sessionRepository;
   final ArmImportPersistenceRepository _persistence;
   final ArmRatingShellShareOverride? shareOverride;
 
@@ -34,6 +37,7 @@ class ExportArmRatingShellUseCase {
     required TreatmentRepository treatmentRepository,
     required TrialAssessmentRepository trialAssessmentRepository,
     required RatingRepository ratingRepository,
+    required SessionRepository sessionRepository,
     required ArmImportPersistenceRepository persistence,
     this.shareOverride,
   })  : _db = db,
@@ -41,6 +45,7 @@ class ExportArmRatingShellUseCase {
         _treatmentRepository = treatmentRepository,
         _trialAssessmentRepository = trialAssessmentRepository,
         _ratingRepository = ratingRepository,
+        _sessionRepository = sessionRepository,
         _persistence = persistence;
 
   Future<ArmRatingShellResult> execute({
@@ -136,7 +141,7 @@ class ExportArmRatingShellUseCase {
         return ka.compareTo(kb);
       });
 
-    final sessionId = await _resolveMostRecentSessionId(trial.id);
+    final sessionId = await _sessionRepository.resolveSessionIdForRatingShell(trial);
 
     for (var plotIndex = 0; plotIndex < sortedPlots.length; plotIndex++) {
       final plot = sortedPlots[plotIndex];
@@ -300,7 +305,13 @@ class ExportArmRatingShellUseCase {
       if (decoded is List) {
         return decoded.map((e) => e.toString()).toList();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint(
+          'ARM Rating Shell: columnOrderOnExport JSON parse failed: $e\n$st',
+        );
+      }
+    }
     return [];
   }
 
@@ -362,7 +373,12 @@ class ExportArmRatingShellUseCase {
       final decoded = jsonDecode(snap.assessmentTokens) as List<dynamic>;
       return decoded
           .map((e) => (e as Map<String, dynamic>)['rawHeader'] as String).toList();
-    } catch (_) {
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint(
+          'ARM Rating Shell: fallback assessment headers from snapshot failed: $e\n$st',
+        );
+      }
       return null;
     }
   }
@@ -387,7 +403,12 @@ class ExportArmRatingShellUseCase {
     try {
       final decoded = jsonDecode(jsonStr) as List<dynamic>;
       return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-    } catch (_) {
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint(
+          'ARM Rating Shell: assessmentTokens JSON parse failed: $e\n$st',
+        );
+      }
       return null;
     }
   }
@@ -414,15 +435,6 @@ class ExportArmRatingShellUseCase {
     final plot = await (_db.select(_db.plots)..where((p) => p.id.equals(plotPk)))
         .getSingleOrNull();
     return plot?.treatmentId;
-  }
-
-  Future<int?> _resolveMostRecentSessionId(int trialId) async {
-    final row = await (_db.select(_db.sessions)
-          ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false))
-          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
-          ..limit(1))
-        .getSingleOrNull();
-    return row?.id;
   }
 
   TrialAssessment? _matchTrialAssessmentForHeader(

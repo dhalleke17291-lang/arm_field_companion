@@ -64,6 +64,22 @@ class TrialAssessmentRepository {
         .getSingleOrNull();
   }
 
+  /// Persists [Assessments.id] on the trial assessment row (ARM import / shell export).
+  /// Does not use [assertCanEditProtocolForTrialId] — required after [markTrialAsArmLinked]
+  /// when protocol edits are blocked.
+  Future<void> updateLegacyAssessmentId(
+    int taId,
+    int legacyAssessmentId,
+  ) async {
+    await (_db.update(_db.trialAssessments)..where((t) => t.id.equals(taId)))
+        .write(
+      TrialAssessmentsCompanion(
+        legacyAssessmentId: Value(legacyAssessmentId),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
   /// Add a library definition to this trial (manual or protocol-driven).
   Future<int> addToTrial({
     required int trialId,

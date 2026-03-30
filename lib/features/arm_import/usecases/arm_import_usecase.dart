@@ -474,7 +474,12 @@ class ArmImportUseCase {
         [trialAssess.id],
       );
       if (ids.length == 1) {
-        out[key] = ids.first;
+        final legacyId = ids.first;
+        out[key] = legacyId;
+        await _trialAssessmentRepository.updateLegacyAssessmentId(
+          trialAssess.id,
+          legacyId,
+        );
       }
     }
     return out;

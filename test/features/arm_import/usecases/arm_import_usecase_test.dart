@@ -138,6 +138,15 @@ void main() {
           ..where((c) => c.trialId.equals(tid)))
         .get();
     expect(profiles, hasLength(1));
+
+    final tas = await (db.select(db.trialAssessments)
+          ..where((t) => t.trialId.equals(tid)))
+        .get();
+    expect(tas, isNotEmpty);
+    for (final ta in tas) {
+      expect(ta.legacyAssessmentId, isNotNull,
+          reason: 'legacy id should be stored on TrialAssessment after import');
+    }
   });
 
   test('ERA column sets trial location', () async {

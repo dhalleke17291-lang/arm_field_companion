@@ -834,6 +834,7 @@ final exportArmRatingShellUseCaseProvider =
     treatmentRepository: ref.watch(treatmentRepositoryProvider),
     trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
     ratingRepository: ref.watch(ratingRepositoryProvider),
+    sessionRepository: ref.watch(sessionRepositoryProvider),
     persistence: ref.watch(armImportPersistenceRepositoryProvider),
   );
 });
