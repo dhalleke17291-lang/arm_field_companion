@@ -484,7 +484,7 @@ void main() {
 }
 
 class _OmitFirstKeyResolver extends ArmAssessmentDefinitionResolver {
-  _OmitFirstKeyResolver(AssessmentDefinitionRepository def) : super(def);
+  _OmitFirstKeyResolver(super._definitions);
 
   @override
   Future<ResolvedArmAssessmentDefinitions> resolveAll({
@@ -508,7 +508,7 @@ class _OmitFirstKeyResolver extends ArmAssessmentDefinitionResolver {
 }
 
 class _ThrowingResolver extends ArmAssessmentDefinitionResolver {
-  _ThrowingResolver(AssessmentDefinitionRepository def) : super(def);
+  _ThrowingResolver(super._definitions);
 
   @override
   Future<ResolvedArmAssessmentDefinitions> resolveAll({
