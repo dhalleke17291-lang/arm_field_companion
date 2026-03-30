@@ -65,6 +65,39 @@ void main() {
     expect(row.capturedAt, isNotNull);
   });
 
+  test('getTrialIdsByChecksum returns distinct trial ids', () async {
+    const sharedChecksum = 'same_chk';
+    const snapPayload = ImportSnapshotPayload(
+      sourceFile: 'a.csv',
+      sourceRoute: 'arm_csv_v1',
+      armVersion: null,
+      rawHeaders: [],
+      columnOrder: [],
+      rowTypePatterns: [],
+      plotCount: 0,
+      treatmentCount: 0,
+      assessmentCount: 0,
+      identityColumns: [],
+      assessmentTokens: [],
+      treatmentTokens: [],
+      plotTokens: [],
+      unknownPatterns: [],
+      hasSubsamples: false,
+      hasMultiApplication: false,
+      hasSparseData: false,
+      hasRepeatedCodes: false,
+      rawFileChecksum: sharedChecksum,
+    );
+    final t1 = await trialRepo.createTrial(name: 'T_chk_1', workspaceType: 'efficacy');
+    final t2 = await trialRepo.createTrial(name: 'T_chk_2', workspaceType: 'efficacy');
+    await repo.insertImportSnapshot(snapPayload, trialId: t1);
+    await repo.insertImportSnapshot(snapPayload, trialId: t2);
+
+    final ids = await repo.getTrialIdsByChecksum(sharedChecksum);
+    expect(ids, hasLength(2));
+    expect(ids, containsAll(<int>[t1, t2]));
+  });
+
   test('insertCompatibilityProfile writes row', () async {
     final trialId =
         await trialRepo.createTrial(name: 'T2', workspaceType: 'efficacy');

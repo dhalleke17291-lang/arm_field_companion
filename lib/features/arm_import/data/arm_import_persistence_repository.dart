@@ -21,6 +21,14 @@ class ArmImportPersistenceRepository {
     return result.isNotEmpty;
   }
 
+  Future<List<int>> getTrialIdsByChecksum(String checksum) async {
+    final query = _db.select(_db.importSnapshots)
+      ..where((s) => s.rawFileChecksum.equals(checksum));
+
+    final rows = await query.get();
+    return rows.map((r) => r.trialId).toSet().toList();
+  }
+
   /// Latest [CompatibilityProfiles] row for [trialId] by descending [CompatibilityProfiles.id].
   Future<CompatibilityProfile?> getLatestCompatibilityProfileForTrial(
     int trialId,

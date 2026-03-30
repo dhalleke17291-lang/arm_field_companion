@@ -12,6 +12,8 @@ class ArmImportResult {
     this.errorMessage,
     this.warnings = const [],
     this.unknownPatterns = const [],
+    this.duplicateDetected = false,
+    this.priorTrialIds = const [],
   });
 
   final bool success;
@@ -23,12 +25,22 @@ class ArmImportResult {
   final List<String> warnings;
   final List<UnknownPatternFlag> unknownPatterns;
 
+  /// True when this file's checksum matched a prior [ImportSnapshots.rawFileChecksum] row
+  /// before this run completed (structured companion to the duplicate warning string).
+  final bool duplicateDetected;
+
+  /// Distinct trial ids that already had a snapshot with this checksum at import time
+  /// (excludes the new trial until after the next import sees it).
+  final List<int> priorTrialIds;
+
   factory ArmImportResult.success({
     int? trialId,
     int? importSessionId,
     ImportConfidence confidence = ImportConfidence.high,
     List<String> warnings = const [],
     List<UnknownPatternFlag> unknownPatterns = const [],
+    bool duplicateDetected = false,
+    List<int> priorTrialIds = const [],
   }) {
     return ArmImportResult._(
       success: true,
@@ -37,6 +49,8 @@ class ArmImportResult {
       confidence: confidence,
       warnings: warnings,
       unknownPatterns: unknownPatterns,
+      duplicateDetected: duplicateDetected,
+      priorTrialIds: priorTrialIds,
     );
   }
 
@@ -45,6 +59,8 @@ class ArmImportResult {
     ImportConfidence confidence = ImportConfidence.blocked,
     List<String> warnings = const [],
     List<UnknownPatternFlag> unknownPatterns = const [],
+    bool duplicateDetected = false,
+    List<int> priorTrialIds = const [],
   }) {
     return ArmImportResult._(
       success: false,
@@ -52,6 +68,8 @@ class ArmImportResult {
       errorMessage: message,
       warnings: warnings,
       unknownPatterns: unknownPatterns,
+      duplicateDetected: duplicateDetected,
+      priorTrialIds: priorTrialIds,
     );
   }
 }

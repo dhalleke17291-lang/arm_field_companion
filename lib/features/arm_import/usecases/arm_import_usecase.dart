@@ -96,6 +96,12 @@ class ArmImportUseCase {
         snapshotPayload.rawFileChecksum,
       );
 
+      final priorTrialIds = duplicateDetected
+          ? await _persistence.getTrialIdsByChecksum(
+              snapshotPayload.rawFileChecksum,
+            )
+          : const <int>[];
+
       final profilePayload = _profileBuilder.build(
         parsed: parsed,
         snapshot: snapshotPayload,
@@ -197,6 +203,8 @@ class ArmImportUseCase {
         confidence: parsed.importConfidence,
         warnings: mergedWarnings,
         unknownPatterns: mergedUnknownPatterns,
+        duplicateDetected: duplicateDetected,
+        priorTrialIds: priorTrialIds,
       );
     } on DuplicateTrialException catch (e) {
       return ArmImportResult.failure('ARM import failed: $e');

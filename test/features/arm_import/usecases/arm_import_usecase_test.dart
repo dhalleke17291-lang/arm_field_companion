@@ -13,6 +13,7 @@ import 'package:arm_field_companion/features/arm_import/data/compatibility_profi
 import 'package:arm_field_companion/features/arm_import/domain/models/assessment_token.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/resolved_arm_assessment_definitions.dart';
+import 'package:arm_field_companion/features/arm_import/domain/results/arm_import_result.dart';
 import 'package:arm_field_companion/features/arm_import/usecases/arm_import_usecase.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
@@ -575,10 +576,14 @@ void main() {
 
     final r1 = await uc.execute(content, sourceFileName: 'first_$unique.csv');
     expect(r1.success, true);
+    expect(r1.duplicateDetected, false);
+    expect(r1.priorTrialIds, isEmpty);
     expect(r1.warnings, isNot(contains(kDuplicateChecksumWarning)));
 
     final r2 = await uc.execute(content, sourceFileName: 'second_$unique.csv');
     expect(r2.success, true);
+    expect(r2.duplicateDetected, true);
+    expect(r2.priorTrialIds, contains(r1.trialId));
     expect(r2.warnings, contains(kDuplicateChecksumWarning));
   });
 
@@ -593,11 +598,21 @@ void main() {
 
     final r1 = await uc.execute(content1, sourceFileName: 'a_$unique.csv');
     expect(r1.success, true);
+    expect(r1.duplicateDetected, false);
+    expect(r1.priorTrialIds, isEmpty);
     expect(r1.warnings, isNot(contains(kDuplicateChecksumWarning)));
 
     final r2 = await uc.execute(content2, sourceFileName: 'b_$unique.csv');
     expect(r2.success, true);
+    expect(r2.duplicateDetected, false);
+    expect(r2.priorTrialIds, isEmpty);
     expect(r2.warnings, isNot(contains(kDuplicateChecksumWarning)));
+  });
+
+  test('ArmImportResult.failure exposes default duplicate metadata', () {
+    final r = ArmImportResult.failure('x');
+    expect(r.duplicateDetected, false);
+    expect(r.priorTrialIds, isEmpty);
   });
 
   test('import persists numeric rating via SaveRatingUseCase', () async {
