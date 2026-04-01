@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
@@ -234,8 +236,9 @@ class ArmImportUseCase {
     }
   }
 
-  /// Inserts one plot per data row (no deduplication). Assignments use plot PKs in
-  /// [Plots.id] insertion order, aligned with rows that produced each companion.
+  /// Inserts one plot per data row (no deduplication). Assignments match each CSV
+  /// row to a plot PK by business plot id ([Plots.plotId]), dequeuing in [Plots.id]
+  /// order when the same business id appears on multiple rows.
   Future<void> _insertPlotsAndAssignments({
     required ParsedArmCsv parsed,
     required int trialId,
@@ -304,9 +307,25 @@ class ArmImportUseCase {
       );
     }
 
-    for (var j = 0; j < plotRows.length; j++) {
-      final plot = plotRows[j];
-      final row = parsed.dataRows[insertedRowIndices[j]];
+    final plotPkQueuesByBusinessId = <String, Queue<int>>{};
+    for (final p in plotRows) {
+      plotPkQueuesByBusinessId.putIfAbsent(p.plotId, () => Queue<int>());
+      plotPkQueuesByBusinessId[p.plotId]!.addLast(p.id);
+    }
+
+    for (final rowIndex in insertedRowIndices) {
+      final row = parsed.dataRows[rowIndex];
+      final pv = row[plotHeader];
+      if (pv == null || pv.trim().isEmpty) continue;
+      final businessId = pv.trim();
+      final queue = plotPkQueuesByBusinessId[businessId];
+      if (queue == null || queue.isEmpty) {
+        throw StateError(
+          'No plot PK available for business plot id "$businessId" during assignment.',
+        );
+      }
+      final plotPk = queue.removeFirst();
+
       final trtRaw = row[trtHeader];
       if (trtRaw == null || trtRaw.trim().isEmpty) continue;
 
@@ -316,7 +335,7 @@ class ArmImportUseCase {
 
       await _assignmentRepository.upsert(
         trialId: trialId,
-        plotId: plot.id,
+        plotId: plotPk,
         treatmentId: tid,
         assignmentSource: 'imported',
         assignedAt: DateTime.now().toUtc(),
