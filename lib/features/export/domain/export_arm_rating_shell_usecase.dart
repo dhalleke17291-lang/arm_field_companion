@@ -123,7 +123,8 @@ class ExportArmRatingShellUseCase {
     };
 
     final excel = Excel.createExcel();
-    final sheet = excel['Sheet1'];
+    excel.rename('Sheet1', 'Plot Data');
+    final sheet = excel['Plot Data'];
 
     _setCellText(sheet, 0, 0, trial.name);
 

@@ -135,6 +135,9 @@ class MockSessionRepository implements SessionRepository {
   Future<SessionRestoreResult> restoreSession(int sessionId,
           {String? restoredBy, int? restoredByUserId}) async =>
       SessionRestoreResult.failure('Not implemented');
+
+  @override
+  Future<int?> resolveSessionIdForRatingShell(Trial trial) async => null;
 }
 
 Trial _trial({String status = 'ACTIVE'}) => Trial(

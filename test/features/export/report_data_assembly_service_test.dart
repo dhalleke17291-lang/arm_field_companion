@@ -410,6 +410,9 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Stream<bool> watchTrialHasSessionData(int trialId) => Stream.value(false);
+
+  @override
+  Future<int?> resolveSessionIdForRatingShell(Trial trial) async => null;
 }
 
 class MockAssignmentRepository implements AssignmentRepository {

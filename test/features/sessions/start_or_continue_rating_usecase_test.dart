@@ -97,6 +97,9 @@ class _FakeSessionRepository implements SessionRepository {
   Future<SessionRestoreResult> restoreSession(int sessionId,
           {String? restoredBy, int? restoredByUserId}) async =>
       SessionRestoreResult.failure('Not implemented');
+
+  @override
+  Future<int?> resolveSessionIdForRatingShell(Trial trial) async => null;
 }
 
 class _FakeTrialRepository implements TrialRepository {

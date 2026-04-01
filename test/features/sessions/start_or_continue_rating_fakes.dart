@@ -95,6 +95,36 @@ class FakeSessionRepository implements SessionRepository {
   Future<SessionRestoreResult> restoreSession(int sessionId,
           {String? restoredBy, int? restoredByUserId}) async =>
       SessionRestoreResult.failure('Not implemented');
+
+  @override
+  Future<int?> resolveSessionIdForRatingShell(Trial trial) async {
+    final list = sessions
+        .where((s) => s.trialId == trial.id && !s.isDeleted)
+        .toList()
+      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    if (list.isEmpty) return null;
+    if (trial.isArmLinked) {
+      for (final s in list) {
+        if (s.name.contains('ARM Import')) return s.id;
+      }
+      final anchor = trial.armImportedAt;
+      if (anchor != null) {
+        Session? best;
+        var bestDelta = 9223372036854775807;
+        for (final s in list) {
+          final d = (s.startedAt.millisecondsSinceEpoch -
+                  anchor.millisecondsSinceEpoch)
+              .abs();
+          if (d < bestDelta) {
+            bestDelta = d;
+            best = s;
+          }
+        }
+        return best?.id;
+      }
+    }
+    return list.first.id;
+  }
 }
 
 class FakeTrialRepository implements TrialRepository {
