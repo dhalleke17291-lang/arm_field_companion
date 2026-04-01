@@ -350,7 +350,7 @@ class ExportTrialUseCase {
       );
       final zipFile = await _buildArmHandoffPackage(
           bundle, trial, validation, photos);
-      await Share.shareXFiles([XFile(zipFile.path)],
+      await Share.shareXFiles([XFile(zipFile.path, mimeType: 'application/zip')],
           text: '${trial.name} – ARM Import Assistant package');
     }
 

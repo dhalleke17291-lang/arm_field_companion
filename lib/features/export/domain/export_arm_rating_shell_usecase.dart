@@ -250,7 +250,7 @@ class ExportArmRatingShellUseCase {
         await shareOverride!(filePath);
       } else {
         await Share.shareXFiles(
-          [XFile(filePath)],
+          [XFile(filePath, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
           text: '${trial.name} – ARM Rating Shell',
         );
       }
