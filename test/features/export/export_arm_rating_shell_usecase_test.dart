@@ -267,7 +267,7 @@ void main() {
       if (path == null) fail('expected file path');
       final bytes = await File(path).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Plot Data'];
+      final sheet = excel['Ratings'];
       final v = _cell(sheet, 2, 4);
       expect(v, isA<DoubleCellValue>());
       expect((v as DoubleCellValue).value, 42.5);
@@ -333,7 +333,7 @@ void main() {
       if (pathBlank == null) fail('expected file path');
       final bytes = await File(pathBlank).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Plot Data'];
+      final sheet = excel['Ratings'];
       expect(_cellString(sheet, 2, 4), '');
       final v = _cell(sheet, 2, 4);
       expect(v, isNot(isA<IntCellValue>()));
@@ -399,7 +399,7 @@ void main() {
       if (pathOrder == null) fail('expected file path');
       final bytes = await File(pathOrder).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Plot Data'];
+      final sheet = excel['Ratings'];
       expect(_cellString(sheet, 2, 0), '1');
       expect(_cellString(sheet, 3, 0), '2');
     });
@@ -458,7 +458,7 @@ void main() {
       if (pathCol == null) fail('expected file path');
       final bytes = await File(pathCol).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Plot Data'];
+      final sheet = excel['Ratings'];
       expect(_cellString(sheet, 1, 4), 'ZZZ hdr');
       expect(_cellString(sheet, 1, 5), 'AAA hdr');
     });
@@ -515,7 +515,7 @@ void main() {
       if (pathTn == null) fail('expected file path');
       final bytes = await File(pathTn).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Plot Data'];
+      final sheet = excel['Ratings'];
       expect(_cellString(sheet, 2, 3), 'Product Alpha');
     });
 
@@ -625,7 +625,7 @@ void main() {
       if (pathSub == null) fail('expected file path');
       final bytes = await File(pathSub).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Plot Data'];
+      final sheet = excel['Ratings'];
       expect(_cellNum(sheet, 2, 4), 7.0);
       expect(_cellNum(sheet, 2, 5), 3.0);
     });
@@ -735,7 +735,7 @@ void main() {
       if (pathArm == null) fail('expected file path');
       final bytes = await File(pathArm).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Plot Data'];
+      final sheet = excel['Ratings'];
       final v = _cell(sheet, 2, 4);
       if (v is DoubleCellValue) {
         expect(v.value, 77.0);

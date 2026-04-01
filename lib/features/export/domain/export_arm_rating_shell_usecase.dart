@@ -123,8 +123,8 @@ class ExportArmRatingShellUseCase {
     };
 
     final excel = Excel.createExcel();
-    excel.rename('Sheet1', 'Plot Data');
-    final sheet = excel['Plot Data'];
+    excel.rename('Sheet1', 'Ratings');
+    final sheet = excel['Ratings'];
 
     _setCellText(sheet, 0, 0, trial.name);
 
@@ -235,9 +235,7 @@ class ExportArmRatingShellUseCase {
         : trial.name
             .replaceAll(RegExp(r'[^\w\s-]'), '')
             .replaceAll(RegExp(r'\s+'), '_');
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final filePath =
-        '${tempDir.path}/AGQ_${safeName}_RatingShell_$timestamp.xlsx';
+    final filePath = '${tempDir.path}/${safeName}_RatingShell.xlsx';
 
     final fileBytes = excel.encode();
     if (fileBytes == null) {
