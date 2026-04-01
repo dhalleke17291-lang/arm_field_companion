@@ -3161,9 +3161,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   Future<void> _navigatePlot(BuildContext context, int direction) async {
     if (direction == -1 && _valueController.text.trim().isNotEmpty) {
-      final ok = await _saveRating(context, navigateAfterSave: false);
+      await _saveRating(context, navigateAfterSave: false);
       if (!mounted || !context.mounted) return;
-      if (!ok) return;
     }
     final ids = widget.filteredPlotIds;
     if (widget.isFilteredMode && ids != null && ids.isNotEmpty) {
