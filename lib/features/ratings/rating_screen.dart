@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
@@ -36,6 +37,8 @@ enum RatingStatus {
   missing,
   techIssue,
 }
+
+enum _RatingLeaveAction { save, discard, cancel }
 
 String _statusDisplayLabel(String value) {
   switch (value) {
@@ -238,6 +241,76 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     });
   }
 
+  bool get _isBackNavigationDirty =>
+      _valueController.text.trim().isNotEmpty ||
+      _numericValueUserEditedThisVisit;
+
+  Future<void> _handleRatingPopInvoked(BuildContext context, bool didPop) async {
+    if (didPop) return;
+    if (!_isBackNavigationDirty) {
+      if (context.mounted) Navigator.of(context).pop();
+      return;
+    }
+    final action = await showDialog<_RatingLeaveAction>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppDesignTokens.cardSurface,
+        title: const Text(
+          'Save rating before leaving?',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        content: const Text(
+          'You have unsaved changes.',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _RatingLeaveAction.cancel),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppDesignTokens.secondaryText),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _RatingLeaveAction.discard),
+            child: const Text(
+              'Discard',
+              style: TextStyle(color: AppDesignTokens.warningFg),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, _RatingLeaveAction.save),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppDesignTokens.primary,
+              foregroundColor: AppDesignTokens.onPrimary,
+            ),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    switch (action) {
+      case _RatingLeaveAction.save:
+        final ok = await _saveRating(context, navigateAfterSave: false);
+        if (ok && context.mounted) Navigator.of(context).pop();
+        break;
+      case _RatingLeaveAction.discard:
+        if (context.mounted) Navigator.of(context).pop();
+        break;
+      case _RatingLeaveAction.cancel:
+      case null:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final existingRatingAsync = ref.watch(
@@ -282,24 +355,29 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots rated'
         : '$ratedCount / $totalPlots plots rated';
 
-    return Theme(
-      data: Theme.of(context).copyWith(
-        inputDecorationTheme: const InputDecorationTheme(
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        await _handleRatingPopInvoked(context, didPop);
+      },
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          inputDecorationTheme: const InputDecorationTheme(
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+          ),
+          dividerColor: const Color(0xFFE8E5E0),
+          dividerTheme: const DividerThemeData(
+            color: Color(0xFFE8E5E0),
+            thickness: 0.5,
+            space: 0,
+          ),
         ),
-        dividerColor: const Color(0xFFE8E5E0),
-        dividerTheme: const DividerThemeData(
-          color: Color(0xFFE8E5E0),
-          thickness: 0.5,
-          space: 0,
-        ),
-      ),
-      child: Scaffold(
+        child: Scaffold(
         backgroundColor: AppDesignTokens.backgroundSurface,
         appBar: AppBar(
           leading: const BackButton(color: Colors.white),
@@ -415,7 +493,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           ],
         ),
       ),
-    ),
+        ),
+      ),
     );
   }
 
@@ -2591,8 +2670,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextButton.icon(
-                  onPressed:
-                      canGoBack ? () => _navigatePlot(context, -1) : null,
+                  onPressed: canGoBack
+                      ? () async {
+                          await _navigatePlot(context, -1);
+                        }
+                      : null,
                   icon: const Icon(Icons.arrow_back, size: 18),
                   label: const Text('Prev', style: TextStyle(fontSize: 13)),
                   style: TextButton.styleFrom(
@@ -2677,6 +2759,30 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
     if (index == widget.currentPlotIndex) return;
     if (!context.mounted) return;
+    if (_valueController.text.trim().isNotEmpty) {
+      final ok = await _saveRating(context, navigateAfterSave: false);
+      if (!mounted || !context.mounted) return;
+      if (!ok) return;
+    }
+    if (context.mounted) {
+      final currentPlotIndex = widget.currentPlotIndex;
+      final destinationIndex = index;
+      if (destinationIndex > currentPlotIndex + 1) {
+        final skippedCount = destinationIndex - currentPlotIndex - 1;
+        if (skippedCount > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Jumping forward — $skippedCount plot(s) will remain unrated. Check the pre-close checklist before closing.',
+                style: const TextStyle(color: AppDesignTokens.warningFg),
+              ),
+              backgroundColor: AppDesignTokens.warningBg,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -2697,13 +2803,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   /// Saves the current rating. When [navigateAfterSave] is true (default), advances to next
   /// assessment or next plot or shows session complete; when false, stays on current plot/assessment.
-  Future<void> _saveRating(BuildContext context,
+  /// Returns true when a row was written successfully (or save was appropriate and completed).
+  Future<bool> _saveRating(BuildContext context,
       {bool navigateAfterSave = true,
       bool skipCarryForwardConfirm = false}) async {
     if (!skipCarryForwardConfirm && _shouldConfirmUnchangedCarryForward()) {
       final proceed = await _showCarryForwardConfirmDialog(context);
-      if (!context.mounted) return;
-      if (!proceed) return;
+      if (!context.mounted) return false;
+      if (!proceed) return false;
       if (mounted && _carryForwardBaselineNumeric != null) {
         setState(() {
           _carryForwardConfirmSuppressedAssessmentId =
@@ -2733,7 +2840,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               backgroundColor: Colors.red,
             ),
           );
-          return;
+          return false;
         }
         if (numericValue != null) {
           numericValue = numericValue.clamp(_effectiveMin, _effectiveMax);
@@ -2773,7 +2880,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
 
     if (!mounted) {
-      return;
+      return false;
     }
     setState(() => _isSaving = false);
 
@@ -2798,7 +2905,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             const SnackBar(content: Text('Saved')),
           );
         }
-        return;
+        return true;
       }
       if (_assessmentIndex < widget.assessments.length - 1) {
         setState(() {
@@ -2817,8 +2924,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _scrollToActiveAssessment();
         _loadPriorRating();
         _prefillFromLastValue();
+        return true;
       } else {
-        if (!context.mounted) return;
+        if (!context.mounted) return false;
         if (_effectiveIsLastPlotForNavigation) {
           if (_isAtEndOfFilteredSequence) {
             _showEndOfFilteredListDialog(context);
@@ -2826,13 +2934,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             _showSessionCompleteDialog(context);
           }
         } else {
-          _navigatePlot(context, 1);
+          await _navigatePlot(context, 1);
         }
+        return true;
       }
     } else if (result.isDebounced) {
       // silent
+      return false;
     } else {
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       final msg = result.errorMessage ?? 'Save failed';
       if (msg == kClosedSessionBlockedMessage) {
         ref
@@ -2845,6 +2955,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           backgroundColor: Colors.red,
         ),
       );
+      return false;
     }
   }
 
@@ -3048,7 +3159,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     return widget.currentPlotIndex <= 0;
   }
 
-  void _navigatePlot(BuildContext context, int direction) {
+  Future<void> _navigatePlot(BuildContext context, int direction) async {
+    if (direction == -1 && _valueController.text.trim().isNotEmpty) {
+      final ok = await _saveRating(context, navigateAfterSave: false);
+      if (!mounted || !context.mounted) return;
+      if (!ok) return;
+    }
     final ids = widget.filteredPlotIds;
     if (widget.isFilteredMode && ids != null && ids.isNotEmpty) {
       final fi = ids.indexOf(widget.plot.id);
