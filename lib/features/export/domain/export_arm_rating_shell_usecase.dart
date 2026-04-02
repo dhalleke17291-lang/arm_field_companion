@@ -155,11 +155,47 @@ class ExportArmRatingShellUseCase {
     final parser = ArmShellParser(shellPath);
     final shellImport = await parser.parse();
 
-    if (shellImport.assessmentColumns.isEmpty) {
-      throw StateError(
-        'The selected file has no assessment columns. '
-        'Select a Rating Shell that ARM has populated with assessments.',
-      );
+    final sortedAssessments = List<TrialAssessment>.from(assessments)
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    final effectiveColumns = shellImport.assessmentColumns.isNotEmpty
+        ? (List<ArmColumnMap>.from(shellImport.assessmentColumns)
+            ..sort((a, b) => a.columnIndex.compareTo(b.columnIndex)))
+        : List.generate(
+            sortedAssessments.length,
+            (i) {
+              final colIdx = 2 + i;
+              final letter = String.fromCharCode('A'.codeUnitAt(0) + colIdx);
+              return ArmColumnMap(
+                armColumnId: letter,
+                columnLetter: letter,
+                columnIndex: colIdx,
+              );
+            },
+          );
+
+    if (shellImport.assessmentColumns.isNotEmpty) {
+      for (var i = 0; i < sortedAssessments.length; i++) {
+        if (i >= effectiveColumns.length) break;
+        final ta = sortedAssessments[i];
+        final col = effectiveColumns[i];
+        final seCode = ta.pestCode?.trim().toUpperCase();
+        final shellSeName = col.seName?.trim().toUpperCase();
+        if (seCode != null &&
+            shellSeName != null &&
+            seCode != shellSeName) {
+          debugPrint(
+            'ExportArmRatingShell: positional mismatch warning — '
+            'assessment[$i] pestCode="$seCode" but shell column '
+            '"${col.columnLetter}" seName="$shellSeName". '
+            'Injecting positionally.',
+          );
+        }
+        final pc = ta.pestCode?.trim();
+        if (pc != null && pc.isNotEmpty) {
+          _logSeCodeMismatch(shellImport.assessmentColumns, pc, i);
+        }
+      }
     }
 
     final ratingValues = <ArmRatingValue>[];
@@ -173,34 +209,29 @@ class ExportArmRatingShellUseCase {
       });
       if (plot == null) {
         debugPrint(
-          'ExportArmRatingShell: no app plot for shell plotNumber ${pr.plotNumber}',
+          'ExportArmRatingShell: no app plot for shell '
+          'plotNumber ${pr.plotNumber}',
         );
         continue;
       }
-      for (final ta in assessments) {
+      for (var i = 0; i < sortedAssessments.length; i++) {
+        if (i >= effectiveColumns.length) {
+          debugPrint(
+            'ExportArmRatingShell: no shell column for '
+            'assessment index $i, skipping.',
+          );
+          break;
+        }
+        final ta = sortedAssessments[i];
+        final col = effectiveColumns[i];
         final legacyId = ta.legacyAssessmentId;
         if (legacyId == null) continue;
-        final seCode = ta.pestCode?.trim();
-        if (seCode == null || seCode.isEmpty) {
-          debugPrint(
-            'ExportArmRatingShellUseCase: ta.pestCode is null for '
-            'assessmentDefinitionId=${ta.assessmentDefinitionId}, skipping.',
-          );
-          continue;
-        }
-        final armId = _matchArmColumnId(
-          shellImport.assessmentColumns,
-          seCode,
-          null,
-        );
-        if (armId == null) {
-          continue;
-        }
+
         if (sessionId == null) {
           ratingValues.add(
             ArmRatingValue(
               plotNumber: pr.plotNumber,
-              armColumnId: armId,
+              armColumnId: col.armColumnId,
               value: '',
             ),
           );
@@ -216,7 +247,7 @@ class ExportArmRatingShellUseCase {
         ratingValues.add(
           ArmRatingValue(
             plotNumber: pr.plotNumber,
-            armColumnId: armId,
+            armColumnId: col.armColumnId,
             value: valueStr,
           ),
         );
@@ -261,22 +292,21 @@ class ExportArmRatingShellUseCase {
     return '';
   }
 
-  String? _matchArmColumnId(
+  void _logSeCodeMismatch(
     List<ArmColumnMap> columns,
     String seCode,
-    String? unused,
+    int positionIndex,
   ) {
     final match = columns.where(
       (c) => c.seName?.trim().toUpperCase() == seCode.toUpperCase(),
     );
     if (match.isEmpty) {
       debugPrint(
-        'ExportArmRatingShellUseCase: no ARM column found '
-        'for seCode "$seCode".',
+        'ExportArmRatingShellUseCase: validation — seCode '
+        '"$seCode" at position $positionIndex has no matching '
+        'shell column by name. Injecting positionally.',
       );
-      return null;
     }
-    return match.first.armColumnId;
   }
 
   String? _mergeWarnings(String? base, List<String> shell) {

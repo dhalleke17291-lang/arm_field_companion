@@ -15,12 +15,6 @@ class ArmValueInjector {
   final ArmShellImport shellImport;
 
   Future<File> inject(List<ArmRatingValue> values, String outputPath) async {
-    if (shellImport.assessmentColumns.isEmpty) {
-      throw StateError(
-        'Cannot inject: shell has no assessment columns. '
-        'Import a shell that ARM has already populated with assessments.',
-      );
-    }
     assert(
       outputPath != shellImport.shellFilePath,
       'outputPath must differ from original shell path',
@@ -39,9 +33,19 @@ class ArmValueInjector {
     final plotRowMap = <int, int>{
       for (final r in shellImport.plotRows) r.plotNumber: r.rowIndex,
     };
-    final columnMap = <String, int>{
-      for (final c in shellImport.assessmentColumns) c.armColumnId: c.columnIndex,
-    };
+    final Map<String, int> columnMap;
+    if (shellImport.assessmentColumns.isNotEmpty) {
+      columnMap = {
+        for (final c in shellImport.assessmentColumns)
+          c.armColumnId: c.columnIndex,
+      };
+    } else {
+      columnMap = {
+        for (final v in values)
+          v.armColumnId:
+              v.armColumnId.codeUnitAt(0) - 'A'.codeUnitAt(0),
+      };
+    }
 
     for (final v in values) {
       final rowIdx = plotRowMap[v.plotNumber];
