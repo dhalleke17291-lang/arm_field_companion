@@ -73,7 +73,7 @@ Future<void> _insertCompatibilityProfile({
 Trial _trial({
   required int id,
   String name = 'Test Trial',
-  bool isArmLinked = false,
+  bool isArmLinked = true,
   DateTime? armImportedAt,
 }) =>
     Trial(
@@ -101,11 +101,66 @@ String _cellString(Sheet sheet, int row, int col) {
   return v.toString();
 }
 
-double _cellNum(Sheet sheet, int row, int col) {
-  final v = _cell(sheet, row, col);
-  if (v is DoubleCellValue) return v.value;
-  if (v is IntCellValue) return v.value.toDouble();
-  fail('expected numeric cell at row $row col $col, got $v');
+/// Minimal ARM-style Plot Data sheet for [ArmShellParser] / [ArmValueInjector].
+Future<String> writeArmShellFixture(
+  String tempDir, {
+  required List<int> plotNumbers,
+  required List<String> armColumnIds,
+  required List<String> seNames,
+  List<String>? ratingDates,
+}) async {
+  final excel = Excel.createExcel();
+  excel.rename('Sheet1', 'Plot Data');
+  final sheet = excel['Plot Data'];
+
+  void setText(int r, int c, String t) {
+    sheet
+        .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
+        .value = TextCellValue(t);
+  }
+
+  void setInt(int r, int c, int v) {
+    sheet
+        .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
+        .value = IntCellValue(v);
+  }
+
+  setText(1, 2, 'T');
+  setText(2, 2, 'id');
+  setText(3, 2, 'c');
+  setText(4, 2, 'cr');
+  setText(5, 2, 'f');
+
+  for (var i = 0; i < armColumnIds.length; i++) {
+    final col = 2 + i;
+    setText(7, col, armColumnIds[i]);
+    setText(
+      15,
+      col,
+      ratingDates != null && i < ratingDates.length ? ratingDates[i] : '',
+    );
+    setText(17, col, seNames[i]);
+    setText(20, col, 'TYPE');
+    setText(21, col, 'u');
+    setText(29, col, 'st');
+    setText(41, col, 'tim');
+    setText(46, col, '1');
+  }
+
+  setText(47, 0, '041TRT');
+  setText(47, 1, 'Plot (Sub)');
+
+  for (var i = 0; i < plotNumbers.length; i++) {
+    final row = 48 + i;
+    setInt(row, 0, 1);
+    setInt(row, 1, plotNumbers[i]);
+  }
+
+  final path = '$tempDir/shell_${DateTime.now().microsecondsSinceEpoch}.xlsx';
+  final b = excel.encode();
+  if (b == null) throw StateError('encode');
+  await File(path).writeAsBytes(b);
+  return path;
 }
 
 class _FakePathProvider extends PathProviderPlatform {
@@ -141,7 +196,10 @@ void main() {
     await db.close();
   });
 
-  ExportArmRatingShellUseCase makeUc() => ExportArmRatingShellUseCase(
+  ExportArmRatingShellUseCase makeUc({
+    Future<String?> Function()? pickShellPathOverride,
+  }) =>
+      ExportArmRatingShellUseCase(
         db: db,
         plotRepository: PlotRepository(db),
         treatmentRepository: TreatmentRepository(db),
@@ -150,9 +208,26 @@ void main() {
         sessionRepository: SessionRepository(db),
         persistence: ArmImportPersistenceRepository(db),
         shareOverride: (_) async {},
+        pickShellPathOverride: pickShellPathOverride,
       );
 
   group('ExportArmRatingShellUseCase', () {
+    test('throws when trial is not ARM-linked', () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'NoArm', workspaceType: 'efficacy');
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+      );
+      final uc = makeUc();
+      expect(
+        () => uc.execute(trial: _trial(id: trialId, isArmLinked: false)),
+        throwsStateError,
+      );
+    });
+
     test('blocked confidence returns failure result', () async {
       final trialRepo = TrialRepository(db);
       final trialId =
@@ -184,7 +259,57 @@ void main() {
       expect(r.errorMessage, contains('No plots'));
     });
 
-    test('numeric rating written to correct cell', () async {
+    test('pick cancelled returns failure', () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'Cancel', workspaceType: 'efficacy');
+      final trtId = await TreatmentRepository(db).insertTreatment(
+        trialId: trialId,
+        code: '1',
+        name: 'T',
+      );
+      await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: '101',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 1,
+      );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'AVEFA',
+              name: 'A',
+              category: 'pest',
+            ),
+          );
+      final legacyAsmId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: 'Legacy A',
+            ),
+          );
+      await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              legacyAssessmentId: Value(legacyAsmId),
+              sortOrder: const Value(0),
+              pestCode: const Value('AVEFA'),
+            ),
+          );
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+        columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+      );
+      final uc = makeUc(pickShellPathOverride: () async => null);
+      final r = await uc.execute(trial: _trial(id: trialId));
+      expect(r.success, false);
+      expect(r.errorMessage, contains('cancelled'));
+    });
+
+    test('numeric rating written to Plot Data sheet', () async {
       final trialRepo = TrialRepository(db);
       final trialId =
           await trialRepo.createTrial(name: 'Num', workspaceType: 'efficacy');
@@ -260,374 +385,26 @@ void main() {
         ],
       );
 
-      final uc = makeUc();
+      final shellPath = await writeArmShellFixture(
+        tempPath,
+        plotNumbers: const [101],
+        armColumnIds: const ['001EID001'],
+        seNames: const ['AVEFA'],
+        ratingDates: const ['1-Jul-26'],
+      );
+
+      final uc = makeUc(
+        pickShellPathOverride: () async => shellPath,
+      );
       final r = await uc.execute(trial: _trial(id: trialId));
       expect(r.success, true);
       final path = r.filePath;
       if (path == null) fail('expected file path');
       final bytes = await File(path).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Ratings'];
-      final v = _cell(sheet, 2, 4);
-      expect(v, isA<DoubleCellValue>());
-      expect((v as DoubleCellValue).value, 42.5);
-    });
-
-    test('blank rating written as empty string not zero', () async {
-      final trialRepo = TrialRepository(db);
-      final trialId =
-          await trialRepo.createTrial(name: 'Blank', workspaceType: 'efficacy');
-      final trtId = await TreatmentRepository(db).insertTreatment(
-        trialId: trialId,
-        code: '1',
-        name: 'Check',
-      );
-      await PlotRepository(db).insertPlot(
-        trialId: trialId,
-        plotId: '101',
-        rep: 1,
-        treatmentId: trtId,
-        plotSortIndex: 1,
-      );
-      final defId = await db.into(db.assessmentDefinitions).insert(
-            AssessmentDefinitionsCompanion.insert(
-              code: 'AVEFA',
-              name: 'A',
-              category: 'pest',
-            ),
-          );
-      final legacyAsmId = await db.into(db.assessments).insert(
-            AssessmentsCompanion.insert(
-              trialId: trialId,
-              name: 'Legacy A',
-            ),
-          );
-      await db.into(db.trialAssessments).insert(
-            TrialAssessmentsCompanion.insert(
-              trialId: trialId,
-              assessmentDefinitionId: defId,
-              legacyAssessmentId: Value(legacyAsmId),
-              sortOrder: const Value(0),
-              pestCode: const Value('AVEFA'),
-            ),
-          );
-      await db.into(db.sessions).insert(
-            SessionsCompanion.insert(
-              trialId: trialId,
-              name: 'S1',
-              sessionDateLocal: '2026-01-01',
-            ),
-          );
-
-      await _insertCompatibilityProfile(
-        db: db,
-        trialId: trialId,
-        exportConfidence: ImportConfidence.high,
-        columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
-      );
-
-      final uc = makeUc();
-      final r = await uc.execute(trial: _trial(id: trialId));
-      expect(r.success, true);
-      final pathBlank = r.filePath;
-      if (pathBlank == null) fail('expected file path');
-      final bytes = await File(pathBlank).readAsBytes();
-      final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Ratings'];
-      expect(_cellString(sheet, 2, 4), '');
-      final v = _cell(sheet, 2, 4);
-      expect(v, isNot(isA<IntCellValue>()));
-      expect(v is DoubleCellValue, false);
-    });
-
-    test('plot order is ascending by plotNumber', () async {
-      final trialRepo = TrialRepository(db);
-      final trialId =
-          await trialRepo.createTrial(name: 'Order', workspaceType: 'efficacy');
-      final trtId = await TreatmentRepository(db).insertTreatment(
-        trialId: trialId,
-        code: '1',
-        name: 'T',
-      );
-      await PlotRepository(db).insertPlot(
-        trialId: trialId,
-        plotId: '2',
-        rep: 1,
-        treatmentId: trtId,
-        plotSortIndex: 2,
-      );
-      await PlotRepository(db).insertPlot(
-        trialId: trialId,
-        plotId: '1',
-        rep: 1,
-        treatmentId: trtId,
-        plotSortIndex: 1,
-      );
-      final defId = await db.into(db.assessmentDefinitions).insert(
-            AssessmentDefinitionsCompanion.insert(
-              code: 'AVEFA',
-              name: 'A',
-              category: 'pest',
-            ),
-          );
-      final legacyAsmId = await db.into(db.assessments).insert(
-            AssessmentsCompanion.insert(
-              trialId: trialId,
-              name: 'Legacy A',
-            ),
-          );
-      await db.into(db.trialAssessments).insert(
-            TrialAssessmentsCompanion.insert(
-              trialId: trialId,
-              assessmentDefinitionId: defId,
-              legacyAssessmentId: Value(legacyAsmId),
-              sortOrder: const Value(0),
-              pestCode: const Value('AVEFA'),
-            ),
-          );
-      await _insertCompatibilityProfile(
-        db: db,
-        trialId: trialId,
-        exportConfidence: ImportConfidence.high,
-        columnOrderOnExport: const ['AVEFA'],
-      );
-
-      final uc = makeUc();
-      final r = await uc.execute(trial: _trial(id: trialId));
-      expect(r.success, true);
-      final pathOrder = r.filePath;
-      if (pathOrder == null) fail('expected file path');
-      final bytes = await File(pathOrder).readAsBytes();
-      final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Ratings'];
-      expect(_cellString(sheet, 2, 0), '1');
-      expect(_cellString(sheet, 3, 0), '2');
-    });
-
-    test('assessment column order matches columnOrderOnExport', () async {
-      final trialRepo = TrialRepository(db);
-      final trialId =
-          await trialRepo.createTrial(name: 'Col', workspaceType: 'efficacy');
-      final trtId = await TreatmentRepository(db).insertTreatment(
-        trialId: trialId,
-        code: '1',
-        name: 'T',
-      );
-      await PlotRepository(db).insertPlot(
-        trialId: trialId,
-        plotId: '1',
-        rep: 1,
-        treatmentId: trtId,
-        plotSortIndex: 1,
-      );
-      for (final code in ['ZZZ', 'AAA']) {
-        final defId = await db.into(db.assessmentDefinitions).insert(
-              AssessmentDefinitionsCompanion.insert(
-                code: code,
-                name: code,
-                category: 'pest',
-              ),
-            );
-        final legacyId = await db.into(db.assessments).insert(
-              AssessmentsCompanion.insert(
-                trialId: trialId,
-                name: 'L$code',
-              ),
-            );
-        await db.into(db.trialAssessments).insert(
-              TrialAssessmentsCompanion.insert(
-                trialId: trialId,
-                assessmentDefinitionId: defId,
-                legacyAssessmentId: Value(legacyId),
-                sortOrder: Value(code == 'ZZZ' ? 0 : 1),
-                pestCode: Value(code),
-              ),
-            );
-      }
-      await _insertCompatibilityProfile(
-        db: db,
-        trialId: trialId,
-        exportConfidence: ImportConfidence.high,
-        columnOrderOnExport: const ['ZZZ hdr', 'AAA hdr'],
-      );
-
-      final uc = makeUc();
-      final r = await uc.execute(trial: _trial(id: trialId));
-      expect(r.success, true);
-      final pathCol = r.filePath;
-      if (pathCol == null) fail('expected file path');
-      final bytes = await File(pathCol).readAsBytes();
-      final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Ratings'];
-      expect(_cellString(sheet, 1, 4), 'ZZZ hdr');
-      expect(_cellString(sheet, 1, 5), 'AAA hdr');
-    });
-
-    test('treatment name written in col 3', () async {
-      final trialRepo = TrialRepository(db);
-      final trialId =
-          await trialRepo.createTrial(name: 'TN', workspaceType: 'efficacy');
-      final trtId = await TreatmentRepository(db).insertTreatment(
-        trialId: trialId,
-        code: '1',
-        name: 'Product Alpha',
-      );
-      await PlotRepository(db).insertPlot(
-        trialId: trialId,
-        plotId: '1',
-        rep: 1,
-        treatmentId: trtId,
-        plotSortIndex: 1,
-      );
-      final defId = await db.into(db.assessmentDefinitions).insert(
-            AssessmentDefinitionsCompanion.insert(
-              code: 'AVEFA',
-              name: 'A',
-              category: 'pest',
-            ),
-          );
-      final legacyAsmId = await db.into(db.assessments).insert(
-            AssessmentsCompanion.insert(
-              trialId: trialId,
-              name: 'Legacy A',
-            ),
-          );
-      await db.into(db.trialAssessments).insert(
-            TrialAssessmentsCompanion.insert(
-              trialId: trialId,
-              assessmentDefinitionId: defId,
-              legacyAssessmentId: Value(legacyAsmId),
-              sortOrder: const Value(0),
-              pestCode: const Value('AVEFA'),
-            ),
-          );
-      await _insertCompatibilityProfile(
-        db: db,
-        trialId: trialId,
-        exportConfidence: ImportConfidence.high,
-        columnOrderOnExport: const ['AVEFA'],
-      );
-
-      final uc = makeUc();
-      final r = await uc.execute(trial: _trial(id: trialId));
-      expect(r.success, true);
-      final pathTn = r.filePath;
-      if (pathTn == null) fail('expected file path');
-      final bytes = await File(pathTn).readAsBytes();
-      final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Ratings'];
-      expect(_cellString(sheet, 2, 3), 'Product Alpha');
-    });
-
-    test('longer pestCode wins when shorter code is substring', () async {
-      final trialRepo = TrialRepository(db);
-      final trialId =
-          await trialRepo.createTrial(name: 'Sub', workspaceType: 'efficacy');
-      final trtId = await TreatmentRepository(db).insertTreatment(
-        trialId: trialId,
-        code: '1',
-        name: 'T',
-      );
-      final plotPk = await PlotRepository(db).insertPlot(
-        trialId: trialId,
-        plotId: '1',
-        rep: 1,
-        treatmentId: trtId,
-        plotSortIndex: 1,
-      );
-      final defAb = await db.into(db.assessmentDefinitions).insert(
-            AssessmentDefinitionsCompanion.insert(
-              code: 'DEFAB',
-              name: 'AB',
-              category: 'pest',
-            ),
-          );
-      final defAbc = await db.into(db.assessmentDefinitions).insert(
-            AssessmentDefinitionsCompanion.insert(
-              code: 'DEFABC',
-              name: 'ABC',
-              category: 'pest',
-            ),
-          );
-      final legAb = await db.into(db.assessments).insert(
-            AssessmentsCompanion.insert(
-              trialId: trialId,
-              name: 'LAB',
-            ),
-          );
-      final legAbc = await db.into(db.assessments).insert(
-            AssessmentsCompanion.insert(
-              trialId: trialId,
-              name: 'LABC',
-            ),
-          );
-      final taAb = await db.into(db.trialAssessments).insert(
-            TrialAssessmentsCompanion.insert(
-              trialId: trialId,
-              assessmentDefinitionId: defAb,
-              legacyAssessmentId: Value(legAb),
-              sortOrder: const Value(0),
-              pestCode: const Value('AB'),
-            ),
-          );
-      final taAbc = await db.into(db.trialAssessments).insert(
-            TrialAssessmentsCompanion.insert(
-              trialId: trialId,
-              assessmentDefinitionId: defAbc,
-              legacyAssessmentId: Value(legAbc),
-              sortOrder: const Value(1),
-              pestCode: const Value('ABC'),
-            ),
-          );
-      final sessionId = await db.into(db.sessions).insert(
-            SessionsCompanion.insert(
-              trialId: trialId,
-              name: 'S1',
-              sessionDateLocal: '2026-01-01',
-            ),
-          );
-      await db.into(db.ratingRecords).insert(
-            RatingRecordsCompanion.insert(
-              trialId: trialId,
-              plotPk: plotPk,
-              assessmentId: legAbc,
-              sessionId: sessionId,
-              trialAssessmentId: Value(taAbc),
-              resultStatus: const Value('RECORDED'),
-              numericValue: const Value(7.0),
-              isCurrent: const Value(true),
-            ),
-          );
-      await db.into(db.ratingRecords).insert(
-            RatingRecordsCompanion.insert(
-              trialId: trialId,
-              plotPk: plotPk,
-              assessmentId: legAb,
-              sessionId: sessionId,
-              trialAssessmentId: Value(taAb),
-              resultStatus: const Value('RECORDED'),
-              numericValue: const Value(3.0),
-              isCurrent: const Value(true),
-            ),
-          );
-
-      await _insertCompatibilityProfile(
-        db: db,
-        trialId: trialId,
-        exportConfidence: ImportConfidence.high,
-        columnOrderOnExport: const ['ABC column', 'AB column'],
-      );
-
-      final uc = makeUc();
-      final r = await uc.execute(trial: _trial(id: trialId));
-      expect(r.success, true);
-      final pathSub = r.filePath;
-      if (pathSub == null) fail('expected file path');
-      final bytes = await File(pathSub).readAsBytes();
-      final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Ratings'];
-      expect(_cellNum(sheet, 2, 4), 7.0);
-      expect(_cellNum(sheet, 2, 5), 3.0);
+      final sheet = excel.sheets['Plot Data'];
+      expect(sheet, isNotNull);
+      expect(_cellString(sheet!, 48, 2), '42.5');
     });
 
     test('ARM-linked trial uses ARM Import Session for ratings not newest session',
@@ -728,81 +505,26 @@ void main() {
         ],
       );
 
-      final uc = makeUc();
+      final shellPath = await writeArmShellFixture(
+        tempPath,
+        plotNumbers: const [101],
+        armColumnIds: const ['001EID001'],
+        seNames: const ['AVEFA'],
+        ratingDates: const ['1-Jul-26'],
+      );
+
+      final uc = makeUc(
+        pickShellPathOverride: () async => shellPath,
+      );
       final r = await uc.execute(trial: trialRow);
       expect(r.success, true);
       final pathArm = r.filePath;
       if (pathArm == null) fail('expected file path');
       final bytes = await File(pathArm).readAsBytes();
       final excel = Excel.decodeBytes(bytes);
-      final sheet = excel['Ratings'];
-      final v = _cell(sheet, 2, 4);
-      if (v is DoubleCellValue) {
-        expect(v.value, 77.0);
-      } else if (v is IntCellValue) {
-        expect(v.value, 77);
-      } else {
-        fail('expected numeric cell, got $v');
-      }
-    });
-
-    test('null pestCode falls back to definition code with warning', () async {
-      final trialRepo = TrialRepository(db);
-      final trialId =
-          await trialRepo.createTrial(name: 'NullPest', workspaceType: 'efficacy');
-      final trtId = await TreatmentRepository(db).insertTreatment(
-        trialId: trialId,
-        code: '1',
-        name: 'T',
-      );
-      await PlotRepository(db).insertPlot(
-        trialId: trialId,
-        plotId: '1',
-        rep: 1,
-        treatmentId: trtId,
-        plotSortIndex: 1,
-      );
-      final defId = await db.into(db.assessmentDefinitions).insert(
-            AssessmentDefinitionsCompanion.insert(
-              code: 'XCODE',
-              name: 'X',
-              category: 'pest',
-            ),
-          );
-      final legacyAsmId = await db.into(db.assessments).insert(
-            AssessmentsCompanion.insert(
-              trialId: trialId,
-              name: 'Legacy X',
-            ),
-          );
-      await db.into(db.trialAssessments).insert(
-            TrialAssessmentsCompanion.insert(
-              trialId: trialId,
-              assessmentDefinitionId: defId,
-              legacyAssessmentId: Value(legacyAsmId),
-              sortOrder: const Value(0),
-            ),
-          );
-      await db.into(db.sessions).insert(
-            SessionsCompanion.insert(
-              trialId: trialId,
-              name: 'S1',
-              sessionDateLocal: '2026-01-01',
-            ),
-          );
-
-      await _insertCompatibilityProfile(
-        db: db,
-        trialId: trialId,
-        exportConfidence: ImportConfidence.high,
-        columnOrderOnExport: const ['XCODE hdr'],
-      );
-
-      final uc = makeUc();
-      final r = await uc.execute(trial: _trial(id: trialId));
-      expect(r.success, true);
-      expect(r.warningMessage, contains('unknownPattern'));
-      expect(r.warningMessage, contains('pestCode'));
+      final sheet = excel.sheets['Plot Data'];
+      expect(sheet, isNotNull);
+      expect(double.parse(_cellString(sheet!, 48, 2)), 77.0);
     });
   });
 }

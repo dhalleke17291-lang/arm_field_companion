@@ -1,9 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:drift/drift.dart';
-import 'package:excel/excel.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -11,6 +9,10 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/database/app_database.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
+import '../../../data/services/arm_shell_parser.dart';
+import '../../../data/services/arm_value_injector.dart';
+import '../../../domain/models/arm_column_map.dart';
+import '../../../domain/models/arm_rating_value.dart';
 import '../../arm_import/data/arm_import_persistence_repository.dart';
 import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
@@ -31,6 +33,9 @@ class ExportArmRatingShellUseCase {
   final ArmImportPersistenceRepository _persistence;
   final ArmRatingShellShareOverride? shareOverride;
 
+  /// Test-only: bypass [FilePicker] and return a shell `.xlsx` path (or null to cancel).
+  final Future<String?> Function()? pickShellPathOverride;
+
   ExportArmRatingShellUseCase({
     required AppDatabase db,
     required PlotRepository plotRepository,
@@ -40,6 +45,7 @@ class ExportArmRatingShellUseCase {
     required SessionRepository sessionRepository,
     required ArmImportPersistenceRepository persistence,
     this.shareOverride,
+    this.pickShellPathOverride,
   })  : _db = db,
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
@@ -53,6 +59,13 @@ class ExportArmRatingShellUseCase {
     /// When true, file is written but [Share] / [shareOverride] are skipped (UI shares with sheet origin).
     bool suppressShare = false,
   }) async {
+    if (!trial.isArmLinked) {
+      throw StateError(
+        'ExportArmRatingShellUseCase must only be called for ARM-linked trials. '
+        'Use ExportTrialUseCase for standalone trials.',
+      );
+    }
+
     final profile = await _persistence.getLatestCompatibilityProfileForTrial(
       trial.id,
     );
@@ -79,6 +92,7 @@ class ExportArmRatingShellUseCase {
     ]);
     final plots = loaded[0] as List<Plot>;
     final assessments = loaded[1] as List<TrialAssessment>;
+    // ignore: unused_local_variable
     final treatments = loaded[2] as List<Treatment>;
 
     if (plots.isEmpty) {
@@ -115,91 +129,81 @@ class ExportArmRatingShellUseCase {
       );
     }
 
-    final tokens = _parseAssessmentTokens(snapshot?.assessmentTokens);
-
-    // STEP 3 — treatment lookup by numeric key derived from treatment code.
-    final treatmentByNumber = <int, Treatment>{
-      for (final t in treatments) _treatmentNumberKey(t): t,
-    };
-
-    final excel = Excel.createExcel();
-    excel.rename('Sheet1', 'Ratings');
-    final sheet = excel['Ratings'];
-
-    _setCellText(sheet, 0, 0, trial.name);
-
-    _setCellText(sheet, 1, 0, 'Plot No.');
-    _setCellText(sheet, 1, 1, 'trt');
-    _setCellText(sheet, 1, 2, 'reps');
-    _setCellText(sheet, 1, 3, 'Treatment Name');
-    for (var i = 0; i < assessmentColumns.length; i++) {
-      _setCellText(sheet, 1, 4 + i, assessmentColumns[i]);
-    }
-
-    final sortedPlots = [...plots]..sort((a, b) {
-        final ka = _plotNumberKey(a);
-        final kb = _plotNumberKey(b);
-        return ka.compareTo(kb);
-      });
+    // ignore: unused_local_variable
+    final snapshotTokens = _parseAssessmentTokens(snapshot?.assessmentTokens);
 
     final sessionId = await _sessionRepository.resolveSessionIdForRatingShell(trial);
 
-    for (var plotIndex = 0; plotIndex < sortedPlots.length; plotIndex++) {
-      final plot = sortedPlots[plotIndex];
-      final row = 2 + plotIndex;
-      final treatmentId = await _treatmentIdForPlot(plot.id, trial.id);
-      final effectiveTreatment = treatmentId == null
-          ? null
-          : treatments.firstWhereOrNull((t) => t.id == treatmentId);
-      final treatmentKey =
-          effectiveTreatment != null ? _treatmentNumberKey(effectiveTreatment) : null;
-      final treatmentFromMap = treatmentKey != null
-          ? treatmentByNumber[treatmentKey]
-          : null;
-      final tRow = (treatmentFromMap != null &&
-              effectiveTreatment != null &&
-              treatmentFromMap.id == effectiveTreatment.id)
-          ? treatmentFromMap
-          : effectiveTreatment;
+    final String? shellPath;
+    if (pickShellPathOverride != null) {
+      shellPath = await pickShellPathOverride!();
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['xlsx'],
+        dialogTitle: 'Select ARM Rating Shell for ${trial.name}',
+      );
+      if (result == null || result.files.isEmpty) {
+        return ArmRatingShellResult.failure('Export cancelled.');
+      }
+      shellPath = result.files.single.path;
+    }
+    if (shellPath == null) {
+      return ArmRatingShellResult.failure('Export cancelled.');
+    }
 
-      _setCellText(sheet, row, 0, plot.plotId);
-      _setCellText(
-        sheet,
-        row,
-        1,
-        tRow?.code ?? '',
-      );
-      _setCellText(
-        sheet,
-        row,
-        2,
-        plot.rep != null ? plot.rep.toString() : '',
-      );
-      _setCellText(
-        sheet,
-        row,
-        3,
-        tRow?.name ?? '',
-      );
+    final parser = ArmShellParser(shellPath);
+    final shellImport = await parser.parse();
 
-      for (var ai = 0; ai < assessmentColumns.length; ai++) {
-        final header = assessmentColumns[ai];
-        final col = 4 + ai;
-        if (sessionId == null) {
-          _setCellText(sheet, row, col, '');
+    if (shellImport.assessmentColumns.isEmpty) {
+      throw StateError(
+        'The selected file has no assessment columns. '
+        'Select a Rating Shell that ARM has populated with assessments.',
+      );
+    }
+
+    final ratingValues = <ArmRatingValue>[];
+    for (final pr in shellImport.plotRows) {
+      final plot = plots.firstWhereOrNull((p) {
+        final n = int.tryParse(p.plotId.trim());
+        if (n != null) {
+          return n == pr.plotNumber;
+        }
+        return p.plotId.trim() == pr.plotNumber.toString();
+      });
+      if (plot == null) {
+        debugPrint(
+          'ExportArmRatingShell: no app plot for shell plotNumber ${pr.plotNumber}',
+        );
+        continue;
+      }
+      for (final ta in assessments) {
+        final legacyId = ta.legacyAssessmentId;
+        if (legacyId == null) continue;
+        final seCode = ta.pestCode?.trim();
+        if (seCode == null || seCode.isEmpty) {
+          debugPrint(
+            'ExportArmRatingShellUseCase: ta.pestCode is null for '
+            'assessmentDefinitionId=${ta.assessmentDefinitionId}, skipping.',
+          );
           continue;
         }
-        final ta = _matchTrialAssessmentForHeader(
-          header,
-          assessments,
-          defById,
-          tokens,
-          shellWarnings,
-          warnedNullPestTaIds,
+        final armId = _matchArmColumnId(
+          shellImport.assessmentColumns,
+          seCode,
+          null,
         );
-        final legacyId = ta?.legacyAssessmentId;
-        if (legacyId == null) {
-          _setCellText(sheet, row, col, '');
+        if (armId == null) {
+          continue;
+        }
+        if (sessionId == null) {
+          ratingValues.add(
+            ArmRatingValue(
+              plotNumber: pr.plotNumber,
+              armColumnId: armId,
+              value: '',
+            ),
+          );
           continue;
         }
         final rating = await _ratingRepository.getCurrentRating(
@@ -208,40 +212,26 @@ class ExportArmRatingShellUseCase {
           assessmentId: legacyId,
           sessionId: sessionId,
         );
-        if (rating == null) {
-          _setCellText(sheet, row, col, '');
-          continue;
-        }
-        if (rating.numericValue != null) {
-          sheet
-              .cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row))
-              .value = DoubleCellValue(rating.numericValue!);
-        } else if (rating.textValue != null &&
-            rating.textValue!.trim().isNotEmpty) {
-          _setCellText(sheet, row, col, rating.textValue!);
-        } else {
-          _setCellText(sheet, row, col, '');
-        }
+        final valueStr = _ratingValueAsString(rating);
+        ratingValues.add(
+          ArmRatingValue(
+            plotNumber: pr.plotNumber,
+            armColumnId: armId,
+            value: valueStr,
+          ),
+        );
       }
     }
 
+    final injector = ArmValueInjector(shellImport);
+    final safeBase = trial.name
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .replaceAll(' ', '_')
+        .trim();
+    final safeName = safeBase.isEmpty ? 'trial_${trial.id}' : safeBase;
     final tempDir = await getTemporaryDirectory();
-    final safeName = trial.name
-            .replaceAll(RegExp(r'[^\w\s-]'), '')
-            .replaceAll(RegExp(r'\s+'), '_')
-            .trim()
-            .isEmpty
-        ? 'trial_${trial.id}'
-        : trial.name
-            .replaceAll(RegExp(r'[^\w\s-]'), '')
-            .replaceAll(RegExp(r'\s+'), '_');
-    final filePath = '${tempDir.path}/${safeName}_RatingShell.xlsx';
-
-    final fileBytes = excel.encode();
-    if (fileBytes == null) {
-      return ArmRatingShellResult.failure('Failed to encode Excel file.');
-    }
-    await File(filePath).writeAsBytes(fileBytes);
+    final filePath = '${tempDir.path}/${safeName}_RatingShell_filled.xlsx';
+    await injector.inject(ratingValues, filePath);
 
     if (!suppressShare) {
       if (shareOverride != null) {
@@ -259,6 +249,34 @@ class ExportArmRatingShellUseCase {
       warningMessage:
           _mergeWarnings(confidenceWarningMessage, shellWarnings),
     );
+  }
+
+  String _ratingValueAsString(RatingRecord? rating) {
+    if (rating == null) return '';
+    if (rating.numericValue != null) {
+      return rating.numericValue!.toString();
+    }
+    final t = rating.textValue;
+    if (t != null && t.trim().isNotEmpty) return t;
+    return '';
+  }
+
+  String? _matchArmColumnId(
+    List<ArmColumnMap> columns,
+    String seCode,
+    String? unused,
+  ) {
+    final match = columns.where(
+      (c) => c.seName?.trim().toUpperCase() == seCode.toUpperCase(),
+    );
+    if (match.isEmpty) {
+      debugPrint(
+        'ExportArmRatingShellUseCase: no ARM column found '
+        'for seCode "$seCode".',
+      );
+      return null;
+    }
+    return match.first.armColumnId;
   }
 
   String? _mergeWarnings(String? base, List<String> shell) {
@@ -412,100 +430,4 @@ class ExportArmRatingShellUseCase {
     }
   }
 
-  int _treatmentNumberKey(Treatment t) {
-    final n = int.tryParse(t.code.replaceAll(RegExp(r'[^0-9]'), ''));
-    if (n != null) return n;
-    return int.tryParse(t.code) ?? t.id;
-  }
-
-  /// ARM plot label order: parse [Plot.plotId] as int when possible (101, 201);
-  /// otherwise [plotSortIndex], then database id.
-  int _plotNumberKey(Plot p) {
-    final n = int.tryParse(p.plotId.trim());
-    if (n != null) return n;
-    return p.plotSortIndex ?? p.id;
-  }
-
-  Future<int?> _treatmentIdForPlot(int plotPk, int trialId) async {
-    final assign = await (_db.select(_db.assignments)
-          ..where((a) => a.plotId.equals(plotPk) & a.trialId.equals(trialId)))
-        .getSingleOrNull();
-    if (assign?.treatmentId != null) return assign!.treatmentId;
-    final plot = await (_db.select(_db.plots)..where((p) => p.id.equals(plotPk)))
-        .getSingleOrNull();
-    return plot?.treatmentId;
-  }
-
-  TrialAssessment? _matchTrialAssessmentForHeader(
-    String header,
-    List<TrialAssessment> tas,
-    Map<int, AssessmentDefinition> defById,
-    List<Map<String, dynamic>>? tokens,
-    List<String> shellWarnings,
-    Set<int> warnedNullPestTaIds,
-  ) {
-    final withPest = tas
-        .where((t) => t.pestCode != null && t.pestCode!.trim().isNotEmpty)
-        .toList()
-      ..sort((a, b) => b.pestCode!.length.compareTo(a.pestCode!.length));
-    for (final ta in withPest) {
-      if (header.contains(ta.pestCode!)) return ta;
-    }
-
-    if (tokens != null) {
-      for (final t in tokens) {
-        if (t['rawHeader'] != header) continue;
-        final ac = (t['armCode'] as String?)?.trim();
-        final tc = (t['timingCode'] as String?)?.trim() ?? '';
-        if (ac == null) continue;
-        for (final ta in tas) {
-          final pc = ta.pestCode?.trim();
-          if (pc != null && pc.toUpperCase() == ac.toUpperCase()) {
-            final def = defById[ta.assessmentDefinitionId];
-            final defTiming = def?.timingCode?.trim() ?? '';
-            if (tc.isEmpty || defTiming == tc) return ta;
-          }
-        }
-        for (final ta in tas) {
-          final def = defById[ta.assessmentDefinitionId];
-          if (def == null) continue;
-          if (def.code.toUpperCase() == ac.toUpperCase()) {
-            final defTiming = def.timingCode?.trim() ?? '';
-            if (tc.isEmpty || defTiming == tc) {
-              _addNullPestWarningIfNeeded(
-                shellWarnings,
-                ta,
-                def.code,
-                warnedNullPestTaIds,
-              );
-              return ta;
-            }
-          }
-        }
-      }
-    }
-
-    for (final ta in tas) {
-      if (ta.pestCode != null && ta.pestCode!.trim().isNotEmpty) continue;
-      final def = defById[ta.assessmentDefinitionId];
-      if (def != null &&
-          def.code.trim().isNotEmpty &&
-          header.contains(def.code)) {
-        _addNullPestWarningIfNeeded(
-          shellWarnings,
-          ta,
-          def.code,
-          warnedNullPestTaIds,
-        );
-        return ta;
-      }
-    }
-    return null;
-  }
-
-  void _setCellText(Sheet sheet, int row, int col, String text) {
-    sheet
-        .cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row))
-        .value = TextCellValue(text);
-  }
 }
