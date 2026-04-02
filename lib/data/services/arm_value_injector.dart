@@ -22,6 +22,12 @@ class ArmValueInjector {
 
     final bytes = await File(shellImport.shellFilePath).readAsBytes();
     final excel = Excel.decodeBytes(bytes);
+    // Touch every sheet so the excel package fully parses each worksheet
+    // before encode(). Re-encoding can otherwise corrupt untouched sheets
+    // (e.g. Subsample Treatment Means / sheet5.xml) when only Plot Data is edited.
+    for (final sheetName in excel.sheets.keys) {
+      final _ = excel[sheetName];
+    }
     final sheets = excel.sheets;
     final sheet = sheets['Plot Data'];
     if (sheet == null) {

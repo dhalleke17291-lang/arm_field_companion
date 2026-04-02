@@ -215,15 +215,16 @@ class ExportArmRatingShellUseCase {
         continue;
       }
       for (var i = 0; i < sortedAssessments.length; i++) {
-        if (i >= effectiveColumns.length) {
-          debugPrint(
-            'ExportArmRatingShell: no shell column for '
-            'assessment index $i, skipping.',
-          );
-          break;
-        }
         final ta = sortedAssessments[i];
-        final col = effectiveColumns[i];
+        final def = defById[ta.assessmentDefinitionId];
+        final col = _matchColumnForAssessment(
+          columns: effectiveColumns,
+          ta: ta,
+          def: def,
+          positionalIndex: i,
+        );
+        if (col == null) continue;
+
         final legacyId = ta.legacyAssessmentId;
         if (legacyId == null) continue;
 
@@ -290,6 +291,49 @@ class ExportArmRatingShellUseCase {
     final t = rating.textValue;
     if (t != null && t.trim().isNotEmpty) return t;
     return '';
+  }
+
+  /// Matches a shell assessment column to a TrialAssessment using
+  /// Rating Type + Unit (primary) with positional index as fallback.
+  /// Returns the matched ArmColumnMap or null if no match found.
+  ArmColumnMap? _matchColumnForAssessment({
+    required List<ArmColumnMap> columns,
+    required TrialAssessment ta,
+    required AssessmentDefinition? def,
+    required int positionalIndex,
+  }) {
+    // Primary: match by ratingType + ratingUnit (populated shell)
+    if (columns.isNotEmpty) {
+      final pestCode = ta.pestCode?.trim().toUpperCase();
+      final unit = def?.unit?.trim();
+      if (pestCode != null && pestCode.isNotEmpty) {
+        final matches = columns.where((c) {
+          final typeMatch = c.ratingType?.trim().toUpperCase() == pestCode;
+          final unitMatch = unit == null ||
+              unit.isEmpty ||
+              c.ratingUnit?.trim() == unit;
+          return typeMatch && unitMatch;
+        }).toList();
+        if (matches.length == 1) return matches.first;
+        if (matches.length > 1) {
+          // Ambiguous — fall through to positional
+          debugPrint(
+            'ExportArmRatingShell: ambiguous ratingType match for '
+            'pestCode="$pestCode" unit="$unit" — '
+            '${matches.length} columns match, using positional.',
+          );
+        }
+      }
+    }
+    // Fallback: positional
+    if (positionalIndex < columns.length) {
+      return columns[positionalIndex];
+    }
+    debugPrint(
+      'ExportArmRatingShell: no column found for assessment '
+      'index=$positionalIndex pestCode=${ta.pestCode}',
+    );
+    return null;
   }
 
   void _logSeCodeMismatch(

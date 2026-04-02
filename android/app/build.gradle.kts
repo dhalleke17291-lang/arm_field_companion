@@ -15,7 +15,7 @@ configurations.all {
 
 android {
     namespace = "com.gdmsolutions.arm_field_companion"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = maxOf(flutter.compileSdkVersion, 34)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -32,7 +32,7 @@ android {
         applicationId = "com.gdmsolutions.arm_field_companion"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = maxOf(flutter.minSdkVersion, 21)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
