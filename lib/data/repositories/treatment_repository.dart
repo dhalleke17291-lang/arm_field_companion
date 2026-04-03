@@ -11,6 +11,28 @@ class TreatmentRepository {
 
   TreatmentRepository(this._db, [this._assignmentRepository]);
 
+  TreatmentsCompanion _withTreatmentLastEdit(
+    TreatmentsCompanion base,
+    int? performedByUserId,
+  ) {
+    if (performedByUserId == null) return base;
+    return base.copyWith(
+      lastEditedAt: Value(DateTime.now().toUtc()),
+      lastEditedByUserId: Value(performedByUserId),
+    );
+  }
+
+  TreatmentComponentsCompanion _withComponentLastEdit(
+    TreatmentComponentsCompanion base,
+    int? performedByUserId,
+  ) {
+    if (performedByUserId == null) return base;
+    return base.copyWith(
+      lastEditedAt: Value(DateTime.now().toUtc()),
+      lastEditedByUserId: Value(performedByUserId),
+    );
+  }
+
   Future<List<Treatment>> getTreatmentsForTrial(int trialId) {
     return (_db.select(_db.treatments)
           ..where((t) => t.trialId.equals(trialId) & t.isDeleted.equals(false))
@@ -79,19 +101,22 @@ class TreatmentRepository {
     String? treatmentType,
     String? timingCode,
     String? eppoCode,
+    int? performedByUserId,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
-    return _db.into(_db.treatments).insert(
-          TreatmentsCompanion.insert(
-            trialId: trialId,
-            code: code,
-            name: name,
-            description: Value(description),
-            treatmentType: Value(treatmentType),
-            timingCode: Value(timingCode),
-            eppoCode: Value(eppoCode),
-          ),
-        );
+    final companion = _withTreatmentLastEdit(
+      TreatmentsCompanion.insert(
+        trialId: trialId,
+        code: code,
+        name: name,
+        description: Value(description),
+        treatmentType: Value(treatmentType),
+        timingCode: Value(timingCode),
+        eppoCode: Value(eppoCode),
+      ),
+      performedByUserId,
+    );
+    return _db.into(_db.treatments).insert(companion);
   }
 
   Future<void> updateTreatment(
@@ -102,26 +127,28 @@ class TreatmentRepository {
     String? treatmentType,
     String? timingCode,
     String? eppoCode,
+    int? performedByUserId,
   }) async {
     final existing = await getTreatmentById(id);
     if (existing == null) {
       throw TreatmentNotFoundException(id);
     }
     await assertCanEditProtocolForTrialId(_db, existing.trialId);
-    await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
-      TreatmentsCompanion(
-        code: code != null ? Value(code) : const Value.absent(),
-        name: name != null ? Value(name) : const Value.absent(),
-        description:
-            description != null ? Value(description) : const Value.absent(),
-        treatmentType: treatmentType != null
-            ? Value(treatmentType)
-            : const Value.absent(),
-        timingCode:
-            timingCode != null ? Value(timingCode) : const Value.absent(),
-        eppoCode: eppoCode != null ? Value(eppoCode) : const Value.absent(),
-      ),
+    final base = TreatmentsCompanion(
+      code: code != null ? Value(code) : const Value.absent(),
+      name: name != null ? Value(name) : const Value.absent(),
+      description:
+          description != null ? Value(description) : const Value.absent(),
+      treatmentType: treatmentType != null
+          ? Value(treatmentType)
+          : const Value.absent(),
+      timingCode:
+          timingCode != null ? Value(timingCode) : const Value.absent(),
+      eppoCode: eppoCode != null ? Value(eppoCode) : const Value.absent(),
     );
+    await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
+          _withTreatmentLastEdit(base, performedByUserId),
+        );
   }
 
   /// Soft-deletes treatment and all its components; assignment/plot FKs are unchanged.
@@ -250,25 +277,41 @@ class TreatmentRepository {
     String? manufacturer,
     String? registrationNumber,
     String? eppoCode,
+    int? performedByUserId,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
-    return _db.into(_db.treatmentComponents).insert(
-          TreatmentComponentsCompanion.insert(
-            treatmentId: treatmentId,
-            trialId: trialId,
-            productName: productName,
-            rate: Value(rate),
-            rateUnit: Value(rateUnit),
-            applicationTiming: Value(applicationTiming),
-            notes: Value(notes),
-            sortOrder: Value(sortOrder),
-            activeIngredientPct: Value(activeIngredientPct),
-            formulationType: Value(formulationType),
-            manufacturer: Value(manufacturer),
-            registrationNumber: Value(registrationNumber),
-            eppoCode: Value(eppoCode),
+    return _db.transaction(() async {
+      final rowId = await _db.into(_db.treatmentComponents).insert(
+            _withComponentLastEdit(
+              TreatmentComponentsCompanion.insert(
+                treatmentId: treatmentId,
+                trialId: trialId,
+                productName: productName,
+                rate: Value(rate),
+                rateUnit: Value(rateUnit),
+                applicationTiming: Value(applicationTiming),
+                notes: Value(notes),
+                sortOrder: Value(sortOrder),
+                activeIngredientPct: Value(activeIngredientPct),
+                formulationType: Value(formulationType),
+                manufacturer: Value(manufacturer),
+                registrationNumber: Value(registrationNumber),
+                eppoCode: Value(eppoCode),
+              ),
+              performedByUserId,
+            ),
+          );
+      if (performedByUserId != null) {
+        await (_db.update(_db.treatments)..where((t) => t.id.equals(treatmentId)))
+            .write(
+          _withTreatmentLastEdit(
+            const TreatmentsCompanion(),
+            performedByUserId,
           ),
         );
+      }
+      return rowId;
+    });
   }
 
   Future<TreatmentComponent?> _getActiveComponentById(int componentId) {

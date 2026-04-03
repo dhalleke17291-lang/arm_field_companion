@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
@@ -48,6 +49,20 @@ Future<void> _softDeleteTreatmentComponentWithAudit(
         deletedBy: user?.displayName,
         deletedByUserId: userId,
       );
+}
+
+String _treatmentLastUpdatedLine(WidgetRef ref, Treatment treatment) {
+  final at = treatment.lastEditedAt!;
+  final timeStr = DateFormat('MMM d, yyyy HH:mm').format(at.toLocal());
+  var bySuffix = '';
+  if (treatment.lastEditedByUserId != null) {
+    final u = ref.watch(userByIdProvider(treatment.lastEditedByUserId!));
+    bySuffix = u.maybeWhen(
+      data: (user) => user != null ? ' by ${user.displayName}' : '',
+      orElse: () => '',
+    );
+  }
+  return 'Last updated $timeStr$bySuffix';
 }
 
 String _inlineRateUnit(TreatmentComponent c) {
@@ -385,6 +400,7 @@ class TreatmentsTab extends ConsumerWidget {
                         BorderRadius.circular(FormStyles.buttonRadius)),
               ),
               onPressed: () async {
+                final userId = await ref.read(currentUserIdProvider.future);
                 final useCase = ref.read(updateTreatmentUseCaseProvider);
                 final result = await useCase.execute(
                   trial: trial,
@@ -399,6 +415,7 @@ class TreatmentsTab extends ConsumerWidget {
                   eppoCode: eppoController.text.trim().isEmpty
                       ? null
                       : eppoController.text.trim(),
+                  performedByUserId: userId,
                 );
                 if (!ctx.mounted) return;
                 if (result.success) {
@@ -611,6 +628,16 @@ class _TreatmentExpansionTileState
                     ),
                   ),
               ],
+            ),
+          ],
+          if (widget.treatment.lastEditedAt != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _treatmentLastUpdatedLine(ref, widget.treatment),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppDesignTokens.secondaryText,
+              ),
             ),
           ],
           const SizedBox(height: 2),
@@ -995,6 +1022,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                     onPressed: () async {
                       final name = _productController.text.trim();
                       if (name.isEmpty) return;
+                      final userId =
+                          await widget.ref.read(currentUserIdProvider.future);
                       final repo = widget.ref.read(treatmentRepositoryProvider);
                       final existing = widget.existingComponent;
                       if (existing != null) {
@@ -1029,6 +1058,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                         eppoCode: _eppoController.text.trim().isEmpty
                             ? null
                             : _eppoController.text.trim(),
+                        performedByUserId: userId,
                       );
                       if (!context.mounted) return;
                       widget.onSaved();
@@ -1229,6 +1259,8 @@ decoration: FormStyles.inputDecoration(
         FilledButton(
           onPressed: () async {
             if (productController.text.trim().isEmpty) return;
+            final userId =
+                await widget.ref.read(currentUserIdProvider.future);
             final repo = widget.ref.read(treatmentRepositoryProvider);
             await repo.insertComponent(
               treatmentId: widget.treatment.id,
@@ -1258,6 +1290,7 @@ decoration: FormStyles.inputDecoration(
               eppoCode: eppoController.text.trim().isEmpty
                   ? null
                   : eppoController.text.trim(),
+              performedByUserId: userId,
             );
             if (!context.mounted) return;
             Navigator.pop(context);

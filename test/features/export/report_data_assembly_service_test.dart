@@ -206,6 +206,7 @@ class MockTreatmentRepository implements TreatmentRepository {
     String? treatmentType,
     String? timingCode,
     String? eppoCode,
+    int? performedByUserId,
   }) async =>
       throw UnimplementedError();
 
@@ -216,7 +217,8 @@ class MockTreatmentRepository implements TreatmentRepository {
       String? description,
       String? treatmentType,
       String? timingCode,
-      String? eppoCode}) async =>
+      String? eppoCode,
+      int? performedByUserId}) async =>
       throw UnimplementedError();
 
   @override
@@ -244,6 +246,7 @@ class MockTreatmentRepository implements TreatmentRepository {
     String? manufacturer,
     String? registrationNumber,
     String? eppoCode,
+    int? performedByUserId,
   }) async =>
       throw UnimplementedError();
 

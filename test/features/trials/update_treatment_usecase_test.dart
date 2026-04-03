@@ -19,6 +19,7 @@ class _NoopTreatmentRepository extends TreatmentRepository {
     String? treatmentType,
     String? timingCode,
     String? eppoCode,
+    int? performedByUserId,
   }) async {
     updateCalled = true;
   }

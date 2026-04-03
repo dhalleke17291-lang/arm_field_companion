@@ -93,6 +93,9 @@ class Treatments extends Table {
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
 }
 
 class TreatmentComponents extends Table {
@@ -114,6 +117,9 @@ class TreatmentComponents extends Table {
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
 }
 
 class Assessments extends Table {
@@ -744,7 +750,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 38;
+  int get schemaVersion => 39;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1086,6 +1092,14 @@ SET status = 'completed',
                 trialApplicationEvents, trialApplicationEvents.lastEditedByUserId);
             await m.addColumn(
                 trialApplicationEvents, trialApplicationEvents.lastEditedAt);
+          }
+          if (from < 39) {
+            await m.addColumn(treatments, treatments.lastEditedByUserId);
+            await m.addColumn(treatments, treatments.lastEditedAt);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.lastEditedByUserId);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.lastEditedAt);
           }
           await _createIndexes();
         },

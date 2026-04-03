@@ -112,6 +112,7 @@ class _AddTreatmentSheetBodyState extends ConsumerState<_AddTreatmentSheetBody> 
         _nameController.text.trim().isEmpty) {
       return;
     }
+    final userId = await ref.read(currentUserIdProvider.future);
     final repo = ref.read(treatmentRepositoryProvider);
     await repo.insertTreatment(
       trialId: widget.trial.id,
@@ -125,6 +126,7 @@ class _AddTreatmentSheetBodyState extends ConsumerState<_AddTreatmentSheetBody> 
       eppoCode: _eppoController.text.trim().isEmpty
           ? null
           : _eppoController.text.trim(),
+      performedByUserId: userId,
     );
     ref.invalidate(treatmentsForTrialProvider(widget.trial.id));
     if (mounted) widget.onDone();

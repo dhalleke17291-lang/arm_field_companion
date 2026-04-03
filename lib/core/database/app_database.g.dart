@@ -2422,6 +2422,21 @@ class $TreatmentsTable extends Treatments
   late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
       'deleted_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastEditedByUserIdMeta =
+      const VerificationMeta('lastEditedByUserId');
+  @override
+  late final GeneratedColumn<int> lastEditedByUserId = GeneratedColumn<int>(
+      'last_edited_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _lastEditedAtMeta =
+      const VerificationMeta('lastEditedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastEditedAt = GeneratedColumn<DateTime>(
+      'last_edited_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2434,7 +2449,9 @@ class $TreatmentsTable extends Treatments
         eppoCode,
         isDeleted,
         deletedAt,
-        deletedBy
+        deletedBy,
+        lastEditedByUserId,
+        lastEditedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2501,6 +2518,18 @@ class $TreatmentsTable extends Treatments
       context.handle(_deletedByMeta,
           deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
     }
+    if (data.containsKey('last_edited_by_user_id')) {
+      context.handle(
+          _lastEditedByUserIdMeta,
+          lastEditedByUserId.isAcceptableOrUnknown(
+              data['last_edited_by_user_id']!, _lastEditedByUserIdMeta));
+    }
+    if (data.containsKey('last_edited_at')) {
+      context.handle(
+          _lastEditedAtMeta,
+          lastEditedAt.isAcceptableOrUnknown(
+              data['last_edited_at']!, _lastEditedAtMeta));
+    }
     return context;
   }
 
@@ -2532,6 +2561,10 @@ class $TreatmentsTable extends Treatments
           .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
       deletedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
+      lastEditedByUserId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}last_edited_by_user_id']),
+      lastEditedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_edited_at']),
     );
   }
 
@@ -2553,6 +2586,8 @@ class Treatment extends DataClass implements Insertable<Treatment> {
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
+  final int? lastEditedByUserId;
+  final DateTime? lastEditedAt;
   const Treatment(
       {required this.id,
       required this.trialId,
@@ -2564,7 +2599,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       this.eppoCode,
       required this.isDeleted,
       this.deletedAt,
-      this.deletedBy});
+      this.deletedBy,
+      this.lastEditedByUserId,
+      this.lastEditedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2590,6 +2627,12 @@ class Treatment extends DataClass implements Insertable<Treatment> {
     }
     if (!nullToAbsent || deletedBy != null) {
       map['deleted_by'] = Variable<String>(deletedBy);
+    }
+    if (!nullToAbsent || lastEditedByUserId != null) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId);
+    }
+    if (!nullToAbsent || lastEditedAt != null) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt);
     }
     return map;
   }
@@ -2619,6 +2662,12 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       deletedBy: deletedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedBy),
+      lastEditedByUserId: lastEditedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedByUserId),
+      lastEditedAt: lastEditedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedAt),
     );
   }
 
@@ -2637,6 +2686,8 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
+      lastEditedByUserId: serializer.fromJson<int?>(json['lastEditedByUserId']),
+      lastEditedAt: serializer.fromJson<DateTime?>(json['lastEditedAt']),
     );
   }
   @override
@@ -2654,6 +2705,8 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
+      'lastEditedByUserId': serializer.toJson<int?>(lastEditedByUserId),
+      'lastEditedAt': serializer.toJson<DateTime?>(lastEditedAt),
     };
   }
 
@@ -2668,7 +2721,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           Value<String?> eppoCode = const Value.absent(),
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
-          Value<String?> deletedBy = const Value.absent()}) =>
+          Value<String?> deletedBy = const Value.absent(),
+          Value<int?> lastEditedByUserId = const Value.absent(),
+          Value<DateTime?> lastEditedAt = const Value.absent()}) =>
       Treatment(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -2682,6 +2737,11 @@ class Treatment extends DataClass implements Insertable<Treatment> {
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
+        lastEditedByUserId: lastEditedByUserId.present
+            ? lastEditedByUserId.value
+            : this.lastEditedByUserId,
+        lastEditedAt:
+            lastEditedAt.present ? lastEditedAt.value : this.lastEditedAt,
       );
   Treatment copyWithCompanion(TreatmentsCompanion data) {
     return Treatment(
@@ -2700,6 +2760,12 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
+      lastEditedByUserId: data.lastEditedByUserId.present
+          ? data.lastEditedByUserId.value
+          : this.lastEditedByUserId,
+      lastEditedAt: data.lastEditedAt.present
+          ? data.lastEditedAt.value
+          : this.lastEditedAt,
     );
   }
 
@@ -2716,14 +2782,28 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           ..write('eppoCode: $eppoCode, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, trialId, code, name, description,
-      treatmentType, timingCode, eppoCode, isDeleted, deletedAt, deletedBy);
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      code,
+      name,
+      description,
+      treatmentType,
+      timingCode,
+      eppoCode,
+      isDeleted,
+      deletedAt,
+      deletedBy,
+      lastEditedByUserId,
+      lastEditedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2738,7 +2818,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           other.eppoCode == this.eppoCode &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
-          other.deletedBy == this.deletedBy);
+          other.deletedBy == this.deletedBy &&
+          other.lastEditedByUserId == this.lastEditedByUserId &&
+          other.lastEditedAt == this.lastEditedAt);
 }
 
 class TreatmentsCompanion extends UpdateCompanion<Treatment> {
@@ -2753,6 +2835,8 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
+  final Value<int?> lastEditedByUserId;
+  final Value<DateTime?> lastEditedAt;
   const TreatmentsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -2765,6 +2849,8 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
   });
   TreatmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -2778,6 +2864,8 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
   })  : trialId = Value(trialId),
         code = Value(code),
         name = Value(name);
@@ -2793,6 +2881,8 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
+    Expression<int>? lastEditedByUserId,
+    Expression<DateTime>? lastEditedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2806,6 +2896,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
+      if (lastEditedByUserId != null)
+        'last_edited_by_user_id': lastEditedByUserId,
+      if (lastEditedAt != null) 'last_edited_at': lastEditedAt,
     });
   }
 
@@ -2820,7 +2913,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
       Value<String?>? eppoCode,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
-      Value<String?>? deletedBy}) {
+      Value<String?>? deletedBy,
+      Value<int?>? lastEditedByUserId,
+      Value<DateTime?>? lastEditedAt}) {
     return TreatmentsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -2833,6 +2928,8 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      lastEditedByUserId: lastEditedByUserId ?? this.lastEditedByUserId,
+      lastEditedAt: lastEditedAt ?? this.lastEditedAt,
     );
   }
 
@@ -2872,6 +2969,12 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     if (deletedBy.present) {
       map['deleted_by'] = Variable<String>(deletedBy.value);
     }
+    if (lastEditedByUserId.present) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId.value);
+    }
+    if (lastEditedAt.present) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt.value);
+    }
     return map;
   }
 
@@ -2888,7 +2991,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
           ..write('eppoCode: $eppoCode, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt')
           ..write(')'))
         .toString();
   }
@@ -3018,6 +3123,21 @@ class $TreatmentComponentsTable extends TreatmentComponents
   late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
       'deleted_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastEditedByUserIdMeta =
+      const VerificationMeta('lastEditedByUserId');
+  @override
+  late final GeneratedColumn<int> lastEditedByUserId = GeneratedColumn<int>(
+      'last_edited_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _lastEditedAtMeta =
+      const VerificationMeta('lastEditedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastEditedAt = GeneratedColumn<DateTime>(
+      'last_edited_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3036,7 +3156,9 @@ class $TreatmentComponentsTable extends TreatmentComponents
         eppoCode,
         isDeleted,
         deletedAt,
-        deletedBy
+        deletedBy,
+        lastEditedByUserId,
+        lastEditedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3135,6 +3257,18 @@ class $TreatmentComponentsTable extends TreatmentComponents
       context.handle(_deletedByMeta,
           deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
     }
+    if (data.containsKey('last_edited_by_user_id')) {
+      context.handle(
+          _lastEditedByUserIdMeta,
+          lastEditedByUserId.isAcceptableOrUnknown(
+              data['last_edited_by_user_id']!, _lastEditedByUserIdMeta));
+    }
+    if (data.containsKey('last_edited_at')) {
+      context.handle(
+          _lastEditedAtMeta,
+          lastEditedAt.isAcceptableOrUnknown(
+              data['last_edited_at']!, _lastEditedAtMeta));
+    }
     return context;
   }
 
@@ -3178,6 +3312,10 @@ class $TreatmentComponentsTable extends TreatmentComponents
           .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
       deletedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
+      lastEditedByUserId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}last_edited_by_user_id']),
+      lastEditedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_edited_at']),
     );
   }
 
@@ -3206,6 +3344,8 @@ class TreatmentComponent extends DataClass
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
+  final int? lastEditedByUserId;
+  final DateTime? lastEditedAt;
   const TreatmentComponent(
       {required this.id,
       required this.treatmentId,
@@ -3223,7 +3363,9 @@ class TreatmentComponent extends DataClass
       this.eppoCode,
       required this.isDeleted,
       this.deletedAt,
-      this.deletedBy});
+      this.deletedBy,
+      this.lastEditedByUserId,
+      this.lastEditedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3266,6 +3408,12 @@ class TreatmentComponent extends DataClass
     if (!nullToAbsent || deletedBy != null) {
       map['deleted_by'] = Variable<String>(deletedBy);
     }
+    if (!nullToAbsent || lastEditedByUserId != null) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId);
+    }
+    if (!nullToAbsent || lastEditedAt != null) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt);
+    }
     return map;
   }
 
@@ -3307,6 +3455,12 @@ class TreatmentComponent extends DataClass
       deletedBy: deletedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedBy),
+      lastEditedByUserId: lastEditedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedByUserId),
+      lastEditedAt: lastEditedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedAt),
     );
   }
 
@@ -3334,6 +3488,8 @@ class TreatmentComponent extends DataClass
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
+      lastEditedByUserId: serializer.fromJson<int?>(json['lastEditedByUserId']),
+      lastEditedAt: serializer.fromJson<DateTime?>(json['lastEditedAt']),
     );
   }
   @override
@@ -3357,6 +3513,8 @@ class TreatmentComponent extends DataClass
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
+      'lastEditedByUserId': serializer.toJson<int?>(lastEditedByUserId),
+      'lastEditedAt': serializer.toJson<DateTime?>(lastEditedAt),
     };
   }
 
@@ -3377,7 +3535,9 @@ class TreatmentComponent extends DataClass
           Value<String?> eppoCode = const Value.absent(),
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
-          Value<String?> deletedBy = const Value.absent()}) =>
+          Value<String?> deletedBy = const Value.absent(),
+          Value<int?> lastEditedByUserId = const Value.absent(),
+          Value<DateTime?> lastEditedAt = const Value.absent()}) =>
       TreatmentComponent(
         id: id ?? this.id,
         treatmentId: treatmentId ?? this.treatmentId,
@@ -3405,6 +3565,11 @@ class TreatmentComponent extends DataClass
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
+        lastEditedByUserId: lastEditedByUserId.present
+            ? lastEditedByUserId.value
+            : this.lastEditedByUserId,
+        lastEditedAt:
+            lastEditedAt.present ? lastEditedAt.value : this.lastEditedAt,
       );
   TreatmentComponent copyWithCompanion(TreatmentComponentsCompanion data) {
     return TreatmentComponent(
@@ -3437,6 +3602,12 @@ class TreatmentComponent extends DataClass
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
+      lastEditedByUserId: data.lastEditedByUserId.present
+          ? data.lastEditedByUserId.value
+          : this.lastEditedByUserId,
+      lastEditedAt: data.lastEditedAt.present
+          ? data.lastEditedAt.value
+          : this.lastEditedAt,
     );
   }
 
@@ -3459,7 +3630,9 @@ class TreatmentComponent extends DataClass
           ..write('eppoCode: $eppoCode, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt')
           ..write(')'))
         .toString();
   }
@@ -3482,7 +3655,9 @@ class TreatmentComponent extends DataClass
       eppoCode,
       isDeleted,
       deletedAt,
-      deletedBy);
+      deletedBy,
+      lastEditedByUserId,
+      lastEditedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3503,7 +3678,9 @@ class TreatmentComponent extends DataClass
           other.eppoCode == this.eppoCode &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
-          other.deletedBy == this.deletedBy);
+          other.deletedBy == this.deletedBy &&
+          other.lastEditedByUserId == this.lastEditedByUserId &&
+          other.lastEditedAt == this.lastEditedAt);
 }
 
 class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
@@ -3524,6 +3701,8 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
+  final Value<int?> lastEditedByUserId;
+  final Value<DateTime?> lastEditedAt;
   const TreatmentComponentsCompanion({
     this.id = const Value.absent(),
     this.treatmentId = const Value.absent(),
@@ -3542,6 +3721,8 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
   });
   TreatmentComponentsCompanion.insert({
     this.id = const Value.absent(),
@@ -3561,6 +3742,8 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
   })  : treatmentId = Value(treatmentId),
         trialId = Value(trialId),
         productName = Value(productName);
@@ -3582,6 +3765,8 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
+    Expression<int>? lastEditedByUserId,
+    Expression<DateTime>? lastEditedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3602,6 +3787,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
+      if (lastEditedByUserId != null)
+        'last_edited_by_user_id': lastEditedByUserId,
+      if (lastEditedAt != null) 'last_edited_at': lastEditedAt,
     });
   }
 
@@ -3622,7 +3810,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       Value<String?>? eppoCode,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
-      Value<String?>? deletedBy}) {
+      Value<String?>? deletedBy,
+      Value<int?>? lastEditedByUserId,
+      Value<DateTime?>? lastEditedAt}) {
     return TreatmentComponentsCompanion(
       id: id ?? this.id,
       treatmentId: treatmentId ?? this.treatmentId,
@@ -3641,6 +3831,8 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      lastEditedByUserId: lastEditedByUserId ?? this.lastEditedByUserId,
+      lastEditedAt: lastEditedAt ?? this.lastEditedAt,
     );
   }
 
@@ -3699,6 +3891,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     if (deletedBy.present) {
       map['deleted_by'] = Variable<String>(deletedBy.value);
     }
+    if (lastEditedByUserId.present) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId.value);
+    }
+    if (lastEditedAt.present) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt.value);
+    }
     return map;
   }
 
@@ -3721,7 +3919,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
           ..write('eppoCode: $eppoCode, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt')
           ..write(')'))
         .toString();
   }
@@ -25155,6 +25355,36 @@ class $$UsersTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ComposableFilter treatmentsRefs(
+      ComposableFilter Function($$TreatmentsTableFilterComposer f) f) {
+    final $$TreatmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.treatments,
+        getReferencedColumn: (t) => t.lastEditedByUserId,
+        builder: (joinBuilder, parentComposers) =>
+            $$TreatmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.treatments, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter treatmentComponentsRefs(
+      ComposableFilter Function($$TreatmentComponentsTableFilterComposer f) f) {
+    final $$TreatmentComponentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.treatmentComponents,
+            getReferencedColumn: (t) => t.lastEditedByUserId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TreatmentComponentsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.treatmentComponents,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
   ComposableFilter assignmentsRefs(
       ComposableFilter Function($$AssignmentsTableFilterComposer f) f) {
     final $$AssignmentsTableFilterComposer composer = $state.composerBuilder(
@@ -26421,6 +26651,8 @@ typedef $$TreatmentsTableCreateCompanionBuilder = TreatmentsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
 });
 typedef $$TreatmentsTableUpdateCompanionBuilder = TreatmentsCompanion Function({
   Value<int> id,
@@ -26434,6 +26666,8 @@ typedef $$TreatmentsTableUpdateCompanionBuilder = TreatmentsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
 });
 
 class $$TreatmentsTableTableManager extends RootTableManager<
@@ -26464,6 +26698,8 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
           }) =>
               TreatmentsCompanion(
             id: id,
@@ -26477,6 +26713,8 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -26490,6 +26728,8 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
           }) =>
               TreatmentsCompanion.insert(
             id: id,
@@ -26503,6 +26743,8 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
           ),
         ));
 }
@@ -26560,6 +26802,11 @@ class $$TreatmentsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ColumnFilters<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
   $$TrialsTableFilterComposer get trialId {
     final $$TrialsTableFilterComposer composer = $state.composerBuilder(
         composer: this,
@@ -26569,6 +26816,18 @@ class $$TreatmentsTableFilterComposer
         builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
             ComposerState(
                 $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get lastEditedByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 
@@ -26687,6 +26946,11 @@ class $$TreatmentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -26696,6 +26960,18 @@ class $$TreatmentsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$TrialsTableOrderingComposer(ComposerState(
                 $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get lastEditedByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -26719,6 +26995,8 @@ typedef $$TreatmentComponentsTableCreateCompanionBuilder
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
 });
 typedef $$TreatmentComponentsTableUpdateCompanionBuilder
     = TreatmentComponentsCompanion Function({
@@ -26739,6 +27017,8 @@ typedef $$TreatmentComponentsTableUpdateCompanionBuilder
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
 });
 
 class $$TreatmentComponentsTableTableManager extends RootTableManager<
@@ -26776,6 +27056,8 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
           }) =>
               TreatmentComponentsCompanion(
             id: id,
@@ -26795,6 +27077,8 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -26814,6 +27098,8 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
           }) =>
               TreatmentComponentsCompanion.insert(
             id: id,
@@ -26833,6 +27119,8 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
           ),
         ));
 }
@@ -26915,6 +27203,11 @@ class $$TreatmentComponentsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ColumnFilters<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
   $$TreatmentsTableFilterComposer get treatmentId {
     final $$TreatmentsTableFilterComposer composer = $state.composerBuilder(
         composer: this,
@@ -26936,6 +27229,18 @@ class $$TreatmentComponentsTableFilterComposer
         builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
             ComposerState(
                 $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get lastEditedByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -27018,6 +27323,11 @@ class $$TreatmentComponentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TreatmentsTableOrderingComposer get treatmentId {
     final $$TreatmentsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -27039,6 +27349,18 @@ class $$TreatmentComponentsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$TrialsTableOrderingComposer(ComposerState(
                 $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get lastEditedByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }

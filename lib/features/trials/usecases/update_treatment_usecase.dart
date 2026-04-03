@@ -18,6 +18,7 @@ class UpdateTreatmentUseCase {
     String? treatmentType,
     String? timingCode,
     String? eppoCode,
+    int? performedByUserId,
   }) async {
     if (!canEditProtocol(trial)) {
       return UpdateTreatmentResult.failure(protocolEditBlockedMessage(trial));
@@ -39,6 +40,7 @@ class UpdateTreatmentUseCase {
         treatmentType: treatmentType?.trim(),
         timingCode: timingCode?.trim(),
         eppoCode: eppoCode?.trim(),
+        performedByUserId: performedByUserId,
       );
       return UpdateTreatmentResult.success();
     } on TreatmentNotFoundException {
