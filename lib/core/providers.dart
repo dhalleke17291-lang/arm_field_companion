@@ -419,6 +419,12 @@ final currentUserProvider = FutureProvider.autoDispose<User?>((ref) async {
   return ref.read(userRepositoryProvider).getUserById(id);
 });
 
+/// Lookup by local [Users] id (e.g. lastEditedByUserId). Not limited to current user.
+final userByIdProvider =
+    FutureProvider.autoDispose.family<User?, int>((ref, userId) async {
+  return ref.read(userRepositoryProvider).getUserById(userId);
+});
+
 final createTrialUseCaseProvider = Provider<CreateTrialUseCase>((ref) {
   return CreateTrialUseCase(ref.watch(trialRepositoryProvider));
 });

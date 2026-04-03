@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
@@ -29,6 +30,20 @@ Widget _sectionHeader(String title) {
       style: FormStyles.sectionLabelStyle,
     ),
   );
+}
+
+String _lastUpdatedLine(WidgetRef ref, SeedingEvent event) {
+  final at = event.lastEditedAt!;
+  final timeStr = DateFormat('MMM d, yyyy HH:mm').format(at.toLocal());
+  var bySuffix = '';
+  if (event.lastEditedByUserId != null) {
+    final u = ref.watch(userByIdProvider(event.lastEditedByUserId!));
+    bySuffix = u.maybeWhen(
+      data: (user) => user != null ? ' by ${user.displayName}' : '',
+      orElse: () => '',
+    );
+  }
+  return 'Last updated $timeStr$bySuffix';
 }
 
 /// Seeding tab for a trial. Use as tab content or full-screen body:
@@ -171,7 +186,7 @@ class SeedingTab extends ConsumerWidget {
   }
 }
 
-class _SeedingEventSummaryCard extends StatelessWidget {
+class _SeedingEventSummaryCard extends ConsumerWidget {
   final SeedingEvent event;
   final VoidCallback onEdit;
   final VoidCallback? onRecordEmergence;
@@ -185,7 +200,7 @@ class _SeedingEventSummaryCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateText = event.seedingDate.toLocal().toString().split(' ')[0];
     final hasEmergence =
         event.emergenceDate != null || event.emergencePct != null;
@@ -342,6 +357,20 @@ class _SeedingEventSummaryCard extends StatelessWidget {
                     if (event.notes != null &&
                         event.notes!.trim().isNotEmpty)
                       _summaryRow('Notes', event.notes!),
+                    if (event.lastEditedAt != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: AppDesignTokens.spacing8,
+                        ),
+                        child: Text(
+                          _lastUpdatedLine(ref, event),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                      ),
+                    ],
                     if (onMarkComplete != null) ...[
                       const Padding(
                         padding:

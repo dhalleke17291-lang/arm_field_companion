@@ -116,6 +116,20 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     );
   }
 
+  String _lastUpdatedLine(WidgetRef ref, TrialApplicationEvent e) {
+    final at = e.lastEditedAt!;
+    final timeStr = DateFormat('MMM d, yyyy HH:mm').format(at.toLocal());
+    var bySuffix = '';
+    if (e.lastEditedByUserId != null) {
+      final u = ref.watch(userByIdProvider(e.lastEditedByUserId!));
+      bySuffix = u.maybeWhen(
+        data: (user) => user != null ? ' by ${user.displayName}' : '',
+        orElse: () => '',
+      );
+    }
+    return 'Last updated $timeStr$bySuffix';
+  }
+
   Widget _buildApplicationTile(
     BuildContext context,
     WidgetRef ref,
@@ -197,6 +211,16 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                         rateLine,
                         style: const TextStyle(
                           fontSize: 12,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                    ],
+                    if (e.lastEditedAt != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        _lastUpdatedLine(ref, e),
+                        style: const TextStyle(
+                          fontSize: 13,
                           color: AppDesignTokens.secondaryText,
                         ),
                       ),
