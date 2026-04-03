@@ -226,7 +226,8 @@ class Plots extends Table {
   TextColumn get soilSeries => text().nullable()();
   TextColumn get plotNotes => text().nullable()();
 
-  /// Field layout: non-data / border plot (v1: display + flag only; no workflow change).
+  /// Field layout: non-data / border plot.
+  /// v2: excluded from rating queue by default; display + editing unchanged in Plots tab.
   BoolColumn get isGuardRow => boolean().withDefault(const Constant(false))();
 
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();

@@ -80,6 +80,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   GlobalKey _keyForPlotRow(int plotPk) =>
       _plotRowKeys.putIfAbsent(plotPk, GlobalKey.new);
 
+  /// Plots in the rating walk; guard rows are excluded (see Plots tab for full list).
+  List<Plot> _queuePlotsExcludingGuards(List<Plot> raw) =>
+      raw.where((p) => !p.isGuardRow).toList();
+
   /// Same filter pipeline as [_buildQueue] (full walk order in, filtered out).
   List<Plot> _plotsAfterQueueFilters(
     List<Plot> plotsInWalkOrder,
@@ -211,9 +215,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           <int>{};
       final raw =
           ref.read(plotsForTrialProvider(widget.trial.id)).valueOrNull ?? [];
-      if (raw.isEmpty || walkPlots.isEmpty) return;
+      final queuePlots = _queuePlotsExcludingGuards(raw);
+      if (raw.isEmpty || queuePlots.isEmpty || walkPlots.isEmpty) return;
       final walk = sortPlotsByWalkOrder(
-        raw,
+        queuePlots,
         _walkOrderMode,
         customPlotIds: _customPlotIds,
       );
@@ -466,9 +471,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
     }
 
+    final queuePlots = _queuePlotsExcludingGuards(rawPlots);
     // Apply session walk order (numeric, serpentine, or custom) for rating navigation
     final plots = sortPlotsByWalkOrder(
-      rawPlots,
+      queuePlots,
       _walkOrderMode,
       customPlotIds: _customPlotIds,
     );
@@ -710,7 +716,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                       const SizedBox(height: 16),
                       Text(
                           plots.isEmpty
-                              ? 'No plots in this trial'
+                              ? (rawPlots.isEmpty
+                                  ? 'No plots in this trial'
+                                  : 'No plots in rating queue')
                               : (_emptyQueueIsAllRatedUnratedOnly()
                                   ? 'All plots rated!'
                                   : 'No plots match filters'),
@@ -980,6 +988,13 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       );
       return;
     }
+    final queuePlots = _queuePlotsExcludingGuards(rawPlots);
+    if (queuePlots.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No plots in rating queue')),
+      );
+      return;
+    }
     if (assessments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No assessments in this session')),
@@ -988,7 +1003,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     }
     if (!context.mounted) return;
     final plots = sortPlotsByWalkOrder(
-      rawPlots,
+      queuePlots,
       _walkOrderMode,
       customPlotIds: _customPlotIds,
     );
