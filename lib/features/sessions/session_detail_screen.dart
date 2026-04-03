@@ -962,7 +962,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                                       Border.all(color: scheme.outlineVariant),
                                 ),
                                 child: Text(
-                                  'Missing / issues',
+                                  'Warnings',
                                   style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
@@ -1038,7 +1038,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
     return Semantics(
       label:
-          'Plots with issues: ${flaggedLabels.length} flagged, ${issueLabels.length} with reading issues',
+          'Warnings — plots: ${flaggedLabels.length} flagged, ${issueLabels.length} with non-recorded readings',
       child: Container(
         margin: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16,
             AppDesignTokens.spacing8, AppDesignTokens.spacing16, 0),
@@ -1058,7 +1058,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     size: 18, color: scheme.onTertiaryContainer),
                 const SizedBox(width: AppDesignTokens.spacing8),
                 Text(
-                  'Plots with issues',
+                  'Warnings — plots',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -1099,7 +1099,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   SizedBox(
                     width: 100,
                     child: Text(
-                      'Reading issues:',
+                      'Warnings — readings:',
                       style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

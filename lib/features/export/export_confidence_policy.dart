@@ -21,10 +21,10 @@ ExportGate gateFromConfidence(String? confidence) {
 }
 
 const kBlockedExportMessage =
-    'Export blocked: import confidence is too low. Review data issues before exporting.';
+    'Blocked — import confidence is too low. Review data before exporting.';
 
 const kWarnExportMessage =
-    'Exporting with warnings: import confidence is low. Review data before use.';
+    'Warnings — import confidence is low. Review data before use.';
 
 /// Thrown when [ExportGate.block] applies (e.g. compatibility profile confidence is blocked).
 class ExportBlockedByConfidenceException implements Exception {

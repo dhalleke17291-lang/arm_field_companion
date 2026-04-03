@@ -349,8 +349,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Export blocked — data issues found:\n${e.message}',
+                content: Text(
+                'Blocked — data issues:\n${e.message}',
               ),
               backgroundColor: Theme.of(context).colorScheme.error,
               duration: const Duration(seconds: 6),
@@ -458,7 +458,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     return switch (report.status) {
       TrialReadinessStatus.ready => 'Ready',
       TrialReadinessStatus.readyWithWarnings => 'Warnings',
-      TrialReadinessStatus.notReady => 'Needs attention',
+      TrialReadinessStatus.notReady => 'Blocked',
     };
   }
 
@@ -2037,7 +2037,7 @@ class _SessionListEntry {
   const _SessionListEntry({required this.isHeader, this.date, this.session});
 }
 
-/// Compact pill for session status (Open, Needs attention). Professional, consistent styling.
+/// Compact pill for session status (Open, Warnings). Professional, consistent styling.
 class _SessionPill extends StatelessWidget {
   const _SessionPill({
     required this.label,
@@ -2491,7 +2491,7 @@ class SessionsView extends ConsumerWidget {
             foregroundColor: Colors.white,
           ),
         const _SessionPill(
-          label: 'Needs attention',
+          label: 'Warnings',
           backgroundColor: AppDesignTokens.warningBg,
           foregroundColor: AppDesignTokens.warningFg,
           icon: Icons.info_outline_rounded,
@@ -2684,7 +2684,8 @@ class SessionsView extends ConsumerWidget {
       'Rated plots: ${s.ratedPlots} of ${s.totalPlots}',
       if (s.unratedPlots > 0) 'Unrated plots: ${s.unratedPlots}',
       if (s.flaggedPlots > 0) 'Flagged plots: ${s.flaggedPlots}',
-      if (s.issuesPlots > 0) 'Plots with issues: ${s.issuesPlots}',
+      if (s.issuesPlots > 0)
+        'Warnings — plots not fully recorded: ${s.issuesPlots}',
       if (s.editedPlots > 0) 'Edited plots: ${s.editedPlots}',
     ];
     return showDialog<_SessionCloseAttentionAction>(
