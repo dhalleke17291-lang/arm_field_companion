@@ -824,10 +824,10 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     photoRepository: ref.watch(photoRepositoryProvider),
     armImportPersistenceRepository:
         ref.watch(armImportPersistenceRepositoryProvider),
-    publishExportDiagnostics: (trialId, findings) {
+    publishExportDiagnostics: (trialId, findings, attemptLabel) {
       ref
           .read(trialExportDiagnosticsMapProvider.notifier)
-          .setTrialSnapshot(trialId, findings);
+          .setTrialSnapshot(trialId, findings, attemptLabel);
     },
   );
 });
@@ -842,10 +842,10 @@ final exportArmRatingShellUseCaseProvider =
     ratingRepository: ref.watch(ratingRepositoryProvider),
     sessionRepository: ref.watch(sessionRepositoryProvider),
     persistence: ref.watch(armImportPersistenceRepositoryProvider),
-    publishExportDiagnostics: (trialId, findings) {
+    publishExportDiagnostics: (trialId, findings, attemptLabel) {
       ref
           .read(trialExportDiagnosticsMapProvider.notifier)
-          .setTrialSnapshot(trialId, findings);
+          .setTrialSnapshot(trialId, findings, attemptLabel);
     },
   );
 });

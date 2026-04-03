@@ -3007,8 +3007,8 @@ class _TrialReadinessSheet extends ConsumerWidget {
                 const SizedBox(height: 6),
                 Text(
                   exportSnapshot != null
-                      ? 'From last export run · ${DateFormat.yMMMd().add_jm().format(exportSnapshot.publishedAt.toLocal())}'
-                      : 'From last export run',
+                      ? 'From last trial export attempt — ${exportSnapshot.attemptLabel} · ${DateFormat.yMMMd().add_jm().format(exportSnapshot.publishedAt.toLocal())}'
+                      : 'From last trial export attempt',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

@@ -10,6 +10,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/diagnostics/diagnostic_finding.dart';
+import '../../core/diagnostics/trial_export_diagnostics.dart'
+    show kTrialExportAttemptLabel;
 import '../arm_import/data/arm_import_persistence_repository.dart';
 import '../plots/plot_repository.dart';
 import 'export_confidence_policy.dart';
@@ -32,6 +34,7 @@ import 'trial_export_bundle.dart';
 typedef PublishTrialExportDiagnostics = void Function(
   int trialId,
   List<DiagnosticFinding> findings,
+  String attemptLabel,
 );
 
 class ExportBlockedByValidationException implements Exception {
@@ -225,6 +228,7 @@ class ExportTrialUseCase {
         List<DiagnosticFinding>.unmodifiable(
           List<DiagnosticFinding>.from(exportDiagnosticsBuffer),
         ),
+        kTrialExportAttemptLabel,
       );
     }
 

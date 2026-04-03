@@ -8,6 +8,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
+import '../../../core/diagnostics/trial_export_diagnostics.dart'
+    show kArmRatingShellExportAttemptLabel;
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
@@ -81,6 +83,7 @@ class ExportArmRatingShellUseCase {
         List<DiagnosticFinding>.unmodifiable(
           List<DiagnosticFinding>.from(exportDiagnosticsBuffer),
         ),
+        kArmRatingShellExportAttemptLabel,
       );
     }
 
