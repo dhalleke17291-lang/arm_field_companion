@@ -17848,6 +17848,21 @@ class $SeedingEventsTable extends SeedingEvents
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _lastEditedByUserIdMeta =
+      const VerificationMeta('lastEditedByUserId');
+  @override
+  late final GeneratedColumn<int> lastEditedByUserId = GeneratedColumn<int>(
+      'last_edited_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _lastEditedAtMeta =
+      const VerificationMeta('lastEditedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastEditedAt = GeneratedColumn<DateTime>(
+      'last_edited_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -17869,7 +17884,9 @@ class $SeedingEventsTable extends SeedingEvents
         plantingMethod,
         status,
         completedAt,
-        createdAt
+        createdAt,
+        lastEditedByUserId,
+        lastEditedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -17992,6 +18009,18 @@ class $SeedingEventsTable extends SeedingEvents
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('last_edited_by_user_id')) {
+      context.handle(
+          _lastEditedByUserIdMeta,
+          lastEditedByUserId.isAcceptableOrUnknown(
+              data['last_edited_by_user_id']!, _lastEditedByUserIdMeta));
+    }
+    if (data.containsKey('last_edited_at')) {
+      context.handle(
+          _lastEditedAtMeta,
+          lastEditedAt.isAcceptableOrUnknown(
+              data['last_edited_at']!, _lastEditedAtMeta));
+    }
     return context;
   }
 
@@ -18041,6 +18070,10 @@ class $SeedingEventsTable extends SeedingEvents
           .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      lastEditedByUserId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}last_edited_by_user_id']),
+      lastEditedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_edited_at']),
     );
   }
 
@@ -18071,6 +18104,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
   final String status;
   final DateTime? completedAt;
   final DateTime createdAt;
+  final int? lastEditedByUserId;
+  final DateTime? lastEditedAt;
   const SeedingEvent(
       {required this.id,
       required this.trialId,
@@ -18091,7 +18126,9 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       this.plantingMethod,
       required this.status,
       this.completedAt,
-      required this.createdAt});
+      required this.createdAt,
+      this.lastEditedByUserId,
+      this.lastEditedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -18145,6 +18182,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       map['completed_at'] = Variable<DateTime>(completedAt);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || lastEditedByUserId != null) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId);
+    }
+    if (!nullToAbsent || lastEditedAt != null) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt);
+    }
     return map;
   }
 
@@ -18199,6 +18242,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           ? const Value.absent()
           : Value(completedAt),
       createdAt: Value(createdAt),
+      lastEditedByUserId: lastEditedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedByUserId),
+      lastEditedAt: lastEditedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedAt),
     );
   }
 
@@ -18226,6 +18275,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       status: serializer.fromJson<String>(json['status']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastEditedByUserId: serializer.fromJson<int?>(json['lastEditedByUserId']),
+      lastEditedAt: serializer.fromJson<DateTime?>(json['lastEditedAt']),
     );
   }
   @override
@@ -18252,6 +18303,8 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       'status': serializer.toJson<String>(status),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastEditedByUserId': serializer.toJson<int?>(lastEditedByUserId),
+      'lastEditedAt': serializer.toJson<DateTime?>(lastEditedAt),
     };
   }
 
@@ -18275,7 +18328,9 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           Value<String?> plantingMethod = const Value.absent(),
           String? status,
           Value<DateTime?> completedAt = const Value.absent(),
-          DateTime? createdAt}) =>
+          DateTime? createdAt,
+          Value<int?> lastEditedByUserId = const Value.absent(),
+          Value<DateTime?> lastEditedAt = const Value.absent()}) =>
       SeedingEvent(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -18308,6 +18363,11 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
         status: status ?? this.status,
         completedAt: completedAt.present ? completedAt.value : this.completedAt,
         createdAt: createdAt ?? this.createdAt,
+        lastEditedByUserId: lastEditedByUserId.present
+            ? lastEditedByUserId.value
+            : this.lastEditedByUserId,
+        lastEditedAt:
+            lastEditedAt.present ? lastEditedAt.value : this.lastEditedAt,
       );
   SeedingEvent copyWithCompanion(SeedingEventsCompanion data) {
     return SeedingEvent(
@@ -18355,6 +18415,12 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       completedAt:
           data.completedAt.present ? data.completedAt.value : this.completedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastEditedByUserId: data.lastEditedByUserId.present
+          ? data.lastEditedByUserId.value
+          : this.lastEditedByUserId,
+      lastEditedAt: data.lastEditedAt.present
+          ? data.lastEditedAt.value
+          : this.lastEditedAt,
     );
   }
 
@@ -18380,33 +18446,38 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           ..write('plantingMethod: $plantingMethod, ')
           ..write('status: $status, ')
           ..write('completedAt: $completedAt, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      trialId,
-      seedingDate,
-      operatorName,
-      seedLotNumber,
-      seedingRate,
-      seedingRateUnit,
-      seedingDepth,
-      rowSpacing,
-      equipmentUsed,
-      notes,
-      variety,
-      seedTreatment,
-      germinationPct,
-      emergenceDate,
-      emergencePct,
-      plantingMethod,
-      status,
-      completedAt,
-      createdAt);
+  int get hashCode => Object.hashAll([
+        id,
+        trialId,
+        seedingDate,
+        operatorName,
+        seedLotNumber,
+        seedingRate,
+        seedingRateUnit,
+        seedingDepth,
+        rowSpacing,
+        equipmentUsed,
+        notes,
+        variety,
+        seedTreatment,
+        germinationPct,
+        emergenceDate,
+        emergencePct,
+        plantingMethod,
+        status,
+        completedAt,
+        createdAt,
+        lastEditedByUserId,
+        lastEditedAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -18430,7 +18501,9 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           other.plantingMethod == this.plantingMethod &&
           other.status == this.status &&
           other.completedAt == this.completedAt &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.lastEditedByUserId == this.lastEditedByUserId &&
+          other.lastEditedAt == this.lastEditedAt);
 }
 
 class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
@@ -18454,6 +18527,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
   final Value<String> status;
   final Value<DateTime?> completedAt;
   final Value<DateTime> createdAt;
+  final Value<int?> lastEditedByUserId;
+  final Value<DateTime?> lastEditedAt;
   final Value<int> rowid;
   const SeedingEventsCompanion({
     this.id = const Value.absent(),
@@ -18476,6 +18551,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     this.status = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SeedingEventsCompanion.insert({
@@ -18499,6 +18576,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     this.status = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
         seedingDate = Value(seedingDate);
@@ -18523,6 +18602,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     Expression<String>? status,
     Expression<DateTime>? completedAt,
     Expression<DateTime>? createdAt,
+    Expression<int>? lastEditedByUserId,
+    Expression<DateTime>? lastEditedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -18546,6 +18627,9 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       if (status != null) 'status': status,
       if (completedAt != null) 'completed_at': completedAt,
       if (createdAt != null) 'created_at': createdAt,
+      if (lastEditedByUserId != null)
+        'last_edited_by_user_id': lastEditedByUserId,
+      if (lastEditedAt != null) 'last_edited_at': lastEditedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -18571,6 +18655,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       Value<String>? status,
       Value<DateTime?>? completedAt,
       Value<DateTime>? createdAt,
+      Value<int?>? lastEditedByUserId,
+      Value<DateTime?>? lastEditedAt,
       Value<int>? rowid}) {
     return SeedingEventsCompanion(
       id: id ?? this.id,
@@ -18593,6 +18679,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       status: status ?? this.status,
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
+      lastEditedByUserId: lastEditedByUserId ?? this.lastEditedByUserId,
+      lastEditedAt: lastEditedAt ?? this.lastEditedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -18660,6 +18748,12 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (lastEditedByUserId.present) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId.value);
+    }
+    if (lastEditedAt.present) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -18689,6 +18783,8 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
           ..write('status: $status, ')
           ..write('completedAt: $completedAt, ')
           ..write('createdAt: $createdAt, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -18955,6 +19051,21 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _lastEditedByUserIdMeta =
+      const VerificationMeta('lastEditedByUserId');
+  @override
+  late final GeneratedColumn<int> lastEditedByUserId = GeneratedColumn<int>(
+      'last_edited_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _lastEditedAtMeta =
+      const VerificationMeta('lastEditedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastEditedAt = GeneratedColumn<DateTime>(
+      'last_edited_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -18997,7 +19108,9 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
         plotsTreated,
         status,
         appliedAt,
-        createdAt
+        createdAt,
+        lastEditedByUserId,
+        lastEditedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -19235,6 +19348,18 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('last_edited_by_user_id')) {
+      context.handle(
+          _lastEditedByUserIdMeta,
+          lastEditedByUserId.isAcceptableOrUnknown(
+              data['last_edited_by_user_id']!, _lastEditedByUserIdMeta));
+    }
+    if (data.containsKey('last_edited_at')) {
+      context.handle(
+          _lastEditedAtMeta,
+          lastEditedAt.isAcceptableOrUnknown(
+              data['last_edited_at']!, _lastEditedAtMeta));
+    }
     return context;
   }
 
@@ -19326,6 +19451,10 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           .read(DriftSqlType.dateTime, data['${effectivePrefix}applied_at']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      lastEditedByUserId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}last_edited_by_user_id']),
+      lastEditedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_edited_at']),
     );
   }
 
@@ -19378,6 +19507,8 @@ class TrialApplicationEvent extends DataClass
   final String status;
   final DateTime? appliedAt;
   final DateTime createdAt;
+  final int? lastEditedByUserId;
+  final DateTime? lastEditedAt;
   const TrialApplicationEvent(
       {required this.id,
       required this.trialId,
@@ -19419,7 +19550,9 @@ class TrialApplicationEvent extends DataClass
       this.plotsTreated,
       required this.status,
       this.appliedAt,
-      required this.createdAt});
+      required this.createdAt,
+      this.lastEditedByUserId,
+      this.lastEditedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -19536,6 +19669,12 @@ class TrialApplicationEvent extends DataClass
       map['applied_at'] = Variable<DateTime>(appliedAt);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || lastEditedByUserId != null) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId);
+    }
+    if (!nullToAbsent || lastEditedAt != null) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt);
+    }
     return map;
   }
 
@@ -19651,6 +19790,12 @@ class TrialApplicationEvent extends DataClass
           ? const Value.absent()
           : Value(appliedAt),
       createdAt: Value(createdAt),
+      lastEditedByUserId: lastEditedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedByUserId),
+      lastEditedAt: lastEditedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEditedAt),
     );
   }
 
@@ -19701,6 +19846,8 @@ class TrialApplicationEvent extends DataClass
       status: serializer.fromJson<String>(json['status']),
       appliedAt: serializer.fromJson<DateTime?>(json['appliedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastEditedByUserId: serializer.fromJson<int?>(json['lastEditedByUserId']),
+      lastEditedAt: serializer.fromJson<DateTime?>(json['lastEditedAt']),
     );
   }
   @override
@@ -19748,6 +19895,8 @@ class TrialApplicationEvent extends DataClass
       'status': serializer.toJson<String>(status),
       'appliedAt': serializer.toJson<DateTime?>(appliedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastEditedByUserId': serializer.toJson<int?>(lastEditedByUserId),
+      'lastEditedAt': serializer.toJson<DateTime?>(lastEditedAt),
     };
   }
 
@@ -19792,7 +19941,9 @@ class TrialApplicationEvent extends DataClass
           Value<String?> plotsTreated = const Value.absent(),
           String? status,
           Value<DateTime?> appliedAt = const Value.absent(),
-          DateTime? createdAt}) =>
+          DateTime? createdAt,
+          Value<int?> lastEditedByUserId = const Value.absent(),
+          Value<DateTime?> lastEditedAt = const Value.absent()}) =>
       TrialApplicationEvent(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -19866,6 +20017,11 @@ class TrialApplicationEvent extends DataClass
         status: status ?? this.status,
         appliedAt: appliedAt.present ? appliedAt.value : this.appliedAt,
         createdAt: createdAt ?? this.createdAt,
+        lastEditedByUserId: lastEditedByUserId.present
+            ? lastEditedByUserId.value
+            : this.lastEditedByUserId,
+        lastEditedAt:
+            lastEditedAt.present ? lastEditedAt.value : this.lastEditedAt,
       );
   TrialApplicationEvent copyWithCompanion(
       TrialApplicationEventsCompanion data) {
@@ -19962,6 +20118,12 @@ class TrialApplicationEvent extends DataClass
       status: data.status.present ? data.status.value : this.status,
       appliedAt: data.appliedAt.present ? data.appliedAt.value : this.appliedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastEditedByUserId: data.lastEditedByUserId.present
+          ? data.lastEditedByUserId.value
+          : this.lastEditedByUserId,
+      lastEditedAt: data.lastEditedAt.present
+          ? data.lastEditedAt.value
+          : this.lastEditedAt,
     );
   }
 
@@ -20008,7 +20170,9 @@ class TrialApplicationEvent extends DataClass
           ..write('plotsTreated: $plotsTreated, ')
           ..write('status: $status, ')
           ..write('appliedAt: $appliedAt, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt')
           ..write(')'))
         .toString();
   }
@@ -20055,7 +20219,9 @@ class TrialApplicationEvent extends DataClass
         plotsTreated,
         status,
         appliedAt,
-        createdAt
+        createdAt,
+        lastEditedByUserId,
+        lastEditedAt
       ]);
   @override
   bool operator ==(Object other) =>
@@ -20101,7 +20267,9 @@ class TrialApplicationEvent extends DataClass
           other.plotsTreated == this.plotsTreated &&
           other.status == this.status &&
           other.appliedAt == this.appliedAt &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.lastEditedByUserId == this.lastEditedByUserId &&
+          other.lastEditedAt == this.lastEditedAt);
 }
 
 class TrialApplicationEventsCompanion
@@ -20147,6 +20315,8 @@ class TrialApplicationEventsCompanion
   final Value<String> status;
   final Value<DateTime?> appliedAt;
   final Value<DateTime> createdAt;
+  final Value<int?> lastEditedByUserId;
+  final Value<DateTime?> lastEditedAt;
   final Value<int> rowid;
   const TrialApplicationEventsCompanion({
     this.id = const Value.absent(),
@@ -20190,6 +20360,8 @@ class TrialApplicationEventsCompanion
     this.status = const Value.absent(),
     this.appliedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TrialApplicationEventsCompanion.insert({
@@ -20234,6 +20406,8 @@ class TrialApplicationEventsCompanion
     this.status = const Value.absent(),
     this.appliedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.lastEditedByUserId = const Value.absent(),
+    this.lastEditedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
         applicationDate = Value(applicationDate);
@@ -20279,6 +20453,8 @@ class TrialApplicationEventsCompanion
     Expression<String>? status,
     Expression<DateTime>? appliedAt,
     Expression<DateTime>? createdAt,
+    Expression<int>? lastEditedByUserId,
+    Expression<DateTime>? lastEditedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -20323,6 +20499,9 @@ class TrialApplicationEventsCompanion
       if (status != null) 'status': status,
       if (appliedAt != null) 'applied_at': appliedAt,
       if (createdAt != null) 'created_at': createdAt,
+      if (lastEditedByUserId != null)
+        'last_edited_by_user_id': lastEditedByUserId,
+      if (lastEditedAt != null) 'last_edited_at': lastEditedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -20369,6 +20548,8 @@ class TrialApplicationEventsCompanion
       Value<String>? status,
       Value<DateTime?>? appliedAt,
       Value<DateTime>? createdAt,
+      Value<int?>? lastEditedByUserId,
+      Value<DateTime?>? lastEditedAt,
       Value<int>? rowid}) {
     return TrialApplicationEventsCompanion(
       id: id ?? this.id,
@@ -20412,6 +20593,8 @@ class TrialApplicationEventsCompanion
       status: status ?? this.status,
       appliedAt: appliedAt ?? this.appliedAt,
       createdAt: createdAt ?? this.createdAt,
+      lastEditedByUserId: lastEditedByUserId ?? this.lastEditedByUserId,
+      lastEditedAt: lastEditedAt ?? this.lastEditedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -20542,6 +20725,12 @@ class TrialApplicationEventsCompanion
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (lastEditedByUserId.present) {
+      map['last_edited_by_user_id'] = Variable<int>(lastEditedByUserId.value);
+    }
+    if (lastEditedAt.present) {
+      map['last_edited_at'] = Variable<DateTime>(lastEditedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -20592,6 +20781,8 @@ class TrialApplicationEventsCompanion
           ..write('status: $status, ')
           ..write('appliedAt: $appliedAt, ')
           ..write('createdAt: $createdAt, ')
+          ..write('lastEditedByUserId: $lastEditedByUserId, ')
+          ..write('lastEditedAt: $lastEditedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -25030,6 +25221,37 @@ class $$UsersTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$AuditEventsTableFilterComposer(ComposerState($state.db,
                 $state.db.auditEvents, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter seedingEventsRefs(
+      ComposableFilter Function($$SeedingEventsTableFilterComposer f) f) {
+    final $$SeedingEventsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.seedingEvents,
+        getReferencedColumn: (t) => t.lastEditedByUserId,
+        builder: (joinBuilder, parentComposers) =>
+            $$SeedingEventsTableFilterComposer(ComposerState($state.db,
+                $state.db.seedingEvents, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter trialApplicationEventsRefs(
+      ComposableFilter Function($$TrialApplicationEventsTableFilterComposer f)
+          f) {
+    final $$TrialApplicationEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.lastEditedByUserId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 }
@@ -33494,6 +33716,8 @@ typedef $$SeedingEventsTableCreateCompanionBuilder = SeedingEventsCompanion
   Value<String> status,
   Value<DateTime?> completedAt,
   Value<DateTime> createdAt,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
   Value<int> rowid,
 });
 typedef $$SeedingEventsTableUpdateCompanionBuilder = SeedingEventsCompanion
@@ -33518,6 +33742,8 @@ typedef $$SeedingEventsTableUpdateCompanionBuilder = SeedingEventsCompanion
   Value<String> status,
   Value<DateTime?> completedAt,
   Value<DateTime> createdAt,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
   Value<int> rowid,
 });
 
@@ -33558,6 +33784,8 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               SeedingEventsCompanion(
@@ -33581,6 +33809,8 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             status: status,
             completedAt: completedAt,
             createdAt: createdAt,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -33604,6 +33834,8 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               SeedingEventsCompanion.insert(
@@ -33627,6 +33859,8 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             status: status,
             completedAt: completedAt,
             createdAt: createdAt,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
             rowid: rowid,
           ),
         ));
@@ -33730,6 +33964,11 @@ class $$SeedingEventsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ColumnFilters<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
   $$TrialsTableFilterComposer get trialId {
     final $$TrialsTableFilterComposer composer = $state.composerBuilder(
         composer: this,
@@ -33739,6 +33978,18 @@ class $$SeedingEventsTableFilterComposer
         builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
             ComposerState(
                 $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get lastEditedByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -33841,6 +34092,11 @@ class $$SeedingEventsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -33850,6 +34106,18 @@ class $$SeedingEventsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$TrialsTableOrderingComposer(ComposerState(
                 $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get lastEditedByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -33897,6 +34165,8 @@ typedef $$TrialApplicationEventsTableCreateCompanionBuilder
   Value<String> status,
   Value<DateTime?> appliedAt,
   Value<DateTime> createdAt,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
   Value<int> rowid,
 });
 typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
@@ -33942,6 +34212,8 @@ typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
   Value<String> status,
   Value<DateTime?> appliedAt,
   Value<DateTime> createdAt,
+  Value<int?> lastEditedByUserId,
+  Value<DateTime?> lastEditedAt,
   Value<int> rowid,
 });
 
@@ -34004,6 +34276,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<DateTime?> appliedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion(
@@ -34048,6 +34322,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             status: status,
             appliedAt: appliedAt,
             createdAt: createdAt,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -34092,6 +34368,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<DateTime?> appliedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int?> lastEditedByUserId = const Value.absent(),
+            Value<DateTime?> lastEditedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion.insert(
@@ -34136,6 +34414,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             status: status,
             appliedAt: appliedAt,
             createdAt: createdAt,
+            lastEditedByUserId: lastEditedByUserId,
+            lastEditedAt: lastEditedAt,
             rowid: rowid,
           ),
         ));
@@ -34339,6 +34619,11 @@ class $$TrialApplicationEventsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
+  ColumnFilters<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
   $$TrialsTableFilterComposer get trialId {
     final $$TrialsTableFilterComposer composer = $state.composerBuilder(
         composer: this,
@@ -34360,6 +34645,18 @@ class $$TrialApplicationEventsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$TreatmentsTableFilterComposer(ComposerState($state.db,
                 $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get lastEditedByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 
@@ -34580,6 +34877,11 @@ class $$TrialApplicationEventsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<DateTime> get lastEditedAt => $state.composableBuilder(
+      column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -34601,6 +34903,18 @@ class $$TrialApplicationEventsTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$TreatmentsTableOrderingComposer(ComposerState($state.db,
                 $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get lastEditedByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.lastEditedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
     return composer;
   }
 }

@@ -524,6 +524,9 @@ class SeedingEvents extends Table {
   TextColumn get status => text().withDefault(const Constant('pending'))();
   DateTimeColumn get completedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -574,6 +577,9 @@ class TrialApplicationEvents extends Table {
   TextColumn get status => text().withDefault(const Constant('pending'))();
   DateTimeColumn get appliedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -738,7 +744,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 37;
+  int get schemaVersion => 38;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1072,6 +1078,14 @@ SET status = 'completed',
             await m.addColumn(photos, photos.isDeleted);
             await m.addColumn(photos, photos.deletedAt);
             await m.addColumn(photos, photos.deletedBy);
+          }
+          if (from < 38) {
+            await m.addColumn(seedingEvents, seedingEvents.lastEditedByUserId);
+            await m.addColumn(seedingEvents, seedingEvents.lastEditedAt);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.lastEditedByUserId);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.lastEditedAt);
           }
           await _createIndexes();
         },

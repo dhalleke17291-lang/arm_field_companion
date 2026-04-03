@@ -9,6 +9,17 @@ class SeedingRepository {
 
   SeedingRepository(this._db);
 
+  SeedingEventsCompanion _withLastEditIfUser(
+    SeedingEventsCompanion base,
+    int? performedByUserId,
+  ) {
+    if (performedByUserId == null) return base;
+    return base.copyWith(
+      lastEditedAt: Value(DateTime.now().toUtc()),
+      lastEditedByUserId: Value(performedByUserId),
+    );
+  }
+
   /// Inserts a new row when no record exists for the given trial_id;
   /// updates the existing row when one already exists.
   /// Never creates a second row for the same trial (unique on trial_id).
@@ -37,11 +48,12 @@ class SeedingRepository {
           ? Value(companion.plantingMethod.value)
           : const Value.absent(),
     );
+    final fullWithEdit = _withLastEditIfUser(full, performedByUserId);
     await _db.transaction(() async {
       await _db.into(_db.seedingEvents).insert(
-            full,
+            fullWithEdit,
             onConflict: DoUpdate<$SeedingEventsTable, SeedingEvent>(
-              (_) => full,
+              (_) => fullWithEdit,
               target: [_db.seedingEvents.trialId],
             ),
           );
@@ -81,12 +93,15 @@ class SeedingRepository {
             ..where((e) => e.id.equals(id)))
           .getSingleOrNull();
 
-      await (_db.update(_db.seedingEvents)..where((e) => e.id.equals(id))).write(
-            SeedingEventsCompanion(
-              status: const Value('completed'),
-              completedAt: Value(completedAt),
-            ),
-          );
+      final completedCompanion = _withLastEditIfUser(
+        SeedingEventsCompanion(
+          status: const Value('completed'),
+          completedAt: Value(completedAt),
+        ),
+        performedByUserId,
+      );
+      await (_db.update(_db.seedingEvents)..where((e) => e.id.equals(id)))
+          .write(completedCompanion);
 
       if (existing == null) return;
 

@@ -30,7 +30,10 @@ class ApplicationRepository {
     String? performedBy,
     int? performedByUserId,
   }) async {
-    final full = _withNewFields(companion);
+    final full = _withLastEditIfUser(
+      _withNewFields(companion),
+      performedByUserId,
+    );
     return _db.transaction(() async {
       final row =
           await _db.into(_db.trialApplicationEvents).insertReturning(full);
@@ -59,7 +62,10 @@ class ApplicationRepository {
     String? performedBy,
     int? performedByUserId,
   }) async {
-    final full = _withNewFields(companion);
+    final full = _withLastEditIfUser(
+      _withNewFields(companion),
+      performedByUserId,
+    );
     await _db.transaction(() async {
       await (_db.update(_db.trialApplicationEvents)
             ..where((e) => e.id.equals(id)))
@@ -99,12 +105,16 @@ class ApplicationRepository {
             ..where((e) => e.id.equals(id)))
           .getSingleOrNull();
 
+      final appliedCompanion = _withLastEditIfUser(
+        TrialApplicationEventsCompanion(
+          status: const Value('applied'),
+          appliedAt: Value(appliedAt),
+        ),
+        performedByUserId,
+      );
       await (_db.update(_db.trialApplicationEvents)
             ..where((e) => e.id.equals(id)))
-          .write(TrialApplicationEventsCompanion(
-        status: const Value('applied'),
-        appliedAt: Value(appliedAt),
-      ));
+          .write(appliedCompanion);
 
       if (existing == null) return;
 
@@ -124,6 +134,17 @@ class ApplicationRepository {
             ),
           );
     });
+  }
+
+  TrialApplicationEventsCompanion _withLastEditIfUser(
+    TrialApplicationEventsCompanion base,
+    int? performedByUserId,
+  ) {
+    if (performedByUserId == null) return base;
+    return base.copyWith(
+      lastEditedAt: Value(DateTime.now().toUtc()),
+      lastEditedByUserId: Value(performedByUserId),
+    );
   }
 
   TrialApplicationEventsCompanion _withNewFields(
