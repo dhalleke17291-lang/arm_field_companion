@@ -42,7 +42,10 @@ extension on AuditLogSort {
 }
 
 class AuditLogScreen extends ConsumerStatefulWidget {
-  const AuditLogScreen({super.key, this.limit = 500});
+  const AuditLogScreen({super.key, this.limit = 500, this.trialId});
+
+  /// When set, only [audit_events] rows for this trial are shown (same sort/export/enrichment).
+  final int? trialId;
 
   final int limit;
 
@@ -108,7 +111,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     final guard = ref.read(exportGuardProvider);
     final ran = await guard.runExclusive(() async {
       final buffer = StringBuffer();
-      buffer.writeln('Audit Log');
+      buffer.writeln(
+          widget.trialId != null ? 'Trial activity' : 'Audit Log');
       buffer.writeln('Exported: ${DateTime.now().toIso8601String()}');
       buffer.writeln('Rows: ${events.length}');
       buffer.writeln('');
@@ -130,8 +134,9 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
       try {
         await Share.share(
           buffer.toString(),
-          subject:
-              'Audit log ${DateTime.now().toIso8601String().substring(0, 10)}',
+          subject: widget.trialId != null
+              ? 'Trial activity ${DateTime.now().toIso8601String().substring(0, 10)}'
+              : 'Audit log ${DateTime.now().toIso8601String().substring(0, 10)}',
         );
         if (context.mounted) {
           ScaffoldMessenger.of(context)
@@ -208,10 +213,21 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     final sessionRepo = ref.watch(sessionRepositoryProvider);
     final plotRepo = ref.watch(plotRepositoryProvider);
 
-    final stream = (db.select(db.auditEvents)
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)])
-          ..limit(widget.limit))
-        .watch();
+    final scoped = widget.trialId != null;
+    final title = scoped ? 'Activity' : 'Audit log';
+    final subtitle = scoped ? 'This trial' : 'Recent events';
+
+    final stream = () {
+      final q = db.select(db.auditEvents);
+      final tid = widget.trialId;
+      if (tid != null) {
+        q.where((t) => t.trialId.equals(tid));
+      }
+      q
+        ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)])
+        ..limit(widget.limit);
+      return q.watch();
+    }();
 
     return StreamBuilder<List<AuditEvent>>(
       stream: stream,
@@ -220,21 +236,23 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
 
         if (snapshot.connectionState == ConnectionState.waiting &&
             events.isEmpty) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: AppDesignTokens.backgroundSurface,
-            appBar: GradientScreenHeader(title: 'Audit log'),
-            body: Center(child: CircularProgressIndicator()),
+            appBar: GradientScreenHeader(title: title),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (events.isEmpty) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: AppDesignTokens.backgroundSurface,
-            appBar: GradientScreenHeader(title: 'Audit log'),
+            appBar: GradientScreenHeader(title: title),
             body: Center(
               child: Text(
-                'No audit events recorded yet.',
-                style: TextStyle(color: AppDesignTokens.secondaryText),
+                scoped
+                    ? 'No audit events recorded for this trial yet.'
+                    : 'No audit events recorded yet.',
+                style: const TextStyle(color: AppDesignTokens.secondaryText),
               ),
             ),
           );
@@ -243,8 +261,8 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
         return Scaffold(
           backgroundColor: AppDesignTokens.backgroundSurface,
           appBar: GradientScreenHeader(
-            title: 'Audit log',
-            subtitle: 'Recent events',
+            title: title,
+            subtitle: subtitle,
             titleFontSize: 18,
             actions: [
               PopupMenuButton<AuditLogSort>(

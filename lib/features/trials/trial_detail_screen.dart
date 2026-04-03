@@ -35,6 +35,7 @@ import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
 import 'tabs/timeline_tab.dart';
 import 'trial_setup_screen.dart';
+import '../diagnostics/audit_log_screen.dart';
 import '../diagnostics/edited_items_screen.dart';
 import '../recovery/recovery_screen.dart';
 import '../derived/derived_snapshot_provider.dart'
@@ -984,11 +985,22 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       tooltip: 'More',
       padding: const EdgeInsets.all(8),
       onSelected: (value) {
-        if (value == 'delete_trial') {
+        if (value == 'activity') {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => AuditLogScreen(trialId: trial.id),
+            ),
+          );
+        } else if (value == 'delete_trial') {
           _confirmAndSoftDeleteTrial(context, trial);
         }
       },
       itemBuilder: (context) => const [
+        PopupMenuItem<String>(
+          value: 'activity',
+          child: Text('Activity'),
+        ),
         PopupMenuItem<String>(
           value: 'delete_trial',
           child: Text('Delete trial'),

@@ -105,6 +105,11 @@ class SessionRepository {
     String? raterName,
     int? closedByUserId,
   }) async {
+    final sessionRow = await (_db.select(_db.sessions)
+          ..where((s) => s.id.equals(sessionId)))
+        .getSingleOrNull();
+    final trialIdForAudit = sessionRow?.trialId;
+
     await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
         .write(SessionsCompanion(
       endedAt: Value(DateTime.now()),
@@ -113,6 +118,9 @@ class SessionRepository {
 
     await _db.into(_db.auditEvents).insert(
           AuditEventsCompanion.insert(
+            trialId: trialIdForAudit != null
+                ? Value(trialIdForAudit)
+                : const Value.absent(),
             sessionId: Value(sessionId),
             eventType: 'SESSION_CLOSED',
             description: 'Session closed',
