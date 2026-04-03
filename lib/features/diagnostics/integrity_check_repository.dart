@@ -10,9 +10,10 @@ class IntegrityCheckRepository {
   Future<List<IntegrityIssue>> runChecks() async {
     final issues = <IntegrityIssue>[];
 
-    // Sessions without created_by_user_id (legacy data)
+    // Sessions without created_by_user_id (legacy data); live sessions only.
     final sessionsWithoutUser = await (_db.select(_db.sessions)
-          ..where((s) => s.createdByUserId.isNull()))
+          ..where((s) =>
+              s.createdByUserId.isNull() & s.isDeleted.equals(false)))
         .get();
     if (sessionsWithoutUser.isNotEmpty) {
       issues.add(IntegrityIssue(
@@ -24,12 +25,15 @@ class IntegrityCheckRepository {
       ));
     }
 
-    // Plots with no treatment assigned (Assignment-first, then Plot fallback)
+    // Plots with no treatment assigned (Assignment-first, then Plot fallback).
+    // Live plots only; assignments table has no soft-delete flag.
     final assignmentRows = await _db.select(_db.assignments).get();
     final plotIdToTreatmentId = {
       for (var a in assignmentRows) a.plotId: a.treatmentId
     };
-    final allPlots = await _db.select(_db.plots).get();
+    final allPlots = await (_db.select(_db.plots)
+          ..where((p) => p.isDeleted.equals(false)))
+        .get();
     final plotsWithoutTreatment = allPlots
         .where((p) => (plotIdToTreatmentId[p.id] ?? p.treatmentId) == null)
         .toList();
@@ -43,9 +47,10 @@ class IntegrityCheckRepository {
       ));
     }
 
-    // Closed sessions with zero current ratings
+    // Closed sessions with zero current ratings (live sessions and ratings).
     final closedSessions = await (_db.select(_db.sessions)
-          ..where((s) => s.endedAt.isNotNull()))
+          ..where(
+              (s) => s.endedAt.isNotNull() & s.isDeleted.equals(false)))
         .get();
     int closedWithZeroRatings = 0;
     final countExpr = _db.ratingRecords.id.count();
@@ -53,7 +58,8 @@ class IntegrityCheckRepository {
       final row = await (_db.selectOnly(_db.ratingRecords)
             ..addColumns([countExpr])
             ..where(_db.ratingRecords.sessionId.equals(session.id) &
-                _db.ratingRecords.isCurrent.equals(true)))
+                _db.ratingRecords.isCurrent.equals(true) &
+                _db.ratingRecords.isDeleted.equals(false)))
           .getSingle();
       final count = row.read(countExpr) ?? 0;
       if (count == 0) closedWithZeroRatings++;
@@ -96,9 +102,10 @@ class IntegrityCheckRepository {
       ));
     }
 
-    // Ratings missing provenance (created_app_version) — informational for post-migration
+    // Ratings missing provenance (created_app_version) — live rows only.
     final ratingsNoProvenance = await (_db.select(_db.ratingRecords)
-          ..where((r) => r.createdAppVersion.isNull()))
+          ..where((r) =>
+              r.createdAppVersion.isNull() & r.isDeleted.equals(false)))
         .get();
     if (ratingsNoProvenance.isNotEmpty) {
       issues.add(IntegrityIssue(
@@ -111,14 +118,17 @@ class IntegrityCheckRepository {
       ));
     }
 
-    // Trials with no plots (protocol incomplete)
-    final trials = await _db.select(_db.trials).get();
+    // Trials with no live plots (protocol incomplete); non-deleted trials only.
+    final trials = await (_db.select(_db.trials)
+          ..where((t) => t.isDeleted.equals(false)))
+        .get();
     int trialsWithNoPlots = 0;
     final plotCountExpr = _db.plots.id.count();
     for (final trial in trials) {
       final row = await (_db.selectOnly(_db.plots)
             ..addColumns([plotCountExpr])
-            ..where(_db.plots.trialId.equals(trial.id)))
+            ..where(_db.plots.trialId.equals(trial.id) &
+                _db.plots.isDeleted.equals(false)))
           .getSingle();
       final n = row.read(plotCountExpr) ?? 0;
       if (n == 0) trialsWithNoPlots++;
