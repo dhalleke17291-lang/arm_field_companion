@@ -24,10 +24,11 @@ class UpdatePlotAssignmentUseCase {
     if (!canEditProtocol(trial)) {
       return UpdateAssignmentResult.failure(protocolEditBlockedMessage(trial));
     }
-    final sessions = await _sessionRepository.getSessionsForTrial(trial.id);
-    if (isAssignmentsLocked(trial.status, sessions.isNotEmpty)) {
+    final hasSessionData =
+        await _sessionRepository.watchTrialHasSessionData(trial.id).first;
+    if (isAssignmentsLocked(trial.status, hasSessionData)) {
       return UpdateAssignmentResult.failure(
-          getAssignmentsLockMessage(trial.status, sessions.isNotEmpty));
+          getAssignmentsLockMessage(trial.status, hasSessionData));
     }
     try {
       await _assignmentRepository.upsert(
@@ -54,10 +55,11 @@ class UpdatePlotAssignmentUseCase {
     if (!canEditProtocol(trial)) {
       return UpdateAssignmentResult.failure(protocolEditBlockedMessage(trial));
     }
-    final sessions = await _sessionRepository.getSessionsForTrial(trial.id);
-    if (isAssignmentsLocked(trial.status, sessions.isNotEmpty)) {
+    final hasSessionData =
+        await _sessionRepository.watchTrialHasSessionData(trial.id).first;
+    if (isAssignmentsLocked(trial.status, hasSessionData)) {
       return UpdateAssignmentResult.failure(
-          getAssignmentsLockMessage(trial.status, sessions.isNotEmpty));
+          getAssignmentsLockMessage(trial.status, hasSessionData));
     }
     if (plotPkToTreatmentId.isEmpty) {
       return UpdateAssignmentResult.success();

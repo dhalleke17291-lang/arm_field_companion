@@ -68,9 +68,12 @@ class MockAssignmentRepository implements AssignmentRepository {
   }
 }
 
-/// Mock that returns configurable session list for assignments-lock check.
+/// Mock that returns configurable session list and session-data flag (DB parity for tests).
 class MockSessionRepository implements SessionRepository {
   List<Session> sessionsForTrial = [];
+
+  /// Matches [SessionRepository.watchTrialHasSessionData]: ratings/notes/photos/flags exist.
+  bool trialHasSessionData = false;
 
   @override
   Future<List<Session>> getSessionsForTrial(int trialId) async =>
@@ -129,7 +132,7 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Stream<bool> watchTrialHasSessionData(int trialId) =>
-      Stream.value(sessionsForTrial.isNotEmpty);
+      Stream.value(trialHasSessionData);
 
   @override
   Future<SessionRestoreResult> restoreSession(int sessionId,
@@ -245,21 +248,8 @@ void main() {
       expect(result.errorMessage, contains('Update failed'));
     });
 
-    test('LOCK: rejects when trial has sessions (assignments fixed)', () async {
-      mockSessionRepo.sessionsForTrial = [
-        Session(
-          id: 1,
-          trialId: 1,
-          name: 'S1',
-          startedAt: DateTime.now(),
-          endedAt: null,
-          sessionDateLocal: '2026-01-01',
-          raterName: null,
-          createdByUserId: null,
-          status: 'open',
-          isDeleted: false,
-        ),
-      ];
+    test('LOCK: rejects when trial has session data (assignments fixed)', () async {
+      mockSessionRepo.trialHasSessionData = true;
       final result = await useCase.updateOne(
         trial: _trial(status: 'draft'),
         plotPk: 10,
