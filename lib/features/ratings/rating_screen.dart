@@ -235,7 +235,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     SharedPreferences.getInstance().then((prefs) {
       SessionResumeStore(prefs).savePosition(
         widget.session.id,
-        widget.currentPlotIndex,
+        widget.plot.id,
         _assessmentIndex,
       );
     });

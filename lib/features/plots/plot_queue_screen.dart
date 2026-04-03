@@ -174,9 +174,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final prefs = await SharedPreferences.getInstance();
     if (!context.mounted) return;
     final pos = SessionResumeStore(prefs).getPosition(widget.session.id);
-    if (pos != null && pos.$1 == currentPlotIndex) {
+    if (pos != null && pos.isForPlot(plot.id, currentPlotIndex)) {
       initialAssessmentIndex =
-          pos.$2.clamp(0, assessments.length - 1);
+          pos.clampedAssessmentIndex(assessments.length);
     }
     if (!context.mounted) return;
     await Navigator.push<void>(

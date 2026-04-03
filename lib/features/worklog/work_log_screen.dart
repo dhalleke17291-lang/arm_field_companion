@@ -536,9 +536,14 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     int? initialAssessmentIndex;
     final pos =
         SessionResumeStore(prefs).getPosition(resolvedSession.id);
-    if (pos != null && pos.$1 >= 0 && pos.$1 < plots.length) {
-      startIndex = pos.$1;
-      initialAssessmentIndex = pos.$2.clamp(0, assessments.length - 1);
+    if (pos != null) {
+      final resolved = pos.resolveResumeStart(
+        plots: plots,
+        fallbackStartIndex: startIndex,
+        assessmentCount: assessments.length,
+      );
+      startIndex = resolved.$1;
+      initialAssessmentIndex = resolved.$2;
     }
     LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
     if (!context.mounted) return;
