@@ -111,9 +111,15 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
         }
       } catch (e) {
         if (mounted) {
+          final scheme = Theme.of(context).colorScheme;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('Export failed: $e'), backgroundColor: Colors.red),
+              content: Text(
+                'Export failed: $e',
+                style: TextStyle(color: scheme.onError),
+              ),
+              backgroundColor: scheme.error,
+            ),
           );
         }
       }
@@ -400,7 +406,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: Icon(
-                      Icons.warning_amber_rounded,
+                      Icons.close,
                       color: theme.colorScheme.error,
                       size: 28,
                     ),
@@ -462,8 +468,8 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle,
-                          color: theme.colorScheme.primary),
+                      const Icon(Icons.check,
+                          color: AppDesignTokens.successFg),
                       const SizedBox(width: 12),
                       Text(
                         'No issues found.',

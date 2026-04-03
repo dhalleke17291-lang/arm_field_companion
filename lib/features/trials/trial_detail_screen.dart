@@ -238,20 +238,28 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           if (!mounted) return;
           ScaffoldMessenger.of(context).clearSnackBars();
           if (!result.success) {
+            final scheme = Theme.of(context).colorScheme;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(result.errorMessage ?? 'Export failed'),
-                backgroundColor: Colors.red,
+                content: Text(
+                  result.errorMessage ?? 'Export failed',
+                  style: TextStyle(color: scheme.onError),
+                ),
+                backgroundColor: scheme.error,
               ),
             );
             return;
           }
           final path = result.filePath;
           if (path == null) {
+            final scheme = Theme.of(context).colorScheme;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Export failed: missing file path'),
-                backgroundColor: Colors.red,
+              SnackBar(
+                content: Text(
+                  'Export failed: missing file path',
+                  style: TextStyle(color: scheme.onError),
+                ),
+                backgroundColor: scheme.error,
               ),
             );
             return;
@@ -346,24 +354,30 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         );
       } on ExportBlockedByValidationException catch (e) {
         if (mounted) {
+          final scheme = Theme.of(context).colorScheme;
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(
+              content: Text(
                 'Blocked — data issues:\n${e.message}',
+                style: TextStyle(color: scheme.onError),
               ),
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: scheme.error,
               duration: const Duration(seconds: 6),
             ),
           );
         }
       } catch (e) {
         if (!mounted) return;
+        final scheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Export failed: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Export failed: $e',
+              style: TextStyle(color: scheme.onError),
+            ),
+            backgroundColor: scheme.error,
           ),
         );
       } finally {
@@ -382,9 +396,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final sheetFormats = exportFormatsForTrialSheet(trial.workspaceType);
     if (sheetFormats.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No export options available for this trial.'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('No export options available for this trial.'),
+          backgroundColor: Colors.amber.shade700,
         ),
       );
       return;
@@ -436,9 +450,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           if (sheetFormats.isEmpty) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('No export options available for this trial.'),
-                  backgroundColor: Colors.orange,
+                SnackBar(
+                  content: const Text('No export options available for this trial.'),
+                  backgroundColor: Colors.amber.shade700,
                 ),
               );
             }
@@ -462,11 +476,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     };
   }
 
-  static Color _readinessCollapsedSummaryColor(TrialReadinessReport report) {
+  static Color _readinessCollapsedSummaryColor(
+    BuildContext context,
+    TrialReadinessReport report,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
     return switch (report.status) {
       TrialReadinessStatus.ready => AppDesignTokens.successFg,
       TrialReadinessStatus.readyWithWarnings => AppDesignTokens.warningFg,
-      TrialReadinessStatus.notReady => AppDesignTokens.warningFg,
+      TrialReadinessStatus.notReady => scheme.error,
     };
   }
 
@@ -742,7 +760,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                         final summary =
                             _readinessCollapsedSummary(report);
                         final summaryColor =
-                            _readinessCollapsedSummaryColor(report);
+                            _readinessCollapsedSummaryColor(context, report);
                         return ExpansionTile(
                           tilePadding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -850,7 +868,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     shape: BoxShape.circle,
                     color: isBlocker
                         ? theme.colorScheme.error
-                        : const Color(0xFFEF9F27),
+                        : Colors.amber.shade700,
                   ),
                 ),
               ],
@@ -2163,10 +2181,14 @@ class SessionsView extends ConsumerWidget {
                                 Text('Exported ${result.sessionCount} sessions')),
                       );
                     } else {
+                      final scheme = Theme.of(context).colorScheme;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(result.errorMessage ?? 'Export failed'),
-                          backgroundColor: Colors.red,
+                          content: Text(
+                            result.errorMessage ?? 'Export failed',
+                            style: TextStyle(color: scheme.onError),
+                          ),
+                          backgroundColor: scheme.error,
                         ),
                       );
                     }
@@ -2494,7 +2516,7 @@ class SessionsView extends ConsumerWidget {
           label: 'Warnings',
           backgroundColor: AppDesignTokens.warningBg,
           foregroundColor: AppDesignTokens.warningFg,
-          icon: Icons.info_outline_rounded,
+          icon: Icons.warning_amber_outlined,
         ),
       ];
     }
@@ -2760,10 +2782,19 @@ class SessionsView extends ConsumerWidget {
       closedByUserId: userId,
     );
     if (context.mounted) {
+      final scheme = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-            result.success ? 'Session closed' : result.errorMessage ?? 'Error'),
-        backgroundColor: result.success ? Colors.green : Colors.red,
+          result.success ? 'Session closed' : result.errorMessage ?? 'Error',
+          style: TextStyle(
+            color: result.success
+                ? AppDesignTokens.successFg
+                : scheme.onError,
+          ),
+        ),
+        backgroundColor: result.success
+            ? AppDesignTokens.successBg
+            : scheme.error,
       ));
     }
   }
@@ -3015,8 +3046,8 @@ class _ReadinessCheckRow extends StatelessWidget {
         color = AppDesignTokens.successFg;
         break;
       case UnifiedSeverity.info:
-        icon = Icons.check;
-        color = AppDesignTokens.successFg;
+        icon = Icons.info_outline;
+        color = scheme.primary;
         break;
     }
     return Padding(

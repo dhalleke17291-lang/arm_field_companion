@@ -396,7 +396,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     result.warningMessage!,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.error,
+                      color: Colors.amber.shade700,
                     ),
                   ),
                 ],
@@ -440,10 +440,16 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         );
       } catch (e) {
         if (context.mounted) {
+          final scheme = Theme.of(context).colorScheme;
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('Export failed: $e'), backgroundColor: Colors.red),
+              content: Text(
+                'Export failed: $e',
+                style: TextStyle(color: scheme.onError),
+              ),
+              backgroundColor: scheme.error,
+            ),
           );
         }
       }
@@ -541,11 +547,16 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         );
       } catch (e) {
         if (context.mounted) {
+          final scheme = Theme.of(context).colorScheme;
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('ARM XML export failed: $e'),
-                backgroundColor: Colors.red),
+              content: Text(
+                'ARM XML export failed: $e',
+                style: TextStyle(color: scheme.onError),
+              ),
+              backgroundColor: scheme.error,
+            ),
           );
         }
       }
@@ -944,11 +955,11 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (isFlagged)
-                              const Padding(
-                                padding: EdgeInsets.only(
+                              Padding(
+                                padding: const EdgeInsets.only(
                                     right: AppDesignTokens.spacing8),
                                 child: Icon(Icons.flag,
-                                    color: Colors.amber, size: 22),
+                                    color: Colors.amber.shade700, size: 22),
                               ),
                             if (hasIssues)
                               Container(
@@ -996,8 +1007,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: rating.resultStatus == 'RECORDED'
-                                    ? Colors.green
-                                    : Colors.orange,
+                                    ? AppDesignTokens.successFg
+                                    : Colors.amber.shade700,
                               ),
                             ),
                           );
@@ -1054,8 +1065,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.warning_amber_rounded,
-                    size: 18, color: scheme.onTertiaryContainer),
+                Icon(Icons.warning_amber_outlined,
+                    size: 18, color: Colors.amber.shade700),
                 const SizedBox(width: AppDesignTokens.spacing8),
                 Text(
                   'Warnings — plots',
