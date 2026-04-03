@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/diagnostics/diagnostic_finding.dart';
 import '../../core/diagnostics/unified_severity.dart';
 import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
@@ -443,6 +444,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _TrialReadinessSheet(
+        trialId: trial.id,
         report: report,
         showExportAnyway: showExportAnyway,
         onExport: () async {
@@ -2917,32 +2919,60 @@ enum _SessionCloseAttentionAction {
   closeAnyway,
 }
 
-class _TrialReadinessSheet extends StatelessWidget {
+UnifiedSeverity _mapDiagnosticSeverity(DiagnosticSeverity s) =>
+    mapFindingDiagnosticSeverity(s);
+
+String _sourceLabel(DiagnosticSource source) {
+  return switch (source) {
+    DiagnosticSource.exportValidation => 'export',
+    DiagnosticSource.armConfidence => 'ARM',
+    DiagnosticSource.readiness => '',
+  };
+}
+
+class _TrialReadinessSheet extends ConsumerWidget {
   const _TrialReadinessSheet({
+    required this.trialId,
     required this.report,
     required this.showExportAnyway,
     required this.onExport,
     required this.onClose,
   });
 
+  final int trialId;
   final TrialReadinessReport report;
   final bool showExportAnyway;
   final VoidCallback onExport;
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final blockers = report.checks
+    final readinessCodes = report.checks.map((c) => c.code).toSet();
+    final diagnosticExtras = ref
+        .watch(trialDiagnosticsProvider(trialId))
         .where(
-          (c) => mapTrialCheckSeverity(c.severity) == UnifiedSeverity.blocker,
+          (f) =>
+              f.source != DiagnosticSource.readiness &&
+              !readinessCodes.contains(f.code),
         )
         .toList();
-    final warnings = report.checks
-        .where(
-          (c) => mapTrialCheckSeverity(c.severity) == UnifiedSeverity.warning,
-        )
-        .toList();
+
+    List<_ReadinessCheckRow> rowsForSeverity(UnifiedSeverity severity) {
+      final fromReport = report.checks
+          .where((c) => mapTrialCheckSeverity(c.severity) == severity)
+          .map((c) => _ReadinessCheckRow(check: c))
+          .toList();
+      final fromDiag = diagnosticExtras
+          .where((f) => mapFindingDiagnosticSeverity(f.severity) == severity)
+          .map((f) => _ReadinessCheckRow.fromFinding(f))
+          .toList();
+      return [...fromReport, ...fromDiag];
+    }
+
+    final blockers = rowsForSeverity(UnifiedSeverity.blocker);
+    final warnings = rowsForSeverity(UnifiedSeverity.warning);
+    final infos = rowsForSeverity(UnifiedSeverity.info);
     final passes = report.checks
         .where(
           (c) => mapTrialCheckSeverity(c.severity) == UnifiedSeverity.pass,
@@ -2978,8 +3008,9 @@ class _TrialReadinessSheet extends StatelessWidget {
                   controller: scrollController,
                   shrinkWrap: true,
                   children: [
-                    ...blockers.map((c) => _ReadinessCheckRow(check: c)),
-                    ...warnings.map((c) => _ReadinessCheckRow(check: c)),
+                    ...blockers,
+                    ...warnings,
+                    ...infos,
                     if (passes.isNotEmpty)
                       ExpansionTile(
                         initiallyExpanded: false,
@@ -3022,24 +3053,64 @@ class _TrialReadinessSheet extends StatelessWidget {
 }
 
 class _ReadinessCheckRow extends StatelessWidget {
-  const _ReadinessCheckRow({required this.check});
+  const _ReadinessCheckRow({
+    required this.check,
+    // Reserved for readiness rows that need a source hint; callers use default today.
+    // ignore: unused_element_parameter
+    this.source,
+  })  : _findingSeverity = null,
+        _message = null,
+        _findingDetail = null,
+        _findingSource = null;
 
-  final TrialReadinessCheck check;
+  factory _ReadinessCheckRow.fromFinding(DiagnosticFinding f) {
+    return _ReadinessCheckRow._finding(
+      severity: _mapDiagnosticSeverity(f.severity),
+      message: f.message,
+      detail: f.detail,
+      findingSource: f.source,
+    );
+  }
+
+  const _ReadinessCheckRow._finding({
+    required UnifiedSeverity severity,
+    required String message,
+    String? detail,
+    required DiagnosticSource findingSource,
+  })  : check = null,
+        source = null,
+        _findingSeverity = severity,
+        _message = message,
+        _findingDetail = detail,
+        _findingSource = findingSource;
+
+  final TrialReadinessCheck? check;
+  final DiagnosticSource? source;
+  final UnifiedSeverity? _findingSeverity;
+  final String? _message;
+  final String? _findingDetail;
+  final DiagnosticSource? _findingSource;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final unified = check != null
+        ? mapTrialCheckSeverity(check!.severity)
+        : _findingSeverity!;
+    final label = check?.label ?? _message!;
+    final detailText = check?.detail ?? _findingDetail;
+    final hintSource = check != null ? source : _findingSource;
     IconData icon;
     Color color;
-    switch (mapTrialCheckSeverity(check.severity)) {
+    switch (unified) {
       case UnifiedSeverity.blocker:
         icon = Icons.close;
         color = scheme.error;
         break;
       case UnifiedSeverity.warning:
         icon = Icons.warning_amber_outlined;
-        color = Colors.amber.shade700;
+        color = AppDesignTokens.warningFg;
         break;
       case UnifiedSeverity.pass:
         icon = Icons.check;
@@ -3047,9 +3118,14 @@ class _ReadinessCheckRow extends StatelessWidget {
         break;
       case UnifiedSeverity.info:
         icon = Icons.info_outline;
-        color = scheme.primary;
+        color = AppDesignTokens.primary;
         break;
     }
+    final hintText = hintSource != null &&
+            hintSource != DiagnosticSource.readiness &&
+            _sourceLabel(hintSource).isNotEmpty
+        ? _sourceLabel(hintSource)
+        : null;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -3063,15 +3139,15 @@ class _ReadinessCheckRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  check.label,
+                  label,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (check.detail != null && check.detail!.isNotEmpty) ...[
+                if (detailText != null && detailText.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
-                    check.detail!,
+                    detailText,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -3080,6 +3156,16 @@ class _ReadinessCheckRow extends StatelessWidget {
               ],
             ),
           ),
+          if (hintText != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text(
+                hintText,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
         ],
       ),
     );

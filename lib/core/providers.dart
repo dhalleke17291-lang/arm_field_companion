@@ -59,6 +59,7 @@ import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
 import '../features/diagnostics/trial_readiness.dart';
 import '../features/diagnostics/trial_readiness_service.dart';
+import 'diagnostics/diagnostic_finding.dart';
 import '../features/today/domain/activity_event.dart';
 import '../features/today/today_activity_repository.dart';
 import 'current_user.dart';
@@ -844,6 +845,24 @@ final trialReadinessProvider = StreamProvider.autoDispose
   final db = ref.watch(databaseProvider);
   return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) =>
       TrialReadinessService().runChecks(trialId.toString(), ref));
+});
+
+/// Merged [DiagnosticFinding]s for trial-scoped diagnostics UI (readiness sheet).
+///
+/// Currently includes non-pass readiness checks only. Export validation and
+/// ARM confidence are produced at export time; there is no persistent
+/// watchable store for them yet. Those surfaces remain SnackBars until a
+/// follow-up adds persisted or cached findings here.
+final trialDiagnosticsProvider = Provider.autoDispose
+    .family<List<DiagnosticFinding>, int>((ref, trialId) {
+  final readinessAsync = ref.watch(trialReadinessProvider(trialId));
+  return readinessAsync.maybeWhen(
+    data: (report) => report.checks
+        .where((c) => c.severity != TrialCheckSeverity.pass)
+        .map((c) => c.toDiagnosticFinding(trialId))
+        .toList(),
+    orElse: () => <DiagnosticFinding>[],
+  );
 });
 
 /// Latest protocol import event for a trial (for opening saved CSV reference).
