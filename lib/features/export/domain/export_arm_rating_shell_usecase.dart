@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/diagnostics/diagnostic_finding.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
@@ -18,6 +19,7 @@ import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
 import '../../sessions/session_repository.dart';
 import '../export_confidence_policy.dart';
+import '../export_trial_usecase.dart' show PublishTrialExportDiagnostics;
 import 'arm_rating_shell_result.dart';
 
 /// Optional share override for tests (avoids platform Share).
@@ -46,13 +48,17 @@ class ExportArmRatingShellUseCase {
     required ArmImportPersistenceRepository persistence,
     this.shareOverride,
     this.pickShellPathOverride,
+    PublishTrialExportDiagnostics? publishExportDiagnostics,
   })  : _db = db,
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
         _trialAssessmentRepository = trialAssessmentRepository,
         _ratingRepository = ratingRepository,
         _sessionRepository = sessionRepository,
-        _persistence = persistence;
+        _persistence = persistence,
+        _publishExportDiagnostics = publishExportDiagnostics;
+
+  final PublishTrialExportDiagnostics? _publishExportDiagnostics;
 
   Future<ArmRatingShellResult> execute({
     required Trial trial,
@@ -66,6 +72,18 @@ class ExportArmRatingShellUseCase {
       );
     }
 
+    final trialPk = trial.id;
+    final exportDiagnosticsBuffer = <DiagnosticFinding>[];
+
+    void publishExportDiagnostics() {
+      _publishExportDiagnostics?.call(
+        trialPk,
+        List<DiagnosticFinding>.unmodifiable(
+          List<DiagnosticFinding>.from(exportDiagnosticsBuffer),
+        ),
+      );
+    }
+
     final profile = await _persistence.getLatestCompatibilityProfileForTrial(
       trial.id,
     );
@@ -76,11 +94,19 @@ class ExportArmRatingShellUseCase {
       if (reason != null && reason.trim().isNotEmpty) {
         msg = '$msg Reason: $reason';
       }
+      final finding = gate.toDiagnosticFinding(trialId: trialPk, message: msg);
+      if (finding != null) exportDiagnosticsBuffer.add(finding);
+      publishExportDiagnostics();
       return ArmRatingShellResult.failure(msg);
     }
     String? confidenceWarningMessage;
     if (gate == ExportGate.warn) {
       confidenceWarningMessage = kWarnExportMessage;
+      final finding = gate.toDiagnosticFinding(
+        trialId: trialPk,
+        message: confidenceWarningMessage,
+      );
+      if (finding != null) exportDiagnosticsBuffer.add(finding);
     }
     final shellWarnings = <String>[];
     final warnedNullPestTaIds = <int>{};
@@ -96,9 +122,31 @@ class ExportArmRatingShellUseCase {
     final treatments = loaded[2] as List<Treatment>;
 
     if (plots.isEmpty) {
+      exportDiagnosticsBuffer.add(
+        DiagnosticFinding(
+          code: 'arm_rating_shell_no_plots',
+          severity: DiagnosticSeverity.blocker,
+          message: 'No plots found for trial.',
+          trialId: trialPk,
+          source: DiagnosticSource.exportValidation,
+          blocksExport: true,
+        ),
+      );
+      publishExportDiagnostics();
       return ArmRatingShellResult.failure('No plots found for trial.');
     }
     if (assessments.isEmpty) {
+      exportDiagnosticsBuffer.add(
+        DiagnosticFinding(
+          code: 'arm_rating_shell_no_assessments',
+          severity: DiagnosticSeverity.blocker,
+          message: 'No assessments found for trial.',
+          trialId: trialPk,
+          source: DiagnosticSource.exportValidation,
+          blocksExport: true,
+        ),
+      );
+      publishExportDiagnostics();
       return ArmRatingShellResult.failure('No assessments found for trial.');
     }
 
@@ -124,6 +172,17 @@ class ExportArmRatingShellUseCase {
     }
 
     if (assessmentColumns.isEmpty) {
+      exportDiagnosticsBuffer.add(
+        DiagnosticFinding(
+          code: 'arm_rating_shell_no_columns',
+          severity: DiagnosticSeverity.blocker,
+          message: 'No assessment columns could be determined.',
+          trialId: trialPk,
+          source: DiagnosticSource.exportValidation,
+          blocksExport: true,
+        ),
+      );
+      publishExportDiagnostics();
       return ArmRatingShellResult.failure(
         'No assessment columns could be determined.',
       );
@@ -137,6 +196,20 @@ class ExportArmRatingShellUseCase {
     final String? shellPath;
     if (pickShellPathOverride != null) {
       shellPath = await pickShellPathOverride!();
+      if (shellPath == null) {
+        exportDiagnosticsBuffer.add(
+          DiagnosticFinding(
+            code: 'arm_rating_shell_cancelled',
+            severity: DiagnosticSeverity.info,
+            message: 'Export cancelled.',
+            trialId: trialPk,
+            source: DiagnosticSource.exportValidation,
+            blocksExport: false,
+          ),
+        );
+        publishExportDiagnostics();
+        return ArmRatingShellResult.failure('Export cancelled.');
+      }
     } else {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -144,11 +217,33 @@ class ExportArmRatingShellUseCase {
         dialogTitle: 'Select ARM Rating Shell for ${trial.name}',
       );
       if (result == null || result.files.isEmpty) {
+        exportDiagnosticsBuffer.add(
+          DiagnosticFinding(
+            code: 'arm_rating_shell_cancelled',
+            severity: DiagnosticSeverity.info,
+            message: 'Export cancelled.',
+            trialId: trialPk,
+            source: DiagnosticSource.exportValidation,
+            blocksExport: false,
+          ),
+        );
+        publishExportDiagnostics();
         return ArmRatingShellResult.failure('Export cancelled.');
       }
       shellPath = result.files.single.path;
     }
     if (shellPath == null) {
+      exportDiagnosticsBuffer.add(
+        DiagnosticFinding(
+          code: 'arm_rating_shell_cancelled',
+          severity: DiagnosticSeverity.info,
+          message: 'Export cancelled.',
+          trialId: trialPk,
+          source: DiagnosticSource.exportValidation,
+          blocksExport: false,
+        ),
+      );
+      publishExportDiagnostics();
       return ArmRatingShellResult.failure('Export cancelled.');
     }
 
@@ -276,6 +371,19 @@ class ExportArmRatingShellUseCase {
       }
     }
 
+    for (var i = 0; i < shellWarnings.length; i++) {
+      exportDiagnosticsBuffer.add(
+        DiagnosticFinding(
+          code: 'arm_rating_shell_warn_$i',
+          severity: DiagnosticSeverity.warning,
+          message: shellWarnings[i],
+          trialId: trialPk,
+          source: DiagnosticSource.exportValidation,
+          blocksExport: false,
+        ),
+      );
+    }
+    publishExportDiagnostics();
     return ArmRatingShellResult.ok(
       filePath: filePath,
       warningMessage:
