@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/diagnostics/diagnostic_finding.dart';
 import '../arm_import/data/arm_import_persistence_repository.dart';
 import '../plots/plot_repository.dart';
 import 'export_confidence_policy.dart';
@@ -26,6 +27,12 @@ import '../../data/repositories/assignment_repository.dart';
 import '../photos/photo_repository.dart';
 import 'csv_export_service.dart';
 import 'trial_export_bundle.dart';
+
+/// Optional sink for trial-level export diagnostics (validation + confidence).
+typedef PublishTrialExportDiagnostics = void Function(
+  int trialId,
+  List<DiagnosticFinding> findings,
+);
 
 class ExportBlockedByValidationException implements Exception {
   const ExportBlockedByValidationException(this.message);
@@ -50,6 +57,7 @@ class ExportTrialUseCase {
     required AssignmentRepository assignmentRepository,
     required PhotoRepository photoRepository,
     required ArmImportPersistenceRepository armImportPersistenceRepository,
+    PublishTrialExportDiagnostics? publishExportDiagnostics,
   })  : _trialRepository = trialRepository,
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
@@ -60,7 +68,10 @@ class ExportTrialUseCase {
         _ratingRepository = ratingRepository,
         _assignmentRepository = assignmentRepository,
         _photoRepository = photoRepository,
-        _armImportPersistenceRepository = armImportPersistenceRepository;
+        _armImportPersistenceRepository = armImportPersistenceRepository,
+        _publishExportDiagnostics = publishExportDiagnostics;
+
+  final PublishTrialExportDiagnostics? _publishExportDiagnostics;
 
   // Kept for API consistency; trial is passed into execute().
   // ignore: unused_field
@@ -205,6 +216,18 @@ class ExportTrialUseCase {
   ];
 
   Future<TrialExportBundle> execute({required Trial trial, required ExportFormat format}) async {
+    final trialPk = trial.id;
+    final exportDiagnosticsBuffer = <DiagnosticFinding>[];
+
+    void publishExportDiagnostics() {
+      _publishExportDiagnostics?.call(
+        trialPk,
+        List<DiagnosticFinding>.unmodifiable(
+          List<DiagnosticFinding>.from(exportDiagnosticsBuffer),
+        ),
+      );
+    }
+
     if (format == ExportFormat.armRatingShell) {
       throw ArgumentError(
         'ARM Rating Shell must use ExportArmRatingShellUseCase, not ExportTrialUseCase.',
@@ -219,15 +242,22 @@ class ExportTrialUseCase {
       if (reason != null && reason.trim().isNotEmpty) {
         msg = '$msg Reason: $reason';
       }
+      final finding = gate.toDiagnosticFinding(trialId: trialPk, message: msg);
+      if (finding != null) exportDiagnosticsBuffer.add(finding);
+      publishExportDiagnostics();
       throw ExportBlockedByConfidenceException(msg);
     }
     String? confidenceWarningMessage;
     if (gate == ExportGate.warn) {
       confidenceWarningMessage = kWarnExportMessage;
+      final finding = gate.toDiagnosticFinding(
+        trialId: trialPk,
+        message: confidenceWarningMessage,
+      );
+      if (finding != null) exportDiagnosticsBuffer.add(finding);
     }
 
     final exportTimestamp = DateTime.now().toUtc().toIso8601String();
-    final trialPk = trial.id;
     final armAligned =
         format == ExportFormat.armHandoff || format == ExportFormat.zipBundle;
 
@@ -357,8 +387,12 @@ class ExportTrialUseCase {
         sessions: sessions,
         photos: photos,
       );
+      for (final issue in validation.issues) {
+        exportDiagnosticsBuffer.add(issue.toDiagnosticFinding(trialPk));
+      }
       if (validation.issues
           .any((i) => i.severity == export_validation.IssueSeverity.error)) {
+        publishExportDiagnostics();
         throw ExportBlockedByValidationException(
           validation.issues
               .where((i) => i.severity == export_validation.IssueSeverity.error)
@@ -372,6 +406,7 @@ class ExportTrialUseCase {
           text: '${trial.name} – ARM Import Assistant package');
     }
 
+    publishExportDiagnostics();
     return bundle;
   }
 

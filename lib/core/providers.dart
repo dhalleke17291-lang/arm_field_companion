@@ -60,6 +60,7 @@ import '../features/diagnostics/integrity_check_repository.dart';
 import '../features/diagnostics/trial_readiness.dart';
 import '../features/diagnostics/trial_readiness_service.dart';
 import 'diagnostics/diagnostic_finding.dart';
+import 'diagnostics/trial_export_diagnostics.dart';
 import '../features/today/domain/activity_event.dart';
 import '../features/today/today_activity_repository.dart';
 import 'current_user.dart';
@@ -823,6 +824,11 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     photoRepository: ref.watch(photoRepositoryProvider),
     armImportPersistenceRepository:
         ref.watch(armImportPersistenceRepositoryProvider),
+    publishExportDiagnostics: (trialId, findings) {
+      ref
+          .read(trialExportDiagnosticsMapProvider.notifier)
+          .setTrialFindings(trialId, findings);
+    },
   );
 });
 
@@ -849,20 +855,23 @@ final trialReadinessProvider = StreamProvider.autoDispose
 
 /// Merged [DiagnosticFinding]s for trial-scoped diagnostics UI (readiness sheet).
 ///
-/// Currently includes non-pass readiness checks only. Export validation and
-/// ARM confidence are produced at export time; there is no persistent
-/// watchable store for them yet. Those surfaces remain SnackBars until a
-/// follow-up adds persisted or cached findings here.
+/// Combines live readiness checks (non-pass) with the latest export-time
+/// findings from [trialExportDiagnosticsMapProvider] (validation + ARM
+/// confidence from the most recent export attempt). Export cache is in-memory
+/// for the app session only.
 final trialDiagnosticsProvider = Provider.autoDispose
     .family<List<DiagnosticFinding>, int>((ref, trialId) {
   final readinessAsync = ref.watch(trialReadinessProvider(trialId));
-  return readinessAsync.maybeWhen(
+  final readinessFindings = readinessAsync.maybeWhen(
     data: (report) => report.checks
         .where((c) => c.severity != TrialCheckSeverity.pass)
         .map((c) => c.toDiagnosticFinding(trialId))
         .toList(),
     orElse: () => <DiagnosticFinding>[],
   );
+  final exportByTrial = ref.watch(trialExportDiagnosticsMapProvider);
+  final exportFindings = exportByTrial[trialId] ?? const <DiagnosticFinding>[];
+  return [...readinessFindings, ...exportFindings];
 });
 
 /// Latest protocol import event for a trial (for opening saved CSV reference).
