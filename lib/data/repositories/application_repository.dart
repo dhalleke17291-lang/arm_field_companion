@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 
@@ -23,33 +25,105 @@ class ApplicationRepository {
         .get();
   }
 
-  Future<String> createApplication(TrialApplicationEventsCompanion companion) {
+  Future<String> createApplication(
+    TrialApplicationEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
     final full = _withNewFields(companion);
-    return _db
-        .into(_db.trialApplicationEvents)
-        .insertReturning(full)
-        .then((row) => row.id);
+    return _db.transaction(() async {
+      final row =
+          await _db.into(_db.trialApplicationEvents).insertReturning(full);
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(row.trialId),
+              eventType: 'TRIAL_APPLICATION_EVENT_CREATED',
+              description: 'Trial application event created',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'trial_application_event_id': row.id,
+                'trial_id': row.trialId,
+                'status': row.status,
+                'application_date': row.applicationDate.toIso8601String(),
+              })),
+            ),
+          );
+      return row.id;
+    });
   }
 
   Future<void> updateApplication(
-      String id, TrialApplicationEventsCompanion companion) {
+    String id,
+    TrialApplicationEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
     final full = _withNewFields(companion);
-    return (_db.update(_db.trialApplicationEvents)
-          ..where((e) => e.id.equals(id)))
-        .write(full);
+    await _db.transaction(() async {
+      await (_db.update(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .write(full);
+      final row = await (_db.select(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .getSingleOrNull();
+      if (row == null) return;
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(row.trialId),
+              eventType: 'TRIAL_APPLICATION_EVENT_UPDATED',
+              description: 'Trial application event updated',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'trial_application_event_id': row.id,
+                'trial_id': row.trialId,
+                'status': row.status,
+                'application_date': row.applicationDate.toIso8601String(),
+              })),
+            ),
+          );
+    });
   }
 
   /// Sets lifecycle to applied (trial application sheet workflow).
   Future<void> markApplicationApplied({
     required String id,
     required DateTime appliedAt,
-  }) {
-    return (_db.update(_db.trialApplicationEvents)
-          ..where((e) => e.id.equals(id)))
-        .write(TrialApplicationEventsCompanion(
-      status: const Value('applied'),
-      appliedAt: Value(appliedAt),
-    ));
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    await _db.transaction(() async {
+      final existing = await (_db.select(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .getSingleOrNull();
+
+      await (_db.update(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .write(TrialApplicationEventsCompanion(
+        status: const Value('applied'),
+        appliedAt: Value(appliedAt),
+      ));
+
+      if (existing == null) return;
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(existing.trialId),
+              eventType: 'TRIAL_APPLICATION_EVENT_APPLIED',
+              description: 'Trial application event marked applied',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'trial_application_event_id': id,
+                'trial_id': existing.trialId,
+                'status': 'applied',
+                'applied_at': appliedAt.toIso8601String(),
+              })),
+            ),
+          );
+    });
   }
 
   TrialApplicationEventsCompanion _withNewFields(

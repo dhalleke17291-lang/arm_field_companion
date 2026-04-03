@@ -275,18 +275,27 @@ class MockApplicationRepository implements ApplicationRepository {
 
   @override
   Future<String> createApplication(
-          TrialApplicationEventsCompanion companion) async =>
+    TrialApplicationEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async =>
       throw UnimplementedError();
 
   @override
   Future<void> updateApplication(
-          String id, TrialApplicationEventsCompanion companion) async =>
+    String id,
+    TrialApplicationEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async =>
       throw UnimplementedError();
 
   @override
   Future<void> markApplicationApplied({
     required String id,
     required DateTime appliedAt,
+    String? performedBy,
+    int? performedByUserId,
   }) async =>
       throw UnimplementedError();
 
@@ -366,11 +375,17 @@ class MockSeedingRepository implements SeedingRepository {
   Future<void> markSeedingCompleted({
     required String id,
     required DateTime completedAt,
+    String? performedBy,
+    int? performedByUserId,
   }) async =>
       throw UnimplementedError();
 
   @override
-  Future<void> upsertSeedingEvent(SeedingEventsCompanion companion) async =>
+  Future<void> upsertSeedingEvent(
+    SeedingEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async =>
       throw UnimplementedError();
 }
 

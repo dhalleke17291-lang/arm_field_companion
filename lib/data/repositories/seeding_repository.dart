@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 
@@ -10,7 +12,11 @@ class SeedingRepository {
   /// Inserts a new row when no record exists for the given trial_id;
   /// updates the existing row when one already exists.
   /// Never creates a second row for the same trial (unique on trial_id).
-  Future<void> upsertSeedingEvent(SeedingEventsCompanion companion) async {
+  Future<void> upsertSeedingEvent(
+    SeedingEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
     final full = companion.copyWith(
       variety: companion.variety.present
           ? Value(companion.variety.value)
@@ -31,26 +37,75 @@ class SeedingRepository {
           ? Value(companion.plantingMethod.value)
           : const Value.absent(),
     );
-    await _db.into(_db.seedingEvents).insert(
-          full,
-          onConflict: DoUpdate<$SeedingEventsTable, SeedingEvent>(
-            (_) => full,
-            target: [_db.seedingEvents.trialId],
-          ),
-        );
+    await _db.transaction(() async {
+      await _db.into(_db.seedingEvents).insert(
+            full,
+            onConflict: DoUpdate<$SeedingEventsTable, SeedingEvent>(
+              (_) => full,
+              target: [_db.seedingEvents.trialId],
+            ),
+          );
+
+      if (!companion.trialId.present) return;
+      final trialPk = companion.trialId.value;
+      final row = await getSeedingEventForTrial(trialPk);
+      if (row == null) return;
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(row.trialId),
+              eventType: 'SEEDING_EVENT_UPSERTED',
+              description: 'Seeding event saved',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'seeding_event_id': row.id,
+                'trial_id': row.trialId,
+                'status': row.status,
+                'seeding_date': row.seedingDate.toIso8601String(),
+              })),
+            ),
+          );
+    });
   }
 
   /// Sets lifecycle to completed (seeding workflow).
   Future<void> markSeedingCompleted({
     required String id,
     required DateTime completedAt,
-  }) {
-    return (_db.update(_db.seedingEvents)..where((e) => e.id.equals(id))).write(
-          SeedingEventsCompanion(
-            status: const Value('completed'),
-            completedAt: Value(completedAt),
-          ),
-        );
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    await _db.transaction(() async {
+      final existing = await (_db.select(_db.seedingEvents)
+            ..where((e) => e.id.equals(id)))
+          .getSingleOrNull();
+
+      await (_db.update(_db.seedingEvents)..where((e) => e.id.equals(id))).write(
+            SeedingEventsCompanion(
+              status: const Value('completed'),
+              completedAt: Value(completedAt),
+            ),
+          );
+
+      if (existing == null) return;
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(existing.trialId),
+              eventType: 'SEEDING_EVENT_COMPLETED',
+              description: 'Seeding event marked completed',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'seeding_event_id': id,
+                'trial_id': existing.trialId,
+                'status': 'completed',
+                'completed_at': completedAt.toIso8601String(),
+              })),
+            ),
+          );
+    });
   }
 
   /// Returns the single seeding event for the trial, or null if none.
