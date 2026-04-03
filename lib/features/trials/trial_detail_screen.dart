@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/diagnostics/unified_severity.dart';
 import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
 import '../../core/workspace/workspace_config.dart';
@@ -22,6 +23,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../diagnostics/trial_readiness.dart';
 import '../../core/export_guard.dart';
 import '../export/export_format.dart';
+import '../export/export_trial_usecase.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../shared/widgets/app_empty_state.dart';
 import 'tabs/assessments_tab.dart';
@@ -342,6 +344,19 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Export ready to share')),
         );
+      } on ExportBlockedByValidationException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Export blocked — data issues found:\n${e.message}',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 6),
+            ),
+          );
+        }
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -2887,13 +2902,19 @@ class _TrialReadinessSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final blockers = report.checks
-        .where((c) => c.severity == TrialCheckSeverity.blocker)
+        .where(
+          (c) => mapTrialCheckSeverity(c.severity) == UnifiedSeverity.blocker,
+        )
         .toList();
     final warnings = report.checks
-        .where((c) => c.severity == TrialCheckSeverity.warning)
+        .where(
+          (c) => mapTrialCheckSeverity(c.severity) == UnifiedSeverity.warning,
+        )
         .toList();
     final passes = report.checks
-        .where((c) => c.severity == TrialCheckSeverity.pass)
+        .where(
+          (c) => mapTrialCheckSeverity(c.severity) == UnifiedSeverity.pass,
+        )
         .toList();
 
     return DraggableScrollableSheet(
@@ -2979,16 +3000,20 @@ class _ReadinessCheckRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     IconData icon;
     Color color;
-    switch (check.severity) {
-      case TrialCheckSeverity.blocker:
+    switch (mapTrialCheckSeverity(check.severity)) {
+      case UnifiedSeverity.blocker:
         icon = Icons.close;
         color = scheme.error;
         break;
-      case TrialCheckSeverity.warning:
+      case UnifiedSeverity.warning:
         icon = Icons.warning_amber_outlined;
         color = Colors.amber.shade700;
         break;
-      case TrialCheckSeverity.pass:
+      case UnifiedSeverity.pass:
+        icon = Icons.check;
+        color = AppDesignTokens.successFg;
+        break;
+      case UnifiedSeverity.info:
         icon = Icons.check;
         color = AppDesignTokens.successFg;
         break;
