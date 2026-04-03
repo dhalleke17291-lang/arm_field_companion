@@ -116,7 +116,26 @@ class TreatmentRepository {
       ),
       performedByUserId,
     );
-    return _db.into(_db.treatments).insert(companion);
+    return _db.transaction(() async {
+      final newId = await _db.into(_db.treatments).insert(companion);
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(trialId),
+              eventType: 'TREATMENT_CREATED',
+              description: 'Treatment "$name" created',
+              performedBy: const Value.absent(),
+              performedByUserId: performedByUserId != null
+                  ? Value(performedByUserId)
+                  : const Value.absent(),
+              metadata: Value(jsonEncode({
+                'treatment_id': newId,
+                'code': code,
+                'name': name,
+              })),
+            ),
+          );
+      return newId;
+    });
   }
 
   Future<void> updateTreatment(
@@ -146,9 +165,34 @@ class TreatmentRepository {
           timingCode != null ? Value(timingCode) : const Value.absent(),
       eppoCode: eppoCode != null ? Value(eppoCode) : const Value.absent(),
     );
-    await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
-          _withTreatmentLastEdit(base, performedByUserId),
-        );
+    final fieldsUpdated = <String>[
+      if (code != null) 'code',
+      if (name != null) 'name',
+      if (description != null) 'description',
+      if (treatmentType != null) 'treatment_type',
+      if (timingCode != null) 'timing_code',
+      if (eppoCode != null) 'eppo_code',
+    ];
+    await _db.transaction(() async {
+      await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
+            _withTreatmentLastEdit(base, performedByUserId),
+          );
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(existing.trialId),
+              eventType: 'TREATMENT_UPDATED',
+              description: 'Treatment "${existing.name}" updated',
+              performedBy: const Value.absent(),
+              performedByUserId: performedByUserId != null
+                  ? Value(performedByUserId)
+                  : const Value.absent(),
+              metadata: Value(jsonEncode({
+                'treatment_id': id,
+                'fields_updated': fieldsUpdated,
+              })),
+            ),
+          );
+    });
   }
 
   /// Soft-deletes treatment and all its components; assignment/plot FKs are unchanged.
