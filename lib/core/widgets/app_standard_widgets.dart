@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../database/app_database.dart';
 import '../design/app_design_tokens.dart';
 import '../trial_state.dart';
 
@@ -422,25 +423,26 @@ class OperationalSourceBadge extends StatelessWidget {
 }
 
 /// Compact chip showing protocol lock state: "Editable" or "Locked".
-/// Optional [status] enables tooltip with [getProtocolLockMessage] when locked.
+/// [trial] enables tooltip with [protocolEditBlockedMessage] when [isLocked].
 class ProtocolLockChip extends StatelessWidget {
   final bool isLocked;
-  final String? status;
+  final Trial? trial;
 
   const ProtocolLockChip({
     super.key,
     required this.isLocked,
-    this.status,
+    this.trial,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final label = getProtocolLockLabel(status);
-    final tooltip =
-        isLocked && status != null && getProtocolLockMessage(status).isNotEmpty
-            ? getProtocolLockMessage(status)
-            : null;
+    final label = isLocked ? 'Locked' : 'Editable';
+    final tooltip = isLocked && trial != null
+        ? protocolEditBlockedMessage(trial!)
+        : null;
+    final tooltipOrNull =
+        tooltip != null && tooltip.isNotEmpty ? tooltip : null;
     Widget chip = Material(
       color:
           isLocked ? scheme.surfaceContainerHighest : scheme.primaryContainer,
@@ -468,8 +470,8 @@ class ProtocolLockChip extends StatelessWidget {
         ),
       ),
     );
-    if (tooltip != null) {
-      chip = Tooltip(message: tooltip, child: chip);
+    if (tooltipOrNull != null) {
+      chip = Tooltip(message: tooltipOrNull, child: chip);
     }
     return chip;
   }

@@ -394,7 +394,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
     if (_review == null || !_review!.canProceed) return;
     final useCase = ref.read(protocolImportUseCaseProvider);
     final locked =
-        widget.trial != null && isProtocolLocked(widget.trial!.status);
+        widget.trial != null && !canEditProtocol(widget.trial!);
 
     setState(() => _isLoading = true);
     final result = await useCase.execute(
@@ -402,7 +402,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
       existingTrialId: widget.trial?.id,
       isProtocolLocked: locked,
       protocolLockMessage: locked && widget.trial != null
-          ? getProtocolLockMessage(widget.trial!.status)
+          ? protocolEditBlockedMessage(widget.trial!)
           : null,
     );
     if (!mounted) return;

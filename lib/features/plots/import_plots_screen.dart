@@ -402,9 +402,9 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
   Future<void> _importPlots() async {
     if (_reviewResult == null || !_reviewResult!.canProceed) return;
     final normalizedRows = _reviewResult!.normalizedRows!;
-    if (isProtocolLocked(widget.trial.status)) {
+    if (!canEditProtocol(widget.trial)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(getProtocolLockMessage(widget.trial.status))),
+        SnackBar(content: Text(protocolEditBlockedMessage(widget.trial))),
       );
       return;
     }

@@ -69,7 +69,7 @@ class AssessmentsTab extends ConsumerWidget {
     final config = safeConfigFromString(trial.workspaceType);
     final isStandalone = config.isStandalone;
     final isGlp = config.studyType == StudyType.glp;
-    final locked = isProtocolLocked(trial.status);
+    final locked = !canEditProtocol(trial);
     final total = libraryList.length + customLegacyList.length;
     if (total == 0) {
       return Column(
@@ -79,7 +79,7 @@ class AssessmentsTab extends ConsumerWidget {
               icon: Icons.assessment,
               title: 'No Assessments Yet',
               subtitle: locked
-                  ? getModeLockMessage(trial.status, trial.workspaceType)
+                  ? protocolEditBlockedMessage(trial)
                   : 'Add from library or create a custom assessment.',
               action: null,
             ),
@@ -90,7 +90,7 @@ class AssessmentsTab extends ConsumerWidget {
                 ? null
                 : () => _showAddAssessmentOptions(context, ref),
             disabledTooltip:
-                locked ? getModeLockMessage(trial.status, trial.workspaceType) : null,
+                locked ? protocolEditBlockedMessage(trial) : null,
           ),
         ],
       );
@@ -125,12 +125,12 @@ class AssessmentsTab extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              ProtocolLockChip(isLocked: locked, status: trial.status),
+              ProtocolLockChip(isLocked: locked, trial: trial),
             ],
           ),
         ),
         if (locked)
-          ProtocolLockNotice(message: getModeLockMessage(trial.status, trial.workspaceType)),
+          ProtocolLockNotice(message: protocolEditBlockedMessage(trial)),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
@@ -361,7 +361,7 @@ class AssessmentsTab extends ConsumerWidget {
               ? null
               : () => _showAddAssessmentOptions(context, ref),
           disabledTooltip:
-              locked ? getModeLockMessage(trial.status, trial.workspaceType) : null,
+              locked ? protocolEditBlockedMessage(trial) : null,
         ),
       ],
     );

@@ -899,7 +899,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
       ),
       data: (plots) {
         if (plots.isEmpty) {
-          final showTestPlotsButton = !isProtocolLocked(trial.status);
+          final showTestPlotsButton = canEditProtocol(trial);
           if (widget.embeddedInScroll) {
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -2892,9 +2892,7 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
           title: 'No Plots Yet',
           subtitle: canEditStructure
               ? 'Import plots via CSV or add test plots below.'
-              : (trial.isArmLinked
-                  ? getArmProtocolLockMessage()
-                  : getModeLockMessage(trial.status, trial.workspaceType)),
+              : protocolEditBlockedMessage(trial),
         ),
         if (canEditStructure) ...[
           const SizedBox(height: 24),

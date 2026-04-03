@@ -146,7 +146,7 @@ class TreatmentsTab extends ConsumerWidget {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    final locked = isProtocolLocked(trial.status);
+    final locked = !canEditProtocol(trial);
     return Column(
       children: [
         Expanded(
@@ -154,7 +154,7 @@ class TreatmentsTab extends ConsumerWidget {
             icon: Icons.science_outlined,
             title: 'No Treatments Yet',
             subtitle: locked
-                ? getModeLockMessage(trial.status, trial.workspaceType)
+                ? protocolEditBlockedMessage(trial)
                 : 'Add the treatment groups for this trial.',
             action: null,
           ),
@@ -164,7 +164,7 @@ class TreatmentsTab extends ConsumerWidget {
           onPressed:
               locked ? null : () => _showAddTreatmentDialog(context, ref),
           disabledTooltip:
-              locked ? getModeLockMessage(trial.status, trial.workspaceType) : null,
+              locked ? protocolEditBlockedMessage(trial) : null,
         ),
       ],
     );
@@ -172,7 +172,7 @@ class TreatmentsTab extends ConsumerWidget {
 
   Widget _buildList(
       BuildContext context, WidgetRef ref, List<Treatment> treatments) {
-    final locked = isProtocolLocked(trial.status);
+    final locked = !canEditProtocol(trial);
     return Column(
       children: [
         Expanded(
@@ -188,10 +188,10 @@ class TreatmentsTab extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ProtocolLockChip(isLocked: true, status: trial.status),
+                      ProtocolLockChip(isLocked: true, trial: trial),
                       const SizedBox(height: 4),
                       Text(
-                        getModeLockMessage(trial.status, trial.workspaceType),
+                        protocolEditBlockedMessage(trial),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -223,7 +223,7 @@ class TreatmentsTab extends ConsumerWidget {
           onPressed:
               locked ? null : () => _showAddTreatmentDialog(context, ref),
           disabledTooltip:
-              locked ? getModeLockMessage(trial.status, trial.workspaceType) : null,
+              locked ? protocolEditBlockedMessage(trial) : null,
         ),
       ],
     );
@@ -1288,7 +1288,7 @@ class _TreatmentComponentsSheetState
 
   @override
   Widget build(BuildContext context) {
-    final locked = isProtocolLocked(widget.trial.status);
+    final locked = !canEditProtocol(widget.trial);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -1442,7 +1442,7 @@ class _TreatmentComponentsSheetState
 
   Widget _buildComponentTile(BuildContext context, int i) {
     final c = _components[i];
-    final locked = isProtocolLocked(widget.trial.status);
+    final locked = !canEditProtocol(widget.trial);
     final ratePart = (c.rate != null && c.rateUnit != null)
         ? '${c.rate} ${c.rateUnit}'
         : null;
