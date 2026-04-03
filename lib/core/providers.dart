@@ -827,7 +827,7 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     publishExportDiagnostics: (trialId, findings) {
       ref
           .read(trialExportDiagnosticsMapProvider.notifier)
-          .setTrialFindings(trialId, findings);
+          .setTrialSnapshot(trialId, findings);
     },
   );
 });
@@ -870,8 +870,15 @@ final trialDiagnosticsProvider = Provider.autoDispose
     orElse: () => <DiagnosticFinding>[],
   );
   final exportByTrial = ref.watch(trialExportDiagnosticsMapProvider);
-  final exportFindings = exportByTrial[trialId] ?? const <DiagnosticFinding>[];
+  final exportFindings =
+      exportByTrial[trialId]?.findings ?? const <DiagnosticFinding>[];
   return [...readinessFindings, ...exportFindings];
+});
+
+/// Latest export diagnostics snapshot for a trial (for UI context, e.g. timestamp).
+final trialExportDiagnosticsSnapshotProvider = Provider.autoDispose
+    .family<TrialExportDiagnosticsSnapshot?, int>((ref, trialId) {
+  return ref.watch(trialExportDiagnosticsMapProvider)[trialId];
 });
 
 /// Latest protocol import event for a trial (for opening saved CSV reference).

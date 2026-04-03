@@ -2957,6 +2957,7 @@ class _TrialReadinessSheet extends ConsumerWidget {
               !readinessCodes.contains(f.code),
         )
         .toList();
+    final exportSnapshot = ref.watch(trialExportDiagnosticsSnapshotProvider(trialId));
 
     List<_ReadinessCheckRow> rowsForSeverity(UnifiedSeverity severity) {
       final fromReport = report.checks
@@ -3002,6 +3003,17 @@ class _TrialReadinessSheet extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              if (diagnosticExtras.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  exportSnapshot != null
+                      ? 'From last export run · ${DateFormat.yMMMd().add_jm().format(exportSnapshot.publishedAt.toLocal())}'
+                      : 'From last export run',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Expanded(
                 child: ListView(
