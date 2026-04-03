@@ -81,11 +81,15 @@ class SeedingTab extends ConsumerWidget {
                 _openEmergenceSheet(context, ref, event),
             onMarkComplete: event.status == 'pending'
                 ? () async {
+                    final userId = await ref.read(currentUserIdProvider.future);
+                    final user = await ref.read(currentUserProvider.future);
                     await ref
                         .read(seedingRepositoryProvider)
                         .markSeedingCompleted(
                           id: event.id,
                           completedAt: DateTime.now(),
+                          performedBy: user?.displayName,
+                          performedByUserId: userId,
                         );
                     ref.invalidate(seedingEventForTrialProvider(trial.id));
                   }
@@ -561,7 +565,13 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
                 ? drift.Value(emergencePct)
                 : const drift.Value.absent(),
           );
-      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(companion);
+      final userId = await ref.read(currentUserIdProvider.future);
+      final user = await ref.read(currentUserProvider.future);
+      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(
+            companion,
+            performedBy: user?.displayName,
+            performedByUserId: userId,
+          );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Emergence recorded')),
@@ -798,7 +808,13 @@ class _SeedingEventFormSheetState
 
     setState(() => _saving = true);
     try {
-      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(baseCompanion);
+      final userId = await ref.read(currentUserIdProvider.future);
+      final user = await ref.read(currentUserProvider.future);
+      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(
+            baseCompanion,
+            performedBy: user?.displayName,
+            performedByUserId: userId,
+          );
       if (mounted) widget.onSaved();
     } catch (e) {
       if (mounted) {

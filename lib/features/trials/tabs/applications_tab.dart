@@ -358,9 +358,13 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
         selectedTime.hour,
         selectedTime.minute,
       );
+      final userId = await ref.read(currentUserIdProvider.future);
+      final user = await ref.read(currentUserProvider.future);
       await ref.read(applicationRepositoryProvider).markApplicationApplied(
             id: e.id,
             appliedAt: appliedAt,
+            performedBy: user?.displayName,
+            performedByUserId: userId,
           );
       ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
       if (context.mounted) {

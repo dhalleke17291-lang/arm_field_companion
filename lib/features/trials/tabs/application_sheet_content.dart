@@ -359,11 +359,22 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       final repo = ref.read(applicationRepositoryProvider);
       final productRepo = ref.read(applicationProductRepositoryProvider);
       final companion = _buildCompanion();
+      final userId = await ref.read(currentUserIdProvider.future);
+      final user = await ref.read(currentUserProvider.future);
       final String eventId;
       if (widget.existing == null) {
-        eventId = await repo.createApplication(companion);
+        eventId = await repo.createApplication(
+          companion,
+          performedBy: user?.displayName,
+          performedByUserId: userId,
+        );
       } else {
-        await repo.updateApplication(widget.existing!.id, companion);
+        await repo.updateApplication(
+          widget.existing!.id,
+          companion,
+          performedBy: user?.displayName,
+          performedByUserId: userId,
+        );
         eventId = widget.existing!.id;
       }
       final rows = <({String productName, double? rate, String? rateUnit})>[];

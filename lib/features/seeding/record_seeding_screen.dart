@@ -244,7 +244,13 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
       status: const drift.Value('completed'),
       completedAt: drift.Value(_seedingDate.value),
     );
-    await ref.read(seedingRepositoryProvider).upsertSeedingEvent(companion);
+    final userId = await ref.read(currentUserIdProvider.future);
+    final user = await ref.read(currentUserProvider.future);
+    await ref.read(seedingRepositoryProvider).upsertSeedingEvent(
+          companion,
+          performedBy: user?.displayName,
+          performedByUserId: userId,
+        );
     ref.invalidate(seedingEventForTrialProvider(widget.trial.id));
     ref.invalidate(todayActivityProvider);
     ref.invalidate(workLogDatesProvider);
