@@ -6,6 +6,7 @@ enum ExportFormat {
   zipBundle,
   pdfReport,
   /// Excel rating shell for ARM data collector; handled by [ExportArmRatingShellUseCase].
+  /// Listed on the trial export sheet only when the trial is ARM-linked.
   armRatingShell,
 }
 

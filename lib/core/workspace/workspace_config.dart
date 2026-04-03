@@ -313,11 +313,34 @@ List<ExportFormat> allowedExportFormatsForWorkspace(String workspaceType) {
       .availableExports;
 }
 
-/// Trial export sheet: workspace formats plus [ExportFormat.armRatingShell] when not already listed.
-List<ExportFormat> exportFormatsForTrialSheet(String workspaceType) {
+/// Trial export sheet: workspace formats, plus [ExportFormat.armRatingShell] only when
+/// [isArmLinked] is true (not already in [WorkspaceConfig.availableExports]).
+///
+/// Non–ARM-linked trials never list ARM Rating Shell, so the sheet matches what
+/// [ExportArmRatingShellUseCase] can run.
+List<ExportFormat> exportFormatsForTrialSheet(
+  String workspaceType, {
+  required bool isArmLinked,
+}) {
   final allowed = allowedExportFormatsForWorkspace(workspaceType);
+  if (!isArmLinked) return allowed;
   if (allowed.contains(ExportFormat.armRatingShell)) return allowed;
   return [...allowed, ExportFormat.armRatingShell];
+}
+
+/// Tooltip for the trial detail Export control: standalone vs protocol, and ARM-linked options.
+String exportEntryTooltipMessage(
+  String workspaceType, {
+  required bool isArmLinked,
+}) {
+  final config = safeConfigFromString(workspaceType);
+  if (config.isStandalone) {
+    return 'Export trial data (PDF or CSV bundle)';
+  }
+  if (isArmLinked) {
+    return 'Export trial data (CSV, ARM Import Assistant, ZIP with photos, PDF, or ARM Rating Shell)';
+  }
+  return 'Export trial data (CSV, ARM Import Assistant, ZIP with photos, or PDF)';
 }
 
 /// Parses a stored [workspaceType] string to a [WorkspaceConfig].

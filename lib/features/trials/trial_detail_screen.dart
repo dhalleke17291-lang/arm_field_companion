@@ -395,7 +395,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
   Future<void> _onExportTapped(
       BuildContext context, WidgetRef ref, Trial trial) async {
-    final sheetFormats = exportFormatsForTrialSheet(trial.workspaceType);
+    final sheetFormats = exportFormatsForTrialSheet(
+      trial.workspaceType,
+      isArmLinked: trial.isArmLinked,
+    );
     if (sheetFormats.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -440,7 +443,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     TrialReadinessReport report, {
     required bool showExportAnyway,
   }) {
-    final sheetFormats = exportFormatsForTrialSheet(trial.workspaceType);
+    final sheetFormats = exportFormatsForTrialSheet(
+      trial.workspaceType,
+      isArmLinked: trial.isArmLinked,
+    );
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -825,7 +831,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   /// Export control for the white toolbar under the green header (primary colors + badge).
   Widget _buildExportToolbarControl(
       BuildContext context, WidgetRef ref, Trial trial) {
-    final sheetFormats = exportFormatsForTrialSheet(trial.workspaceType);
+    final sheetFormats = exportFormatsForTrialSheet(
+      trial.workspaceType,
+      isArmLinked: trial.isArmLinked,
+    );
     if (sheetFormats.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
@@ -836,7 +845,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final isBlocker = (readinessAsync.valueOrNull?.blockerCount ?? 0) > 0;
 
     return Tooltip(
-      message: 'Export trial data (bundle or ARM package)',
+      message: exportEntryTooltipMessage(
+        trial.workspaceType,
+        isArmLinked: trial.isArmLinked,
+      ),
       child: InkWell(
         onTap: _isExporting
             ? null
@@ -888,8 +900,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     WidgetRef ref,
     Trial trial,
   ) {
-    final showExport =
-        exportFormatsForTrialSheet(trial.workspaceType).isNotEmpty;
+    final showExport = exportFormatsForTrialSheet(
+      trial.workspaceType,
+      isArmLinked: trial.isArmLinked,
+    ).isNotEmpty;
     return Material(
       color: AppDesignTokens.cardSurface,
       child: Container(
