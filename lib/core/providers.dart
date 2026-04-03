@@ -57,7 +57,6 @@ import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
-import '../features/diagnostics/trial_diagnostics.dart';
 import '../features/diagnostics/trial_readiness.dart';
 import '../features/diagnostics/trial_readiness_service.dart';
 import '../features/today/domain/activity_event.dart';
@@ -837,14 +836,6 @@ final exportArmRatingShellUseCaseProvider =
     sessionRepository: ref.watch(sessionRepositoryProvider),
     persistence: ref.watch(armImportPersistenceRepositoryProvider),
   );
-});
-
-/// Trial readiness checks for pre-export diagnostics. AutoDispose, family by trialId.
-final trialDiagnosticsProvider = StreamProvider.autoDispose
-    .family<TrialReadinessResult, int>((ref, trialId) {
-  final db = ref.watch(databaseProvider);
-  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) =>
-      TrialDiagnosticsService().runChecks(trialId.toString(), ref));
 });
 
 /// Unified trial readiness report (blockers, warnings, passes). Used for readiness card and export gating.
