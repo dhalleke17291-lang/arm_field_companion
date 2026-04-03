@@ -84,7 +84,8 @@ class TrialRepository {
         .then((list) => list.length);
 
     final treatmentCount = await (_db.select(_db.treatments)
-          ..where((t) => t.trialId.equals(trialId)))
+          ..where((t) =>
+              t.trialId.equals(trialId) & t.isDeleted.equals(false)))
         .get()
         .then((list) => list.length);
 

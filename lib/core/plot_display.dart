@@ -52,14 +52,15 @@ String getDisplayPlotLabel(Plot plot, List<Plot> sameTrialPlots) {
   return n != null ? '$n' : getDisplayPlotNumberFallback(plot);
 }
 
-/// Treatment label for UI: treatment code or "Unassigned".
+/// Treatment label for UI: treatment code, '(removed)' if [tid] is set but the
+/// treatment is missing (e.g. soft-deleted), or "Unassigned" when no treatment.
 /// Use [treatmentIdOverride] when resolution is via Assignments (Plot → Assignment → Treatment).
 String getTreatmentDisplayLabel(Plot plot, Map<int, Treatment> treatmentById,
     {int? treatmentIdOverride}) {
   final tid = treatmentIdOverride ?? plot.treatmentId;
   if (tid == null) return 'Unassigned';
   final t = treatmentById[tid];
-  return t?.code ?? 'Unassigned';
+  return t?.code ?? '(removed)';
 }
 
 /// Assignment source label: Imported | Manual | Unassigned | Unknown.

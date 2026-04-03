@@ -270,7 +270,9 @@ class PlotDetailScreen extends ConsumerWidget {
                               label: 'Treatment',
                               value: ctx.hasTreatment
                                   ? '${ctx.treatmentCode}  —  ${ctx.treatmentName}'
-                                  : 'Unassigned'),
+                                  : (ctx.hasRemovedTreatment
+                                      ? '(removed)'
+                                      : 'Unassigned')),
                           if (ctx.hasComponents) ...[
                             const SizedBox(height: 8),
                             Text('Components',

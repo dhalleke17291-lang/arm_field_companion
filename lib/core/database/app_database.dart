@@ -89,6 +89,10 @@ class Treatments extends Table {
   TextColumn get treatmentType => text().nullable()();
   TextColumn get timingCode => text().nullable()();
   TextColumn get eppoCode => text().nullable()();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 class TreatmentComponents extends Table {
@@ -106,6 +110,10 @@ class TreatmentComponents extends Table {
   TextColumn get manufacturer => text().nullable()();
   TextColumn get registrationNumber => text().nullable()();
   TextColumn get eppoCode => text().nullable()();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 class Assessments extends Table {
@@ -357,6 +365,10 @@ class Photos extends Table {
   TextColumn get status => text().withDefault(const Constant('final'))();
   TextColumn get caption => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 class PlotFlags extends Table {
@@ -726,7 +738,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 36;
+  int get schemaVersion => 37;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1047,6 +1059,19 @@ SET status = 'completed',
             await m.createTable(cropDescriptions);
             await m.createTable(trialContacts);
             await m.createTable(yieldDetails);
+          }
+          if (from < 37) {
+            await m.addColumn(treatments, treatments.isDeleted);
+            await m.addColumn(treatments, treatments.deletedAt);
+            await m.addColumn(treatments, treatments.deletedBy);
+            await m.addColumn(treatmentComponents, treatmentComponents.isDeleted);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.deletedAt);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.deletedBy);
+            await m.addColumn(photos, photos.isDeleted);
+            await m.addColumn(photos, photos.deletedAt);
+            await m.addColumn(photos, photos.deletedBy);
           }
           await _createIndexes();
         },

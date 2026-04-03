@@ -7,10 +7,14 @@ class PlotContext {
   final Treatment? treatment;
   final List<TreatmentComponent> components;
 
+  /// Set when a plot/assignment references a treatment id, including if that treatment is soft-deleted.
+  final int? assignedTreatmentId;
+
   const PlotContext({
     required this.plot,
     required this.treatment,
     required this.components,
+    this.assignedTreatmentId,
   });
 
   // Convenience getters
@@ -19,11 +23,18 @@ class PlotContext {
   String get treatmentCode => treatment?.code ?? '—';
   String get treatmentName => treatment?.name ?? 'Unassigned';
   bool get hasTreatment => treatment != null;
+
+  /// Assignment points at a treatment id that is not in the active protocol list (e.g. soft-deleted).
+  bool get hasRemovedTreatment =>
+      treatment == null && assignedTreatmentId != null;
+
   bool get hasComponents => components.isNotEmpty;
 
   /// Display label shown in field UI — e.g. "Plot 101 · T2"
   String get displayLabel {
     final tCode = treatment?.code;
-    return tCode != null ? '${plot.plotId} · $tCode' : plot.plotId;
+    if (tCode != null) return '${plot.plotId} · $tCode';
+    if (assignedTreatmentId != null) return '${plot.plotId} · (removed)';
+    return plot.plotId;
   }
 }

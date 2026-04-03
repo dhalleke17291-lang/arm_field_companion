@@ -2400,6 +2400,28 @@ class $TreatmentsTable extends Treatments
   late final GeneratedColumn<String> eppoCode = GeneratedColumn<String>(
       'eppo_code', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedByMeta =
+      const VerificationMeta('deletedBy');
+  @override
+  late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
+      'deleted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2409,7 +2431,10 @@ class $TreatmentsTable extends Treatments
         description,
         treatmentType,
         timingCode,
-        eppoCode
+        eppoCode,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2464,6 +2489,18 @@ class $TreatmentsTable extends Treatments
       context.handle(_eppoCodeMeta,
           eppoCode.isAcceptableOrUnknown(data['eppo_code']!, _eppoCodeMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('deleted_by')) {
+      context.handle(_deletedByMeta,
+          deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
+    }
     return context;
   }
 
@@ -2489,6 +2526,12 @@ class $TreatmentsTable extends Treatments
           .read(DriftSqlType.string, data['${effectivePrefix}timing_code']),
       eppoCode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}eppo_code']),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      deletedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
     );
   }
 
@@ -2507,6 +2550,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
   final String? treatmentType;
   final String? timingCode;
   final String? eppoCode;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   const Treatment(
       {required this.id,
       required this.trialId,
@@ -2515,7 +2561,10 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       this.description,
       this.treatmentType,
       this.timingCode,
-      this.eppoCode});
+      this.eppoCode,
+      required this.isDeleted,
+      this.deletedAt,
+      this.deletedBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2534,6 +2583,13 @@ class Treatment extends DataClass implements Insertable<Treatment> {
     }
     if (!nullToAbsent || eppoCode != null) {
       map['eppo_code'] = Variable<String>(eppoCode);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || deletedBy != null) {
+      map['deleted_by'] = Variable<String>(deletedBy);
     }
     return map;
   }
@@ -2556,6 +2612,13 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       eppoCode: eppoCode == null && nullToAbsent
           ? const Value.absent()
           : Value(eppoCode),
+      isDeleted: Value(isDeleted),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      deletedBy: deletedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedBy),
     );
   }
 
@@ -2571,6 +2634,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       treatmentType: serializer.fromJson<String?>(json['treatmentType']),
       timingCode: serializer.fromJson<String?>(json['timingCode']),
       eppoCode: serializer.fromJson<String?>(json['eppoCode']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      deletedBy: serializer.fromJson<String?>(json['deletedBy']),
     );
   }
   @override
@@ -2585,6 +2651,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       'treatmentType': serializer.toJson<String?>(treatmentType),
       'timingCode': serializer.toJson<String?>(timingCode),
       'eppoCode': serializer.toJson<String?>(eppoCode),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'deletedBy': serializer.toJson<String?>(deletedBy),
     };
   }
 
@@ -2596,7 +2665,10 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           Value<String?> description = const Value.absent(),
           Value<String?> treatmentType = const Value.absent(),
           Value<String?> timingCode = const Value.absent(),
-          Value<String?> eppoCode = const Value.absent()}) =>
+          Value<String?> eppoCode = const Value.absent(),
+          bool? isDeleted,
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<String?> deletedBy = const Value.absent()}) =>
       Treatment(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -2607,6 +2679,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
             treatmentType.present ? treatmentType.value : this.treatmentType,
         timingCode: timingCode.present ? timingCode.value : this.timingCode,
         eppoCode: eppoCode.present ? eppoCode.value : this.eppoCode,
+        isDeleted: isDeleted ?? this.isDeleted,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
       );
   Treatment copyWithCompanion(TreatmentsCompanion data) {
     return Treatment(
@@ -2622,6 +2697,9 @@ class Treatment extends DataClass implements Insertable<Treatment> {
       timingCode:
           data.timingCode.present ? data.timingCode.value : this.timingCode,
       eppoCode: data.eppoCode.present ? data.eppoCode.value : this.eppoCode,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
     );
   }
 
@@ -2635,14 +2713,17 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           ..write('description: $description, ')
           ..write('treatmentType: $treatmentType, ')
           ..write('timingCode: $timingCode, ')
-          ..write('eppoCode: $eppoCode')
+          ..write('eppoCode: $eppoCode, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, trialId, code, name, description,
-      treatmentType, timingCode, eppoCode);
+      treatmentType, timingCode, eppoCode, isDeleted, deletedAt, deletedBy);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2654,7 +2735,10 @@ class Treatment extends DataClass implements Insertable<Treatment> {
           other.description == this.description &&
           other.treatmentType == this.treatmentType &&
           other.timingCode == this.timingCode &&
-          other.eppoCode == this.eppoCode);
+          other.eppoCode == this.eppoCode &&
+          other.isDeleted == this.isDeleted &&
+          other.deletedAt == this.deletedAt &&
+          other.deletedBy == this.deletedBy);
 }
 
 class TreatmentsCompanion extends UpdateCompanion<Treatment> {
@@ -2666,6 +2750,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
   final Value<String?> treatmentType;
   final Value<String?> timingCode;
   final Value<String?> eppoCode;
+  final Value<bool> isDeleted;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> deletedBy;
   const TreatmentsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -2675,6 +2762,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     this.treatmentType = const Value.absent(),
     this.timingCode = const Value.absent(),
     this.eppoCode = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   });
   TreatmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -2685,6 +2775,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     this.treatmentType = const Value.absent(),
     this.timingCode = const Value.absent(),
     this.eppoCode = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   })  : trialId = Value(trialId),
         code = Value(code),
         name = Value(name);
@@ -2697,6 +2790,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     Expression<String>? treatmentType,
     Expression<String>? timingCode,
     Expression<String>? eppoCode,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? deletedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2707,6 +2803,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
       if (treatmentType != null) 'treatment_type': treatmentType,
       if (timingCode != null) 'timing_code': timingCode,
       if (eppoCode != null) 'eppo_code': eppoCode,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deletedBy != null) 'deleted_by': deletedBy,
     });
   }
 
@@ -2718,7 +2817,10 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
       Value<String?>? description,
       Value<String?>? treatmentType,
       Value<String?>? timingCode,
-      Value<String?>? eppoCode}) {
+      Value<String?>? eppoCode,
+      Value<bool>? isDeleted,
+      Value<DateTime?>? deletedAt,
+      Value<String?>? deletedBy}) {
     return TreatmentsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -2728,6 +2830,9 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
       treatmentType: treatmentType ?? this.treatmentType,
       timingCode: timingCode ?? this.timingCode,
       eppoCode: eppoCode ?? this.eppoCode,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 
@@ -2758,6 +2863,15 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
     if (eppoCode.present) {
       map['eppo_code'] = Variable<String>(eppoCode.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (deletedBy.present) {
+      map['deleted_by'] = Variable<String>(deletedBy.value);
+    }
     return map;
   }
 
@@ -2771,7 +2885,10 @@ class TreatmentsCompanion extends UpdateCompanion<Treatment> {
           ..write('description: $description, ')
           ..write('treatmentType: $treatmentType, ')
           ..write('timingCode: $timingCode, ')
-          ..write('eppoCode: $eppoCode')
+          ..write('eppoCode: $eppoCode, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -2879,6 +2996,28 @@ class $TreatmentComponentsTable extends TreatmentComponents
   late final GeneratedColumn<String> eppoCode = GeneratedColumn<String>(
       'eppo_code', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedByMeta =
+      const VerificationMeta('deletedBy');
+  @override
+  late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
+      'deleted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2894,7 +3033,10 @@ class $TreatmentComponentsTable extends TreatmentComponents
         formulationType,
         manufacturer,
         registrationNumber,
-        eppoCode
+        eppoCode,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2981,6 +3123,18 @@ class $TreatmentComponentsTable extends TreatmentComponents
       context.handle(_eppoCodeMeta,
           eppoCode.isAcceptableOrUnknown(data['eppo_code']!, _eppoCodeMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('deleted_by')) {
+      context.handle(_deletedByMeta,
+          deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
+    }
     return context;
   }
 
@@ -3018,6 +3172,12 @@ class $TreatmentComponentsTable extends TreatmentComponents
           DriftSqlType.string, data['${effectivePrefix}registration_number']),
       eppoCode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}eppo_code']),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      deletedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
     );
   }
 
@@ -3043,6 +3203,9 @@ class TreatmentComponent extends DataClass
   final String? manufacturer;
   final String? registrationNumber;
   final String? eppoCode;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   const TreatmentComponent(
       {required this.id,
       required this.treatmentId,
@@ -3057,7 +3220,10 @@ class TreatmentComponent extends DataClass
       this.formulationType,
       this.manufacturer,
       this.registrationNumber,
-      this.eppoCode});
+      this.eppoCode,
+      required this.isDeleted,
+      this.deletedAt,
+      this.deletedBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3093,6 +3259,13 @@ class TreatmentComponent extends DataClass
     if (!nullToAbsent || eppoCode != null) {
       map['eppo_code'] = Variable<String>(eppoCode);
     }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || deletedBy != null) {
+      map['deleted_by'] = Variable<String>(deletedBy);
+    }
     return map;
   }
 
@@ -3127,6 +3300,13 @@ class TreatmentComponent extends DataClass
       eppoCode: eppoCode == null && nullToAbsent
           ? const Value.absent()
           : Value(eppoCode),
+      isDeleted: Value(isDeleted),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      deletedBy: deletedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedBy),
     );
   }
 
@@ -3151,6 +3331,9 @@ class TreatmentComponent extends DataClass
       registrationNumber:
           serializer.fromJson<String?>(json['registrationNumber']),
       eppoCode: serializer.fromJson<String?>(json['eppoCode']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      deletedBy: serializer.fromJson<String?>(json['deletedBy']),
     );
   }
   @override
@@ -3171,6 +3354,9 @@ class TreatmentComponent extends DataClass
       'manufacturer': serializer.toJson<String?>(manufacturer),
       'registrationNumber': serializer.toJson<String?>(registrationNumber),
       'eppoCode': serializer.toJson<String?>(eppoCode),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'deletedBy': serializer.toJson<String?>(deletedBy),
     };
   }
 
@@ -3188,7 +3374,10 @@ class TreatmentComponent extends DataClass
           Value<String?> formulationType = const Value.absent(),
           Value<String?> manufacturer = const Value.absent(),
           Value<String?> registrationNumber = const Value.absent(),
-          Value<String?> eppoCode = const Value.absent()}) =>
+          Value<String?> eppoCode = const Value.absent(),
+          bool? isDeleted,
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<String?> deletedBy = const Value.absent()}) =>
       TreatmentComponent(
         id: id ?? this.id,
         treatmentId: treatmentId ?? this.treatmentId,
@@ -3213,6 +3402,9 @@ class TreatmentComponent extends DataClass
             ? registrationNumber.value
             : this.registrationNumber,
         eppoCode: eppoCode.present ? eppoCode.value : this.eppoCode,
+        isDeleted: isDeleted ?? this.isDeleted,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
       );
   TreatmentComponent copyWithCompanion(TreatmentComponentsCompanion data) {
     return TreatmentComponent(
@@ -3242,6 +3434,9 @@ class TreatmentComponent extends DataClass
           ? data.registrationNumber.value
           : this.registrationNumber,
       eppoCode: data.eppoCode.present ? data.eppoCode.value : this.eppoCode,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
     );
   }
 
@@ -3261,7 +3456,10 @@ class TreatmentComponent extends DataClass
           ..write('formulationType: $formulationType, ')
           ..write('manufacturer: $manufacturer, ')
           ..write('registrationNumber: $registrationNumber, ')
-          ..write('eppoCode: $eppoCode')
+          ..write('eppoCode: $eppoCode, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -3281,7 +3479,10 @@ class TreatmentComponent extends DataClass
       formulationType,
       manufacturer,
       registrationNumber,
-      eppoCode);
+      eppoCode,
+      isDeleted,
+      deletedAt,
+      deletedBy);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3299,7 +3500,10 @@ class TreatmentComponent extends DataClass
           other.formulationType == this.formulationType &&
           other.manufacturer == this.manufacturer &&
           other.registrationNumber == this.registrationNumber &&
-          other.eppoCode == this.eppoCode);
+          other.eppoCode == this.eppoCode &&
+          other.isDeleted == this.isDeleted &&
+          other.deletedAt == this.deletedAt &&
+          other.deletedBy == this.deletedBy);
 }
 
 class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
@@ -3317,6 +3521,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
   final Value<String?> manufacturer;
   final Value<String?> registrationNumber;
   final Value<String?> eppoCode;
+  final Value<bool> isDeleted;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> deletedBy;
   const TreatmentComponentsCompanion({
     this.id = const Value.absent(),
     this.treatmentId = const Value.absent(),
@@ -3332,6 +3539,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.manufacturer = const Value.absent(),
     this.registrationNumber = const Value.absent(),
     this.eppoCode = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   });
   TreatmentComponentsCompanion.insert({
     this.id = const Value.absent(),
@@ -3348,6 +3558,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.manufacturer = const Value.absent(),
     this.registrationNumber = const Value.absent(),
     this.eppoCode = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   })  : treatmentId = Value(treatmentId),
         trialId = Value(trialId),
         productName = Value(productName);
@@ -3366,6 +3579,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     Expression<String>? manufacturer,
     Expression<String>? registrationNumber,
     Expression<String>? eppoCode,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? deletedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3383,6 +3599,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       if (manufacturer != null) 'manufacturer': manufacturer,
       if (registrationNumber != null) 'registration_number': registrationNumber,
       if (eppoCode != null) 'eppo_code': eppoCode,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deletedBy != null) 'deleted_by': deletedBy,
     });
   }
 
@@ -3400,7 +3619,10 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       Value<String?>? formulationType,
       Value<String?>? manufacturer,
       Value<String?>? registrationNumber,
-      Value<String?>? eppoCode}) {
+      Value<String?>? eppoCode,
+      Value<bool>? isDeleted,
+      Value<DateTime?>? deletedAt,
+      Value<String?>? deletedBy}) {
     return TreatmentComponentsCompanion(
       id: id ?? this.id,
       treatmentId: treatmentId ?? this.treatmentId,
@@ -3416,6 +3638,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       manufacturer: manufacturer ?? this.manufacturer,
       registrationNumber: registrationNumber ?? this.registrationNumber,
       eppoCode: eppoCode ?? this.eppoCode,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 
@@ -3465,6 +3690,15 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     if (eppoCode.present) {
       map['eppo_code'] = Variable<String>(eppoCode.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (deletedBy.present) {
+      map['deleted_by'] = Variable<String>(deletedBy.value);
+    }
     return map;
   }
 
@@ -3484,7 +3718,10 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
           ..write('formulationType: $formulationType, ')
           ..write('manufacturer: $manufacturer, ')
           ..write('registrationNumber: $registrationNumber, ')
-          ..write('eppoCode: $eppoCode')
+          ..write('eppoCode: $eppoCode, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -11885,6 +12122,28 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedByMeta =
+      const VerificationMeta('deletedBy');
+  @override
+  late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
+      'deleted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -11895,7 +12154,10 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
         tempPath,
         status,
         caption,
-        createdAt
+        createdAt,
+        isDeleted,
+        deletedAt,
+        deletedBy
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -11950,6 +12212,18 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('deleted_by')) {
+      context.handle(_deletedByMeta,
+          deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
+    }
     return context;
   }
 
@@ -11977,6 +12251,12 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
           .read(DriftSqlType.string, data['${effectivePrefix}caption']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      deletedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
     );
   }
 
@@ -11996,6 +12276,9 @@ class Photo extends DataClass implements Insertable<Photo> {
   final String status;
   final String? caption;
   final DateTime createdAt;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   const Photo(
       {required this.id,
       required this.trialId,
@@ -12005,7 +12288,10 @@ class Photo extends DataClass implements Insertable<Photo> {
       this.tempPath,
       required this.status,
       this.caption,
-      required this.createdAt});
+      required this.createdAt,
+      required this.isDeleted,
+      this.deletedAt,
+      this.deletedBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -12022,6 +12308,13 @@ class Photo extends DataClass implements Insertable<Photo> {
       map['caption'] = Variable<String>(caption);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || deletedBy != null) {
+      map['deleted_by'] = Variable<String>(deletedBy);
+    }
     return map;
   }
 
@@ -12040,6 +12333,13 @@ class Photo extends DataClass implements Insertable<Photo> {
           ? const Value.absent()
           : Value(caption),
       createdAt: Value(createdAt),
+      isDeleted: Value(isDeleted),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      deletedBy: deletedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedBy),
     );
   }
 
@@ -12056,6 +12356,9 @@ class Photo extends DataClass implements Insertable<Photo> {
       status: serializer.fromJson<String>(json['status']),
       caption: serializer.fromJson<String?>(json['caption']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      deletedBy: serializer.fromJson<String?>(json['deletedBy']),
     );
   }
   @override
@@ -12071,6 +12374,9 @@ class Photo extends DataClass implements Insertable<Photo> {
       'status': serializer.toJson<String>(status),
       'caption': serializer.toJson<String?>(caption),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'deletedBy': serializer.toJson<String?>(deletedBy),
     };
   }
 
@@ -12083,7 +12389,10 @@ class Photo extends DataClass implements Insertable<Photo> {
           Value<String?> tempPath = const Value.absent(),
           String? status,
           Value<String?> caption = const Value.absent(),
-          DateTime? createdAt}) =>
+          DateTime? createdAt,
+          bool? isDeleted,
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<String?> deletedBy = const Value.absent()}) =>
       Photo(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -12094,6 +12403,9 @@ class Photo extends DataClass implements Insertable<Photo> {
         status: status ?? this.status,
         caption: caption.present ? caption.value : this.caption,
         createdAt: createdAt ?? this.createdAt,
+        isDeleted: isDeleted ?? this.isDeleted,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
       );
   Photo copyWithCompanion(PhotosCompanion data) {
     return Photo(
@@ -12106,6 +12418,9 @@ class Photo extends DataClass implements Insertable<Photo> {
       status: data.status.present ? data.status.value : this.status,
       caption: data.caption.present ? data.caption.value : this.caption,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
     );
   }
 
@@ -12120,14 +12435,17 @@ class Photo extends DataClass implements Insertable<Photo> {
           ..write('tempPath: $tempPath, ')
           ..write('status: $status, ')
           ..write('caption: $caption, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, trialId, plotPk, sessionId, filePath,
-      tempPath, status, caption, createdAt);
+      tempPath, status, caption, createdAt, isDeleted, deletedAt, deletedBy);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -12140,7 +12458,10 @@ class Photo extends DataClass implements Insertable<Photo> {
           other.tempPath == this.tempPath &&
           other.status == this.status &&
           other.caption == this.caption &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.isDeleted == this.isDeleted &&
+          other.deletedAt == this.deletedAt &&
+          other.deletedBy == this.deletedBy);
 }
 
 class PhotosCompanion extends UpdateCompanion<Photo> {
@@ -12153,6 +12474,9 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   final Value<String> status;
   final Value<String?> caption;
   final Value<DateTime> createdAt;
+  final Value<bool> isDeleted;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> deletedBy;
   const PhotosCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -12163,6 +12487,9 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     this.status = const Value.absent(),
     this.caption = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   });
   PhotosCompanion.insert({
     this.id = const Value.absent(),
@@ -12174,6 +12501,9 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     this.status = const Value.absent(),
     this.caption = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   })  : trialId = Value(trialId),
         plotPk = Value(plotPk),
         sessionId = Value(sessionId),
@@ -12188,6 +12518,9 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     Expression<String>? status,
     Expression<String>? caption,
     Expression<DateTime>? createdAt,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? deletedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -12199,6 +12532,9 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
       if (status != null) 'status': status,
       if (caption != null) 'caption': caption,
       if (createdAt != null) 'created_at': createdAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deletedBy != null) 'deleted_by': deletedBy,
     });
   }
 
@@ -12211,7 +12547,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
       Value<String?>? tempPath,
       Value<String>? status,
       Value<String?>? caption,
-      Value<DateTime>? createdAt}) {
+      Value<DateTime>? createdAt,
+      Value<bool>? isDeleted,
+      Value<DateTime?>? deletedAt,
+      Value<String?>? deletedBy}) {
     return PhotosCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -12222,6 +12561,9 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
       status: status ?? this.status,
       caption: caption ?? this.caption,
       createdAt: createdAt ?? this.createdAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 
@@ -12255,6 +12597,15 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (deletedBy.present) {
+      map['deleted_by'] = Variable<String>(deletedBy.value);
+    }
     return map;
   }
 
@@ -12269,7 +12620,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
           ..write('tempPath: $tempPath, ')
           ..write('status: $status, ')
           ..write('caption: $caption, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -25842,6 +26196,9 @@ typedef $$TreatmentsTableCreateCompanionBuilder = TreatmentsCompanion Function({
   Value<String?> treatmentType,
   Value<String?> timingCode,
   Value<String?> eppoCode,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 typedef $$TreatmentsTableUpdateCompanionBuilder = TreatmentsCompanion Function({
   Value<int> id,
@@ -25852,6 +26209,9 @@ typedef $$TreatmentsTableUpdateCompanionBuilder = TreatmentsCompanion Function({
   Value<String?> treatmentType,
   Value<String?> timingCode,
   Value<String?> eppoCode,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 
 class $$TreatmentsTableTableManager extends RootTableManager<
@@ -25879,6 +26239,9 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             Value<String?> treatmentType = const Value.absent(),
             Value<String?> timingCode = const Value.absent(),
             Value<String?> eppoCode = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               TreatmentsCompanion(
             id: id,
@@ -25889,6 +26252,9 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             treatmentType: treatmentType,
             timingCode: timingCode,
             eppoCode: eppoCode,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -25899,6 +26265,9 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             Value<String?> treatmentType = const Value.absent(),
             Value<String?> timingCode = const Value.absent(),
             Value<String?> eppoCode = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               TreatmentsCompanion.insert(
             id: id,
@@ -25909,6 +26278,9 @@ class $$TreatmentsTableTableManager extends RootTableManager<
             treatmentType: treatmentType,
             timingCode: timingCode,
             eppoCode: eppoCode,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
         ));
 }
@@ -25948,6 +26320,21 @@ class $$TreatmentsTableFilterComposer
 
   ColumnFilters<String> get eppoCode => $state.composableBuilder(
       column: $state.table.eppoCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -26063,6 +26450,21 @@ class $$TreatmentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -26092,6 +26494,9 @@ typedef $$TreatmentComponentsTableCreateCompanionBuilder
   Value<String?> manufacturer,
   Value<String?> registrationNumber,
   Value<String?> eppoCode,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 typedef $$TreatmentComponentsTableUpdateCompanionBuilder
     = TreatmentComponentsCompanion Function({
@@ -26109,6 +26514,9 @@ typedef $$TreatmentComponentsTableUpdateCompanionBuilder
   Value<String?> manufacturer,
   Value<String?> registrationNumber,
   Value<String?> eppoCode,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 
 class $$TreatmentComponentsTableTableManager extends RootTableManager<
@@ -26143,6 +26551,9 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<String?> manufacturer = const Value.absent(),
             Value<String?> registrationNumber = const Value.absent(),
             Value<String?> eppoCode = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               TreatmentComponentsCompanion(
             id: id,
@@ -26159,6 +26570,9 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             manufacturer: manufacturer,
             registrationNumber: registrationNumber,
             eppoCode: eppoCode,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -26175,6 +26589,9 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<String?> manufacturer = const Value.absent(),
             Value<String?> registrationNumber = const Value.absent(),
             Value<String?> eppoCode = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               TreatmentComponentsCompanion.insert(
             id: id,
@@ -26191,6 +26608,9 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             manufacturer: manufacturer,
             registrationNumber: registrationNumber,
             eppoCode: eppoCode,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
         ));
 }
@@ -26255,6 +26675,21 @@ class $$TreatmentComponentsTableFilterComposer
 
   ColumnFilters<String> get eppoCode => $state.composableBuilder(
       column: $state.table.eppoCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -26343,6 +26778,21 @@ class $$TreatmentComponentsTableOrderingComposer
 
   ColumnOrderings<String> get eppoCode => $state.composableBuilder(
       column: $state.table.eppoCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -30365,6 +30815,9 @@ typedef $$PhotosTableCreateCompanionBuilder = PhotosCompanion Function({
   Value<String> status,
   Value<String?> caption,
   Value<DateTime> createdAt,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 typedef $$PhotosTableUpdateCompanionBuilder = PhotosCompanion Function({
   Value<int> id,
@@ -30376,6 +30829,9 @@ typedef $$PhotosTableUpdateCompanionBuilder = PhotosCompanion Function({
   Value<String> status,
   Value<String?> caption,
   Value<DateTime> createdAt,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 
 class $$PhotosTableTableManager extends RootTableManager<
@@ -30404,6 +30860,9 @@ class $$PhotosTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<String?> caption = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               PhotosCompanion(
             id: id,
@@ -30415,6 +30874,9 @@ class $$PhotosTableTableManager extends RootTableManager<
             status: status,
             caption: caption,
             createdAt: createdAt,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -30426,6 +30888,9 @@ class $$PhotosTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<String?> caption = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               PhotosCompanion.insert(
             id: id,
@@ -30437,6 +30902,9 @@ class $$PhotosTableTableManager extends RootTableManager<
             status: status,
             caption: caption,
             createdAt: createdAt,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
         ));
 }
@@ -30471,6 +30939,21 @@ class $$PhotosTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
       column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -30541,6 +31024,21 @@ class $$PhotosTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
       column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

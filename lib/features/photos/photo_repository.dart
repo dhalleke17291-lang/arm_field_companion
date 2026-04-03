@@ -1,5 +1,7 @@
-import 'package:drift/drift.dart';
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 
 class PhotoRepository {
@@ -18,7 +20,6 @@ class PhotoRepository {
     int? performedByUserId,
   }) async {
     return _db.transaction(() async {
-      // Step 1 — insert DB record with temp path
       final photoId = await _db.into(_db.photos).insert(
             PhotosCompanion.insert(
               trialId: trialId,
@@ -31,13 +32,11 @@ class PhotoRepository {
             ),
           );
 
-      // Step 2 — rename temp file to final path
       final tempFile = File(tempPath);
       if (await tempFile.exists()) {
         await tempFile.rename(finalPath);
       }
 
-      // Step 3 — mark as final
       await (_db.update(_db.photos)..where((p) => p.id.equals(photoId)))
           .write(const PhotosCompanion(
         status: Value('final'),
@@ -63,7 +62,8 @@ class PhotoRepository {
 
   Future<int> getPhotoCountForSession(int sessionId) async {
     final list = await (_db.select(_db.photos)
-          ..where((p) => p.sessionId.equals(sessionId)))
+          ..where((p) =>
+              p.sessionId.equals(sessionId) & p.isDeleted.equals(false)))
         .get();
     return list.length;
   }
@@ -77,12 +77,12 @@ class PhotoRepository {
           ..where((p) =>
               p.trialId.equals(trialId) &
               p.plotPk.equals(plotPk) &
-              p.sessionId.equals(sessionId))
+              p.sessionId.equals(sessionId) &
+              p.isDeleted.equals(false))
           ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
         .get();
   }
 
-  /// Photos for a single plot in a single session (one-shot fetch).
   Future<List<Photo>> getPhotosForPlotInSession({
     required int trialId,
     required int plotPk,
@@ -95,11 +95,52 @@ class PhotoRepository {
     );
   }
 
-  /// Deletes a photo record by id. Does not delete the file on disk.
-  Future<void> deletePhoto(int id) async {
-    await (_db.delete(_db.photos)..where((p) => p.id.equals(id))).go();
+  /// Soft-deletes a photo row. Does not delete the file on disk.
+  Future<void> softDeletePhoto(int id,
+      {String? deletedBy, int? deletedByUserId}) async {
+    final photo = await (_db.select(_db.photos)
+          ..where((p) => p.id.equals(id) & p.isDeleted.equals(false)))
+        .getSingleOrNull();
+    if (photo == null) return;
+
+    final now = DateTime.now().toUtc();
+    await _db.transaction(() async {
+      await (_db.update(_db.photos)..where((p) => p.id.equals(id))).write(
+        PhotosCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(now),
+          deletedBy: Value(deletedBy),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(photo.trialId),
+              sessionId: Value(photo.sessionId),
+              plotPk: Value(photo.plotPk),
+              eventType: 'PHOTO_DELETED',
+              description: 'Photo soft-deleted',
+              performedBy: Value(deletedBy),
+              performedByUserId: Value(deletedByUserId),
+              metadata: Value(jsonEncode({
+                'file_path': photo.filePath,
+              })),
+            ),
+          );
+    });
   }
 
+  /// Soft-deleted photos for a session (Recovery), newest first.
+  Future<List<Photo>> getDeletedPhotosForSession(int sessionId) {
+    return (_db.select(_db.photos)
+          ..where((p) =>
+              p.sessionId.equals(sessionId) & p.isDeleted.equals(true))
+          ..orderBy([(p) => OrderingTerm.desc(p.deletedAt)]))
+        .get();
+  }
+
+  /// Hard delete intentional — temp/pending rows were never finalized and have
+  /// no audit value.
   Future<void> cleanupOrphanTempFiles() async {
     final pendingPhotos = await (_db.select(_db.photos)
           ..where((p) => p.status.equals('pending')))
@@ -125,15 +166,16 @@ class PhotoRepository {
           ..where((p) =>
               p.trialId.equals(trialId) &
               p.plotPk.equals(plotPk) &
-              p.sessionId.equals(sessionId))
+              p.sessionId.equals(sessionId) &
+              p.isDeleted.equals(false))
           ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
         .watch();
   }
 
-  /// All photos for a trial (any session, any plot). Ordered by session then createdAt.
   Stream<List<Photo>> watchPhotosForTrial(int trialId) {
     return (_db.select(_db.photos)
-          ..where((p) => p.trialId.equals(trialId))
+          ..where((p) =>
+              p.trialId.equals(trialId) & p.isDeleted.equals(false))
           ..orderBy([
             (p) => OrderingTerm.asc(p.sessionId),
             (p) => OrderingTerm.asc(p.createdAt),
@@ -141,11 +183,10 @@ class PhotoRepository {
         .watch();
   }
 
-  /// One-shot fetch of all photos for a trial. Ordered by session then createdAt.
-  /// Used by export (ARM handoff, ZIP bundle).
   Future<List<Photo>> getPhotosForTrial(int trialId) {
     return (_db.select(_db.photos)
-          ..where((p) => p.trialId.equals(trialId))
+          ..where((p) =>
+              p.trialId.equals(trialId) & p.isDeleted.equals(false))
           ..orderBy([
             (p) => OrderingTerm.asc(p.sessionId),
             (p) => OrderingTerm.asc(p.createdAt),

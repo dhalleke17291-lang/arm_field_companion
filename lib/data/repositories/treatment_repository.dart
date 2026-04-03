@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 import '../../core/trial_state.dart';
@@ -11,42 +13,60 @@ class TreatmentRepository {
 
   Future<List<Treatment>> getTreatmentsForTrial(int trialId) {
     return (_db.select(_db.treatments)
-          ..where((t) => t.trialId.equals(trialId))
+          ..where((t) => t.trialId.equals(trialId) & t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.asc(t.code)]))
         .get();
   }
 
   Stream<List<Treatment>> watchTreatmentsForTrial(int trialId) {
     return (_db.select(_db.treatments)
-          ..where((t) => t.trialId.equals(trialId))
+          ..where((t) => t.trialId.equals(trialId) & t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.asc(t.code)]))
         .watch();
   }
 
   Future<Treatment?> getTreatmentById(int id) {
-    return (_db.select(_db.treatments)..where((t) => t.id.equals(id)))
+    return (_db.select(_db.treatments)
+          ..where((t) => t.id.equals(id) & t.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
-  Future<Treatment?> getTreatmentForPlot(int plotPk) async {
-    // Plot → Assignment → Treatment (ARM resolution)
+  /// Soft-deleted treatments for a trial (Recovery), newest deletion first.
+  Future<List<Treatment>> getDeletedTreatmentsForTrial(int trialId) {
+    return (_db.select(_db.treatments)
+          ..where((t) => t.trialId.equals(trialId) & t.isDeleted.equals(true))
+          ..orderBy([(t) => OrderingTerm.desc(t.deletedAt)]))
+        .get();
+  }
+
+  Future<Treatment?> getDeletedTreatmentById(int id) {
+    return (_db.select(_db.treatments)
+          ..where((t) => t.id.equals(id) & t.isDeleted.equals(true)))
+        .getSingleOrNull();
+  }
+
+  /// Assignment or legacy plot column; non-null even if the treatment row is soft-deleted.
+  Future<int?> getEffectiveTreatmentIdForPlot(int plotPk) async {
     if (_assignmentRepository != null) {
       final a = await _assignmentRepository!.getForPlot(plotPk);
-      if (a != null && a.treatmentId != null) {
-        return getTreatmentById(a.treatmentId!);
-      }
+      if (a != null && a.treatmentId != null) return a.treatmentId;
     }
-    // Fallback: legacy Plot.treatmentId
     final plot = await (_db.select(_db.plots)
           ..where((p) => p.id.equals(plotPk) & p.isDeleted.equals(false)))
         .getSingleOrNull();
-    if (plot == null || plot.treatmentId == null) return null;
-    return getTreatmentById(plot.treatmentId!);
+    return plot?.treatmentId;
+  }
+
+  Future<Treatment?> getTreatmentForPlot(int plotPk) async {
+    final tid = await getEffectiveTreatmentIdForPlot(plotPk);
+    if (tid == null) return null;
+    return getTreatmentById(tid);
   }
 
   Future<List<TreatmentComponent>> getComponentsForTreatment(int treatmentId) {
     return (_db.select(_db.treatmentComponents)
-          ..where((c) => c.treatmentId.equals(treatmentId))
+          ..where((c) =>
+              c.treatmentId.equals(treatmentId) & c.isDeleted.equals(false))
           ..orderBy([(c) => OrderingTerm.asc(c.sortOrder)]))
         .get();
   }
@@ -104,21 +124,116 @@ class TreatmentRepository {
     );
   }
 
-  /// Deletes treatment and its components; clears plot/assignment references.
-  Future<void> deleteTreatment(int id) async {
+  /// Soft-deletes treatment and all its components; assignment/plot FKs are unchanged.
+  Future<void> softDeleteTreatment(int id,
+      {String? deletedBy, int? deletedByUserId}) async {
     final existing = await getTreatmentById(id);
     if (existing == null) {
       throw TreatmentNotFoundException(id);
     }
     await assertCanEditProtocolForTrialId(_db, existing.trialId);
-    await (_db.delete(_db.treatmentComponents)
-          ..where((c) => c.treatmentId.equals(id)))
-        .go();
-    await (_db.update(_db.assignments)..where((a) => a.treatmentId.equals(id)))
-        .write(const AssignmentsCompanion(treatmentId: Value(null)));
-    await (_db.update(_db.plots)..where((p) => p.treatmentId.equals(id)))
-        .write(const PlotsCompanion(treatmentId: Value(null)));
-    await (_db.delete(_db.treatments)..where((t) => t.id.equals(id))).go();
+    final now = DateTime.now().toUtc();
+    await _db.transaction(() async {
+      final deletedComponentsCount = await (_db
+              .update(_db.treatmentComponents)
+            ..where((c) =>
+                c.treatmentId.equals(id) & c.isDeleted.equals(false)))
+          .write(
+        TreatmentComponentsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(now),
+          deletedBy: Value(deletedBy),
+        ),
+      );
+
+      await (_db.update(_db.treatments)..where((t) => t.id.equals(id))).write(
+        TreatmentsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(now),
+          deletedBy: Value(deletedBy),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(existing.trialId),
+              eventType: 'TREATMENT_DELETED',
+              description: 'Treatment soft-deleted',
+              performedBy: Value(deletedBy),
+              performedByUserId: Value(deletedByUserId),
+              metadata: Value(jsonEncode({
+                'treatment_name': existing.name,
+                'deleted_components_count': deletedComponentsCount,
+              })),
+            ),
+          );
+    });
+  }
+
+  Future<TreatmentRestoreResult> restoreTreatment(int treatmentId,
+      {String? restoredBy, int? restoredByUserId}) async {
+    return _db.transaction(() async {
+      final treatment = await getDeletedTreatmentById(treatmentId);
+      if (treatment == null) {
+        return TreatmentRestoreResult.failure(
+          'This treatment was not found or is no longer deleted.',
+        );
+      }
+
+      final trial = await (_db.select(_db.trials)
+            ..where((t) => t.id.equals(treatment.trialId)))
+          .getSingleOrNull();
+      if (trial == null) {
+        return TreatmentRestoreResult.failure(
+          'Trial not found. This treatment cannot be restored.',
+        );
+      }
+      if (trial.isDeleted) {
+        return TreatmentRestoreResult.failure(
+          'Restore the trial from Recovery before restoring this treatment.',
+        );
+      }
+      if (!canEditProtocol(trial)) {
+        return TreatmentRestoreResult.failure(protocolEditBlockedMessage(trial));
+      }
+
+      final restoredComponentsCount = await (_db
+              .update(_db.treatmentComponents)
+            ..where((c) =>
+                c.treatmentId.equals(treatmentId) & c.isDeleted.equals(true)))
+          .write(
+        const TreatmentComponentsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      await (_db.update(_db.treatments)..where((t) => t.id.equals(treatmentId)))
+          .write(
+        const TreatmentsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(treatment.trialId),
+              eventType: 'TREATMENT_RESTORED',
+              description: 'Treatment restored from Recovery',
+              performedBy: Value(restoredBy),
+              performedByUserId: Value(restoredByUserId),
+              metadata: Value(jsonEncode({
+                'treatment_name': treatment.name,
+                'restored_components_count': restoredComponentsCount,
+              })),
+            ),
+          );
+
+      return TreatmentRestoreResult.ok();
+    });
   }
 
   Future<int> insertComponent({
@@ -156,15 +271,119 @@ class TreatmentRepository {
         );
   }
 
-  Future<void> deleteComponent(int componentId) async {
-    final row = await (_db.select(_db.treatmentComponents)
-          ..where((c) => c.id.equals(componentId)))
+  Future<TreatmentComponent?> _getActiveComponentById(int componentId) {
+    return (_db.select(_db.treatmentComponents)
+          ..where(
+              (c) => c.id.equals(componentId) & c.isDeleted.equals(false)))
         .getSingleOrNull();
+  }
+
+  Future<TreatmentComponent?> getDeletedComponentById(int componentId) {
+    return (_db.select(_db.treatmentComponents)
+          ..where((c) => c.id.equals(componentId) & c.isDeleted.equals(true)))
+        .getSingleOrNull();
+  }
+
+  Future<void> softDeleteComponent(int componentId,
+      {String? deletedBy, int? deletedByUserId}) async {
+    final row = await _getActiveComponentById(componentId);
     if (row == null) return;
     await assertCanEditProtocolForTrialId(_db, row.trialId);
-    await (_db.delete(_db.treatmentComponents)
-          ..where((c) => c.id.equals(componentId)))
-        .go();
+    final now = DateTime.now().toUtc();
+    await _db.transaction(() async {
+      await (_db.update(_db.treatmentComponents)
+            ..where((c) => c.id.equals(componentId)))
+          .write(
+        TreatmentComponentsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(now),
+          deletedBy: Value(deletedBy),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(row.trialId),
+              eventType: 'TREATMENT_COMPONENT_DELETED',
+              description: 'Treatment component soft-deleted',
+              performedBy: Value(deletedBy),
+              performedByUserId: Value(deletedByUserId),
+              metadata: Value(jsonEncode({
+                'product_name': row.productName,
+              })),
+            ),
+          );
+    });
+  }
+
+  Future<TreatmentComponentRestoreResult> restoreComponent(int componentId,
+      {String? restoredBy, int? restoredByUserId}) async {
+    return _db.transaction(() async {
+      final row = await getDeletedComponentById(componentId);
+      if (row == null) {
+        return TreatmentComponentRestoreResult.failure(
+          'This component was not found or is no longer deleted.',
+        );
+      }
+
+      final treatment = await (_db.select(_db.treatments)
+            ..where((t) => t.id.equals(row.treatmentId)))
+          .getSingleOrNull();
+      if (treatment == null) {
+        return TreatmentComponentRestoreResult.failure(
+          'Parent treatment not found.',
+        );
+      }
+      if (treatment.isDeleted) {
+        return TreatmentComponentRestoreResult.failure(
+          'Restore the treatment from Recovery before restoring this component.',
+        );
+      }
+
+      final trial = await (_db.select(_db.trials)
+            ..where((t) => t.id.equals(row.trialId)))
+          .getSingleOrNull();
+      if (trial == null) {
+        return TreatmentComponentRestoreResult.failure(
+          'Trial not found.',
+        );
+      }
+      if (trial.isDeleted) {
+        return TreatmentComponentRestoreResult.failure(
+          'Restore the trial from Recovery before restoring this component.',
+        );
+      }
+      if (!canEditProtocol(trial)) {
+        return TreatmentComponentRestoreResult.failure(
+          protocolEditBlockedMessage(trial),
+        );
+      }
+
+      await (_db.update(_db.treatmentComponents)
+            ..where((c) => c.id.equals(componentId)))
+          .write(
+        const TreatmentComponentsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(row.trialId),
+              eventType: 'TREATMENT_COMPONENT_RESTORED',
+              description: 'Treatment component restored from Recovery',
+              performedBy: Value(restoredBy),
+              performedByUserId: Value(restoredByUserId),
+              metadata: Value(jsonEncode({
+                'product_name': row.productName,
+              })),
+            ),
+          );
+
+      return TreatmentComponentRestoreResult.ok();
+    });
   }
 }
 
@@ -174,4 +393,45 @@ class TreatmentNotFoundException implements Exception {
 
   @override
   String toString() => 'Treatment with id $treatmentId not found.';
+}
+
+sealed class TreatmentRestoreResult {
+  const TreatmentRestoreResult();
+
+  factory TreatmentRestoreResult.ok() = TreatmentRestoreOk;
+
+  factory TreatmentRestoreResult.failure(String reason) =
+      TreatmentRestoreFailure;
+}
+
+final class TreatmentRestoreOk extends TreatmentRestoreResult {
+  const TreatmentRestoreOk();
+}
+
+final class TreatmentRestoreFailure extends TreatmentRestoreResult {
+  const TreatmentRestoreFailure(this.reason);
+
+  final String reason;
+}
+
+sealed class TreatmentComponentRestoreResult {
+  const TreatmentComponentRestoreResult();
+
+  factory TreatmentComponentRestoreResult.ok() =
+      TreatmentComponentRestoreOk;
+
+  factory TreatmentComponentRestoreResult.failure(String reason) =
+      TreatmentComponentRestoreFailure;
+}
+
+final class TreatmentComponentRestoreOk
+    extends TreatmentComponentRestoreResult {
+  const TreatmentComponentRestoreOk();
+}
+
+final class TreatmentComponentRestoreFailure
+    extends TreatmentComponentRestoreResult {
+  const TreatmentComponentRestoreFailure(this.reason);
+
+  final String reason;
 }

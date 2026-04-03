@@ -2725,7 +2725,7 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
                     final currentId =
                         assignment?.treatmentId ?? plot.treatmentId;
                     final currentCode = currentId != null
-                        ? (treatmentMap[currentId]?.code ?? '—')
+                        ? (treatmentMap[currentId]?.code ?? '(removed)')
                         : '—';
                     final selected = _selectedPlotIds.contains(plot.id);
                     return CheckboxListTile(
@@ -2864,7 +2864,8 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
       );
       return;
     }
-    final code = treatmentMap[_selectedTreatmentId]?.code ?? '?';
+    final code = treatmentMap[_selectedTreatmentId]?.code ??
+        (_selectedTreatmentId != null ? '(removed)' : '?');
     ref.invalidate(trialReadinessProvider(widget.trial.id));
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -3314,7 +3315,9 @@ class _PlotGridTile extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  treatment != null ? treatment.code : '',
+                  treatment != null
+                      ? treatment.code
+                      : (effectiveTid != null ? '(removed)' : ''),
                   style: TextStyle(
                     color: subColor,
                     fontSize: 10,

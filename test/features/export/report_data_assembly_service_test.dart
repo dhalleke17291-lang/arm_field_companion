@@ -178,7 +178,19 @@ class MockTreatmentRepository implements TreatmentRepository {
       treatmentsForTrial.where((t) => t.id == id).firstOrNull;
 
   @override
+  Future<List<Treatment>> getDeletedTreatmentsForTrial(int trialId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<Treatment?> getDeletedTreatmentById(int id) async =>
+      throw UnimplementedError();
+
+  @override
   Future<Treatment?> getTreatmentForPlot(int plotPk) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<int?> getEffectiveTreatmentIdForPlot(int plotPk) async =>
       throw UnimplementedError();
 
   @override
@@ -208,7 +220,14 @@ class MockTreatmentRepository implements TreatmentRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> deleteTreatment(int id) async => throw UnimplementedError();
+  Future<void> softDeleteTreatment(int id,
+          {String? deletedBy, int? deletedByUserId}) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<TreatmentRestoreResult> restoreTreatment(int treatmentId,
+          {String? restoredBy, int? restoredByUserId}) async =>
+      throw UnimplementedError();
 
   @override
   Future<int> insertComponent({
@@ -229,7 +248,17 @@ class MockTreatmentRepository implements TreatmentRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> deleteComponent(int componentId) async =>
+  Future<void> softDeleteComponent(int componentId,
+          {String? deletedBy, int? deletedByUserId}) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<TreatmentComponent?> getDeletedComponentById(int componentId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<TreatmentComponentRestoreResult> restoreComponent(int componentId,
+          {String? restoredBy, int? restoredByUserId}) async =>
       throw UnimplementedError();
 }
 
@@ -505,7 +534,13 @@ class MockPhotoRepository implements PhotoRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> deletePhoto(int id) async => throw UnimplementedError();
+  Future<void> softDeletePhoto(int id,
+          {String? deletedBy, int? deletedByUserId}) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<Photo>> getDeletedPhotosForSession(int sessionId) async =>
+      throw UnimplementedError();
 
   @override
   Future<void> cleanupOrphanTempFiles() async =>
@@ -617,6 +652,7 @@ void main() {
           code: 'T1',
           name: 'Control',
           treatmentType: 'control',
+          isDeleted: false,
         ),
       ];
       mockTreatmentRepo.componentsByTreatmentId[10] = [
@@ -626,6 +662,7 @@ void main() {
           trialId: 42,
           productName: 'Product A',
           sortOrder: 0,
+          isDeleted: false,
         ),
       ];
       mockSessionRepo.sessionsForTrial = [
@@ -659,6 +696,7 @@ void main() {
           filePath: '/path/photo.jpg',
           status: 'final',
           createdAt: DateTime.now(),
+          isDeleted: false,
         ),
       ];
 
@@ -704,14 +742,34 @@ void main() {
     test('SUCCESS: treatment component count from getComponentsForTreatment', () async {
       final trial = _trial();
       mockTreatmentRepo.treatmentsForTrial = [
-        const Treatment(id: 1, trialId: 1, code: 'T1', name: 'Treatment 1'),
-        const Treatment(id: 2, trialId: 1, code: 'T2', name: 'Treatment 2'),
+        const Treatment(
+            id: 1,
+            trialId: 1,
+            code: 'T1',
+            name: 'Treatment 1',
+            isDeleted: false),
+        const Treatment(
+            id: 2,
+            trialId: 1,
+            code: 'T2',
+            name: 'Treatment 2',
+            isDeleted: false),
       ];
       mockTreatmentRepo.componentsByTreatmentId[1] = [
         const TreatmentComponent(
-            id: 1, treatmentId: 1, trialId: 1, productName: 'A', sortOrder: 0),
+            id: 1,
+            treatmentId: 1,
+            trialId: 1,
+            productName: 'A',
+            sortOrder: 0,
+            isDeleted: false),
         const TreatmentComponent(
-            id: 2, treatmentId: 1, trialId: 1, productName: 'B', sortOrder: 1),
+            id: 2,
+            treatmentId: 1,
+            trialId: 1,
+            productName: 'B',
+            sortOrder: 1,
+            isDeleted: false),
       ];
       mockTreatmentRepo.componentsByTreatmentId[2] = [];
 
@@ -737,7 +795,12 @@ void main() {
         ),
       ];
       mockTreatmentRepo.treatmentsForTrial = [
-        const Treatment(id: 5, trialId: 1, code: 'T5', name: 'Assigned Treatment'),
+        const Treatment(
+            id: 5,
+            trialId: 1,
+            code: 'T5',
+            name: 'Assigned Treatment',
+            isDeleted: false),
       ];
       mockAssignmentRepo.assignmentsForTrial = [
         Assignment(

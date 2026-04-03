@@ -37,6 +37,19 @@ String buildTreatmentFormula(List<TreatmentComponent> components) {
   return '${one(components.first)} + ${components.length - 1} more';
 }
 
+Future<void> _softDeleteTreatmentComponentWithAudit(
+  WidgetRef ref,
+  int componentId,
+) async {
+  final userId = await ref.read(currentUserIdProvider.future);
+  final user = await ref.read(currentUserProvider.future);
+  await ref.read(treatmentRepositoryProvider).softDeleteComponent(
+        componentId,
+        deletedBy: user?.displayName,
+        deletedByUserId: userId,
+      );
+}
+
 String _inlineRateUnit(TreatmentComponent c) {
   final r = c.rate?.trim();
   final u = c.rateUnit?.trim();
@@ -412,9 +425,11 @@ class TreatmentsTab extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Treatment'),
+        title: const Text('Remove Treatment'),
         content: Text(
-          'Delete "${treatment.code} — ${treatment.name}"? Plots assigned to this treatment will be unassigned. This cannot be undone.',
+          'Remove "${treatment.code} — ${treatment.name}" from the protocol?\n\n'
+          'This treatment will be removed and can be restored from Recovery if needed. '
+          'Plot assignments are unchanged.',
         ),
         actions: [
           TextButton(
@@ -424,21 +439,27 @@ class TreatmentsTab extends ConsumerWidget {
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Remove'),
           ),
         ],
       ),
     );
     if (confirmed != true || !context.mounted) return;
+    final userId = await ref.read(currentUserIdProvider.future);
+    final user = await ref.read(currentUserProvider.future);
     final useCase = ref.read(deleteTreatmentUseCaseProvider);
-    final result =
-        await useCase.execute(trial: trial, treatmentId: treatment.id);
+    final result = await useCase.execute(
+      trial: trial,
+      treatmentId: treatment.id,
+      deletedBy: user?.displayName,
+      deletedByUserId: userId,
+    );
     if (!context.mounted) return;
     if (result.success) {
       ref.invalidate(treatmentsForTrialProvider(trial.id));
       ref.invalidate(assignmentsForTrialProvider(trial.id));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Treatment deleted')),
+        const SnackBar(content: Text('Treatment removed')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -654,9 +675,8 @@ class _TreatmentExpansionTileState
                               ),
                             );
                             if (ok == true && context.mounted) {
-                              final repo =
-                                  ref.read(treatmentRepositoryProvider);
-                              await repo.deleteComponent(c.id);
+                              await _softDeleteTreatmentComponentWithAudit(
+                                  ref, c.id);
                               ref.invalidate(
                                 treatmentComponentsForTreatmentProvider(
                                     widget.treatment.id),
@@ -978,7 +998,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                       final repo = widget.ref.read(treatmentRepositoryProvider);
                       final existing = widget.existingComponent;
                       if (existing != null) {
-                        await repo.deleteComponent(existing.id);
+                        await _softDeleteTreatmentComponentWithAudit(
+                            widget.ref, existing.id);
                       }
                       await repo.insertComponent(
                         treatmentId: widget.treatment.id,
@@ -1585,8 +1606,7 @@ class _TreatmentComponentsSheetState
       ),
     );
     if (confirm != true) return;
-    final repo = ref.read(treatmentRepositoryProvider);
-    await repo.deleteComponent(component.id);
+    await _softDeleteTreatmentComponentWithAudit(ref, component.id);
     await _loadComponents();
   }
 

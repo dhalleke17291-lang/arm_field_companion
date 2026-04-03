@@ -341,7 +341,7 @@ SELECT EXISTS(
   UNION ALL
   SELECT 1 FROM notes WHERE trial_id = ? LIMIT 1
   UNION ALL
-  SELECT 1 FROM photos WHERE trial_id = ? LIMIT 1
+  SELECT 1 FROM photos WHERE trial_id = ? AND is_deleted = 0 LIMIT 1
   UNION ALL
   SELECT 1 FROM plot_flags WHERE trial_id = ? LIMIT 1
 ) AS has_data

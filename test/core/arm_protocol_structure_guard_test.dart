@@ -120,7 +120,7 @@ void main() {
       );
     });
 
-    test('deleteTreatment blocked for ARM-linked trial', () async {
+    test('softDeleteTreatment blocked for ARM-linked trial', () async {
       final trialId =
           await trialRepo.createTrial(name: 'Td', workspaceType: 'efficacy');
       final tid = await treatmentRepo.insertTreatment(
@@ -131,7 +131,7 @@ void main() {
       await _markArmLinked(db, trialId);
 
       expect(
-        () => treatmentRepo.deleteTreatment(tid),
+        () => treatmentRepo.softDeleteTreatment(tid),
         throwsA(
           predicate<ProtocolEditBlockedException>(
             (e) => e.message == kArmProtocolStructureLockMessage,
@@ -164,7 +164,7 @@ void main() {
       );
     });
 
-    test('deleteComponent blocked for ARM-linked trial', () async {
+    test('softDeleteComponent blocked for ARM-linked trial', () async {
       final trialId =
           await trialRepo.createTrial(name: 'Tdc', workspaceType: 'efficacy');
       final tid = await treatmentRepo.insertTreatment(
@@ -180,7 +180,7 @@ void main() {
       await _markArmLinked(db, trialId);
 
       expect(
-        () => treatmentRepo.deleteComponent(cid),
+        () => treatmentRepo.softDeleteComponent(cid),
         throwsA(
           predicate<ProtocolEditBlockedException>(
             (e) => e.message == kArmProtocolStructureLockMessage,

@@ -3,7 +3,7 @@ import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/trial_state.dart';
 import '../../../data/repositories/treatment_repository.dart';
 
-/// Deletes a treatment and its components; clears plot/assignment references.
+/// Soft-deletes a treatment and its components (Recovery).
 /// Respects protocol lock.
 class DeleteTreatmentUseCase {
   final TreatmentRepository _repository;
@@ -13,12 +13,18 @@ class DeleteTreatmentUseCase {
   Future<DeleteTreatmentResult> execute({
     required Trial trial,
     required int treatmentId,
+    String? deletedBy,
+    int? deletedByUserId,
   }) async {
     if (!canEditProtocol(trial)) {
       return DeleteTreatmentResult.failure(protocolEditBlockedMessage(trial));
     }
     try {
-      await _repository.deleteTreatment(treatmentId);
+      await _repository.softDeleteTreatment(
+        treatmentId,
+        deletedBy: deletedBy,
+        deletedByUserId: deletedByUserId,
+      );
       return DeleteTreatmentResult.success();
     } on TreatmentNotFoundException {
       return DeleteTreatmentResult.failure('Treatment not found.');

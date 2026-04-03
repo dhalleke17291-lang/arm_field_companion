@@ -28,13 +28,19 @@ void main() {
     );
     treatments = [
       const Treatment(
-          id: 10, trialId: 1, code: 'T1', name: 'Control', description: null),
+          id: 10,
+          trialId: 1,
+          code: 'T1',
+          name: 'Control',
+          description: null,
+          isDeleted: false),
       const Treatment(
           id: 11,
           trialId: 1,
           code: 'T2',
           name: 'Fertilizer A',
-          description: null),
+          description: null,
+          isDeleted: false),
     ];
     assessments = [
       const Assessment(

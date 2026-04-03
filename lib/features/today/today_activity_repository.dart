@@ -127,7 +127,8 @@ class TodayActivityRepository {
     final photos = await (_db.select(_db.photos)
           ..where((p) =>
               p.createdAt.isBiggerOrEqualValue(start) &
-              p.createdAt.isSmallerThanValue(end)))
+              p.createdAt.isSmallerThanValue(end) &
+              p.isDeleted.equals(false)))
         .get();
     final photosBySession = <int, List<Photo>>{};
     for (final p in photos) {
@@ -262,7 +263,9 @@ class TodayActivityRepository {
     }
 
     final photos = await (_db.select(_db.photos)
-          ..where((p) => p.createdAt.isBiggerOrEqualValue(cutoff)))
+          ..where((p) =>
+              p.createdAt.isBiggerOrEqualValue(cutoff) &
+              p.isDeleted.equals(false)))
         .get();
     for (final p in photos) {
       add(toDateLocal(p.createdAt));

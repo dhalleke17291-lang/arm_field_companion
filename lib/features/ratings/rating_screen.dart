@@ -905,7 +905,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         builder: (_) => PhotoViewScreen(
           photo: photo,
           onDelete: () async {
-            await ref.read(photoRepositoryProvider).deletePhoto(photo.id);
+            final userId = await ref.read(currentUserIdProvider.future);
+            final user = await ref.read(currentUserProvider.future);
+            await ref.read(photoRepositoryProvider).softDeletePhoto(
+                  photo.id,
+                  deletedBy: user?.displayName ?? widget.session.raterName,
+                  deletedByUserId: userId,
+                );
             ref.invalidate(
               photosForPlotProvider(
                 PhotosForPlotParams(
@@ -1094,7 +1100,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   plotCtx.when(
                     loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),
-                    data: (ctx) => ctx.hasTreatment
+                    data: (ctx) => (ctx.hasTreatment || ctx.hasRemovedTreatment)
                         ? Padding(
                             padding: const EdgeInsets.only(right: 6),
                             child: Container(
@@ -1107,7 +1113,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                ctx.treatmentCode,
+                                ctx.hasRemovedTreatment
+                                    ? '(removed)'
+                                    : ctx.treatmentCode,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,

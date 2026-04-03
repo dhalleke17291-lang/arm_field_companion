@@ -20,7 +20,11 @@ class ResolvePlotTreatment {
     final plot = await _plotRepository.getPlotByPk(plotPk);
     if (plot == null) throw PlotContextException(plotPk);
 
-    final treatment = await _treatmentRepository.getTreatmentForPlot(plotPk);
+    final assignedTreatmentId =
+        await _treatmentRepository.getEffectiveTreatmentIdForPlot(plotPk);
+    final treatment = assignedTreatmentId != null
+        ? await _treatmentRepository.getTreatmentById(assignedTreatmentId)
+        : null;
 
     final components = treatment != null
         ? await _treatmentRepository.getComponentsForTreatment(treatment.id)
@@ -30,6 +34,7 @@ class ResolvePlotTreatment {
       plot: plot,
       treatment: treatment,
       components: components,
+      assignedTreatmentId: assignedTreatmentId,
     );
   }
 }
