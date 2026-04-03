@@ -27,6 +27,15 @@ import '../photos/photo_repository.dart';
 import 'csv_export_service.dart';
 import 'trial_export_bundle.dart';
 
+class ExportBlockedByValidationException implements Exception {
+  const ExportBlockedByValidationException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// Exports a trial to six CSV files using existing repositories only.
 class ExportTrialUseCase {
   ExportTrialUseCase({
@@ -348,6 +357,15 @@ class ExportTrialUseCase {
         sessions: sessions,
         photos: photos,
       );
+      if (validation.issues
+          .any((i) => i.severity == export_validation.IssueSeverity.error)) {
+        throw ExportBlockedByValidationException(
+          validation.issues
+              .where((i) => i.severity == export_validation.IssueSeverity.error)
+              .map((i) => i.message)
+              .join('\n'),
+        );
+      }
       final zipFile = await _buildArmHandoffPackage(
           bundle, trial, validation, photos);
       await Share.shareXFiles([XFile(zipFile.path, mimeType: 'application/zip')],

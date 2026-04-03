@@ -1,3 +1,5 @@
+import '../../../core/diagnostics/diagnostic_finding.dart';
+
 enum TrialCheckSeverity { pass, warning, blocker }
 
 class TrialReadinessCheck {
@@ -33,4 +35,25 @@ class TrialReadinessReport {
       : warningCount > 0
           ? TrialReadinessStatus.readyWithWarnings
           : TrialReadinessStatus.ready;
+}
+
+extension TrialReadinessCheckExtension on TrialReadinessCheck {
+  /// Maps this check to a shared [DiagnosticFinding].
+  /// Uses [code] as the stable identifier (stable across builds).
+  DiagnosticFinding toDiagnosticFinding(int trialId) {
+    return DiagnosticFinding(
+      code: code,
+      severity: switch (severity) {
+        TrialCheckSeverity.blocker => DiagnosticSeverity.blocker,
+        TrialCheckSeverity.warning => DiagnosticSeverity.warning,
+        TrialCheckSeverity.pass => DiagnosticSeverity.info,
+      },
+      message: label,
+      detail: detail,
+      trialId: trialId,
+      source: DiagnosticSource.readiness,
+      blocksExport: severity == TrialCheckSeverity.blocker,
+      blocksAction: false,
+    );
+  }
 }
