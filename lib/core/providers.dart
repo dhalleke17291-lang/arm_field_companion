@@ -78,6 +78,12 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
+final trialExportDiagnosticsMapProvider = StateNotifierProvider<
+    TrialExportDiagnosticsMapNotifier,
+    Map<int, TrialExportDiagnosticsSnapshot>>((ref) {
+  return TrialExportDiagnosticsMapNotifier(ref.watch(databaseProvider));
+});
+
 final trialRepositoryProvider = Provider<TrialRepository>((ref) {
   return TrialRepository(ref.watch(databaseProvider));
 });
@@ -869,8 +875,8 @@ final trialReadinessProvider = StreamProvider.autoDispose
 ///
 /// Combines live readiness checks (non-pass) with the latest export-time
 /// findings from [trialExportDiagnosticsMapProvider] (validation + ARM
-/// confidence from the most recent export attempt). Export cache is in-memory
-/// for the app session only.
+/// confidence from the most recent export attempt). Snapshots are persisted in
+/// Drift and hydrated on startup.
 final trialDiagnosticsProvider = Provider.autoDispose
     .family<List<DiagnosticFinding>, int>((ref, trialId) {
   final readinessAsync = ref.watch(trialReadinessProvider(trialId));

@@ -7148,7 +7148,8 @@ class Plot extends DataClass implements Insertable<Plot> {
   final String? soilSeries;
   final String? plotNotes;
 
-  /// Field layout: non-data / border plot (v1: display + flag only; no workflow change).
+  /// Field layout: non-data / border plot.
+  /// v2: excluded from rating queue by default; display + editing unchanged in Plots tab.
   final bool isGuardRow;
   final bool isDeleted;
   final DateTime? deletedAt;
@@ -25138,6 +25139,325 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
   }
 }
 
+class $TrialExportDiagnosticsTable extends TrialExportDiagnostics
+    with TableInfo<$TrialExportDiagnosticsTable, TrialExportDiagnostic> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrialExportDiagnosticsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _publishedAtMeta =
+      const VerificationMeta('publishedAt');
+  @override
+  late final GeneratedColumn<DateTime> publishedAt = GeneratedColumn<DateTime>(
+      'published_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _attemptLabelMeta =
+      const VerificationMeta('attemptLabel');
+  @override
+  late final GeneratedColumn<String> attemptLabel = GeneratedColumn<String>(
+      'attempt_label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _findingsJsonMeta =
+      const VerificationMeta('findingsJson');
+  @override
+  late final GeneratedColumn<String> findingsJson = GeneratedColumn<String>(
+      'findings_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadVersionMeta =
+      const VerificationMeta('payloadVersion');
+  @override
+  late final GeneratedColumn<int> payloadVersion = GeneratedColumn<int>(
+      'payload_version', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [trialId, publishedAt, attemptLabel, findingsJson, payloadVersion];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trial_export_diagnostics';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TrialExportDiagnostic> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    }
+    if (data.containsKey('published_at')) {
+      context.handle(
+          _publishedAtMeta,
+          publishedAt.isAcceptableOrUnknown(
+              data['published_at']!, _publishedAtMeta));
+    } else if (isInserting) {
+      context.missing(_publishedAtMeta);
+    }
+    if (data.containsKey('attempt_label')) {
+      context.handle(
+          _attemptLabelMeta,
+          attemptLabel.isAcceptableOrUnknown(
+              data['attempt_label']!, _attemptLabelMeta));
+    } else if (isInserting) {
+      context.missing(_attemptLabelMeta);
+    }
+    if (data.containsKey('findings_json')) {
+      context.handle(
+          _findingsJsonMeta,
+          findingsJson.isAcceptableOrUnknown(
+              data['findings_json']!, _findingsJsonMeta));
+    } else if (isInserting) {
+      context.missing(_findingsJsonMeta);
+    }
+    if (data.containsKey('payload_version')) {
+      context.handle(
+          _payloadVersionMeta,
+          payloadVersion.isAcceptableOrUnknown(
+              data['payload_version']!, _payloadVersionMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {trialId};
+  @override
+  TrialExportDiagnostic map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrialExportDiagnostic(
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      publishedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at'])!,
+      attemptLabel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}attempt_label'])!,
+      findingsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}findings_json'])!,
+      payloadVersion: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}payload_version'])!,
+    );
+  }
+
+  @override
+  $TrialExportDiagnosticsTable createAlias(String alias) {
+    return $TrialExportDiagnosticsTable(attachedDatabase, alias);
+  }
+}
+
+class TrialExportDiagnostic extends DataClass
+    implements Insertable<TrialExportDiagnostic> {
+  final int trialId;
+  final DateTime publishedAt;
+  final String attemptLabel;
+  final String findingsJson;
+  final int payloadVersion;
+  const TrialExportDiagnostic(
+      {required this.trialId,
+      required this.publishedAt,
+      required this.attemptLabel,
+      required this.findingsJson,
+      required this.payloadVersion});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['trial_id'] = Variable<int>(trialId);
+    map['published_at'] = Variable<DateTime>(publishedAt);
+    map['attempt_label'] = Variable<String>(attemptLabel);
+    map['findings_json'] = Variable<String>(findingsJson);
+    map['payload_version'] = Variable<int>(payloadVersion);
+    return map;
+  }
+
+  TrialExportDiagnosticsCompanion toCompanion(bool nullToAbsent) {
+    return TrialExportDiagnosticsCompanion(
+      trialId: Value(trialId),
+      publishedAt: Value(publishedAt),
+      attemptLabel: Value(attemptLabel),
+      findingsJson: Value(findingsJson),
+      payloadVersion: Value(payloadVersion),
+    );
+  }
+
+  factory TrialExportDiagnostic.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrialExportDiagnostic(
+      trialId: serializer.fromJson<int>(json['trialId']),
+      publishedAt: serializer.fromJson<DateTime>(json['publishedAt']),
+      attemptLabel: serializer.fromJson<String>(json['attemptLabel']),
+      findingsJson: serializer.fromJson<String>(json['findingsJson']),
+      payloadVersion: serializer.fromJson<int>(json['payloadVersion']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'trialId': serializer.toJson<int>(trialId),
+      'publishedAt': serializer.toJson<DateTime>(publishedAt),
+      'attemptLabel': serializer.toJson<String>(attemptLabel),
+      'findingsJson': serializer.toJson<String>(findingsJson),
+      'payloadVersion': serializer.toJson<int>(payloadVersion),
+    };
+  }
+
+  TrialExportDiagnostic copyWith(
+          {int? trialId,
+          DateTime? publishedAt,
+          String? attemptLabel,
+          String? findingsJson,
+          int? payloadVersion}) =>
+      TrialExportDiagnostic(
+        trialId: trialId ?? this.trialId,
+        publishedAt: publishedAt ?? this.publishedAt,
+        attemptLabel: attemptLabel ?? this.attemptLabel,
+        findingsJson: findingsJson ?? this.findingsJson,
+        payloadVersion: payloadVersion ?? this.payloadVersion,
+      );
+  TrialExportDiagnostic copyWithCompanion(
+      TrialExportDiagnosticsCompanion data) {
+    return TrialExportDiagnostic(
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      publishedAt:
+          data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
+      attemptLabel: data.attemptLabel.present
+          ? data.attemptLabel.value
+          : this.attemptLabel,
+      findingsJson: data.findingsJson.present
+          ? data.findingsJson.value
+          : this.findingsJson,
+      payloadVersion: data.payloadVersion.present
+          ? data.payloadVersion.value
+          : this.payloadVersion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialExportDiagnostic(')
+          ..write('trialId: $trialId, ')
+          ..write('publishedAt: $publishedAt, ')
+          ..write('attemptLabel: $attemptLabel, ')
+          ..write('findingsJson: $findingsJson, ')
+          ..write('payloadVersion: $payloadVersion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      trialId, publishedAt, attemptLabel, findingsJson, payloadVersion);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrialExportDiagnostic &&
+          other.trialId == this.trialId &&
+          other.publishedAt == this.publishedAt &&
+          other.attemptLabel == this.attemptLabel &&
+          other.findingsJson == this.findingsJson &&
+          other.payloadVersion == this.payloadVersion);
+}
+
+class TrialExportDiagnosticsCompanion
+    extends UpdateCompanion<TrialExportDiagnostic> {
+  final Value<int> trialId;
+  final Value<DateTime> publishedAt;
+  final Value<String> attemptLabel;
+  final Value<String> findingsJson;
+  final Value<int> payloadVersion;
+  const TrialExportDiagnosticsCompanion({
+    this.trialId = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+    this.attemptLabel = const Value.absent(),
+    this.findingsJson = const Value.absent(),
+    this.payloadVersion = const Value.absent(),
+  });
+  TrialExportDiagnosticsCompanion.insert({
+    this.trialId = const Value.absent(),
+    required DateTime publishedAt,
+    required String attemptLabel,
+    required String findingsJson,
+    this.payloadVersion = const Value.absent(),
+  })  : publishedAt = Value(publishedAt),
+        attemptLabel = Value(attemptLabel),
+        findingsJson = Value(findingsJson);
+  static Insertable<TrialExportDiagnostic> custom({
+    Expression<int>? trialId,
+    Expression<DateTime>? publishedAt,
+    Expression<String>? attemptLabel,
+    Expression<String>? findingsJson,
+    Expression<int>? payloadVersion,
+  }) {
+    return RawValuesInsertable({
+      if (trialId != null) 'trial_id': trialId,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (attemptLabel != null) 'attempt_label': attemptLabel,
+      if (findingsJson != null) 'findings_json': findingsJson,
+      if (payloadVersion != null) 'payload_version': payloadVersion,
+    });
+  }
+
+  TrialExportDiagnosticsCompanion copyWith(
+      {Value<int>? trialId,
+      Value<DateTime>? publishedAt,
+      Value<String>? attemptLabel,
+      Value<String>? findingsJson,
+      Value<int>? payloadVersion}) {
+    return TrialExportDiagnosticsCompanion(
+      trialId: trialId ?? this.trialId,
+      publishedAt: publishedAt ?? this.publishedAt,
+      attemptLabel: attemptLabel ?? this.attemptLabel,
+      findingsJson: findingsJson ?? this.findingsJson,
+      payloadVersion: payloadVersion ?? this.payloadVersion,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (publishedAt.present) {
+      map['published_at'] = Variable<DateTime>(publishedAt.value);
+    }
+    if (attemptLabel.present) {
+      map['attempt_label'] = Variable<String>(attemptLabel.value);
+    }
+    if (findingsJson.present) {
+      map['findings_json'] = Variable<String>(findingsJson.value);
+    }
+    if (payloadVersion.present) {
+      map['payload_version'] = Variable<int>(payloadVersion.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialExportDiagnosticsCompanion(')
+          ..write('trialId: $trialId, ')
+          ..write('publishedAt: $publishedAt, ')
+          ..write('attemptLabel: $attemptLabel, ')
+          ..write('findingsJson: $findingsJson, ')
+          ..write('payloadVersion: $payloadVersion')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -25189,6 +25509,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CropDescriptionsTable(this);
   late final $TrialContactsTable trialContacts = $TrialContactsTable(this);
   late final $YieldDetailsTable yieldDetails = $YieldDetailsTable(this);
+  late final $TrialExportDiagnosticsTable trialExportDiagnostics =
+      $TrialExportDiagnosticsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -25226,7 +25548,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         compatibilityProfiles,
         cropDescriptions,
         trialContacts,
-        yieldDetails
+        yieldDetails,
+        trialExportDiagnostics
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -26411,6 +26734,24 @@ class $$TrialsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$YieldDetailsTableFilterComposer(ComposerState($state.db,
                 $state.db.yieldDetails, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter trialExportDiagnosticsRefs(
+      ComposableFilter Function($$TrialExportDiagnosticsTableFilterComposer f)
+          f) {
+    final $$TrialExportDiagnosticsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialExportDiagnostics,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialExportDiagnosticsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialExportDiagnostics,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 }
@@ -36950,6 +37291,143 @@ class $$YieldDetailsTableOrderingComposer
   }
 }
 
+typedef $$TrialExportDiagnosticsTableCreateCompanionBuilder
+    = TrialExportDiagnosticsCompanion Function({
+  Value<int> trialId,
+  required DateTime publishedAt,
+  required String attemptLabel,
+  required String findingsJson,
+  Value<int> payloadVersion,
+});
+typedef $$TrialExportDiagnosticsTableUpdateCompanionBuilder
+    = TrialExportDiagnosticsCompanion Function({
+  Value<int> trialId,
+  Value<DateTime> publishedAt,
+  Value<String> attemptLabel,
+  Value<String> findingsJson,
+  Value<int> payloadVersion,
+});
+
+class $$TrialExportDiagnosticsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TrialExportDiagnosticsTable,
+    TrialExportDiagnostic,
+    $$TrialExportDiagnosticsTableFilterComposer,
+    $$TrialExportDiagnosticsTableOrderingComposer,
+    $$TrialExportDiagnosticsTableCreateCompanionBuilder,
+    $$TrialExportDiagnosticsTableUpdateCompanionBuilder> {
+  $$TrialExportDiagnosticsTableTableManager(
+      _$AppDatabase db, $TrialExportDiagnosticsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$TrialExportDiagnosticsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$TrialExportDiagnosticsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> trialId = const Value.absent(),
+            Value<DateTime> publishedAt = const Value.absent(),
+            Value<String> attemptLabel = const Value.absent(),
+            Value<String> findingsJson = const Value.absent(),
+            Value<int> payloadVersion = const Value.absent(),
+          }) =>
+              TrialExportDiagnosticsCompanion(
+            trialId: trialId,
+            publishedAt: publishedAt,
+            attemptLabel: attemptLabel,
+            findingsJson: findingsJson,
+            payloadVersion: payloadVersion,
+          ),
+          createCompanionCallback: ({
+            Value<int> trialId = const Value.absent(),
+            required DateTime publishedAt,
+            required String attemptLabel,
+            required String findingsJson,
+            Value<int> payloadVersion = const Value.absent(),
+          }) =>
+              TrialExportDiagnosticsCompanion.insert(
+            trialId: trialId,
+            publishedAt: publishedAt,
+            attemptLabel: attemptLabel,
+            findingsJson: findingsJson,
+            payloadVersion: payloadVersion,
+          ),
+        ));
+}
+
+class $$TrialExportDiagnosticsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $TrialExportDiagnosticsTable> {
+  $$TrialExportDiagnosticsTableFilterComposer(super.$state);
+  ColumnFilters<DateTime> get publishedAt => $state.composableBuilder(
+      column: $state.table.publishedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get attemptLabel => $state.composableBuilder(
+      column: $state.table.attemptLabel,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get findingsJson => $state.composableBuilder(
+      column: $state.table.findingsJson,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get payloadVersion => $state.composableBuilder(
+      column: $state.table.payloadVersion,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$TrialExportDiagnosticsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $TrialExportDiagnosticsTable> {
+  $$TrialExportDiagnosticsTableOrderingComposer(super.$state);
+  ColumnOrderings<DateTime> get publishedAt => $state.composableBuilder(
+      column: $state.table.publishedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get attemptLabel => $state.composableBuilder(
+      column: $state.table.attemptLabel,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get findingsJson => $state.composableBuilder(
+      column: $state.table.findingsJson,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get payloadVersion => $state.composableBuilder(
+      column: $state.table.payloadVersion,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -37022,4 +37500,7 @@ class $AppDatabaseManager {
       $$TrialContactsTableTableManager(_db, _db.trialContacts);
   $$YieldDetailsTableTableManager get yieldDetails =>
       $$YieldDetailsTableTableManager(_db, _db.yieldDetails);
+  $$TrialExportDiagnosticsTableTableManager get trialExportDiagnostics =>
+      $$TrialExportDiagnosticsTableTableManager(
+          _db, _db.trialExportDiagnostics);
 }

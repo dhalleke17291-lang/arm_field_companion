@@ -709,6 +709,18 @@ class YieldDetails extends Table {
   TextColumn get createdBy => text().nullable()();
 }
 
+/// Latest export-time diagnostics snapshot per trial (replaced on each publish).
+class TrialExportDiagnostics extends Table {
+  IntColumn get trialId => integer().references(Trials, #id)();
+  DateTimeColumn get publishedAt => dateTime()();
+  TextColumn get attemptLabel => text()();
+  TextColumn get findingsJson => text()();
+  IntColumn get payloadVersion => integer().withDefault(const Constant(1))();
+
+  @override
+  Set<Column> get primaryKey => {trialId};
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -743,6 +755,7 @@ class YieldDetails extends Table {
   CropDescriptions,
   TrialContacts,
   YieldDetails,
+  TrialExportDiagnostics,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -751,7 +764,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1101,6 +1114,9 @@ SET status = 'completed',
                 treatmentComponents, treatmentComponents.lastEditedByUserId);
             await m.addColumn(
                 treatmentComponents, treatmentComponents.lastEditedAt);
+          }
+          if (from < 40) {
+            await m.createTable(trialExportDiagnostics);
           }
           await _createIndexes();
         },
