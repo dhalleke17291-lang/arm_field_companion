@@ -991,7 +991,12 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     final cropController = TextEditingController();
     final locationController = TextEditingController();
     final seasonController = TextEditingController();
-    bool isCustomTrial = false;
+    // Match the list context (Custom vs Protocol hub); user can still switch in-dialog.
+    bool isCustomTrial = switch (widget.workspaceFilter) {
+      TrialListFilter.standaloneOnly => true,
+      TrialListFilter.protocolOnly => false,
+      TrialListFilter.all => false,
+    };
     WorkspaceType selectedProtocolSubtype = WorkspaceType.efficacy;
 
     await showDialog(
