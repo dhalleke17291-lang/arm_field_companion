@@ -7,6 +7,18 @@ import '../../../core/providers.dart';
 import '../../../core/session_state.dart';
 import '../../../core/trial_state.dart';
 
+/// Trial-level rating coverage; null when loading, error, or no plots.
+String? _ratedPlotsProgressLine(
+  AsyncValue<List<Plot>> plotsAsync,
+  AsyncValue<int> ratedAsync,
+) {
+  final plots = plotsAsync.valueOrNull;
+  final rated = ratedAsync.valueOrNull;
+  if (plots == null || rated == null) return null;
+  if (plots.isEmpty) return null;
+  return 'Rated plots $rated/${plots.length}';
+}
+
 String _trialStatusDisplay(String statusLower) {
   switch (statusLower) {
     case 'active':
@@ -73,6 +85,9 @@ class TrialCard extends ConsumerWidget {
     ].join(' • ');
     final hasMetadata = cropLoc.isNotEmpty;
     final indexStr = index.toString().padLeft(2, '0');
+    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trial.id));
+    final ratedProgressLine = _ratedPlotsProgressLine(plotsAsync, ratedAsync);
 
     return Container(
       decoration: BoxDecoration(
@@ -186,6 +201,22 @@ class TrialCard extends ConsumerWidget {
                         alpha: 0.5,
                       ),
                       height: 1.4,
+                    ),
+                  ),
+                ],
+                if (ratedProgressLine != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    ratedProgressLine,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.45,
+                      ),
+                      height: 1.35,
                     ),
                   ),
                 ],
