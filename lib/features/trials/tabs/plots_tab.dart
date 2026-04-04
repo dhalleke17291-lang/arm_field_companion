@@ -24,6 +24,35 @@ const double _kGridMinScale = 0.3;
 const double _kGridMaxScale = 3.0;
 const double _kGridZoomFactor = 1.25;
 
+/// Left gutter for "Rep n" labels — same width on layout grid and ratings overlay.
+const double _kRepLabelWidth = 52.0;
+
+/// Swatch size for plot layout legends (Treats / Apps / Ratings).
+const double _kPlotLayoutLegendSwatch = 16.0;
+
+TextStyle _plotDetailsRepLabelStyle(BuildContext context) {
+  final scheme = Theme.of(context).colorScheme;
+  return TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.12,
+    height: 1.25,
+    color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+  );
+}
+
+BoxDecoration _plotLayoutLegendPanelDecoration(BuildContext context) {
+  final scheme = Theme.of(context).colorScheme;
+  return BoxDecoration(
+    color: scheme.surfaceContainerHighest.withValues(alpha: 0.42),
+    borderRadius: BorderRadius.circular(10),
+    border: Border.all(
+      color: scheme.outlineVariant.withValues(alpha: 0.28),
+      width: 1,
+    ),
+  );
+}
+
 Future<void> _runGenerateRepGuardPlots(
   BuildContext context,
   WidgetRef ref,
@@ -99,15 +128,16 @@ Future<void> _runGenerateRepGuardPlots(
 Widget _buildAddRepGuardsRow(
   BuildContext context,
   WidgetRef ref,
-  int trialId,
-) {
+  int trialId, {
+  EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(
+    AppDesignTokens.spacing16,
+    0,
+    AppDesignTokens.spacing16,
+    4,
+  ),
+}) {
   return Padding(
-    padding: const EdgeInsets.fromLTRB(
-      AppDesignTokens.spacing16,
-      0,
-      AppDesignTokens.spacing16,
-      4,
-    ),
+    padding: padding,
     child: Align(
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
@@ -243,26 +273,82 @@ String _ratingCellLabel(RatingRecord? rating) {
   }
 }
 
-Widget _ratingOverlayLegendChip(Color color, String label) {
+Widget _ratingOverlayLegendChip(BuildContext context, Color color, String label) {
+  final scheme = Theme.of(context).colorScheme;
+  final borderColor = color == Colors.white
+      ? scheme.outlineVariant.withValues(alpha: 0.45)
+      : const Color(0xFFE0DDD6);
   return Row(
-    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.center,
     children: [
       Container(
-        width: 12,
-        height: 12,
+        width: _kPlotLayoutLegendSwatch,
+        height: _kPlotLayoutLegendSwatch,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(3),
-          border: Border.all(color: const Color(0xFFE0DDD6)),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: borderColor),
         ),
       ),
-      const SizedBox(width: 6),
-      Text(
-        label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
       ),
     ],
   );
+}
+
+/// Single-line treatment line for Treats legend (matches Apps chip density).
+Widget _compactTreatmentLegendLine(
+  BuildContext context,
+  Color color,
+  String code,
+  String name, [
+  String? description,
+]) {
+  final line = '$code - $name';
+  final row = Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Container(
+        width: _kPlotLayoutLegendSwatch,
+        height: _kPlotLayoutLegendSwatch,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          line,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+      ),
+    ],
+  );
+  if (description != null && description.trim().isNotEmpty) {
+    return Tooltip(
+      message: description.trim(),
+      child: row,
+    );
+  }
+  return row;
 }
 
 Widget _buildRatingsOverlay({
@@ -392,7 +478,6 @@ Widget _buildRatingsOverlay({
 
             const tileSize = 56.0;
             const tileSpacing = 6.0;
-            const repLabelWidth = 52.0;
 
             return InteractiveViewer(
               constrained: false,
@@ -415,14 +500,12 @@ Widget _buildRatingsOverlay({
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
-                              width: repLabelWidth,
+                              width: _kRepLabelWidth,
                               child: Text(
                                 'Rep ${rep ?? '?'}',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade500,
-                                ),
+                                style: _plotDetailsRepLabelStyle(context),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             ...repPlots.map((plot) {
@@ -460,11 +543,12 @@ Widget _buildRatingsOverlay({
                                           Text(
                                             getDisplayPlotLabel(plot, plots),
                                             style: TextStyle(
-                                              fontSize: 9,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
                                               color: rating == null
                                                   ? Colors.grey.shade400
                                                   : textColor.withValues(
-                                                      alpha: 0.7,
+                                                      alpha: 0.78,
                                                     ),
                                             ),
                                           ),
@@ -519,20 +603,62 @@ Widget _buildRatingsOverlay({
                       );
                     }),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 6,
-                      children: [
-                        _ratingOverlayLegendChip(
-                            const Color(0xFF2D5A40), 'Recorded'),
-                        _ratingOverlayLegendChip(
-                            Colors.grey.shade400, 'Not observed'),
-                        _ratingOverlayLegendChip(
-                            const Color(0xFFF59E0B), 'Missing'),
-                        _ratingOverlayLegendChip(
-                            const Color(0xFFEA580C), 'Tech issue'),
-                        _ratingOverlayLegendChip(Colors.white, 'No record'),
-                      ],
+                    DecoratedBox(
+                      decoration: _plotLayoutLegendPanelDecoration(context),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 10,
+                        ),
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.start,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 200),
+                              child: _ratingOverlayLegendChip(
+                                context,
+                                const Color(0xFF2D5A40),
+                                'Recorded',
+                              ),
+                            ),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 200),
+                              child: _ratingOverlayLegendChip(
+                                context,
+                                Colors.grey.shade400,
+                                'Not observed',
+                              ),
+                            ),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 200),
+                              child: _ratingOverlayLegendChip(
+                                context,
+                                const Color(0xFFF59E0B),
+                                'Missing',
+                              ),
+                            ),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 200),
+                              child: _ratingOverlayLegendChip(
+                                context,
+                                const Color(0xFFEA580C),
+                                'Tech issue',
+                              ),
+                            ),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 200),
+                              child: _ratingOverlayLegendChip(
+                                context,
+                                Colors.white,
+                                'No record',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1692,21 +1818,64 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             false;
     final assignmentsLocked =
         isAssignmentsLocked(widget.trial.status, hasSessionData);
-    const double maxTopSectionHeight = 320;
-    final topSection = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildPlotsHeaderForDetails(context, ref, plots, assignmentsLocked),
-        _buildListLayoutToggleForDetails(context, ref, plots),
-        _buildShowGuardsToggleForDetails(context),
-        _buildAddRepGuardsRow(context, ref, widget.trial.id),
-        if (_showLayoutView) ...[
-          _buildLayerSwitcherForDetails(context),
-          if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
-          if (_layoutLayer == _LayoutLayer.applications)
-            _buildAppEventSelectorForDetails(context, ref),
-        ],
-      ],
+    const double maxTopSectionHeight = 380;
+    final colorScheme = Theme.of(context).colorScheme;
+    final topSection = Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.38),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildPlotsHeaderForDetails(
+                  context, ref, plots, assignmentsLocked),
+              const SizedBox(height: 12),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+              ),
+              const SizedBox(height: 10),
+              _buildListLayoutToggleForDetails(context, ref, plots),
+              _buildAddRepGuardsRow(
+                context,
+                ref,
+                widget.trial.id,
+                padding: const EdgeInsets.only(top: 8, bottom: 2),
+              ),
+              if (_showLayoutView) ...[
+                const SizedBox(height: 6),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                ),
+                const SizedBox(height: 8),
+                _buildLayerSwitcherForDetails(context),
+                if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
+                if (_layoutLayer == _LayoutLayer.applications)
+                  _buildAppEventSelectorForDetails(context, ref),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
     return Column(
       children: [
@@ -1951,7 +2120,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
       },
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1976,11 +2145,16 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
 
   Widget _buildLayerSwitcherForDetails(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: SegmentedButton<_LayoutLayer>(
+        showSelectedIcon: false,
         style: const ButtonStyle(
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
+          padding: WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          ),
+          minimumSize: WidgetStatePropertyAll(Size(0, 34)),
         ),
         segments: const [
           ButtonSegment(
@@ -2015,7 +2189,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           return const SizedBox.shrink();
         }
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.only(top: 4, bottom: 4),
           child: Row(
             children: [
               Expanded(
@@ -2062,80 +2236,85 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
 
   Widget _buildListLayoutToggleForDetails(
       BuildContext context, WidgetRef ref, List<Plot> plots) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppDesignTokens.spacing16,
-          vertical: AppDesignTokens.spacing8),
-      child: Row(
-        children: [
-          Expanded(
-            child: SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(
-                    value: false, label: Text('List'), icon: Icon(Icons.list)),
-                ButtonSegment(
-                    value: true,
-                    label: Text('Layout'),
-                    icon: Icon(Icons.grid_on)),
-              ],
-              selected: {_showLayoutView},
-              onSelectionChanged: (Set<bool> selected) {
-                setState(() => _showLayoutView = selected.first);
-              },
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.fullscreen),
-            tooltip: 'Open in full screen',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => _PlotsFullScreenPage(
-                    trial: widget.trial,
-                    isLayoutView: _showLayoutView,
-                    initialLayoutLayer: _layoutLayer,
-                    selectedAppEvent: _selectedAppEvent,
-                    appPlotRecords: _appPlotRecords,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShowGuardsToggleForDetails(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppDesignTokens.spacing16, 0, AppDesignTokens.spacing16, 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Show guards',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: scheme.onSurface,
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: SegmentedButton<bool>(
+            showSelectedIcon: false,
+            style: ButtonStyle(
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+              padding: const WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              ),
+              minimumSize: const WidgetStatePropertyAll(Size(0, 34)),
+              side: WidgetStatePropertyAll(
+                BorderSide(color: cs.outlineVariant.withValues(alpha: 0.45)),
               ),
             ),
-          ),
-          Switch.adaptive(
-            value: _showGuardPlots,
-            onChanged: (v) {
-              setState(() {
-                _showGuardPlots = v;
-                _gridCenterScheduled = false;
-              });
+            segments: [
+              ButtonSegment<bool>(
+                value: false,
+                icon: Icon(Icons.view_list_rounded,
+                    size: 16, color: cs.onSurfaceVariant),
+                label: Text(
+                  'List',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ),
+              ButtonSegment<bool>(
+                value: true,
+                icon: Icon(Icons.grid_view_rounded,
+                    size: 16, color: cs.onSurfaceVariant),
+                label: Text(
+                  'Layout',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ),
+            ],
+            selected: {_showLayoutView},
+            onSelectionChanged: (Set<bool> selected) {
+              setState(() => _showLayoutView = selected.first);
             },
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 4),
+        IconButton(
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          padding: EdgeInsets.zero,
+          style: IconButton.styleFrom(
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            foregroundColor: cs.onSurfaceVariant,
+          ),
+          icon: const Icon(Icons.open_in_full_rounded, size: 20),
+          tooltip: 'Open in full screen',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => _PlotsFullScreenPage(
+                  trial: widget.trial,
+                  isLayoutView: _showLayoutView,
+                  initialLayoutLayer: _layoutLayer,
+                  selectedAppEvent: _selectedAppEvent,
+                  appPlotRecords: _appPlotRecords,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -2160,143 +2339,166 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             ? 'All $assignedCount assigned'
             : '$assignedCount assigned · $unassignedCount unassigned';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(
-          horizontal: AppDesignTokens.spacing16,
-          vertical: AppDesignTokens.spacing8),
-      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-      decoration: BoxDecoration(
-        color: AppDesignTokens.cardSurface,
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-        border: Border.all(color: AppDesignTokens.borderCrisp),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Row 1: primary info — plots count + lock chip
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  '${plots.length} plots',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppDesignTokens.primaryText,
-                    letterSpacing: -0.2,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
-                  border: Border.all(
-                    color: assignmentsLocked
-                        ? AppDesignTokens.secondaryText
-                        : AppDesignTokens.primary,
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      assignmentsLocked
-                          ? Icons.lock_outlined
-                          : Icons.lock_open_outlined,
-                      size: 14,
-                      color: assignmentsLocked
-                          ? AppDesignTokens.secondaryText
-                          : AppDesignTokens.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      getAssignmentsLockLabel(
-                          widget.trial.status, hasSessionData),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: assignmentsLocked
-                            ? AppDesignTokens.secondaryText
-                            : AppDesignTokens.primary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // Row 2: explanation
-          Text(
-            assignmentsLocked && message.isNotEmpty ? message : summaryLine,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppDesignTokens.secondaryText,
-              height: 1.3,
+    final cs = Theme.of(context).colorScheme;
+    final lockChip = Material(
+      color: assignmentsLocked
+          ? cs.surfaceContainerHighest
+          : cs.primaryContainer.withValues(alpha: 0.42),
+      borderRadius: BorderRadius.circular(999),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              assignmentsLocked
+                  ? Icons.lock_outlined
+                  : Icons.lock_open_outlined,
+              size: 15,
+              color: assignmentsLocked
+                  ? AppDesignTokens.secondaryText
+                  : AppDesignTokens.primary,
             ),
+            const SizedBox(width: 5),
+            Text(
+              getAssignmentsLockLabel(widget.trial.status, hasSessionData),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.1,
+                color: assignmentsLocked
+                    ? AppDesignTokens.secondaryText
+                    : AppDesignTokens.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final guardsControl = Material(
+      color: cs.surfaceContainerLow.withValues(alpha: 0.75),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 8, right: 4, top: 4, bottom: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.shield_outlined,
+              size: 18,
+              color: cs.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Show guards',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: cs.onSurface,
+              ),
+            ),
+            Transform.scale(
+              scale: 0.9,
+              alignment: Alignment.centerRight,
+              child: Switch.adaptive(
+                value: _showGuardPlots,
+                onChanged: (v) {
+                  setState(() {
+                    _showGuardPlots = v;
+                    _gridCenterScheduled = false;
+                  });
+                },
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${plots.length} plots',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppDesignTokens.primaryText,
+            letterSpacing: -0.25,
+            height: 1.15,
           ),
-          const SizedBox(height: 10),
-          // Row 3: Bulk Assign button
-          Tooltip(
-            message: assignmentsLocked
-                ? message
-                : 'Assign treatments to multiple plots',
-            child: Opacity(
-              opacity: assignmentsLocked ? 0.6 : 1,
-              child: OutlinedButton.icon(
+        ),
+        const SizedBox(height: 6),
+        Text(
+          assignmentsLocked && message.isNotEmpty ? message : summaryLine,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppDesignTokens.secondaryText,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Tooltip(
+          message: assignmentsLocked
+              ? message
+              : 'Assign treatments to multiple plots',
+          child: Opacity(
+            opacity: assignmentsLocked ? 0.55 : 1,
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
                 onPressed: assignmentsLocked
                     ? null
-                    : () => _showBulkAssignSheet(
-                        context, ref, widget.trial, plots),
+                    : () =>
+                        _showBulkAssignSheet(context, ref, widget.trial, plots),
                 icon: Icon(
-                  Icons.grid_view,
+                  Icons.grid_view_rounded,
                   size: 18,
                   color: assignmentsLocked
                       ? AppDesignTokens.iconSubtle
                       : AppDesignTokens.primary,
                 ),
                 label: const Text('Bulk Assign'),
-                style: OutlinedButton.styleFrom(
+                style: FilledButton.styleFrom(
                   foregroundColor: assignmentsLocked
                       ? AppDesignTokens.secondaryText
                       : AppDesignTokens.primary,
-                  side: BorderSide(
-                    color: assignmentsLocked
-                        ? AppDesignTokens.iconSubtle
-                        : AppDesignTokens.primary,
-                    width: 1,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                  backgroundColor: cs.surfaceContainerHighest.withValues(
+                      alpha: assignmentsLocked ? 0.55 : 0.88),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  minimumSize: const Size.fromHeight(44),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: assignmentsLocked
+                          ? AppDesignTokens.borderCrisp
+                          : cs.outlineVariant.withValues(alpha: 0.45),
+                    ),
                   ),
                   textStyle: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            lockChip,
+            const SizedBox(width: 10),
+            Expanded(child: guardsControl),
+          ],
+        ),
+      ],
     );
   }
 
@@ -2979,20 +3181,31 @@ class _PlotLayoutGrid extends StatelessWidget {
     this.onLongPressPlot,
   });
 
-  Widget _legendChip(Color color, String label) {
+  Widget _legendChip(BuildContext context, Color color, String label) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 14,
-          height: 14,
+          width: _kPlotLayoutLegendSwatch,
+          height: _kPlotLayoutLegendSwatch,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -3043,48 +3256,116 @@ class _PlotLayoutGrid extends StatelessWidget {
       children: [
         gridWidget,
         Padding(
-          padding: const EdgeInsets.all(12),
-          child: layer == _LayoutLayer.applications
-              ? Wrap(
-                  spacing: 12,
-                  runSpacing: 6,
-                  children: plotPksWithTrialApplication != null
-                      ? [
-                          _legendChip(AppDesignTokens.appliedColor, 'Applied'),
-                          _legendChip(
-                              AppDesignTokens.unassignedColor, 'Unassigned'),
-                        ]
-                      : [
-                          _legendChip(AppDesignTokens.appliedColor, 'Applied'),
-                          _legendChip(AppDesignTokens.skippedColor, 'Skipped'),
-                          _legendChip(AppDesignTokens.missedColor, 'Missed'),
-                          _legendChip(
-                              AppDesignTokens.noRecordColor, 'No record'),
-                        ],
-                )
-              : Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ...treatments.asMap().entries.map((entry) {
-                      final color = AppDesignTokens.treatmentPalette[
-                          entry.key % AppDesignTokens.treatmentPalette.length];
-                      return _buildTreatmentLegendCard(
-                        color,
-                        entry.value.code,
-                        entry.value.name,
-                        entry.value.description,
-                      );
-                    }),
-                    _legendChip(AppDesignTokens.unassignedColor, 'Unassigned'),
-                  ],
-                ),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: DecoratedBox(
+            decoration: _plotLayoutLegendPanelDecoration(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: layer == _LayoutLayer.applications
+                  ? Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.start,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: plotPksWithTrialApplication != null
+                          ? [
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 200),
+                                child: _legendChip(
+                                  context,
+                                  AppDesignTokens.appliedColor,
+                                  'Applied',
+                                ),
+                              ),
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 200),
+                                child: _legendChip(
+                                  context,
+                                  AppDesignTokens.unassignedColor,
+                                  'Unassigned',
+                                ),
+                              ),
+                            ]
+                          : [
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 200),
+                                child: _legendChip(
+                                  context,
+                                  AppDesignTokens.appliedColor,
+                                  'Applied',
+                                ),
+                              ),
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 200),
+                                child: _legendChip(
+                                  context,
+                                  AppDesignTokens.skippedColor,
+                                  'Skipped',
+                                ),
+                              ),
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 200),
+                                child: _legendChip(
+                                  context,
+                                  AppDesignTokens.missedColor,
+                                  'Missed',
+                                ),
+                              ),
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 200),
+                                child: _legendChip(
+                                  context,
+                                  AppDesignTokens.noRecordColor,
+                                  'No record',
+                                ),
+                              ),
+                            ],
+                    )
+                  : Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.start,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        ...treatments.asMap().entries.map((entry) {
+                          final color = AppDesignTokens.treatmentPalette[
+                              entry.key %
+                                  AppDesignTokens.treatmentPalette.length];
+                          return ConstrainedBox(
+                            constraints:
+                                const BoxConstraints(maxWidth: 200),
+                            child: _compactTreatmentLegendLine(
+                              context,
+                              color,
+                              entry.value.code,
+                              entry.value.name,
+                              entry.value.description,
+                            ),
+                          );
+                        }),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 200),
+                          child: _legendChip(
+                            context,
+                            AppDesignTokens.unassignedColor,
+                            'Unassigned',
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
         ),
       ],
     );
   }
 
-  static const double _repLabelWidth = 52.0;
   static const double _tileSpacing = 6.0;
   // ignore: unused_field - kept for consistency with fixed 56px cell size
   static const double _minTileSize = 56.0;
@@ -3148,22 +3429,13 @@ class _PlotLayoutGrid extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
-                          width: _repLabelWidth,
+                          width: _kRepLabelWidth,
                           height: rowHeight,
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
                               'Rep ${repRow.repNumber}',
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant
-                                    .withValues(alpha: 0.88),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.15,
-                                height: 1.25,
-                              ),
+                              style: _plotDetailsRepLabelStyle(context),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
                             ),
