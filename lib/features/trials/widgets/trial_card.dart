@@ -6,6 +6,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/session_state.dart';
 import '../../../core/trial_state.dart';
+import '../../diagnostics/trial_readiness.dart';
 
 /// Trial-level rating coverage; null when loading, error, or no plots.
 String? _ratedPlotsProgressLine(
@@ -17,6 +18,28 @@ String? _ratedPlotsProgressLine(
   if (plots == null || rated == null) return null;
   if (plots.isEmpty) return null;
   return 'Rated plots $rated/${plots.length}';
+}
+
+/// Readiness checklist line; null when loading/error, no issues, or fully ready (line hidden).
+String? _readinessSummaryLine(AsyncValue<TrialReadinessReport> readinessAsync) {
+  return readinessAsync.maybeWhen(
+    data: (report) {
+      if (report.blockerCount > 0) {
+        final n = report.blockerCount;
+        return n == 1
+            ? '1 blocker before ready'
+            : '$n blockers before ready';
+      }
+      if (report.warningCount > 0) {
+        final n = report.warningCount;
+        return n == 1
+            ? '1 warning to review'
+            : '$n warnings to review';
+      }
+      return null;
+    },
+    orElse: () => null,
+  );
 }
 
 String _trialStatusDisplay(String statusLower) {
@@ -88,6 +111,8 @@ class TrialCard extends ConsumerWidget {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trial.id));
     final ratedProgressLine = _ratedPlotsProgressLine(plotsAsync, ratedAsync);
+    final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
+    final readinessLine = _readinessSummaryLine(readinessAsync);
 
     return Container(
       decoration: BoxDecoration(
@@ -215,6 +240,22 @@ class TrialCard extends ConsumerWidget {
                       fontWeight: FontWeight.w400,
                       color: colorScheme.onSurfaceVariant.withValues(
                         alpha: 0.45,
+                      ),
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+                if (readinessLine != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    readinessLine,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.42,
                       ),
                       height: 1.35,
                     ),
