@@ -3135,27 +3135,38 @@ class _PlotLayoutGrid extends StatelessWidget {
                       ),
                     ]
                   : <Widget>[];
-              final repRows = block.repRows.map((repRow) {
+              final repRows =
+                  block.repRows.reversed.map((repRow) {
                 const cellSize = _minCellSize;
                 const rowHeight = _minCellSize + 2;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: _tileSpacing),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: SizedBox(
                     height: rowHeight,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
                           width: _repLabelWidth,
-                          child: Text(
-                            'Rep ${repRow.repNumber}',
-                            style: const TextStyle(
-                              color: AppDesignTokens.secondaryText,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                          height: rowHeight,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Rep ${repRow.repNumber}',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withValues(alpha: 0.88),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.15,
+                                height: 1.25,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: _tileSpacing),
@@ -3219,7 +3230,7 @@ class _PlotLayoutGrid extends StatelessWidget {
   }
 }
 
-class _PlotGridTile extends StatelessWidget {
+class _PlotGridTile extends StatefulWidget {
   final Plot plot;
   final Map<int, Treatment> treatmentMap;
   final List<Treatment> treatments;
@@ -3241,10 +3252,18 @@ class _PlotGridTile extends StatelessWidget {
   });
 
   @override
+  State<_PlotGridTile> createState() => _PlotGridTileState();
+}
+
+class _PlotGridTileState extends State<_PlotGridTile> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final effectiveTid = treatmentIdOverride ?? plot.treatmentId;
-    final treatment = effectiveTid != null ? treatmentMap[effectiveTid] : null;
-    final label = displayLabel ?? plot.plotId;
+    final plot = widget.plot;
+    final effectiveTid = widget.treatmentIdOverride ?? plot.treatmentId;
+    final treatment = effectiveTid != null ? widget.treatmentMap[effectiveTid] : null;
+    final label = widget.displayLabel ?? plot.plotId;
     final isGuardUnused = plot.isGuardRow && effectiveTid == null;
     final labelColor = isGuardUnused
         ? AppDesignTokens.secondaryText
@@ -3255,30 +3274,35 @@ class _PlotGridTile extends StatelessWidget {
     final borderColor = isGuardUnused
         ? AppDesignTokens.borderCrisp
         : Colors.white.withValues(alpha: 0.2);
+    final scheme = Theme.of(context).colorScheme;
+    final pressedBorderColor = scheme.primary.withValues(alpha: 0.55);
     return Container(
       decoration: BoxDecoration(
-        color: tileColor,
+        color: widget.tileColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: borderColor,
+          color: _pressed ? pressedBorderColor : borderColor,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: _pressed ? 0.2 : 0.12),
+            blurRadius: _pressed ? 8 : 4,
+            offset: Offset(0, _pressed ? 3 : 2),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onLongPress: onLongPress,
+          onHighlightChanged: (highlighted) {
+            setState(() => _pressed = highlighted);
+          },
+          onLongPress: widget.onLongPress,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => PlotDetailScreen(trial: trial, plot: plot),
+              builder: (_) => PlotDetailScreen(trial: widget.trial, plot: plot),
             ),
           ),
           splashColor: Colors.white.withValues(alpha: 0.2),
