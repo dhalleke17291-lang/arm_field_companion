@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/workspace/workspace_config.dart';
 import '../../core/protocol_edit_blocked_exception.dart';
 import '../../core/trial_state.dart';
 import '../../data/repositories/treatment_repository.dart';
@@ -303,6 +304,9 @@ class ProtocolImportUseCase {
           crop: t['crop'] as String?,
           location: t['location'] as String?,
           season: t['season'] as String?,
+          // Protocol import always creates an efficacy/protocol trial.
+          // workspaceType is required for correct hub classification.
+          workspaceType: WorkspaceType.efficacy.name,
         );
       } else if (existingTrialId == null) {
         return ProtocolImportExecuteResult.failure(

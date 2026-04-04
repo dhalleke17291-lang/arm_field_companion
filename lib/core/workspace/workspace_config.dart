@@ -344,10 +344,11 @@ String exportEntryTooltipMessage(
 }
 
 /// Parses a stored [workspaceType] string to a [WorkspaceConfig].
-/// Unknown or invalid values fall back to [WorkspaceConfig.efficacy]
-/// as a safe protocol preset.
+/// In-app creation paths always write 'standalone' or 'efficacy'.
+/// This fallback only applies to legacy data, bad imports, or manual DB edits —
+/// not normal app usage. Unknown or invalid values fall back to
+/// [WorkspaceConfig.efficacy] as a safe protocol preset.
 ///
-/// IMPORTANT: This fallback is a safe default for export and backend logic.
 /// UI callers must not assume that a fallback result means the trial is
 /// genuinely a protocol/efficacy trial — it only means the type was
 /// unrecognized. Use config.isStandalone and config.studyType for

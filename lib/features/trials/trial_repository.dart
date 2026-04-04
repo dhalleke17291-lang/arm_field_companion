@@ -30,6 +30,8 @@ class TrialRepository {
     String? crop,
     String? location,
     String? season,
+    // Default: efficacy. All creation paths should pass this explicitly.
+    // See workspace_config.dart for type list.
     String workspaceType = 'efficacy',
   }) async {
     // Duplicate name check — silent overwrite forbidden per spec

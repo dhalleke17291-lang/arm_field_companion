@@ -1,5 +1,7 @@
 // Centralized workspace type predicates for Custom vs Protocol filtered lists and hub stats.
-// Recognized values only; null, blank, or unknown strings match neither list (see [trialsStreamProvider] for all trials).
+// Stored workspaceType is non-nullable in the DB with an efficacy default.
+// Null or blank arguments here are defensive (nullable API); unrecognized strings
+// indicate legacy or bad data, not normal app flow. See [trialsStreamProvider] for all trials.
 
 import 'workspace_config.dart';
 
