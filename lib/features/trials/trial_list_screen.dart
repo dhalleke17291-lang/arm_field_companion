@@ -488,6 +488,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                             ),
                           ),
                           onAbout: () => _showAppInfoDialog(context),
+                          showProtocolImports: widget.workspaceFilter !=
+                              TrialListFilter.standaloneOnly,
                         ),
                       ],
                     ),
@@ -1204,19 +1206,23 @@ class _ContinueLastSessionCard extends StatelessWidget {
 }
 
 /// Compact stat pill for header: value + label (e.g. "12" / "Trials").
-/// Grouped header actions: export, import, about — single pill with separators.
+/// Grouped header actions: export, optional protocol/ARM imports, about.
 class _TrialListToolbarActions extends StatelessWidget {
   const _TrialListToolbarActions({
     required this.onExport,
     required this.onImport,
     required this.onArmImport,
     required this.onAbout,
+    this.showProtocolImports = true,
   });
 
   final VoidCallback onExport;
   final VoidCallback onImport;
   final VoidCallback onArmImport;
   final VoidCallback onAbout;
+
+  /// False on Custom Trials only — protocol CSV / ARM import belong on Protocol Trials.
+  final bool showProtocolImports;
 
   @override
   Widget build(BuildContext context) {
@@ -1241,18 +1247,20 @@ class _TrialListToolbarActions extends StatelessWidget {
             onPressed: onExport,
           ),
           sep(),
-          _TrialListToolbarIcon(
-            icon: Icons.file_download_outlined,
-            tooltip: 'Import Protocol',
-            onPressed: onImport,
-          ),
-          sep(),
-          _TrialListToolbarIcon(
-            icon: Icons.table_chart_outlined,
-            tooltip: 'Import ARM Trial',
-            onPressed: onArmImport,
-          ),
-          sep(),
+          if (showProtocolImports) ...[
+            _TrialListToolbarIcon(
+              icon: Icons.file_download_outlined,
+              tooltip: 'Import Protocol',
+              onPressed: onImport,
+            ),
+            sep(),
+            _TrialListToolbarIcon(
+              icon: Icons.table_chart_outlined,
+              tooltip: 'Import ARM Trial',
+              onPressed: onArmImport,
+            ),
+            sep(),
+          ],
           _TrialListToolbarIcon(
             icon: Icons.info_outline,
             tooltip: 'About',
