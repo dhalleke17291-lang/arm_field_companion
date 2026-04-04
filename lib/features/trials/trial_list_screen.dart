@@ -634,11 +634,24 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FilledButton.tonalIcon(
-        onPressed: () => _showCreateTrialDialog(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('New Trial'),
-      ),
+      floatingActionButton: widget.workspaceFilter == TrialListFilter.protocolOnly
+          ? FilledButton.tonalIcon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ProtocolImportScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.file_download_outlined),
+              label: const Text('Import Protocol'),
+            )
+          : FilledButton.tonalIcon(
+              onPressed: () => _showCreateTrialDialog(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('New Custom Trial'),
+            ),
     );
   }
 
@@ -717,7 +730,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
         ),
       TrialListFilter.protocolOnly => (
           'No trials yet',
-          'Create your first protocol trial to begin',
+          'Import a protocol CSV to add your first protocol trial.',
         ),
       TrialListFilter.all => (
           'No trials yet',
@@ -918,161 +931,29 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     );
   }
 
-  Widget _buildTrialTypeOption(
-    BuildContext context,
-    String title,
-    String description,
-    bool selected,
-    VoidCallback onTap,
-  ) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected
-                ? theme.colorScheme.primary
-                : const Color(0xFFE8E2D8),
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: selected
-                    ? theme.colorScheme.primary
-                    : const Color(0xFF1A2E20),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              description,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-                height: 1.2,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProtocolSubtypeChip(
-    BuildContext context,
-    WorkspaceType type,
-    bool selected,
-    VoidCallback onSelected,
-  ) {
-    final config = WorkspaceConfig.forType(type);
-    return ChoiceChip(
-      label: Text(config.displayName),
-      selected: selected,
-      onSelected: (_) => onSelected(),
-    );
-  }
-
+  /// Manual create only: **Custom** (standalone) trials. Protocol trials are created
+  /// via [ProtocolImportScreen] / ARM import — not from this dialog.
+  /// Called from the FAB when [workspaceFilter] is [TrialListFilter.standaloneOnly]
+  /// or [TrialListFilter.all] (not from [TrialListFilter.protocolOnly]).
   Future<void> _showCreateTrialDialog(
       BuildContext context, WidgetRef ref) async {
+    assert(
+      widget.workspaceFilter != TrialListFilter.protocolOnly,
+      'Protocol list uses Import Protocol FAB, not manual create',
+    );
     final nameController = TextEditingController();
     final cropController = TextEditingController();
     final locationController = TextEditingController();
     final seasonController = TextEditingController();
-    // Match the list context (Custom vs Protocol hub); user can still switch in-dialog.
-    bool isCustomTrial = switch (widget.workspaceFilter) {
-      TrialListFilter.standaloneOnly => true,
-      TrialListFilter.protocolOnly => false,
-      TrialListFilter.all => false,
-    };
-    WorkspaceType selectedProtocolSubtype = WorkspaceType.efficacy;
 
     await showDialog(
       context: context,
       builder: (context) => AppDialog(
-        title: 'New Trial',
+        title: 'New Custom Trial',
         scrollable: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            StatefulBuilder(
-              builder: (context, setLocalState) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Trial type',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildTrialTypeOption(
-                          context,
-                          'Custom Trials',
-                          'Flexible, user-defined trials without strict protocol structure (standalone workspace)',
-                          isCustomTrial,
-                          () => setLocalState(() => isCustomTrial = true),
-                        ),
-                        _buildTrialTypeOption(
-                          context,
-                          'Protocol Trials',
-                          'Structured trials based on standardized research protocols. Supports ARM-compatible export where applicable.',
-                          !isCustomTrial,
-                          () =>
-                              setLocalState(() => isCustomTrial = false),
-                        ),
-                      ],
-                    ),
-                    if (!isCustomTrial) ...[
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Text(
-                          'Study template',
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            for (final type
-                                in [WorkspaceType.variety, WorkspaceType.efficacy, WorkspaceType.glp])
-                              _buildProtocolSubtypeChip(
-                                context,
-                                type,
-                                selectedProtocolSubtype == type,
-                                () => setLocalState(
-                                    () => selectedProtocolSubtype = type),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                  ],
-                );
-              },
-            ),
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
@@ -1115,9 +996,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
           FilledButton(
             onPressed: () async {
               final useCase = ref.read(createTrialUseCaseProvider);
-              final workspaceType = isCustomTrial
-                  ? WorkspaceType.standalone
-                  : selectedProtocolSubtype;
               final result = await useCase.execute(CreateTrialInput(
                 name: nameController.text,
                 crop: cropController.text.isEmpty ? null : cropController.text,
@@ -1127,7 +1005,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                 season: seasonController.text.isEmpty
                     ? null
                     : seasonController.text,
-                workspaceType: workspaceType.name,
+                workspaceType: WorkspaceType.standalone.name,
               ));
 
               if (context.mounted) {

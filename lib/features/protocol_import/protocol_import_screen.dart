@@ -15,7 +15,10 @@ import 'protocol_import_models.dart';
 import 'imported_protocol_file_screen.dart';
 
 /// Full protocol import (Charter PART 16): one CSV with sections TRIAL, TREATMENT, PLOT.
-/// [trial] null = create new trial from file; non-null = add treatments/plots to this trial.
+///
+/// **Trials hub:** New protocol-typed trials are created here (or ARM import), not via
+/// the Custom Trials manual-create dialog. [trial] null = create new trial from file;
+/// non-null = add treatments/plots to this trial.
 class ProtocolImportScreen extends ConsumerStatefulWidget {
   final Trial? trial;
 
