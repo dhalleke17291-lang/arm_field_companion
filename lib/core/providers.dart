@@ -489,15 +489,16 @@ final trialsStreamProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials();
 });
 
-/// Custom trials only (standalone workspace type). For Custom Trials screen.
+/// Custom trials only: stored [Trial.workspaceType] parses to `standalone`.
+/// Null, blank, or unknown types are omitted (use [trialsStreamProvider] for all trials).
 final customTrialsProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials().map((all) {
     return all.where((t) => isStandalone(t.workspaceType)).toList();
   });
 });
 
-/// Protocol trials only (variety, efficacy, glp). For Protocol Trials screen.
-/// Unknown workspace types are excluded.
+/// Protocol trials only: stored type parses to variety, efficacy, or glp.
+/// Null, blank, or unknown types are omitted (use [trialsStreamProvider] for all trials).
 final protocolTrialsProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials().map((all) {
     return all.where((t) => isProtocol(t.workspaceType)).toList();

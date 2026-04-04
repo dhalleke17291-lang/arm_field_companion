@@ -281,7 +281,7 @@ class WorkspaceConfig {
 }
 
 /// Parses non-empty [workspaceType] to a known enum, or null if blank/unknown.
-/// Used for standalone vs protocol filtering; unknown values are not treated as protocol.
+/// List filtering ([workspace_filter]) uses this: null means the trial is neither custom nor protocol-only.
 WorkspaceType? workspaceTypeFromStringOrNull(String? workspaceType) {
   if (workspaceType == null || workspaceType.trim().isEmpty) return null;
   try {

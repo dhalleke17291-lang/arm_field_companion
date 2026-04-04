@@ -15,6 +15,7 @@ import '../../core/session_walk_order_store.dart';
 import '../../core/trial_state.dart';
 import '../../core/database/app_database.dart';
 import '../../core/workspace/workspace_config.dart';
+import '../../core/workspace/workspace_filter.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../about/about_screen.dart';
 import '../arm_import/arm_import_screen.dart';
@@ -1178,22 +1179,15 @@ String _formatSessionDateForCard(String sessionDateLocal) {
   return '${d.day} $month ${d.year}';
 }
 
-/// Client-side: does [trial] match [workspaceFilter]? Matches workspace_filter
-/// policy: unknown or blank workspace type resolves to efficacy (protocol).
+/// Client-side: does [trial] match [workspaceFilter]? Same rules as [isStandalone] / [isProtocol].
 bool _trialMatchesWorkspaceFilter(Trial trial, TrialListFilter workspaceFilter) {
   switch (workspaceFilter) {
     case TrialListFilter.all:
       return true;
     case TrialListFilter.standaloneOnly:
-      final wt = workspaceTypeFromStringOrNull(trial.workspaceType);
-      final resolved = wt ?? WorkspaceType.efficacy;
-      final config = WorkspaceConfig.forType(resolved);
-      return config.mode == TrialMode.standalone;
+      return isStandalone(trial.workspaceType);
     case TrialListFilter.protocolOnly:
-      final wt = workspaceTypeFromStringOrNull(trial.workspaceType);
-      final resolved = wt ?? WorkspaceType.efficacy;
-      final config = WorkspaceConfig.forType(resolved);
-      return config.mode == TrialMode.protocol;
+      return isProtocol(trial.workspaceType);
   }
 }
 

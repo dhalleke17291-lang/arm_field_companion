@@ -1,31 +1,21 @@
-// Centralized workspace type predicates for trial filtering.
-// Keeps Custom vs Protocol separation explicit and future-safe.
+// Centralized workspace type predicates for Custom vs Protocol filtered lists and hub stats.
+// Recognized values only; null, blank, or unknown strings match neither list (see [trialsStreamProvider] for all trials).
 
 import 'workspace_config.dart';
 
-// [isStandalone] / [isProtocol]: [workspaceTypeFromStringOrNull] may yield null for
-// unknown or blank values. These predicates coerce null to [WorkspaceType.efficacy]
-// before resolving [WorkspaceConfig], so trials are not excluded from *both*
-// custom-only and protocol-only provider streams — unknown rows count as protocol.
-
-/// Returns true when [workspaceType] is 'standalone' (custom trial).
+/// True when [workspaceType] parses to [WorkspaceType.standalone] (Custom list / hub).
 ///
-/// Unknown, blank, or invalid values resolve to [WorkspaceType.efficacy] for
-/// filtering (protocol), matching export and trial detail policy.
+/// Null, blank, or unrecognized values → false (trial appears in "All Trials" only).
 bool isStandalone(String? workspaceType) {
-  final wt = workspaceTypeFromStringOrNull(workspaceType);
-  final resolved = wt ?? WorkspaceType.efficacy;
-  final config = WorkspaceConfig.forType(resolved);
-  return config.isStandalone;
+  return workspaceTypeFromStringOrNull(workspaceType) == WorkspaceType.standalone;
 }
 
-/// Returns true when [workspaceType] is a protocol trial (variety, efficacy, glp).
+/// True when [workspaceType] parses to variety, efficacy, or glp (Protocol list / hub).
 ///
-/// Unknown, blank, or invalid values resolve to [WorkspaceType.efficacy], so
-/// they are treated as protocol.
+/// Null, blank, or unrecognized values → false (trial appears in "All Trials" only).
 bool isProtocol(String? workspaceType) {
   final wt = workspaceTypeFromStringOrNull(workspaceType);
-  final resolved = wt ?? WorkspaceType.efficacy;
-  final config = WorkspaceConfig.forType(resolved);
-  return config.isProtocol;
+  return wt == WorkspaceType.variety ||
+      wt == WorkspaceType.efficacy ||
+      wt == WorkspaceType.glp;
 }

@@ -41,7 +41,8 @@ bool _isActive(String status) =>
 bool _isComplete(String status) =>
     status == kTrialStatusClosed || status == kTrialStatusArchived;
 
-/// Live, reactive stats for Trials Hub. Updates on any trial/plot change.
+/// Live, reactive stats for Trials Hub (same classification as [customTrialsProvider] / [protocolTrialsProvider]).
+/// Trials with null, blank, or unknown [Trial.workspaceType] are counted in neither custom nor protocol totals.
 final trialsHubStatsProvider = StreamProvider.autoDispose<TrialsHubStats>((ref) async* {
   final trialRepo = ref.watch(trialRepositoryProvider);
 
