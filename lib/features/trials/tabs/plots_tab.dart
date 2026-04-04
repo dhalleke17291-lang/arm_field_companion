@@ -2118,7 +2118,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         if (!mounted) return;
         setState(() => _plotLayoutHintDismissed = true);
       },
-      behavior: HitTestBehavior.opaque,
+      behavior: HitTestBehavior.deferToChild,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
