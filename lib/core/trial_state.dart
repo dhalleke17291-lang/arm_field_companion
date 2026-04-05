@@ -111,7 +111,7 @@ String getProtocolLockLabel(String? status) {
 String getProtocolLockMessage(String? status) {
   if (status == null || !isProtocolLocked(status)) return '';
   final label = labelForTrialStatus(status);
-  return 'Trial structure cannot be edited while this trial is $label.';
+  return 'This custom trial is currently locked because the trial is $label. Structure cannot be changed.';
 }
 
 /// Legacy API: [workspaceType] is ignored; use [getProtocolLockMessage] only.
@@ -145,7 +145,7 @@ String getAssignmentsLockLabel(String? status, bool hasSessionData) {
 String getAssignmentsLockMessage(String? status, bool hasSessionData) {
   if (isProtocolLocked(status)) return getProtocolLockMessage(status);
   if (hasSessionData) {
-    return 'Assignments are fixed because this trial has session data.';
+    return 'This custom trial has session data. Assignments cannot be changed.';
   }
   return '';
 }
@@ -166,9 +166,19 @@ bool canEditProtocol(Trial trial) {
   return !isProtocolLocked(trial.status);
 }
 
-/// User-visible trial link mode: not a lock state — use with [canEditProtocol] / chips for editability.
-String structuralTrialModeLabel(Trial trial) {
-  return trial.isArmLinked ? 'ARM-linked trial' : 'Editable trial';
+/// Trial type from ARM linkage only (not [Trial.workspaceType]).
+String trialTypeLabel(Trial trial) {
+  return trial.isArmLinked ? 'ARM-linked trial' : 'Custom trial';
+}
+
+/// Structure layer: whether treatments/plots/assessments may be edited (ARM or lifecycle).
+String trialStructureStateLabel(Trial trial) {
+  return canEditProtocol(trial) ? 'Structure editable' : 'Structure locked';
+}
+
+/// Compact type + structure state (e.g. chips, subtitles).
+String trialTypeAndStructureCompactLine(Trial trial) {
+  return '${trialTypeLabel(trial)} • ${trialStructureStateLabel(trial)}';
 }
 
 /// True when structure or assignment UI should block treatment/plot/assignment edits.
@@ -177,17 +187,20 @@ bool plotAssignmentsEditLocked(Trial trial, bool hasSessionData) {
       isAssignmentsLocked(trial.status, hasSessionData);
 }
 
-/// Short label for the plots-tab assignment/structure chip when editing is blocked.
+/// Short label for the plots-tab assignment/structure chip.
 String plotAssignmentsLockChipLabel(Trial trial, bool hasSessionData) {
   if (!canEditProtocol(trial)) {
-    return trial.isArmLinked ? 'ARM-linked trial' : 'Structure locked';
+    return trialTypeAndStructureCompactLine(trial);
   }
-  return getAssignmentsLockLabel(trial.status, hasSessionData);
+  if (isAssignmentsLocked(trial.status, hasSessionData)) {
+    return '${trialTypeLabel(trial)} • ${getAssignmentsLockLabel(trial.status, hasSessionData)}';
+  }
+  return trialTypeAndStructureCompactLine(trial);
 }
 
 /// User-facing message when structure edits are blocked for ARM-linked trials.
 const String kArmProtocolStructureLockMessage =
-    'This trial is ARM-linked. Structure cannot be edited.';
+    'This trial is ARM-linked. Structure cannot be changed.';
 
 String getArmProtocolLockMessage() => kArmProtocolStructureLockMessage;
 

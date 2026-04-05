@@ -183,7 +183,7 @@ class TreatmentsTab extends ConsumerWidget {
             title: 'No Treatments Yet',
             subtitle: locked
                 ? protocolEditBlockedMessage(trial)
-                : '${structuralTrialModeLabel(trial)}. Add the treatment groups for this trial.',
+                : '${trialTypeAndStructureCompactLine(trial)}. Add the treatment groups for this trial.',
             action: null,
           ),
         ),
@@ -204,16 +204,26 @@ class TreatmentsTab extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!locked)
+        if (!locked) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
             child: Text(
-              structuralTrialModeLabel(trial),
+              trialTypeLabel(trial),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              trialStructureStateLabel(trial),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+        ],
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),

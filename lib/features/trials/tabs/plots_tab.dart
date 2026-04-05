@@ -2354,9 +2354,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             : assignmentMessage)
         : 'Assign treatments to multiple plots';
 
-    final chipLabel = plotAssignmentsLocked
-        ? plotAssignmentsLockChipLabel(widget.trial, hasSessionData)
-        : structuralTrialModeLabel(widget.trial);
+    final chipLabel =
+        plotAssignmentsLockChipLabel(widget.trial, hasSessionData);
 
     final cs = Theme.of(context).colorScheme;
     final lockChip = Material(
@@ -2382,13 +2381,16 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             Text(
               chipLabel,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.1,
                 color: plotAssignmentsLocked
                     ? AppDesignTokens.secondaryText
                     : AppDesignTokens.primary,
               ),
+              maxLines: 2,
+              softWrap: true,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -2510,7 +2512,10 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            lockChip,
+            Flexible(
+              fit: FlexFit.loose,
+              child: lockChip,
+            ),
             const SizedBox(width: 10),
             Expanded(child: guardsControl),
           ],
@@ -3117,7 +3122,7 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
           icon: Icons.grid_on,
           title: 'No Plots Yet',
           subtitle: canEditStructure
-              ? '${structuralTrialModeLabel(trial)}. Import plots via CSV or add test plots below.'
+              ? '${trialTypeAndStructureCompactLine(trial)}. Import plots via CSV or add test plots below.'
               : protocolEditBlockedMessage(trial),
         ),
         if (canEditStructure) ...[

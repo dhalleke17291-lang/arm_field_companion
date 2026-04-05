@@ -80,7 +80,7 @@ class AssessmentsTab extends ConsumerWidget {
               title: 'No Assessments Yet',
               subtitle: locked
                   ? protocolEditBlockedMessage(trial)
-                  : '${structuralTrialModeLabel(trial)}. Add from library or create a custom assessment.',
+                  : '${trialTypeAndStructureCompactLine(trial)}. Add from library or create a custom assessment.',
               action: null,
             ),
           ),
@@ -128,17 +128,28 @@ class AssessmentsTab extends ConsumerWidget {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (!locked)
+                    if (!locked) ...[
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          structuralTrialModeLabel(trial),
+                          trialTypeLabel(trial),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: scheme.onSurfaceVariant,
                             fontSize: 11,
                           ),
                         ),
                       ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          trialStructureStateLabel(trial),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -422,7 +422,8 @@ class OperationalSourceBadge extends StatelessWidget {
   }
 }
 
-/// Compact chip: "Locked" when [isLocked], else [structuralTrialModeLabel] ("ARM-linked trial" / "Editable trial").
+/// Compact chip: trial type and structure state ([trialTypeAndStructureCompactLine]),
+/// e.g. "ARM-linked trial • Structure locked" / "Custom trial • Structure editable".
 /// [trial] enables tooltip with [protocolEditBlockedMessage] when [isLocked].
 class ProtocolLockChip extends StatelessWidget {
   final bool isLocked;
@@ -437,11 +438,9 @@ class ProtocolLockChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final label = isLocked
-        ? 'Locked'
-        : (trial != null
-            ? structuralTrialModeLabel(trial!)
-            : 'Editable trial');
+    final label = trial != null
+        ? trialTypeAndStructureCompactLine(trial!)
+        : 'Custom trial • Structure editable';
     final tooltip = isLocked && trial != null
         ? protocolEditBlockedMessage(trial!)
         : null;
@@ -462,12 +461,17 @@ class ProtocolLockChip extends StatelessWidget {
               color: isLocked ? scheme.onSurfaceVariant : scheme.primary,
             ),
             const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: isLocked ? scheme.onSurfaceVariant : scheme.primary,
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: isLocked ? scheme.onSurfaceVariant : scheme.primary,
+                ),
+                maxLines: 2,
+                softWrap: true,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
