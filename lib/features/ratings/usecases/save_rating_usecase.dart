@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:io' show Platform;
-import '../rating_repository.dart';
+
 import '../../../core/app_info.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/session_lock.dart';
+import '../../../domain/ratings/rating_value_validator.dart';
+import '../../../domain/ratings/save_rating_input.dart';
+import '../rating_repository.dart';
+
+export '../../../domain/ratings/save_rating_input.dart';
 
 /// SaveRatingUseCase — centerpiece of Ag-Quest Field Companion
 ///
 /// Enforces all spec invariants:
-/// 1. numericValue must be NULL if resultStatus != RECORDED
+/// 1. [RatingValueValidator] — result status vs value columns + assessment rules
 /// 2. Version chain — immutable records, new record per change
 /// 3. Debounce protection — prevents duplicate writes from double-taps
 /// 4. Audit trail written on every save
@@ -35,10 +40,9 @@ class SaveRatingUseCase {
         return SaveRatingResult.failure(kClosedSessionBlockedMessage);
       }
 
-      // Validate input before touching database
-      final validationError = _validate(input);
-      if (validationError != null) {
-        return SaveRatingResult.failure(validationError);
+      final validation = RatingValueValidator.validate(input);
+      if (!validation.isValid) {
+        return SaveRatingResult.failure(validation.combinedMessage);
       }
 
       const createdAppVersion = kAppVersion;
@@ -75,85 +79,6 @@ class SaveRatingUseCase {
       _isProcessing = false;
     }
   }
-
-  String? _validate(SaveRatingInput input) {
-    // Spec invariant: numeric_value must be NULL if status != RECORDED
-    if (input.resultStatus != 'RECORDED' && input.numericValue != null) {
-      return 'numericValue must be null when status is ${input.resultStatus}';
-    }
-
-    // Must belong to a valid session
-    if (input.sessionId <= 0) {
-      return 'Invalid session ID';
-    }
-
-    // Must belong to a valid trial
-    if (input.trialId <= 0) {
-      return 'Invalid trial ID';
-    }
-
-    // Must belong to a valid plot
-    if (input.plotPk <= 0) {
-      return 'Invalid plot PK';
-    }
-
-    // Numeric value range check if provided
-    if (input.numericValue != null && input.minValue != null) {
-      if (input.numericValue! < input.minValue!) {
-        return 'Value ${input.numericValue} is below minimum ${input.minValue}';
-      }
-    }
-
-    if (input.numericValue != null && input.maxValue != null) {
-      if (input.numericValue! > input.maxValue!) {
-        return 'Value ${input.numericValue} exceeds maximum ${input.maxValue}';
-      }
-    }
-
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────
-// INPUT
-// ─────────────────────────────────────────────
-
-class SaveRatingInput {
-  final int trialId;
-  final int plotPk;
-  final int assessmentId;
-  final int sessionId;
-  final String resultStatus;
-  final double? numericValue;
-  final String? textValue;
-  final int? subUnitId;
-  final String? raterName;
-  final int? performedByUserId;
-  final bool isSessionClosed;
-  final double? minValue;
-  final double? maxValue;
-  final String? ratingTime;
-  final String? ratingMethod;
-  final String? confidence;
-
-  const SaveRatingInput({
-    required this.trialId,
-    required this.plotPk,
-    required this.assessmentId,
-    required this.sessionId,
-    required this.resultStatus,
-    this.numericValue,
-    this.textValue,
-    this.subUnitId,
-    this.raterName,
-    this.performedByUserId,
-    this.isSessionClosed = false,
-    this.minValue,
-    this.maxValue,
-    this.ratingTime,
-    this.ratingMethod,
-    this.confidence,
-  });
 }
 
 // ─────────────────────────────────────────────

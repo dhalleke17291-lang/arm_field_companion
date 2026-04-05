@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
+
 import '../../core/database/app_database.dart';
+import '../../domain/ratings/result_status.dart';
 
 class RatingRepository {
   final AppDatabase _db;
@@ -66,11 +68,9 @@ class RatingRepository {
   }) async {
     if (isSessionClosed) throw SessionClosedException();
 
-    // Enforce spec rule: numeric_value must be NULL if status != RECORDED
-    if (resultStatus != 'RECORDED' && numericValue != null) {
-      throw RatingIntegrityException(
-          'numericValue must be null when resultStatus is $resultStatus');
-    }
+    // Defensive gate: [SaveRatingUseCase] / [RatingValueValidator] own full rules.
+    // Repository only enforces status vs numeric column without assessment metadata.
+    _assertCoreNumericColumnIntegrity(resultStatus, numericValue);
 
     return _db.transaction(() async {
       // Find existing current rating
@@ -229,6 +229,9 @@ class RatingRepository {
   /// Update an existing rating (edit flow). Applies amendment logic: if the
   /// stored value is changed and there was an existing value, sets amended=true,
   /// amended_at=now(), and preserves original_value only if currently null.
+  //
+  // TODO(integrity): In-place mutation vs version-chain policy must be aligned
+  // with [saveRating] / [RatingValueValidator] before extending integrity rules here.
   Future<RatingRecord> updateRating({
     required int ratingId,
     double? numericValue,
@@ -446,6 +449,19 @@ class RatingRepository {
       }
       return correction;
     });
+  }
+}
+
+/// Non-recorded statuses must not persist a numeric value; unknown statuses reject.
+void _assertCoreNumericColumnIntegrity(String resultStatus, double? numericValue) {
+  final status = resultStatusFromDb(resultStatus);
+  if (status == null) {
+    throw RatingIntegrityException('Unknown result status: $resultStatus');
+  }
+  if (status.mustClearNumericValue && numericValue != null) {
+    throw RatingIntegrityException(
+      'numericValue must be null when status is ${status.dbString}',
+    );
   }
 }
 

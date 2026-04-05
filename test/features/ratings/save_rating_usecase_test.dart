@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
-import 'package:arm_field_companion/core/database/app_database.dart';
 
 class MockRatingRepository implements RatingRepository {
   final List<RatingRecord> _records = [];

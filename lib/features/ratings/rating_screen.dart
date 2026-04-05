@@ -2884,6 +2884,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         maxValue: _currentAssessment.maxValue,
         ratingTime: ratingTime,
         confidence: _confidence,
+        assessmentConstraints: RatingAssessmentConstraints(
+          dataType: _currentAssessment.dataType,
+          minValue: _currentAssessment.minValue,
+          maxValue: _currentAssessment.maxValue,
+          unit: _currentAssessment.unit,
+        ),
       ),
     );
 
