@@ -15,8 +15,10 @@ import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
 import '../../core/workspace/workspace_config.dart';
 import '../sessions/create_session_screen.dart';
+import '../sessions/domain/session_completeness_report.dart';
 import '../sessions/session_detail_screen.dart';
 import '../sessions/session_summary_screen.dart';
+import '../sessions/usecases/compute_session_completeness_usecase.dart';
 import '../plots/plot_queue_screen.dart';
 import 'full_protocol_details_screen.dart';
 import '../../core/providers.dart';
@@ -2083,6 +2085,34 @@ class _SessionListEntry {
   const _SessionListEntry({required this.isHeader, this.date, this.session});
 }
 
+String _sessionCloseCompletenessIssueLine(SessionCompletenessIssue i) {
+  switch (i.code) {
+    case SessionCompletenessIssueCode.sessionNotFound:
+      return 'Session not found.';
+    case SessionCompletenessIssueCode.noSessionAssessments:
+      return 'This session has no linked assessments.';
+    case SessionCompletenessIssueCode.missingCurrentRating:
+      return 'Missing rating for plot ${i.plotPk} (assessment ${i.assessmentId}).';
+    case SessionCompletenessIssueCode.voidRating:
+      return 'Void rating on plot ${i.plotPk} (assessment ${i.assessmentId}).';
+    case SessionCompletenessIssueCode.nonRecordedStatus:
+      return 'Non-recorded status on plot ${i.plotPk} (assessment ${i.assessmentId}).';
+  }
+}
+
+enum _SessionIncompleteAction { keepOpen, reviewSession, plotQueue }
+
+List<String> _legacySessionCloseAttentionLines(_SessionCloseAttentionSummary s) {
+  return [
+    'Rated plots: ${s.ratedPlots} of ${s.totalPlots}',
+    if (s.unratedPlots > 0) 'Unrated plots: ${s.unratedPlots}',
+    if (s.flaggedPlots > 0) 'Flagged plots: ${s.flaggedPlots}',
+    if (s.issuesPlots > 0)
+      'Warnings — plots not fully recorded: ${s.issuesPlots}',
+    if (s.editedPlots > 0) 'Edited plots: ${s.editedPlots}',
+  ];
+}
+
 /// Compact pill for session status (Open, Warnings). Professional, consistent styling.
 class _SessionPill extends StatelessWidget {
   const _SessionPill({
@@ -2725,19 +2755,95 @@ class SessionsView extends ConsumerWidget {
     );
   }
 
-  Future<_SessionCloseAttentionAction?> _showSessionCloseAttentionDialog(
+  Future<_SessionIncompleteAction?> _showSessionIncompleteBlockerDialog(
     BuildContext context,
     Session session,
-    _SessionCloseAttentionSummary s,
+    SessionCompletenessReport report,
   ) {
-    final lines = <String>[
-      'Rated plots: ${s.ratedPlots} of ${s.totalPlots}',
-      if (s.unratedPlots > 0) 'Unrated plots: ${s.unratedPlots}',
-      if (s.flaggedPlots > 0) 'Flagged plots: ${s.flaggedPlots}',
-      if (s.issuesPlots > 0)
-        'Warnings — plots not fully recorded: ${s.issuesPlots}',
-      if (s.editedPlots > 0) 'Edited plots: ${s.editedPlots}',
-    ];
+    final issueLines = report.issues
+        .map(_sessionCloseCompletenessIssueLine)
+        .take(15)
+        .toList();
+    return showDialog<_SessionIncompleteAction>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Session incomplete'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Incomplete target plots: ${report.incompletePlots} of '
+                '${report.expectedPlots}.',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Resolve these before closing:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              ...issueLines.map(
+                (line) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    line,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.start,
+        actionsOverflowAlignment: OverflowBarAlignment.start,
+        actionsOverflowDirection: VerticalDirection.down,
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(ctx, _SessionIncompleteAction.keepOpen),
+            child: const Text('Keep open'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(ctx, _SessionIncompleteAction.reviewSession),
+            child: const Text('Review session'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(ctx, _SessionIncompleteAction.plotQueue),
+            child: const Text('Open Plot Queue'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<_SessionCloseAttentionAction?> _showSessionCloseCombinedWarningDialog(
+    BuildContext context,
+    Session session,
+    SessionCompletenessReport report,
+    _SessionCloseAttentionSummary summary, {
+    required bool hasCompletenessWarnings,
+    required bool legacyNeedsAttention,
+  }) {
+    final completenessLines = report.issues
+        .where(
+          (i) => i.severity == SessionCompletenessIssueSeverity.warning,
+        )
+        .map(_sessionCloseCompletenessIssueLine)
+        .toList();
+    final legacyLines = legacyNeedsAttention
+        ? _legacySessionCloseAttentionLines(summary)
+        : <String>[];
+
     return showDialog<_SessionCloseAttentionAction>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2752,18 +2858,51 @@ class SessionsView extends ConsumerWidget {
                 style: TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 12),
-              ...lines.map(
-                (line) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    line,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+              if (hasCompletenessWarnings) ...[
+                const Text(
+                  'Completeness',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...completenessLines.map(
+                  (line) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      line,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
-              ),
+                if (legacyNeedsAttention) const SizedBox(height: 12),
+              ],
+              if (legacyNeedsAttention) ...[
+                const Text(
+                  'Flags and edits',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...legacyLines.map(
+                  (line) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      line,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -2847,8 +2986,16 @@ class SessionsView extends ConsumerWidget {
     );
     if (confirm != true || !context.mounted) return;
 
-    _SessionCloseAttentionSummary? summary;
+    late final SessionCompletenessReport report;
+    late final _SessionCloseAttentionSummary summary;
     try {
+      final completenessUseCase = ComputeSessionCompletenessUseCase(
+        ref.read(sessionRepositoryProvider),
+        ref.read(plotRepositoryProvider),
+        ref.read(ratingRepositoryProvider),
+      );
+      report = await completenessUseCase.execute(sessionId: session.id);
+
       final plots = await ref.read(plotsForTrialProvider(trial.id).future);
       final ratedPks =
           await ref.read(ratedPlotPksProvider(session.id).future);
@@ -2866,16 +3013,70 @@ class SessionsView extends ConsumerWidget {
         corrections: corrections,
       );
     } catch (_) {
-      summary = null;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not verify session before closing.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
     }
 
     if (!context.mounted) return;
 
-    if (summary != null && summary.needsAttention) {
-      final action = await _showSessionCloseAttentionDialog(
+    final hasCompletenessWarnings = report.issues.any(
+      (i) => i.severity == SessionCompletenessIssueSeverity.warning,
+    );
+    final legacyNeedsAttention = summary.needsAttention;
+
+    if (!report.canClose) {
+      final action = await _showSessionIncompleteBlockerDialog(
         context,
         session,
+        report,
+      );
+      if (!context.mounted) return;
+      switch (action) {
+        case _SessionIncompleteAction.keepOpen:
+        case null:
+          return;
+        case _SessionIncompleteAction.reviewSession:
+          await Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => SessionSummaryScreen(
+                trial: trial,
+                session: session,
+              ),
+            ),
+          );
+          return;
+        case _SessionIncompleteAction.plotQueue:
+          await Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => PlotQueueScreen(
+                trial: trial,
+                session: session,
+              ),
+            ),
+          );
+          return;
+      }
+    }
+
+    if (!context.mounted) return;
+
+    if (hasCompletenessWarnings || legacyNeedsAttention) {
+      final action = await _showSessionCloseCombinedWarningDialog(
+        context,
+        session,
+        report,
         summary,
+        hasCompletenessWarnings: hasCompletenessWarnings,
+        legacyNeedsAttention: legacyNeedsAttention,
       );
       if (!context.mounted) return;
       switch (action) {
