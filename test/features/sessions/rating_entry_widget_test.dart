@@ -94,7 +94,7 @@ void main() {
         allPlotsSerpentine: plots,
         assessments: assessments,
         startPlotIndex: 0,
-        isSessionComplete: false,
+        isWalkEndReachedWithAnyRating: false,
       );
 
       await tester.pumpWidget(
@@ -132,7 +132,7 @@ void main() {
         allPlotsSerpentine: plots,
         assessments: assessments,
         startPlotIndex: 0,
-        isSessionComplete: false,
+        isWalkEndReachedWithAnyRating: false,
       );
 
       final fakeSessionRepo = FakeSessionRepository(
@@ -190,7 +190,7 @@ void main() {
         allPlotsSerpentine: plots,
         assessments: assessments,
         startPlotIndex: 0,
-        isSessionComplete: false,
+        isWalkEndReachedWithAnyRating: false,
       );
 
       await tester.pumpWidget(

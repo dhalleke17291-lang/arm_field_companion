@@ -23,7 +23,7 @@ class StartOrContinueRatingInput {
 /// Result DTO for starting or continuing rating.
 ///
 /// This is deliberately UI-agnostic: widgets can decide whether to
-/// show a "session complete" banner or jump into the RatingScreen.
+/// show navigation-end messaging or jump into the [RatingScreen].
 class StartOrContinueRatingResult {
   final bool success;
   final Trial? trial;
@@ -31,7 +31,11 @@ class StartOrContinueRatingResult {
   final List<Plot>? allPlotsSerpentine;
   final List<Assessment>? assessments;
   final int? startPlotIndex;
-  final bool isSessionComplete;
+
+  /// True when the **last plot in the current walk order** has at least one
+  /// **current** rating in this session (any assessment). This is **walk /
+  /// navigation** progress only—not scientific completeness or session close.
+  final bool isWalkEndReachedWithAnyRating;
   final String? errorMessage;
 
   const StartOrContinueRatingResult._({
@@ -41,7 +45,7 @@ class StartOrContinueRatingResult {
     this.allPlotsSerpentine,
     this.assessments,
     this.startPlotIndex,
-    required this.isSessionComplete,
+    required this.isWalkEndReachedWithAnyRating,
     this.errorMessage,
   });
 
@@ -51,7 +55,7 @@ class StartOrContinueRatingResult {
     required List<Plot> allPlotsSerpentine,
     required List<Assessment> assessments,
     required int startPlotIndex,
-    required bool isSessionComplete,
+    required bool isWalkEndReachedWithAnyRating,
   }) {
     return StartOrContinueRatingResult._(
       success: true,
@@ -60,14 +64,14 @@ class StartOrContinueRatingResult {
       allPlotsSerpentine: allPlotsSerpentine,
       assessments: assessments,
       startPlotIndex: startPlotIndex,
-      isSessionComplete: isSessionComplete,
+      isWalkEndReachedWithAnyRating: isWalkEndReachedWithAnyRating,
     );
   }
 
   factory StartOrContinueRatingResult.failure(String message) {
     return StartOrContinueRatingResult._(
       success: false,
-      isSessionComplete: false,
+      isWalkEndReachedWithAnyRating: false,
       errorMessage: message,
     );
   }
@@ -87,8 +91,10 @@ class StartOrContinueRatingResult {
 /// - If no plots have ratings, start at the first plot in serpentine order.
 /// - If some plots have ratings, resume at the plot immediately after the
 ///   last-rated plot in serpentine order.
-/// - If all plots have ratings, mark the session as complete and point
-///   startPlotIndex at the last plot (so UI can still open a review view).
+/// - If the last plot in walk order has any current rating, set
+///   [StartOrContinueRatingResult.isWalkEndReachedWithAnyRating] and point
+///   [StartOrContinueRatingResult.startPlotIndex] at the last plot (so UI can
+///   still open a review view). This is not scientific/session completeness.
 class StartOrContinueRatingUseCase {
   final SessionRepository _sessionRepository;
   final TrialRepository _trialRepository;
@@ -148,17 +154,17 @@ class StartOrContinueRatingUseCase {
         }
       }
 
-      final bool allRated;
+      final bool walkEndReachedWithAnyRating;
       final int startIndex;
 
       if (lastRatedIndex == -1) {
-        allRated = false;
+        walkEndReachedWithAnyRating = false;
         startIndex = 0;
       } else if (lastRatedIndex >= orderedPlots.length - 1) {
-        allRated = true;
+        walkEndReachedWithAnyRating = true;
         startIndex = orderedPlots.length - 1;
       } else {
-        allRated = false;
+        walkEndReachedWithAnyRating = false;
         startIndex = lastRatedIndex + 1;
       }
 
@@ -168,7 +174,7 @@ class StartOrContinueRatingUseCase {
         allPlotsSerpentine: orderedPlots,
         assessments: assessments,
         startPlotIndex: startIndex,
-        isSessionComplete: allRated,
+        isWalkEndReachedWithAnyRating: walkEndReachedWithAnyRating,
       );
     } catch (e) {
       return StartOrContinueRatingResult.failure(

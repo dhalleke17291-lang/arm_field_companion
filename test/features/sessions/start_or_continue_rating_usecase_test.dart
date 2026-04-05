@@ -587,7 +587,7 @@ void main() {
 
       expect(result.success, true);
       expect(result.startPlotIndex, 0);
-      expect(result.isSessionComplete, false);
+      expect(result.isWalkEndReachedWithAnyRating, false);
       expect(result.allPlotsSerpentine?.length, plots.length);
     });
 
@@ -631,10 +631,10 @@ void main() {
       expect(result.success, true);
       // Next after plot[0] is plot[1] at index 1.
       expect(result.startPlotIndex, 1);
-      expect(result.isSessionComplete, false);
+      expect(result.isWalkEndReachedWithAnyRating, false);
     });
 
-    test('all rated → marks session complete and points at last index',
+    test('walk end has any rating → flag set and points at last index',
         () async {
       final ratingsRepo = _FakeRatingRepository([
         RatingRecord(
@@ -713,7 +713,7 @@ void main() {
           .execute(StartOrContinueRatingInput(sessionId: session.id));
 
       expect(result.success, true);
-      expect(result.isSessionComplete, true);
+      expect(result.isWalkEndReachedWithAnyRating, true);
       expect(result.startPlotIndex, plots.length - 1);
     });
   });

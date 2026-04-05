@@ -738,17 +738,17 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
     if (!context.mounted) return;
 
-    if (result.isSessionComplete) {
-      // All plots have ratings — let the user choose between review in queue
-      // or jumping into the last plot in the rating screen.
+    if (result.isWalkEndReachedWithAnyRating) {
+      // Walk end has at least one rating — choose plot queue or last plot.
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('All Plots Rated'),
+          title: const Text('End of Plot Walk'),
           content: const Text(
-            'All plots in this session already have ratings. '
-            'You can review or edit values from the plot queue, '
-            'or open the last plot in the rating screen.',
+            'The last plot in the current walk order already has at least one '
+            'rating. That reflects navigation progress, not full completeness '
+            'for every assessment. Open the plot queue to review, or open the '
+            'last plot in the rating screen.',
           ),
           actions: [
             TextButton(
