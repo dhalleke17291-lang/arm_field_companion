@@ -1,9 +1,10 @@
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import 'trial_readiness.dart';
 
-/// Runs trial readiness checks using existing providers only. No new queries.
+/// Runs trial readiness checks using existing providers and trial-scoped DB reads.
 class TrialReadinessService {
   Future<TrialReadinessReport> runChecks(String trialId, Ref ref) async {
     final trialPk = int.parse(trialId);
@@ -89,6 +90,35 @@ class TrialReadinessService {
         label: 'Plot assignments present',
         severity: TrialCheckSeverity.pass,
       ));
+    }
+
+    if (plots.isNotEmpty) {
+      final plotPkToAssignmentTreatment = <int, int?>{};
+      for (final a in assignments) {
+        plotPkToAssignmentTreatment[a.plotId] = a.treatmentId;
+      }
+      var plotsWithoutTreatmentCount = 0;
+      for (final p in plots) {
+        final effective =
+            plotPkToAssignmentTreatment[p.id] ?? p.treatmentId;
+        if (effective == null) plotsWithoutTreatmentCount++;
+      }
+      if (plotsWithoutTreatmentCount > 0) {
+        checks.add(TrialReadinessCheck(
+          code: 'plots_without_treatment',
+          label:
+              '$plotsWithoutTreatmentCount plot(s) have no treatment assigned',
+          detail: 'Assign treatments to all plots before '
+              'export to ensure correct ARM mapping.',
+          severity: TrialCheckSeverity.warning,
+        ));
+      } else {
+        checks.add(const TrialReadinessCheck(
+          code: 'plots_without_treatment',
+          label: 'All plots have treatments assigned',
+          severity: TrialCheckSeverity.pass,
+        ));
+      }
     }
 
     final sessions = await sessionRepo.getSessionsForTrial(trialPk);
@@ -273,6 +303,33 @@ class TrialReadinessService {
       checks.add(const TrialReadinessCheck(
         code: 'applications_complete_ok',
         label: 'All application events complete',
+        severity: TrialCheckSeverity.pass,
+      ));
+    }
+
+    final db = ref.read(databaseProvider);
+    final rc = db.ratingCorrections;
+    final rr = db.ratingRecords;
+    final correctionsQuery = db.select(rc).join([
+      drift.innerJoin(rr, rr.id.equalsExp(rc.ratingId)),
+    ])
+      ..where(rr.trialId.equals(trialPk) & rc.reason.equals(''));
+    final correctionsMissingReasonRows = await correctionsQuery.get();
+    final correctionsMissingReasonCount = correctionsMissingReasonRows.length;
+    if (correctionsMissingReasonCount > 0) {
+      checks.add(TrialReadinessCheck(
+        code: 'corrections_missing_reason',
+        label:
+            '$correctionsMissingReasonCount correction(s) have no reason recorded',
+        detail: 'GLP compliance requires a reason for every '
+            'rating correction. Review corrections in '
+            'the audit log.',
+        severity: TrialCheckSeverity.blocker,
+      ));
+    } else {
+      checks.add(const TrialReadinessCheck(
+        code: 'corrections_missing_reason',
+        label: 'All corrections have reasons recorded',
         severity: TrialCheckSeverity.pass,
       ));
     }
