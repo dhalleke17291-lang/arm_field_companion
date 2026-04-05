@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_exception.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
 
@@ -230,13 +232,36 @@ class MockRatingRepository implements RatingRepository {
   }
 }
 
+class _NoOpRatingReferentialIntegrity implements RatingReferentialIntegrity {
+  @override
+  Future<void> assertPlotBelongsToTrial({
+    required int plotPk,
+    required int trialId,
+  }) async {}
+
+  @override
+  Future<void> assertSessionBelongsToTrial({
+    required int sessionId,
+    required int trialId,
+  }) async {}
+
+  @override
+  Future<void> assertAssessmentInSession({
+    required int assessmentId,
+    required int sessionId,
+  }) async {}
+}
+
 void main() {
   late SaveRatingUseCase useCase;
   late MockRatingRepository mockRepo;
 
   setUp(() {
     mockRepo = MockRatingRepository();
-    useCase = SaveRatingUseCase(mockRepo);
+    useCase = SaveRatingUseCase(
+      mockRepo,
+      _NoOpRatingReferentialIntegrity(),
+    );
   });
 
   group('SaveRatingUseCase — Core Invariants', () {

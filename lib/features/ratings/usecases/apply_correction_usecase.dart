@@ -2,13 +2,16 @@ import '../rating_repository.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/session_lock.dart';
 import '../../../domain/ratings/assessment_scale_resolver.dart';
+import '../../../domain/ratings/rating_integrity_exception.dart';
+import '../../../domain/ratings/rating_integrity_guard.dart';
 
 /// Apply an immutable correction to a rating (closed sessions only).
 /// Original rating record is never modified.
 class ApplyCorrectionUseCase {
   final RatingRepository _ratingRepository;
+  final RatingReferentialIntegrity _referentialIntegrity;
 
-  ApplyCorrectionUseCase(this._ratingRepository);
+  ApplyCorrectionUseCase(this._ratingRepository, this._referentialIntegrity);
 
   Future<ApplyCorrectionResult> execute({
     required RatingRecord rating,
@@ -45,6 +48,19 @@ class ApplyCorrectionUseCase {
     }
 
     try {
+      await _referentialIntegrity.assertPlotBelongsToTrial(
+        plotPk: rating.plotPk,
+        trialId: rating.trialId,
+      );
+      await _referentialIntegrity.assertSessionBelongsToTrial(
+        sessionId: rating.sessionId,
+        trialId: rating.trialId,
+      );
+      await _referentialIntegrity.assertAssessmentInSession(
+        assessmentId: rating.assessmentId,
+        sessionId: rating.sessionId,
+      );
+
       final correction = await _ratingRepository.applyCorrection(
         ratingId: rating.id,
         oldResultStatus: rating.resultStatus,
@@ -59,6 +75,8 @@ class ApplyCorrectionUseCase {
         plotPk: rating.plotPk,
       );
       return ApplyCorrectionResult.success(correction);
+    } on RatingIntegrityException catch (e) {
+      return ApplyCorrectionResult.failure(e.toString());
     } catch (e) {
       return ApplyCorrectionResult.failure('Correction failed: $e');
     }

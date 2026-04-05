@@ -29,6 +29,12 @@ class _FakeSessionRepository implements SessionRepository {
     return _sessionAssessments[sessionId] ?? const [];
   }
 
+  @override
+  Future<bool> isAssessmentInSession(int assessmentId, int sessionId) async {
+    final list = _sessionAssessments[sessionId] ?? const [];
+    return list.any((a) => a.id == assessmentId);
+  }
+
   // Unused methods for this use case in this test.
   @override
   Future<Session?> getOpenSession(int trialId) async => _sessions

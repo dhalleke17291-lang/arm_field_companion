@@ -14,6 +14,7 @@ import 'package:arm_field_companion/features/arm_import/domain/models/assessment
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/resolved_arm_assessment_definitions.dart';
 import 'package:arm_field_companion/features/arm_import/domain/results/arm_import_result.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
 import 'package:arm_field_companion/features/arm_import/usecases/arm_import_usecase.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
@@ -37,7 +38,10 @@ ArmImportUseCase _makeUseCase(
     ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
     TrialAssessmentRepository(db),
     SessionRepository(db),
-    SaveRatingUseCase(RatingRepository(db)),
+    SaveRatingUseCase(
+      RatingRepository(db),
+      RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+    ),
     ArmCsvParser(),
     ArmImportSnapshotService(),
     CompatibilityProfileBuilder(),
@@ -563,7 +567,10 @@ void main() {
       _OmitFirstKeyResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
       SessionRepository(db),
-      SaveRatingUseCase(RatingRepository(db)),
+      SaveRatingUseCase(
+        RatingRepository(db),
+        RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+      ),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -599,7 +606,10 @@ void main() {
       _ThrowingResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
       SessionRepository(db),
-      SaveRatingUseCase(RatingRepository(db)),
+      SaveRatingUseCase(
+        RatingRepository(db),
+        RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+      ),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -633,7 +643,10 @@ void main() {
       ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
       TrialAssessmentRepository(db),
       SessionRepository(db),
-      SaveRatingUseCase(RatingRepository(db)),
+      SaveRatingUseCase(
+        RatingRepository(db),
+        RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+      ),
       ArmCsvParser(),
       ArmImportSnapshotService(),
       CompatibilityProfileBuilder(),
@@ -826,7 +839,10 @@ void main() {
     expect(first, hasLength(1));
     final assessmentId = first.single.assessmentId;
 
-    final save = SaveRatingUseCase(RatingRepository(db));
+    final save = SaveRatingUseCase(
+      RatingRepository(db),
+      RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+    );
     final second = await save.execute(
       SaveRatingInput(
         trialId: tid,

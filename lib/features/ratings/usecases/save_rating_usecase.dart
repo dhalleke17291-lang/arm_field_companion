@@ -4,6 +4,8 @@ import 'dart:io' show Platform;
 import '../../../core/app_info.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/session_lock.dart';
+import '../../../domain/ratings/rating_integrity_exception.dart';
+import '../../../domain/ratings/rating_integrity_guard.dart';
 import '../../../domain/ratings/rating_value_validator.dart';
 import '../../../domain/ratings/save_rating_input.dart';
 import '../rating_repository.dart';
@@ -20,11 +22,12 @@ export '../../../domain/ratings/save_rating_input.dart';
 
 class SaveRatingUseCase {
   final RatingRepository _ratingRepository;
+  final RatingReferentialIntegrity _referentialIntegrity;
 
   // Debounce protection — spec section 21
   bool _isProcessing = false;
 
-  SaveRatingUseCase(this._ratingRepository);
+  SaveRatingUseCase(this._ratingRepository, this._referentialIntegrity);
 
   Future<SaveRatingResult> execute(SaveRatingInput input) async {
     // Debounce guard — prevents double-tap duplicate writes
@@ -44,6 +47,19 @@ class SaveRatingUseCase {
       if (!validation.isValid) {
         return SaveRatingResult.failure(validation.combinedMessage);
       }
+
+      await _referentialIntegrity.assertPlotBelongsToTrial(
+        plotPk: input.plotPk,
+        trialId: input.trialId,
+      );
+      await _referentialIntegrity.assertSessionBelongsToTrial(
+        sessionId: input.sessionId,
+        trialId: input.trialId,
+      );
+      await _referentialIntegrity.assertAssessmentInSession(
+        assessmentId: input.assessmentId,
+        sessionId: input.sessionId,
+      );
 
       const createdAppVersion = kAppVersion;
       final createdDeviceInfo = Platform.operatingSystem;

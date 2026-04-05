@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
+import '../../domain/ratings/rating_integrity_exception.dart';
 import '../../domain/ratings/result_status.dart';
 
 class RatingRepository {
@@ -513,14 +514,6 @@ void _assertCoreNumericColumnIntegrity(String resultStatus, double? numericValue
       'numericValue must be null when status is ${status.dbString}',
     );
   }
-}
-
-class RatingIntegrityException implements Exception {
-  final String message;
-  RatingIntegrityException(this.message);
-
-  @override
-  String toString() => 'Rating integrity violation: $message';
 }
 
 /// Thrown when a write is attempted on a closed session.

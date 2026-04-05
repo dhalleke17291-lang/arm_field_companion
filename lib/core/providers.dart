@@ -8,6 +8,7 @@ import "../data/repositories/application_repository.dart";
 import "../data/repositories/application_product_repository.dart";
 import "../data/repositories/seeding_repository.dart";
 import "../domain/models/plot_context.dart";
+import "../domain/ratings/rating_integrity_guard.dart";
 import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
@@ -471,8 +472,18 @@ final deleteTreatmentUseCaseProvider = Provider<DeleteTreatmentUseCase>((ref) {
   return DeleteTreatmentUseCase(ref.watch(treatmentRepositoryProvider));
 });
 
+final ratingIntegrityGuardProvider = Provider<RatingIntegrityGuard>((ref) {
+  return RatingIntegrityGuard(
+    ref.watch(plotRepositoryProvider),
+    ref.watch(sessionRepositoryProvider),
+  );
+});
+
 final saveRatingUseCaseProvider = Provider<SaveRatingUseCase>((ref) {
-  return SaveRatingUseCase(ref.watch(ratingRepositoryProvider));
+  return SaveRatingUseCase(
+    ref.watch(ratingRepositoryProvider),
+    ref.watch(ratingIntegrityGuardProvider),
+  );
 });
 
 final amendPlotRatingUseCaseProvider = Provider<AmendPlotRatingUseCase>((ref) {
@@ -484,15 +495,24 @@ final amendPlotRatingUseCaseProvider = Provider<AmendPlotRatingUseCase>((ref) {
 });
 
 final undoRatingUseCaseProvider = Provider<UndoRatingUseCase>((ref) {
-  return UndoRatingUseCase(ref.watch(ratingRepositoryProvider));
+  return UndoRatingUseCase(
+    ref.watch(ratingRepositoryProvider),
+    ref.watch(ratingIntegrityGuardProvider),
+  );
 });
 
 final applyCorrectionUseCaseProvider = Provider<ApplyCorrectionUseCase>((ref) {
-  return ApplyCorrectionUseCase(ref.watch(ratingRepositoryProvider));
+  return ApplyCorrectionUseCase(
+    ref.watch(ratingRepositoryProvider),
+    ref.watch(ratingIntegrityGuardProvider),
+  );
 });
 
 final voidRatingUseCaseProvider = Provider<VoidRatingUseCase>((ref) {
-  return VoidRatingUseCase(ref.watch(ratingRepositoryProvider));
+  return VoidRatingUseCase(
+    ref.watch(ratingRepositoryProvider),
+    ref.watch(ratingIntegrityGuardProvider),
+  );
 });
 
 /// Latest correction for a rating (for effective value display).

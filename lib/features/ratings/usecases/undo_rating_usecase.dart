@@ -1,10 +1,14 @@
-import '../rating_repository.dart';
+import '../../../core/database/app_database.dart';
 import '../../../core/session_lock.dart';
+import '../../../domain/ratings/rating_integrity_exception.dart';
+import '../../../domain/ratings/rating_integrity_guard.dart';
+import '../rating_repository.dart';
 
 class UndoRatingUseCase {
   final RatingRepository _ratingRepository;
+  final RatingReferentialIntegrity _referentialIntegrity;
 
-  UndoRatingUseCase(this._ratingRepository);
+  UndoRatingUseCase(this._ratingRepository, this._referentialIntegrity);
 
   Future<UndoRatingResult> execute({
     required int currentRatingId,
@@ -22,11 +26,22 @@ class UndoRatingUseCase {
       final ratings =
           await _ratingRepository.getCurrentRatingsForSession(sessionId);
 
-      final belongs = ratings.any((r) => r.id == currentRatingId);
-      if (!belongs) {
+      RatingRecord? current;
+      for (final r in ratings) {
+        if (r.id == currentRatingId) {
+          current = r;
+          break;
+        }
+      }
+      if (current == null) {
         return UndoRatingResult.failure(
             'Rating does not belong to current session');
       }
+
+      await _referentialIntegrity.assertSessionBelongsToTrial(
+        sessionId: sessionId,
+        trialId: current.trialId,
+      );
 
       await _ratingRepository.undoRating(
         currentRatingId: currentRatingId,
@@ -38,6 +53,8 @@ class UndoRatingUseCase {
       return UndoRatingResult.success();
     } on SessionClosedException {
       return UndoRatingResult.failure(kClosedSessionBlockedMessage);
+    } on RatingIntegrityException catch (e) {
+      return UndoRatingResult.failure(e.toString());
     } catch (e) {
       return UndoRatingResult.failure('Undo failed: $e');
     }

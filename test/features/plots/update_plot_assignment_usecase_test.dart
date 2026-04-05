@@ -109,6 +109,10 @@ class MockSessionRepository implements SessionRepository {
   Future<List<Assessment>> getSessionAssessments(int sessionId) async => [];
 
   @override
+  Future<bool> isAssessmentInSession(int assessmentId, int sessionId) async =>
+      false;
+
+  @override
   Future<Session?> getSessionById(int sessionId) async => null;
 
   @override

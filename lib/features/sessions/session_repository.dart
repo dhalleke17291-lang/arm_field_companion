@@ -152,6 +152,16 @@ class SessionRepository {
     return [for (final id in assessmentIds) byId[id]!];
   }
 
+  /// Whether [assessmentId] is linked to [sessionId] in [session_assessments].
+  Future<bool> isAssessmentInSession(int assessmentId, int sessionId) async {
+    final row = await (_db.select(_db.sessionAssessments)
+          ..where((sa) =>
+              sa.sessionId.equals(sessionId) &
+              sa.assessmentId.equals(assessmentId)))
+        .getSingleOrNull();
+    return row != null;
+  }
+
   /// Updates the rating order for this session. Same sequence applies to every plot.
   Future<void> updateSessionAssessmentOrder(
     int sessionId,

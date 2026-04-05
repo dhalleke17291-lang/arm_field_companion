@@ -7,6 +7,7 @@ import 'package:arm_field_companion/data/repositories/assessment_definition_repo
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
 import 'package:arm_field_companion/domain/ratings/result_status.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_assessment_definition_resolver.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_csv_parser.dart';
@@ -42,7 +43,10 @@ ArmImportUseCase _makeArmImport(AppDatabase db) {
     ArmAssessmentDefinitionResolver(AssessmentDefinitionRepository(db)),
     TrialAssessmentRepository(db),
     SessionRepository(db),
-    SaveRatingUseCase(RatingRepository(db)),
+    SaveRatingUseCase(
+      RatingRepository(db),
+      RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+    ),
     ArmCsvParser(),
     ArmImportSnapshotService(),
     CompatibilityProfileBuilder(),
@@ -256,7 +260,10 @@ void main() {
       expect(before, isNotNull);
       expect(before!.numericValue, 5.0);
 
-      final saveUc = SaveRatingUseCase(ratingRepo);
+      final saveUc = SaveRatingUseCase(
+        ratingRepo,
+        RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+      );
       final saveResult = await saveUc.execute(
         SaveRatingInput(
           trialId: trialId,

@@ -80,6 +80,10 @@ class _MockSessionRepository implements SessionRepository {
       throw UnimplementedError();
 
   @override
+  Future<bool> isAssessmentInSession(int assessmentId, int sessionId) async =>
+      false;
+
+  @override
   Future<void> updateSessionAssessmentOrder(
     int sessionId,
     List<int> assessmentIdsInOrder,

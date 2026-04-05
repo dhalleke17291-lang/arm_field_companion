@@ -1,9 +1,12 @@
 import '../rating_repository.dart';
+import '../../../domain/ratings/rating_integrity_exception.dart';
+import '../../../domain/ratings/rating_integrity_guard.dart';
 
 class VoidRatingUseCase {
   final RatingRepository _ratingRepository;
+  final RatingReferentialIntegrity _referentialIntegrity;
 
-  VoidRatingUseCase(this._ratingRepository);
+  VoidRatingUseCase(this._ratingRepository, this._referentialIntegrity);
 
   Future<VoidRatingResult> execute({
     required int trialId,
@@ -25,6 +28,15 @@ class VoidRatingUseCase {
         return VoidRatingResult.failure('Void reason must not be empty');
       }
 
+      await _referentialIntegrity.assertPlotBelongsToTrial(
+        plotPk: plotPk,
+        trialId: trialId,
+      );
+      await _referentialIntegrity.assertSessionBelongsToTrial(
+        sessionId: sessionId,
+        trialId: trialId,
+      );
+
       await _ratingRepository.voidRating(
         trialId: trialId,
         plotPk: plotPk,
@@ -37,6 +49,8 @@ class VoidRatingUseCase {
       );
 
       return VoidRatingResult.success();
+    } on RatingIntegrityException catch (e) {
+      return VoidRatingResult.failure(e.toString());
     } catch (e) {
       return VoidRatingResult.failure('Void failed: $e');
     }
