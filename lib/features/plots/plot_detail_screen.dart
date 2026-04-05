@@ -12,6 +12,211 @@ import '../ratings/usecases/amend_plot_rating_usecase.dart';
 import 'plot_detail_form_controller.dart';
 import 'plot_notes_dialog.dart';
 import '../../core/widgets/app_standard_widgets.dart';
+import '../../domain/models/plot_context.dart';
+
+String _plotDetailFormatDate(DateTime dt) {
+  return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+}
+
+/// Treatment row + components from resolved [PlotContext].
+///
+/// [assignmentSourceLabel] is included so the subtree rebuilds when assignment
+/// metadata changes (label is already shown earlier in the plot details card).
+class _PlotContextCard extends StatelessWidget {
+  const _PlotContextCard({
+    required this.plotContext,
+    required this.assignmentSourceLabel,
+  });
+
+  final PlotContext plotContext;
+  final String assignmentSourceLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: ValueKey<String>(assignmentSourceLabel),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        StandardDetailRow(
+          label: 'Treatment',
+          value: plotContext.hasTreatment
+              ? '${plotContext.treatmentCode}  —  ${plotContext.treatmentName}'
+              : (plotContext.hasRemovedTreatment ? '(removed)' : 'Unassigned'),
+        ),
+        if (plotContext.hasComponents) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Components',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...plotContext.components.map(
+            (c) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.circle,
+                    size: 6,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      [
+                        c.productName,
+                        if (c.rate != null && c.rateUnit != null)
+                          '${c.rate} ${c.rateUnit}',
+                        if (c.applicationTiming != null) c.applicationTiming!,
+                      ].join('  ·  '),
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Sliver list of rating history tiles (no provider access).
+class _PlotRatingHistoryList extends StatelessWidget {
+  const _PlotRatingHistoryList({
+    required this.ratings,
+    required this.sessions,
+    required this.assessments,
+    required this.trial,
+    required this.plot,
+    required this.onAmendmentTap,
+    required this.onEditRatingTap,
+  });
+
+  final List<RatingRecord> ratings;
+  final List<Session> sessions;
+  final List<Assessment> assessments;
+  final Trial trial;
+  final Plot plot;
+  final void Function(RatingRecord rating, Assessment? assessment)
+      onAmendmentTap;
+  final void Function(RatingRecord rating, Assessment? assessment)
+      onEditRatingTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final rating = ratings[index];
+            final session =
+                sessions.where((s) => s.id == rating.sessionId).firstOrNull;
+            final assessment = assessments
+                .where((a) => a.id == rating.assessmentId)
+                .firstOrNull;
+            return Card(
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: rating.resultStatus == 'RECORDED'
+                      ? Colors.green.shade100
+                      : Colors.orange.shade100,
+                  child: Icon(
+                    rating.resultStatus == 'RECORDED'
+                        ? Icons.check
+                        : Icons.info_outline,
+                    color: rating.resultStatus == 'RECORDED'
+                        ? Colors.green
+                        : Colors.orange,
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  assessment?.name ?? 'Assessment',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(session?.name ?? 'Unknown session'),
+                    if (rating.amended) ...[
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () => onAmendmentTap(rating, assessment),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.orange.shade700),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Amended',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      rating.resultStatus == 'RECORDED'
+                          ? '${rating.numericValue ?? rating.textValue ?? "-"} ${assessment?.unit ?? ""}'
+                          : rating.resultStatus,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: rating.resultStatus == 'RECORDED'
+                            ? Colors.green
+                            : Colors.orange,
+                      ),
+                    ),
+                    Text(
+                      _plotDetailFormatDate(rating.createdAt),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () => onEditRatingTap(rating, assessment),
+                      child: const Text(
+                        'Edit rating',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          childCount: ratings.length,
+        ),
+      ),
+    );
+  }
+}
 
 Future<void> _confirmAndSoftDeletePlot(
   BuildContext context,
@@ -212,7 +417,6 @@ class PlotDetailScreen extends ConsumerWidget {
                         key: ValueKey('plot_details_${plotToShow.id}'),
                         plot: plotToShow,
                         trial: trial,
-                        ref: ref,
                       ),
                       const Divider(),
                       if (plotToShow.notes != null &&
@@ -260,59 +464,9 @@ class PlotDetailScreen extends ConsumerWidget {
                         ),
                         error: (e, st) => StandardDetailRow(
                             label: 'Treatment', value: e.toString()),
-                        data: (ctx) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            StandardDetailRow(
-                                label: 'Treatment',
-                                value: ctx.hasTreatment
-                                    ? '${ctx.treatmentCode}  —  ${ctx.treatmentName}'
-                                    : (ctx.hasRemovedTreatment
-                                        ? '(removed)'
-                                        : 'Unassigned')),
-                            if (ctx.hasComponents) ...[
-                              const SizedBox(height: 8),
-                              Text('Components',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary)),
-                              const SizedBox(height: 4),
-                              ...ctx.components.map((c) => Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 3),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const SizedBox(width: 8),
-                                        Icon(Icons.circle,
-                                            size: 6,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .outlineVariant),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            [
-                                              c.productName,
-                                              if (c.rate != null &&
-                                                  c.rateUnit != null)
-                                                '${c.rate} ${c.rateUnit}',
-                                              if (c.applicationTiming != null)
-                                                c.applicationTiming!,
-                                            ].join('  ·  '),
-                                            style:
-                                                const TextStyle(fontSize: 13),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )),
-                            ],
-                          ],
+                        data: (ctx) => _PlotContextCard(
+                          plotContext: ctx,
+                          assignmentSourceLabel: assignmentSourceLabel,
                         ),
                       ),
                     ],
@@ -377,118 +531,18 @@ class PlotDetailScreen extends ConsumerWidget {
                       ),
                     ]
                   : [
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final rating = ratings[index];
-                              final session = sessions
-                                  .where((s) => s.id == rating.sessionId)
-                                  .firstOrNull;
-                              final assessment = assessments
-                                  .where((a) => a.id == rating.assessmentId)
-                                  .firstOrNull;
-                              return Card(
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor:
-                                        rating.resultStatus == 'RECORDED'
-                                            ? Colors.green.shade100
-                                            : Colors.orange.shade100,
-                                    child: Icon(
-                                      rating.resultStatus == 'RECORDED'
-                                          ? Icons.check
-                                          : Icons.info_outline,
-                                      color: rating.resultStatus == 'RECORDED'
-                                          ? Colors.green
-                                          : Colors.orange,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  title: Text(
-                                    assessment?.name ?? 'Assessment',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(session?.name ?? 'Unknown session'),
-                                      if (rating.amended) ...[
-                                        const SizedBox(height: 4),
-                                        GestureDetector(
-                                          onTap: () => _showAmendmentInfoSheet(
-                                              context, ref, rating, assessment),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color:
-                                                      Colors.orange.shade700),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            child: const Text('Amended',
-                                                style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: Colors.orange)),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                  trailing: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        rating.resultStatus == 'RECORDED'
-                                            ? '${rating.numericValue ?? rating.textValue ?? "-"} ${assessment?.unit ?? ""}'
-                                            : rating.resultStatus,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color:
-                                              rating.resultStatus == 'RECORDED'
-                                                  ? Colors.green
-                                                  : Colors.orange,
-                                        ),
-                                      ),
-                                      Text(
-                                        _formatDate(rating.createdAt),
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant),
-                                      ),
-                                      TextButton(
-                                        style: TextButton.styleFrom(
-                                            minimumSize: Size.zero,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8),
-                                            tapTargetSize: MaterialTapTargetSize
-                                                .shrinkWrap),
-                                        onPressed: () => _showEditRatingSheet(
-                                            context,
-                                            ref,
-                                            rating,
-                                            assessment,
-                                            trial,
-                                            plot),
-                                        child: const Text('Edit rating',
-                                            style: TextStyle(fontSize: 12)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                            childCount: ratings.length,
-                          ),
-                        ),
+                      _PlotRatingHistoryList(
+                        ratings: ratings,
+                        sessions: sessions,
+                        assessments: assessments,
+                        trial: trial,
+                        plot: plot,
+                        onAmendmentTap: (rating, assessment) =>
+                            _showAmendmentInfoSheet(
+                                context, ref, rating, assessment),
+                        onEditRatingTap: (rating, assessment) =>
+                            _showEditRatingSheet(
+                                context, ref, rating, assessment, trial, plot),
                       ),
                     ],
             ),
@@ -500,10 +554,6 @@ class PlotDetailScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  static String _formatDate(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
   }
 }
 
@@ -795,12 +845,10 @@ class _PlotDetailsForm extends ConsumerStatefulWidget {
     super.key,
     required this.plot,
     required this.trial,
-    required this.ref,
   });
 
   final Plot plot;
   final Trial trial;
-  final WidgetRef ref;
 
   @override
   ConsumerState<_PlotDetailsForm> createState() => _PlotDetailsFormState();
