@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../core/database/app_database.dart';
 
 class SessionRepository {
@@ -303,15 +305,27 @@ class SessionRepository {
     });
   }
 
-  /// Prefer [ArmImportUseCase] session (name contains `'ARM Import'`, see
-  /// `'ARM Import Session'`) for ARM-linked trials; else closest [Session.startedAt]
-  /// to [Trial.armImportedAt]; else most recent non-deleted session.
+  /// Prefer [Trial.armImportSessionId] when set; else [ArmImportUseCase] session
+  /// (name contains `'ARM Import'`); else closest [Session.startedAt] to
+  /// [Trial.armImportedAt]; else most recent non-deleted session.
   Future<int?> resolveSessionIdForRatingShell(Trial trial) async {
     final sessions = await (_db.select(_db.sessions)
           ..where((s) => s.trialId.equals(trial.id) & s.isDeleted.equals(false))
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
         .get();
     if (sessions.isEmpty) return null;
+
+    final pinned = trial.armImportSessionId;
+    if (pinned != null) {
+      final match = sessions.where((s) => s.id == pinned).toList();
+      if (match.length == 1) {
+        return match.single.id;
+      }
+      debugPrint(
+        'resolveSessionIdForRatingShell: trials.armImportSessionId=$pinned '
+        'not found for trial ${trial.id} or not in session list; using fallback.',
+      );
+    }
 
     if (trial.isArmLinked) {
       for (final s in sessions) {

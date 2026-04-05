@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -124,6 +123,15 @@ class ExportArmRatingShellUseCase {
     // ignore: unused_local_variable
     final treatments = loaded[2] as List<Treatment>;
 
+    if (trial.isArmLinked &&
+        plots.isNotEmpty &&
+        plots.any((p) => p.armPlotNumber == null)) {
+      debugPrint(
+        'ExportArmRatingShell: trial ${trial.id} has plots without armPlotNumber; '
+        'shell plot matching may use plotId fallback.',
+      );
+    }
+
     if (plots.isEmpty) {
       exportDiagnosticsBuffer.add(
         DiagnosticFinding(
@@ -194,7 +202,8 @@ class ExportArmRatingShellUseCase {
     // ignore: unused_local_variable
     final snapshotTokens = _parseAssessmentTokens(snapshot?.assessmentTokens);
 
-    final sessionId = await _sessionRepository.resolveSessionIdForRatingShell(trial);
+    final sessionId =
+        await _sessionRepository.resolveSessionIdForRatingShell(trial);
 
     final String? shellPath;
     if (pickShellPathOverride != null) {
@@ -253,8 +262,27 @@ class ExportArmRatingShellUseCase {
     final parser = ArmShellParser(shellPath);
     final shellImport = await parser.parse();
 
-    final sortedAssessments = List<TrialAssessment>.from(assessments)
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final sortedAssessments = List<TrialAssessment>.from(assessments);
+    final withColIdx =
+        assessments.where((a) => a.armImportColumnIndex != null).length;
+    if (withColIdx == assessments.length && assessments.isNotEmpty) {
+      sortedAssessments.sort(
+        (a, b) => a.armImportColumnIndex!.compareTo(b.armImportColumnIndex!),
+      );
+    } else {
+      if (assessments.isNotEmpty && withColIdx > 0) {
+        debugPrint(
+          'ExportArmRatingShell: trial ${trial.id} has mixed '
+          'armImportColumnIndex; using sortOrder for assessment order.',
+        );
+      } else if (assessments.isNotEmpty && withColIdx == 0) {
+        debugPrint(
+          'ExportArmRatingShell: trial ${trial.id} has no armImportColumnIndex '
+          'on trial_assessments; using sortOrder (legacy data).',
+        );
+      }
+      sortedAssessments.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }
 
     final effectiveColumns = shellImport.assessmentColumns.isNotEmpty
         ? (List<ArmColumnMap>.from(shellImport.assessmentColumns)
@@ -298,13 +326,7 @@ class ExportArmRatingShellUseCase {
 
     final ratingValues = <ArmRatingValue>[];
     for (final pr in shellImport.plotRows) {
-      final plot = plots.firstWhereOrNull((p) {
-        final n = int.tryParse(p.plotId.trim());
-        if (n != null) {
-          return n == pr.plotNumber;
-        }
-        return p.plotId.trim() == pr.plotNumber.toString();
-      });
+      final plot = _plotForShellPlotNumber(plots, pr.plotNumber);
       if (plot == null) {
         debugPrint(
           'ExportArmRatingShell: no app plot for shell '
@@ -394,6 +416,39 @@ class ExportArmRatingShellUseCase {
     );
   }
 
+  /// Prefer [Plot.armPlotNumber]. On duplicates, lowest [Plot.id] wins.
+  /// Falls back to [Plot.plotId] int/string match (legacy).
+  Plot? _plotForShellPlotNumber(List<Plot> plots, int plotNumber) {
+    final byArm = plots.where((p) => p.armPlotNumber == plotNumber).toList();
+    if (byArm.length > 1) {
+      debugPrint(
+        'ExportArmRatingShell: ${byArm.length} plots share armPlotNumber='
+        '$plotNumber; using lowest Plots.id.',
+      );
+      byArm.sort((a, b) => a.id.compareTo(b.id));
+      return byArm.first;
+    }
+    if (byArm.length == 1) return byArm.single;
+
+    final fallback = plots.where((p) {
+      final n = int.tryParse(p.plotId.trim());
+      if (n != null) return n == plotNumber;
+      return p.plotId.trim() == plotNumber.toString();
+    }).toList();
+    if (fallback.length > 1) {
+      debugPrint(
+        'ExportArmRatingShell: ${fallback.length} plots match shell '
+        'plotNumber=$plotNumber via plotId; using lowest Plots.id.',
+      );
+      fallback.sort((a, b) => a.id.compareTo(b.id));
+      return fallback.first;
+    }
+    if (fallback.length == 1) {
+      return fallback.single;
+    }
+    return null;
+  }
+
   String _ratingValueAsString(RatingRecord? rating) {
     if (rating == null) return '';
     if (rating.numericValue != null) {
@@ -436,7 +491,7 @@ class ExportArmRatingShellUseCase {
         }
       }
     }
-    // Fallback: positional
+    // Fallback: positional (trial-level warning when indexes missing: see sortedAssessments)
     if (positionalIndex < columns.length) {
       return columns[positionalIndex];
     }

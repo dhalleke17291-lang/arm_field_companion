@@ -191,6 +191,15 @@ class ArmImportUseCase {
           sourceFile: sourceFileName,
           armVersion: snapshotPayload.armVersion,
         );
+
+        if (importSessionId != null) {
+          await _trialRepository.updateTrialSetup(
+            trialId,
+            TrialsCompanion(
+              armImportSessionId: Value(importSessionId),
+            ),
+          );
+        }
       });
 
       if (importSessionId != null) {
@@ -274,13 +283,17 @@ class ArmImportUseCase {
 
       final repRaw = row[repHeader];
       final rep = int.tryParse(repRaw ?? '');
+      final trimmedPlotId = pv.trim();
+      final armPlotNum = int.tryParse(trimmedPlotId);
 
       companions.add(
         PlotsCompanion.insert(
           trialId: trialId,
-          plotId: pv.trim(),
+          plotId: trimmedPlotId,
           plotSortIndex: Value(i + 1),
           rep: Value(rep),
+          armPlotNumber: Value(armPlotNum),
+          armImportDataRowIndex: Value(i),
         ),
       );
       insertedRowIndices.add(i);
@@ -368,6 +381,7 @@ class ArmImportUseCase {
       if (existing != null) {
         continue;
       }
+      final colIdx = _armImportColumnIndexForKey(parsed, key);
       await _trialAssessmentRepository.addToTrial(
         trialId: trialId,
         assessmentDefinitionId: defId,
@@ -379,6 +393,7 @@ class ArmImportUseCase {
         sortOrder: sortOrder,
         isActive: true,
         pestCode: token.armCode,
+        armImportColumnIndex: colIdx,
       );
       sortOrder++;
     }
@@ -574,6 +589,15 @@ class ArmImportUseCase {
       }
     }
   }
+}
+
+/// First CSV column index for [assessmentKey] ([ArmColumnClassification.index]).
+int? _armImportColumnIndexForKey(ParsedArmCsv parsed, String assessmentKey) {
+  for (final c in parsed.columns) {
+    final t = c.assessmentToken;
+    if (t != null && t.assessmentKey == assessmentKey) return c.index;
+  }
+  return null;
 }
 
 String? _findHeaderByRole(

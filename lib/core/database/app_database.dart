@@ -78,6 +78,10 @@ class Trials extends Table {
   DateTimeColumn get armImportedAt => dateTime().nullable()();
   TextColumn get armSourceFile => text().nullable()();
   TextColumn get armVersion => text().nullable()();
+
+  /// Session used for ARM import ratings; preferred for Rating Shell export.
+  /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
+  IntColumn get armImportSessionId => integer().nullable()();
 }
 
 class Treatments extends Table {
@@ -196,6 +200,9 @@ class TrialAssessments extends Table {
   TextColumn get eppoCodeLocal => text().nullable()();
   TextColumn get bbchScale => text().nullable()();
   TextColumn get cropStageAtAssessment => text().nullable()();
+
+  /// Original CSV column index for this assessment (ARM import); guides export ordering.
+  IntColumn get armImportColumnIndex => integer().nullable()();
 }
 
 class Plots extends Table {
@@ -238,6 +245,12 @@ class Plots extends Table {
       boolean().withDefault(const Constant(false))();
   TextColumn get exclusionReason => text().nullable()();
   TextColumn get damageType => text().nullable()();
+
+  /// Canonical ARM plot number (matches Rating Shell plot column); nullable for non-ARM plots.
+  IntColumn get armPlotNumber => integer().nullable()();
+
+  /// Index into source ARM CSV data rows for this plot row (import alignment).
+  IntColumn get armImportDataRowIndex => integer().nullable()();
 }
 
 /// Protocol-to-field mapping: which treatment is assigned to which plot (ARM first-class entity).
@@ -764,7 +777,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 40;
+  int get schemaVersion => 41;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1117,6 +1130,13 @@ SET status = 'completed',
           }
           if (from < 40) {
             await m.createTable(trialExportDiagnostics);
+          }
+          if (from < 41) {
+            await m.addColumn(plots, plots.armPlotNumber);
+            await m.addColumn(plots, plots.armImportDataRowIndex);
+            await m.addColumn(
+                trialAssessments, trialAssessments.armImportColumnIndex);
+            await m.addColumn(trials, trials.armImportSessionId);
           }
           await _createIndexes();
         },

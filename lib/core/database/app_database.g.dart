@@ -668,6 +668,12 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   late final GeneratedColumn<String> armVersion = GeneratedColumn<String>(
       'arm_version', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armImportSessionIdMeta =
+      const VerificationMeta('armImportSessionId');
+  @override
+  late final GeneratedColumn<int> armImportSessionId = GeneratedColumn<int>(
+      'arm_import_session_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -713,7 +719,8 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         isArmLinked,
         armImportedAt,
         armSourceFile,
-        armVersion
+        armVersion,
+        armImportSessionId
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -944,6 +951,12 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           armVersion.isAcceptableOrUnknown(
               data['arm_version']!, _armVersionMeta));
     }
+    if (data.containsKey('arm_import_session_id')) {
+      context.handle(
+          _armImportSessionIdMeta,
+          armImportSessionId.isAcceptableOrUnknown(
+              data['arm_import_session_id']!, _armImportSessionIdMeta));
+    }
     return context;
   }
 
@@ -1041,6 +1054,8 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.string, data['${effectivePrefix}arm_source_file']),
       armVersion: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}arm_version']),
+      armImportSessionId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}arm_import_session_id']),
     );
   }
 
@@ -1103,6 +1118,10 @@ class Trial extends DataClass implements Insertable<Trial> {
   final DateTime? armImportedAt;
   final String? armSourceFile;
   final String? armVersion;
+
+  /// Session used for ARM import ratings; preferred for Rating Shell export.
+  /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
+  final int? armImportSessionId;
   const Trial(
       {required this.id,
       required this.name,
@@ -1147,7 +1166,8 @@ class Trial extends DataClass implements Insertable<Trial> {
       required this.isArmLinked,
       this.armImportedAt,
       this.armSourceFile,
-      this.armVersion});
+      this.armVersion,
+      this.armImportSessionId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1267,6 +1287,9 @@ class Trial extends DataClass implements Insertable<Trial> {
     if (!nullToAbsent || armVersion != null) {
       map['arm_version'] = Variable<String>(armVersion);
     }
+    if (!nullToAbsent || armImportSessionId != null) {
+      map['arm_import_session_id'] = Variable<int>(armImportSessionId);
+    }
     return map;
   }
 
@@ -1382,6 +1405,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       armVersion: armVersion == null && nullToAbsent
           ? const Value.absent()
           : Value(armVersion),
+      armImportSessionId: armImportSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armImportSessionId),
     );
   }
 
@@ -1434,6 +1460,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       armImportedAt: serializer.fromJson<DateTime?>(json['armImportedAt']),
       armSourceFile: serializer.fromJson<String?>(json['armSourceFile']),
       armVersion: serializer.fromJson<String?>(json['armVersion']),
+      armImportSessionId: serializer.fromJson<int?>(json['armImportSessionId']),
     );
   }
   @override
@@ -1484,6 +1511,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       'armImportedAt': serializer.toJson<DateTime?>(armImportedAt),
       'armSourceFile': serializer.toJson<String?>(armSourceFile),
       'armVersion': serializer.toJson<String?>(armVersion),
+      'armImportSessionId': serializer.toJson<int?>(armImportSessionId),
     };
   }
 
@@ -1531,7 +1559,8 @@ class Trial extends DataClass implements Insertable<Trial> {
           bool? isArmLinked,
           Value<DateTime?> armImportedAt = const Value.absent(),
           Value<String?> armSourceFile = const Value.absent(),
-          Value<String?> armVersion = const Value.absent()}) =>
+          Value<String?> armVersion = const Value.absent(),
+          Value<int?> armImportSessionId = const Value.absent()}) =>
       Trial(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -1591,6 +1620,9 @@ class Trial extends DataClass implements Insertable<Trial> {
         armSourceFile:
             armSourceFile.present ? armSourceFile.value : this.armSourceFile,
         armVersion: armVersion.present ? armVersion.value : this.armVersion,
+        armImportSessionId: armImportSessionId.present
+            ? armImportSessionId.value
+            : this.armImportSessionId,
       );
   Trial copyWithCompanion(TrialsCompanion data) {
     return Trial(
@@ -1671,6 +1703,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           : this.armSourceFile,
       armVersion:
           data.armVersion.present ? data.armVersion.value : this.armVersion,
+      armImportSessionId: data.armImportSessionId.present
+          ? data.armImportSessionId.value
+          : this.armImportSessionId,
     );
   }
 
@@ -1720,7 +1755,8 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('isArmLinked: $isArmLinked, ')
           ..write('armImportedAt: $armImportedAt, ')
           ..write('armSourceFile: $armSourceFile, ')
-          ..write('armVersion: $armVersion')
+          ..write('armVersion: $armVersion, ')
+          ..write('armImportSessionId: $armImportSessionId')
           ..write(')'))
         .toString();
   }
@@ -1770,7 +1806,8 @@ class Trial extends DataClass implements Insertable<Trial> {
         isArmLinked,
         armImportedAt,
         armSourceFile,
-        armVersion
+        armVersion,
+        armImportSessionId
       ]);
   @override
   bool operator ==(Object other) =>
@@ -1819,7 +1856,8 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.isArmLinked == this.isArmLinked &&
           other.armImportedAt == this.armImportedAt &&
           other.armSourceFile == this.armSourceFile &&
-          other.armVersion == this.armVersion);
+          other.armVersion == this.armVersion &&
+          other.armImportSessionId == this.armImportSessionId);
 }
 
 class TrialsCompanion extends UpdateCompanion<Trial> {
@@ -1867,6 +1905,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<DateTime?> armImportedAt;
   final Value<String?> armSourceFile;
   final Value<String?> armVersion;
+  final Value<int?> armImportSessionId;
   const TrialsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -1912,6 +1951,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.armImportedAt = const Value.absent(),
     this.armSourceFile = const Value.absent(),
     this.armVersion = const Value.absent(),
+    this.armImportSessionId = const Value.absent(),
   });
   TrialsCompanion.insert({
     this.id = const Value.absent(),
@@ -1958,6 +1998,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.armImportedAt = const Value.absent(),
     this.armSourceFile = const Value.absent(),
     this.armVersion = const Value.absent(),
+    this.armImportSessionId = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Trial> custom({
     Expression<int>? id,
@@ -2004,6 +2045,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<DateTime>? armImportedAt,
     Expression<String>? armSourceFile,
     Expression<String>? armVersion,
+    Expression<int>? armImportSessionId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2050,6 +2092,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (armImportedAt != null) 'arm_imported_at': armImportedAt,
       if (armSourceFile != null) 'arm_source_file': armSourceFile,
       if (armVersion != null) 'arm_version': armVersion,
+      if (armImportSessionId != null)
+        'arm_import_session_id': armImportSessionId,
     });
   }
 
@@ -2097,7 +2141,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<bool>? isArmLinked,
       Value<DateTime?>? armImportedAt,
       Value<String?>? armSourceFile,
-      Value<String?>? armVersion}) {
+      Value<String?>? armVersion,
+      Value<int?>? armImportSessionId}) {
     return TrialsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -2143,6 +2188,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       armImportedAt: armImportedAt ?? this.armImportedAt,
       armSourceFile: armSourceFile ?? this.armSourceFile,
       armVersion: armVersion ?? this.armVersion,
+      armImportSessionId: armImportSessionId ?? this.armImportSessionId,
     );
   }
 
@@ -2281,6 +2327,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (armVersion.present) {
       map['arm_version'] = Variable<String>(armVersion.value);
     }
+    if (armImportSessionId.present) {
+      map['arm_import_session_id'] = Variable<int>(armImportSessionId.value);
+    }
     return map;
   }
 
@@ -2330,7 +2379,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('isArmLinked: $isArmLinked, ')
           ..write('armImportedAt: $armImportedAt, ')
           ..write('armSourceFile: $armSourceFile, ')
-          ..write('armVersion: $armVersion')
+          ..write('armVersion: $armVersion, ')
+          ..write('armImportSessionId: $armImportSessionId')
           ..write(')'))
         .toString();
   }
@@ -5675,6 +5725,12 @@ class $TrialAssessmentsTable extends TrialAssessments
   late final GeneratedColumn<String> cropStageAtAssessment =
       GeneratedColumn<String>('crop_stage_at_assessment', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armImportColumnIndexMeta =
+      const VerificationMeta('armImportColumnIndex');
+  @override
+  late final GeneratedColumn<int> armImportColumnIndex = GeneratedColumn<int>(
+      'arm_import_column_index', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -5700,7 +5756,8 @@ class $TrialAssessmentsTable extends TrialAssessments
         pestName,
         eppoCodeLocal,
         bbchScale,
-        cropStageAtAssessment
+        cropStageAtAssessment,
+        armImportColumnIndex
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5839,6 +5896,12 @@ class $TrialAssessmentsTable extends TrialAssessments
           cropStageAtAssessment.isAcceptableOrUnknown(
               data['crop_stage_at_assessment']!, _cropStageAtAssessmentMeta));
     }
+    if (data.containsKey('arm_import_column_index')) {
+      context.handle(
+          _armImportColumnIndexMeta,
+          armImportColumnIndex.isAcceptableOrUnknown(
+              data['arm_import_column_index']!, _armImportColumnIndexMeta));
+    }
     return context;
   }
 
@@ -5898,6 +5961,8 @@ class $TrialAssessmentsTable extends TrialAssessments
       cropStageAtAssessment: attachedDatabase.typeMapping.read(
           DriftSqlType.string,
           data['${effectivePrefix}crop_stage_at_assessment']),
+      armImportColumnIndex: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}arm_import_column_index']),
     );
   }
 
@@ -5932,6 +5997,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
   final String? eppoCodeLocal;
   final String? bbchScale;
   final String? cropStageAtAssessment;
+
+  /// Original CSV column index for this assessment (ARM import); guides export ordering.
+  final int? armImportColumnIndex;
   const TrialAssessment(
       {required this.id,
       required this.trialId,
@@ -5956,7 +6024,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       this.pestName,
       this.eppoCodeLocal,
       this.bbchScale,
-      this.cropStageAtAssessment});
+      this.cropStageAtAssessment,
+      this.armImportColumnIndex});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -6009,6 +6078,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
     }
     if (!nullToAbsent || cropStageAtAssessment != null) {
       map['crop_stage_at_assessment'] = Variable<String>(cropStageAtAssessment);
+    }
+    if (!nullToAbsent || armImportColumnIndex != null) {
+      map['arm_import_column_index'] = Variable<int>(armImportColumnIndex);
     }
     return map;
   }
@@ -6065,6 +6137,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       cropStageAtAssessment: cropStageAtAssessment == null && nullToAbsent
           ? const Value.absent()
           : Value(cropStageAtAssessment),
+      armImportColumnIndex: armImportColumnIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armImportColumnIndex),
     );
   }
 
@@ -6101,6 +6176,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       bbchScale: serializer.fromJson<String?>(json['bbchScale']),
       cropStageAtAssessment:
           serializer.fromJson<String?>(json['cropStageAtAssessment']),
+      armImportColumnIndex:
+          serializer.fromJson<int?>(json['armImportColumnIndex']),
     );
   }
   @override
@@ -6132,6 +6209,7 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       'bbchScale': serializer.toJson<String?>(bbchScale),
       'cropStageAtAssessment':
           serializer.toJson<String?>(cropStageAtAssessment),
+      'armImportColumnIndex': serializer.toJson<int?>(armImportColumnIndex),
     };
   }
 
@@ -6159,7 +6237,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           Value<String?> pestName = const Value.absent(),
           Value<String?> eppoCodeLocal = const Value.absent(),
           Value<String?> bbchScale = const Value.absent(),
-          Value<String?> cropStageAtAssessment = const Value.absent()}) =>
+          Value<String?> cropStageAtAssessment = const Value.absent(),
+          Value<int?> armImportColumnIndex = const Value.absent()}) =>
       TrialAssessment(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -6200,6 +6279,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
         cropStageAtAssessment: cropStageAtAssessment.present
             ? cropStageAtAssessment.value
             : this.cropStageAtAssessment,
+        armImportColumnIndex: armImportColumnIndex.present
+            ? armImportColumnIndex.value
+            : this.armImportColumnIndex,
       );
   TrialAssessment copyWithCompanion(TrialAssessmentsCompanion data) {
     return TrialAssessment(
@@ -6253,6 +6335,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       cropStageAtAssessment: data.cropStageAtAssessment.present
           ? data.cropStageAtAssessment.value
           : this.cropStageAtAssessment,
+      armImportColumnIndex: data.armImportColumnIndex.present
+          ? data.armImportColumnIndex.value
+          : this.armImportColumnIndex,
     );
   }
 
@@ -6282,7 +6367,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           ..write('pestName: $pestName, ')
           ..write('eppoCodeLocal: $eppoCodeLocal, ')
           ..write('bbchScale: $bbchScale, ')
-          ..write('cropStageAtAssessment: $cropStageAtAssessment')
+          ..write('cropStageAtAssessment: $cropStageAtAssessment, ')
+          ..write('armImportColumnIndex: $armImportColumnIndex')
           ..write(')'))
         .toString();
   }
@@ -6312,7 +6398,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
         pestName,
         eppoCodeLocal,
         bbchScale,
-        cropStageAtAssessment
+        cropStageAtAssessment,
+        armImportColumnIndex
       ]);
   @override
   bool operator ==(Object other) =>
@@ -6341,7 +6428,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           other.pestName == this.pestName &&
           other.eppoCodeLocal == this.eppoCodeLocal &&
           other.bbchScale == this.bbchScale &&
-          other.cropStageAtAssessment == this.cropStageAtAssessment);
+          other.cropStageAtAssessment == this.cropStageAtAssessment &&
+          other.armImportColumnIndex == this.armImportColumnIndex);
 }
 
 class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
@@ -6369,6 +6457,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
   final Value<String?> eppoCodeLocal;
   final Value<String?> bbchScale;
   final Value<String?> cropStageAtAssessment;
+  final Value<int?> armImportColumnIndex;
   const TrialAssessmentsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -6394,6 +6483,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.eppoCodeLocal = const Value.absent(),
     this.bbchScale = const Value.absent(),
     this.cropStageAtAssessment = const Value.absent(),
+    this.armImportColumnIndex = const Value.absent(),
   });
   TrialAssessmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -6420,6 +6510,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.eppoCodeLocal = const Value.absent(),
     this.bbchScale = const Value.absent(),
     this.cropStageAtAssessment = const Value.absent(),
+    this.armImportColumnIndex = const Value.absent(),
   })  : trialId = Value(trialId),
         assessmentDefinitionId = Value(assessmentDefinitionId);
   static Insertable<TrialAssessment> custom({
@@ -6447,6 +6538,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     Expression<String>? eppoCodeLocal,
     Expression<String>? bbchScale,
     Expression<String>? cropStageAtAssessment,
+    Expression<int>? armImportColumnIndex,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6480,6 +6572,8 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       if (bbchScale != null) 'bbch_scale': bbchScale,
       if (cropStageAtAssessment != null)
         'crop_stage_at_assessment': cropStageAtAssessment,
+      if (armImportColumnIndex != null)
+        'arm_import_column_index': armImportColumnIndex,
     });
   }
 
@@ -6507,7 +6601,8 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       Value<String?>? pestName,
       Value<String?>? eppoCodeLocal,
       Value<String?>? bbchScale,
-      Value<String?>? cropStageAtAssessment}) {
+      Value<String?>? cropStageAtAssessment,
+      Value<int?>? armImportColumnIndex}) {
     return TrialAssessmentsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -6535,6 +6630,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       bbchScale: bbchScale ?? this.bbchScale,
       cropStageAtAssessment:
           cropStageAtAssessment ?? this.cropStageAtAssessment,
+      armImportColumnIndex: armImportColumnIndex ?? this.armImportColumnIndex,
     );
   }
 
@@ -6617,6 +6713,10 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       map['crop_stage_at_assessment'] =
           Variable<String>(cropStageAtAssessment.value);
     }
+    if (armImportColumnIndex.present) {
+      map['arm_import_column_index'] =
+          Variable<int>(armImportColumnIndex.value);
+    }
     return map;
   }
 
@@ -6646,7 +6746,8 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
           ..write('pestName: $pestName, ')
           ..write('eppoCodeLocal: $eppoCodeLocal, ')
           ..write('bbchScale: $bbchScale, ')
-          ..write('cropStageAtAssessment: $cropStageAtAssessment')
+          ..write('cropStageAtAssessment: $cropStageAtAssessment, ')
+          ..write('armImportColumnIndex: $armImportColumnIndex')
           ..write(')'))
         .toString();
   }
@@ -6850,6 +6951,18 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   late final GeneratedColumn<String> damageType = GeneratedColumn<String>(
       'damage_type', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armPlotNumberMeta =
+      const VerificationMeta('armPlotNumber');
+  @override
+  late final GeneratedColumn<int> armPlotNumber = GeneratedColumn<int>(
+      'arm_plot_number', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _armImportDataRowIndexMeta =
+      const VerificationMeta('armImportDataRowIndex');
+  @override
+  late final GeneratedColumn<int> armImportDataRowIndex = GeneratedColumn<int>(
+      'arm_import_data_row_index', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -6880,7 +6993,9 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
         deletedBy,
         excludeFromAnalysis,
         exclusionReason,
-        damageType
+        damageType,
+        armPlotNumber,
+        armImportDataRowIndex
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7045,6 +7160,18 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           damageType.isAcceptableOrUnknown(
               data['damage_type']!, _damageTypeMeta));
     }
+    if (data.containsKey('arm_plot_number')) {
+      context.handle(
+          _armPlotNumberMeta,
+          armPlotNumber.isAcceptableOrUnknown(
+              data['arm_plot_number']!, _armPlotNumberMeta));
+    }
+    if (data.containsKey('arm_import_data_row_index')) {
+      context.handle(
+          _armImportDataRowIndexMeta,
+          armImportDataRowIndex.isAcceptableOrUnknown(
+              data['arm_import_data_row_index']!, _armImportDataRowIndexMeta));
+    }
     return context;
   }
 
@@ -7113,6 +7240,10 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           DriftSqlType.string, data['${effectivePrefix}exclusion_reason']),
       damageType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}damage_type']),
+      armPlotNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}arm_plot_number']),
+      armImportDataRowIndex: attachedDatabase.typeMapping.read(DriftSqlType.int,
+          data['${effectivePrefix}arm_import_data_row_index']),
     );
   }
 
@@ -7157,6 +7288,12 @@ class Plot extends DataClass implements Insertable<Plot> {
   final bool excludeFromAnalysis;
   final String? exclusionReason;
   final String? damageType;
+
+  /// Canonical ARM plot number (matches Rating Shell plot column); nullable for non-ARM plots.
+  final int? armPlotNumber;
+
+  /// Index into source ARM CSV data rows for this plot row (import alignment).
+  final int? armImportDataRowIndex;
   const Plot(
       {required this.id,
       required this.trialId,
@@ -7186,7 +7323,9 @@ class Plot extends DataClass implements Insertable<Plot> {
       this.deletedBy,
       required this.excludeFromAnalysis,
       this.exclusionReason,
-      this.damageType});
+      this.damageType,
+      this.armPlotNumber,
+      this.armImportDataRowIndex});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -7265,6 +7404,12 @@ class Plot extends DataClass implements Insertable<Plot> {
     if (!nullToAbsent || damageType != null) {
       map['damage_type'] = Variable<String>(damageType);
     }
+    if (!nullToAbsent || armPlotNumber != null) {
+      map['arm_plot_number'] = Variable<int>(armPlotNumber);
+    }
+    if (!nullToAbsent || armImportDataRowIndex != null) {
+      map['arm_import_data_row_index'] = Variable<int>(armImportDataRowIndex);
+    }
     return map;
   }
 
@@ -7339,6 +7484,12 @@ class Plot extends DataClass implements Insertable<Plot> {
       damageType: damageType == null && nullToAbsent
           ? const Value.absent()
           : Value(damageType),
+      armPlotNumber: armPlotNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armPlotNumber),
+      armImportDataRowIndex: armImportDataRowIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armImportDataRowIndex),
     );
   }
 
@@ -7377,6 +7528,9 @@ class Plot extends DataClass implements Insertable<Plot> {
           serializer.fromJson<bool>(json['excludeFromAnalysis']),
       exclusionReason: serializer.fromJson<String?>(json['exclusionReason']),
       damageType: serializer.fromJson<String?>(json['damageType']),
+      armPlotNumber: serializer.fromJson<int?>(json['armPlotNumber']),
+      armImportDataRowIndex:
+          serializer.fromJson<int?>(json['armImportDataRowIndex']),
     );
   }
   @override
@@ -7412,6 +7566,8 @@ class Plot extends DataClass implements Insertable<Plot> {
       'excludeFromAnalysis': serializer.toJson<bool>(excludeFromAnalysis),
       'exclusionReason': serializer.toJson<String?>(exclusionReason),
       'damageType': serializer.toJson<String?>(damageType),
+      'armPlotNumber': serializer.toJson<int?>(armPlotNumber),
+      'armImportDataRowIndex': serializer.toJson<int?>(armImportDataRowIndex),
     };
   }
 
@@ -7444,7 +7600,9 @@ class Plot extends DataClass implements Insertable<Plot> {
           Value<String?> deletedBy = const Value.absent(),
           bool? excludeFromAnalysis,
           Value<String?> exclusionReason = const Value.absent(),
-          Value<String?> damageType = const Value.absent()}) =>
+          Value<String?> damageType = const Value.absent(),
+          Value<int?> armPlotNumber = const Value.absent(),
+          Value<int?> armImportDataRowIndex = const Value.absent()}) =>
       Plot(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -7486,6 +7644,11 @@ class Plot extends DataClass implements Insertable<Plot> {
             ? exclusionReason.value
             : this.exclusionReason,
         damageType: damageType.present ? damageType.value : this.damageType,
+        armPlotNumber:
+            armPlotNumber.present ? armPlotNumber.value : this.armPlotNumber,
+        armImportDataRowIndex: armImportDataRowIndex.present
+            ? armImportDataRowIndex.value
+            : this.armImportDataRowIndex,
       );
   Plot copyWithCompanion(PlotsCompanion data) {
     return Plot(
@@ -7544,6 +7707,12 @@ class Plot extends DataClass implements Insertable<Plot> {
           : this.exclusionReason,
       damageType:
           data.damageType.present ? data.damageType.value : this.damageType,
+      armPlotNumber: data.armPlotNumber.present
+          ? data.armPlotNumber.value
+          : this.armPlotNumber,
+      armImportDataRowIndex: data.armImportDataRowIndex.present
+          ? data.armImportDataRowIndex.value
+          : this.armImportDataRowIndex,
     );
   }
 
@@ -7578,7 +7747,9 @@ class Plot extends DataClass implements Insertable<Plot> {
           ..write('deletedBy: $deletedBy, ')
           ..write('excludeFromAnalysis: $excludeFromAnalysis, ')
           ..write('exclusionReason: $exclusionReason, ')
-          ..write('damageType: $damageType')
+          ..write('damageType: $damageType, ')
+          ..write('armPlotNumber: $armPlotNumber, ')
+          ..write('armImportDataRowIndex: $armImportDataRowIndex')
           ..write(')'))
         .toString();
   }
@@ -7613,7 +7784,9 @@ class Plot extends DataClass implements Insertable<Plot> {
         deletedBy,
         excludeFromAnalysis,
         exclusionReason,
-        damageType
+        damageType,
+        armPlotNumber,
+        armImportDataRowIndex
       ]);
   @override
   bool operator ==(Object other) =>
@@ -7647,7 +7820,9 @@ class Plot extends DataClass implements Insertable<Plot> {
           other.deletedBy == this.deletedBy &&
           other.excludeFromAnalysis == this.excludeFromAnalysis &&
           other.exclusionReason == this.exclusionReason &&
-          other.damageType == this.damageType);
+          other.damageType == this.damageType &&
+          other.armPlotNumber == this.armPlotNumber &&
+          other.armImportDataRowIndex == this.armImportDataRowIndex);
 }
 
 class PlotsCompanion extends UpdateCompanion<Plot> {
@@ -7680,6 +7855,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   final Value<bool> excludeFromAnalysis;
   final Value<String?> exclusionReason;
   final Value<String?> damageType;
+  final Value<int?> armPlotNumber;
+  final Value<int?> armImportDataRowIndex;
   const PlotsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -7710,6 +7887,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.excludeFromAnalysis = const Value.absent(),
     this.exclusionReason = const Value.absent(),
     this.damageType = const Value.absent(),
+    this.armPlotNumber = const Value.absent(),
+    this.armImportDataRowIndex = const Value.absent(),
   });
   PlotsCompanion.insert({
     this.id = const Value.absent(),
@@ -7741,6 +7920,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.excludeFromAnalysis = const Value.absent(),
     this.exclusionReason = const Value.absent(),
     this.damageType = const Value.absent(),
+    this.armPlotNumber = const Value.absent(),
+    this.armImportDataRowIndex = const Value.absent(),
   })  : trialId = Value(trialId),
         plotId = Value(plotId);
   static Insertable<Plot> custom({
@@ -7773,6 +7954,8 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     Expression<bool>? excludeFromAnalysis,
     Expression<String>? exclusionReason,
     Expression<String>? damageType,
+    Expression<int>? armPlotNumber,
+    Expression<int>? armImportDataRowIndex,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7806,6 +7989,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
         'exclude_from_analysis': excludeFromAnalysis,
       if (exclusionReason != null) 'exclusion_reason': exclusionReason,
       if (damageType != null) 'damage_type': damageType,
+      if (armPlotNumber != null) 'arm_plot_number': armPlotNumber,
+      if (armImportDataRowIndex != null)
+        'arm_import_data_row_index': armImportDataRowIndex,
     });
   }
 
@@ -7838,7 +8024,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       Value<String?>? deletedBy,
       Value<bool>? excludeFromAnalysis,
       Value<String?>? exclusionReason,
-      Value<String?>? damageType}) {
+      Value<String?>? damageType,
+      Value<int?>? armPlotNumber,
+      Value<int?>? armImportDataRowIndex}) {
     return PlotsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -7869,6 +8057,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       excludeFromAnalysis: excludeFromAnalysis ?? this.excludeFromAnalysis,
       exclusionReason: exclusionReason ?? this.exclusionReason,
       damageType: damageType ?? this.damageType,
+      armPlotNumber: armPlotNumber ?? this.armPlotNumber,
+      armImportDataRowIndex:
+          armImportDataRowIndex ?? this.armImportDataRowIndex,
     );
   }
 
@@ -7963,6 +8154,13 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     if (damageType.present) {
       map['damage_type'] = Variable<String>(damageType.value);
     }
+    if (armPlotNumber.present) {
+      map['arm_plot_number'] = Variable<int>(armPlotNumber.value);
+    }
+    if (armImportDataRowIndex.present) {
+      map['arm_import_data_row_index'] =
+          Variable<int>(armImportDataRowIndex.value);
+    }
     return map;
   }
 
@@ -7997,7 +8195,9 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
           ..write('deletedBy: $deletedBy, ')
           ..write('excludeFromAnalysis: $excludeFromAnalysis, ')
           ..write('exclusionReason: $exclusionReason, ')
-          ..write('damageType: $damageType')
+          ..write('damageType: $damageType, ')
+          ..write('armPlotNumber: $armPlotNumber, ')
+          ..write('armImportDataRowIndex: $armImportDataRowIndex')
           ..write(')'))
         .toString();
   }
@@ -25893,6 +26093,7 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<DateTime?> armImportedAt,
   Value<String?> armSourceFile,
   Value<String?> armVersion,
+  Value<int?> armImportSessionId,
 });
 typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<int> id,
@@ -25939,6 +26140,7 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<DateTime?> armImportedAt,
   Value<String?> armSourceFile,
   Value<String?> armVersion,
+  Value<int?> armImportSessionId,
 });
 
 class $$TrialsTableTableManager extends RootTableManager<
@@ -26002,6 +26204,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<DateTime?> armImportedAt = const Value.absent(),
             Value<String?> armSourceFile = const Value.absent(),
             Value<String?> armVersion = const Value.absent(),
+            Value<int?> armImportSessionId = const Value.absent(),
           }) =>
               TrialsCompanion(
             id: id,
@@ -26048,6 +26251,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             armImportedAt: armImportedAt,
             armSourceFile: armSourceFile,
             armVersion: armVersion,
+            armImportSessionId: armImportSessionId,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -26094,6 +26298,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<DateTime?> armImportedAt = const Value.absent(),
             Value<String?> armSourceFile = const Value.absent(),
             Value<String?> armVersion = const Value.absent(),
+            Value<int?> armImportSessionId = const Value.absent(),
           }) =>
               TrialsCompanion.insert(
             id: id,
@@ -26140,6 +26345,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             armImportedAt: armImportedAt,
             armSourceFile: armSourceFile,
             armVersion: armVersion,
+            armImportSessionId: armImportSessionId,
           ),
         ));
 }
@@ -26364,6 +26570,11 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<String> get armVersion => $state.composableBuilder(
       column: $state.table.armVersion,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armImportSessionId => $state.composableBuilder(
+      column: $state.table.armImportSessionId,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -26976,6 +27187,11 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<String> get armVersion => $state.composableBuilder(
       column: $state.table.armVersion,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armImportSessionId => $state.composableBuilder(
+      column: $state.table.armImportSessionId,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
@@ -28417,6 +28633,7 @@ typedef $$TrialAssessmentsTableCreateCompanionBuilder
   Value<String?> eppoCodeLocal,
   Value<String?> bbchScale,
   Value<String?> cropStageAtAssessment,
+  Value<int?> armImportColumnIndex,
 });
 typedef $$TrialAssessmentsTableUpdateCompanionBuilder
     = TrialAssessmentsCompanion Function({
@@ -28444,6 +28661,7 @@ typedef $$TrialAssessmentsTableUpdateCompanionBuilder
   Value<String?> eppoCodeLocal,
   Value<String?> bbchScale,
   Value<String?> cropStageAtAssessment,
+  Value<int?> armImportColumnIndex,
 });
 
 class $$TrialAssessmentsTableTableManager extends RootTableManager<
@@ -28488,6 +28706,7 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<String?> eppoCodeLocal = const Value.absent(),
             Value<String?> bbchScale = const Value.absent(),
             Value<String?> cropStageAtAssessment = const Value.absent(),
+            Value<int?> armImportColumnIndex = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion(
             id: id,
@@ -28514,6 +28733,7 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             eppoCodeLocal: eppoCodeLocal,
             bbchScale: bbchScale,
             cropStageAtAssessment: cropStageAtAssessment,
+            armImportColumnIndex: armImportColumnIndex,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -28540,6 +28760,7 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<String?> eppoCodeLocal = const Value.absent(),
             Value<String?> bbchScale = const Value.absent(),
             Value<String?> cropStageAtAssessment = const Value.absent(),
+            Value<int?> armImportColumnIndex = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion.insert(
             id: id,
@@ -28566,6 +28787,7 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             eppoCodeLocal: eppoCodeLocal,
             bbchScale: bbchScale,
             cropStageAtAssessment: cropStageAtAssessment,
+            armImportColumnIndex: armImportColumnIndex,
           ),
         ));
 }
@@ -28675,6 +28897,11 @@ class $$TrialAssessmentsTableFilterComposer
 
   ColumnFilters<String> get cropStageAtAssessment => $state.composableBuilder(
       column: $state.table.cropStageAtAssessment,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armImportColumnIndex => $state.composableBuilder(
+      column: $state.table.armImportColumnIndex,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -28870,6 +29097,11 @@ class $$TrialAssessmentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<int> get armImportColumnIndex => $state.composableBuilder(
+      column: $state.table.armImportColumnIndex,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -28941,6 +29173,8 @@ typedef $$PlotsTableCreateCompanionBuilder = PlotsCompanion Function({
   Value<bool> excludeFromAnalysis,
   Value<String?> exclusionReason,
   Value<String?> damageType,
+  Value<int?> armPlotNumber,
+  Value<int?> armImportDataRowIndex,
 });
 typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<int> id,
@@ -28972,6 +29206,8 @@ typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<bool> excludeFromAnalysis,
   Value<String?> exclusionReason,
   Value<String?> damageType,
+  Value<int?> armPlotNumber,
+  Value<int?> armImportDataRowIndex,
 });
 
 class $$PlotsTableTableManager extends RootTableManager<
@@ -29020,6 +29256,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<bool> excludeFromAnalysis = const Value.absent(),
             Value<String?> exclusionReason = const Value.absent(),
             Value<String?> damageType = const Value.absent(),
+            Value<int?> armPlotNumber = const Value.absent(),
+            Value<int?> armImportDataRowIndex = const Value.absent(),
           }) =>
               PlotsCompanion(
             id: id,
@@ -29051,6 +29289,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             excludeFromAnalysis: excludeFromAnalysis,
             exclusionReason: exclusionReason,
             damageType: damageType,
+            armPlotNumber: armPlotNumber,
+            armImportDataRowIndex: armImportDataRowIndex,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -29082,6 +29322,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<bool> excludeFromAnalysis = const Value.absent(),
             Value<String?> exclusionReason = const Value.absent(),
             Value<String?> damageType = const Value.absent(),
+            Value<int?> armPlotNumber = const Value.absent(),
+            Value<int?> armImportDataRowIndex = const Value.absent(),
           }) =>
               PlotsCompanion.insert(
             id: id,
@@ -29113,6 +29355,8 @@ class $$PlotsTableTableManager extends RootTableManager<
             excludeFromAnalysis: excludeFromAnalysis,
             exclusionReason: exclusionReason,
             damageType: damageType,
+            armPlotNumber: armPlotNumber,
+            armImportDataRowIndex: armImportDataRowIndex,
           ),
         ));
 }
@@ -29252,6 +29496,16 @@ class $$PlotsTableFilterComposer
 
   ColumnFilters<String> get damageType => $state.composableBuilder(
       column: $state.table.damageType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armPlotNumber => $state.composableBuilder(
+      column: $state.table.armPlotNumber,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armImportDataRowIndex => $state.composableBuilder(
+      column: $state.table.armImportDataRowIndex,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -29567,6 +29821,16 @@ class $$PlotsTableOrderingComposer
 
   ColumnOrderings<String> get damageType => $state.composableBuilder(
       column: $state.table.damageType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armPlotNumber => $state.composableBuilder(
+      column: $state.table.armPlotNumber,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armImportDataRowIndex => $state.composableBuilder(
+      column: $state.table.armImportDataRowIndex,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

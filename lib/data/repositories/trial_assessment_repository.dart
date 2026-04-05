@@ -93,6 +93,7 @@ class TrialAssessmentRepository {
     bool isActive = true,
     /// ARM assessment code (e.g. CONTRO, AVEFA); stored in [TrialAssessments.pestCode].
     String? pestCode,
+    int? armImportColumnIndex,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.into(_db.trialAssessments).insert(
@@ -107,6 +108,7 @@ class TrialAssessmentRepository {
             sortOrder: Value(sortOrder),
             isActive: Value(isActive),
             pestCode: Value(pestCode),
+            armImportColumnIndex: Value(armImportColumnIndex),
           ),
         );
   }

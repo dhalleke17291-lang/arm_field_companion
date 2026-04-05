@@ -149,6 +149,42 @@ void main() {
     }
   });
 
+  test('ARM import sets deterministic mapping fields', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'arm_map_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content = 'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+    expect(r.success, true);
+    final tid = r.trialId!;
+
+    final trial = await (db.select(db.trials)..where((t) => t.id.equals(tid)))
+        .getSingle();
+    expect(trial.armImportSessionId, isNotNull);
+    final sessions = await (db.select(db.sessions)
+          ..where((s) => s.trialId.equals(tid)))
+        .get();
+    expect(
+      sessions.map((s) => s.id).contains(trial.armImportSessionId),
+      isTrue,
+    );
+
+    final plotRows = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid)))
+        .get();
+    expect(plotRows, hasLength(1));
+    expect(plotRows.single.armPlotNumber, 101);
+    expect(plotRows.single.armImportDataRowIndex, 0);
+
+    final tas = await (db.select(db.trialAssessments)
+          ..where((t) => t.trialId.equals(tid)))
+        .get();
+    expect(tas, hasLength(1));
+    // Plot No., trt, reps = 0..2; assessment column index 3
+    expect(tas.single.armImportColumnIndex, 3);
+  });
+
   test('ERA column sets trial location', () async {
     final unique = DateTime.now().microsecondsSinceEpoch;
     final fileName = 'era_loc_$unique.csv';
