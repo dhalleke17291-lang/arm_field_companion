@@ -23,6 +23,7 @@ import '../../sessions/session_repository.dart';
 import '../export_confidence_policy.dart';
 import '../export_trial_usecase.dart' show PublishTrialExportDiagnostics;
 import 'arm_rating_shell_result.dart';
+import 'compute_arm_round_trip_diagnostics_usecase.dart';
 
 /// Optional share override for tests (avoids platform Share).
 typedef ArmRatingShellShareOverride = Future<void> Function(String filePath);
@@ -58,9 +59,17 @@ class ExportArmRatingShellUseCase {
         _ratingRepository = ratingRepository,
         _sessionRepository = sessionRepository,
         _persistence = persistence,
-        _publishExportDiagnostics = publishExportDiagnostics;
+        _publishExportDiagnostics = publishExportDiagnostics,
+        _computeArmRoundTripDiagnostics =
+            ComputeArmRoundTripDiagnosticsUseCase(
+          plotRepository: plotRepository,
+          trialAssessmentRepository: trialAssessmentRepository,
+          sessionRepository: sessionRepository,
+          ratingRepository: ratingRepository,
+        );
 
   final PublishTrialExportDiagnostics? _publishExportDiagnostics;
+  final ComputeArmRoundTripDiagnosticsUseCase _computeArmRoundTripDiagnostics;
 
   Future<ArmRatingShellResult> execute({
     required Trial trial,
@@ -123,6 +132,13 @@ class ExportArmRatingShellUseCase {
     final assessments = loaded[1] as List<TrialAssessment>;
     // ignore: unused_local_variable
     final treatments = loaded[2] as List<Treatment>;
+
+    final roundTripReport = await _computeArmRoundTripDiagnostics.execute(
+      trial: trial,
+      plots: plots,
+      assessments: assessments,
+    );
+    exportDiagnosticsBuffer.addAll(roundTripReport.toDiagnosticFindings());
 
     if (trial.isArmLinked &&
         plots.isNotEmpty &&
