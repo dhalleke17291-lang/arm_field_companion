@@ -337,6 +337,18 @@ class RatingRepository {
         .get();
   }
 
+  /// Distinct plot PKs with at least one current rating in [sessionId] (any assessment).
+  /// Matches [ratedPlotPksProvider] snapshot semantics.
+  Future<Set<int>> getRatedPlotPksForSession(int sessionId) async {
+    final ratings = await (_db.select(_db.ratingRecords)
+          ..where((r) =>
+              r.sessionId.equals(sessionId) &
+              r.isCurrent.equals(true) &
+              r.isDeleted.equals(false)))
+        .get();
+    return ratings.map((r) => r.plotPk).toSet();
+  }
+
   /// Recovery export: every [rating_records] row for [sessionId], including
   /// soft-deleted ratings and non-current chain members. Ordered by id ascending.
   Future<List<RatingRecord>> getRatingRecordsForSessionRecoveryExport(

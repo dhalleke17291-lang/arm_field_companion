@@ -32,6 +32,15 @@ class PlotRepository {
         .watch();
   }
 
+  /// Distinct plot PKs with at least one flag in [sessionId]
+  /// (matches [flaggedPlotIdsForSessionProvider] snapshot semantics).
+  Future<Set<int>> getFlaggedPlotPksForSession(int sessionId) async {
+    final rows = await (_db.select(_db.plotFlags)
+          ..where((f) => f.sessionId.equals(sessionId)))
+        .get();
+    return rows.map((f) => f.plotPk).toSet();
+  }
+
   Future<Plot?> getPlotByPk(int plotPk) {
     return (_db.select(_db.plots)
           ..where((p) => p.id.equals(plotPk) & p.isDeleted.equals(false)))

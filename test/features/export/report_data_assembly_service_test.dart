@@ -45,6 +45,9 @@ class MockPlotRepository implements PlotRepository {
       Stream.value(plotsForTrial);
 
   @override
+  Future<Set<int>> getFlaggedPlotPksForSession(int sessionId) async => {};
+
+  @override
   Future<Plot?> getPlotByPk(int plotPk) async => throw UnimplementedError();
 
   @override

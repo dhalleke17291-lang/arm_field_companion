@@ -194,6 +194,9 @@ class FakePlotRepository implements PlotRepository {
       Stream.value(plots.where((p) => p.trialId == trialId).toList());
 
   @override
+  Future<Set<int>> getFlaggedPlotPksForSession(int sessionId) async => {};
+
+  @override
   Future<Plot?> getPlotByPk(int plotPk) async => throw UnimplementedError();
 
   @override
@@ -310,6 +313,12 @@ class FakeRatingRepository implements RatingRepository {
   @override
   Future<List<RatingRecord>> getCurrentRatingsForSession(int sessionId) async =>
       ratings.where((r) => r.sessionId == sessionId).toList();
+
+  @override
+  Future<Set<int>> getRatedPlotPksForSession(int sessionId) async => ratings
+      .where((r) => r.sessionId == sessionId && r.isCurrent)
+      .map((r) => r.plotPk)
+      .toSet();
 
   @override
   Future<RatingRecord?> getCurrentRating({

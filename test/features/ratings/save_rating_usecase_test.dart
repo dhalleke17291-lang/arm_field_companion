@@ -157,6 +157,14 @@ class MockRatingRepository implements RatingRepository {
   }
 
   @override
+  Future<Set<int>> getRatedPlotPksForSession(int sessionId) async {
+    return _records
+        .where((r) => r.sessionId == sessionId && r.isCurrent)
+        .map((r) => r.plotPk)
+        .toSet();
+  }
+
+  @override
   Future<Set<int>> getRatedPlotPks({
     required int sessionId,
     required int assessmentId,

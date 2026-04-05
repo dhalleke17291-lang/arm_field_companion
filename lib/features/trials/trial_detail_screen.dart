@@ -15,10 +15,11 @@ import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
 import '../../core/workspace/workspace_config.dart';
 import '../sessions/create_session_screen.dart';
+import '../sessions/domain/session_close_attention_summary.dart';
+import '../sessions/domain/session_close_policy_result.dart';
 import '../sessions/domain/session_completeness_report.dart';
 import '../sessions/session_detail_screen.dart';
 import '../sessions/session_summary_screen.dart';
-import '../sessions/usecases/compute_session_completeness_usecase.dart';
 import '../plots/plot_queue_screen.dart';
 import 'full_protocol_details_screen.dart';
 import '../../core/providers.dart';
@@ -2106,7 +2107,7 @@ String _sessionCloseCompletenessIssueLine(SessionCompletenessIssue i) {
 enum _SessionIncompleteAction { keepOpen, reviewSession, plotQueue }
 
 List<String> _legacySessionCloseAttentionLines(
-    _SessionCloseAttentionSummary s) {
+    SessionCloseAttentionSummary s) {
   return [
     'Navigation — plots with any current rating: ${s.ratedPlots} of ${s.totalPlots}',
     if (s.unratedPlots > 0)
@@ -2723,51 +2724,6 @@ class SessionsView extends ConsumerWidget {
     }
   }
 
-  /// Matches plot-queue / session summary semantics for pre-close warning only.
-  /// Excludes guard rows ([Plot.isGuardRow]) from navigation/data-quality counts.
-  _SessionCloseAttentionSummary _computeSessionCloseAttentionSummary({
-    required List<Plot> plots,
-    required Set<int> ratedPks,
-    required Set<int> flaggedIds,
-    required List<RatingRecord> ratings,
-    required Set<int> corrections,
-  }) {
-    final targetPlots = plots.where((p) => !p.isGuardRow).toList();
-    final targetPlotPkSet = targetPlots.map((p) => p.id).toSet();
-
-    final totalPlots = targetPlots.length;
-    final ratedPlots =
-        targetPlots.where((p) => ratedPks.contains(p.id)).length;
-    final unratedPlots =
-        targetPlots.where((p) => !ratedPks.contains(p.id)).length;
-    final flaggedPlots =
-        flaggedIds.where(targetPlotPkSet.contains).length;
-    final ratingsByPlot = <int, List<RatingRecord>>{};
-    for (final r in ratings) {
-      ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
-    }
-    var issuesPlots = 0;
-    var editedPlots = 0;
-    for (final plot in targetPlots) {
-      final pr = ratingsByPlot[plot.id] ?? [];
-      if (pr.any((r) => r.resultStatus != 'RECORDED')) {
-        issuesPlots++;
-      }
-      if (pr.any((r) => r.amended || (r.previousId != null)) ||
-          corrections.contains(plot.id)) {
-        editedPlots++;
-      }
-    }
-    return _SessionCloseAttentionSummary(
-      totalPlots: totalPlots,
-      ratedPlots: ratedPlots,
-      unratedPlots: unratedPlots,
-      flaggedPlots: flaggedPlots,
-      issuesPlots: issuesPlots,
-      editedPlots: editedPlots,
-    );
-  }
-
   Future<_SessionIncompleteAction?> _showSessionIncompleteBlockerDialog(
     BuildContext context,
     Session session,
@@ -2841,7 +2797,7 @@ class SessionsView extends ConsumerWidget {
     BuildContext context,
     Session session,
     SessionCompletenessReport report,
-    _SessionCloseAttentionSummary summary, {
+    SessionCloseAttentionSummary summary, {
     required bool hasCompletenessWarnings,
     required bool legacyNeedsAttention,
   }) {
@@ -2994,30 +2950,12 @@ class SessionsView extends ConsumerWidget {
     );
     if (confirm != true || !context.mounted) return;
 
-    late final SessionCompletenessReport report;
-    late final _SessionCloseAttentionSummary summary;
+    late final SessionClosePolicyResult policy;
     try {
-      final completenessUseCase = ComputeSessionCompletenessUseCase(
-        ref.read(sessionRepositoryProvider),
-        ref.read(plotRepositoryProvider),
-        ref.read(ratingRepositoryProvider),
-      );
-      report = await completenessUseCase.execute(sessionId: session.id);
-
-      final plots = await ref.read(plotsForTrialProvider(trial.id).future);
-      final ratedPks = await ref.read(ratedPlotPksProvider(session.id).future);
-      final flaggedIds =
-          await ref.read(flaggedPlotIdsForSessionProvider(session.id).future);
-      final ratings = await ref.read(sessionRatingsProvider(session.id).future);
-      final corrections = await ref
-          .read(plotPksWithCorrectionsForSessionProvider(session.id).future);
-      summary = _computeSessionCloseAttentionSummary(
-        plots: plots,
-        ratedPks: ratedPks,
-        flaggedIds: flaggedIds,
-        ratings: ratings,
-        corrections: corrections,
-      );
+      policy = await ref.read(evaluateSessionClosePolicyUseCaseProvider).execute(
+            sessionId: session.id,
+            trialId: trial.id,
+          );
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -3032,12 +2970,14 @@ class SessionsView extends ConsumerWidget {
 
     if (!context.mounted) return;
 
+    final report = policy.completenessReport;
+    final summary = policy.attentionSummary;
     final hasCompletenessWarnings = report.issues.any(
       (i) => i.severity == SessionCompletenessIssueSeverity.warning,
     );
     final legacyNeedsAttention = summary.needsAttention;
 
-    if (!report.canClose) {
+    if (policy.decision == SessionClosePolicyDecision.blocked) {
       final action = await _showSessionIncompleteBlockerDialog(
         context,
         session,
@@ -3075,7 +3015,7 @@ class SessionsView extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    if (hasCompletenessWarnings || legacyNeedsAttention) {
+    if (policy.decision == SessionClosePolicyDecision.warnBeforeClose) {
       final action = await _showSessionCloseCombinedWarningDialog(
         context,
         session,
@@ -3119,30 +3059,6 @@ class SessionsView extends ConsumerWidget {
     if (!context.mounted) return;
     await _runCloseSessionUseCase(context, ref, session);
   }
-}
-
-class _SessionCloseAttentionSummary {
-  const _SessionCloseAttentionSummary({
-    required this.totalPlots,
-    required this.ratedPlots,
-    required this.unratedPlots,
-    required this.flaggedPlots,
-    required this.issuesPlots,
-    required this.editedPlots,
-  });
-
-  final int totalPlots;
-  final int ratedPlots;
-  final int unratedPlots;
-  final int flaggedPlots;
-  final int issuesPlots;
-  final int editedPlots;
-
-  bool get needsAttention =>
-      unratedPlots > 0 ||
-      flaggedPlots > 0 ||
-      issuesPlots > 0 ||
-      editedPlots > 0;
 }
 
 enum _SessionCloseAttentionAction {

@@ -33,6 +33,7 @@ import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
 import '../features/sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../features/sessions/usecases/compute_session_completeness_usecase.dart';
+import '../features/sessions/usecases/evaluate_session_close_policy_usecase.dart';
 import '../features/sessions/domain/session_completeness_report.dart';
 import '../features/export/data/export_repository.dart';
 import '../features/export/domain/export_session_csv_usecase.dart';
@@ -501,6 +502,15 @@ final computeSessionCompletenessUseCaseProvider =
     Provider<ComputeSessionCompletenessUseCase>((ref) {
   return ComputeSessionCompletenessUseCase(
     ref.watch(sessionRepositoryProvider),
+    ref.watch(plotRepositoryProvider),
+    ref.watch(ratingRepositoryProvider),
+  );
+});
+
+final evaluateSessionClosePolicyUseCaseProvider =
+    Provider<EvaluateSessionClosePolicyUseCase>((ref) {
+  return EvaluateSessionClosePolicyUseCase(
+    ref.watch(computeSessionCompletenessUseCaseProvider),
     ref.watch(plotRepositoryProvider),
     ref.watch(ratingRepositoryProvider),
   );
