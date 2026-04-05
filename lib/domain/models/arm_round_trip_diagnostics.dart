@@ -40,10 +40,16 @@ class ArmRoundTripDiagnostic {
 /// Aggregated round-trip report for a single trial.
 class ArmRoundTripDiagnosticReport {
   final int trialId;
+
+  /// Result of [SessionRepository.resolveSessionIdForRatingShell] for this trial.
+  /// Used by Phase 2 strict export policy (e.g. block when no session resolves).
+  final int? resolvedShellSessionId;
+
   final List<ArmRoundTripDiagnostic> diagnostics;
 
   const ArmRoundTripDiagnosticReport({
     required this.trialId,
+    this.resolvedShellSessionId,
     required this.diagnostics,
   });
 }

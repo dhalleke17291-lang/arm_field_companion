@@ -70,6 +70,34 @@ Future<void> _insertCompatibilityProfile({
   );
 }
 
+/// ARM strict export (Phase 2): plot arm numbers, TA column indexes, pinned session.
+Future<void> _pinArmExportAnchors(
+  AppDatabase db, {
+  required int trialId,
+  required int plotPk,
+  required int armPlotNumber,
+  required int trialAssessmentId,
+  int armImportColumnIndex = 2,
+  required int sessionId,
+}) async {
+  await (db.update(db.plots)..where((p) => p.id.equals(plotPk))).write(
+    PlotsCompanion(armPlotNumber: Value(armPlotNumber)),
+  );
+  await (db.update(db.trialAssessments)
+        ..where((t) => t.id.equals(trialAssessmentId)))
+      .write(
+    TrialAssessmentsCompanion(
+      armImportColumnIndex: Value(armImportColumnIndex),
+    ),
+  );
+  await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
+    TrialsCompanion(
+      isArmLinked: const Value(true),
+      armImportSessionId: Value(sessionId),
+    ),
+  );
+}
+
 Trial _trial({
   required int id,
   String name = 'Test Trial',
@@ -268,7 +296,7 @@ void main() {
         code: '1',
         name: 'T',
       );
-      await PlotRepository(db).insertPlot(
+      final plotPk = await PlotRepository(db).insertPlot(
         trialId: trialId,
         plotId: '101',
         rep: 1,
@@ -288,7 +316,7 @@ void main() {
               name: 'Legacy A',
             ),
           );
-      await db.into(db.trialAssessments).insert(
+      final taId = await db.into(db.trialAssessments).insert(
             TrialAssessmentsCompanion.insert(
               trialId: trialId,
               assessmentDefinitionId: defId,
@@ -297,14 +325,32 @@ void main() {
               pestCode: const Value('AVEFA'),
             ),
           );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-01-01',
+            ),
+          );
+      await _pinArmExportAnchors(
+        db,
+        trialId: trialId,
+        plotPk: plotPk,
+        armPlotNumber: 101,
+        trialAssessmentId: taId,
+        sessionId: sessionId,
+      );
       await _insertCompatibilityProfile(
         db: db,
         trialId: trialId,
         exportConfidence: ImportConfidence.high,
         columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
       );
+      final trialRow =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
       final uc = makeUc(pickShellPathOverride: () async => null);
-      final r = await uc.execute(trial: _trial(id: trialId));
+      final r = await uc.execute(trial: trialRow);
       expect(r.success, false);
       expect(r.errorMessage, contains('cancelled'));
     });
@@ -368,6 +414,15 @@ void main() {
             ),
           );
 
+      await _pinArmExportAnchors(
+        db,
+        trialId: trialId,
+        plotPk: plotPk,
+        armPlotNumber: 101,
+        trialAssessmentId: taId,
+        sessionId: sessionId,
+      );
+
       await _insertCompatibilityProfile(
         db: db,
         trialId: trialId,
@@ -393,10 +448,13 @@ void main() {
         ratingDates: const ['1-Jul-26'],
       );
 
+      final trialRow =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
       final uc = makeUc(
         pickShellPathOverride: () async => shellPath,
       );
-      final r = await uc.execute(trial: _trial(id: trialId));
+      final r = await uc.execute(trial: trialRow);
       expect(r.success, true);
       final path = r.filePath;
       if (path == null) fail('expected file path');
@@ -439,7 +497,7 @@ void main() {
               name: 'Legacy A',
             ),
           );
-      await db.into(db.trialAssessments).insert(
+      final taId = await db.into(db.trialAssessments).insert(
             TrialAssessmentsCompanion.insert(
               trialId: trialId,
               assessmentDefinitionId: defId,
@@ -472,11 +530,21 @@ void main() {
               plotPk: plotPk,
               assessmentId: legacyAsmId,
               sessionId: armSessionId,
+              trialAssessmentId: Value(taId),
               resultStatus: const Value('RECORDED'),
               numericValue: const Value(77.0),
               isCurrent: const Value(true),
             ),
           );
+
+      await _pinArmExportAnchors(
+        db,
+        trialId: trialId,
+        plotPk: plotPk,
+        armPlotNumber: 101,
+        trialAssessmentId: taId,
+        sessionId: armSessionId,
+      );
 
       await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
         TrialsCompanion(
@@ -525,6 +593,92 @@ void main() {
       final sheet = excel.sheets['Plot Data'];
       expect(sheet, isNotNull);
       expect(double.parse(_cellString(sheet!, 48, 2)), 77.0);
+    });
+
+    test('strict structural block stops export before shell (duplicate armPlotNumber)',
+        () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'DupPlot', workspaceType: 'efficacy');
+      final trtId = await TreatmentRepository(db).insertTreatment(
+        trialId: trialId,
+        code: '1',
+        name: 'T',
+      );
+      final p1 = await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: '101',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 1,
+      );
+      final p2 = await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: '102',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 2,
+      );
+      await (db.update(db.plots)..where((p) => p.id.isIn([p1, p2]))).write(
+        const PlotsCompanion(armPlotNumber: Value(101)),
+      );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'AVEFA',
+              name: 'A',
+              category: 'pest',
+              timingCode: const Value('1-Jul-26'),
+            ),
+          );
+      final legacyAsmId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: 'Legacy A',
+            ),
+          );
+      await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              legacyAssessmentId: Value(legacyAsmId),
+              sortOrder: const Value(0),
+              pestCode: const Value('AVEFA'),
+              armImportColumnIndex: const Value(2),
+            ),
+          );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-01-01',
+            ),
+          );
+      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
+        TrialsCompanion(
+          isArmLinked: const Value(true),
+          armImportSessionId: Value(sessionId),
+        ),
+      );
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+        columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+      );
+      final shellPath = await writeArmShellFixture(
+        tempPath,
+        plotNumbers: const [101],
+        armColumnIds: const ['001EID001'],
+        seNames: const ['AVEFA'],
+        ratingDates: const ['1-Jul-26'],
+      );
+      final trialRow =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
+      final r = await makeUc(pickShellPathOverride: () async => shellPath)
+          .execute(trial: trialRow);
+      expect(r.success, false);
+      expect(r.errorMessage, contains('duplicate armPlotNumber'));
     });
   });
 }

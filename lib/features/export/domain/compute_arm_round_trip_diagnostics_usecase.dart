@@ -33,20 +33,31 @@ class ComputeArmRoundTripDiagnosticsUseCase {
     List<TrialAssessment>? assessments,
   }) async {
     if (!trial.isArmLinked) {
-      return ArmRoundTripDiagnosticReport(trialId: trial.id, diagnostics: const []);
+      return ArmRoundTripDiagnosticReport(
+        trialId: trial.id,
+        resolvedShellSessionId: null,
+        diagnostics: const [],
+      );
     }
 
     final plotList = plots ?? await _plotRepository.getPlotsForTrial(trial.id);
     final assessmentList =
         assessments ?? await _trialAssessmentRepository.getForTrial(trial.id);
 
+    final resolved =
+        await _sessionRepository.resolveSessionIdForRatingShell(trial);
+
     final out = <ArmRoundTripDiagnostic>[];
 
     _applyPlotRules(plotList, trial.id, out);
     _applyAssessmentColumnRules(assessmentList, trial.id, out);
-    await _applySessionAndRatingRules(trial, out);
+    await _applySessionAndRatingRules(trial, resolved, out);
 
-    return ArmRoundTripDiagnosticReport(trialId: trial.id, diagnostics: out);
+    return ArmRoundTripDiagnosticReport(
+      trialId: trial.id,
+      resolvedShellSessionId: resolved,
+      diagnostics: out,
+    );
   }
 
   void _applyPlotRules(List<Plot> plots, int trialId, List<ArmRoundTripDiagnostic> out) {
@@ -136,10 +147,9 @@ class ComputeArmRoundTripDiagnosticsUseCase {
 
   Future<void> _applySessionAndRatingRules(
     Trial trial,
+    int? resolved,
     List<ArmRoundTripDiagnostic> out,
   ) async {
-    final resolved =
-        await _sessionRepository.resolveSessionIdForRatingShell(trial);
     final pinned = trial.armImportSessionId;
 
     if (pinned == null) {

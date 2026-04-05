@@ -22,6 +22,7 @@ import '../../ratings/rating_repository.dart';
 import '../../sessions/session_repository.dart';
 import '../export_confidence_policy.dart';
 import '../export_trial_usecase.dart' show PublishTrialExportDiagnostics;
+import 'arm_rating_shell_export_block_policy.dart';
 import 'arm_rating_shell_result.dart';
 import 'compute_arm_round_trip_diagnostics_usecase.dart';
 
@@ -34,7 +35,6 @@ class ExportArmRatingShellUseCase {
   final TreatmentRepository _treatmentRepository;
   final TrialAssessmentRepository _trialAssessmentRepository;
   final RatingRepository _ratingRepository;
-  final SessionRepository _sessionRepository;
   final ArmImportPersistenceRepository _persistence;
   final ArmRatingShellShareOverride? shareOverride;
 
@@ -57,7 +57,6 @@ class ExportArmRatingShellUseCase {
         _treatmentRepository = treatmentRepository,
         _trialAssessmentRepository = trialAssessmentRepository,
         _ratingRepository = ratingRepository,
-        _sessionRepository = sessionRepository,
         _persistence = persistence,
         _publishExportDiagnostics = publishExportDiagnostics,
         _computeArmRoundTripDiagnostics =
@@ -178,6 +177,22 @@ class ExportArmRatingShellUseCase {
       return ArmRatingShellResult.failure('No assessments found for trial.');
     }
 
+    final strictBlock = evaluateArmRatingShellStrictBlock(roundTripReport);
+    if (strictBlock.blocksExport) {
+      exportDiagnosticsBuffer.add(
+        DiagnosticFinding(
+          code: 'arm_rating_shell_strict_structural_block',
+          severity: DiagnosticSeverity.blocker,
+          message: strictBlock.userMessage,
+          trialId: trialPk,
+          source: DiagnosticSource.exportValidation,
+          blocksExport: true,
+        ),
+      );
+      publishExportDiagnostics();
+      return ArmRatingShellResult.failure(strictBlock.userMessage);
+    }
+
     final defById = await _loadDefinitionsForTrialAssessments(assessments);
     final snapshot = profile != null
         ? await (_db.select(_db.importSnapshots)
@@ -219,8 +234,7 @@ class ExportArmRatingShellUseCase {
     // ignore: unused_local_variable
     final snapshotTokens = _parseAssessmentTokens(snapshot?.assessmentTokens);
 
-    final sessionId =
-        await _sessionRepository.resolveSessionIdForRatingShell(trial);
+    final sessionId = roundTripReport.resolvedShellSessionId!;
 
     final String? shellPath;
     if (pickShellPathOverride != null) {
@@ -365,16 +379,6 @@ class ExportArmRatingShellUseCase {
         final legacyId = ta.legacyAssessmentId;
         if (legacyId == null) continue;
 
-        if (sessionId == null) {
-          ratingValues.add(
-            ArmRatingValue(
-              plotNumber: pr.plotNumber,
-              armColumnId: col.armColumnId,
-              value: '',
-            ),
-          );
-          continue;
-        }
         final rating = await _ratingRepository.getCurrentRating(
           trialId: trial.id,
           plotPk: plot.id,
