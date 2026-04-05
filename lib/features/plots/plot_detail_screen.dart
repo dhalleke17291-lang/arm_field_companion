@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
+import '../../domain/ratings/assessment_scale_resolver.dart';
+import '../../domain/ratings/save_rating_input.dart';
+import '../ratings/usecases/save_rating_usecase.dart';
 import 'plot_notes_dialog.dart';
 import '../../core/widgets/app_standard_widgets.dart';
 
@@ -560,6 +563,38 @@ Widget _infoRow(BuildContext context, String label, String value) {
   );
 }
 
+int _editRatingDefaultMax(String? unit) {
+  switch (unit?.toLowerCase().trim()) {
+    case 'cm':
+      return 350;
+    case 'm':
+      return 4;
+    case '%':
+      return 100;
+    case 'kg/ha':
+      return 20000;
+    case 'plants/plot':
+      return 999;
+    default:
+      return 999;
+  }
+}
+
+({double min, double max}) _editRatingNumericBounds(Assessment? assessment) {
+  if (assessment == null) {
+    return (min: 0.0, max: 999.0);
+  }
+  final resolved = resolveAssessmentScale(
+    assessment: assessment,
+    definitionScale: null,
+  );
+  final maxDefault = _editRatingDefaultMax(assessment.unit).toDouble();
+  return (
+    min: resolved.minValue ?? 0.0,
+    max: resolved.maxValue ?? maxDefault,
+  );
+}
+
 Future<void> _showEditRatingSheet(
   BuildContext context,
   WidgetRef ref,
@@ -568,7 +603,6 @@ Future<void> _showEditRatingSheet(
   Trial trial,
   Plot plot,
 ) async {
-  final repo = ref.read(ratingRepositoryProvider);
   String? lastRater = '';
   try {
     final prefs = await SharedPreferences.getInstance();
@@ -634,11 +668,23 @@ Future<void> _showEditRatingSheet(
                           content: Text('Amendment reason is required')));
                   return;
                 }
-                double? numericValue;
+                final session = await ref
+                    .read(sessionRepositoryProvider)
+                    .getSessionById(rating.sessionId);
+                if (session == null) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(content: Text('Session not found')));
+                  }
+                  return;
+                }
+
+                double? numericValue = rating.numericValue;
+                String? textValue = rating.textValue;
                 if (rating.resultStatus == 'RECORDED' &&
                     assessment?.dataType == 'numeric') {
-                  numericValue = double.tryParse(newValStr);
-                  if (numericValue == null && newValStr.isNotEmpty) {
+                  final parsed = double.tryParse(newValStr);
+                  if (parsed == null && newValStr.isNotEmpty) {
                     if (ctx.mounted) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
                           const SnackBar(
@@ -646,13 +692,70 @@ Future<void> _showEditRatingSheet(
                     }
                     return;
                   }
+                  if (parsed != null) {
+                    final bounds = _editRatingNumericBounds(assessment);
+                    numericValue = parsed.clamp(bounds.min, bounds.max);
+                  } else {
+                    numericValue = rating.numericValue;
+                  }
+                  textValue = null;
+                } else if (rating.resultStatus == 'RECORDED') {
+                  numericValue = null;
+                  textValue =
+                      newValStr.isNotEmpty ? newValStr : rating.textValue;
                 }
+
+                final bounds = _editRatingNumericBounds(assessment);
+                final assessmentConstraints = assessment != null
+                    ? RatingAssessmentConstraints(
+                        dataType: assessment.dataType,
+                        minValue: bounds.min,
+                        maxValue: bounds.max,
+                        unit: assessment.unit,
+                      )
+                    : null;
+
+                final now = DateTime.now();
+                final ratingTime =
+                    '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
                 try {
                   final userId = await ref.read(currentUserIdProvider.future);
-                  await repo.updateRating(
-                    ratingId: rating.id,
-                    numericValue: numericValue ?? rating.numericValue,
-                    textValue: newValStr.isNotEmpty ? newValStr : rating.textValue,
+                  final saveUseCase = ref.read(saveRatingUseCaseProvider);
+                  final ratingRepo = ref.read(ratingRepositoryProvider);
+                  final result = await saveUseCase.execute(SaveRatingInput(
+                    trialId: rating.trialId,
+                    plotPk: rating.plotPk,
+                    assessmentId: rating.assessmentId,
+                    sessionId: rating.sessionId,
+                    resultStatus: rating.resultStatus,
+                    numericValue: numericValue,
+                    textValue: textValue,
+                    subUnitId: rating.subUnitId,
+                    raterName: session.raterName,
+                    performedByUserId: userId,
+                    isSessionClosed: session.endedAt != null,
+                    minValue: bounds.min,
+                    maxValue: bounds.max,
+                    ratingTime: ratingTime,
+                    assessmentConstraints: assessmentConstraints,
+                  ));
+
+                  if (!result.isSuccess) {
+                    if (ctx.mounted) {
+                      final msg = result.isDebounced
+                          ? 'Please wait and try again'
+                          : (result.errorMessage ?? 'Could not save rating');
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(content: Text(msg)),
+                      );
+                    }
+                    return;
+                  }
+
+                  final saved = result.rating!;
+                  await ratingRepo.updateRating(
+                    ratingId: saved.id,
                     amendmentReason: reason,
                     amendedBy: amendedByController.text.trim().isEmpty
                         ? null

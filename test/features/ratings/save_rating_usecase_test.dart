@@ -97,21 +97,36 @@ class MockRatingRepository implements RatingRepository {
   @override
   Future<RatingRecord> updateRating({
     required int ratingId,
-    double? numericValue,
-    String? textValue,
-    String? resultStatus,
     String? amendmentReason,
     String? amendedBy,
     String? confidence,
     int? lastEditedByUserId,
   }) async {
     final idx = _records.indexWhere((r) => r.id == ratingId);
-    if (idx == -1) throw RatingIntegrityException('Rating not found: $ratingId');
+    if (idx == -1) {
+      throw RatingIntegrityException('Rating not found: $ratingId');
+    }
+    final hasAmendmentReason = amendmentReason != null;
+    final hasAmendedBy = amendedBy != null;
+    final hasConfidence = confidence != null;
+    final hasEditor = lastEditedByUserId != null;
+    if (!hasAmendmentReason &&
+        !hasAmendedBy &&
+        !hasConfidence &&
+        !hasEditor) {
+      throw RatingIntegrityException(
+        'No metadata fields to update. Rating value/status changes must use saveRating.',
+      );
+    }
     final r = _records[idx];
     _records[idx] = r.copyWith(
-      numericValue: Value(numericValue ?? r.numericValue),
-      textValue: Value(textValue ?? r.textValue),
-      resultStatus: resultStatus ?? r.resultStatus,
+      amendmentReason:
+          hasAmendmentReason ? Value(amendmentReason) : const Value.absent(),
+      amendedBy: hasAmendedBy ? Value(amendedBy) : const Value.absent(),
+      confidence: hasConfidence ? Value(confidence) : const Value.absent(),
+      lastEditedByUserId:
+          hasEditor ? Value(lastEditedByUserId) : const Value.absent(),
+      lastEditedAt: Value(DateTime.now().toUtc()),
     );
     return _records[idx];
   }
@@ -357,6 +372,65 @@ void main() {
 
       expect(statuses.contains(SaveRatingStatus.success), true);
       expect(statuses.contains(SaveRatingStatus.debounced), true);
+    });
+  });
+
+  group('updateRating — metadata only (mock parity with RatingRepository)', () {
+    test('throws when no metadata fields are provided', () async {
+      final row = await mockRepo.saveRating(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 3.0,
+        isSessionClosed: false,
+      );
+      expect(
+        () => mockRepo.updateRating(ratingId: row.id),
+        throwsA(isA<RatingIntegrityException>().having(
+          (e) => e.toString(),
+          'message',
+          contains('saveRating'),
+        )),
+      );
+    });
+
+    test('plot-detail style: save new value then metadata update keeps new value',
+        () async {
+      final first = await mockRepo.saveRating(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 2.0,
+        isSessionClosed: false,
+      );
+      final firstId = first.id;
+
+      final saveResult = await useCase.execute(const SaveRatingInput(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 9.0,
+      ));
+      expect(saveResult.isSuccess, true);
+      final newId = saveResult.rating!.id;
+
+      await mockRepo.updateRating(
+        ratingId: newId,
+        amendmentReason: 'Corrected entry',
+        lastEditedByUserId: 42,
+      );
+
+      final updated = await mockRepo.getRatingById(newId);
+      expect(updated!.numericValue, 9.0);
+      expect(updated.amendmentReason, 'Corrected entry');
+      expect(updated.lastEditedByUserId, 42);
+      expect(firstId, isNot(newId));
     });
   });
 }

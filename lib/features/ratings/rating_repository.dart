@@ -226,63 +226,52 @@ class RatingRepository {
         .getSingleOrNull();
   }
 
-  /// Update an existing rating (edit flow). Applies amendment logic: if the
-  /// stored value is changed and there was an existing value, sets amended=true,
-  /// amended_at=now(), and preserves original_value only if currently null.
-  //
-  // TODO(integrity): In-place mutation vs version-chain policy must be aligned
-  // with [saveRating] / [RatingValueValidator] before extending integrity rules here.
+  /// Metadata-only updates on an existing rating row (e.g. [amendmentReason],
+  /// [amendedBy], [confidence], editor attribution).
+  ///
+  /// **Policy:** [saveRating] is the only path that may change [numericValue],
+  /// [textValue], or [resultStatus] (new version-chain row + audit). Callers
+  /// must route value/status edits through [saveRating] (e.g. via
+  /// `SaveRatingUseCase`).
+  ///
+  /// At least one optional field must be non-null or this throws — there is no
+  /// silent no-op for accidental misuse.
   Future<RatingRecord> updateRating({
     required int ratingId,
-    double? numericValue,
-    String? textValue,
-    String? resultStatus,
     String? amendmentReason,
     String? amendedBy,
     String? confidence,
     int? lastEditedByUserId,
   }) async {
     final existing = await getRatingById(ratingId);
-    if (existing == null) throw RatingIntegrityException('Rating not found: $ratingId');
-
-    final newNum = numericValue ?? existing.numericValue;
-    final newText = textValue ?? existing.textValue;
-    final newStatus = resultStatus ?? existing.resultStatus;
-
-    final existingValueStr = existing.numericValue?.toString() ?? existing.textValue ?? '';
-    final newValueStr = newNum?.toString() ?? newText ?? '';
-    final valueChanged = existingValueStr != newValueStr && existingValueStr.isNotEmpty;
-
-    bool amended = existing.amended;
-    DateTime? amendedAt = existing.amendedAt;
-    String? originalValue = existing.originalValue;
-
-    DateTime? editAtUtc;
-    if (valueChanged) {
-      amended = true;
-      editAtUtc = DateTime.now().toUtc();
-      amendedAt = editAtUtc;
-      if (originalValue == null || originalValue.isEmpty) {
-        originalValue = existingValueStr;
-      }
+    if (existing == null) {
+      throw RatingIntegrityException('Rating not found: $ratingId');
     }
 
+    final hasAmendmentReason = amendmentReason != null;
+    final hasAmendedBy = amendedBy != null;
+    final hasConfidence = confidence != null;
+    final hasEditor = lastEditedByUserId != null;
+    if (!hasAmendmentReason &&
+        !hasAmendedBy &&
+        !hasConfidence &&
+        !hasEditor) {
+      throw RatingIntegrityException(
+        'No metadata fields to update. Rating value/status changes must use saveRating.',
+      );
+    }
+
+    final nowUtc = DateTime.now().toUtc();
     await (_db.update(_db.ratingRecords)..where((r) => r.id.equals(ratingId)))
         .write(
       RatingRecordsCompanion(
-        numericValue: Value(newNum),
-        textValue: Value(newText),
-        resultStatus: Value(newStatus),
-        amended: Value(amended),
-        amendedAt: Value(amendedAt),
-        originalValue: Value(originalValue),
-        amendmentReason: amendmentReason != null ? Value(amendmentReason) : const Value.absent(),
-        amendedBy: amendedBy != null ? Value(amendedBy) : const Value.absent(),
-        confidence: confidence != null ? Value(confidence) : const Value.absent(),
-        lastEditedAt: editAtUtc != null ? Value(editAtUtc) : const Value.absent(),
-        lastEditedByUserId: editAtUtc != null && lastEditedByUserId != null
-            ? Value(lastEditedByUserId)
-            : const Value.absent(),
+        amendmentReason:
+            hasAmendmentReason ? Value(amendmentReason) : const Value.absent(),
+        amendedBy: hasAmendedBy ? Value(amendedBy) : const Value.absent(),
+        confidence: hasConfidence ? Value(confidence) : const Value.absent(),
+        lastEditedByUserId:
+            hasEditor ? Value(lastEditedByUserId) : const Value.absent(),
+        lastEditedAt: Value(nowUtc),
       ),
     );
 

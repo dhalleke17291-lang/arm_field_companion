@@ -334,9 +334,6 @@ class _FakeRatingRepository implements RatingRepository {
   @override
   Future<RatingRecord> updateRating({
     required int ratingId,
-    double? numericValue,
-    String? textValue,
-    String? resultStatus,
     String? amendmentReason,
     String? amendedBy,
     String? confidence,
