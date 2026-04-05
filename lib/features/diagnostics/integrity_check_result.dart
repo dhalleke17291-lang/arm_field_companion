@@ -1,3 +1,5 @@
+import '../../core/diagnostics/diagnostic_finding.dart';
+
 /// Severity for integrity findings.
 enum IntegritySeverity { error, warning, informational }
 
@@ -16,4 +18,24 @@ class IntegrityIssue {
     this.detail,
     this.severity = IntegritySeverity.warning,
   });
+}
+
+extension IntegrityIssueExtension on IntegrityIssue {
+  DiagnosticFinding toDiagnosticFinding({int? trialId}) {
+    final diagSeverity = switch (severity) {
+      IntegritySeverity.error => DiagnosticSeverity.blocker,
+      IntegritySeverity.warning => DiagnosticSeverity.warning,
+      IntegritySeverity.informational => DiagnosticSeverity.info,
+    };
+    return DiagnosticFinding(
+      code: code,
+      severity: diagSeverity,
+      message: summary,
+      detail: detail,
+      trialId: trialId,
+      source: DiagnosticSource.readiness,
+      blocksExport: diagSeverity == DiagnosticSeverity.blocker,
+      blocksAction: false,
+    );
+  }
 }

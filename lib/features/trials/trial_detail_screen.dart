@@ -3076,6 +3076,8 @@ String _sourceLabel(DiagnosticSource source) {
     DiagnosticSource.exportValidation => 'export',
     DiagnosticSource.armConfidence => 'ARM',
     DiagnosticSource.readiness => '',
+    DiagnosticSource.sessionCompleteness => '',
+    DiagnosticSource.attention => '',
   };
 }
 

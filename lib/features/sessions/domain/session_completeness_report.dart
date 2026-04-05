@@ -1,3 +1,5 @@
+import '../../../core/diagnostics/diagnostic_finding.dart';
+
 /// Severity for [SessionCompletenessIssue]. Blockers prevent [SessionCompletenessReport.canClose].
 enum SessionCompletenessIssueSeverity {
   blocker,
@@ -73,4 +75,38 @@ class SessionCompletenessReport {
 
   /// True when there are no blocker-severity issues.
   final bool canClose;
+}
+
+extension SessionCompletenessIssueExtension on SessionCompletenessIssue {
+  /// Human-readable line aligned with trial detail close-dialog copy.
+  DiagnosticFinding toDiagnosticFinding({
+    required int trialId,
+    required int sessionId,
+  }) {
+    final diagSeverity = severity == SessionCompletenessIssueSeverity.blocker
+        ? DiagnosticSeverity.blocker
+        : DiagnosticSeverity.warning;
+    final message = switch (code) {
+      SessionCompletenessIssueCode.sessionNotFound => 'Session not found.',
+      SessionCompletenessIssueCode.noSessionAssessments =>
+        'This session has no linked assessments.',
+      SessionCompletenessIssueCode.missingCurrentRating =>
+        'Missing rating for plot $plotPk (assessment $assessmentId).',
+      SessionCompletenessIssueCode.voidRating =>
+        'Void rating on plot $plotPk (assessment $assessmentId).',
+      SessionCompletenessIssueCode.nonRecordedStatus =>
+        'Non-recorded status on plot $plotPk (assessment $assessmentId).',
+    };
+    return DiagnosticFinding(
+      code: code.name,
+      severity: diagSeverity,
+      message: message,
+      trialId: trialId,
+      sessionId: sessionId,
+      plotPk: plotPk,
+      source: DiagnosticSource.sessionCompleteness,
+      blocksExport: diagSeverity == DiagnosticSeverity.blocker,
+      blocksAction: false,
+    );
+  }
 }

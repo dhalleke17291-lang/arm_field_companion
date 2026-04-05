@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/diagnostics/diagnostic_finding.dart';
 import '../../core/database/app_database.dart';
 import '../../core/workspace/workspace_config.dart';
 import '../../data/repositories/seeding_repository.dart';
@@ -255,5 +256,25 @@ class TrialAttentionService {
         (a, b) => a.severity.index.compareTo(b.severity.index));
 
     return items;
+  }
+}
+
+extension AttentionItemExtension on AttentionItem {
+  DiagnosticFinding toDiagnosticFinding({required int trialId}) {
+    final diagSeverity = switch (severity) {
+      AttentionSeverity.high || AttentionSeverity.medium =>
+        DiagnosticSeverity.warning,
+      AttentionSeverity.low || AttentionSeverity.info =>
+        DiagnosticSeverity.info,
+    };
+    return DiagnosticFinding(
+      code: type.name,
+      severity: diagSeverity,
+      message: label,
+      trialId: trialId,
+      source: DiagnosticSource.attention,
+      blocksExport: false,
+      blocksAction: false,
+    );
   }
 }

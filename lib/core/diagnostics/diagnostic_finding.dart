@@ -2,7 +2,13 @@
 /// and ARM confidence surfaces.
 enum DiagnosticSeverity { info, warning, blocker }
 
-enum DiagnosticSource { readiness, exportValidation, armConfidence }
+enum DiagnosticSource {
+  readiness,
+  exportValidation,
+  armConfidence,
+  sessionCompleteness,
+  attention,
+}
 
 class DiagnosticFinding {
   /// Stable identifier — never changes for UX.
