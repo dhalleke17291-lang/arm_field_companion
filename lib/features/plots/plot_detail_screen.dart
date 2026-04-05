@@ -7,10 +7,12 @@ import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../../domain/ratings/save_rating_input.dart';
+import '../ratings/rating_lineage_sheet.dart';
 import '../ratings/rating_scale_map.dart';
 import '../ratings/usecases/amend_plot_rating_usecase.dart';
 import 'plot_detail_form_controller.dart';
 import 'plot_notes_dialog.dart';
+import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/app_standard_widgets.dart';
 import '../../domain/models/plot_context.dart';
 
@@ -98,6 +100,7 @@ class _PlotRatingHistoryList extends StatelessWidget {
     required this.plot,
     required this.onAmendmentTap,
     required this.onEditRatingTap,
+    required this.onHistoryTap,
   });
 
   final List<RatingRecord> ratings;
@@ -109,6 +112,7 @@ class _PlotRatingHistoryList extends StatelessWidget {
       onAmendmentTap;
   final void Function(RatingRecord rating, Assessment? assessment)
       onEditRatingTap;
+  final void Function(RatingRecord rating, Assessment? assessment) onHistoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -125,19 +129,38 @@ class _PlotRatingHistoryList extends StatelessWidget {
                 .firstOrNull;
             return Card(
               child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: rating.resultStatus == 'RECORDED'
-                      ? Colors.green.shade100
-                      : Colors.orange.shade100,
-                  child: Icon(
-                    rating.resultStatus == 'RECORDED'
-                        ? Icons.check
-                        : Icons.info_outline,
-                    color: rating.resultStatus == 'RECORDED'
-                        ? Colors.green
-                        : Colors.orange,
-                    size: 20,
-                  ),
+                leading: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: rating.resultStatus == 'RECORDED'
+                          ? Colors.green.shade100
+                          : Colors.orange.shade100,
+                      child: Icon(
+                        rating.resultStatus == 'RECORDED'
+                            ? Icons.check
+                            : Icons.info_outline,
+                        color: rating.resultStatus == 'RECORDED'
+                            ? Colors.green
+                            : Colors.orange,
+                        size: 20,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.history,
+                        size: AppDesignTokens.spacing20,
+                        color: AppDesignTokens.primary,
+                      ),
+                      tooltip: 'History',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: AppDesignTokens.spacing32,
+                        minHeight: AppDesignTokens.spacing32,
+                      ),
+                      onPressed: () => onHistoryTap(rating, assessment),
+                    ),
+                  ],
                 ),
                 title: Text(
                   assessment?.name ?? 'Assessment',
@@ -543,6 +566,17 @@ class PlotDetailScreen extends ConsumerWidget {
                         onEditRatingTap: (rating, assessment) =>
                             _showEditRatingSheet(
                                 context, ref, rating, assessment, trial, plot),
+                        onHistoryTap: (rating, assessment) =>
+                            showRatingLineageBottomSheet(
+                          context: context,
+                          ref: ref,
+                          trialId: trial.id,
+                          plotPk: plot.id,
+                          assessmentId: rating.assessmentId,
+                          sessionId: rating.sessionId,
+                          assessmentName: assessment?.name ?? 'Assessment',
+                          plotLabel: getDisplayPlotLabel(plotToShow, plots),
+                        ),
                       ),
                     ],
             ),

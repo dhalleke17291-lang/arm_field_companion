@@ -230,6 +230,38 @@ class MockRatingRepository implements RatingRepository {
     list.sort((a, b) => a.id.compareTo(b.id));
     return list;
   }
+
+  @override
+  Future<List<RatingRecord>> getRatingChainForPlotAssessmentSession({
+    required int trialId,
+    required int plotPk,
+    required int assessmentId,
+    required int sessionId,
+  }) async {
+    final list = _records
+        .where((r) =>
+            r.trialId == trialId &&
+            r.plotPk == plotPk &&
+            r.assessmentId == assessmentId &&
+            r.sessionId == sessionId &&
+            !r.isDeleted)
+        .toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
+
+  @override
+  Future<List<RatingCorrection>> getCorrectionsForRatingIds(
+          List<int> ratingIds) async =>
+      [];
+
+  @override
+  Future<List<DeviationFlag>> getVoidDeviationFlags({
+    required int trialId,
+    required int sessionId,
+    required int plotPk,
+  }) async =>
+      [];
 }
 
 class _NoOpRatingReferentialIntegrity implements RatingReferentialIntegrity {

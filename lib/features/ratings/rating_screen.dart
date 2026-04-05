@@ -25,6 +25,7 @@ import '../photos/photo_filename_helper.dart';
 import '../photos/photo_view_screen.dart';
 import '../photos/usecases/save_photo_usecase.dart';
 import 'last_value_memory.dart';
+import 'rating_lineage_sheet.dart';
 import 'usecases/save_rating_usecase.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/rating_order_sheet.dart';
@@ -438,11 +439,41 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     if (ex != null) {
                       _showVoidRatingDialog(context, ex);
                     }
+                  } else if (value == 'rating_history') {
+                    final ex = existingRatingAsync.asData?.value;
+                    if (ex != null) {
+                      showRatingLineageBottomSheet(
+                        context: context,
+                        ref: ref,
+                        trialId: widget.trial.id,
+                        plotPk: widget.plot.id,
+                        assessmentId: _currentAssessment.id,
+                        sessionId: widget.session.id,
+                        assessmentName: _currentAssessment.name,
+                        plotLabel:
+                            getDisplayPlotLabel(widget.plot, widget.allPlots),
+                      );
+                    }
                   }
                 },
                 itemBuilder: (context) {
                   final items = <PopupMenuEntry<String>>[];
                   final existing = existingRatingAsync.asData?.value;
+                  if (existing != null) {
+                    items.add(
+                      const PopupMenuItem<String>(
+                        value: 'rating_history',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.history, size: 20),
+                            SizedBox(width: AppDesignTokens.spacing12),
+                            Text('History'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
                   if (isSessionEditable(widget.session) &&
                       existing != null &&
                       existing.resultStatus == 'RECORDED') {

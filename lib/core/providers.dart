@@ -33,6 +33,7 @@ import '../features/ratings/usecases/save_rating_usecase.dart';
 import '../features/ratings/usecases/undo_rating_usecase.dart';
 import '../features/ratings/usecases/apply_correction_usecase.dart';
 import '../features/ratings/usecases/void_rating_usecase.dart';
+import '../features/ratings/usecases/rating_lineage_usecase.dart';
 import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
 import '../features/sessions/usecases/start_or_continue_rating_usecase.dart';
@@ -515,6 +516,10 @@ final voidRatingUseCaseProvider = Provider<VoidRatingUseCase>((ref) {
     ref.watch(ratingRepositoryProvider),
     ref.watch(ratingIntegrityGuardProvider),
   );
+});
+
+final ratingLineageUseCaseProvider = Provider<RatingLineageUseCase>((ref) {
+  return RatingLineageUseCase(ref.watch(ratingRepositoryProvider));
 });
 
 /// Latest correction for a rating (for effective value display).

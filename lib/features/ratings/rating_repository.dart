@@ -439,6 +439,54 @@ class RatingRepository {
     return {for (final c in rows) if (c.plotPk != null) c.plotPk!};
   }
 
+  /// All non-deleted rating versions for plot / assessment / session (version chain).
+  /// Ordered by [RatingRecord.id] ascending (oldest version first).
+  Future<List<RatingRecord>> getRatingChainForPlotAssessmentSession({
+    required int trialId,
+    required int plotPk,
+    required int assessmentId,
+    required int sessionId,
+  }) {
+    return (_db.select(_db.ratingRecords)
+          ..where((r) =>
+              r.trialId.equals(trialId) &
+              r.plotPk.equals(plotPk) &
+              r.assessmentId.equals(assessmentId) &
+              r.sessionId.equals(sessionId) &
+              r.isDeleted.equals(false))
+          ..orderBy([(r) => OrderingTerm.asc(r.id)]))
+        .get();
+  }
+
+  /// Corrections for any rating in [ratingIds], oldest first by [RatingCorrection.correctedAt].
+  Future<List<RatingCorrection>> getCorrectionsForRatingIds(
+      List<int> ratingIds) async {
+    if (ratingIds.isEmpty) return [];
+    return (_db.select(_db.ratingCorrections)
+          ..where((c) => c.ratingId.isIn(ratingIds))
+          ..orderBy([
+            (c) => OrderingTerm.asc(c.correctedAt),
+            (c) => OrderingTerm.asc(c.id),
+          ]))
+        .get();
+  }
+
+  /// [VOID_RATING] deviation rows for this plot context (void reason text).
+  Future<List<DeviationFlag>> getVoidDeviationFlags({
+    required int trialId,
+    required int sessionId,
+    required int plotPk,
+  }) {
+    return (_db.select(_db.deviationFlags)
+          ..where((d) =>
+              d.trialId.equals(trialId) &
+              d.sessionId.equals(sessionId) &
+              d.plotPk.equals(plotPk) &
+              d.deviationType.equals('VOID_RATING'))
+          ..orderBy([(d) => OrderingTerm.asc(d.createdAt)]))
+        .get();
+  }
+
   /// Applies a correction (closed sessions only). Original rating is never updated.
   Future<RatingCorrection> applyCorrection({
     required int ratingId,
