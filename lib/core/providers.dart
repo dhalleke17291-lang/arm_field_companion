@@ -76,6 +76,18 @@ import 'export_guard.dart';
 import 'workspace/workspace_filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// ARCHITECTURE RULE: Use case return types
+/// New use cases must return domain result types (e.g. SaveRatingResult),
+/// never raw Drift row types (e.g. RatingRecord, Session, Trial).
+/// Existing use cases that return Drift rows are documented technical debt:
+/// - SaveRatingUseCase (RatingRecord)
+/// - CreateSessionUseCase (Session)
+/// - CreateTrialUseCase (Trial)
+/// - StartOrContinueRatingUseCase (Trial, Session, List<Plot>, List<Assessment>)
+/// - ApplyCorrectionUseCase (RatingCorrection)
+/// - SavePhotoUseCase (Photo)
+/// These will be migrated to domain types when their consumers are next modified.
+
 final exportGuardProvider = Provider<ExportGuard>((ref) => ExportGuard());
 
 final databaseProvider = Provider<AppDatabase>((ref) {
