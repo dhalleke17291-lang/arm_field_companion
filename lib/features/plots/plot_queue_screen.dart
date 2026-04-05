@@ -163,6 +163,26 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     });
   }
 
+  /// Maps [Assessment.id] to [AssessmentDefinition] scale via [TrialAssessment.legacyAssessmentId].
+  Map<int, ({double? scaleMin, double? scaleMax})> _ratingScaleMap() {
+    final trialAssessments = ref
+            .read(trialAssessmentsForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <TrialAssessment>[];
+    final definitions = ref.read(assessmentDefinitionsProvider).valueOrNull ??
+        <AssessmentDefinition>[];
+    final defById = {for (final d in definitions) d.id: d};
+    return {
+      for (final ta in trialAssessments)
+        if (ta.legacyAssessmentId != null)
+          if (defById[ta.assessmentDefinitionId] != null)
+            ta.legacyAssessmentId!: (
+              scaleMin: defById[ta.assessmentDefinitionId]!.scaleMin,
+              scaleMax: defById[ta.assessmentDefinitionId]!.scaleMax,
+            ),
+    };
+  }
+
   Future<void> _openRatingFromQueue(
     BuildContext context,
     Plot plot,
@@ -197,6 +217,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           filteredPlotIds: filteredPlotIds,
           isFilteredMode: isFilteredMode,
           navigationModeLabel: navigationModeLabel,
+          scaleMap: _ratingScaleMap(),
         ),
       ),
     );

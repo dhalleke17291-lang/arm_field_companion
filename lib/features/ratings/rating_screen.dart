@@ -77,6 +77,10 @@ class RatingScreen extends ConsumerStatefulWidget {
   /// Short label from Plot Queue when a single filter is active (e.g. "Unrated"); null → generic chip.
   final String? navigationModeLabel;
 
+  /// Scale bounds from [AssessmentDefinition] keyed by [Assessment.id] (trial assessment row).
+  /// Used to enforce ARM-defined min/max when linked via [TrialAssessment.legacyAssessmentId].
+  final Map<int, ({double? scaleMin, double? scaleMax})>? scaleMap;
+
   const RatingScreen({
     super.key,
     required this.trial,
@@ -89,6 +93,7 @@ class RatingScreen extends ConsumerStatefulWidget {
     this.filteredPlotIds,
     this.isFilteredMode = false,
     this.navigationModeLabel,
+    this.scaleMap,
   });
 
   @override
@@ -2151,14 +2156,21 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
-  // TODO: wire AssessmentDefinition.scaleMin/scaleMax once Assessment model exposes those fields.
   /// Effective min for value entry; default 0 when minValue is null.
-  double get _effectiveMin =>
-      _currentAssessment.minValue ?? 0.0;
+  double get _effectiveMin {
+    final scale = widget.scaleMap?[_currentAssessment.id];
+    return scale?.scaleMin ??
+        _currentAssessment.minValue ??
+        0.0;
+  }
 
   /// Effective max for value entry; unit-aware default when maxValue is null.
-  double get _effectiveMax =>
-      _currentAssessment.maxValue ?? _defaultMax(_currentAssessment.unit).toDouble();
+  double get _effectiveMax {
+    final scale = widget.scaleMap?[_currentAssessment.id];
+    return scale?.scaleMax ??
+        _currentAssessment.maxValue ??
+        _defaultMax(_currentAssessment.unit).toDouble();
+  }
 
   void _clampValueToEffectiveRange() {
     final v = double.tryParse(_valueController.text);
@@ -2806,6 +2818,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           allPlots: widget.allPlots,
           currentPlotIndex: index,
           initialAssessmentIndex: null,
+          scaleMap: widget.scaleMap,
         ),
       ),
     );
@@ -3150,6 +3163,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           filteredPlotIds: null,
           isFilteredMode: false,
           navigationModeLabel: null,
+          scaleMap: widget.scaleMap,
         ),
       ),
     );
@@ -3294,6 +3308,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           filteredPlotIds: widget.filteredPlotIds,
           isFilteredMode: widget.isFilteredMode,
           navigationModeLabel: widget.navigationModeLabel,
+          scaleMap: widget.scaleMap,
         ),
       ),
     );
