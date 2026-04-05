@@ -139,6 +139,9 @@ Future<String> writeArmShellFixture(
   required List<String> armColumnIds,
   required List<String> seNames,
   List<String>? ratingDates,
+  List<String>? ratingTypes,
+  List<String>? ratingUnits,
+  List<String>? ratingTimings,
 }) async {
   final excel = Excel.createExcel();
   excel.rename('Sheet1', 'Plot Data');
@@ -171,10 +174,24 @@ Future<String> writeArmShellFixture(
       ratingDates != null && i < ratingDates.length ? ratingDates[i] : '',
     );
     setText(17, col, seNames[i]);
-    setText(20, col, 'TYPE');
-    setText(21, col, 'u');
+    setText(
+      20,
+      col,
+      ratingTypes != null && i < ratingTypes.length ? ratingTypes[i] : 'TYPE',
+    );
+    setText(
+      21,
+      col,
+      ratingUnits != null && i < ratingUnits.length ? ratingUnits[i] : 'u',
+    );
     setText(29, col, 'st');
-    setText(41, col, 'tim');
+    setText(
+      41,
+      col,
+      ratingTimings != null && i < ratingTimings.length
+          ? ratingTimings[i]
+          : 'tim',
+    );
     setText(46, col, '1');
   }
 
@@ -477,6 +494,267 @@ void main() {
       expect(sheet, isNotNull);
       expect(_cellString(sheet!, 48, 2), '42.5');
     });
+
+    test(
+      'seName matches pestCode before ratingType; avoids positional fallback',
+      () async {
+        final trialRepo = TrialRepository(db);
+        final trialId =
+            await trialRepo.createTrial(name: 'SeNameMatch', workspaceType: 'efficacy');
+        final trtId = await TreatmentRepository(db).insertTreatment(
+          trialId: trialId,
+          code: '1',
+          name: 'Check',
+        );
+        final plotPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '101',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 1,
+        );
+        final defId = await db.into(db.assessmentDefinitions).insert(
+              AssessmentDefinitionsCompanion.insert(
+                code: 'AVEFA',
+                name: 'A',
+                category: 'pest',
+                timingCode: const Value('1-Jul-26'),
+              ),
+            );
+        final legacyAsmId = await db.into(db.assessments).insert(
+              AssessmentsCompanion.insert(
+                trialId: trialId,
+                name: 'Legacy A',
+              ),
+            );
+        final taId = await db.into(db.trialAssessments).insert(
+              TrialAssessmentsCompanion.insert(
+                trialId: trialId,
+                assessmentDefinitionId: defId,
+                legacyAssessmentId: Value(legacyAsmId),
+                sortOrder: const Value(0),
+                pestCode: const Value('AVEFA'),
+              ),
+            );
+        final sessionId = await db.into(db.sessions).insert(
+              SessionsCompanion.insert(
+                trialId: trialId,
+                name: 'S1',
+                sessionDateLocal: '2026-01-01',
+              ),
+            );
+        await db.into(db.ratingRecords).insert(
+              RatingRecordsCompanion.insert(
+                trialId: trialId,
+                plotPk: plotPk,
+                assessmentId: legacyAsmId,
+                sessionId: sessionId,
+                trialAssessmentId: Value(taId),
+                resultStatus: const Value('RECORDED'),
+                numericValue: const Value(19.25),
+                isCurrent: const Value(true),
+              ),
+            );
+
+        await _pinArmExportAnchors(
+          db,
+          trialId: trialId,
+          plotPk: plotPk,
+          armPlotNumber: 101,
+          trialAssessmentId: taId,
+          sessionId: sessionId,
+        );
+        await (db.update(db.trialAssessments)..where((t) => t.id.equals(taId)))
+            .write(
+          const TrialAssessmentsCompanion(
+            armImportColumnIndex: Value(99),
+          ),
+        );
+
+        await _insertCompatibilityProfile(
+          db: db,
+          trialId: trialId,
+          exportConfidence: ImportConfidence.high,
+          columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+          assessmentTokens: [
+            {
+              'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+              'armCode': 'AVEFA',
+              'timingCode': '1-Jul-26',
+              'unit': '%',
+              'ratingDate': null,
+              'assessmentKey': 'k',
+            },
+          ],
+        );
+
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001'],
+          seNames: const ['  aVeFa  '],
+          ratingDates: const ['1-Jul-26'],
+          ratingTypes: const ['NOT_THE_PEST_CODE'],
+        );
+
+        final trialRow =
+            await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+                .getSingle();
+        final codes = <String>[];
+        final uc = makeUc(
+          pickShellPathOverride: () async => shellPath,
+          publishExportDiagnostics: (_, findings, __) {
+            codes.addAll(findings.map((f) => f.code));
+          },
+        );
+        final r = await uc.execute(trial: trialRow);
+        expect(r.success, true);
+        expect(
+          codes.contains('arm_round_trip_fallback_assessment_match_used'),
+          false,
+        );
+        expect(
+          codes.contains('arm_rating_shell_strict_structural_block'),
+          false,
+        );
+        final path = r.filePath;
+        if (path == null) fail('expected file path');
+        final sheet =
+            Excel.decodeBytes(await File(path).readAsBytes()).sheets['Plot Data']!;
+        expect(_cellString(sheet, 48, 2), '19.25');
+      },
+    );
+
+    test(
+      'duplicate seName resolved by timing to single shell column',
+      () async {
+        final trialRepo = TrialRepository(db);
+        final trialId =
+            await trialRepo.createTrial(name: 'SeNameTiming', workspaceType: 'efficacy');
+        final trtId = await TreatmentRepository(db).insertTreatment(
+          trialId: trialId,
+          code: '1',
+          name: 'Check',
+        );
+        final plotPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '101',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 1,
+        );
+        final defId = await db.into(db.assessmentDefinitions).insert(
+              AssessmentDefinitionsCompanion.insert(
+                code: 'AVEFA',
+                name: 'A',
+                category: 'pest',
+                timingCode: const Value('1-Jul-26'),
+              ),
+            );
+        final legacyAsmId = await db.into(db.assessments).insert(
+              AssessmentsCompanion.insert(
+                trialId: trialId,
+                name: 'Legacy A',
+              ),
+            );
+        final taId = await db.into(db.trialAssessments).insert(
+              TrialAssessmentsCompanion.insert(
+                trialId: trialId,
+                assessmentDefinitionId: defId,
+                legacyAssessmentId: Value(legacyAsmId),
+                sortOrder: const Value(0),
+                pestCode: const Value('AVEFA'),
+              ),
+            );
+        final sessionId = await db.into(db.sessions).insert(
+              SessionsCompanion.insert(
+                trialId: trialId,
+                name: 'S1',
+                sessionDateLocal: '2026-01-01',
+              ),
+            );
+        await db.into(db.ratingRecords).insert(
+              RatingRecordsCompanion.insert(
+                trialId: trialId,
+                plotPk: plotPk,
+                assessmentId: legacyAsmId,
+                sessionId: sessionId,
+                trialAssessmentId: Value(taId),
+                resultStatus: const Value('RECORDED'),
+                numericValue: const Value(33.33),
+                isCurrent: const Value(true),
+              ),
+            );
+
+        await _pinArmExportAnchors(
+          db,
+          trialId: trialId,
+          plotPk: plotPk,
+          armPlotNumber: 101,
+          trialAssessmentId: taId,
+          sessionId: sessionId,
+        );
+        await (db.update(db.trialAssessments)..where((t) => t.id.equals(taId)))
+            .write(
+          const TrialAssessmentsCompanion(
+            armImportColumnIndex: Value(99),
+          ),
+        );
+
+        await _insertCompatibilityProfile(
+          db: db,
+          trialId: trialId,
+          exportConfidence: ImportConfidence.high,
+          columnOrderOnExport: const [
+            'AVEFA 1-Jul-26 CONTRO %',
+            'AVEFA 1-Aug-26 CONTRO %',
+          ],
+          assessmentTokens: [
+            {
+              'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+              'armCode': 'AVEFA',
+              'timingCode': '1-Jul-26',
+              'unit': '%',
+              'ratingDate': null,
+              'assessmentKey': 'k',
+            },
+          ],
+        );
+
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001', '002EID002'],
+          seNames: const ['AVEFA', 'AVEFA'],
+          ratingDates: const ['', ''],
+          ratingTypes: const ['ZZ1', 'ZZ2'],
+          ratingTimings: const ['1-Jul-26', '1-Aug-26'],
+        );
+
+        final trialRow =
+            await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+                .getSingle();
+        final codes = <String>[];
+        final uc = makeUc(
+          pickShellPathOverride: () async => shellPath,
+          publishExportDiagnostics: (_, findings, __) {
+            codes.addAll(findings.map((f) => f.code));
+          },
+        );
+        final r = await uc.execute(trial: trialRow);
+        expect(r.success, true);
+        expect(
+          codes.contains('arm_round_trip_fallback_assessment_match_used'),
+          false,
+        );
+        final path = r.filePath;
+        if (path == null) fail('expected file path');
+        final sheet =
+            Excel.decodeBytes(await File(path).readAsBytes()).sheets['Plot Data']!;
+        expect(_cellString(sheet, 48, 2), '33.33');
+        expect(_cellString(sheet, 48, 3), '');
+      },
+    );
 
     test(
       'shell row maps to data plot only; guard with same plotId is not matched',
@@ -937,11 +1215,13 @@ void main() {
           ],
         );
 
+        // seName must not equal pestCode (AVEFA) or seName match would avoid
+        // positional fallback and Phase 3 would not run.
         final shellPath = await writeArmShellFixture(
           tempPath,
           plotNumbers: const [101],
           armColumnIds: const ['001EID001'],
-          seNames: const ['AVEFA'],
+          seNames: const ['OTHERSE'],
           ratingDates: const ['1-Jul-26'],
         );
 
@@ -1079,7 +1359,7 @@ void main() {
           tempPath,
           plotNumbers: const [101],
           armColumnIds: const ['001EID001'],
-          seNames: const ['AVEFA'],
+          seNames: const ['OTHERSE'],
           ratingDates: const ['1-Jul-26'],
         );
 

@@ -32,6 +32,39 @@ import 'compute_arm_round_trip_diagnostics_usecase.dart';
 /// Optional share override for tests (avoids platform Share).
 typedef ArmRatingShellShareOverride = Future<void> Function(String filePath);
 
+String? _normalizeArmShellMatchString(String? s) {
+  if (s == null) return null;
+  final t = s.trim();
+  if (t.isEmpty) return null;
+  return t.toUpperCase();
+}
+
+bool _armShellUnitMatchesDefinition(String? defUnitTrimmed, ArmColumnMap c) {
+  if (defUnitTrimmed == null || defUnitTrimmed.isEmpty) return true;
+  return c.ratingUnit?.trim() == defUnitTrimmed;
+}
+
+/// Loose timing alignment for disambiguation when [ArmColumnMap.seName] + unit
+/// match multiple columns. Requires non-empty normalized [timingNormUpper].
+bool _shellColumnTimingCompatibleWithDefinition(
+  ArmColumnMap c,
+  String timingNormUpper,
+) {
+  if (timingNormUpper.isEmpty) return false;
+  bool aligns(String? shellPart) {
+    final v = _normalizeArmShellMatchString(shellPart);
+    if (v == null) return false;
+    if (v == timingNormUpper) return true;
+    if (timingNormUpper.length >= 4 && v.length >= 4) {
+      if (v.contains(timingNormUpper) || timingNormUpper.contains(v)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return aligns(c.ratingTiming) || aligns(c.ratingDate);
+}
+
 class ExportArmRatingShellUseCase {
   final AppDatabase _db;
   final PlotRepository _plotRepository;
@@ -526,10 +559,13 @@ class ExportArmRatingShellUseCase {
   /// Resolves shell column for a [TrialAssessment].
   ///
   /// Order: (1) unique column whose [ArmColumnMap.columnIndex] equals
-  /// [TrialAssessment.armImportColumnIndex]; (2) unique rating type + unit
-  /// match vs [AssessmentDefinition]; (3) positional slot in [columns].
+  /// [TrialAssessment.armImportColumnIndex]; (2) unique [ArmColumnMap.seName] +
+  /// unit vs [TrialAssessment.pestCode] / [AssessmentDefinition.unit], with
+  /// optional timing disambiguation when [AssessmentDefinition.timingCode]
+  /// narrows multiple seName matches to one; (3) unique rating type + unit
+  /// vs pestCode; (4) positional slot in [columns].
   ///
-  /// [usedPositionalFallback] is true only for case (3) when a column is
+  /// [usedPositionalFallback] is true only for case (4) when a column is
   /// returned (export-time positional matching instead of identity).
   ({ArmColumnMap? column, bool usedPositionalFallback})
   _matchColumnForAssessment({
@@ -551,14 +587,45 @@ class ExportArmRatingShellUseCase {
       }
     }
 
-    final pestCode = ta.pestCode?.trim().toUpperCase();
-    final unit = def?.unit?.trim();
-    if (pestCode != null && pestCode.isNotEmpty) {
+    final pestCodeNorm = _normalizeArmShellMatchString(ta.pestCode);
+    final unitTrimmed = def?.unit?.trim() ?? '';
+
+    if (pestCodeNorm != null) {
+      final seMatches = columns.where((c) {
+        if (_normalizeArmShellMatchString(c.seName) != pestCodeNorm) {
+          return false;
+        }
+        return _armShellUnitMatchesDefinition(
+          unitTrimmed.isEmpty ? null : unitTrimmed,
+          c,
+        );
+      }).toList();
+
+      if (seMatches.length == 1) {
+        return (column: seMatches.single, usedPositionalFallback: false);
+      }
+      if (seMatches.length > 1) {
+        final timingNorm =
+            _normalizeArmShellMatchString(def?.timingCode);
+        if (timingNorm != null && timingNorm.isNotEmpty) {
+          final byTiming = seMatches
+              .where(
+                (c) => _shellColumnTimingCompatibleWithDefinition(c, timingNorm),
+              )
+              .toList();
+          if (byTiming.length == 1) {
+            return (column: byTiming.single, usedPositionalFallback: false);
+          }
+        }
+      }
+    }
+
+    if (pestCodeNorm != null) {
       final matches = columns.where((c) {
-        final typeMatch = c.ratingType?.trim().toUpperCase() == pestCode;
-        final unitMatch = unit == null ||
-            unit.isEmpty ||
-            c.ratingUnit?.trim() == unit;
+        final typeMatch =
+            _normalizeArmShellMatchString(c.ratingType) == pestCodeNorm;
+        final unitMatch = unitTrimmed.isEmpty ||
+            c.ratingUnit?.trim() == unitTrimmed;
         return typeMatch && unitMatch;
       }).toList();
       if (matches.length == 1) {
@@ -567,7 +634,7 @@ class ExportArmRatingShellUseCase {
       if (matches.length > 1) {
         debugPrint(
           'ExportArmRatingShell: ambiguous ratingType match for '
-          'pestCode="$pestCode" unit="$unit" — '
+          'pestCode="$pestCodeNorm" unit="$unitTrimmed" — '
           '${matches.length} columns match, using positional.',
         );
       }
