@@ -32,6 +32,8 @@ import '../features/ratings/usecases/apply_correction_usecase.dart';
 import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
 import '../features/sessions/usecases/start_or_continue_rating_usecase.dart';
+import '../features/sessions/usecases/compute_session_completeness_usecase.dart';
+import '../features/sessions/domain/session_completeness_report.dart';
 import '../features/export/data/export_repository.dart';
 import '../features/export/domain/export_session_csv_usecase.dart';
 import '../features/export/domain/export_session_arm_xml_usecase.dart';
@@ -491,6 +493,31 @@ final startOrContinueRatingUseCaseProvider =
   );
 });
 
+/// [ComputeSessionCompletenessUseCase] for [SessionCompletenessReport].
+///
+/// [SessionCompletenessReport] is the authoritative **scientific / session**
+/// completeness source (per session assessment, guard rows excluded, close gating).
+final computeSessionCompletenessUseCaseProvider =
+    Provider<ComputeSessionCompletenessUseCase>((ref) {
+  return ComputeSessionCompletenessUseCase(
+    ref.watch(sessionRepositoryProvider),
+    ref.watch(plotRepositoryProvider),
+    ref.watch(ratingRepositoryProvider),
+  );
+});
+
+/// Async [SessionCompletenessReport] for one session id.
+///
+/// Prefer this (or the use case above) for completeness and close readiness.
+/// [ratedPlotPksProvider] is **navigation / progress** only (any current rating
+/// per plot) and must not be treated as scientific completeness.
+final sessionCompletenessReportProvider = FutureProvider.autoDispose
+    .family<SessionCompletenessReport, int>((ref, sessionId) async {
+  return ref
+      .read(computeSessionCompletenessUseCaseProvider)
+      .execute(sessionId: sessionId);
+});
+
 final trialsStreamProvider = StreamProvider((ref) {
   return ref.watch(trialRepositoryProvider).watchAllTrials();
 });
@@ -663,6 +690,11 @@ final sessionAssessmentsProvider =
       .asyncMap((_) => sessionRepo.getSessionAssessments(sessionId));
 });
 
+/// Plot PKs with at least one **current** rating in the session (any assessment).
+///
+/// **Navigation / plot-queue progress** only—not [SessionCompletenessReport] /
+/// per-assessment completeness. Use [sessionCompletenessReportProvider] for
+/// scientific session completeness and close gating.
 final ratedPlotPksProvider =
     StreamProvider.family<Set<int>, int>((ref, sessionId) {
   final db = ref.watch(databaseProvider);
