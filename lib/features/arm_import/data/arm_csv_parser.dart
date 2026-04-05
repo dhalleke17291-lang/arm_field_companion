@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../domain/models/arm_assessment_identity.dart';
 import '../domain/enums/arm_column_kind.dart';
 import '../domain/models/arm_column_classification.dart';
 import '../domain/models/assessment_token.dart';
@@ -382,6 +383,20 @@ class ArmCsvParser {
       hasSparseData: hasSparseData,
       hasRepeatedCodes: hasRepeatedCodes,
       importConfidence: confidence,
+    );
+  }
+}
+
+extension AssessmentTokenArmAssessmentIdentity on AssessmentToken {
+  /// Maps CSV token fields to [ArmAssessmentIdentity] (no shell [seName]).
+  ArmAssessmentIdentity toIdentity() {
+    final normalizedUnit = unit.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final tc = timingCode.trim();
+    return ArmAssessmentIdentity(
+      code: armCode,
+      unit: normalizedUnit.isEmpty ? null : normalizedUnit,
+      timingCode: tc.isEmpty ? null : tc,
+      seName: null,
     );
   }
 }

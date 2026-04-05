@@ -14,9 +14,12 @@ import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
 import '../../../data/services/arm_value_injector.dart';
+import '../../../domain/models/arm_assessment_identity.dart';
+import '../../../domain/models/arm_assessment_matcher.dart';
 import '../../../domain/models/arm_column_map.dart';
 import '../../../domain/models/arm_rating_value.dart';
 import '../../../domain/models/arm_round_trip_diagnostics.dart';
+import '../../arm_import/data/arm_csv_parser.dart';
 import '../../arm_import/data/arm_import_persistence_repository.dart';
 import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
@@ -32,40 +35,10 @@ import 'compute_arm_round_trip_diagnostics_usecase.dart';
 /// Optional share override for tests (avoids platform Share).
 typedef ArmRatingShellShareOverride = Future<void> Function(String filePath);
 
-String? _normalizeArmShellMatchString(String? s) {
-  if (s == null) return null;
-  final t = s.trim();
-  if (t.isEmpty) return null;
-  return t.toUpperCase();
-}
-
-bool _armShellUnitMatchesDefinition(String? defUnitTrimmed, ArmColumnMap c) {
-  if (defUnitTrimmed == null || defUnitTrimmed.isEmpty) return true;
-  return c.ratingUnit?.trim() == defUnitTrimmed;
-}
-
-/// Loose timing alignment for disambiguation when [ArmColumnMap.seName] + unit
-/// match multiple columns. Requires non-empty normalized [timingNormUpper].
-bool _shellColumnTimingCompatibleWithDefinition(
-  ArmColumnMap c,
-  String timingNormUpper,
-) {
-  if (timingNormUpper.isEmpty) return false;
-  bool aligns(String? shellPart) {
-    final v = _normalizeArmShellMatchString(shellPart);
-    if (v == null) return false;
-    if (v == timingNormUpper) return true;
-    if (timingNormUpper.length >= 4 && v.length >= 4) {
-      if (v.contains(timingNormUpper) || timingNormUpper.contains(v)) {
-        return true;
-      }
-    }
-    return false;
-  }
-  return aligns(c.ratingTiming) || aligns(c.ratingDate);
-}
-
 class ExportArmRatingShellUseCase {
+  static const ArmAssessmentMatcher _armAssessmentMatcher =
+      ArmAssessmentMatcher();
+
   final AppDatabase _db;
   final PlotRepository _plotRepository;
   final TreatmentRepository _treatmentRepository;
@@ -406,13 +379,15 @@ class ExportArmRatingShellUseCase {
       for (var i = 0; i < sortedAssessments.length; i++) {
         final ta = sortedAssessments[i];
         final def = defById[ta.assessmentDefinitionId];
-        final match = _matchColumnForAssessment(
+        final identity = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
+        final match = _armAssessmentMatcher.findMatchingColumn(
+          assessment: identity,
           columns: effectiveColumns,
-          ta: ta,
-          def: def,
+          armImportColumnIndex: ta.armImportColumnIndex,
           positionalIndex: i,
+          logDebug: debugPrint,
         );
-        if (match.usedPositionalFallback) {
+        if (match.wasPositionalFallback) {
           positionalFallbackTrialAssessmentIds.add(ta.id);
         }
         final col = match.column;
@@ -556,100 +531,6 @@ class ExportArmRatingShellUseCase {
     return null;
   }
 
-  /// Resolves shell column for a [TrialAssessment].
-  ///
-  /// Order: (1) unique column whose [ArmColumnMap.columnIndex] equals
-  /// [TrialAssessment.armImportColumnIndex]; (2) unique [ArmColumnMap.seName] +
-  /// unit vs [TrialAssessment.pestCode] / [AssessmentDefinition.unit], with
-  /// optional timing disambiguation when [AssessmentDefinition.timingCode]
-  /// narrows multiple seName matches to one; (3) unique rating type + unit
-  /// vs pestCode; (4) positional slot in [columns].
-  ///
-  /// [usedPositionalFallback] is true only for case (4) when a column is
-  /// returned (export-time positional matching instead of identity).
-  ({ArmColumnMap? column, bool usedPositionalFallback})
-  _matchColumnForAssessment({
-    required List<ArmColumnMap> columns,
-    required TrialAssessment ta,
-    required AssessmentDefinition? def,
-    required int positionalIndex,
-  }) {
-    if (columns.isEmpty) {
-      return (column: null, usedPositionalFallback: false);
-    }
-
-    final pinnedIdx = ta.armImportColumnIndex;
-    if (pinnedIdx != null) {
-      final byIdx =
-          columns.where((c) => c.columnIndex == pinnedIdx).toList();
-      if (byIdx.length == 1) {
-        return (column: byIdx.single, usedPositionalFallback: false);
-      }
-    }
-
-    final pestCodeNorm = _normalizeArmShellMatchString(ta.pestCode);
-    final unitTrimmed = def?.unit?.trim() ?? '';
-
-    if (pestCodeNorm != null) {
-      final seMatches = columns.where((c) {
-        if (_normalizeArmShellMatchString(c.seName) != pestCodeNorm) {
-          return false;
-        }
-        return _armShellUnitMatchesDefinition(
-          unitTrimmed.isEmpty ? null : unitTrimmed,
-          c,
-        );
-      }).toList();
-
-      if (seMatches.length == 1) {
-        return (column: seMatches.single, usedPositionalFallback: false);
-      }
-      if (seMatches.length > 1) {
-        final timingNorm =
-            _normalizeArmShellMatchString(def?.timingCode);
-        if (timingNorm != null && timingNorm.isNotEmpty) {
-          final byTiming = seMatches
-              .where(
-                (c) => _shellColumnTimingCompatibleWithDefinition(c, timingNorm),
-              )
-              .toList();
-          if (byTiming.length == 1) {
-            return (column: byTiming.single, usedPositionalFallback: false);
-          }
-        }
-      }
-    }
-
-    if (pestCodeNorm != null) {
-      final matches = columns.where((c) {
-        final typeMatch =
-            _normalizeArmShellMatchString(c.ratingType) == pestCodeNorm;
-        final unitMatch = unitTrimmed.isEmpty ||
-            c.ratingUnit?.trim() == unitTrimmed;
-        return typeMatch && unitMatch;
-      }).toList();
-      if (matches.length == 1) {
-        return (column: matches.first, usedPositionalFallback: false);
-      }
-      if (matches.length > 1) {
-        debugPrint(
-          'ExportArmRatingShell: ambiguous ratingType match for '
-          'pestCode="$pestCodeNorm" unit="$unitTrimmed" — '
-          '${matches.length} columns match, using positional.',
-        );
-      }
-    }
-
-    if (positionalIndex < columns.length) {
-      return (column: columns[positionalIndex], usedPositionalFallback: true);
-    }
-    debugPrint(
-      'ExportArmRatingShell: no column found for assessment '
-      'index=$positionalIndex pestCode=${ta.pestCode}',
-    );
-    return (column: null, usedPositionalFallback: false);
-  }
-
   void _logSeCodeMismatch(
     List<ArmColumnMap> columns,
     String seCode,
@@ -747,19 +628,38 @@ class ExportArmRatingShellUseCase {
     List<String> shellWarnings,
     Set<int> warnedNullPestTaIds,
   ) {
+    final parser = ArmCsvParser();
     final withPest = tas
         .where((t) => t.pestCode != null && t.pestCode!.trim().isNotEmpty)
         .toList()
       ..sort((a, b) => b.pestCode!.length.compareTo(a.pestCode!.length));
     for (final ta in withPest) {
+      final def = defById[ta.assessmentDefinitionId];
+      final id = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
+      final parsed = parser.tryParseAssessmentToken(h);
+      if (parsed != null &&
+          parsed.toIdentity().canonicalKey == id.canonicalKey) {
+        return true;
+      }
       if (h.contains(ta.pestCode!)) return true;
     }
     for (final ta in tas) {
       if (ta.pestCode != null && ta.pestCode!.trim().isNotEmpty) continue;
       final def = defById[ta.assessmentDefinitionId];
-      if (def != null &&
-          def.code.trim().isNotEmpty &&
-          h.contains(def.code)) {
+      if (def == null || def.code.trim().isEmpty) continue;
+      final id = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
+      final parsed = parser.tryParseAssessmentToken(h);
+      if (parsed != null &&
+          parsed.toIdentity().canonicalKey == id.canonicalKey) {
+        _addNullPestWarningIfNeeded(
+          shellWarnings,
+          ta,
+          def.code,
+          warnedNullPestTaIds,
+        );
+        return true;
+      }
+      if (h.contains(def.code)) {
         _addNullPestWarningIfNeeded(
           shellWarnings,
           ta,
