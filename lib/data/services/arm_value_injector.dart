@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:xml/xml.dart';
 
+import '../../core/excel_column_letters.dart';
 import '../../domain/models/arm_rating_value.dart';
 import '../../domain/models/arm_shell_import.dart';
 
@@ -20,10 +21,13 @@ class ArmValueInjector {
   final ArmShellImport shellImport;
 
   Future<File> inject(List<ArmRatingValue> values, String outputPath) async {
-    assert(
-      outputPath != shellImport.shellFilePath,
-      'outputPath must differ from original shell path',
-    );
+    if (outputPath == shellImport.shellFilePath) {
+      throw StateError(
+        'outputPath must differ from original shell path (would overwrite source).',
+      );
+    }
+
+    var invalidBoundsEncountered = false;
 
     final shellBytes = await File(shellImport.shellFilePath).readAsBytes();
     final archive = ZipDecoder().decodeBytes(shellBytes);
@@ -54,11 +58,13 @@ class ArmValueInjector {
           c.armColumnId: c.columnIndex,
       };
     } else {
-      columnMap = {
-        for (final v in values)
-          v.armColumnId:
-              v.armColumnId.codeUnitAt(0) - 'A'.codeUnitAt(0),
-      };
+      columnMap = {};
+      for (final v in values) {
+        final idx = columnLettersToIndexZeroBased(v.armColumnId);
+        if (idx != null) {
+          columnMap[v.armColumnId] = idx;
+        }
+      }
     }
 
     for (final v in values) {
@@ -76,14 +82,15 @@ class ArmValueInjector {
         );
         continue;
       }
-      assert(
-        rowIdx >= 48,
-        'Write blocked: rowIdx $rowIdx is in ARM descriptor zone (< 48)',
-      );
-      assert(
-        colIdx >= 2,
-        'Write blocked: colIdx $colIdx targets col A or B',
-      );
+      if (rowIdx < 48 || colIdx < 2) {
+        invalidBoundsEncountered = true;
+        debugPrint(
+          'ArmValueInjector: skipping write — bounds violation for '
+          'plotNumber=${v.plotNumber} armColumnId=${v.armColumnId}: '
+          'rowIdx=$rowIdx (require >=48) colIdx=$colIdx (require >=2)',
+        );
+        continue;
+      }
 
       final trimmed = v.value.trim();
       final numVal = double.tryParse(trimmed);
@@ -95,6 +102,14 @@ class ArmValueInjector {
         colIdx,
         cellValue,
         isNumeric,
+      );
+    }
+
+    if (invalidBoundsEncountered) {
+      throw StateError(
+        'ARM shell injection aborted: one or more cells had row/col indices '
+        'outside allowed plot-data bounds (row index >= 48, column index >= 2). '
+        'See debug log for details.',
       );
     }
 
@@ -243,20 +258,7 @@ class ArmValueInjector {
     e.attributes.add(XmlAttribute(XmlName(name), value));
   }
 
-  // Convert 0-based column index to Excel column letter(s)
-  // 0→A, 1→B, 2→C, 25→Z, 26→AA etc.
-  String _colIndexToLetter(int colIdx) {
-    var result = '';
-    var n = colIdx + 1;
-    while (n > 0) {
-      n--;
-      result = String.fromCharCode(65 + n % 26) + result;
-      n ~/= 26;
-    }
-    return result;
-  }
-
   // Build Excel cell reference e.g. C49
   String _cellRef(int colIdx, int rowIdx) =>
-      '${_colIndexToLetter(colIdx)}${rowIdx + 1}';
+      '${columnIndexToLettersZeroBased(colIdx)}${rowIdx + 1}';
 }

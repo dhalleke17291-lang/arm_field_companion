@@ -2724,6 +2724,7 @@ class SessionsView extends ConsumerWidget {
   }
 
   /// Matches plot-queue / session summary semantics for pre-close warning only.
+  /// Excludes guard rows ([Plot.isGuardRow]) from navigation/data-quality counts.
   _SessionCloseAttentionSummary _computeSessionCloseAttentionSummary({
     required List<Plot> plots,
     required Set<int> ratedPks,
@@ -2731,17 +2732,23 @@ class SessionsView extends ConsumerWidget {
     required List<RatingRecord> ratings,
     required Set<int> corrections,
   }) {
-    final totalPlots = plots.length;
-    final ratedPlots = ratedPks.length;
-    final unratedPlots = plots.where((p) => !ratedPks.contains(p.id)).length;
-    final flaggedPlots = flaggedIds.length;
+    final targetPlots = plots.where((p) => !p.isGuardRow).toList();
+    final targetPlotPkSet = targetPlots.map((p) => p.id).toSet();
+
+    final totalPlots = targetPlots.length;
+    final ratedPlots =
+        targetPlots.where((p) => ratedPks.contains(p.id)).length;
+    final unratedPlots =
+        targetPlots.where((p) => !ratedPks.contains(p.id)).length;
+    final flaggedPlots =
+        flaggedIds.where(targetPlotPkSet.contains).length;
     final ratingsByPlot = <int, List<RatingRecord>>{};
     for (final r in ratings) {
       ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
     }
     var issuesPlots = 0;
     var editedPlots = 0;
-    for (final plot in plots) {
+    for (final plot in targetPlots) {
       final pr = ratingsByPlot[plot.id] ?? [];
       if (pr.any((r) => r.resultStatus != 'RECORDED')) {
         issuesPlots++;

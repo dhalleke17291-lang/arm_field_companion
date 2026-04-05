@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:excel/excel.dart';
 
+import '../../core/excel_column_letters.dart';
 import '../../domain/models/arm_column_map.dart';
 import '../../domain/models/arm_plot_row.dart';
 import '../../domain/models/arm_shell_import.dart';
@@ -42,7 +43,7 @@ class ArmShellParser {
       assessmentColumns.add(
         ArmColumnMap(
           armColumnId: armColumnId,
-          columnLetter: _colIndexToLetter(colIdx),
+          columnLetter: columnIndexToLettersZeroBased(colIdx),
           columnIndex: colIdx,
           ratingDate: _cellString(sheet, 15, colIdx),
           seName: _cellString(sheet, 17, colIdx),
@@ -99,10 +100,6 @@ class ArmShellParser {
       plotRows: plotRows,
       shellFilePath: shellFilePath,
     );
-  }
-
-  String _colIndexToLetter(int colIdx) {
-    return String.fromCharCode('A'.codeUnitAt(0) + colIdx);
   }
 
   String? _cellString(Sheet sheet, int rowIdx, int colIdx) {

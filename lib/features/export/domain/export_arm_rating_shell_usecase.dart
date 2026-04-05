@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/excel_column_letters.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
 import '../../../core/diagnostics/trial_export_diagnostics.dart'
     show kArmRatingShellExportAttemptLabel;
@@ -291,7 +292,7 @@ class ExportArmRatingShellUseCase {
             sortedAssessments.length,
             (i) {
               final colIdx = 2 + i;
-              final letter = String.fromCharCode('A'.codeUnitAt(0) + colIdx);
+              final letter = columnIndexToLettersZeroBased(colIdx);
               return ArmColumnMap(
                 armColumnId: letter,
                 columnLetter: letter,
