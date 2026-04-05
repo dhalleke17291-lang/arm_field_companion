@@ -9,7 +9,38 @@ import '../../domain/models/arm_shell_import.dart';
 
 /// Reads an ARM Excel Rating Shell and extracts trial metadata, columns, and plot rows.
 ///
-/// Supports sheet name **Ratings** (app export) or **Plot Data** (legacy / ARM-native).
+/// Only the **Plot Data** sheet is implemented; a **Ratings** sheet name is not read.
+///
+/// ARM Rating Shell layout contract (ARM 2025/2026):
+/// Sheet: "Plot Data" (exact name)
+///
+/// Metadata:
+///   r=1,c=2: Trial title
+///   r=2,c=2: Trial ID
+///   r=3,c=2: Cooperator
+///   r=4,c=2: Crop
+///
+/// Assessment columns (c=2 onward, until empty ID cell):
+///   r=7:  ARM Column ID (identity anchor)
+///   r=15: Rating date
+///   r=17: SE Name
+///   r=20: Rating type
+///   r=21: Rating unit
+///   r=29: Crop stage major
+///   r=41: Rating timing
+///   r=46: Num subsamples
+///
+/// Plot data:
+///   Marker: "041TRT" in c=0 (scanned from r=7 downward)
+///   Data rows: headerRow+1 onward
+///   c=0: Treatment number (int)
+///   c=1: Plot number (int)
+///   Block number: derived as plotNumber ~/ 100
+///
+/// If ARM changes this layout, update the row indices above
+/// and the corresponding constants in parse().
+///
+/// Row and column indices are **0-based** ([CellIndex.indexByColumnRow]).
 class ArmShellParser {
   ArmShellParser(this.shellFilePath);
 
