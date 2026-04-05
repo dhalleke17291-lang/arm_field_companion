@@ -2,7 +2,6 @@ import 'package:drift/drift.dart';
 
 import 'database/app_database.dart';
 import 'protocol_edit_blocked_exception.dart';
-import 'workspace/workspace_config.dart';
 
 /// Trial lifecycle states (Constitution §9).
 /// Stored on [Trials.status] (`trials.status` TEXT). Values are lowercase strings
@@ -103,32 +102,21 @@ String statusDescriptionForTrialStatus(String? status) {
   }
 }
 
-/// Label for protocol lock state: "Editable" or "Locked".
+/// Label for lifecycle lock state: "Editable" or "Locked" (structure layer).
 String getProtocolLockLabel(String? status) {
   return isProtocolLocked(status) ? 'Locked' : 'Editable';
 }
 
-/// Standard message when an action is blocked because protocol is locked.
+/// Message when structure edits are blocked because the trial lifecycle is past setup.
 String getProtocolLockMessage(String? status) {
   if (status == null || !isProtocolLocked(status)) return '';
   final label = labelForTrialStatus(status);
-  return 'Protocol is locked because this trial is $label.';
+  return 'Trial structure cannot be edited while this trial is $label.';
 }
 
-/// Mode-aware lock message. Use when workspaceType is available.
-/// Standalone trials show a softer warning; protocol/GLP show strict lock.
-/// Falls back to [getProtocolLockMessage] when workspaceType is unknown.
+/// Legacy API: [workspaceType] is ignored; use [getProtocolLockMessage] only.
 String getModeLockMessage(String? status, String? workspaceType) {
-  if (status == null || !isProtocolLocked(status)) return '';
-  final config = safeConfigFromString(workspaceType ?? '');
-  if (config.isStandalone) {
-    final label = labelForTrialStatus(status);
-    return 'This trial is $label. Structural changes may affect existing data.';
-  }
-  if (config.studyType == StudyType.glp) {
-    return 'GLP protocol is locked. Changes require a controlled amendment workflow.';
-  }
-  return 'Protocol is locked. Changes require protocol-controlled workflow.';
+  return getProtocolLockMessage(status);
 }
 
 /// True when plot assignments must not be edited (protocol lock or trial has session data).
@@ -166,20 +154,40 @@ String getAssignmentsLockMessage(String? status, bool hasSessionData) {
 /// Use in status bar or help so users understand lock vs. unlock behavior.
 String getProtocolLockExplanation(String? status) {
   if (status == null || !isProtocolLocked(status)) return '';
-  return "When locked you cannot add or edit: treatments, plots, assessments, or plot assignments. "
+  return "You cannot add or edit: treatments, plots, assessments, or plot assignments. "
       "You can still: run sessions, record ratings, add plot notes, and export.";
 }
 
-/// True when trial protocol structure (treatments, plots, assessments, assignments) may be edited.
+/// True when trial structure (treatments, plots, assessments, assignments) may be edited.
+/// ARM-linked trials are never structurally editable here. Otherwise, lifecycle must not be locked.
 /// Structure mutations must use [assertCanEditProtocolForTrialId] (or this predicate) at repository/use-case layer.
 bool canEditProtocol(Trial trial) {
   if (trial.isArmLinked == true) return false;
   return !isProtocolLocked(trial.status);
 }
 
-/// Single user-facing message when protocol structure edits are blocked for ARM-linked trials.
+/// User-visible trial link mode: not a lock state — use with [canEditProtocol] / chips for editability.
+String structuralTrialModeLabel(Trial trial) {
+  return trial.isArmLinked ? 'ARM-linked trial' : 'Editable trial';
+}
+
+/// True when structure or assignment UI should block treatment/plot/assignment edits.
+bool plotAssignmentsEditLocked(Trial trial, bool hasSessionData) {
+  return !canEditProtocol(trial) ||
+      isAssignmentsLocked(trial.status, hasSessionData);
+}
+
+/// Short label for the plots-tab assignment/structure chip when editing is blocked.
+String plotAssignmentsLockChipLabel(Trial trial, bool hasSessionData) {
+  if (!canEditProtocol(trial)) {
+    return trial.isArmLinked ? 'ARM-linked trial' : 'Structure locked';
+  }
+  return getAssignmentsLockLabel(trial.status, hasSessionData);
+}
+
+/// User-facing message when structure edits are blocked for ARM-linked trials.
 const String kArmProtocolStructureLockMessage =
-    'This is an ARM-linked trial. Structure cannot be edited.';
+    'This trial is ARM-linked. Structure cannot be edited.';
 
 String getArmProtocolLockMessage() => kArmProtocolStructureLockMessage;
 
@@ -198,6 +206,33 @@ Future<void> assertPlotNotesEditableForTrialId(AppDatabase db, int trialId) asyn
 String protocolEditBlockedMessage(Trial trial) {
   if (trial.isArmLinked) return getArmProtocolLockMessage();
   return getProtocolLockMessage(trial.status);
+}
+
+/// True if the trial has any ratings, notes, photos, or plot flags (any session).
+///
+/// Uses small Drift selects (not raw SQL) so results are correct inside nested
+/// transactions (e.g. ARM import assigning plots before commit).
+Future<bool> trialHasAnySessionData(AppDatabase db, int trialId) async {
+  final rating = await (db.select(db.ratingRecords)
+        ..where((r) => r.trialId.equals(trialId))
+        ..limit(1))
+      .getSingleOrNull();
+  if (rating != null) return true;
+  final note = await (db.select(db.notes)
+        ..where((n) => n.trialId.equals(trialId))
+        ..limit(1))
+      .getSingleOrNull();
+  if (note != null) return true;
+  final photo = await (db.select(db.photos)
+        ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false))
+        ..limit(1))
+      .getSingleOrNull();
+  if (photo != null) return true;
+  final flag = await (db.select(db.plotFlags)
+        ..where((f) => f.trialId.equals(trialId))
+        ..limit(1))
+      .getSingleOrNull();
+  return flag != null;
 }
 
 Future<Trial?> loadTrialForProtocolCheck(AppDatabase db, int trialId) {

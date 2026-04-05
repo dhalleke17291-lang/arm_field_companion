@@ -183,7 +183,7 @@ class TreatmentsTab extends ConsumerWidget {
             title: 'No Treatments Yet',
             subtitle: locked
                 ? protocolEditBlockedMessage(trial)
-                : 'Add the treatment groups for this trial.',
+                : '${structuralTrialModeLabel(trial)}. Add the treatment groups for this trial.',
             action: null,
           ),
         ),
@@ -202,7 +202,18 @@ class TreatmentsTab extends ConsumerWidget {
       BuildContext context, WidgetRef ref, List<Treatment> treatments) {
     final locked = !canEditProtocol(trial);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (!locked)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              structuralTrialModeLabel(trial),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
@@ -444,7 +455,7 @@ class TreatmentsTab extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Remove Treatment'),
         content: Text(
-          'Remove "${treatment.code} — ${treatment.name}" from the protocol?\n\n'
+          'Remove "${treatment.code} — ${treatment.name}" from this trial?\n\n'
           'This treatment will be removed and can be restored from Recovery if needed. '
           'Plot assignments are unchanged.',
         ),

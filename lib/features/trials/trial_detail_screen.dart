@@ -215,7 +215,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'This trial was not imported from ARM. Rating Shell export is only available for ARM trials.',
+              'ARM Rating Shell export is only available for ARM-linked trials.',
             ),
           ),
         );
@@ -1621,7 +1621,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         builder: (ctx) => AlertDialog(
           title: const Text('Activate Trial?'),
           content: const Text(
-            'Activating this trial will lock the protocol structure. '
+            'Activating this trial will lock trial structure. '
             'Plots, treatments, assessments, and assignments will no longer be editable. '
             'Data collection sessions can continue.',
           ),

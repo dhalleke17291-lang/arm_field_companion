@@ -422,7 +422,7 @@ class OperationalSourceBadge extends StatelessWidget {
   }
 }
 
-/// Compact chip showing protocol lock state: "Editable" or "Locked".
+/// Compact chip: "Locked" when [isLocked], else [structuralTrialModeLabel] ("ARM-linked trial" / "Editable trial").
 /// [trial] enables tooltip with [protocolEditBlockedMessage] when [isLocked].
 class ProtocolLockChip extends StatelessWidget {
   final bool isLocked;
@@ -437,7 +437,11 @@ class ProtocolLockChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final label = isLocked ? 'Locked' : 'Editable';
+    final label = isLocked
+        ? 'Locked'
+        : (trial != null
+            ? structuralTrialModeLabel(trial!)
+            : 'Editable trial');
     final tooltip = isLocked && trial != null
         ? protocolEditBlockedMessage(trial!)
         : null;

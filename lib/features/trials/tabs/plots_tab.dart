@@ -128,7 +128,7 @@ Future<void> _runGenerateRepGuardPlots(
 Widget _buildAddRepGuardsRow(
   BuildContext context,
   WidgetRef ref,
-  int trialId, {
+  Trial trial, {
   EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(
     AppDesignTokens.spacing16,
     0,
@@ -136,12 +136,15 @@ Widget _buildAddRepGuardsRow(
     4,
   ),
 }) {
+  final enabled = canEditProtocol(trial);
   return Padding(
     padding: padding,
     child: Align(
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
-        onPressed: () => _runGenerateRepGuardPlots(context, ref, trialId),
+        onPressed: enabled
+            ? () => _runGenerateRepGuardPlots(context, ref, trial.id)
+            : null,
         icon: const Icon(Icons.add_moderator_outlined, size: 18),
         label: const Text('Add Rep Guards'),
         style: TextButton.styleFrom(
@@ -1816,8 +1819,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     final hasSessionData =
         ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
             false;
-    final assignmentsLocked =
-        isAssignmentsLocked(widget.trial.status, hasSessionData);
+    final plotAssignmentsLocked =
+        plotAssignmentsEditLocked(widget.trial, hasSessionData);
     const double maxTopSectionHeight = 380;
     final colorScheme = Theme.of(context).colorScheme;
     final topSection = Padding(
@@ -1843,8 +1846,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildPlotsHeaderForDetails(
-                  context, ref, plots, assignmentsLocked),
+              _buildPlotsHeaderForDetails(context, ref, plots, hasSessionData),
               const SizedBox(height: 12),
               Divider(
                 height: 1,
@@ -1856,7 +1858,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
               _buildAddRepGuardsRow(
                 context,
                 ref,
-                widget.trial.id,
+                widget.trial,
                 padding: const EdgeInsets.only(top: 8, bottom: 2),
               ),
               if (_showLayoutView) ...[
@@ -2005,7 +2007,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                                     plotPksWithTrialApplication:
                                         plotPksWithTrialApplication,
                                     plotIdToTreatmentId: plotIdToTreatmentIdMap,
-                                    onLongPressPlot: assignmentsLocked
+                                    onLongPressPlot: plotAssignmentsLocked
                                         ? null
                                         : (plot) =>
                                             _showAssignTreatmentDialogForDetails(
@@ -2103,8 +2105,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           )
         else
           Expanded(
-              child: _buildPlotsListBodyForDetails(context, ref, displayPlots,
-                  plots, assignmentsLocked)),
+              child: _buildPlotsListBodyForDetails(
+                  context, ref, displayPlots, plots, hasSessionData)),
       ],
     );
   }
@@ -2319,11 +2321,11 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   }
 
   Widget _buildPlotsHeaderForDetails(BuildContext context, WidgetRef ref,
-      List<Plot> plots, bool assignmentsLocked) {
-    final hasSessionData =
-        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
-            false;
-    final message =
+      List<Plot> plots, bool hasSessionData) {
+    final plotAssignmentsLocked =
+        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+    final structureLocked = !canEditProtocol(widget.trial);
+    final assignmentMessage =
         getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final assignmentsList =
         ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
@@ -2339,9 +2341,26 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             ? 'All $assignedCount assigned'
             : '$assignedCount assigned · $unassignedCount unassigned';
 
+    final detailLine = structureLocked
+        ? protocolEditBlockedMessage(widget.trial)
+        : (isAssignmentsLocked(widget.trial.status, hasSessionData) &&
+                assignmentMessage.isNotEmpty
+            ? assignmentMessage
+            : summaryLine);
+
+    final bulkTooltip = plotAssignmentsLocked
+        ? (structureLocked
+            ? protocolEditBlockedMessage(widget.trial)
+            : assignmentMessage)
+        : 'Assign treatments to multiple plots';
+
+    final chipLabel = plotAssignmentsLocked
+        ? plotAssignmentsLockChipLabel(widget.trial, hasSessionData)
+        : structuralTrialModeLabel(widget.trial);
+
     final cs = Theme.of(context).colorScheme;
     final lockChip = Material(
-      color: assignmentsLocked
+      color: plotAssignmentsLocked
           ? cs.surfaceContainerHighest
           : cs.primaryContainer.withValues(alpha: 0.42),
       borderRadius: BorderRadius.circular(999),
@@ -2351,22 +2370,22 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              assignmentsLocked
+              plotAssignmentsLocked
                   ? Icons.lock_outlined
                   : Icons.lock_open_outlined,
               size: 15,
-              color: assignmentsLocked
+              color: plotAssignmentsLocked
                   ? AppDesignTokens.secondaryText
                   : AppDesignTokens.primary,
             ),
             const SizedBox(width: 5),
             Text(
-              getAssignmentsLockLabel(widget.trial.status, hasSessionData),
+              chipLabel,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.1,
-                color: assignmentsLocked
+                color: plotAssignmentsLocked
                     ? AppDesignTokens.secondaryText
                     : AppDesignTokens.primary,
               ),
@@ -2433,7 +2452,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          assignmentsLocked && message.isNotEmpty ? message : summaryLine,
+          detailLine,
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
@@ -2443,39 +2462,37 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         ),
         const SizedBox(height: 12),
         Tooltip(
-          message: assignmentsLocked
-              ? message
-              : 'Assign treatments to multiple plots',
+          message: bulkTooltip,
           child: Opacity(
-            opacity: assignmentsLocked ? 0.55 : 1,
+            opacity: plotAssignmentsLocked ? 0.55 : 1,
             child: SizedBox(
               width: double.infinity,
               child: FilledButton.tonalIcon(
-                onPressed: assignmentsLocked
+                onPressed: plotAssignmentsLocked
                     ? null
                     : () =>
                         _showBulkAssignSheet(context, ref, widget.trial, plots),
                 icon: Icon(
                   Icons.grid_view_rounded,
                   size: 18,
-                  color: assignmentsLocked
+                  color: plotAssignmentsLocked
                       ? AppDesignTokens.iconSubtle
                       : AppDesignTokens.primary,
                 ),
                 label: const Text('Bulk Assign'),
                 style: FilledButton.styleFrom(
-                  foregroundColor: assignmentsLocked
+                  foregroundColor: plotAssignmentsLocked
                       ? AppDesignTokens.secondaryText
                       : AppDesignTokens.primary,
                   backgroundColor: cs.surfaceContainerHighest.withValues(
-                      alpha: assignmentsLocked ? 0.55 : 0.88),
+                      alpha: plotAssignmentsLocked ? 0.55 : 0.88),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   minimumSize: const Size.fromHeight(44),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: assignmentsLocked
+                      color: plotAssignmentsLocked
                           ? AppDesignTokens.borderCrisp
                           : cs.outlineVariant.withValues(alpha: 0.45),
                     ),
@@ -2507,12 +2524,12 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
       WidgetRef ref,
       List<Plot> visiblePlots,
       List<Plot> allPlots,
-      bool assignmentsLocked) {
-    final hasSessionData =
-        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
-            false;
-    final assignmentsLockMessage =
-        getAssignmentsLockMessage(widget.trial.status, hasSessionData);
+      bool hasSessionData) {
+    final plotAssignmentsLocked =
+        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+    final longPressBlockMessage = !canEditProtocol(widget.trial)
+        ? protocolEditBlockedMessage(widget.trial)
+        : getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
@@ -2651,9 +2668,15 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                     builder: (_) =>
                         PlotDetailScreen(trial: widget.trial, plot: plot))),
             onLongPress: () {
-              if (assignmentsLocked) {
+              if (plotAssignmentsLocked) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(assignmentsLockMessage)),
+                  SnackBar(
+                    content: Text(
+                      longPressBlockMessage.isNotEmpty
+                          ? longPressBlockMessage
+                          : protocolEditBlockedMessage(widget.trial),
+                    ),
+                  ),
                 );
                 return;
               }
@@ -3094,7 +3117,7 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
           icon: Icons.grid_on,
           title: 'No Plots Yet',
           subtitle: canEditStructure
-              ? 'Import plots via CSV or add test plots below.'
+              ? '${structuralTrialModeLabel(trial)}. Import plots via CSV or add test plots below.'
               : protocolEditBlockedMessage(trial),
         ),
         if (canEditStructure) ...[
@@ -3763,8 +3786,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               ref.watch(trialHasSessionDataProvider(widget.trial.id))
                       .valueOrNull ??
                   false;
-          final assignmentsLocked =
-              isAssignmentsLocked(widget.trial.status, hasSessionData);
+          final plotAssignmentsLocked =
+              plotAssignmentsEditLocked(widget.trial, hasSessionData);
           final sessions =
               ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
           final displayPlots = _plotsVisibleInPlotsTab(plots);
@@ -3795,10 +3818,10 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                     ],
                   ),
                 ),
-                _buildAddRepGuardsRow(context, ref, widget.trial.id),
+                _buildAddRepGuardsRow(context, ref, widget.trial),
                 Expanded(
-                  child: _buildListBody(context, ref, displayPlots, plots,
-                      assignmentsLocked),
+                  child: _buildListBody(
+                      context, ref, displayPlots, plots, hasSessionData),
                 ),
               ],
             );
@@ -3844,7 +3867,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   ],
                 ),
               ),
-              _buildAddRepGuardsRow(context, ref, widget.trial.id),
+              _buildAddRepGuardsRow(context, ref, widget.trial),
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -3991,7 +4014,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                             plotPksWithTrialApplication,
                                         plotIdToTreatmentId:
                                             plotIdToTreatmentId,
-                                        onLongPressPlot: assignmentsLocked
+                                        onLongPressPlot: plotAssignmentsLocked
                                             ? null
                                             : (plot) => _showAssignDialog(
                                                 context, ref, plot, plots),
@@ -4100,12 +4123,12 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
       WidgetRef ref,
       List<Plot> visiblePlots,
       List<Plot> allPlots,
-      bool assignmentsLocked) {
-    final hasSessionData =
-        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
-            false;
-    final assignmentsLockMessage =
-        getAssignmentsLockMessage(widget.trial.status, hasSessionData);
+      bool hasSessionData) {
+    final plotAssignmentsLocked =
+        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+    final longPressBlockMessage = !canEditProtocol(widget.trial)
+        ? protocolEditBlockedMessage(widget.trial)
+        : getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
@@ -4214,9 +4237,16 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                       PlotDetailScreen(trial: widget.trial, plot: plot)),
             ),
             onLongPress: () {
-              if (assignmentsLocked) {
+              if (plotAssignmentsLocked) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(assignmentsLockMessage)));
+                  SnackBar(
+                    content: Text(
+                      longPressBlockMessage.isNotEmpty
+                          ? longPressBlockMessage
+                          : protocolEditBlockedMessage(widget.trial),
+                    ),
+                  ),
+                );
                 return;
               }
               _showAssignDialog(context, ref, plot, allPlots);

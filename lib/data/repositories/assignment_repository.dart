@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import '../../core/protocol_edit_blocked_exception.dart';
 import '../../core/trial_state.dart';
 
 /// Repository for the Assignments table (protocol-to-field mapping layer).
@@ -36,8 +37,21 @@ class AssignmentRepository {
         .watch();
   }
 
-  /// Upserts one assignment: insert or update by (trialId, plotId).
-  Future<void> upsert({
+  Future<void> _assertAssignmentsEditable(int trialId) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
+    final trial = await loadTrialForProtocolCheck(_db, trialId);
+    if (trial == null) {
+      throw StateError('Trial not found');
+    }
+    final hasData = await trialHasAnySessionData(_db, trialId);
+    if (isAssignmentsLocked(trial.status, hasData)) {
+      throw ProtocolEditBlockedException(
+        getAssignmentsLockMessage(trial.status, hasData),
+      );
+    }
+  }
+
+  Future<void> _persistAssignmentRow({
     required int trialId,
     required int plotId,
     int? treatmentId,
@@ -53,7 +67,6 @@ class AssignmentRepository {
     int? assignedBy,
     String? notes,
   }) async {
-    await assertCanEditProtocolForTrialId(_db, trialId);
     final existing = await getForTrialAndPlot(trialId, plotId);
     final now = DateTime.now().toUtc();
     if (existing != null) {
@@ -92,7 +105,6 @@ class AssignmentRepository {
             notes: Value(notes),
           ));
     }
-    // Audit trail
     await _db.into(_db.auditEvents).insert(
           AuditEventsCompanion.insert(
             trialId: Value(trialId),
@@ -107,6 +119,42 @@ class AssignmentRepository {
         );
   }
 
+  /// Upserts one assignment: insert or update by (trialId, plotId).
+  Future<void> upsert({
+    required int trialId,
+    required int plotId,
+    int? treatmentId,
+    int? replication,
+    int? block,
+    int? range,
+    int? column,
+    int? position,
+    bool? isCheck,
+    bool? isControl,
+    String? assignmentSource,
+    DateTime? assignedAt,
+    int? assignedBy,
+    String? notes,
+  }) async {
+    await _assertAssignmentsEditable(trialId);
+    await _persistAssignmentRow(
+      trialId: trialId,
+      plotId: plotId,
+      treatmentId: treatmentId,
+      replication: replication,
+      block: block,
+      range: range,
+      column: column,
+      position: position,
+      isCheck: isCheck,
+      isControl: isControl,
+      assignmentSource: assignmentSource,
+      assignedAt: assignedAt,
+      assignedBy: assignedBy,
+      notes: notes,
+    );
+  }
+
   /// Bulk upsert: one assignment per plot.
   Future<void> upsertBulk({
     required int trialId,
@@ -114,11 +162,11 @@ class AssignmentRepository {
     String? assignmentSource,
     DateTime? assignedAt,
   }) async {
-    await assertCanEditProtocolForTrialId(_db, trialId);
+    await _assertAssignmentsEditable(trialId);
     final at = assignedAt ?? DateTime.now().toUtc();
     await _db.transaction(() async {
       for (final entry in plotPkToTreatmentId.entries) {
-        await upsert(
+        await _persistAssignmentRow(
           trialId: trialId,
           plotId: entry.key,
           treatmentId: entry.value,

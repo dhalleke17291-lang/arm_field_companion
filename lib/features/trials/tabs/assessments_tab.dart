@@ -80,7 +80,7 @@ class AssessmentsTab extends ConsumerWidget {
               title: 'No Assessments Yet',
               subtitle: locked
                   ? protocolEditBlockedMessage(trial)
-                  : 'Add from library or create a custom assessment.',
+                  : '${structuralTrialModeLabel(trial)}. Add from library or create a custom assessment.',
               action: null,
             ),
           ),
@@ -115,14 +115,31 @@ class AssessmentsTab extends ConsumerWidget {
                   size: 16, color: AppDesignTokens.primary),
               const SizedBox(width: AppDesignTokens.spacing8),
               Expanded(
-                child: Text(
-                  total == 1 ? '1 assessment' : '$total assessments',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: AppDesignTokens.primary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      total == 1 ? '1 assessment' : '$total assessments',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: AppDesignTokens.primary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (!locked)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          structuralTrialModeLabel(trial),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               ProtocolLockChip(isLocked: locked, trial: trial),
