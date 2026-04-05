@@ -845,7 +845,7 @@ void main() {
     );
 
     test(
-      'positional assessment column fallback emits arm_round_trip_fallback_assessment_match_used',
+      'positional fallback with high import confidence blocks export after fallback diagnostic',
       () async {
         final trialRepo = TrialRepository(db);
         final trialId =
@@ -959,11 +959,19 @@ void main() {
           },
         );
         final r = await uc.execute(trial: trialRow);
-        expect(r.success, true);
+        expect(r.success, false);
         expect(
           captured.map((f) => f.code).contains(
                 'arm_round_trip_fallback_assessment_match_used',
               ),
+          true,
+        );
+        expect(
+          captured.any(
+            (f) =>
+                f.code == 'arm_rating_shell_strict_structural_block' &&
+                f.blocksExport,
+          ),
           true,
         );
         final fb = captured.firstWhere(
@@ -971,6 +979,140 @@ void main() {
         );
         expect(fb.blocksExport, false);
         expect(fb.detail, contains('$taId'));
+      },
+    );
+
+    test(
+      'positional fallback with medium import confidence is warning only; export succeeds',
+      () async {
+        final trialRepo = TrialRepository(db);
+        final trialId =
+            await trialRepo.createTrial(name: 'PosFallbackMed', workspaceType: 'efficacy');
+        final trtId = await TreatmentRepository(db).insertTreatment(
+          trialId: trialId,
+          code: '1',
+          name: 'Check',
+        );
+        final plotPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '101',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 1,
+        );
+        final defId = await db.into(db.assessmentDefinitions).insert(
+              AssessmentDefinitionsCompanion.insert(
+                code: 'AVEFA',
+                name: 'A',
+                category: 'pest',
+                timingCode: const Value('1-Jul-26'),
+              ),
+            );
+        final legacyAsmId = await db.into(db.assessments).insert(
+              AssessmentsCompanion.insert(
+                trialId: trialId,
+                name: 'Legacy A',
+              ),
+            );
+        final taId = await db.into(db.trialAssessments).insert(
+              TrialAssessmentsCompanion.insert(
+                trialId: trialId,
+                assessmentDefinitionId: defId,
+                legacyAssessmentId: Value(legacyAsmId),
+                sortOrder: const Value(0),
+                pestCode: const Value('AVEFA'),
+              ),
+            );
+        final sessionId = await db.into(db.sessions).insert(
+              SessionsCompanion.insert(
+                trialId: trialId,
+                name: 'S1',
+                sessionDateLocal: '2026-01-01',
+              ),
+            );
+        await db.into(db.ratingRecords).insert(
+              RatingRecordsCompanion.insert(
+                trialId: trialId,
+                plotPk: plotPk,
+                assessmentId: legacyAsmId,
+                sessionId: sessionId,
+                trialAssessmentId: Value(taId),
+                resultStatus: const Value('RECORDED'),
+                numericValue: const Value(7.0),
+                isCurrent: const Value(true),
+              ),
+            );
+
+        await _pinArmExportAnchors(
+          db,
+          trialId: trialId,
+          plotPk: plotPk,
+          armPlotNumber: 101,
+          trialAssessmentId: taId,
+          sessionId: sessionId,
+        );
+        await (db.update(db.trialAssessments)..where((t) => t.id.equals(taId)))
+            .write(
+          const TrialAssessmentsCompanion(
+            armImportColumnIndex: Value(99),
+          ),
+        );
+
+        await _insertCompatibilityProfile(
+          db: db,
+          trialId: trialId,
+          exportConfidence: ImportConfidence.medium,
+          columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+          assessmentTokens: [
+            {
+              'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+              'armCode': 'AVEFA',
+              'timingCode': '1-Jul-26',
+              'unit': '%',
+              'ratingDate': null,
+              'assessmentKey': 'k',
+            },
+          ],
+        );
+
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001'],
+          seNames: const ['AVEFA'],
+          ratingDates: const ['1-Jul-26'],
+        );
+
+        final trialRow =
+            await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+                .getSingle();
+
+        final captured = <DiagnosticFinding>[];
+        final uc = makeUc(
+          pickShellPathOverride: () async => shellPath,
+          publishExportDiagnostics: (_, findings, __) {
+            captured
+              ..clear()
+              ..addAll(findings);
+          },
+        );
+        final r = await uc.execute(trial: trialRow);
+        expect(r.success, true);
+        expect(
+          captured.map((f) => f.code).contains(
+                'arm_round_trip_fallback_assessment_match_used',
+              ),
+          true,
+        );
+        expect(
+          captured.any(
+            (f) =>
+                f.code == 'arm_rating_shell_strict_structural_block' &&
+                f.blocksExport,
+          ),
+          false,
+        );
+        expect(r.filePath, isNotNull);
       },
     );
 

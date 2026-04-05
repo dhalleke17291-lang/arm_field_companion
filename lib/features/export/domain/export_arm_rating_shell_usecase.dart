@@ -420,6 +420,30 @@ class ExportArmRatingShellUseCase {
           sessionId: sessionId,
         ).toDiagnosticFinding(),
       );
+
+      final deterministic = deterministicAssessmentAnchorsExpectedForShellExport(
+        assessments: assessments,
+        latestProfileExportConfidence: profile?.exportConfidence,
+      );
+      final fallbackStrict = evaluateArmRatingShellStrictBlock(
+        roundTripReport,
+        positionalAssessmentFallbackUsed: true,
+        deterministicAssessmentAnchorsExpected: deterministic,
+      );
+      if (fallbackStrict.blocksExport) {
+        exportDiagnosticsBuffer.add(
+          DiagnosticFinding(
+            code: 'arm_rating_shell_strict_structural_block',
+            severity: DiagnosticSeverity.blocker,
+            message: fallbackStrict.userMessage,
+            trialId: trialPk,
+            source: DiagnosticSource.exportValidation,
+            blocksExport: true,
+          ),
+        );
+        publishExportDiagnostics();
+        return ArmRatingShellResult.failure(fallbackStrict.userMessage);
+      }
     }
 
     final injector = ArmValueInjector(shellImport);
