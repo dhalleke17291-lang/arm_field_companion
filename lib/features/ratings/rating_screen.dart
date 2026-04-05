@@ -43,6 +43,8 @@ enum _RatingLeaveAction { save, discard, cancel }
 
 String _statusDisplayLabel(String value) {
   switch (value) {
+    case 'VOID':
+      return 'Void';
     case 'NOT_OBSERVED':
       return 'Not observed';
     case 'NOT_APPLICABLE':
@@ -431,21 +433,48 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 onSelected: (value) {
                   if (value == 'rating_order') {
                     _showRatingOrderSheet(context);
+                  } else if (value == 'void_rating') {
+                    final ex = existingRatingAsync.asData?.value;
+                    if (ex != null) {
+                      _showVoidRatingDialog(context, ex);
+                    }
                   }
                 },
-                itemBuilder: (context) => [
-                  const PopupMenuItem<String>(
-                    value: 'rating_order',
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.swap_vert, size: 20),
-                        SizedBox(width: 12),
-                        Text('Set rating order'),
-                      ],
+                itemBuilder: (context) {
+                  final items = <PopupMenuEntry<String>>[];
+                  final existing = existingRatingAsync.asData?.value;
+                  if (isSessionEditable(widget.session) &&
+                      existing != null &&
+                      existing.resultStatus == 'RECORDED') {
+                    items.add(
+                      const PopupMenuItem<String>(
+                        value: 'void_rating',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.block, size: 20),
+                            SizedBox(width: 12),
+                            Text('Void rating'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  items.add(
+                    const PopupMenuItem<String>(
+                      value: 'rating_order',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.swap_vert, size: 20),
+                          SizedBox(width: 12),
+                          Text('Set rating order'),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  );
+                  return items;
+                },
               ),
             ],
             backgroundColor: const Color(0xFF2D5A40),
@@ -1595,6 +1624,104 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     if (applied == true && mounted) setState(() {});
   }
 
+  void _invalidateRatingStreamsAfterVoid() {
+    ref.invalidate(
+      currentRatingProvider(
+        CurrentRatingParams(
+          trialId: widget.trial.id,
+          plotPk: widget.plot.id,
+          assessmentId: _currentAssessment.id,
+          sessionId: widget.session.id,
+        ),
+      ),
+    );
+    ref.invalidate(sessionRatingsProvider(widget.session.id));
+    ref.invalidate(ratedPlotPksProvider(widget.session.id));
+  }
+
+  Future<void> _showVoidRatingDialog(
+      BuildContext context, RatingRecord existing) async {
+    final reasonController = TextEditingController();
+    String? reasonError;
+    final applied = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Void this rating?'),
+            content: SingleChildScrollView(
+              child: TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  labelText: 'Reason *',
+                  hintText: 'e.g. Value entered in error',
+                  errorText: reasonError,
+                  border: const OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+                onChanged: (_) {
+                  if (reasonError != null) {
+                    setDialogState(() => reasonError = null);
+                  }
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final r = reasonController.text.trim();
+                  if (r.isEmpty) {
+                    setDialogState(() => reasonError = 'A reason is required');
+                    return;
+                  }
+                  final userId = await ref.read(currentUserIdProvider.future);
+                  final useCase = ref.read(voidRatingUseCaseProvider);
+                  final result = await useCase.execute(
+                    trialId: widget.trial.id,
+                    plotPk: widget.plot.id,
+                    assessmentId: _currentAssessment.id,
+                    sessionId: widget.session.id,
+                    reason: r,
+                    isSessionClosed: widget.session.endedAt != null,
+                    raterName: _raterName?.trim().isNotEmpty == true
+                        ? _raterName
+                        : widget.session.raterName,
+                    performedByUserId: userId,
+                  );
+                  if (!ctx.mounted) return;
+                  if (!result.success) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text(result.errorMessage ?? 'Void failed'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(ctx, true);
+                },
+                child: const Text('Confirm'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    reasonController.dispose();
+    if (applied == true && mounted) {
+      _invalidateRatingStreamsAfterVoid();
+      setState(() {
+        _userHasInteracted = false;
+      });
+    }
+  }
+
   Widget _buildRatingArea(BuildContext context, RatingRecord? existing) {
     if (existing == null &&
         _selectedStatus == 'RECORDED' &&
@@ -1614,18 +1741,26 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _carryForwardConfirmSuppressedAssessmentId = null;
         _carryForwardConfirmSuppressedBaseline = null;
         if (!_userHasInteracted) {
-          _selectedStatus = existing.resultStatus;
-          _selectedMissingReasons.clear();
-          if (_selectedStatus == 'MISSING_CONDITION' ||
-              _selectedStatus == 'TECHNICAL_ISSUE') {
-            final t = existing.textValue?.trim() ?? '';
-            if (t.isNotEmpty) {
-              _selectedMissingReasons.addAll(
-                  t.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+          if (existing.resultStatus == 'VOID') {
+            _selectedStatus = 'RECORDED';
+            _selectedMissingReasons.clear();
+          } else {
+            _selectedStatus = existing.resultStatus;
+            _selectedMissingReasons.clear();
+            if (_selectedStatus == 'MISSING_CONDITION' ||
+                _selectedStatus == 'TECHNICAL_ISSUE') {
+              final t = existing.textValue?.trim() ?? '';
+              if (t.isNotEmpty) {
+                _selectedMissingReasons.addAll(t
+                    .split(',')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty));
+              }
             }
           }
         }
-        final numVal = existing.numericValue;
+        final numVal =
+            existing.resultStatus == 'VOID' ? null : existing.numericValue;
         _lastSliderSteppedValue = numVal?.round();
         setState(() {});
       });
@@ -1640,6 +1775,39 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (existing?.resultStatus == 'VOID') ...[
+            Material(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.block,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Current rating: ${_statusDisplayLabel('VOID')} (invalid). '
+                        'Record a new value below to replace it.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: AppDesignTokens.spacing16, vertical: 8),
@@ -1896,6 +2064,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       final IconData statusIcon;
 
                       switch (_selectedStatus) {
+                        case 'VOID':
+                          bgColor = const Color(0xFFF5F5F5);
+                          borderColor = const Color(0xFF9CA3AF);
+                          textColor = const Color(0xFF4B5563);
+                          statusIcon = Icons.block;
+                          break;
                         case 'MISSING_CONDITION':
                           bgColor = const Color(0xFFFEF9EE);
                           borderColor = const Color(0xFFF59E0B);

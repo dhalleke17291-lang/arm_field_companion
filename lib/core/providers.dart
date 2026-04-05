@@ -29,6 +29,7 @@ import '../features/trials/usecases/delete_treatment_usecase.dart';
 import '../features/ratings/usecases/save_rating_usecase.dart';
 import '../features/ratings/usecases/undo_rating_usecase.dart';
 import '../features/ratings/usecases/apply_correction_usecase.dart';
+import '../features/ratings/usecases/void_rating_usecase.dart';
 import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
 import '../features/sessions/usecases/start_or_continue_rating_usecase.dart';
@@ -456,6 +457,10 @@ final undoRatingUseCaseProvider = Provider<UndoRatingUseCase>((ref) {
 
 final applyCorrectionUseCaseProvider = Provider<ApplyCorrectionUseCase>((ref) {
   return ApplyCorrectionUseCase(ref.watch(ratingRepositoryProvider));
+});
+
+final voidRatingUseCaseProvider = Provider<VoidRatingUseCase>((ref) {
+  return VoidRatingUseCase(ref.watch(ratingRepositoryProvider));
 });
 
 /// Latest correction for a rating (for effective value display).
