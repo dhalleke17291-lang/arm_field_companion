@@ -20,6 +20,7 @@ import '../../core/quick_note_templates.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_resume_store.dart';
 import '../../core/session_walk_order_store.dart';
+import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../photos/photo_filename_helper.dart';
 import '../photos/photo_view_screen.dart';
 import '../photos/usecases/save_photo_usecase.dart';
@@ -74,6 +75,7 @@ class RatingScreen extends ConsumerStatefulWidget {
   /// Plot Queue filter-aware next/prev only; resume still uses full [allPlots] indices.
   final List<int>? filteredPlotIds;
   final bool isFilteredMode;
+
   /// Short label from Plot Queue when a single filter is active (e.g. "Unrated"); null → generic chip.
   final String? navigationModeLabel;
 
@@ -111,8 +113,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   /// Set when [_prefillFromLastValue] fills the field from last-plot memory (this visit only).
   double? _carryForwardBaselineNumeric;
+
   /// True after the user changes the numeric value via field, quick buttons, or fine ±.
   bool _numericValueUserEditedThisVisit = false;
+
   /// After "Keep & Continue" on carry-forward confirm: skip repeat prompts for same assessment+baseline until context changes.
   int? _carryForwardConfirmSuppressedAssessmentId;
   double? _carryForwardConfirmSuppressedBaseline;
@@ -154,7 +158,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     _priorRating = null;
     _priorSessionName = null;
     try {
-      final sessions = await ref.read(sessionsForTrialProvider(widget.trial.id).future);
+      final sessions =
+          await ref.read(sessionsForTrialProvider(widget.trial.id).future);
       final earlierSessions = sessions
           .where((s) =>
               s.id != widget.session.id &&
@@ -198,7 +203,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     _currentAssessment = widget.assessments[_assessmentIndex];
     _loadPriorRating();
     WakelockPlus.enable();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToActiveAssessment());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _scrollToActiveAssessment());
     SharedPreferences.getInstance().then((prefs) {
       if (!mounted) return;
       final last = prefs.getString(_kLastRaterNameKey);
@@ -221,8 +227,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   void _scrollToActiveAssessment() {
     if (!_assessmentScrollController.hasClients) return;
-    final index = widget.assessments
-        .indexWhere((a) => a.id == _currentAssessment.id);
+    final index =
+        widget.assessments.indexWhere((a) => a.id == _currentAssessment.id);
     if (index < 0) return;
     const cardWidth = 110.0;
     const cardGap = 6.0;
@@ -250,7 +256,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       _valueController.text.trim().isNotEmpty ||
       _numericValueUserEditedThisVisit;
 
-  Future<void> _handleRatingPopInvoked(BuildContext context, bool didPop) async {
+  Future<void> _handleRatingPopInvoked(
+      BuildContext context, bool didPop) async {
     if (didPop) return;
     if (!_isBackNavigationDirty) {
       if (context.mounted) Navigator.of(context).pop();
@@ -344,21 +351,20 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       });
     }
 
-    final seedingEvent = ref
-        .watch(seedingEventForTrialProvider(widget.trial.id))
-        .valueOrNull;
+    final seedingEvent =
+        ref.watch(seedingEventForTrialProvider(widget.trial.id)).valueOrNull;
     final int? dasDays = (seedingEvent != null &&
             seedingEvent.status == 'completed')
-        ? widget.session.startedAt
-            .difference(seedingEvent.seedingDate)
-            .inDays
+        ? widget.session.startedAt.difference(seedingEvent.seedingDate).inDays
         : null;
-    final ratedPks = ref.watch(ratedPlotPksProvider(widget.session.id)).valueOrNull ?? <int>{};
+    final ratedPks =
+        ref.watch(ratedPlotPksProvider(widget.session.id)).valueOrNull ??
+            <int>{};
     final totalPlots = widget.allPlots.length;
     final ratedCount = ratedPks.length;
     final contextLine = dasDays != null
-        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots rated'
-        : '$ratedCount / $totalPlots plots rated';
+        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots with a rating'
+        : '$ratedCount / $totalPlots plots with a rating';
 
     return PopScope(
       canPop: false,
@@ -383,121 +389,125 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           ),
         ),
         child: Scaffold(
-        backgroundColor: AppDesignTokens.backgroundSurface,
-        appBar: AppBar(
-          leading: const BackButton(color: Colors.white),
-          title: const Text(
-            'Rating',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          actions: [
-            if (!isSessionEditable(widget.session)) ...[
-              Builder(
-                builder: (context) {
-                  final existing = existingRatingAsync.asData?.value;
-                  if (existing == null) return const SizedBox.shrink();
-                  return TextButton(
-                    onPressed: () => _showCorrectDialog(context, existing),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      minimumSize: const Size(0, 40),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      'Correct',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  );
-                },
+          backgroundColor: AppDesignTokens.backgroundSurface,
+          appBar: AppBar(
+            leading: const BackButton(color: Colors.white),
+            title: const Text(
+              'Rating',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
-            ],
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
-              tooltip: 'More options',
-              onSelected: (value) {
-                if (value == 'rating_order') {
-                  _showRatingOrderSheet(context);
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem<String>(
-                  value: 'rating_order',
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.swap_vert, size: 20),
-                      SizedBox(width: 12),
-                      Text('Set rating order'),
-                    ],
-                  ),
+            ),
+            actions: [
+              if (!isSessionEditable(widget.session)) ...[
+                Builder(
+                  builder: (context) {
+                    final existing = existingRatingAsync.asData?.value;
+                    if (existing == null) return const SizedBox.shrink();
+                    return TextButton(
+                      onPressed: () => _showCorrectDialog(context, existing),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        minimumSize: const Size(0, 40),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Correct',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                tooltip: 'More options',
+                onSelected: (value) {
+                  if (value == 'rating_order') {
+                    _showRatingOrderSheet(context);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem<String>(
+                    value: 'rating_order',
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.swap_vert, size: 20),
+                        SizedBox(width: 12),
+                        Text('Set rating order'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            backgroundColor: const Color(0xFF2D5A40),
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildWalkOrderBar(context),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDesignTokens.spacing16,
+                    AppDesignTokens.spacing8,
+                    AppDesignTokens.spacing16,
+                    AppDesignTokens.spacing4,
+                  ),
+                  child: Text(
+                    contextLine,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.75),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.paddingOf(context).bottom + 88,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildContextCard(context),
+                        if (!isSessionEditable(widget.session))
+                          _buildClosedSessionBanner(context),
+                        _buildAssessmentSelector(context),
+                        existingRatingAsync.when(
+                          loading: () => const Padding(
+                            padding: EdgeInsets.all(48),
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                          error: (e, st) => Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Center(child: Text('Error: $e')),
+                          ),
+                          data: (existing) =>
+                              _buildRatingArea(context, existing),
+                        ),
+                        _buildPhotoStrip(context),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildBottomBar(context),
+              ],
             ),
-          ],
-          backgroundColor: const Color(0xFF2D5A40),
-          iconTheme: const IconThemeData(color: Colors.white),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildWalkOrderBar(context),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDesignTokens.spacing16,
-                  AppDesignTokens.spacing8,
-                  AppDesignTokens.spacing16,
-                  AppDesignTokens.spacing4,
-                ),
-                child: Text(
-                  contextLine,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.paddingOf(context).bottom + 88,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildContextCard(context),
-                      if (!isSessionEditable(widget.session))
-                        _buildClosedSessionBanner(context),
-                      _buildAssessmentSelector(context),
-                      existingRatingAsync.when(
-                        loading: () => const Padding(
-                          padding: EdgeInsets.all(48),
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                        error: (e, st) => Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Center(child: Text('Error: $e')),
-                        ),
-                        data: (existing) => _buildRatingArea(context, existing),
-                      ),
-                      _buildPhotoStrip(context),
-                    ],
-                  ),
-                ),
-              ),
-            _buildBottomBar(context),
-          ],
-        ),
-      ),
+          ),
         ),
       ),
     );
@@ -540,7 +550,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             vertical: 8,
           ),
           decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+            border:
+                Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
           ),
           child: Row(
             children: [
@@ -562,7 +573,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
               const Spacer(),
               Icon(Icons.chevron_right,
-                  size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -627,11 +639,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         await photosDir.create(recursive: true);
       }
 
-      final existingPhotos = await ref.read(photoRepositoryProvider).getPhotosForPlotInSession(
-        trialId: widget.trial.id,
-        plotPk: widget.plot.id,
-        sessionId: widget.session.id,
-      );
+      final existingPhotos =
+          await ref.read(photoRepositoryProvider).getPhotosForPlotInSession(
+                trialId: widget.trial.id,
+                plotPk: widget.plot.id,
+                sessionId: widget.session.id,
+              );
       final sequenceNumber = existingPhotos.length + 1;
       final plotLabel = getDisplayPlotLabel(widget.plot, widget.allPlots);
       final capturedAt = DateTime.now();
@@ -712,7 +725,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 letterSpacing: 0.3,
               ),
             ),
@@ -736,42 +750,42 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 ),
               );
             },
-          error: (e, _) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Photo load error: $e',
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ),
-          data: (photos) {
-            const tileSize = 72.0;
-            return SizedBox(
-              height: tileSize + 24,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.zero,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildCameraTile(context, tileSize),
-                    for (var i = 0; i < photos.length; i++) ...[
-                      const SizedBox(width: 8),
-                      _buildPhotoTile(
-                        context,
-                        photos[i],
-                        i + 1,
-                        photos.length,
-                        tileSize,
-                      ),
-                    ],
-                  ],
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Photo load error: $e',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.colorScheme.error,
                 ),
               ),
-            );
-          },
+            ),
+            data: (photos) {
+              const tileSize = 72.0;
+              return SizedBox(
+                height: tileSize + 24,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.zero,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildCameraTile(context, tileSize),
+                      for (var i = 0; i < photos.length; i++) ...[
+                        const SizedBox(width: 8),
+                        _buildPhotoTile(
+                          context,
+                          photos[i],
+                          i + 1,
+                          photos.length,
+                          tileSize,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -853,7 +867,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         child: Icon(
                           Icons.broken_image_outlined,
                           size: 32,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.5),
                         ),
                       ),
               ),
@@ -861,7 +876,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 left: 4,
                 top: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.scrim.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(6),
@@ -880,7 +896,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 right: 4,
                 bottom: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.scrim.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(4),
@@ -1017,9 +1034,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       if (widget.plot.rep != null) 'Rep ${widget.plot.rep}',
     ];
     final secondaryLine = secondaryParts.join(' · ');
-    final tertiaryLine = widget.session.name.trim().isNotEmpty
-        ? widget.session.name
-        : 'Session';
+    final tertiaryLine =
+        widget.session.name.trim().isNotEmpty ? widget.session.name : 'Session';
     final progressText =
         '${widget.currentPlotIndex + 1} of ${widget.allPlots.length}';
     final showFilteredChip = widget.isFilteredMode &&
@@ -1197,10 +1213,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     if (widget.assessments.length == 1) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(
-            AppDesignTokens.spacing16,
-            10,
-            AppDesignTokens.spacing16,
-            6),
+            AppDesignTokens.spacing16, 10, AppDesignTokens.spacing16, 6),
         child: Row(
           children: [
             Container(
@@ -1235,10 +1248,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppDesignTokens.spacing16,
-          10,
-          AppDesignTokens.spacing16,
-          6),
+          AppDesignTokens.spacing16, 10, AppDesignTokens.spacing16, 6),
       child: SizedBox(
         height: 32,
         child: SingleChildScrollView(
@@ -1616,7 +1626,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                             ),
                           ),
                           Text(
-                            '${_priorRating!.numericValue?.toString() ?? _priorRating!.textValue ?? '—'} ${_currentAssessment.unit ?? ''}'.trim(),
+                            '${_priorRating!.numericValue?.toString() ?? _priorRating!.textValue ?? '—'} ${_currentAssessment.unit ?? ''}'
+                                .trim(),
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -1650,8 +1661,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                 horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(
-                                  color: const Color(0xFFE0DDD6)),
+                              border:
+                                  Border.all(color: const Color(0xFFE0DDD6)),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
@@ -1717,12 +1728,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   ] else if (_hasScaleDefined) ...[
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 16),
                       decoration: BoxDecoration(
                         color: AppDesignTokens.primary.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: AppDesignTokens.primary.withValues(alpha: 0.35),
+                          color:
+                              AppDesignTokens.primary.withValues(alpha: 0.35),
                           width: 1,
                         ),
                       ),
@@ -1749,7 +1762,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                 _currentAssessment.unit!,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -1780,14 +1795,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         color: AppDesignTokens.primary.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: AppDesignTokens.primary.withValues(alpha: 0.35),
+                          color:
+                              AppDesignTokens.primary.withValues(alpha: 0.35),
                           width: 1,
                         ),
                       ),
                       child: TextField(
                         controller: _valueController,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         style: const TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.w800,
@@ -1857,7 +1873,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
                       return Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 20, horizontal: 16),
                         decoration: BoxDecoration(
                           color: bgColor,
                           borderRadius: BorderRadius.circular(10),
@@ -1870,7 +1887,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                             Icon(statusIcon, size: 28, color: textColor),
                             const SizedBox(height: 8),
                             Text(
-                              statusLabel.isNotEmpty ? statusLabel : _selectedStatus,
+                              statusLabel.isNotEmpty
+                                  ? statusLabel
+                                  : _selectedStatus,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
@@ -1881,7 +1900,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                             if (_selectedMissingReasons.isNotEmpty) ...[
                               const SizedBox(height: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: borderColor.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
@@ -1989,8 +2009,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   const SizedBox(height: 10),
                   Container(
                     color: const Color(0xFFFEF9EE),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       children: [
                         const Icon(
@@ -2060,11 +2080,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                               ButtonSegment(
                                   value: 'certain', label: Text('Certain')),
                               ButtonSegment(
-                                  value: 'uncertain',
-                                  label: Text('Uncertain')),
+                                  value: 'uncertain', label: Text('Uncertain')),
                               ButtonSegment(
-                                  value: 'estimated',
-                                  label: Text('Estimated')),
+                                  value: 'estimated', label: Text('Estimated')),
                             ],
                             selected: {_confidence},
                             onSelectionChanged: (Set<String> s) {
@@ -2089,8 +2107,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     await showModalBottomSheet(
       context: context,
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -2098,8 +2115,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text('Rater name',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14)),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               const SizedBox(height: 12),
               TextField(
                 controller: controller,
@@ -2131,8 +2147,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   bool get _isTextAssessment =>
       _currentAssessment.dataType.toLowerCase() == 'text';
 
-  bool get _isNumericAssessment =>
-      _currentAssessment.dataType == 'numeric';
+  bool get _isNumericAssessment => _currentAssessment.dataType == 'numeric';
 
   bool get _hasScaleDefined =>
       _currentAssessment.minValue != null &&
@@ -2156,21 +2171,21 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
-  /// Effective min for value entry; default 0 when minValue is null.
-  double get _effectiveMin {
-    final scale = widget.scaleMap?[_currentAssessment.id];
-    return scale?.scaleMin ??
-        _currentAssessment.minValue ??
-        0.0;
+  /// Bounds for clamping and [SaveRatingInput] (same source as validator min/max).
+  ({double min, double max}) get _effectiveNumericBounds {
+    final resolved = resolveAssessmentScale(
+      assessment: _currentAssessment,
+      definitionScale: widget.scaleMap?[_currentAssessment.id],
+    );
+    return (
+      min: resolved.minValue ?? 0.0,
+      max: resolved.maxValue ?? _defaultMax(_currentAssessment.unit).toDouble(),
+    );
   }
 
-  /// Effective max for value entry; unit-aware default when maxValue is null.
-  double get _effectiveMax {
-    final scale = widget.scaleMap?[_currentAssessment.id];
-    return scale?.scaleMax ??
-        _currentAssessment.maxValue ??
-        _defaultMax(_currentAssessment.unit).toDouble();
-  }
+  double get _effectiveMin => _effectiveNumericBounds.min;
+
+  double get _effectiveMax => _effectiveNumericBounds.max;
 
   void _clampValueToEffectiveRange() {
     final v = double.tryParse(_valueController.text);
@@ -2178,9 +2193,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final clamped = v.clamp(_effectiveMin, _effectiveMax);
     if (clamped != v) {
       final step = _effectiveStep;
-      final text = step < 1
-          ? clamped.toStringAsFixed(1)
-          : clamped.round().toString();
+      final text =
+          step < 1 ? clamped.toStringAsFixed(1) : clamped.round().toString();
       _valueController.text = text;
     }
   }
@@ -2213,7 +2227,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final max = _effectiveMax;
     final range = (max - min).abs();
     if (range <= 0) return null;
-    if (range <= 100 && min == min.roundToDouble() && max == max.roundToDouble()) {
+    if (range <= 100 &&
+        min == min.roundToDouble() &&
+        max == max.roundToDouble()) {
       return range.round();
     }
     return null;
@@ -2244,9 +2260,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       final current = double.tryParse(_valueController.text) ?? _effectiveMin;
       final next = (current + delta).clamp(_effectiveMin, _effectiveMax);
       setState(() {
-        _valueController.text = step < 1
-            ? next.toStringAsFixed(1)
-            : next.round().toString();
+        _valueController.text =
+            step < 1 ? next.toStringAsFixed(1) : next.round().toString();
       });
       _clampValueToEffectiveRange();
     }
@@ -2326,10 +2341,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       height: 36,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppDesignTokens.primary.withValues(alpha: 0.06),
+                          color:
+                              AppDesignTokens.primary.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: AppDesignTokens.primary.withValues(alpha: 0.35),
+                            color:
+                                AppDesignTokens.primary.withValues(alpha: 0.35),
                             width: 1,
                           ),
                         ),
@@ -2494,8 +2511,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                             },
                             child: Container(
                               height: 36,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? const Color(0xFFFEF9EE)
@@ -2566,8 +2583,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     // Dynamic primary button label
     String primaryLabel;
     if (isVeryLast) {
-      primaryLabel =
-          _isAtEndOfFilteredSequence ? 'Done' : 'Save & Finish';
+      primaryLabel = _isAtEndOfFilteredSequence ? 'Finished' : 'Save & Finish';
     } else if (isLastAssessment) {
       primaryLabel = 'Save & Next Plot';
     } else {
@@ -2593,144 +2609,145 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           ],
         ),
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Main actions: Save (outlined) + Save & Next (primary, dominant)
-          Row(
-            children: [
-              Expanded(
-                flex: 1,
-                child: SizedBox(
-                  height: 48,
-                  child: OutlinedButton(
-                    onPressed: _isSaving || !editable
-                        ? null
-                        : () => _saveRating(context, navigateAfterSave: false),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppDesignTokens.primary,
-                      side:
-                          const BorderSide(color: AppDesignTokens.borderCrisp),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      softWrap: false,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppDesignTokens.spacing8),
-              Expanded(
-                flex: 2,
-                child: SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _isSaving || !editable
-                        ? null
-                        : () => _saveRating(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppDesignTokens.primary,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: AppDesignTokens.divider,
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  primaryLabel,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Icon(
-                                isVeryLast
-                                    ? Icons.check_circle_outline
-                                    : Icons.arrow_forward,
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // Secondary: Prev, Jump, Flag (small) — centered as a group
-          Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Main actions: Save (outlined) + Save & Next (primary, dominant)
+            Row(
               children: [
-                TextButton.icon(
-                  onPressed: canGoBack
-                      ? () async {
-                          await _navigatePlot(context, -1);
-                        }
-                      : null,
-                  icon: const Icon(Icons.arrow_back, size: 18),
-                  label: const Text('Prev', style: TextStyle(fontSize: 13)),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppDesignTokens.secondaryText,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(0, 36),
+                Expanded(
+                  flex: 1,
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: _isSaving || !editable
+                          ? null
+                          : () =>
+                              _saveRating(context, navigateAfterSave: false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppDesignTokens.primary,
+                        side: const BorderSide(
+                            color: AppDesignTokens.borderCrisp),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        softWrap: false,
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  onPressed: () => _showJumpToPlotDialog(context),
-                  icon: const Icon(Icons.search, size: 18),
-                  label: const Text('Jump', style: TextStyle(fontSize: 13)),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppDesignTokens.secondaryText,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(0, 36),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => _showFlagDialog(context),
-                  icon: const Icon(Icons.flag_outlined, size: 20),
-                  tooltip: 'Flag plot',
-                  style: IconButton.styleFrom(
-                    foregroundColor: AppDesignTokens.secondaryText,
+                const SizedBox(width: AppDesignTokens.spacing8),
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _isSaving || !editable
+                          ? null
+                          : () => _saveRating(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppDesignTokens.primary,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: AppDesignTokens.divider,
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    primaryLabel,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  isVeryLast
+                                      ? Icons.check_circle_outline
+                                      : Icons.arrow_forward,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            // Secondary: Prev, Jump, Flag (small) — centered as a group
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton.icon(
+                    onPressed: canGoBack
+                        ? () async {
+                            await _navigatePlot(context, -1);
+                          }
+                        : null,
+                    icon: const Icon(Icons.arrow_back, size: 18),
+                    label: const Text('Prev', style: TextStyle(fontSize: 13)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppDesignTokens.secondaryText,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 36),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: () => _showJumpToPlotDialog(context),
+                    icon: const Icon(Icons.search, size: 18),
+                    label: const Text('Jump', style: TextStyle(fontSize: 13)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppDesignTokens.secondaryText,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 36),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => _showFlagDialog(context),
+                    icon: const Icon(Icons.flag_outlined, size: 20),
+                    tooltip: 'Flag plot',
+                    style: IconButton.styleFrom(
+                      foregroundColor: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -2827,7 +2844,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   // ===== Actions =====
 
   /// Saves the current rating. When [navigateAfterSave] is true (default), advances to next
-  /// assessment or next plot or shows session complete; when false, stays on current plot/assessment.
+  /// assessment or next plot or shows the end-of-plot-list dialog (navigation only, not session completeness);
+  /// when false, stays on current plot/assessment.
   /// Returns true when a row was written successfully (or save was appropriate and completed).
   Future<bool> _saveRating(BuildContext context,
       {bool navigateAfterSave = true,
@@ -2838,15 +2856,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       if (!proceed) return false;
       if (mounted && _carryForwardBaselineNumeric != null) {
         setState(() {
-          _carryForwardConfirmSuppressedAssessmentId =
-              _currentAssessment.id;
-          _carryForwardConfirmSuppressedBaseline =
-              _carryForwardBaselineNumeric;
+          _carryForwardConfirmSuppressedAssessmentId = _currentAssessment.id;
+          _carryForwardConfirmSuppressedBaseline = _carryForwardBaselineNumeric;
         });
       }
       return _saveRating(context,
-          navigateAfterSave: navigateAfterSave,
-          skipCarryForwardConfirm: true);
+          navigateAfterSave: navigateAfterSave, skipCarryForwardConfirm: true);
     }
 
     double? numericValue;
@@ -2892,7 +2907,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
     final userId = await ref.read(currentUserIdProvider.future);
     final now = DateTime.now();
-    final ratingTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final ratingTime =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final scaleBounds = _effectiveNumericBounds;
     final useCase = ref.read(saveRatingUseCaseProvider);
     final result = await useCase.execute(
       SaveRatingInput(
@@ -2908,14 +2925,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             : widget.session.raterName,
         performedByUserId: userId,
         isSessionClosed: widget.session.endedAt != null,
-        minValue: _currentAssessment.minValue,
-        maxValue: _currentAssessment.maxValue,
+        minValue: scaleBounds.min,
+        maxValue: scaleBounds.max,
         ratingTime: ratingTime,
         confidence: _confidence,
         assessmentConstraints: RatingAssessmentConstraints(
           dataType: _currentAssessment.dataType,
-          minValue: _currentAssessment.minValue,
-          maxValue: _currentAssessment.maxValue,
+          minValue: scaleBounds.min,
+          maxValue: scaleBounds.max,
           unit: _currentAssessment.unit,
         ),
       ),
@@ -3001,6 +3018,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
+  /// End of this session's plot list in navigation order — not scientific session completeness / close readiness.
   Future<void> _showSessionCompleteDialog(BuildContext context) async {
     final flaggedIds = await ref
         .read(flaggedPlotIdsForSessionProvider(widget.session.id).future);
@@ -3008,9 +3026,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final photoCount = await ref
         .read(photoRepositoryProvider)
         .getPhotoCountForSession(widget.session.id);
-    final plotCount = widget.allPlots.length;
+    final ratedPksForSummary =
+        await ref.read(ratedPlotPksProvider(widget.session.id).future);
+    final ratedCountForSummary = ratedPksForSummary.length;
+    final plotListCount = widget.allPlots.length;
     final summary =
-        '$plotCount plots rated · $flaggedCount flagged · $photoCount photos';
+        '$ratedCountForSummary of $plotListCount plots with a rating · $flaggedCount flagged · $photoCount photos';
 
     if (!context.mounted) return;
     await showDialog(
@@ -3048,9 +3069,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
               const SizedBox(height: AppDesignTokens.spacing8),
               const Text(
-                'You have reached the end of the plot list. '
-                'Check the pre-close checklist to confirm all '
-                'required plots are rated before closing.',
+                'You have reached the end of the plot list for this session '
+                '(navigation). Use session completeness and the pre-close checklist '
+                'to confirm you are ready to close — that is separate from having '
+                'a rating on every plot.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -3179,7 +3201,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     return i >= 0 && i == ids.length - 1;
   }
 
-  /// Last plot for Save & Next / session-complete when filter mode is on.
+  /// Last plot for Save & Next / end-of-list when filter mode is on (navigation).
   bool get _effectiveIsLastPlotForNavigation {
     final ids = widget.filteredPlotIds;
     if (widget.isFilteredMode && ids != null && ids.isNotEmpty) {
@@ -3260,7 +3282,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     ),
                     const SizedBox(width: AppDesignTokens.spacing8),
                     Text(
-                      '$repLabel complete',
+                      '$repLabel finished',
                       style: const TextStyle(
                         color: AppDesignTokens.onPrimary,
                       ),
@@ -3289,8 +3311,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     _pushRatingReplacementAtFullIndex(context, nextIndex);
   }
 
-  void _pushRatingReplacementAtFullIndex(
-      BuildContext context, int fullIndex) {
+  void _pushRatingReplacementAtFullIndex(BuildContext context, int fullIndex) {
     if (fullIndex < 0 || fullIndex >= widget.allPlots.length) {
       return;
     }
@@ -3445,8 +3466,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   Widget _statusPill(BuildContext context, String label, String value) {
     final bool isSelected = _selectedStatus == value;
-    final Color bgColor =
-        isSelected ? const Color(0xFFE8F5EE) : Colors.white;
+    final Color bgColor = isSelected ? const Color(0xFFE8F5EE) : Colors.white;
     final Color borderColor =
         isSelected ? const Color(0xFF2D5A40) : const Color(0xFFE0DDD6);
     final Color textColor =
@@ -3488,15 +3508,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   /// and reporting without being flattened into the simple "Other" dropdown.
   Widget _missingStatusPill(BuildContext context) {
     final bool isSelected = _selectedStatus == 'MISSING_CONDITION';
-    final Color bgColor = isSelected
-        ? const Color(0xFFFEF9EE)
-        : Colors.white;
-    final Color borderColor = isSelected
-        ? const Color(0xFFF59E0B)
-        : const Color(0xFFE0DDD6);
-    final Color textColor = isSelected
-        ? const Color(0xFFB45309)
-        : Colors.grey.shade600;
+    final Color bgColor = isSelected ? const Color(0xFFFEF9EE) : Colors.white;
+    final Color borderColor =
+        isSelected ? const Color(0xFFF59E0B) : const Color(0xFFE0DDD6);
+    final Color textColor =
+        isSelected ? const Color(0xFFB45309) : Colors.grey.shade600;
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -3529,9 +3545,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   Widget _buildOtherStatusDropdown(BuildContext context) {
     final bool isSimpleOther =
         _selectedStatus == 'RECORDED' || _selectedStatus == 'MISSING_CONDITION';
-    final String displayText = isSimpleOther
-        ? 'Other'
-        : _statusDisplayLabel(_selectedStatus);
+    final String displayText =
+        isSimpleOther ? 'Other' : _statusDisplayLabel(_selectedStatus);
     return PopupMenuButton<String>(
       padding: EdgeInsets.zero,
       offset: const Offset(0, 40),
@@ -3588,7 +3603,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       },
     );
   }
-
 }
 
 class _PhotoViewerScreen extends StatefulWidget {

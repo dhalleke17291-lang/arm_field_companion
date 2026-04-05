@@ -23,8 +23,8 @@ import '../ratings/rating_screen.dart';
 
 /// Same filter as [workLogSessionsProvider], but backed by Drift [watch] so the
 /// list updates when sessions change without manual invalidation.
-final _workLogSessionsStreamProvider = StreamProvider.autoDispose
-    .family<List<Session>, String>((ref, dateLocal) {
+final _workLogSessionsStreamProvider =
+    StreamProvider.autoDispose.family<List<Session>, String>((ref, dateLocal) {
   final db = ref.watch(databaseProvider);
   return ref.watch(currentUserIdProvider).when(
         data: (userId) => (db.select(db.sessions)
@@ -39,8 +39,8 @@ final _workLogSessionsStreamProvider = StreamProvider.autoDispose
               ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
             .watch(),
         loading: () => Stream.value(<Session>[]),
-        error: (e, st) =>
-            Stream<List<Session>>.fromFuture(Future<List<Session>>.error(e, st)),
+        error: (e, st) => Stream<List<Session>>.fromFuture(
+            Future<List<Session>>.error(e, st)),
       );
 });
 
@@ -199,8 +199,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                 if (sessions.isEmpty) {
                   return _buildSmartEmptyState(
                     context,
-                    isToday:
-                        _selectedDateLocal == workLogTodayDateLocal(),
+                    isToday: _selectedDateLocal == workLogTodayDateLocal(),
                     onGoToTrials: widget.onGoToTrials,
                   );
                 }
@@ -454,9 +453,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: AppDesignTokens.spacing8,
-        top: isFirst
-            ? AppDesignTokens.spacing12
-            : AppDesignTokens.spacing8,
+        top: isFirst ? AppDesignTokens.spacing12 : AppDesignTokens.spacing8,
       ),
       child: Text(
         title,
@@ -505,8 +502,9 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     final prefs = await SharedPreferences.getInstance();
     final store = SessionWalkOrderStore(prefs);
     final walkOrder = store.getMode(session.id);
-    final customIds =
-        walkOrder == WalkOrderMode.custom ? store.getCustomOrder(session.id) : null;
+    final customIds = walkOrder == WalkOrderMode.custom
+        ? store.getCustomOrder(session.id)
+        : null;
     final result = await useCase.execute(StartOrContinueRatingInput(
       sessionId: session.id,
       walkOrderMode: walkOrder,
@@ -534,8 +532,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     final assessments = result.assessments!;
     int startIndex = result.startPlotIndex!;
     int? initialAssessmentIndex;
-    final pos =
-        SessionResumeStore(prefs).getPosition(resolvedSession.id);
+    final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
     if (pos != null) {
       final resolved = pos.resolveResumeStart(
         plots: plots,
@@ -589,8 +586,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
 
     final wt = workspaceTypeFromStringOrNull(trial?.workspaceType) ??
         WorkspaceType.efficacy;
-    final isCustom =
-        WorkspaceConfig.forType(wt).mode == TrialMode.standalone;
+    final isCustom = WorkspaceConfig.forType(wt).mode == TrialMode.standalone;
 
     return Material(
       color: Colors.transparent,
@@ -607,84 +603,84 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
             boxShadow: AppDesignTokens.cardShadow,
           ),
           child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      session.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppDesignTokens.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      trialName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppDesignTokens.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               Row(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (trial != null) _buildWorkspaceBadge(isCustom),
-                  const SizedBox(width: AppDesignTokens.spacing8),
-                  _buildOpenClosedBadge(isOpen),
-                  const SizedBox(width: AppDesignTokens.spacing4),
-                  PopupMenuButton<String>(
-                    icon: const Icon(
-                      Icons.more_vert,
-                      size: 20,
-                      color: AppDesignTokens.secondaryText,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          session.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppDesignTokens.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          trialName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                      ],
                     ),
-                    tooltip: 'More actions',
-                    onSelected: (value) {
-                      if (value == 'delete_session') {
-                        _confirmAndSoftDeleteSession(context, session);
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem<String>(
-                        value: 'delete_session',
-                        child: Text('Move to Recovery'),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (trial != null) _buildWorkspaceBadge(isCustom),
+                      const SizedBox(width: AppDesignTokens.spacing8),
+                      _buildOpenClosedBadge(isOpen),
+                      const SizedBox(width: AppDesignTokens.spacing4),
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          size: 20,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                        tooltip: 'More actions',
+                        onSelected: (value) {
+                          if (value == 'delete_session') {
+                            _confirmAndSoftDeleteSession(context, session);
+                          }
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem<String>(
+                            value: 'delete_session',
+                            child: Text('Move to Recovery'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ],
               ),
+              const SizedBox(height: AppDesignTokens.spacing12),
+              Text(
+                '$startStr → $endStr$durationStr',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              const SizedBox(height: AppDesignTokens.spacing12),
+              _buildStatsRow(
+                ratingCount: ratingCountAsync.valueOrNull ?? 0,
+                flagCount: flagCountAsync.valueOrNull ?? 0,
+                photoCount: photoCountAsync.valueOrNull ?? 0,
+              ),
+              _buildAttentionChips(
+                attentionAsync: attentionAsync,
+                trial: trial,
+              ),
             ],
           ),
-          const SizedBox(height: AppDesignTokens.spacing12),
-          Text(
-            '$startStr → $endStr$durationStr',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppDesignTokens.secondaryText,
-            ),
-          ),
-          const SizedBox(height: AppDesignTokens.spacing12),
-          _buildStatsRow(
-            ratingCount: ratingCountAsync.valueOrNull ?? 0,
-            flagCount: flagCountAsync.valueOrNull ?? 0,
-            photoCount: photoCountAsync.valueOrNull ?? 0,
-          ),
-          _buildAttentionChips(
-            attentionAsync: attentionAsync,
-            trial: trial,
-          ),
-        ],
-      ),
         ),
       ),
     );
@@ -888,7 +884,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
       runSpacing: AppDesignTokens.spacing8,
       children: [
         _statPill(
-          '$ratingCount plots rated',
+          '$ratingCount plots with a rating',
           AppDesignTokens.successBg,
           AppDesignTokens.successFg,
         ),

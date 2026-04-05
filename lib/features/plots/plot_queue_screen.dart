@@ -169,9 +169,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             .read(trialAssessmentsForTrialProvider(widget.trial.id))
             .valueOrNull ??
         <TrialAssessment>[];
-    final definitions = ref
-            .read(assessmentDefinitionsProvider)
-            .valueOrNull ??
+    final definitions = ref.read(assessmentDefinitionsProvider).valueOrNull ??
         <AssessmentDefinition>[];
     final defById = {for (final d in definitions) d.id: d};
     final result = <int, ({double? scaleMin, double? scaleMax})>{};
@@ -212,8 +210,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     if (!context.mounted) return;
     final pos = SessionResumeStore(prefs).getPosition(widget.session.id);
     if (pos != null && pos.isForPlot(plot.id, currentPlotIndex)) {
-      initialAssessmentIndex =
-          pos.clampedAssessmentIndex(assessments.length);
+      initialAssessmentIndex = pos.clampedAssessmentIndex(assessments.length);
     }
     if (!context.mounted) return;
     await Navigator.push<void>(
@@ -245,8 +242,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       // Allow rating stream to emit after save before choosing "next unrated".
       await Future<void>.delayed(const Duration(milliseconds: 120));
       if (!mounted) return;
-      final rated = ref.read(ratedPlotPksProvider(widget.session.id)).valueOrNull ??
-          <int>{};
+      final rated =
+          ref.read(ratedPlotPksProvider(widget.session.id)).valueOrNull ??
+              <int>{};
       final raw =
           ref.read(plotsForTrialProvider(widget.trial.id)).valueOrNull ?? [];
       final queuePlots = _queuePlotsExcludingGuards(raw);
@@ -335,7 +333,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     if (!mounted) return;
     final store = SessionWalkOrderStore(prefs);
     final mode = store.getMode(widget.session.id);
-    final customIds = mode == WalkOrderMode.custom ? store.getCustomOrder(widget.session.id) : null;
+    final customIds = mode == WalkOrderMode.custom
+        ? store.getCustomOrder(widget.session.id)
+        : null;
     setState(() {
       _walkOrderMode = mode;
       _customPlotIds = customIds;
@@ -423,7 +423,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: GradientScreenHeader(
         title: widget.trial.name,
-        subtitle: '${widget.session.name} · Walk order: ${SessionWalkOrderStore.labelForMode(_walkOrderMode)}',
+        subtitle:
+            '${widget.session.name} · Walk order: ${SessionWalkOrderStore.labelForMode(_walkOrderMode)}',
         titleFontSize: 17,
         actions: [
           IconButton(
@@ -463,12 +464,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                 final seedingEvent = ref
                     .watch(seedingEventForTrialProvider(widget.trial.id))
                     .valueOrNull;
-                final int? dasDays = (seedingEvent != null &&
-                        seedingEvent.status == 'completed')
-                    ? widget.session.startedAt
-                        .difference(seedingEvent.seedingDate)
-                        .inDays
-                    : null;
+                final int? dasDays =
+                    (seedingEvent != null && seedingEvent.status == 'completed')
+                        ? widget.session.startedAt
+                            .difference(seedingEvent.seedingDate)
+                            .inDays
+                        : null;
                 return _buildQueue(
                     context,
                     plots,
@@ -520,11 +521,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       plotPksWithCorrections,
     );
     _scheduleScrollToPlotPkOnOpen(filtered);
-    final filterNavActive =
-        _anyPlotFiltersActive() && filtered.isNotEmpty;
-    final filteredPlotIdsForRating = filterNavActive
-        ? filtered.map((p) => p.id).toList()
-        : null;
+    final filterNavActive = _anyPlotFiltersActive() && filtered.isNotEmpty;
+    final filteredPlotIdsForRating =
+        filterNavActive ? filtered.map((p) => p.id).toList() : null;
     final navigationModeLabelForRating =
         filterNavActive ? _singleNavigationModeLabel() : null;
 
@@ -534,8 +533,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final hasFieldRow = plots.any((p) => p.fieldRow != null);
     const serpentineGreen = Color(0xFF2D5A40);
     final contextLine = dasDays != null
-        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots rated'
-        : '$ratedCount / $totalPlots plots rated';
+        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots with a rating'
+        : '$ratedCount / $totalPlots plots with a rating';
 
     return Column(
       children: [
@@ -588,7 +587,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '$ratedCount / $totalPlots rated',
+                  '$ratedCount / $totalPlots with a rating',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
@@ -702,8 +701,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                           ),
                           backgroundColor: scheme.surfaceContainerHighest,
                           side: BorderSide(
-                            color: scheme.outlineVariant.withValues(
-                                alpha: 0.9),
+                            color: scheme.outlineVariant.withValues(alpha: 0.9),
                           ),
                         ),
                       );
@@ -754,7 +752,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                                   ? 'No plots in this trial'
                                   : 'No plots in rating queue')
                               : (_emptyQueueIsAllRatedUnratedOnly()
-                                  ? 'All plots rated!'
+                                  ? 'No unrated plots in this view'
                                   : 'No plots match filters'),
                           style: const TextStyle(
                               fontSize: 20, fontWeight: FontWeight.bold)),
@@ -763,10 +761,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                         plots.isEmpty
                             ? 'Go to the Plots tab to import plots first.'
                             : (_emptyQueueIsAllRatedUnratedOnly()
-                                ? 'You can export and share this session now.'
+                                ? 'Session completeness is separate — review before closing if needed.'
                                 : 'Clear filters below to see all plots again.'),
                         style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                         textAlign: TextAlign.center,
                       ),
                       if (plots.isNotEmpty && filtered.isEmpty) ...[
@@ -800,56 +799,60 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                                 final currentUser =
                                     await ref.read(currentUserProvider.future);
                                 final result = await usecase.exportSessionToCsv(
-                                sessionId: widget.session.id,
-                                trialId: widget.trial.id,
-                                trialName: widget.trial.name,
-                                sessionName: widget.session.name,
-                                sessionDateLocal:
-                                    widget.session.sessionDateLocal,
-                                sessionRaterName: widget.session.raterName,
-                                exportedByDisplayName: currentUser?.displayName,
-                                isSessionClosed: widget.session.endedAt != null,
-                              );
+                                  sessionId: widget.session.id,
+                                  trialId: widget.trial.id,
+                                  trialName: widget.trial.name,
+                                  sessionName: widget.session.name,
+                                  sessionDateLocal:
+                                      widget.session.sessionDateLocal,
+                                  sessionRaterName: widget.session.raterName,
+                                  exportedByDisplayName:
+                                      currentUser?.displayName,
+                                  isSessionClosed:
+                                      widget.session.endedAt != null,
+                                );
 
-                              if (!mounted || !context.mounted) return;
-                              if (!result.success) {
-                                ref.read(diagnosticsStoreProvider).recordError(
-                                      result.errorMessage ?? 'Export failed',
-                                      code: 'export_failed',
-                                    );
+                                if (!mounted || !context.mounted) return;
+                                if (!result.success) {
+                                  ref
+                                      .read(diagnosticsStoreProvider)
+                                      .recordError(
+                                        result.errorMessage ?? 'Export failed',
+                                        code: 'export_failed',
+                                      );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        result.errorMessage ?? 'Export failed',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      result.errorMessage ?? 'Export failed',
+                                      result.warningMessage != null
+                                          ? result.warningMessage!
+                                          : 'Exported ${result.rowCount} rows',
                                     ),
+                                  ),
+                                );
+                                await Share.shareXFiles(
+                                  [XFile(result.filePath!)],
+                                  text:
+                                      'Ag-Quest Field Companion export: ${widget.trial.name} / ${widget.session.name}',
+                                );
+                              } catch (e) {
+                                if (!mounted || !context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Export failed: $e'),
                                     backgroundColor: Colors.red,
                                   ),
                                 );
-                                return;
                               }
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    result.warningMessage != null
-                                        ? result.warningMessage!
-                                        : 'Exported ${result.rowCount} rows',
-                                  ),
-                                ),
-                              );
-                              await Share.shareXFiles(
-                                [XFile(result.filePath!)],
-                                text:
-                                    'Ag-Quest Field Companion export: ${widget.trial.name} / ${widget.session.name}',
-                              );
-                            } catch (e) {
-                              if (!mounted || !context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Export failed: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
                             });
                             if (!ran && mounted && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -889,9 +892,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                   filteredPlotIdsForRating: filteredPlotIdsForRating,
                   isFilteredModeForRating: filterNavActive,
                   navigationModeLabelForRating: navigationModeLabelForRating,
-                  onOpenRating: (plot, walkPlots, asmt, fIds, fMode, navLabel) =>
-                      _openRatingFromQueue(context, plot, walkPlots, asmt,
-                          fIds, fMode, navLabel),
+                  onOpenRating:
+                      (plot, walkPlots, asmt, fIds, fMode, navLabel) =>
+                          _openRatingFromQueue(context, plot, walkPlots, asmt,
+                              fIds, fMode, navLabel),
                   highlightPlotPk: _highlightPlotPk,
                   rowKeyForPlot: _keyForPlotRow,
                 ),
@@ -909,8 +913,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       ..sort((a, b) => (a ?? 999).compareTo(b ?? 999));
     final items = <_PlotQueueListItem>[];
     for (final rep in sortedReps) {
-      items.add(_PlotQueueListItem.header(
-          rep != null ? 'Rep $rep' : 'No Rep'));
+      items.add(_PlotQueueListItem.header(rep != null ? 'Rep $rep' : 'No Rep'));
       for (final plot in groups[rep]!) {
         items.add(_PlotQueueListItem.plot(plot));
       }
@@ -949,16 +952,15 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Text(
               item.headerTitle!,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
           );
         }
         final plot = item.plot!;
         final plotRatings = ratingsByPlot[plot.id] ?? [];
-        final hasEdited = plotRatings.any(
-                (r) => r.amended || (r.previousId != null)) ||
-            plotPksWithCorrections.contains(plot.id);
+        final hasEdited =
+            plotRatings.any((r) => r.amended || (r.previousId != null)) ||
+                plotPksWithCorrections.contains(plot.id);
         final plotHasCorr = plotPksWithCorrections.contains(plot.id);
         String? editRecencyLine;
         if (hasEdited) {
@@ -1013,7 +1015,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   }
 
   Future<void> _showJumpToPlotDialog(BuildContext context) async {
-    final rawPlots = ref.read(plotsForTrialProvider(widget.trial.id)).value ?? [];
+    final rawPlots =
+        ref.read(plotsForTrialProvider(widget.trial.id)).value ?? [];
     final assessments =
         ref.read(sessionAssessmentsProvider(widget.session.id)).value ?? [];
     if (rawPlots.isEmpty) {
@@ -1070,8 +1073,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       ),
     );
     if (plotId == null || plotId.isEmpty || !context.mounted) return;
-    final index = plots.indexWhere((p) =>
-        p.plotId == plotId || getDisplayPlotLabel(p, plots) == plotId);
+    final index = plots.indexWhere(
+        (p) => p.plotId == plotId || getDisplayPlotLabel(p, plots) == plotId);
     if (index < 0) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1140,7 +1143,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     });
   }
 
-  /// Empty list + unrated-only on full trial (no other filters) → "all rated" UX.
+  /// Empty list + unrated-only on full trial (no other filters) → no plots lack a current rating in this view.
   bool _emptyQueueIsAllRatedUnratedOnly() {
     return _showUnratedOnly &&
         _repFilter == null &&
@@ -1164,72 +1167,72 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            const Text('Filter Plots',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Show Unrated Only'),
-              value: _showUnratedOnly,
-              onChanged: (val) {
-                setState(() => _showUnratedOnly = val);
-                Navigator.pop(context);
-              },
-            ),
-            SwitchListTile(
-              title: const Text('Show Issues Only'),
-              value: _showIssuesOnly,
-              onChanged: (val) {
-                setState(() => _showIssuesOnly = val);
-                Navigator.pop(context);
-              },
-            ),
-            SwitchListTile(
-              title: const Text('Show Edited Only'),
-              subtitle: const Text(
-                'Edited = amended, corrected, or re-saved ratings',
-                style: TextStyle(fontSize: 12),
+              const Text('Filter Plots',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Show Unrated Only'),
+                value: _showUnratedOnly,
+                onChanged: (val) {
+                  setState(() => _showUnratedOnly = val);
+                  Navigator.pop(context);
+                },
               ),
-              value: _showEditedOnly,
-              onChanged: (val) {
-                setState(() => _showEditedOnly = val);
-                Navigator.pop(context);
-              },
-            ),
-            SwitchListTile(
-              title: const Text('Show Flagged Only'),
-              value: _showFlaggedOnly,
-              onChanged: (val) {
-                setState(() => _showFlaggedOnly = val);
-                Navigator.pop(context);
-              },
-            ),
-            if (reps.isNotEmpty) ...[
-              const Text('Filter by Rep',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  FilterChip(
-                    label: const Text('All'),
-                    selected: _repFilter == null,
-                    onSelected: (_) {
-                      setState(() => _repFilter = null);
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ...reps.map((rep) => FilterChip(
-                        label: Text('Rep $rep'),
-                        selected: _repFilter == rep,
-                        onSelected: (_) {
-                          setState(() => _repFilter = rep);
-                          Navigator.pop(context);
-                        },
-                      )),
-                ],
+              SwitchListTile(
+                title: const Text('Show Issues Only'),
+                value: _showIssuesOnly,
+                onChanged: (val) {
+                  setState(() => _showIssuesOnly = val);
+                  Navigator.pop(context);
+                },
               ),
+              SwitchListTile(
+                title: const Text('Show Edited Only'),
+                subtitle: const Text(
+                  'Edited = amended, corrected, or re-saved ratings',
+                  style: TextStyle(fontSize: 12),
+                ),
+                value: _showEditedOnly,
+                onChanged: (val) {
+                  setState(() => _showEditedOnly = val);
+                  Navigator.pop(context);
+                },
+              ),
+              SwitchListTile(
+                title: const Text('Show Flagged Only'),
+                value: _showFlaggedOnly,
+                onChanged: (val) {
+                  setState(() => _showFlaggedOnly = val);
+                  Navigator.pop(context);
+                },
+              ),
+              if (reps.isNotEmpty) ...[
+                const Text('Filter by Rep',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilterChip(
+                      label: const Text('All'),
+                      selected: _repFilter == null,
+                      onSelected: (_) {
+                        setState(() => _repFilter = null);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ...reps.map((rep) => FilterChip(
+                          label: Text('Rep $rep'),
+                          selected: _repFilter == rep,
+                          onSelected: (_) {
+                            setState(() => _repFilter = rep);
+                            Navigator.pop(context);
+                          },
+                        )),
+                  ],
+                ),
+              ],
             ],
-          ],
           ),
         ),
       ),
@@ -1386,13 +1389,15 @@ class _PlotQueueTile extends StatelessWidget {
   final bool isFlagged;
   final bool hasIssues;
   final bool hasEdited;
+
   /// Subtle per-plot edit time; null when edited but no safe timestamp.
   final String? editRecencyLine;
   final _PlotQueueOpenRating onOpenRating;
   final List<int>? filteredPlotIdsForRating;
   final bool isFilteredModeForRating;
   final String? navigationModeLabelForRating;
-  /// Long-press on rated row: session value summary sheet (optional).
+
+  /// Long-press on row with a current rating: session value summary sheet (optional).
   final VoidCallback? onShowRatedSummary;
   final bool highlightRow;
   final GlobalKey rowKey;
@@ -1423,8 +1428,7 @@ class _PlotQueueTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayNum = getDisplayPlotLabel(plot, allPlotsForTrial);
     final titleText = 'Plot $displayNum · $treatmentLabel';
-    final hasStatusRow =
-        isFlagged || hasIssues || hasEdited || isRated;
+    final hasStatusRow = isFlagged || hasIssues || hasEdited || isRated;
     final rep = plot.rep;
 
     Widget? statusSubtitle;
@@ -1433,7 +1437,7 @@ class _PlotQueueTile extends StatelessWidget {
         if (isFlagged) 'Flagged',
         if (hasIssues) 'Issues',
         if (hasEdited) 'Edited',
-        if (isRated) 'Rated',
+        if (isRated) 'Has Rating',
       ];
       statusSubtitle = Padding(
         padding: const EdgeInsets.only(top: 2),
@@ -1482,7 +1486,8 @@ class _PlotQueueTile extends StatelessWidget {
                             color: AppDesignTokens.emptyBadgeBg,
                             borderRadius: BorderRadius.circular(
                                 AppDesignTokens.radiusChip),
-                            border: Border.all(color: AppDesignTokens.borderCrisp),
+                            border:
+                                Border.all(color: AppDesignTokens.borderCrisp),
                           ),
                           child: const Text(
                             'Edited',
@@ -1502,11 +1507,12 @@ class _PlotQueueTile extends StatelessWidget {
                           color: AppDesignTokens.successBg,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppDesignTokens.successFg.withValues(alpha: 0.35),
+                            color: AppDesignTokens.successFg
+                                .withValues(alpha: 0.35),
                           ),
                         ),
                         child: const Text(
-                          'Rated',
+                          'Has Rating',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -1560,11 +1566,10 @@ class _PlotQueueTile extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: ListTile(
         dense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(
-              horizontal: AppDesignTokens.spacing16,
-              vertical: 5,
-            ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: 5,
+        ),
         leading: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -1610,8 +1615,7 @@ class _PlotQueueTile extends StatelessWidget {
                   ),
                   Icon(
                     Icons.chevron_right,
-                    color:
-                        Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
               )

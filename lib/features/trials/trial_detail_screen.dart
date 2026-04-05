@@ -59,10 +59,7 @@ List<int> _visibleFixedIndices(WorkspaceConfig config) {
     TrialTab.treatments: 4,
     TrialTab.photos: 5,
   };
-  return config.visibleTabs
-      .map((t) => tabToIndex[t])
-      .whereType<int>()
-      .toList();
+  return config.visibleTabs.map((t) => tabToIndex[t]).whereType<int>().toList();
 }
 
 /// Computes effective selected index: prefers candidate if visible, else first visible, else 0.
@@ -196,7 +193,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     super.dispose();
   }
 
-  Future<ExportFormat?> _showExportSheet(List<ExportFormat> allowedFormats) async {
+  Future<ExportFormat?> _showExportSheet(
+      List<ExportFormat> allowedFormats) async {
     return showModalBottomSheet<ExportFormat>(
       context: context,
       backgroundColor: Colors.white,
@@ -290,16 +288,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           return;
         }
         if (format == ExportFormat.pdfReport) {
-        final useCase = ref.read(exportTrialPdfReportUseCaseProvider);
-        await useCase.execute(trial: widget.trial);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Export ready to share')),
-        );
+          final useCase = ref.read(exportTrialPdfReportUseCaseProvider);
+          await useCase.execute(trial: widget.trial);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Export ready to share')),
+          );
           return;
         }
-          final useCase = ref.read(exportTrialUseCaseProvider);
+        final useCase = ref.read(exportTrialUseCaseProvider);
         final bundle = await useCase.execute(
           trial: widget.trial,
           format: format,
@@ -309,8 +307,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         if (format == ExportFormat.flatCsv) {
           final trial = widget.trial;
           final dir = await getTemporaryDirectory();
-          final safeBase =
-              trial.name.replaceAll(RegExp(r'[^\w\s-]'), '_');
+          final safeBase = trial.name.replaceAll(RegExp(r'[^\w\s-]'), '_');
           final timestamp =
               DateFormat('yyyyMMdd_HHmmss_SSS').format(DateTime.now());
           final base = '${safeBase}_export_$timestamp';
@@ -462,7 +459,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('No export options available for this trial.'),
+                  content:
+                      const Text('No export options available for this trial.'),
                   backgroundColor: Colors.amber.shade700,
                 ),
               );
@@ -513,9 +511,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
     final totalPlots = plotsAsync.valueOrNull?.length;
     final rated = ratedAsync.valueOrNull;
-    final int? unrated = totalPlots != null &&
-            rated != null &&
-            totalPlots > 0
+    final int? unrated = totalPlots != null && rated != null && totalPlots > 0
         ? (totalPlots - rated).clamp(0, totalPlots)
         : null;
 
@@ -530,7 +526,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       children: [
         if (unrated != null && unrated > 0) ...[
           Text(
-            '$unrated plot${unrated == 1 ? '' : 's'} without ratings',
+            '$unrated plot${unrated == 1 ? '' : 's'} without any rating in this trial (navigation)',
             style: const TextStyle(
               fontSize: 12,
               height: 1.35,
@@ -702,7 +698,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Workflow Status', style: captionStyle),
+                              const Text('Workflow Status',
+                                  style: captionStyle),
                               const SizedBox(height: 3),
                               Text(
                                 summary,
@@ -768,8 +765,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                         ),
                       ),
                       data: (report) {
-                        final summary =
-                            _readinessCollapsedSummary(report);
+                        final summary = _readinessCollapsedSummary(report);
                         final summaryColor =
                             _readinessCollapsedSummaryColor(context, report);
                         return ExpansionTile(
@@ -782,7 +778,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Trial Readiness', style: captionStyle),
+                              const Text('Trial Readiness',
+                                  style: captionStyle),
                               const SizedBox(height: 3),
                               Text(
                                 summary,
@@ -795,8 +792,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           ),
                           children: [
                             Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
                               child: _readinessReportDetailColumn(
                                 context,
                                 ref,
@@ -852,9 +848,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         isArmLinked: trial.isArmLinked,
       ),
       child: InkWell(
-        onTap: _isExporting
-            ? null
-            : () => _onExportTapped(context, ref, trial),
+        onTap: _isExporting ? null : () => _onExportTapped(context, ref, trial),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -1126,9 +1120,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
         ],
       ),
-      bottomNavigationBar: isPlotsTab
-          ? PlotDetailsBar(trial: currentTrial)
-          : null,
+      bottomNavigationBar:
+          isPlotsTab ? PlotDetailsBar(trial: currentTrial) : null,
     );
   }
 
@@ -1147,10 +1140,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   void _handleAttentionTap(AttentionItem item) {
     switch (item.type) {
       case AttentionType.openSession:
-        ref.read(sessionsForTrialProvider(widget.trial.id).future).then(
-            (sessions) {
-          final open =
-              sessions.where(isSessionOpenForFieldWork).toList();
+        ref
+            .read(sessionsForTrialProvider(widget.trial.id).future)
+            .then((sessions) {
+          final open = sessions.where(isSessionOpenForFieldWork).toList();
           if (open.isNotEmpty && mounted) {
             Navigator.push(
               context,
@@ -1257,8 +1250,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white
-                                        .withValues(alpha: 0.92),
+                                    color: Colors.white.withValues(alpha: 0.92),
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -1270,8 +1262,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                         const SizedBox(width: 4),
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: _buildTrialOverflowMenu(
-                              context, currentTrial),
+                          child: _buildTrialOverflowMenu(context, currentTrial),
                         ),
                       ],
                     ),
@@ -1339,8 +1330,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   ) {
     final effectiveStatus =
         _effectiveTrialStatus(ref, currentTrial) ?? currentTrial.status;
-    final workspaceConfig =
-        safeConfigFromString(currentTrial.workspaceType);
+    final workspaceConfig = safeConfigFromString(currentTrial.workspaceType);
     final visibleIndices = _visibleFixedIndices(workspaceConfig);
     final effectiveSelectedIndex = _effectiveSelectedIndex(
       candidate: _selectedTabIndex == _sessionsIndex
@@ -1463,8 +1453,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                       ref,
                       widget.trial.id,
                       ref.watch(sessionsForTrialProvider(widget.trial.id)),
-                      ref.watch(
-                          seedingEventForTrialProvider(widget.trial.id)),
+                      ref.watch(seedingEventForTrialProvider(widget.trial.id)),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1500,7 +1489,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  static ({Color bg, Color fg, Color border}) _trialStatusPillStyle(String status) {
+  static ({Color bg, Color fg, Color border}) _trialStatusPillStyle(
+      String status) {
     switch (status) {
       case kTrialStatusDraft:
         return (
@@ -1602,7 +1592,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppDesignTokens.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 minimumSize: const Size(0, 36),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
@@ -1690,7 +1681,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   /// Session label for strip: strip leading ISO date so we don't duplicate date.
   static String _sessionDisplayLabel(Session session) {
     final name = session.name.trim();
-    final stripped = name.replaceFirst(RegExp(r'^\d{4}-\d{2}-\d{2}\s*'), '').trim();
+    final stripped =
+        name.replaceFirst(RegExp(r'^\d{4}-\d{2}-\d{2}\s*'), '').trim();
     return stripped.isNotEmpty ? stripped : 'Session';
   }
 
@@ -1721,85 +1713,93 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             }),
             borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
             child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDesignTokens.spacing12,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
-              border: Border.all(color: AppDesignTokens.borderCrisp),
-            ),
-            child: sessionsAsync.when(
-              loading: () => _buildSessionStripRow(
-                context,
-                statusLabel: '…',
-                sessionLabel: 'Sessions',
-                progressText: null,
-                dateText: null,
-                actionLabel: 'Start or continue',
-                isActive: false,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDesignTokens.spacing12,
+                vertical: 8,
               ),
-              error: (_, __) => _buildSessionStripRow(
-                context,
-                statusLabel: '…',
-                sessionLabel: 'Sessions',
-                progressText: null,
-                dateText: null,
-                actionLabel: 'Start or continue',
-                isActive: false,
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                border: Border.all(color: AppDesignTokens.borderCrisp),
               ),
-              data: (sessions) {
-                final active =
-                    sessions.where(isSessionOpenForFieldWork).toList();
-                final primary = active.isNotEmpty
-                    ? active.first
-                    : (sessions.isNotEmpty ? sessions.first : null);
-                final isActive =
-                    primary != null && isSessionOpenForFieldWork(primary);
-                String? progressText;
-                if (primary != null) {
-                  final ratings = ref
-                      .watch(sessionRatingsProvider(primary.id))
-                      .valueOrNull ?? [];
-                  final plots =
-                      ref.watch(plotsForTrialProvider(trialId)).valueOrNull ?? [];
-                  final ratedCount =
-                      ratings.map((r) => r.plotPk).toSet().length;
-                  final totalCount = plots.length;
-                  if (totalCount > 0) {
-                    progressText = '$ratedCount/$totalCount rated';
-                  }
-                }
-                final dateText = primary != null
-                    ? _formatSessionDateLocal(primary.sessionDateLocal)
-                    : null;
-                final actionLabel = sessions.isEmpty
-                    ? 'Start or continue'
-                    : active.isEmpty
-                        ? (sessions.length == 1 ? 'Open' : '${sessions.length} sessions')
-                        : (active.length == 1 ? 'Open' : '${active.length} active');
-                final statusLabel = sessions.isEmpty
-                    ? 'Not started'
-                    : active.isNotEmpty
-                        ? 'Active'
-                        : 'Closed';
-                return _buildSessionStripRow(
+              child: sessionsAsync.when(
+                loading: () => _buildSessionStripRow(
                   context,
-                  statusLabel: statusLabel,
-                  sessionLabel: primary != null
-                      ? _sessionDisplayLabel(primary)
-                      : 'Sessions',
-                  progressText: progressText,
-                  dateText: dateText,
-                  actionLabel: actionLabel,
-                  isActive: isActive,
-                );
-              },
+                  statusLabel: '…',
+                  sessionLabel: 'Sessions',
+                  progressText: null,
+                  dateText: null,
+                  actionLabel: 'Start or continue',
+                  isActive: false,
+                ),
+                error: (_, __) => _buildSessionStripRow(
+                  context,
+                  statusLabel: '…',
+                  sessionLabel: 'Sessions',
+                  progressText: null,
+                  dateText: null,
+                  actionLabel: 'Start or continue',
+                  isActive: false,
+                ),
+                data: (sessions) {
+                  final active =
+                      sessions.where(isSessionOpenForFieldWork).toList();
+                  final primary = active.isNotEmpty
+                      ? active.first
+                      : (sessions.isNotEmpty ? sessions.first : null);
+                  final isActive =
+                      primary != null && isSessionOpenForFieldWork(primary);
+                  String? progressText;
+                  if (primary != null) {
+                    final ratings = ref
+                            .watch(sessionRatingsProvider(primary.id))
+                            .valueOrNull ??
+                        [];
+                    final plots =
+                        ref.watch(plotsForTrialProvider(trialId)).valueOrNull ??
+                            [];
+                    final ratedCount =
+                        ratings.map((r) => r.plotPk).toSet().length;
+                    final totalCount = plots.length;
+                    if (totalCount > 0) {
+                      progressText =
+                          '$ratedCount/$totalCount plots with a rating (navigation)';
+                    }
+                  }
+                  final dateText = primary != null
+                      ? _formatSessionDateLocal(primary.sessionDateLocal)
+                      : null;
+                  final actionLabel = sessions.isEmpty
+                      ? 'Start or continue'
+                      : active.isEmpty
+                          ? (sessions.length == 1
+                              ? 'Open'
+                              : '${sessions.length} sessions')
+                          : (active.length == 1
+                              ? 'Open'
+                              : '${active.length} active');
+                  final statusLabel = sessions.isEmpty
+                      ? 'Not started'
+                      : active.isNotEmpty
+                          ? 'Active'
+                          : 'Closed';
+                  return _buildSessionStripRow(
+                    context,
+                    statusLabel: statusLabel,
+                    sessionLabel: primary != null
+                        ? _sessionDisplayLabel(primary)
+                        : 'Sessions',
+                    progressText: progressText,
+                    dateText: dateText,
+                    actionLabel: actionLabel,
+                    isActive: isActive,
+                  );
+                },
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 
@@ -1825,7 +1825,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: isActive
                             ? AppDesignTokens.openSessionBgLight
@@ -1891,7 +1892,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
-                          color: AppDesignTokens.secondaryText.withValues(alpha: 0.7),
+                          color: AppDesignTokens.secondaryText
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                     if (sessionLabel != 'Sessions')
@@ -1901,7 +1903,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
-                            color: AppDesignTokens.primaryText.withValues(alpha: 0.75),
+                            color: AppDesignTokens.primaryText
+                                .withValues(alpha: 0.75),
                             letterSpacing: 0.3,
                           ),
                           maxLines: 1,
@@ -2102,13 +2105,15 @@ String _sessionCloseCompletenessIssueLine(SessionCompletenessIssue i) {
 
 enum _SessionIncompleteAction { keepOpen, reviewSession, plotQueue }
 
-List<String> _legacySessionCloseAttentionLines(_SessionCloseAttentionSummary s) {
+List<String> _legacySessionCloseAttentionLines(
+    _SessionCloseAttentionSummary s) {
   return [
-    'Rated plots: ${s.ratedPlots} of ${s.totalPlots}',
-    if (s.unratedPlots > 0) 'Unrated plots: ${s.unratedPlots}',
+    'Navigation — plots with any current rating: ${s.ratedPlots} of ${s.totalPlots}',
+    if (s.unratedPlots > 0)
+      'Navigation — plots with no current rating: ${s.unratedPlots}',
     if (s.flaggedPlots > 0) 'Flagged plots: ${s.flaggedPlots}',
     if (s.issuesPlots > 0)
-      'Warnings — plots not fully recorded: ${s.issuesPlots}',
+      'Data quality — plots with a non-recorded status: ${s.issuesPlots}',
     if (s.editedPlots > 0) 'Edited plots: ${s.editedPlots}',
   ];
 }
@@ -2206,13 +2211,14 @@ class SessionsView extends ConsumerWidget {
                               : 'Exporting...')),
                     );
                     final result = value == 'arm_xml'
-                      ? await ref
-                          .read(exportTrialClosedSessionsArmXmlUsecaseProvider)
-                          .execute(
-                            trialId: trial.id,
-                            trialName: trial.name,
-                            exportedByDisplayName: user?.displayName,
-                          )
+                        ? await ref
+                            .read(
+                                exportTrialClosedSessionsArmXmlUsecaseProvider)
+                            .execute(
+                              trialId: trial.id,
+                              trialName: trial.name,
+                              exportedByDisplayName: user?.displayName,
+                            )
                         : await ref
                             .read(exportTrialClosedSessionsUsecaseProvider)
                             .execute(
@@ -2235,8 +2241,8 @@ class SessionsView extends ConsumerWidget {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content:
-                                Text('Exported ${result.sessionCount} sessions')),
+                            content: Text(
+                                'Exported ${result.sessionCount} sessions')),
                       );
                     } else {
                       final scheme = Theme.of(context).colorScheme;
@@ -2416,8 +2422,7 @@ class SessionsView extends ConsumerWidget {
             .watch(sessionIdsWithCorrectionsForTrialProvider(trial.id))
             .valueOrNull ??
         <int>{};
-    final hasEdited = ratings.any(
-            (r) => r.amended || (r.previousId != null)) ||
+    final hasEdited = ratings.any((r) => r.amended || (r.previousId != null)) ||
         correctionSessionIds.contains(session.id);
 
     final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -2486,7 +2491,8 @@ class SessionsView extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _shortSessionName(session.name, session.sessionDateLocal),
+                        _shortSessionName(
+                            session.name, session.sessionDateLocal),
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
@@ -2760,10 +2766,8 @@ class SessionsView extends ConsumerWidget {
     Session session,
     SessionCompletenessReport report,
   ) {
-    final issueLines = report.issues
-        .map(_sessionCloseCompletenessIssueLine)
-        .take(15)
-        .toList();
+    final issueLines =
+        report.issues.map(_sessionCloseCompletenessIssueLine).take(15).toList();
     return showDialog<_SessionIncompleteAction>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2883,7 +2887,7 @@ class SessionsView extends ConsumerWidget {
               ],
               if (legacyNeedsAttention) ...[
                 const Text(
-                  'Flags and edits',
+                  'Navigation and data signals',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -2954,14 +2958,11 @@ class SessionsView extends ConsumerWidget {
         content: Text(
           result.success ? 'Session closed' : result.errorMessage ?? 'Error',
           style: TextStyle(
-            color: result.success
-                ? AppDesignTokens.successFg
-                : scheme.onError,
+            color: result.success ? AppDesignTokens.successFg : scheme.onError,
           ),
         ),
-        backgroundColor: result.success
-            ? AppDesignTokens.successBg
-            : scheme.error,
+        backgroundColor:
+            result.success ? AppDesignTokens.successBg : scheme.error,
       ));
     }
   }
@@ -2997,14 +2998,12 @@ class SessionsView extends ConsumerWidget {
       report = await completenessUseCase.execute(sessionId: session.id);
 
       final plots = await ref.read(plotsForTrialProvider(trial.id).future);
-      final ratedPks =
-          await ref.read(ratedPlotPksProvider(session.id).future);
+      final ratedPks = await ref.read(ratedPlotPksProvider(session.id).future);
       final flaggedIds =
           await ref.read(flaggedPlotIdsForSessionProvider(session.id).future);
-      final ratings =
-          await ref.read(sessionRatingsProvider(session.id).future);
-      final corrections =
-          await ref.read(plotPksWithCorrectionsForSessionProvider(session.id).future);
+      final ratings = await ref.read(sessionRatingsProvider(session.id).future);
+      final corrections = await ref
+          .read(plotPksWithCorrectionsForSessionProvider(session.id).future);
       summary = _computeSessionCloseAttentionSummary(
         plots: plots,
         ratedPks: ratedPks,
@@ -3184,7 +3183,8 @@ class _TrialReadinessSheet extends ConsumerWidget {
               !readinessCodes.contains(f.code),
         )
         .toList();
-    final exportSnapshot = ref.watch(trialExportDiagnosticsSnapshotProvider(trialId));
+    final exportSnapshot =
+        ref.watch(trialExportDiagnosticsSnapshotProvider(trialId));
 
     List<_ReadinessCheckRow> rowsForSeverity(UnifiedSeverity severity) {
       final fromReport = report.checks
@@ -3511,9 +3511,7 @@ class _ExportFormatSheetState extends ConsumerState<_ExportFormatSheet> {
                 vertical: 14,
               ),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFFE8F5EE)
-                    : Colors.white,
+                color: isSelected ? const Color(0xFFE8F5EE) : Colors.white,
                 border: const Border(
                   bottom: BorderSide(
                     color: Color(0xFFF0EDE8),

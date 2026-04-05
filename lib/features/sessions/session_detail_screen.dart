@@ -797,7 +797,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       return;
     }
 
-    // Normal case: start or resume at the next unrated plot in serpentine order.
+    // Normal case: start or resume at the next plot without any current rating (navigation / walk order).
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -997,7 +997,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   children: plotRatings.isEmpty
                       ? [
                           ListTile(
-                            title: Text('Not rated',
+                            title: Text('No Current Rating',
                                 style: TextStyle(
                                     color: Theme.of(context)
                                         .colorScheme
@@ -1382,7 +1382,7 @@ class _SessionProgressFromDerived extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
-            '${snapshot.ratedPlotCount} / ${snapshot.totalPlotCount} plots rated (${snapshot.progressPct.toStringAsFixed(0)}%)',
+            '${snapshot.ratedPlotCount} / ${snapshot.totalPlotCount} plots with a rating (${snapshot.progressPct.toStringAsFixed(0)}%) — navigation',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.primary,
