@@ -1208,16 +1208,12 @@ final trialApplicationsForTrialProvider = StreamProvider.autoDispose
       .watchApplicationsForTrial(trialId);
 });
 
-/// Latest application event for a trial (most recent application_date). Null if none.
-final latestApplicationForTrialProvider = StreamProvider.autoDispose
-    .family<TrialApplicationEvent?, int>((ref, trialId) {
-  return ref
-      .watch(applicationRepositoryProvider)
-      .watchApplicationsForTrial(trialId)
-      .map((list) => list.isEmpty ? null : list.last);
-});
-
-/// Legacy slot-based application events (application_events table). See APPLICATION EVENTS note above.
+/// LEGACY: application_events + application_plot_records table stack.
+/// Only consumer: plots_tab.dart application event selector + plot overlay.
+/// Canonical system: trialApplicationsForTrialProvider (trial_application_events).
+/// Migration path: re-model plot-level coverage to reference
+/// trial_application_events, then remove this provider and legacy
+/// ApplicationRepository methods.
 final applicationsForTrialProvider =
     StreamProvider.family<List<ApplicationEvent>, int>((ref, trialId) {
   return ref.watch(applicationRepositoryProvider).watchEventsForTrial(trialId);
