@@ -1112,6 +1112,27 @@ final seedingEventForTrialProvider =
       .watchSingleOrNull();
 });
 
+/// ---------------------------------------------------------------------------
+/// APPLICATION EVENTS — IMPORTANT ARCHITECTURE NOTE
+///
+/// There are currently TWO parallel application event systems:
+///
+/// 1. applicationsForTrialProvider (LEGACY)
+///    - Based on ApplicationEvent (int primary key)
+///    - Slot-based / plot-layout driven model
+///    - Still used by plots_tab.dart (application layer on plot grid)
+///
+/// 2. trialApplicationsForTrialProvider (CANONICAL)
+///    - Based on TrialApplicationEvent (String UUID primary key)
+///    - Trial-level application events (new architecture)
+///    - Used by Applications tab and all new flows
+///
+/// ⚠️ DO NOT mix these systems in the same feature.
+/// ⚠️ All new development should use trialApplicationsForTrialProvider.
+/// ⚠️ Legacy provider will be removed after plot-layout migration.
+///
+/// ---------------------------------------------------------------------------
+
 /// Trial-level application events (trial_application_events), ordered by application_date ascending.
 final trialApplicationsForTrialProvider = StreamProvider.autoDispose
     .family<List<TrialApplicationEvent>, int>((ref, trialId) {
@@ -1129,7 +1150,7 @@ final latestApplicationForTrialProvider = StreamProvider.autoDispose
       .map((list) => list.isEmpty ? null : list.last);
 });
 
-/// Slot-based application events (application_events table). Legacy Applications tab and event selector.
+/// Legacy slot-based application events (application_events table). See APPLICATION EVENTS note above.
 final applicationsForTrialProvider =
     StreamProvider.family<List<ApplicationEvent>, int>((ref, trialId) {
   return ref.watch(applicationRepositoryProvider).watchEventsForTrial(trialId);
