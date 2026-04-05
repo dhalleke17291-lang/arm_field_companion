@@ -2905,8 +2905,9 @@ class SessionsView extends ConsumerWidget {
   Future<void> _runCloseSessionUseCase(
     BuildContext context,
     WidgetRef ref,
-    Session session,
-  ) async {
+    Session session, {
+    bool forceClose = false,
+  }) async {
     final userId = await ref.read(currentUserIdProvider.future);
     final useCase = ref.read(closeSessionUseCaseProvider);
     final result = await useCase.execute(
@@ -2914,6 +2915,7 @@ class SessionsView extends ConsumerWidget {
       trialId: trial.id,
       raterName: session.raterName,
       closedByUserId: userId,
+      forceClose: forceClose,
     );
     if (context.mounted) {
       final scheme = Theme.of(context).colorScheme;
@@ -3015,6 +3017,8 @@ class SessionsView extends ConsumerWidget {
 
     if (!context.mounted) return;
 
+    var forceCloseAfterWarningAck = false;
+
     if (policy.decision == SessionClosePolicyDecision.warnBeforeClose) {
       final action = await _showSessionCloseCombinedWarningDialog(
         context,
@@ -3052,12 +3056,18 @@ class SessionsView extends ConsumerWidget {
           );
           return;
         case _SessionCloseAttentionAction.closeAnyway:
+          forceCloseAfterWarningAck = true;
           break;
       }
     }
 
     if (!context.mounted) return;
-    await _runCloseSessionUseCase(context, ref, session);
+    await _runCloseSessionUseCase(
+      context,
+      ref,
+      session,
+      forceClose: forceCloseAfterWarningAck,
+    );
   }
 }
 

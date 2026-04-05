@@ -537,10 +537,6 @@ final createSessionUseCaseProvider = Provider<CreateSessionUseCase>((ref) {
   );
 });
 
-final closeSessionUseCaseProvider = Provider<CloseSessionUseCase>((ref) {
-  return CloseSessionUseCase(ref.watch(sessionRepositoryProvider));
-});
-
 final startOrContinueRatingUseCaseProvider =
     Provider<StartOrContinueRatingUseCase>((ref) {
   return StartOrContinueRatingUseCase(
@@ -570,6 +566,13 @@ final evaluateSessionClosePolicyUseCaseProvider =
     ref.watch(computeSessionCompletenessUseCaseProvider),
     ref.watch(plotRepositoryProvider),
     ref.watch(ratingRepositoryProvider),
+  );
+});
+
+final closeSessionUseCaseProvider = Provider<CloseSessionUseCase>((ref) {
+  return CloseSessionUseCase(
+    ref.watch(sessionRepositoryProvider),
+    ref.watch(evaluateSessionClosePolicyUseCaseProvider),
   );
 });
 
