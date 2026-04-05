@@ -11,6 +11,7 @@ import '../../core/session_walk_order_store.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../plots/plot_queue_screen.dart';
+import 'domain/session_completeness_report.dart';
 
 /// Read-only plot-level completeness; Phase 2: rows in session walk order (Plot Queue parity).
 class SessionCompletenessScreen extends ConsumerStatefulWidget {
@@ -64,6 +65,7 @@ class _SessionCompletenessScreenState
     ref.invalidate(flaggedPlotIdsForSessionProvider(s.id));
     ref.invalidate(plotPksWithCorrectionsForSessionProvider(s.id));
     ref.invalidate(sessionAssessmentsProvider(s.id));
+    ref.invalidate(sessionCompletenessReportProvider(s.id));
   }
 
   @override
@@ -71,13 +73,15 @@ class _SessionCompletenessScreenState
     final trial = widget.trial;
     final session = widget.session;
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final reportAsync =
+        ref.watch(sessionCompletenessReportProvider(session.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final ratedPksAsync = ref.watch(ratedPlotPksProvider(session.id));
-    final flaggedAsync = ref.watch(flaggedPlotIdsForSessionProvider(session.id));
+    final flaggedAsync =
+        ref.watch(flaggedPlotIdsForSessionProvider(session.id));
     final correctionsAsync =
         ref.watch(plotPksWithCorrectionsForSessionProvider(session.id));
-    final assessmentsAsync =
-        ref.watch(sessionAssessmentsProvider(session.id));
+    final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
@@ -115,212 +119,218 @@ class _SessionCompletenessScreenState
             stackTrace: st,
             onRetry: _invalidateForRetry,
           ),
-          data: (rawPlots) => ratingsAsync.when(
+          data: (rawPlots) => reportAsync.when(
             loading: () => const AppLoadingView(),
             error: (e, st) => AppErrorView(
               error: e,
               stackTrace: st,
               onRetry: _invalidateForRetry,
             ),
-            data: (ratings) => ratedPksAsync.when(
+            data: (report) => ratingsAsync.when(
               loading: () => const AppLoadingView(),
               error: (e, st) => AppErrorView(
                 error: e,
                 stackTrace: st,
                 onRetry: _invalidateForRetry,
               ),
-              data: (ratedPks) => flaggedAsync.when(
+              data: (ratings) => ratedPksAsync.when(
                 loading: () => const AppLoadingView(),
                 error: (e, st) => AppErrorView(
                   error: e,
                   stackTrace: st,
                   onRetry: _invalidateForRetry,
                 ),
-                data: (flaggedIds) => correctionsAsync.when(
+                data: (ratedPks) => flaggedAsync.when(
                   loading: () => const AppLoadingView(),
                   error: (e, st) => AppErrorView(
                     error: e,
                     stackTrace: st,
                     onRetry: _invalidateForRetry,
                   ),
-                  data: (correctionPlotPks) => assessmentsAsync.when(
+                  data: (flaggedIds) => correctionsAsync.when(
                     loading: () => const AppLoadingView(),
                     error: (e, st) => AppErrorView(
                       error: e,
                       stackTrace: st,
                       onRetry: _invalidateForRetry,
                     ),
-                    data: (assessments) {
-                      if (!_walkOrderLoaded) {
-                        return const AppLoadingView();
-                      }
-                      if (rawPlots.isEmpty) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(
-                                AppDesignTokens.spacing24),
-                            child: Text(
-                              'No plots in this trial.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                    data: (correctionPlotPks) => assessmentsAsync.when(
+                      loading: () => const AppLoadingView(),
+                      error: (e, st) => AppErrorView(
+                        error: e,
+                        stackTrace: st,
+                        onRetry: _invalidateForRetry,
+                      ),
+                      data: (assessments) {
+                        if (!_walkOrderLoaded) {
+                          return const AppLoadingView();
+                        }
+                        if (rawPlots.isEmpty) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(
+                                  AppDesignTokens.spacing24),
+                              child: Text(
+                                'No plots in this trial.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      }
-                      final expectedAssessmentIds =
-                          {for (final a in assessments) a.id};
-                      final sTotal = expectedAssessmentIds.length;
-
-                      final ratingsByPlot = <int, List<RatingRecord>>{};
-                      for (final r in ratings) {
-                        ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
-                      }
-
-                      var ratedCount = 0;
-                      var notRatedCount = 0;
-                      var flaggedCount = 0;
-                      var issuesCount = 0;
-                      var editedCount = 0;
-                      var completeCount = 0;
-                      var partialCount = 0;
-                      var notStartedCount = 0;
-
-                      for (final plot in rawPlots) {
-                        final plotRatings = ratingsByPlot[plot.id] ?? [];
-                        final isRated = ratedPks.contains(plot.id);
-                        if (isRated) {
-                          ratedCount++;
-                        } else {
-                          notRatedCount++;
+                          );
                         }
-                        if (flaggedIds.contains(plot.id)) flaggedCount++;
-                        final hasIssues = plotRatings
-                            .any((r) => r.resultStatus != 'RECORDED');
-                        if (hasIssues) issuesCount++;
-                        final hasEdited = plotRatings.any((r) =>
-                                r.amended ||
-                                (r.previousId != null)) ||
-                            correctionPlotPks.contains(plot.id);
-                        if (hasEdited) editedCount++;
+                        final expectedAssessmentIds = {
+                          for (final a in assessments) a.id
+                        };
+                        final sTotal = expectedAssessmentIds.length;
 
-                        if (sTotal > 0) {
-                          final coveredIds = plotRatings
-                              .where((r) =>
-                                  expectedAssessmentIds.contains(r.assessmentId))
-                              .map((r) => r.assessmentId)
-                              .toSet();
-                          final c = coveredIds.length;
-                          if (c == 0) {
-                            notStartedCount++;
-                          } else if (c < sTotal) {
-                            partialCount++;
+                        final ratingsByPlot = <int, List<RatingRecord>>{};
+                        for (final r in ratings) {
+                          ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
+                        }
+
+                        final plotSessionBlocker = <int>{};
+                        final plotSessionWarning = <int>{};
+                        for (final issue in report.issues) {
+                          final pk = issue.plotPk;
+                          if (pk == null) continue;
+                          if (issue.severity ==
+                              SessionCompletenessIssueSeverity.blocker) {
+                            plotSessionBlocker.add(pk);
                           } else {
-                            completeCount++;
+                            plotSessionWarning.add(pk);
                           }
                         }
-                      }
 
-                      final orderedPlots = sortPlotsByWalkOrder(
-                        rawPlots,
-                        _walkOrderMode,
-                        customPlotIds: _customPlotIds,
-                      );
+                        var ratedCount = 0;
+                        var notRatedCount = 0;
+                        var flaggedCount = 0;
+                        var issuesCount = 0;
+                        var editedCount = 0;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _SummaryStrip(
-                            totalPlots: rawPlots.length,
-                            ratedCount: ratedCount,
-                            notRatedCount: notRatedCount,
-                            flaggedCount: flaggedCount,
-                            issuesCount: issuesCount,
-                            editedCount: editedCount,
-                            completeCount: completeCount,
-                            partialCount: partialCount,
-                            notStartedCount: notStartedCount,
-                            showAssessmentCoverageSummary: sTotal > 0,
-                            walkOrderLabel: SessionWalkOrderStore.labelForMode(
-                                _walkOrderMode),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              padding: const EdgeInsets.only(
-                                left: AppDesignTokens.spacing16,
-                                right: AppDesignTokens.spacing16,
-                                bottom: AppDesignTokens.spacing16,
-                              ),
-                              itemCount: orderedPlots.length,
-                              itemBuilder: (context, index) {
-                                final plot = orderedPlots[index];
-                                final plotRatings =
-                                    ratingsByPlot[plot.id] ?? [];
-                                final isRated = ratedPks.contains(plot.id);
-                                final isFlagged = flaggedIds.contains(plot.id);
-                                final hasIssues = plotRatings.any(
-                                    (r) => r.resultStatus != 'RECORDED');
-                                final hasEdited = plotRatings.any((r) =>
-                                        r.amended ||
-                                        (r.previousId != null)) ||
-                                    correctionPlotPks.contains(plot.id);
-                                final label =
-                                    getDisplayPlotLabel(plot, rawPlots);
+                        for (final plot in rawPlots) {
+                          final plotRatings = ratingsByPlot[plot.id] ?? [];
+                          final isRated = ratedPks.contains(plot.id);
+                          if (isRated) {
+                            ratedCount++;
+                          } else {
+                            notRatedCount++;
+                          }
+                          if (flaggedIds.contains(plot.id)) flaggedCount++;
+                          final hasIssues = plotRatings
+                              .any((r) => r.resultStatus != 'RECORDED');
+                          if (hasIssues) issuesCount++;
+                          final hasEdited = plotRatings.any(
+                                  (r) => r.amended || (r.previousId != null)) ||
+                              correctionPlotPks.contains(plot.id);
+                          if (hasEdited) editedCount++;
+                        }
 
-                                int? c;
-                                int? s;
-                                _AssessmentCoverageLabel? coverageLabel;
-                                if (sTotal > 0) {
-                                  final coveredIds = plotRatings
-                                      .where((r) => expectedAssessmentIds
-                                          .contains(r.assessmentId))
-                                      .map((r) => r.assessmentId)
-                                      .toSet();
-                                  c = coveredIds.length;
-                                  s = sTotal;
-                                  if (c == 0) {
-                                    coverageLabel =
-                                        _AssessmentCoverageLabel.notStarted;
-                                  } else if (c < sTotal) {
-                                    coverageLabel =
-                                        _AssessmentCoverageLabel.partial;
-                                  } else {
-                                    coverageLabel =
-                                        _AssessmentCoverageLabel.complete;
-                                  }
-                                }
+                        final orderedPlots = sortPlotsByWalkOrder(
+                          rawPlots,
+                          _walkOrderMode,
+                          customPlotIds: _customPlotIds,
+                        );
 
-                                return _PlotCompletenessRow(
-                                  plotLabel: label,
-                                  isRated: isRated,
-                                  isFlagged: isFlagged,
-                                  hasIssues: hasIssues,
-                                  hasEdited: hasEdited,
-                                  assessmentCovered: c,
-                                  assessmentTotal: s,
-                                  coverageLabel: coverageLabel,
-                                  onOpenInPlotQueue: () {
-                                    Navigator.push<void>(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => PlotQueueScreen(
-                                          trial: trial,
-                                          session: session,
-                                          scrollToPlotPkOnOpen: plot.id,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _SummaryStrip(
+                              report: report,
+                              totalPlots: rawPlots.length,
+                              ratedCount: ratedCount,
+                              notRatedCount: notRatedCount,
+                              flaggedCount: flaggedCount,
+                              issuesCount: issuesCount,
+                              editedCount: editedCount,
+                              showCoverageRowFootnote: sTotal > 0,
+                              walkOrderLabel:
+                                  SessionWalkOrderStore.labelForMode(
+                                      _walkOrderMode),
                             ),
-                          ),
-                        ],
-                      );
-                    },
+                            Expanded(
+                              child: ListView.builder(
+                                padding: const EdgeInsets.only(
+                                  left: AppDesignTokens.spacing16,
+                                  right: AppDesignTokens.spacing16,
+                                  bottom: AppDesignTokens.spacing16,
+                                ),
+                                itemCount: orderedPlots.length,
+                                itemBuilder: (context, index) {
+                                  final plot = orderedPlots[index];
+                                  final plotRatings =
+                                      ratingsByPlot[plot.id] ?? [];
+                                  final isRated = ratedPks.contains(plot.id);
+                                  final isFlagged =
+                                      flaggedIds.contains(plot.id);
+                                  final hasIssues = plotRatings
+                                      .any((r) => r.resultStatus != 'RECORDED');
+                                  final hasEdited = plotRatings.any((r) =>
+                                          r.amended ||
+                                          (r.previousId != null)) ||
+                                      correctionPlotPks.contains(plot.id);
+                                  final label =
+                                      getDisplayPlotLabel(plot, rawPlots);
+
+                                  int? c;
+                                  int? s;
+                                  _AssessmentCoverageLabel? coverageLabel;
+                                  if (sTotal > 0) {
+                                    final coveredIds = plotRatings
+                                        .where((r) => expectedAssessmentIds
+                                            .contains(r.assessmentId))
+                                        .map((r) => r.assessmentId)
+                                        .toSet();
+                                    c = coveredIds.length;
+                                    s = sTotal;
+                                    if (c == 0) {
+                                      coverageLabel =
+                                          _AssessmentCoverageLabel.notStarted;
+                                    } else if (c < sTotal) {
+                                      coverageLabel =
+                                          _AssessmentCoverageLabel.partial;
+                                    } else {
+                                      coverageLabel =
+                                          _AssessmentCoverageLabel.complete;
+                                    }
+                                  }
+
+                                  return _PlotCompletenessRow(
+                                    plotLabel: label,
+                                    isRated: isRated,
+                                    isFlagged: isFlagged,
+                                    hasIssues: hasIssues,
+                                    hasEdited: hasEdited,
+                                    hasSessionBlocker:
+                                        plotSessionBlocker.contains(plot.id),
+                                    hasSessionWarning:
+                                        plotSessionWarning.contains(plot.id),
+                                    assessmentCovered: c,
+                                    assessmentTotal: s,
+                                    coverageLabel: coverageLabel,
+                                    onOpenInPlotQueue: () {
+                                      Navigator.push<void>(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => PlotQueueScreen(
+                                            trial: trial,
+                                            session: session,
+                                            scrollToPlotPkOnOpen: plot.id,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -336,29 +346,25 @@ enum _AssessmentCoverageLabel { complete, partial, notStarted }
 
 class _SummaryStrip extends StatelessWidget {
   const _SummaryStrip({
+    required this.report,
     required this.totalPlots,
     required this.ratedCount,
     required this.notRatedCount,
     required this.flaggedCount,
     required this.issuesCount,
     required this.editedCount,
-    required this.completeCount,
-    required this.partialCount,
-    required this.notStartedCount,
-    required this.showAssessmentCoverageSummary,
+    required this.showCoverageRowFootnote,
     required this.walkOrderLabel,
   });
 
+  final SessionCompletenessReport report;
   final int totalPlots;
   final int ratedCount;
   final int notRatedCount;
   final int flaggedCount;
   final int issuesCount;
   final int editedCount;
-  final int completeCount;
-  final int partialCount;
-  final int notStartedCount;
-  final bool showAssessmentCoverageSummary;
+  final bool showCoverageRowFootnote;
   final String walkOrderLabel;
 
   @override
@@ -380,8 +386,9 @@ class _SummaryStrip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$totalPlots plots · $ratedCount rated · $notRatedCount not rated · '
-            '$flaggedCount flagged · $issuesCount issues · $editedCount edited',
+            'Session completeness (target plots, excludes guard rows): '
+            '${report.expectedPlots} expected · ${report.completedPlots} complete · '
+            '${report.incompletePlots} incomplete',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -389,19 +396,30 @@ class _SummaryStrip extends StatelessWidget {
               height: 1.35,
             ),
           ),
-          if (showAssessmentCoverageSummary) ...[
+          if (!report.canClose) ...[
             const SizedBox(height: 4),
             Text(
-              '$completeCount complete · $partialCount partial · '
-              '$notStartedCount not started',
+              'Not ready to close — resolve session completeness blockers.',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: scheme.onSurface,
+                color: scheme.error,
                 height: 1.35,
               ),
             ),
           ],
+          const SizedBox(height: 6),
+          Text(
+            'Navigation: $totalPlots trial plots (all rows) · $ratedCount with any rating · '
+            '$notRatedCount with none · $flaggedCount flagged · $issuesCount status issues · '
+            '$editedCount edited',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+              height: 1.35,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             'Walk order: $walkOrderLabel',
@@ -413,7 +431,9 @@ class _SummaryStrip extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Partial = missing assessments · Issues = non-recorded status',
+            'Row chips: Blocker / Warning = session completeness engine. '
+            'Partial / Not Started = assessment coverage (any current rating per assessment). '
+            'Rated = any current rating on the plot. Issues = non-recorded status.',
             style: TextStyle(
               fontSize: 10,
               height: 1.3,
@@ -421,6 +441,19 @@ class _SummaryStrip extends StatelessWidget {
               color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
             ),
           ),
+          if (showCoverageRowFootnote) ...[
+            const SizedBox(height: 4),
+            Text(
+              'All assessments on a row means every session assessment has a current rating row — '
+              'not the same as session complete until blockers are clear.',
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.3,
+                fontWeight: FontWeight.w500,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: 4),
           Text(
             'Edited includes amended, corrected, and re-saved values',
@@ -444,6 +477,8 @@ class _PlotCompletenessRow extends StatelessWidget {
     required this.isFlagged,
     required this.hasIssues,
     required this.hasEdited,
+    required this.hasSessionBlocker,
+    required this.hasSessionWarning,
     this.assessmentCovered,
     this.assessmentTotal,
     this.coverageLabel,
@@ -456,6 +491,8 @@ class _PlotCompletenessRow extends StatelessWidget {
   final bool isFlagged;
   final bool hasIssues;
   final bool hasEdited;
+  final bool hasSessionBlocker;
+  final bool hasSessionWarning;
   final int? assessmentCovered;
   final int? assessmentTotal;
   final _AssessmentCoverageLabel? coverageLabel;
@@ -536,29 +573,26 @@ class _PlotCompletenessRow extends StatelessWidget {
                 ),
                 _StatusChip(
                   label: switch (coverageLabel!) {
-                    _AssessmentCoverageLabel.complete => 'Complete',
+                    _AssessmentCoverageLabel.complete => 'All Assessments',
                     _AssessmentCoverageLabel.partial => 'Partial',
-                    _AssessmentCoverageLabel.notStarted => 'Not started',
+                    _AssessmentCoverageLabel.notStarted => 'Not Started',
                   },
                   fg: switch (coverageLabel!) {
-                    _AssessmentCoverageLabel.complete =>
-                      Colors.green.shade800,
+                    _AssessmentCoverageLabel.complete => Colors.green.shade800,
                     _AssessmentCoverageLabel.partial =>
                       Colors.deepOrange.shade800,
                     _AssessmentCoverageLabel.notStarted =>
                       AppDesignTokens.secondaryText,
                   },
                   bg: switch (coverageLabel!) {
-                    _AssessmentCoverageLabel.complete =>
-                      Colors.green.shade100,
+                    _AssessmentCoverageLabel.complete => Colors.green.shade100,
                     _AssessmentCoverageLabel.partial =>
                       Colors.deepOrange.shade50,
                     _AssessmentCoverageLabel.notStarted =>
                       AppDesignTokens.emptyBadgeBg,
                   },
                   border: switch (coverageLabel!) {
-                    _AssessmentCoverageLabel.complete =>
-                      Colors.green.shade300,
+                    _AssessmentCoverageLabel.complete => Colors.green.shade300,
                     _AssessmentCoverageLabel.partial =>
                       Colors.deepOrange.shade200,
                     _AssessmentCoverageLabel.notStarted =>
@@ -571,12 +605,35 @@ class _PlotCompletenessRow extends StatelessWidget {
               assessmentCovered != null &&
               assessmentTotal != null)
             const SizedBox(height: 6),
+          if (hasSessionBlocker || hasSessionWarning) ...[
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (hasSessionBlocker)
+                  _StatusChip(
+                    label: 'Blocker',
+                    fg: Colors.red.shade900,
+                    bg: Colors.red.shade50,
+                    border: Colors.red.shade400,
+                  ),
+                if (hasSessionWarning)
+                  _StatusChip(
+                    label: 'Warning',
+                    fg: Colors.amber.shade900,
+                    bg: Colors.amber.shade100,
+                    border: Colors.amber.shade700,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
           Wrap(
             spacing: 6,
             runSpacing: 6,
             children: [
               _StatusChip(
-                label: isRated ? 'Rated' : 'Not rated',
+                label: isRated ? 'Rated' : 'Not Rated',
                 fg: isRated
                     ? Colors.green.shade800
                     : AppDesignTokens.secondaryText,
