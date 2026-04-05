@@ -15,8 +15,10 @@ Future<bool> confirmSessionExportTrust({
   final plots = await ref.read(plotsForTrialProvider(trialId).future);
   final ratedPks = await ref.read(ratedPlotPksProvider(sessionId).future);
   final ratings = await ref.read(sessionRatingsProvider(sessionId).future);
-  final corrections =
-      await ref.read(plotPksWithCorrectionsForSessionProvider(sessionId).future);
+  final corrections = await ref
+      .read(plotPksWithCorrectionsForSessionProvider(sessionId).future);
+  final report =
+      await ref.read(sessionCompletenessReportProvider(sessionId).future);
 
   final unratedPlots = plots.where((p) => !ratedPks.contains(p.id)).length;
   final noRatings = ratings.isEmpty;
@@ -39,6 +41,10 @@ Future<bool> confirmSessionExportTrust({
   }
 
   final metricLines = sessionExportTrustDialogBodyLines(
+    sessionExpectedPlots: report.expectedPlots,
+    sessionCompletedPlots: report.completedPlots,
+    sessionIncompletePlots: report.incompletePlots,
+    sessionCanClose: report.canClose,
     noRatings: noRatings,
     unratedPlots: unratedPlots,
     issuesPlotCount: issuesPlotCount,

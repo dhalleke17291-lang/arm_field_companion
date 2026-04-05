@@ -263,7 +263,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   onModeChanged: (WalkOrderMode mode) async {
                     setState(() => _walkOrderMode = mode);
                     final prefs = await SharedPreferences.getInstance();
-                    await SessionWalkOrderStore(prefs).setMode(session.id, mode);
+                    await SessionWalkOrderStore(prefs)
+                        .setMode(session.id, mode);
                     if (mode == WalkOrderMode.custom && context.mounted) {
                       final saved = await Navigator.push<bool>(
                         context,
@@ -385,10 +386,13 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 if (result.auditFilePath != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text('Session audit events exported (separate file).',
+                    child: Text(
+                        'Session audit events exported (separate file).',
                         style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
                   ),
                 if (result.warningMessage != null) ...[
                   const SizedBox(height: AppDesignTokens.spacing8),
@@ -505,7 +509,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
-              title: const Text('ARM XML Export Complete'),
+            title: const Text('ARM XML Export Complete'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,56 +594,56 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.edit_note,
-                size: 64, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 16),
-            Text(
-              'Rate plots in this session',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            _SessionProgressFromDerived(sessionId: session.id),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () =>
-                  _showRatingOrderSheet(context, ref, session, assessments),
-              icon: const Icon(Icons.swap_vert, size: 18),
-              label: const Text('Set rating order'),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Open the plot queue to enter or edit ratings.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(
-                          alpha: 0.7,
-                        ),
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () =>
-                  _startOrContinueRating(context, ref, trial, session),
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Start Rating'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppDesignTokens.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppDesignTokens.spacing24,
-                    vertical: AppDesignTokens.spacing16),
-                shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDesignTokens.radiusCard)),
+                  size: 64, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 16),
+              Text(
+                'Rate plots in this session',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                textAlign: TextAlign.center,
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              _SessionProgressFromDerived(sessionId: session.id),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () =>
+                    _showRatingOrderSheet(context, ref, session, assessments),
+                icon: const Icon(Icons.swap_vert, size: 18),
+                label: const Text('Set rating order'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Open the plot queue to enter or edit ratings.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () =>
+                    _startOrContinueRating(context, ref, trial, session),
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Start Rating'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppDesignTokens.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppDesignTokens.spacing24,
+                      vertical: AppDesignTokens.spacing16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusCard)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -683,13 +687,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final prefs = await SharedPreferences.getInstance();
     final store = SessionWalkOrderStore(prefs);
     final walkOrder = store.getMode(session.id);
-    final customIds = walkOrder == WalkOrderMode.custom ? store.getCustomOrder(session.id) : null;
-    final result = await useCase.execute(
-        StartOrContinueRatingInput(
-          sessionId: session.id,
-          walkOrderMode: walkOrder,
-          customPlotIds: customIds,
-        ));
+    final customIds = walkOrder == WalkOrderMode.custom
+        ? store.getCustomOrder(session.id)
+        : null;
+    final result = await useCase.execute(StartOrContinueRatingInput(
+      sessionId: session.id,
+      walkOrderMode: walkOrder,
+      customPlotIds: customIds,
+    ));
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -939,7 +944,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                         vertical: AppDesignTokens.spacing8),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2D5A40),
-                      borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusXSmall),
                     ),
                     child: Text(
                       displayNum,
@@ -1256,6 +1262,7 @@ class _SessionExportTrustCaption extends ConsumerWidget {
     final ratingsAsync = ref.watch(sessionRatingsProvider(sessionId));
     final correctionsAsync =
         ref.watch(plotPksWithCorrectionsForSessionProvider(sessionId));
+    final reportAsync = ref.watch(sessionCompletenessReportProvider(sessionId));
 
     return plotsAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -1269,69 +1276,87 @@ class _SessionExportTrustCaption extends ConsumerWidget {
           data: (ratings) => correctionsAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (corrections) {
-              final unratedPlots =
-                  plots.where((p) => !ratedPks.contains(p.id)).length;
-              final noRatings = ratings.isEmpty;
-              final ratingsByPlot = <int, List<RatingRecord>>{};
-              for (final r in ratings) {
-                ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
-              }
-              var issuesPlotCount = 0;
-              var editedPlotCount = 0;
-              for (final plot in plots) {
-                final pr = ratingsByPlot[plot.id] ?? [];
-                if (pr.any((r) => r.resultStatus != 'RECORDED')) {
-                  issuesPlotCount++;
+            data: (corrections) => reportAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (report) {
+                final unratedPlots =
+                    plots.where((p) => !ratedPks.contains(p.id)).length;
+                final noRatings = ratings.isEmpty;
+                final ratingsByPlot = <int, List<RatingRecord>>{};
+                for (final r in ratings) {
+                  ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
                 }
-                if (pr.any((r) => r.amended || (r.previousId != null)) ||
-                    corrections.contains(plot.id)) {
-                  editedPlotCount++;
+                var issuesPlotCount = 0;
+                var editedPlotCount = 0;
+                for (final plot in plots) {
+                  final pr = ratingsByPlot[plot.id] ?? [];
+                  if (pr.any((r) => r.resultStatus != 'RECORDED')) {
+                    issuesPlotCount++;
+                  }
+                  if (pr.any((r) => r.amended || (r.previousId != null)) ||
+                      corrections.contains(plot.id)) {
+                    editedPlotCount++;
+                  }
                 }
-              }
 
-              final primary = sessionExportTrustCaptionPrimaryLine(
-                noRatings: noRatings,
-                unratedPlots: unratedPlots,
-                issuesPlotCount: issuesPlotCount,
-                editedPlotCount: editedPlotCount,
-              );
-              final baseStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.55),
-                  );
-              final footStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                    height: 1.25,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.45),
-                  );
+                final captionLines = sessionExportTrustCaptionLines(
+                  sessionExpectedPlots: report.expectedPlots,
+                  sessionCompletedPlots: report.completedPlots,
+                  sessionIncompletePlots: report.incompletePlots,
+                  sessionCanClose: report.canClose,
+                  noRatings: noRatings,
+                  unratedPlots: unratedPlots,
+                  issuesPlotCount: issuesPlotCount,
+                  editedPlotCount: editedPlotCount,
+                );
+                final baseStyle =
+                    Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.55),
+                        );
+                final footStyle =
+                    Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 10,
+                          height: 1.25,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.45),
+                        );
 
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    primary,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: baseStyle,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    kSessionExportTrustEditedClarification,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: footStyle,
-                  ),
-                ],
-              );
-            },
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      captionLines[0],
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: baseStyle,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      captionLines[1],
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: baseStyle,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      kSessionExportTrustEditedClarification,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: footStyle,
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

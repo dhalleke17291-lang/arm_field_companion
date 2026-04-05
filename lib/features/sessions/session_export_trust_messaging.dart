@@ -7,64 +7,143 @@ const String kSessionExportTrustEditedClarification =
 const String kSessionExportTrustDialogIntro =
     'Info — quick summary of this session before you export.';
 
-/// Bullet lines for the pre-export dialog (compact, calm).
+/// Session completeness (scientific): target plots, excludes guard rows — [expected]/[completed]/[incomplete]/[canClose].
+List<String> sessionExportTrustSessionCompletenessDialogLines({
+  required int expectedPlots,
+  required int completedPlots,
+  required int incompletePlots,
+  required bool canClose,
+}) {
+  return [
+    'Session completeness (target plots, excludes guard rows).',
+    'Complete: $completedPlots / $expectedPlots · Incomplete: $incompletePlots · '
+        '${canClose ? "Ready to close." : "Not ready to close — resolve session completeness blockers."}',
+  ];
+}
+
+/// Navigation progress: trial plots without any current rating (not scientific completeness).
+List<String> sessionExportTrustNavigationDialogLines({
+  required bool noRatings,
+  required int unratedPlots,
+}) {
+  if (noRatings || unratedPlots <= 0) return [];
+  return [
+    'Navigation progress (not session completeness).',
+    'Plots without any current rating (all trial rows): $unratedPlots.',
+  ];
+}
+
+/// Data quality: non-recorded statuses and edited plots.
+List<String> sessionExportTrustDataQualityDialogLines({
+  required bool noRatings,
+  required int issuesPlotCount,
+  required int editedPlotCount,
+}) {
+  if (noRatings) return [];
+  final lines = <String>[];
+  if (issuesPlotCount > 0 || editedPlotCount > 0) {
+    lines.add('Data quality signals.');
+    if (issuesPlotCount > 0) {
+      lines.add(
+        'Plots with a status other than recorded (for example missing or N/A): $issuesPlotCount.',
+      );
+    }
+    if (editedPlotCount > 0) {
+      lines.add(
+        'Plots with edited data (amendments, re-saves, or corrections): $editedPlotCount.',
+      );
+    }
+  }
+  return lines;
+}
+
+/// Bullet lines for the pre-export dialog (compact, calm). Order: scientific → optional no-ratings → navigation → data quality.
 List<String> sessionExportTrustDialogBodyLines({
+  required int sessionExpectedPlots,
+  required int sessionCompletedPlots,
+  required int sessionIncompletePlots,
+  required bool sessionCanClose,
   required bool noRatings,
   required int unratedPlots,
   required int issuesPlotCount,
   required int editedPlotCount,
 }) {
   final lines = <String>[];
+
+  lines.addAll(sessionExportTrustSessionCompletenessDialogLines(
+    expectedPlots: sessionExpectedPlots,
+    completedPlots: sessionCompletedPlots,
+    incompletePlots: sessionIncompletePlots,
+    canClose: sessionCanClose,
+  ));
+
   if (noRatings) {
     lines.add('Info — no ratings recorded for this session.');
-  } else {
-    if (unratedPlots > 0) {
-      lines.add(
-        'Warnings — $unratedPlots plot${unratedPlots == 1 ? '' : 's'} '
-        'have no rating in this session yet.',
-      );
-    }
-    if (issuesPlotCount > 0) {
-      lines.add(
-        'Warnings — $issuesPlotCount plot${issuesPlotCount == 1 ? '' : 's'} '
-        'use a status other than recorded (for example missing or N/A).',
-      );
-    }
-    if (editedPlotCount > 0) {
-      lines.add(
-        'Info — $editedPlotCount plot${editedPlotCount == 1 ? '' : 's'} '
-        'have edited data.',
-      );
-    }
+    return lines;
   }
-  if (lines.isEmpty) {
+
+  lines.addAll(sessionExportTrustNavigationDialogLines(
+    noRatings: noRatings,
+    unratedPlots: unratedPlots,
+  ));
+
+  lines.addAll(sessionExportTrustDataQualityDialogLines(
+    noRatings: noRatings,
+    issuesPlotCount: issuesPlotCount,
+    editedPlotCount: editedPlotCount,
+  ));
+
+  if (lines.length <= 2) {
+    // Only scientific section + no extra warnings — affirm export still reflects data.
     lines.add('Info — export reflects current session data.');
   }
+
   return lines;
 }
 
-/// Single-line summary for the session detail caption (matches dialog signals).
-String sessionExportTrustCaptionPrimaryLine({
+/// Primary caption lines (same concepts as [sessionExportTrustDialogBodyLines], compressed).
+List<String> sessionExportTrustCaptionLines({
+  required int sessionExpectedPlots,
+  required int sessionCompletedPlots,
+  required int sessionIncompletePlots,
+  required bool sessionCanClose,
   required bool noRatings,
   required int unratedPlots,
   required int issuesPlotCount,
   required int editedPlotCount,
 }) {
+  final line1 =
+      'Session completeness: $sessionCompletedPlots / $sessionExpectedPlots complete · '
+      '$sessionIncompletePlots incomplete · '
+      '${sessionCanClose ? "Ready to close" : "Not ready to close"}';
+
   if (noRatings) {
-    return 'Info — no ratings in this session';
+    return [line1, 'Info — no ratings in this session'];
   }
-  final parts = <String>[];
+
+  final navParts = <String>[];
   if (unratedPlots > 0) {
-    parts.add('Warnings — $unratedPlots not rated yet');
+    navParts.add(
+      'Navigation: $unratedPlots plot${unratedPlots == 1 ? '' : 's'} without any current rating',
+    );
   }
+
+  final dqParts = <String>[];
   if (issuesPlotCount > 0) {
-    parts.add('Warnings — $issuesPlotCount not recorded');
+    dqParts.add('$issuesPlotCount not recorded');
   }
   if (editedPlotCount > 0) {
-    parts.add('Info — $editedPlotCount edited');
+    dqParts.add('$editedPlotCount edited');
   }
-  if (parts.isEmpty) {
-    return 'Info — no extra notes for this export';
+
+  final secondary = <String>[];
+  if (navParts.isNotEmpty) secondary.add(navParts.join());
+  if (dqParts.isNotEmpty) {
+    secondary.add('Data quality: ${dqParts.join(' · ')}');
   }
-  return parts.join(' · ');
+
+  if (secondary.isEmpty) {
+    return [line1, 'Info — no extra notes for this export'];
+  }
+  return [line1, secondary.join(' · ')];
 }
