@@ -72,69 +72,104 @@ class RatingRepository {
     // Repository only enforces status vs numeric column without assessment metadata.
     _assertCoreNumericColumnIntegrity(resultStatus, numericValue);
 
-    return _db.transaction(() async {
-      // Find existing current rating
-      final existing = await getCurrentRating(
-        trialId: trialId,
-        plotPk: plotPk,
-        assessmentId: assessmentId,
-        sessionId: sessionId,
-        subUnitId: subUnitId,
-      );
+    return _db.transaction(() => _persistRatingVersionAndAudit(
+          trialId: trialId,
+          plotPk: plotPk,
+          assessmentId: assessmentId,
+          sessionId: sessionId,
+          resultStatus: resultStatus,
+          numericValue: numericValue,
+          textValue: textValue,
+          subUnitId: subUnitId,
+          raterName: raterName,
+          performedByUserId: performedByUserId,
+          createdAppVersion: createdAppVersion,
+          createdDeviceInfo: createdDeviceInfo,
+          capturedLatitude: capturedLatitude,
+          capturedLongitude: capturedLongitude,
+          ratingTime: ratingTime,
+          ratingMethod: ratingMethod,
+          confidence: confidence,
+        ));
+  }
 
-      // Mark existing as not current
-      if (existing != null) {
-        await (_db.update(_db.ratingRecords)
-              ..where((r) => r.id.equals(existing.id)))
-            .write(const RatingRecordsCompanion(isCurrent: Value(false)));
-      }
+  /// New rating row + `RATING_SAVED` audit. Caller must run inside [AppDatabase.transaction].
+  Future<RatingRecord> _persistRatingVersionAndAudit({
+    required int trialId,
+    required int plotPk,
+    required int assessmentId,
+    required int sessionId,
+    required String resultStatus,
+    double? numericValue,
+    String? textValue,
+    int? subUnitId,
+    String? raterName,
+    int? performedByUserId,
+    String? createdAppVersion,
+    String? createdDeviceInfo,
+    double? capturedLatitude,
+    double? capturedLongitude,
+    String? ratingTime,
+    String? ratingMethod,
+    String? confidence,
+  }) async {
+    final existing = await getCurrentRating(
+      trialId: trialId,
+      plotPk: plotPk,
+      assessmentId: assessmentId,
+      sessionId: sessionId,
+      subUnitId: subUnitId,
+    );
 
-      final nowUtc = DateTime.now().toUtc();
-      // Insert new current record (with optional provenance and rating metadata)
-      final newId = await _db.into(_db.ratingRecords).insert(
-            RatingRecordsCompanion.insert(
-              trialId: trialId,
-              plotPk: plotPk,
-              assessmentId: assessmentId,
-              sessionId: sessionId,
-              subUnitId: Value(subUnitId),
-              resultStatus: Value(resultStatus),
-              numericValue: Value(numericValue),
-              textValue: Value(textValue),
-              isCurrent: const Value(true),
-              previousId: Value(existing?.id),
-              raterName: Value(raterName),
-              createdAppVersion: Value(createdAppVersion),
-              createdDeviceInfo: Value(createdDeviceInfo),
-              capturedLatitude: Value(capturedLatitude),
-              capturedLongitude: Value(capturedLongitude),
-              ratingTime: Value(ratingTime),
-              ratingMethod: Value(ratingMethod),
-              confidence: Value(confidence),
-              lastEditedAt: existing != null ? Value(nowUtc) : const Value.absent(),
-              lastEditedByUserId: existing != null && performedByUserId != null
-                  ? Value(performedByUserId)
-                  : const Value.absent(),
-            ),
-          );
+    if (existing != null) {
+      await (_db.update(_db.ratingRecords)
+            ..where((r) => r.id.equals(existing.id)))
+          .write(const RatingRecordsCompanion(isCurrent: Value(false)));
+    }
 
-      // Write audit event
-      await _db.into(_db.auditEvents).insert(
-            AuditEventsCompanion.insert(
-              trialId: Value(trialId),
-              sessionId: Value(sessionId),
-              plotPk: Value(plotPk),
-              eventType: 'RATING_SAVED',
-              description: 'Rating saved: $resultStatus ${numericValue ?? ""}',
-              performedBy: Value(raterName),
-              performedByUserId: Value(performedByUserId),
-            ),
-          );
+    final nowUtc = DateTime.now().toUtc();
+    final newId = await _db.into(_db.ratingRecords).insert(
+          RatingRecordsCompanion.insert(
+            trialId: trialId,
+            plotPk: plotPk,
+            assessmentId: assessmentId,
+            sessionId: sessionId,
+            subUnitId: Value(subUnitId),
+            resultStatus: Value(resultStatus),
+            numericValue: Value(numericValue),
+            textValue: Value(textValue),
+            isCurrent: const Value(true),
+            previousId: Value(existing?.id),
+            raterName: Value(raterName),
+            createdAppVersion: Value(createdAppVersion),
+            createdDeviceInfo: Value(createdDeviceInfo),
+            capturedLatitude: Value(capturedLatitude),
+            capturedLongitude: Value(capturedLongitude),
+            ratingTime: Value(ratingTime),
+            ratingMethod: Value(ratingMethod),
+            confidence: Value(confidence),
+            lastEditedAt: existing != null ? Value(nowUtc) : const Value.absent(),
+            lastEditedByUserId: existing != null && performedByUserId != null
+                ? Value(performedByUserId)
+                : const Value.absent(),
+          ),
+        );
 
-      return await (_db.select(_db.ratingRecords)
-            ..where((r) => r.id.equals(newId)))
-          .getSingle();
-    });
+    await _db.into(_db.auditEvents).insert(
+          AuditEventsCompanion.insert(
+            trialId: Value(trialId),
+            sessionId: Value(sessionId),
+            plotPk: Value(plotPk),
+            eventType: 'RATING_SAVED',
+            description: 'Rating saved: $resultStatus ${numericValue ?? ""}',
+            performedBy: Value(raterName),
+            performedByUserId: Value(performedByUserId),
+          ),
+        );
+
+    return await (_db.select(_db.ratingRecords)
+          ..where((r) => r.id.equals(newId)))
+        .getSingle();
   }
 
   // Undo — reverts to previous rating in chain
@@ -196,27 +231,41 @@ class RatingRepository {
     String? raterName,
     int? performedByUserId,
   }) async {
-    await saveRating(
-      trialId: trialId,
-      plotPk: plotPk,
-      assessmentId: assessmentId,
-      sessionId: sessionId,
-      resultStatus: 'VOID',
-      raterName: raterName,
-      performedByUserId: performedByUserId,
-      isSessionClosed: isSessionClosed,
-    );
+    if (isSessionClosed) throw SessionClosedException();
+    _assertCoreNumericColumnIntegrity('VOID', null);
 
-    await _db.into(_db.deviationFlags).insert(
-          DeviationFlagsCompanion.insert(
-            trialId: trialId,
-            sessionId: sessionId,
-            plotPk: Value(plotPk),
-            deviationType: 'VOID_RATING',
-            description: Value(reason),
-            raterName: Value(raterName),
-          ),
-        );
+    await _db.transaction(() async {
+      await _persistRatingVersionAndAudit(
+        trialId: trialId,
+        plotPk: plotPk,
+        assessmentId: assessmentId,
+        sessionId: sessionId,
+        resultStatus: 'VOID',
+        numericValue: null,
+        textValue: null,
+        subUnitId: null,
+        raterName: raterName,
+        performedByUserId: performedByUserId,
+        createdAppVersion: null,
+        createdDeviceInfo: null,
+        capturedLatitude: null,
+        capturedLongitude: null,
+        ratingTime: null,
+        ratingMethod: null,
+        confidence: null,
+      );
+
+      await _db.into(_db.deviationFlags).insert(
+            DeviationFlagsCompanion.insert(
+              trialId: trialId,
+              sessionId: sessionId,
+              plotPk: Value(plotPk),
+              deviationType: 'VOID_RATING',
+              description: Value(reason),
+              raterName: Value(raterName),
+            ),
+          );
+    });
   }
 
   /// Get a single rating by id (for edit/amendment flow).
