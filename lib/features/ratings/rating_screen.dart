@@ -1420,12 +1420,20 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
     final reasonController = TextEditingController();
     String newStatus = existing.resultStatus;
+    String? valueError;
+
+    Assessment? assessmentForRecord(RatingRecord r) {
+      for (final a in widget.assessments) {
+        if (a.id == r.assessmentId) return a;
+      }
+      return null;
+    }
 
     final applied = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) {
+        builder: (context, setDialogState) {
           return AlertDialog(
             title: const Text('Correct value'),
             content: SingleChildScrollView(
@@ -1455,7 +1463,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                               label:
                                   Text(s, style: const TextStyle(fontSize: 11)),
                               selected: newStatus == s,
-                              onSelected: (_) => setState(() => newStatus = s),
+                              onSelected: (_) => setDialogState(() {
+                                    newStatus = s;
+                                    valueError = null;
+                                  }),
                             ))
                         .toList(),
                   ),
@@ -1465,11 +1476,17 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       controller: newValueController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
+                      onChanged: (_) {
+                        if (valueError != null) {
+                          setDialogState(() => valueError = null);
+                        }
+                      },
+                      decoration: InputDecoration(
                         labelText: 'New value',
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
+                        errorText: valueError,
                       ),
                     ),
                   ],
@@ -1503,10 +1520,41 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   }
                   double? newNumeric;
                   if (newStatus == 'RECORDED') {
-                    newNumeric = double.tryParse(newValueController.text);
+                    final assess = assessmentForRecord(existing);
+                    if (assess != null && assess.dataType == 'numeric') {
+                      final raw = newValueController.text.trim();
+                      if (raw.isEmpty) {
+                        setDialogState(() => valueError = 'A value is required.');
+                        return;
+                      }
+                      final parsed = double.tryParse(raw);
+                      if (parsed == null) {
+                        setDialogState(
+                            () => valueError = 'Enter a valid number.');
+                        return;
+                      }
+                      final bounds = resolvedNumericBoundsForAssessment(
+                        assess,
+                        widget.scaleMap?[assess.id],
+                      );
+                      if (parsed < bounds.min || parsed > bounds.max) {
+                        setDialogState(
+                          () => valueError =
+                              'Value must be between ${bounds.min} and ${bounds.max}.',
+                        );
+                        return;
+                      }
+                      newNumeric = parsed;
+                    } else {
+                      newNumeric = double.tryParse(newValueController.text);
+                    }
                   }
                   final userId = await ref.read(currentUserIdProvider.future);
                   final useCase = ref.read(applyCorrectionUseCaseProvider);
+                  final assessForScale = assessmentForRecord(existing);
+                  final definitionScaleForCorrection = assessForScale == null
+                      ? null
+                      : widget.scaleMap?[assessForScale.id];
                   final result = await useCase.execute(
                     rating: existing,
                     session: widget.session,
@@ -1519,6 +1567,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         : null,
                     reason: reason,
                     correctedByUserId: userId,
+                    assessmentForScale: assessForScale,
+                    definitionScale: definitionScaleForCorrection,
                   );
                   if (!ctx.mounted) return;
                   if (result.success) {
@@ -2153,33 +2203,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       _currentAssessment.minValue != null &&
       _currentAssessment.maxValue != null;
 
-  /// Unit-aware default max when assessment.maxValue is null (e.g. plant height cm cap 350).
-  static int _defaultMax(String? unit) {
-    switch (unit?.toLowerCase().trim()) {
-      case 'cm':
-        return 350;
-      case 'm':
-        return 4;
-      case '%':
-        return 100;
-      case 'kg/ha':
-        return 20000;
-      case 'plants/plot':
-        return 999;
-      default:
-        return 999;
-    }
-  }
-
   /// Bounds for clamping and [SaveRatingInput] (same source as validator min/max).
   ({double min, double max}) get _effectiveNumericBounds {
-    final resolved = resolveAssessmentScale(
-      assessment: _currentAssessment,
-      definitionScale: widget.scaleMap?[_currentAssessment.id],
-    );
-    return (
-      min: resolved.minValue ?? 0.0,
-      max: resolved.maxValue ?? _defaultMax(_currentAssessment.unit).toDouble(),
+    return resolvedNumericBoundsForAssessment(
+      _currentAssessment,
+      widget.scaleMap?[_currentAssessment.id],
     );
   }
 

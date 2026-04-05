@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/database/app_database.dart';
+import '../../../core/diagnostics/diagnostic_finding.dart';
+import '../../../domain/ratings/assessment_scale_resolver.dart';
 import '../../../data/repositories/assignment_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
@@ -541,6 +543,22 @@ class ArmImportUseCase {
       return;
     }
 
+    final assessmentsForTrial = await (_db.select(_db.assessments)
+          ..where((a) => a.trialId.equals(trialId)))
+        .get();
+    final assessById = {for (final a in assessmentsForTrial) a.id: a};
+
+    final defIdList = assessmentKeyToDefinitionId.values.toSet().toList();
+    final defById = <int, AssessmentDefinition>{};
+    if (defIdList.isNotEmpty) {
+      final defs = await (_db.select(_db.assessmentDefinitions)
+            ..where((d) => d.id.isIn(defIdList)))
+          .get();
+      for (final d in defs) {
+        defById[d.id] = d;
+      }
+    }
+
     final assessmentColumns =
         parsed.columns.where((c) => c.assessmentToken != null).toList();
     for (var j = 0; j < parsed.dataRows.length; j++) {
@@ -570,6 +588,36 @@ class ArmImportUseCase {
         } else {
           numericValue = null;
           textValue = cellValue;
+        }
+        if (numericValue != null) {
+          final assess = assessById[legacyId];
+          if (assess != null && assess.dataType == 'numeric') {
+            final defId = assessmentKeyToDefinitionId[key];
+            final def = defId != null ? defById[defId] : null;
+            final defScale = def != null
+                ? (scaleMin: def.scaleMin, scaleMax: def.scaleMax)
+                : null;
+            final bounds =
+                resolvedNumericBoundsForAssessment(assess, defScale);
+            if (numericValue < bounds.min || numericValue > bounds.max) {
+              final finding = DiagnosticFinding(
+                code: 'arm_import_rating_outside_resolved_scale',
+                severity: DiagnosticSeverity.info,
+                message:
+                    'Imported rating value is outside resolved assessment scale (informational only).',
+                detail:
+                    'assessmentId=$legacyId plotPk=$plotPk value=$numericValue '
+                    'min=${bounds.min} max=${bounds.max}',
+                trialId: trialId,
+                plotPk: plotPk,
+                source: DiagnosticSource.armConfidence,
+                blocksExport: false,
+              );
+              debugPrint(
+                '[${finding.code}] ${finding.message} ${finding.detail}',
+              );
+            }
+          }
         }
         final result = await _saveRatingUseCase.execute(
           SaveRatingInput(

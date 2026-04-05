@@ -1,6 +1,7 @@
 import '../rating_repository.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/session_lock.dart';
+import '../../../domain/ratings/assessment_scale_resolver.dart';
 
 /// Apply an immutable correction to a rating (closed sessions only).
 /// Original rating record is never modified.
@@ -17,6 +18,8 @@ class ApplyCorrectionUseCase {
     double? newNumericValue,
     String? newTextValue,
     int? correctedByUserId,
+    Assessment? assessmentForScale,
+    AssessmentDefinitionScale? definitionScale,
   }) async {
     if (isSessionEditable(session)) {
       return ApplyCorrectionResult.failure(
@@ -26,13 +29,28 @@ class ApplyCorrectionUseCase {
       return ApplyCorrectionResult.failure('Correction reason is required.');
     }
 
+    double? effectiveNumeric = newNumericValue;
+    if (newResultStatus == 'RECORDED' &&
+        assessmentForScale != null &&
+        assessmentForScale.dataType == 'numeric') {
+      if (effectiveNumeric == null) {
+        return ApplyCorrectionResult.failure(
+            'A numeric value is required for RECORDED.');
+      }
+      final bounds = resolvedNumericBoundsForAssessment(
+        assessmentForScale,
+        definitionScale,
+      );
+      effectiveNumeric = effectiveNumeric.clamp(bounds.min, bounds.max);
+    }
+
     try {
       final correction = await _ratingRepository.applyCorrection(
         ratingId: rating.id,
         oldResultStatus: rating.resultStatus,
         newResultStatus: newResultStatus,
         oldNumericValue: rating.numericValue,
-        newNumericValue: newNumericValue,
+        newNumericValue: effectiveNumeric,
         oldTextValue: rating.textValue,
         newTextValue: newTextValue,
         reason: reason.trim(),

@@ -20,6 +20,7 @@ import '../sessions/session_detail_screen.dart';
 import '../trials/trial_detail_screen.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../ratings/rating_screen.dart';
+import '../ratings/rating_scale_map.dart';
 
 /// Same filter as [workLogSessionsProvider], but backed by Drift [watch] so the
 /// list updates when sessions change without manual invalidation.
@@ -544,6 +545,16 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     }
     LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
     if (!context.mounted) return;
+    final scaleMap = buildRatingScaleMap(
+      trialAssessments: ref
+              .read(trialAssessmentsForTrialProvider(resolvedTrial.id))
+              .valueOrNull ??
+          <TrialAssessment>[],
+      definitions:
+          ref.read(assessmentDefinitionsProvider).valueOrNull ??
+              <AssessmentDefinition>[],
+      trialIdForLog: resolvedTrial.id,
+    );
     // Use push (not pushAndRemoveUntil) to avoid disposing MainShell/Work Log
     // while ref.watch dependents are still active; pop returns to Work Log.
     Navigator.push(
@@ -557,6 +568,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
           allPlots: plots,
           currentPlotIndex: startIndex,
           initialAssessmentIndex: initialAssessmentIndex,
+          scaleMap: scaleMap,
         ),
       ),
     );

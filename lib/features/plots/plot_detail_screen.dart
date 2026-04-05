@@ -7,6 +7,7 @@ import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../../domain/ratings/save_rating_input.dart';
+import '../ratings/rating_scale_map.dart';
 import '../ratings/usecases/save_rating_usecase.dart';
 import 'plot_notes_dialog.dart';
 import '../../core/widgets/app_standard_widgets.dart';
@@ -563,36 +564,14 @@ Widget _infoRow(BuildContext context, String label, String value) {
   );
 }
 
-int _editRatingDefaultMax(String? unit) {
-  switch (unit?.toLowerCase().trim()) {
-    case 'cm':
-      return 350;
-    case 'm':
-      return 4;
-    case '%':
-      return 100;
-    case 'kg/ha':
-      return 20000;
-    case 'plants/plot':
-      return 999;
-    default:
-      return 999;
-  }
-}
-
-({double min, double max}) _editRatingNumericBounds(Assessment? assessment) {
+({double min, double max}) _editRatingNumericBounds(
+  Assessment? assessment, {
+  AssessmentDefinitionScale? definitionScale,
+}) {
   if (assessment == null) {
     return (min: 0.0, max: 999.0);
   }
-  final resolved = resolveAssessmentScale(
-    assessment: assessment,
-    definitionScale: null,
-  );
-  final maxDefault = _editRatingDefaultMax(assessment.unit).toDouble();
-  return (
-    min: resolved.minValue ?? 0.0,
-    max: resolved.maxValue ?? maxDefault,
-  );
+  return resolvedNumericBoundsForAssessment(assessment, definitionScale);
 }
 
 Future<void> _showEditRatingSheet(
@@ -610,6 +589,20 @@ Future<void> _showEditRatingSheet(
   } catch (_) {}
 
   if (!context.mounted) return;
+  final trialAssessments =
+      ref.read(trialAssessmentsForTrialProvider(trial.id)).valueOrNull ??
+          <TrialAssessment>[];
+  final definitions =
+      ref.read(assessmentDefinitionsProvider).valueOrNull ??
+          <AssessmentDefinition>[];
+  final ratingScaleMap = buildRatingScaleMap(
+    trialAssessments: trialAssessments,
+    definitions: definitions,
+    trialIdForLog: trial.id,
+  );
+  final definitionScale =
+      assessment != null ? ratingScaleMap[assessment.id] : null;
+
   final valueController = TextEditingController(
       text: rating.numericValue?.toString() ?? rating.textValue ?? '');
   final reasonController = TextEditingController();
@@ -693,7 +686,8 @@ Future<void> _showEditRatingSheet(
                     return;
                   }
                   if (parsed != null) {
-                    final bounds = _editRatingNumericBounds(assessment);
+                    final bounds = _editRatingNumericBounds(assessment,
+                        definitionScale: definitionScale);
                     numericValue = parsed.clamp(bounds.min, bounds.max);
                   } else {
                     numericValue = rating.numericValue;
@@ -705,7 +699,8 @@ Future<void> _showEditRatingSheet(
                       newValStr.isNotEmpty ? newValStr : rating.textValue;
                 }
 
-                final bounds = _editRatingNumericBounds(assessment);
+                final bounds = _editRatingNumericBounds(assessment,
+                    definitionScale: definitionScale);
                 final assessmentConstraints = assessment != null
                     ? RatingAssessmentConstraints(
                         dataType: assessment.dataType,

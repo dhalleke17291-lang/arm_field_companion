@@ -2,7 +2,11 @@ import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/domain/ratings/assessment_scale_resolver.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Assessment _assessment({double? minValue, double? maxValue}) {
+Assessment _assessment({
+  double? minValue,
+  double? maxValue,
+  String? unit,
+}) {
   return Assessment(
     id: 1,
     trialId: 1,
@@ -10,7 +14,7 @@ Assessment _assessment({double? minValue, double? maxValue}) {
     dataType: 'numeric',
     minValue: minValue,
     maxValue: maxValue,
-    unit: null,
+    unit: unit,
     isActive: true,
   );
 }
@@ -51,6 +55,34 @@ void main() {
       );
       expect(r.minValue, 5);
       expect(r.maxValue, 99);
+    });
+  });
+
+  group('resolvedNumericBoundsForAssessment', () {
+    test('applies defaults when resolved scale is open', () {
+      final a = _assessment(minValue: null, maxValue: null, unit: 'cm');
+      final b = resolvedNumericBoundsForAssessment(a, null);
+      expect(b.min, 0.0);
+      expect(b.max, 350.0);
+    });
+
+    test('uses resolved scale and default max from unit when max null', () {
+      const a = Assessment(
+        id: 1,
+        trialId: 1,
+        name: 'A',
+        dataType: 'numeric',
+        minValue: 1,
+        maxValue: null,
+        unit: '%',
+        isActive: true,
+      );
+      final b = resolvedNumericBoundsForAssessment(
+        a,
+        (scaleMin: null, scaleMax: null),
+      );
+      expect(b.min, 1.0);
+      expect(b.max, 100.0);
     });
   });
 }

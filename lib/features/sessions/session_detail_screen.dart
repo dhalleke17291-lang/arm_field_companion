@@ -16,6 +16,7 @@ import 'package:share_plus/share_plus.dart';
 import 'arrange_plots_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import '../ratings/rating_screen.dart';
+import '../ratings/rating_scale_map.dart';
 import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
 import 'usecases/start_or_continue_rating_usecase.dart';
@@ -743,6 +744,17 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
     if (!context.mounted) return;
 
+    final scaleMap = buildRatingScaleMap(
+      trialAssessments: ref
+              .read(trialAssessmentsForTrialProvider(resolvedTrial.id))
+              .valueOrNull ??
+          <TrialAssessment>[],
+      definitions:
+          ref.read(assessmentDefinitionsProvider).valueOrNull ??
+              <AssessmentDefinition>[],
+      trialIdForLog: resolvedTrial.id,
+    );
+
     if (result.isWalkEndReachedWithAnyRating) {
       // Walk end has at least one rating — choose plot queue or last plot.
       showDialog(
@@ -785,6 +797,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       allPlots: plots,
                       currentPlotIndex: startIndex,
                       initialAssessmentIndex: initialAssessmentIndex,
+                      scaleMap: scaleMap,
                     ),
                   ),
                 );
@@ -809,6 +822,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           allPlots: plots,
           currentPlotIndex: startIndex,
           initialAssessmentIndex: initialAssessmentIndex,
+          scaleMap: scaleMap,
         ),
       ),
     );

@@ -28,6 +28,7 @@ import 'widgets/trial_card.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
+import '../ratings/rating_scale_map.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
 /// Workspace filter for trial list. Client-side only; no repository changes.
@@ -285,6 +286,16 @@ Future<void> _navigateToRatingForSession(
   }
   LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
   if (!context.mounted) return;
+  final scaleMap = buildRatingScaleMap(
+    trialAssessments: ref
+            .read(trialAssessmentsForTrialProvider(resolvedTrial.id))
+            .valueOrNull ??
+        <TrialAssessment>[],
+    definitions:
+        ref.read(assessmentDefinitionsProvider).valueOrNull ??
+            <AssessmentDefinition>[],
+    trialIdForLog: resolvedTrial.id,
+  );
   Navigator.pushAndRemoveUntil(
     context,
     MaterialPageRoute(
@@ -296,6 +307,7 @@ Future<void> _navigateToRatingForSession(
         allPlots: plots,
         currentPlotIndex: startIndex,
         initialAssessmentIndex: initialAssessmentIndex,
+        scaleMap: scaleMap,
       ),
     ),
     (route) => route.isFirst,

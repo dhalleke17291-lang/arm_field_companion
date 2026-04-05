@@ -12,6 +12,7 @@ import '../../core/export_guard.dart';
 import '../../core/providers.dart';
 import '../../core/session_resume_store.dart';
 import '../ratings/rating_screen.dart';
+import '../ratings/rating_scale_map.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
@@ -171,27 +172,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         <TrialAssessment>[];
     final definitions = ref.read(assessmentDefinitionsProvider).valueOrNull ??
         <AssessmentDefinition>[];
-    final defById = {for (final d in definitions) d.id: d};
-    final result = <int, ({double? scaleMin, double? scaleMax})>{};
-    for (final ta in trialAssessments) {
-      final legacyId = ta.legacyAssessmentId;
-      if (legacyId == null) continue;
-      final def = defById[ta.assessmentDefinitionId];
-      if (def == null) continue;
-      if (result.containsKey(legacyId)) {
-        debugPrint(
-          'AssessmentScaleMap: duplicate legacyAssessmentId $legacyId '
-          'in trial ${widget.trial.id} — keeping first, ignoring '
-          'assessmentDefinitionId ${ta.assessmentDefinitionId}.',
-        );
-        continue;
-      }
-      result[legacyId] = (
-        scaleMin: def.scaleMin,
-        scaleMax: def.scaleMax,
-      );
-    }
-    return result;
+    return buildRatingScaleMap(
+      trialAssessments: trialAssessments,
+      definitions: definitions,
+      trialIdForLog: widget.trial.id,
+    );
   }
 
   Future<void> _openRatingFromQueue(
