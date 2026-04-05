@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
@@ -8,6 +9,8 @@ import 'package:arm_field_companion/features/arm_import/domain/enums/import_conf
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/import_snapshot_payload.dart';
 import 'package:arm_field_companion/features/export/domain/export_arm_rating_shell_usecase.dart';
+import 'package:arm_field_companion/features/export/export_trial_usecase.dart'
+    show PublishTrialExportDiagnostics;
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
@@ -226,6 +229,7 @@ void main() {
 
   ExportArmRatingShellUseCase makeUc({
     Future<String?> Function()? pickShellPathOverride,
+    PublishTrialExportDiagnostics? publishExportDiagnostics,
   }) =>
       ExportArmRatingShellUseCase(
         db: db,
@@ -237,6 +241,7 @@ void main() {
         persistence: ArmImportPersistenceRepository(db),
         shareOverride: (_) async {},
         pickShellPathOverride: pickShellPathOverride,
+        publishExportDiagnostics: publishExportDiagnostics,
       );
 
   group('ExportArmRatingShellUseCase', () {
@@ -451,11 +456,19 @@ void main() {
       final trialRow =
           await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
               .getSingle();
+      final capturedCodes = <String>[];
       final uc = makeUc(
         pickShellPathOverride: () async => shellPath,
+        publishExportDiagnostics: (_, findings, __) {
+          capturedCodes.addAll(findings.map((f) => f.code));
+        },
       );
       final r = await uc.execute(trial: trialRow);
       expect(r.success, true);
+      expect(
+        capturedCodes.contains('arm_round_trip_fallback_assessment_match_used'),
+        false,
+      );
       final path = r.filePath;
       if (path == null) fail('expected file path');
       final bytes = await File(path).readAsBytes();
@@ -464,6 +477,136 @@ void main() {
       expect(sheet, isNotNull);
       expect(_cellString(sheet!, 48, 2), '42.5');
     });
+
+    test(
+      'positional assessment column fallback emits arm_round_trip_fallback_assessment_match_used',
+      () async {
+        final trialRepo = TrialRepository(db);
+        final trialId =
+            await trialRepo.createTrial(name: 'PosFallback', workspaceType: 'efficacy');
+        final trtId = await TreatmentRepository(db).insertTreatment(
+          trialId: trialId,
+          code: '1',
+          name: 'Check',
+        );
+        final plotPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '101',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 1,
+        );
+        final defId = await db.into(db.assessmentDefinitions).insert(
+              AssessmentDefinitionsCompanion.insert(
+                code: 'AVEFA',
+                name: 'A',
+                category: 'pest',
+                timingCode: const Value('1-Jul-26'),
+              ),
+            );
+        final legacyAsmId = await db.into(db.assessments).insert(
+              AssessmentsCompanion.insert(
+                trialId: trialId,
+                name: 'Legacy A',
+              ),
+            );
+        final taId = await db.into(db.trialAssessments).insert(
+              TrialAssessmentsCompanion.insert(
+                trialId: trialId,
+                assessmentDefinitionId: defId,
+                legacyAssessmentId: Value(legacyAsmId),
+                sortOrder: const Value(0),
+                pestCode: const Value('AVEFA'),
+              ),
+            );
+        final sessionId = await db.into(db.sessions).insert(
+              SessionsCompanion.insert(
+                trialId: trialId,
+                name: 'S1',
+                sessionDateLocal: '2026-01-01',
+              ),
+            );
+        await db.into(db.ratingRecords).insert(
+              RatingRecordsCompanion.insert(
+                trialId: trialId,
+                plotPk: plotPk,
+                assessmentId: legacyAsmId,
+                sessionId: sessionId,
+                trialAssessmentId: Value(taId),
+                resultStatus: const Value('RECORDED'),
+                numericValue: const Value(7.0),
+                isCurrent: const Value(true),
+              ),
+            );
+
+        await _pinArmExportAnchors(
+          db,
+          trialId: trialId,
+          plotPk: plotPk,
+          armPlotNumber: 101,
+          trialAssessmentId: taId,
+          sessionId: sessionId,
+        );
+        await (db.update(db.trialAssessments)..where((t) => t.id.equals(taId)))
+            .write(
+          const TrialAssessmentsCompanion(
+            armImportColumnIndex: Value(99),
+          ),
+        );
+
+        await _insertCompatibilityProfile(
+          db: db,
+          trialId: trialId,
+          exportConfidence: ImportConfidence.high,
+          columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+          assessmentTokens: [
+            {
+              'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+              'armCode': 'AVEFA',
+              'timingCode': '1-Jul-26',
+              'unit': '%',
+              'ratingDate': null,
+              'assessmentKey': 'k',
+            },
+          ],
+        );
+
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001'],
+          seNames: const ['AVEFA'],
+          ratingDates: const ['1-Jul-26'],
+        );
+
+        final trialRow =
+            await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+                .getSingle();
+
+        final captured = <DiagnosticFinding>[];
+        final uc = makeUc(
+          pickShellPathOverride: () async => shellPath,
+          publishExportDiagnostics: (_, findings, __) {
+            captured
+              ..clear()
+              ..addAll(findings);
+          },
+        );
+        final r = await uc.execute(trial: trialRow);
+        expect(r.success, true);
+        expect(
+          captured.map((f) => f.code).contains(
+                'arm_round_trip_fallback_assessment_match_used',
+              ),
+          true,
+        );
+        final fb = captured.firstWhere(
+          (f) => f.code == 'arm_round_trip_fallback_assessment_match_used',
+        );
+        expect(fb.blocksExport, false);
+        expect(fb.detail, contains('$taId'));
+      },
+    );
 
     test('ARM-linked trial uses ARM Import Session for ratings not newest session',
         () async {

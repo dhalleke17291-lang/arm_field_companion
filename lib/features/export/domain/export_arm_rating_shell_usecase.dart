@@ -16,6 +16,7 @@ import '../../../data/services/arm_shell_parser.dart';
 import '../../../data/services/arm_value_injector.dart';
 import '../../../domain/models/arm_column_map.dart';
 import '../../../domain/models/arm_rating_value.dart';
+import '../../../domain/models/arm_round_trip_diagnostics.dart';
 import '../../arm_import/data/arm_import_persistence_repository.dart';
 import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
@@ -355,6 +356,7 @@ class ExportArmRatingShellUseCase {
       }
     }
 
+    final positionalFallbackTrialAssessmentIds = <int>{};
     final ratingValues = <ArmRatingValue>[];
     for (final pr in shellImport.plotRows) {
       final plot = _plotForShellPlotNumber(plots, pr.plotNumber);
@@ -368,12 +370,16 @@ class ExportArmRatingShellUseCase {
       for (var i = 0; i < sortedAssessments.length; i++) {
         final ta = sortedAssessments[i];
         final def = defById[ta.assessmentDefinitionId];
-        final col = _matchColumnForAssessment(
+        final match = _matchColumnForAssessment(
           columns: effectiveColumns,
           ta: ta,
           def: def,
           positionalIndex: i,
         );
+        if (match.usedPositionalFallback) {
+          positionalFallbackTrialAssessmentIds.add(ta.id);
+        }
+        final col = match.column;
         if (col == null) continue;
 
         final legacyId = ta.legacyAssessmentId;
@@ -394,6 +400,23 @@ class ExportArmRatingShellUseCase {
           ),
         );
       }
+    }
+
+    if (positionalFallbackTrialAssessmentIds.isNotEmpty) {
+      final ids = positionalFallbackTrialAssessmentIds.toList()..sort();
+      exportDiagnosticsBuffer.add(
+        ArmRoundTripDiagnostic(
+          code: ArmRoundTripDiagnosticCode.fallbackAssessmentMatchUsed,
+          severity: ArmRoundTripDiagnosticSeverity.warning,
+          message:
+              'One or more trial assessments used positional shell column '
+              'matching; armImportColumnIndex and rating type/unit did not '
+              'resolve a unique column.',
+          detail: 'TrialAssessment ids: ${ids.join(", ")}',
+          trialId: trialPk,
+          sessionId: sessionId,
+        ).toDiagnosticFinding(),
+      );
     }
 
     final injector = ArmValueInjector(shellImport);
@@ -480,47 +503,64 @@ class ExportArmRatingShellUseCase {
     return '';
   }
 
-  /// Matches a shell assessment column to a TrialAssessment using
-  /// Rating Type + Unit (primary) with positional index as fallback.
-  /// Returns the matched ArmColumnMap or null if no match found.
-  ArmColumnMap? _matchColumnForAssessment({
+  /// Resolves shell column for a [TrialAssessment].
+  ///
+  /// Order: (1) unique column whose [ArmColumnMap.columnIndex] equals
+  /// [TrialAssessment.armImportColumnIndex]; (2) unique rating type + unit
+  /// match vs [AssessmentDefinition]; (3) positional slot in [columns].
+  ///
+  /// [usedPositionalFallback] is true only for case (3) when a column is
+  /// returned (export-time positional matching instead of identity).
+  ({ArmColumnMap? column, bool usedPositionalFallback})
+  _matchColumnForAssessment({
     required List<ArmColumnMap> columns,
     required TrialAssessment ta,
     required AssessmentDefinition? def,
     required int positionalIndex,
   }) {
-    // Primary: match by ratingType + ratingUnit (populated shell)
-    if (columns.isNotEmpty) {
-      final pestCode = ta.pestCode?.trim().toUpperCase();
-      final unit = def?.unit?.trim();
-      if (pestCode != null && pestCode.isNotEmpty) {
-        final matches = columns.where((c) {
-          final typeMatch = c.ratingType?.trim().toUpperCase() == pestCode;
-          final unitMatch = unit == null ||
-              unit.isEmpty ||
-              c.ratingUnit?.trim() == unit;
-          return typeMatch && unitMatch;
-        }).toList();
-        if (matches.length == 1) return matches.first;
-        if (matches.length > 1) {
-          // Ambiguous — fall through to positional
-          debugPrint(
-            'ExportArmRatingShell: ambiguous ratingType match for '
-            'pestCode="$pestCode" unit="$unit" — '
-            '${matches.length} columns match, using positional.',
-          );
-        }
+    if (columns.isEmpty) {
+      return (column: null, usedPositionalFallback: false);
+    }
+
+    final pinnedIdx = ta.armImportColumnIndex;
+    if (pinnedIdx != null) {
+      final byIdx =
+          columns.where((c) => c.columnIndex == pinnedIdx).toList();
+      if (byIdx.length == 1) {
+        return (column: byIdx.single, usedPositionalFallback: false);
       }
     }
-    // Fallback: positional (trial-level warning when indexes missing: see sortedAssessments)
+
+    final pestCode = ta.pestCode?.trim().toUpperCase();
+    final unit = def?.unit?.trim();
+    if (pestCode != null && pestCode.isNotEmpty) {
+      final matches = columns.where((c) {
+        final typeMatch = c.ratingType?.trim().toUpperCase() == pestCode;
+        final unitMatch = unit == null ||
+            unit.isEmpty ||
+            c.ratingUnit?.trim() == unit;
+        return typeMatch && unitMatch;
+      }).toList();
+      if (matches.length == 1) {
+        return (column: matches.first, usedPositionalFallback: false);
+      }
+      if (matches.length > 1) {
+        debugPrint(
+          'ExportArmRatingShell: ambiguous ratingType match for '
+          'pestCode="$pestCode" unit="$unit" — '
+          '${matches.length} columns match, using positional.',
+        );
+      }
+    }
+
     if (positionalIndex < columns.length) {
-      return columns[positionalIndex];
+      return (column: columns[positionalIndex], usedPositionalFallback: true);
     }
     debugPrint(
       'ExportArmRatingShell: no column found for assessment '
       'index=$positionalIndex pestCode=${ta.pestCode}',
     );
-    return null;
+    return (column: null, usedPositionalFallback: false);
   }
 
   void _logSeCodeMismatch(

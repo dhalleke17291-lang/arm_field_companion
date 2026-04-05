@@ -14,6 +14,10 @@ enum ArmRoundTripDiagnosticCode {
   armImportSessionIdInvalid,
   shellSessionResolvedByHeuristic,
   nonRecordedRatingsInShellSession,
+
+  /// Shell column was chosen by position; [TrialAssessment.armImportColumnIndex]
+  /// and rating-type/unit identity did not resolve a unique column.
+  fallbackAssessmentMatchUsed,
 }
 
 /// One finding from [ComputeArmRoundTripDiagnosticsUseCase].

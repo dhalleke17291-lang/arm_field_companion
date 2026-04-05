@@ -131,5 +131,21 @@ void main() {
       );
       expect(evaluateArmRatingShellStrictBlock(r).blocksExport, false);
     });
+
+    test('fallbackAssessmentMatchUsed does not trigger strict export block', () {
+      const r = ArmRoundTripDiagnosticReport(
+        trialId: 1,
+        resolvedShellSessionId: 9,
+        diagnostics: [
+          ArmRoundTripDiagnostic(
+            code: ArmRoundTripDiagnosticCode.fallbackAssessmentMatchUsed,
+            severity: ArmRoundTripDiagnosticSeverity.warning,
+            message: 'm',
+            trialId: 1,
+          ),
+        ],
+      );
+      expect(evaluateArmRatingShellStrictBlock(r).blocksExport, false);
+    });
   });
 }

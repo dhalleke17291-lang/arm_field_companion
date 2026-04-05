@@ -264,5 +264,7 @@ extension ArmRoundTripDiagnosticX on ArmRoundTripDiagnostic {
           'arm_round_trip_shell_session_resolved_by_heuristic',
         ArmRoundTripDiagnosticCode.nonRecordedRatingsInShellSession =>
           'arm_round_trip_non_recorded_ratings_in_shell_session',
+        ArmRoundTripDiagnosticCode.fallbackAssessmentMatchUsed =>
+          'arm_round_trip_fallback_assessment_match_used',
       };
 }
