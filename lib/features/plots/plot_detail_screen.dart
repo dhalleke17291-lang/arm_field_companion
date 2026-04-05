@@ -8,7 +8,7 @@ import '../../core/providers.dart';
 import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../../domain/ratings/save_rating_input.dart';
 import '../ratings/rating_scale_map.dart';
-import '../ratings/usecases/save_rating_usecase.dart';
+import '../ratings/usecases/amend_plot_rating_usecase.dart';
 import 'plot_notes_dialog.dart';
 import '../../core/widgets/app_standard_widgets.dart';
 
@@ -134,8 +134,9 @@ class PlotDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit_note),
             tooltip: 'Notes',
-            onPressed: () =>
-                showPlotNotesDialog(context, ref, plotToShow, trial, sameTrialPlots: plots),
+            onPressed: () => showPlotNotesDialog(
+                context, ref, plotToShow, trial,
+                sameTrialPlots: plots),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -158,342 +159,355 @@ class PlotDetailScreen extends ConsumerWidget {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-          SliverToBoxAdapter(
-            child: Card(
-              margin: const EdgeInsets.all(12),
+            SliverToBoxAdapter(
+              child: Card(
+                margin: const EdgeInsets.all(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Plot Details',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Theme.of(context).colorScheme.primary)),
+                      const Divider(),
+                      StandardDetailRow(
+                          label: 'Plot (display)', value: displayNum),
+                      if (plotToShow.rep != null)
+                        StandardDetailRow(
+                            label: 'Rep / Block',
+                            value: plotToShow.rep.toString()),
+                      if (assignmentSourceLabel != 'Unknown' &&
+                          assignmentSourceLabel != 'Unassigned')
+                        StandardDetailRow(
+                            label: 'Assignment source',
+                            value: assignmentSourceLabel),
+                      if (plotToShow.row != null)
+                        StandardDetailRow(
+                            label: 'Range', value: plotToShow.row.toString()),
+                      if (plotToShow.column != null)
+                        StandardDetailRow(
+                            label: 'Column',
+                            value: plotToShow.column.toString()),
+                      if (plotToShow.plotSortIndex != null)
+                        StandardDetailRow(
+                            label: 'Sort Index',
+                            value: plotToShow.plotSortIndex.toString()),
+                      if (plotToShow.isGuardRow)
+                        const StandardDetailRow(
+                            label: 'Plot type', value: 'Guard row'),
+                      StandardDetailRow(label: 'Trial', value: trial.name),
+                      if (trial.plotDimensions != null ||
+                          trial.plotRows != null ||
+                          trial.plotSpacing != null) ...[
+                        const Divider(),
+                        if (trial.plotDimensions != null)
+                          StandardDetailRow(
+                              label: 'Plot dimensions',
+                              value: trial.plotDimensions!),
+                        if (trial.plotRows != null)
+                          StandardDetailRow(
+                              label: 'Number of ranges',
+                              value: trial.plotRows.toString()),
+                        if (trial.plotSpacing != null)
+                          StandardDetailRow(
+                              label: 'Plot spacing', value: trial.plotSpacing!),
+                      ],
+                      if (_hasPlotDimensionSummary(plotToShow)) ...[
+                        const Divider(),
+                        _PlotDimensionSummary(plot: plotToShow),
+                      ],
+                      _PlotDetailsForm(
+                        key: ValueKey('plot_details_${plotToShow.id}'),
+                        plot: plotToShow,
+                        trial: trial,
+                        ref: ref,
+                      ),
+                      const Divider(),
+                      if (plotToShow.notes != null &&
+                          plotToShow.notes!.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Notes',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary)),
+                              const SizedBox(height: 4),
+                              Text(
+                                plotToShow.notes!.trim(),
+                                style: const TextStyle(fontSize: 13),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        const StandardDetailRow(
+                            label: 'Notes', value: 'No notes'),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.edit_note, size: 18),
+                        label: Text(plotToShow.notes?.trim().isNotEmpty == true
+                            ? 'Edit Notes'
+                            : 'Add Notes'),
+                        onPressed: () => showPlotNotesDialog(
+                            context, ref, plotToShow, trial,
+                            sameTrialPlots: plots),
+                      ),
+                      const Divider(),
+                      plotContextAsync.when(
+                        loading: () => const SizedBox(
+                          height: 20,
+                          child: Center(
+                              child: LinearProgressIndicator(minHeight: 2)),
+                        ),
+                        error: (e, st) => StandardDetailRow(
+                            label: 'Treatment', value: e.toString()),
+                        data: (ctx) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            StandardDetailRow(
+                                label: 'Treatment',
+                                value: ctx.hasTreatment
+                                    ? '${ctx.treatmentCode}  —  ${ctx.treatmentName}'
+                                    : (ctx.hasRemovedTreatment
+                                        ? '(removed)'
+                                        : 'Unassigned')),
+                            if (ctx.hasComponents) ...[
+                              const SizedBox(height: 8),
+                              Text('Components',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary)),
+                              const SizedBox(height: 4),
+                              ...ctx.components.map((c) => Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 3),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(width: 8),
+                                        Icon(Icons.circle,
+                                            size: 6,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .outlineVariant),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            [
+                                              c.productName,
+                                              if (c.rate != null &&
+                                                  c.rateUnit != null)
+                                                '${c.rate} ${c.rateUnit}',
+                                              if (c.applicationTiming != null)
+                                                c.applicationTiming!,
+                                            ].join('  ·  '),
+                                            style:
+                                                const TextStyle(fontSize: 13),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
                   children: [
-                    Text('Plot Details',
+                    Icon(Icons.history,
+                        color: Theme.of(context).colorScheme.primary, size: 18),
+                    const SizedBox(width: 6),
+                    Text('Rating History',
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                             color: Theme.of(context).colorScheme.primary)),
-                    const Divider(),
-                    StandardDetailRow(
-                        label: 'Plot (display)', value: displayNum),
-                    if (plotToShow.rep != null)
-                      StandardDetailRow(
-                          label: 'Rep / Block',
-                          value: plotToShow.rep.toString()),
-                    if (assignmentSourceLabel != 'Unknown' &&
-                        assignmentSourceLabel != 'Unassigned')
-                      StandardDetailRow(
-                          label: 'Assignment source',
-                          value: assignmentSourceLabel),
-                    if (plotToShow.row != null)
-                      StandardDetailRow(
-                          label: 'Range', value: plotToShow.row.toString()),
-                    if (plotToShow.column != null)
-                      StandardDetailRow(
-                          label: 'Column', value: plotToShow.column.toString()),
-                    if (plotToShow.plotSortIndex != null)
-                      StandardDetailRow(
-                          label: 'Sort Index',
-                          value: plotToShow.plotSortIndex.toString()),
-                    if (plotToShow.isGuardRow)
-                      const StandardDetailRow(
-                          label: 'Plot type', value: 'Guard row'),
-                    StandardDetailRow(label: 'Trial', value: trial.name),
-                    if (trial.plotDimensions != null ||
-                        trial.plotRows != null ||
-                        trial.plotSpacing != null) ...[
-                      const Divider(),
-                      if (trial.plotDimensions != null)
-                        StandardDetailRow(
-                            label: 'Plot dimensions',
-                            value: trial.plotDimensions!),
-                      if (trial.plotRows != null)
-                        StandardDetailRow(
-                            label: 'Number of ranges',
-                            value: trial.plotRows.toString()),
-                      if (trial.plotSpacing != null)
-                        StandardDetailRow(
-                            label: 'Plot spacing', value: trial.plotSpacing!),
-                    ],
-                    if (_hasPlotDimensionSummary(plotToShow)) ...[
-                      const Divider(),
-                      _PlotDimensionSummary(plot: plotToShow),
-                    ],
-                    _PlotDetailsForm(
-                      key: ValueKey('plot_details_${plotToShow.id}'),
-                      plot: plotToShow,
-                      trial: trial,
-                      ref: ref,
-                    ),
-                    const Divider(),
-                    if (plotToShow.notes != null &&
-                        plotToShow.notes!.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Notes',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color:
-                                        Theme.of(context).colorScheme.primary)),
-                            const SizedBox(height: 4),
-                            Text(
-                              plotToShow.notes!.trim(),
-                              style: const TextStyle(fontSize: 13),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      const StandardDetailRow(
-                          label: 'Notes', value: 'No notes'),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.edit_note, size: 18),
-                      label: Text(plotToShow.notes?.trim().isNotEmpty == true
-                          ? 'Edit Notes'
-                          : 'Add Notes'),
-                      onPressed: () =>
-                          showPlotNotesDialog(context, ref, plotToShow, trial, sameTrialPlots: plots),
-                    ),
-                    const Divider(),
-                    plotContextAsync.when(
-                      loading: () => const SizedBox(
-                        height: 20,
-                        child: Center(
-                            child: LinearProgressIndicator(minHeight: 2)),
-                      ),
-                      error: (e, st) => StandardDetailRow(
-                          label: 'Treatment', value: e.toString()),
-                      data: (ctx) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          StandardDetailRow(
-                              label: 'Treatment',
-                              value: ctx.hasTreatment
-                                  ? '${ctx.treatmentCode}  —  ${ctx.treatmentName}'
-                                  : (ctx.hasRemovedTreatment
-                                      ? '(removed)'
-                                      : 'Unassigned')),
-                          if (ctx.hasComponents) ...[
-                            const SizedBox(height: 8),
-                            Text('Components',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color:
-                                        Theme.of(context).colorScheme.primary)),
-                            const SizedBox(height: 4),
-                            ...ctx.components.map((c) => Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 3),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const SizedBox(width: 8),
-                                      Icon(Icons.circle,
-                                          size: 6,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outlineVariant),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          [
-                                            c.productName,
-                                            if (c.rate != null &&
-                                                c.rateUnit != null)
-                                              '${c.rate} ${c.rateUnit}',
-                                            if (c.applicationTiming != null)
-                                              c.applicationTiming!,
-                                          ].join('  ·  '),
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )),
-                          ],
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.history,
-                      color: Theme.of(context).colorScheme.primary, size: 18),
-                  const SizedBox(width: 6),
-                  Text('Rating History',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Theme.of(context).colorScheme.primary)),
-                ],
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 8)),
-          ...ratingsAsync.when(
-            loading: () => [
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ],
-            error: (e, st) => [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: Text('Error: $e')),
-              ),
-            ],
-            data: (ratings) => ratings.isEmpty
-                ? [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.history,
-                                size: 48,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .outlineVariant),
-                            const SizedBox(height: 12),
-                            Text('No Ratings Yet',
-                                style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant)),
-                          ],
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            ...ratingsAsync.when(
+              loading: () => [
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
+              error: (e, st) => [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('Error: $e')),
+                ),
+              ],
+              data: (ratings) => ratings.isEmpty
+                  ? [
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.history,
+                                  size: 48,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant),
+                              const SizedBox(height: 12),
+                              Text('No Ratings Yet',
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant)),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ]
-                : [
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final rating = ratings[index];
-                            final session = sessions
-                                .where((s) => s.id == rating.sessionId)
-                                .firstOrNull;
-                            final assessment = assessments
-                                .where((a) => a.id == rating.assessmentId)
-                                .firstOrNull;
-                            return Card(
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor:
+                    ]
+                  : [
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final rating = ratings[index];
+                              final session = sessions
+                                  .where((s) => s.id == rating.sessionId)
+                                  .firstOrNull;
+                              final assessment = assessments
+                                  .where((a) => a.id == rating.assessmentId)
+                                  .firstOrNull;
+                              return Card(
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor:
+                                        rating.resultStatus == 'RECORDED'
+                                            ? Colors.green.shade100
+                                            : Colors.orange.shade100,
+                                    child: Icon(
                                       rating.resultStatus == 'RECORDED'
-                                          ? Colors.green.shade100
-                                          : Colors.orange.shade100,
-                                  child: Icon(
-                                    rating.resultStatus == 'RECORDED'
-                                        ? Icons.check
-                                        : Icons.info_outline,
-                                    color: rating.resultStatus == 'RECORDED'
-                                        ? Colors.green
-                                        : Colors.orange,
-                                    size: 20,
+                                          ? Icons.check
+                                          : Icons.info_outline,
+                                      color: rating.resultStatus == 'RECORDED'
+                                          ? Colors.green
+                                          : Colors.orange,
+                                      size: 20,
+                                    ),
                                   ),
-                                ),
-                                title: Text(
-                                  assessment?.name ?? 'Assessment',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(session?.name ?? 'Unknown session'),
-                                    if (rating.amended) ...[
-                                      const SizedBox(height: 4),
-                                      GestureDetector(
-                                        onTap: () => _showAmendmentInfoSheet(
-                                            context, ref, rating, assessment),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            border: Border.all(
-                                                color: Colors.orange.shade700),
-                                            borderRadius:
-                                                BorderRadius.circular(6),
+                                  title: Text(
+                                    assessment?.name ?? 'Assessment',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(session?.name ?? 'Unknown session'),
+                                      if (rating.amended) ...[
+                                        const SizedBox(height: 4),
+                                        GestureDetector(
+                                          onTap: () => _showAmendmentInfoSheet(
+                                              context, ref, rating, assessment),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                  color:
+                                                      Colors.orange.shade700),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Text('Amended',
+                                                style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: Colors.orange)),
                                           ),
-                                          child: const Text('Amended',
-                                              style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Colors.orange)),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  trailing: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        rating.resultStatus == 'RECORDED'
+                                            ? '${rating.numericValue ?? rating.textValue ?? "-"} ${assessment?.unit ?? ""}'
+                                            : rating.resultStatus,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              rating.resultStatus == 'RECORDED'
+                                                  ? Colors.green
+                                                  : Colors.orange,
                                         ),
                                       ),
-                                    ],
-                                  ],
-                                ),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      rating.resultStatus == 'RECORDED'
-                                          ? '${rating.numericValue ?? rating.textValue ?? "-"} ${assessment?.unit ?? ""}'
-                                          : rating.resultStatus,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: rating.resultStatus == 'RECORDED'
-                                            ? Colors.green
-                                            : Colors.orange,
+                                      Text(
+                                        _formatDate(rating.createdAt),
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant),
                                       ),
-                                    ),
-                                    Text(
-                                      _formatDate(rating.createdAt),
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant),
-                                    ),
-                                    TextButton(
-                                      style: TextButton.styleFrom(
-                                          minimumSize: Size.zero,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8),
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap),
-                                      onPressed: () =>
-                                          _showEditRatingSheet(context, ref,
-                                              rating, assessment, trial, plot),
-                                      child: const Text('Edit rating',
-                                          style: TextStyle(fontSize: 12)),
-                                    ),
-                                  ],
+                                      TextButton(
+                                        style: TextButton.styleFrom(
+                                            minimumSize: Size.zero,
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8),
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap),
+                                        onPressed: () => _showEditRatingSheet(
+                                            context,
+                                            ref,
+                                            rating,
+                                            assessment,
+                                            trial,
+                                            plot),
+                                        child: const Text('Edit rating',
+                                            style: TextStyle(fontSize: 12)),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                          childCount: ratings.length,
+                              );
+                            },
+                            childCount: ratings.length,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-                height: MediaQuery.paddingOf(context).bottom + 24),
-          ),
-        ],
+                    ],
+            ),
+            SliverToBoxAdapter(
+              child:
+                  SizedBox(height: MediaQuery.paddingOf(context).bottom + 24),
+            ),
+          ],
         ),
       ),
     );
@@ -525,11 +539,16 @@ void _showAmendmentInfoSheet(
                 ),
           ),
           const SizedBox(height: 16),
-          _infoRow(ctx, 'Original value',
-              rating.originalValue ?? (rating.numericValue?.toString() ?? rating.textValue ?? '—')),
+          _infoRow(
+              ctx,
+              'Original value',
+              rating.originalValue ??
+                  (rating.numericValue?.toString() ?? rating.textValue ?? '—')),
           _infoRow(ctx, 'Current value',
               rating.numericValue?.toString() ?? rating.textValue ?? '—'),
-          _infoRow(ctx, 'Amendment reason',
+          _infoRow(
+              ctx,
+              'Amendment reason',
               rating.amendmentReason?.isNotEmpty == true
                   ? rating.amendmentReason!
                   : 'No reason recorded'),
@@ -592,9 +611,8 @@ Future<void> _showEditRatingSheet(
   final trialAssessments =
       ref.read(trialAssessmentsForTrialProvider(trial.id)).valueOrNull ??
           <TrialAssessment>[];
-  final definitions =
-      ref.read(assessmentDefinitionsProvider).valueOrNull ??
-          <AssessmentDefinition>[];
+  final definitions = ref.read(assessmentDefinitionsProvider).valueOrNull ??
+      <AssessmentDefinition>[];
   final ratingScaleMap = buildRatingScaleMap(
     trialAssessments: trialAssessments,
     definitions: definitions,
@@ -612,8 +630,7 @@ Future<void> _showEditRatingSheet(
     context: context,
     isScrollControlled: true,
     builder: (ctx) => Padding(
-      padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -621,17 +638,22 @@ Future<void> _showEditRatingSheet(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('Edit rating',
-                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold)),
+                style: Theme.of(ctx)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextField(
               controller: valueController,
               decoration: InputDecoration(
                 labelText: 'New value',
-                hintText: assessment?.unit != null ? 'e.g. ${assessment?.unit}' : null,
+                hintText: assessment?.unit != null
+                    ? 'e.g. ${assessment?.unit}'
+                    : null,
                 border: const OutlineInputBorder(),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -656,47 +678,9 @@ Future<void> _showEditRatingSheet(
                 final newValStr = valueController.text.trim();
                 final reason = reasonController.text.trim();
                 if (reason.isEmpty) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                          content: Text('Amendment reason is required')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                      content: Text('Amendment reason is required')));
                   return;
-                }
-                final session = await ref
-                    .read(sessionRepositoryProvider)
-                    .getSessionById(rating.sessionId);
-                if (session == null) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('Session not found')));
-                  }
-                  return;
-                }
-
-                double? numericValue = rating.numericValue;
-                String? textValue = rating.textValue;
-                if (rating.resultStatus == 'RECORDED' &&
-                    assessment?.dataType == 'numeric') {
-                  final parsed = double.tryParse(newValStr);
-                  if (parsed == null && newValStr.isNotEmpty) {
-                    if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(
-                              content: Text('Enter a valid number')));
-                    }
-                    return;
-                  }
-                  if (parsed != null) {
-                    final bounds = _editRatingNumericBounds(assessment,
-                        definitionScale: definitionScale);
-                    numericValue = parsed.clamp(bounds.min, bounds.max);
-                  } else {
-                    numericValue = rating.numericValue;
-                  }
-                  textValue = null;
-                } else if (rating.resultStatus == 'RECORDED') {
-                  numericValue = null;
-                  textValue =
-                      newValStr.isNotEmpty ? newValStr : rating.textValue;
                 }
 
                 final bounds = _editRatingNumericBounds(assessment,
@@ -710,53 +694,43 @@ Future<void> _showEditRatingSheet(
                       )
                     : null;
 
-                final now = DateTime.now();
-                final ratingTime =
-                    '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
                 try {
                   final userId = await ref.read(currentUserIdProvider.future);
-                  final saveUseCase = ref.read(saveRatingUseCaseProvider);
-                  final ratingRepo = ref.read(ratingRepositoryProvider);
-                  final result = await saveUseCase.execute(SaveRatingInput(
+                  final amendUseCase = ref.read(amendPlotRatingUseCaseProvider);
+                  final amendedByTrim = amendedByController.text.trim();
+                  final result =
+                      await amendUseCase.execute(AmendPlotRatingInput(
                     trialId: rating.trialId,
                     plotPk: rating.plotPk,
                     assessmentId: rating.assessmentId,
                     sessionId: rating.sessionId,
+                    rawValue: newValStr,
+                    dataType: assessment?.dataType,
                     resultStatus: rating.resultStatus,
-                    numericValue: numericValue,
-                    textValue: textValue,
-                    subUnitId: rating.subUnitId,
-                    raterName: session.raterName,
-                    performedByUserId: userId,
-                    isSessionClosed: session.endedAt != null,
                     minValue: bounds.min,
                     maxValue: bounds.max,
-                    ratingTime: ratingTime,
                     assessmentConstraints: assessmentConstraints,
+                    amendmentReason: reason,
+                    amendedBy: amendedByTrim,
+                    performedByUserId: userId,
+                    subUnitId: rating.subUnitId,
+                    existingNumericValue: rating.numericValue,
+                    existingTextValue: rating.textValue,
                   ));
 
                   if (!result.isSuccess) {
                     if (ctx.mounted) {
-                      final msg = result.isDebounced
-                          ? 'Please wait and try again'
-                          : (result.errorMessage ?? 'Could not save rating');
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text(msg)),
+                        SnackBar(
+                          content: Text(
+                            result.errorMessage ?? 'Could not save rating',
+                          ),
+                        ),
                       );
                     }
                     return;
                   }
 
-                  final saved = result.rating!;
-                  await ratingRepo.updateRating(
-                    ratingId: saved.id,
-                    amendmentReason: reason,
-                    amendedBy: amendedByController.text.trim().isEmpty
-                        ? null
-                        : amendedByController.text.trim(),
-                    lastEditedByUserId: userId,
-                  );
                   if (ctx.mounted) {
                     ref.invalidate(plotRatingHistoryProvider(
                         PlotRatingParams(trialId: trial.id, plotPk: plot.id)));
@@ -766,8 +740,8 @@ Future<void> _showEditRatingSheet(
                   }
                 } catch (e) {
                   if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text('Error: $e')));
+                    ScaffoldMessenger.of(ctx)
+                        .showSnackBar(SnackBar(content: Text('Error: $e')));
                   }
                 }
               },
@@ -892,10 +866,8 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
         TextEditingController(text: plot.harvestAreaM2?.toString() ?? '');
     _directionOtherController =
         TextEditingController(text: plot.plotDirection ?? '');
-    _soilSeriesController =
-        TextEditingController(text: plot.soilSeries ?? '');
-    _plotNotesController =
-        TextEditingController(text: plot.plotNotes ?? '');
+    _soilSeriesController = TextEditingController(text: plot.soilSeries ?? '');
+    _plotNotesController = TextEditingController(text: plot.plotNotes ?? '');
     final dir = plot.plotDirection?.trim() ?? '';
     if (dir.isEmpty) {
       _directionDropdown = null;
@@ -909,13 +881,14 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
     _plotAreaOverride = plot.plotAreaM2 != null &&
         plot.plotLengthM != null &&
         plot.plotWidthM != null &&
-        (plot.plotAreaM2! - (plot.plotLengthM! * plot.plotWidthM!)).abs() > 0.001;
+        (plot.plotAreaM2! - (plot.plotLengthM! * plot.plotWidthM!)).abs() >
+            0.001;
     _harvestAreaOverride = plot.harvestAreaM2 != null &&
         plot.harvestLengthM != null &&
         plot.harvestWidthM != null &&
-        (plot.harvestAreaM2! -
-                (plot.harvestLengthM! * plot.harvestWidthM!))
-            .abs() > 0.001;
+        (plot.harvestAreaM2! - (plot.harvestLengthM! * plot.harvestWidthM!))
+                .abs() >
+            0.001;
     _isGuardRow = plot.isGuardRow;
   }
 
@@ -946,7 +919,9 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
     if (_parseDouble(_plotAreaController) != null || _plotAreaOverride) n++;
     if (_parseDouble(_harvestLengthController) != null) n++;
     if (_parseDouble(_harvestWidthController) != null) n++;
-    if (_parseDouble(_harvestAreaController) != null || _harvestAreaOverride) n++;
+    if (_parseDouble(_harvestAreaController) != null || _harvestAreaOverride) {
+      n++;
+    }
     if (_directionDropdown != null && _directionDropdown!.isNotEmpty) n++;
     return n;
   }
@@ -958,10 +933,8 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
     return n;
   }
 
-  bool get _dimensionsHasData =>
-      _dimensionsFilledCount() > 0;
-  bool get _fieldConditionsHasData =>
-      _fieldConditionsFilledCount() > 0;
+  bool get _dimensionsHasData => _dimensionsFilledCount() > 0;
+  bool get _fieldConditionsHasData => _fieldConditionsFilledCount() > 0;
 
   Future<void> _save() async {
     if (_saving) return;
@@ -984,8 +957,7 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
         direction = _directionOtherController.text.trim().isEmpty
             ? null
             : _directionOtherController.text.trim();
-      } else if (_directionDropdown != null &&
-          _directionDropdown!.isNotEmpty) {
+      } else if (_directionDropdown != null && _directionDropdown!.isNotEmpty) {
         direction = _directionDropdown;
       }
       await ref.read(plotRepositoryProvider).updatePlotDetails(
@@ -1027,9 +999,8 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
     final plotWid = _parseDouble(_plotWidthController);
     final harvestLen = _parseDouble(_harvestLengthController);
     final harvestWid = _parseDouble(_harvestWidthController);
-    final calculatedPlotArea = (plotLen != null && plotWid != null)
-        ? plotLen * plotWid
-        : null;
+    final calculatedPlotArea =
+        (plotLen != null && plotWid != null) ? plotLen * plotWid : null;
     final calculatedHarvestArea = (harvestLen != null && harvestWid != null)
         ? harvestLen * harvestWid
         : null;
@@ -1079,8 +1050,7 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Update failed: $e'),
-                        backgroundColor:
-                            Theme.of(context).colorScheme.error,
+                        backgroundColor: Theme.of(context).colorScheme.error,
                       ),
                     );
                   } finally {
@@ -1096,8 +1066,7 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           title: Text(
             'Plot dimensions (${_dimensionsFilledCount()} filled)',
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 14),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
           initiallyExpanded: _dimensionsHasData,
           children: [
@@ -1132,20 +1101,25 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
                       'Plot area: $calculatedPlotArea m²',
                       style: TextStyle(
                           fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         'calculated',
                         style: TextStyle(
                             fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ],
@@ -1201,20 +1175,25 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
                       'Harvest area: $calculatedHarvestArea m²',
                       style: TextStyle(
                           fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         'calculated',
                         style: TextStyle(
                             fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ],
@@ -1247,10 +1226,9 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
                 border: OutlineInputBorder(),
               ),
               items: [
-                const DropdownMenuItem<String?>(
-                    value: null, child: Text('—')),
-                ..._plotDirectionOptions.map((s) =>
-                    DropdownMenuItem<String?>(value: s, child: Text(s))),
+                const DropdownMenuItem<String?>(value: null, child: Text('—')),
+                ..._plotDirectionOptions.map(
+                    (s) => DropdownMenuItem<String?>(value: s, child: Text(s))),
               ],
               onChanged: (v) => setState(() => _directionDropdown = v),
             ),
@@ -1272,8 +1250,7 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           title: Text(
             'Field conditions (${_fieldConditionsFilledCount()} filled)',
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 14),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
           initiallyExpanded: _fieldConditionsHasData,
           children: [

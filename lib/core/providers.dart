@@ -26,6 +26,7 @@ import '../features/photos/photo_repository.dart';
 import '../features/trials/usecases/create_trial_usecase.dart';
 import '../features/trials/usecases/update_treatment_usecase.dart';
 import '../features/trials/usecases/delete_treatment_usecase.dart';
+import '../features/ratings/usecases/amend_plot_rating_usecase.dart';
 import '../features/ratings/usecases/save_rating_usecase.dart';
 import '../features/ratings/usecases/undo_rating_usecase.dart';
 import '../features/ratings/usecases/apply_correction_usecase.dart';
@@ -449,6 +450,14 @@ final deleteTreatmentUseCaseProvider = Provider<DeleteTreatmentUseCase>((ref) {
 
 final saveRatingUseCaseProvider = Provider<SaveRatingUseCase>((ref) {
   return SaveRatingUseCase(ref.watch(ratingRepositoryProvider));
+});
+
+final amendPlotRatingUseCaseProvider = Provider<AmendPlotRatingUseCase>((ref) {
+  return AmendPlotRatingUseCase(
+    ref.watch(sessionRepositoryProvider),
+    ref.watch(saveRatingUseCaseProvider),
+    ref.watch(ratingRepositoryProvider),
+  );
 });
 
 final undoRatingUseCaseProvider = Provider<UndoRatingUseCase>((ref) {
