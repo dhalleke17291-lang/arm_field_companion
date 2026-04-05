@@ -2126,6 +2126,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   bool get _isTextAssessment =>
       _currentAssessment.dataType.toLowerCase() == 'text';
 
+  bool get _isNumericAssessment =>
+      _currentAssessment.dataType == 'numeric';
+
   bool get _hasScaleDefined =>
       _currentAssessment.minValue != null &&
       _currentAssessment.maxValue != null;
@@ -2148,11 +2151,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
-  /// Effective min for value entry; default 0 when scaleMin is null.
+  // TODO: wire AssessmentDefinition.scaleMin/scaleMax once Assessment model exposes those fields.
+  /// Effective min for value entry; default 0 when minValue is null.
   double get _effectiveMin =>
       _currentAssessment.minValue ?? 0.0;
 
-  /// Effective max for value entry; unit-aware default when scaleMax is null.
+  /// Effective max for value entry; unit-aware default when maxValue is null.
   double get _effectiveMax =>
       _currentAssessment.maxValue ?? _defaultMax(_currentAssessment.unit).toDouble();
 
@@ -2850,6 +2854,17 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           );
           return false;
         }
+        if (numericValue == null &&
+            _valueController.text.trim().isEmpty &&
+            _isNumericAssessment) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter a value before saving.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return false;
+        }
         if (numericValue != null) {
           numericValue = numericValue.clamp(_effectiveMin, _effectiveMax);
         }
@@ -3011,7 +3026,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
               const SizedBox(height: AppDesignTokens.spacing16),
               const Text(
-                'All Plots Rated',
+                'End of Plot List',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -3019,10 +3034,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 ),
               ),
               const SizedBox(height: AppDesignTokens.spacing8),
-              Text(
-                "You've completed all $plotCount plots in this session.",
+              const Text(
+                'You have reached the end of the plot list. '
+                'Check the pre-close checklist to confirm all '
+                'required plots are rated before closing.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   color: AppDesignTokens.secondaryText,
                   height: 1.5,
