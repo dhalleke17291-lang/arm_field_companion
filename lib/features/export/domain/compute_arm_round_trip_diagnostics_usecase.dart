@@ -3,6 +3,7 @@ import '../../../core/diagnostics/diagnostic_finding.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../domain/models/arm_round_trip_diagnostics.dart';
 import '../../../domain/ratings/result_status.dart';
+import 'arm_shell_data_plots.dart';
 import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
 import '../../sessions/session_repository.dart';
@@ -51,7 +52,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
 
     _applyPlotRules(plotList, trial.id, out);
     _applyAssessmentColumnRules(assessmentList, trial.id, out);
-    await _applySessionAndRatingRules(trial, resolved, out);
+    await _applySessionAndRatingRules(trial, resolved, plotList, out);
 
     return ArmRoundTripDiagnosticReport(
       trialId: trial.id,
@@ -61,7 +62,24 @@ class ComputeArmRoundTripDiagnosticsUseCase {
   }
 
   void _applyPlotRules(List<Plot> plots, int trialId, List<ArmRoundTripDiagnostic> out) {
-    final dataPlots = plots.where((p) => !p.isGuardRow).toList();
+    final dataPlots = armShellDataPlots(plots);
+
+    final guardsWithArm =
+        plots.where((p) => p.isGuardRow && p.armPlotNumber != null).toList();
+    if (guardsWithArm.isNotEmpty) {
+      final pks = guardsWithArm.map((p) => p.id).toList()..sort();
+      out.add(
+        ArmRoundTripDiagnostic(
+          code: ArmRoundTripDiagnosticCode.guardHasArmPlotNumber,
+          severity: ArmRoundTripDiagnosticSeverity.warning,
+          message:
+              '${guardsWithArm.length} guard row(s) have an ARM plot number set; '
+              'shell export uses data plots only.',
+          detail: 'Plot ids: ${pks.join(", ")}',
+          trialId: trialId,
+        ),
+      );
+    }
 
     final missingArm = dataPlots.where((p) => p.armPlotNumber == null).toList();
     if (missingArm.isNotEmpty) {
@@ -79,7 +97,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
     }
 
     final byArm = <int, List<Plot>>{};
-    for (final p in plots) {
+    for (final p in dataPlots) {
       final n = p.armPlotNumber;
       if (n == null) continue;
       byArm.putIfAbsent(n, () => []).add(p);
@@ -93,7 +111,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
           code: ArmRoundTripDiagnosticCode.duplicateArmPlotNumber,
           severity: ArmRoundTripDiagnosticSeverity.warning,
           message:
-              'Duplicate armPlotNumber ${entry.key} on ${entry.value.length} plots.',
+              'Duplicate armPlotNumber ${entry.key} on ${entry.value.length} data plots.',
           detail: 'Plot ids (lowest id used first in shell export): $pks',
           trialId: trialId,
           plotPk: sorted.first.id,
@@ -148,8 +166,10 @@ class ComputeArmRoundTripDiagnosticsUseCase {
   Future<void> _applySessionAndRatingRules(
     Trial trial,
     int? resolved,
+    List<Plot> plots,
     List<ArmRoundTripDiagnostic> out,
   ) async {
+    final dataPlotPks = armShellDataPlots(plots).map((p) => p.id).toSet();
     final pinned = trial.armImportSessionId;
 
     if (pinned == null) {
@@ -202,7 +222,11 @@ class ComputeArmRoundTripDiagnosticsUseCase {
       final ratings =
           await _ratingRepository.getCurrentRatingsForSession(resolved);
       final nonRecorded = ratings
-          .where((r) => r.resultStatus != ResultStatusDb.recorded)
+          .where(
+            (r) =>
+                dataPlotPks.contains(r.plotPk) &&
+                r.resultStatus != ResultStatusDb.recorded,
+          )
           .toList();
       if (nonRecorded.isNotEmpty) {
         out.add(
@@ -264,6 +288,8 @@ extension ArmRoundTripDiagnosticX on ArmRoundTripDiagnostic {
           'arm_round_trip_shell_session_resolved_by_heuristic',
         ArmRoundTripDiagnosticCode.nonRecordedRatingsInShellSession =>
           'arm_round_trip_non_recorded_ratings_in_shell_session',
+        ArmRoundTripDiagnosticCode.guardHasArmPlotNumber =>
+          'arm_round_trip_guard_has_arm_plot_number',
         ArmRoundTripDiagnosticCode.fallbackAssessmentMatchUsed =>
           'arm_round_trip_fallback_assessment_match_used',
       };

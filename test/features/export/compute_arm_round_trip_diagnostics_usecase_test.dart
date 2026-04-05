@@ -127,6 +127,162 @@ void main() {
       );
     });
 
+    test(
+      'duplicateArmPlotNumber not emitted when guard shares armPlotNumber with data plot',
+      () async {
+        final trialId =
+            await TrialRepository(db).createTrial(name: 'DG', workspaceType: 'efficacy');
+        final trtId = await TreatmentRepository(db).insertTreatment(
+          trialId: trialId,
+          code: '1',
+          name: 'T',
+        );
+        final guardPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: 'G1-L',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 1,
+          isGuardRow: true,
+        );
+        final dataPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '101',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 2,
+        );
+        await (db.update(db.plots)..where((p) => p.id.isIn([guardPk, dataPk]))).write(
+          const PlotsCompanion(armPlotNumber: Value(101)),
+        );
+        final trial = await _armTrialRow(db, trialId);
+        final r = await makeUc().execute(trial: trial);
+        expect(
+          r.diagnostics.any(
+            (d) => d.code == ArmRoundTripDiagnosticCode.duplicateArmPlotNumber,
+          ),
+          false,
+        );
+        final g = r.diagnostics
+            .where((d) => d.code == ArmRoundTripDiagnosticCode.guardHasArmPlotNumber)
+            .toList();
+        expect(g, hasLength(1));
+        expect(g.single.detail, contains('$guardPk'));
+      },
+    );
+
+    test('guardHasArmPlotNumber when guard has armPlotNumber set', () async {
+      final trialId =
+          await TrialRepository(db).createTrial(name: 'GH', workspaceType: 'efficacy');
+      final trtId = await TreatmentRepository(db).insertTreatment(
+        trialId: trialId,
+        code: '1',
+        name: 'T',
+      );
+      final guardPk = await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: 'G1-R',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 1,
+        isGuardRow: true,
+      );
+      await (db.update(db.plots)..where((p) => p.id.equals(guardPk))).write(
+        const PlotsCompanion(armPlotNumber: Value(999)),
+      );
+      final trial = await _armTrialRow(db, trialId);
+      final r = await makeUc().execute(trial: trial);
+      final g = r.diagnostics
+          .where((d) => d.code == ArmRoundTripDiagnosticCode.guardHasArmPlotNumber)
+          .toList();
+      expect(g, hasLength(1));
+      expect(g.single.severity, ArmRoundTripDiagnosticSeverity.warning);
+      expect(g.single.detail, contains('$guardPk'));
+    });
+
+    test('nonRecordedRatingsInShellSession ignores ratings on guard plots only',
+        () async {
+      final trialId =
+          await TrialRepository(db).createTrial(name: 'RG', workspaceType: 'efficacy');
+      final trtId = await TreatmentRepository(db).insertTreatment(
+        trialId: trialId,
+        code: '1',
+        name: 'T',
+      );
+      await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: '1',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 1,
+      );
+      final guardPk = await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: 'G1-L',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 2,
+        isGuardRow: true,
+      );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'X',
+              name: 'N',
+              category: 'pest',
+            ),
+          );
+      final legacyAsmId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: 'L',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              legacyAssessmentId: Value(legacyAsmId),
+              sortOrder: const Value(0),
+            ),
+          );
+      final sessId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S',
+              sessionDateLocal: '2026-01-01',
+            ),
+          );
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: trialId,
+              plotPk: guardPk,
+              assessmentId: legacyAsmId,
+              sessionId: sessId,
+              trialAssessmentId: Value(taId),
+              resultStatus: const Value('NOT_OBSERVED'),
+              isCurrent: const Value(true),
+            ),
+          );
+      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
+        TrialsCompanion(
+          isArmLinked: const Value(true),
+          armImportSessionId: Value(sessId),
+        ),
+      );
+      final trial =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
+      final r = await makeUc().execute(trial: trial);
+      expect(
+        r.diagnostics.any(
+          (d) =>
+              d.code ==
+              ArmRoundTripDiagnosticCode.nonRecordedRatingsInShellSession,
+        ),
+        false,
+      );
+    });
+
     test('missing and duplicate armImportColumnIndex', () async {
       final trialId =
           await TrialRepository(db).createTrial(name: 'A', workspaceType: 'efficacy');

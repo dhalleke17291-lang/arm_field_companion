@@ -479,6 +479,133 @@ void main() {
     });
 
     test(
+      'shell row maps to data plot only; guard with same plotId is not matched',
+      () async {
+        final trialRepo = TrialRepository(db);
+        final trialId =
+            await trialRepo.createTrial(name: 'GuardSkip', workspaceType: 'efficacy');
+        final trtId = await TreatmentRepository(db).insertTreatment(
+          trialId: trialId,
+          code: '1',
+          name: 'Check',
+        );
+        await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '101',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 1,
+          isGuardRow: true,
+        );
+        final dataPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '201',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 2,
+        );
+        final defId = await db.into(db.assessmentDefinitions).insert(
+              AssessmentDefinitionsCompanion.insert(
+                code: 'AVEFA',
+                name: 'A',
+                category: 'pest',
+                timingCode: const Value('1-Jul-26'),
+              ),
+            );
+        final legacyAsmId = await db.into(db.assessments).insert(
+              AssessmentsCompanion.insert(
+                trialId: trialId,
+                name: 'Legacy A',
+              ),
+            );
+        final taId = await db.into(db.trialAssessments).insert(
+              TrialAssessmentsCompanion.insert(
+                trialId: trialId,
+                assessmentDefinitionId: defId,
+                legacyAssessmentId: Value(legacyAsmId),
+                sortOrder: const Value(0),
+                pestCode: const Value('AVEFA'),
+              ),
+            );
+        final sessionId = await db.into(db.sessions).insert(
+              SessionsCompanion.insert(
+                trialId: trialId,
+                name: 'S1',
+                sessionDateLocal: '2026-01-01',
+              ),
+            );
+        await db.into(db.ratingRecords).insert(
+              RatingRecordsCompanion.insert(
+                trialId: trialId,
+                plotPk: dataPk,
+                assessmentId: legacyAsmId,
+                sessionId: sessionId,
+                trialAssessmentId: Value(taId),
+                resultStatus: const Value('RECORDED'),
+                numericValue: const Value(77.5),
+                isCurrent: const Value(true),
+              ),
+            );
+
+        await _pinArmExportAnchors(
+          db,
+          trialId: trialId,
+          plotPk: dataPk,
+          armPlotNumber: 101,
+          trialAssessmentId: taId,
+          sessionId: sessionId,
+        );
+
+        await _insertCompatibilityProfile(
+          db: db,
+          trialId: trialId,
+          exportConfidence: ImportConfidence.high,
+          columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+          assessmentTokens: [
+            {
+              'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+              'armCode': 'AVEFA',
+              'timingCode': '1-Jul-26',
+              'unit': '%',
+              'ratingDate': null,
+              'assessmentKey': 'k',
+            },
+          ],
+        );
+
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001'],
+          seNames: const ['AVEFA'],
+          ratingDates: const ['1-Jul-26'],
+        );
+
+        final trialRow =
+            await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+                .getSingle();
+        final findingCodes = <String>[];
+        final uc = makeUc(
+          pickShellPathOverride: () async => shellPath,
+          publishExportDiagnostics: (_, findings, __) {
+            findingCodes.addAll(findings.map((f) => f.code));
+          },
+        );
+        final r = await uc.execute(trial: trialRow);
+        expect(r.success, true);
+        expect(
+          findingCodes.contains('arm_round_trip_duplicate_arm_plot_number'),
+          false,
+        );
+        final path = r.filePath;
+        if (path == null) fail('expected file path');
+        final sheet = Excel.decodeBytes(await File(path).readAsBytes())
+            .sheets['Plot Data']!;
+        expect(_cellString(sheet, 48, 2), '77.5');
+      },
+    );
+
+    test(
       'NOT_OBSERVED rating exports empty shell cell; non-recorded diagnostic non-blocking',
       () async {
         final trialRepo = TrialRepository(db);

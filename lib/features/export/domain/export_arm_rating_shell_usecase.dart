@@ -25,6 +25,7 @@ import '../export_confidence_policy.dart';
 import '../export_trial_usecase.dart' show PublishTrialExportDiagnostics;
 import 'arm_rating_shell_cell_value.dart';
 import 'arm_rating_shell_export_block_policy.dart';
+import 'arm_shell_data_plots.dart';
 import 'arm_rating_shell_result.dart';
 import 'compute_arm_round_trip_diagnostics_usecase.dart';
 
@@ -130,6 +131,7 @@ class ExportArmRatingShellUseCase {
       _treatmentRepository.getTreatmentsForTrial(trial.id),
     ]);
     final plots = loaded[0] as List<Plot>;
+    final shellDataPlots = armShellDataPlots(plots);
     final assessments = loaded[1] as List<TrialAssessment>;
     // ignore: unused_local_variable
     final treatments = loaded[2] as List<Treatment>;
@@ -142,10 +144,10 @@ class ExportArmRatingShellUseCase {
     exportDiagnosticsBuffer.addAll(roundTripReport.toDiagnosticFindings());
 
     if (trial.isArmLinked &&
-        plots.isNotEmpty &&
-        plots.any((p) => p.armPlotNumber == null)) {
+        shellDataPlots.isNotEmpty &&
+        shellDataPlots.any((p) => p.armPlotNumber == null)) {
       debugPrint(
-        'ExportArmRatingShell: trial ${trial.id} has plots without armPlotNumber; '
+        'ExportArmRatingShell: trial ${trial.id} has data plots without armPlotNumber; '
         'shell plot matching may use plotId fallback.',
       );
     }
@@ -360,7 +362,7 @@ class ExportArmRatingShellUseCase {
     final positionalFallbackTrialAssessmentIds = <int>{};
     final ratingValues = <ArmRatingValue>[];
     for (final pr in shellImport.plotRows) {
-      final plot = _plotForShellPlotNumber(plots, pr.plotNumber);
+      final plot = _plotForShellPlotNumber(shellDataPlots, pr.plotNumber);
       if (plot == null) {
         debugPrint(
           'ExportArmRatingShell: no app plot for shell '
@@ -463,6 +465,9 @@ class ExportArmRatingShellUseCase {
 
   /// Prefer [Plot.armPlotNumber]. On duplicates, lowest [Plot.id] wins.
   /// Falls back to [Plot.plotId] int/string match (legacy).
+  ///
+  /// [plots] must be shell data plots only ([armShellDataPlots]); guard rows are
+  /// never matched to shell rows.
   Plot? _plotForShellPlotNumber(List<Plot> plots, int plotNumber) {
     final byArm = plots.where((p) => p.armPlotNumber == plotNumber).toList();
     if (byArm.length > 1) {

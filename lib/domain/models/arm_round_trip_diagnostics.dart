@@ -15,6 +15,9 @@ enum ArmRoundTripDiagnosticCode {
   shellSessionResolvedByHeuristic,
   nonRecordedRatingsInShellSession,
 
+  /// Guard row has [Plot.armPlotNumber] set (protocol misuse; shell ignores guards).
+  guardHasArmPlotNumber,
+
   /// Shell column was chosen by position; [TrialAssessment.armImportColumnIndex]
   /// and rating-type/unit identity did not resolve a unique column.
   fallbackAssessmentMatchUsed,
