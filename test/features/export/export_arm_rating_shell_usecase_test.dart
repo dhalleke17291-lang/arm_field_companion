@@ -479,6 +479,245 @@ void main() {
     });
 
     test(
+      'NOT_OBSERVED rating exports empty shell cell; non-recorded diagnostic non-blocking',
+      () async {
+        final trialRepo = TrialRepository(db);
+        final trialId =
+            await trialRepo.createTrial(name: 'NonRec', workspaceType: 'efficacy');
+        final trtId = await TreatmentRepository(db).insertTreatment(
+          trialId: trialId,
+          code: '1',
+          name: 'Check',
+        );
+        final plotPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '101',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 1,
+        );
+        final defId = await db.into(db.assessmentDefinitions).insert(
+              AssessmentDefinitionsCompanion.insert(
+                code: 'AVEFA',
+                name: 'A',
+                category: 'pest',
+                timingCode: const Value('1-Jul-26'),
+              ),
+            );
+        final legacyAsmId = await db.into(db.assessments).insert(
+              AssessmentsCompanion.insert(
+                trialId: trialId,
+                name: 'Legacy A',
+              ),
+            );
+        final taId = await db.into(db.trialAssessments).insert(
+              TrialAssessmentsCompanion.insert(
+                trialId: trialId,
+                assessmentDefinitionId: defId,
+                legacyAssessmentId: Value(legacyAsmId),
+                sortOrder: const Value(0),
+                pestCode: const Value('AVEFA'),
+              ),
+            );
+        final sessionId = await db.into(db.sessions).insert(
+              SessionsCompanion.insert(
+                trialId: trialId,
+                name: 'S1',
+                sessionDateLocal: '2026-01-01',
+              ),
+            );
+        await db.into(db.ratingRecords).insert(
+              RatingRecordsCompanion.insert(
+                trialId: trialId,
+                plotPk: plotPk,
+                assessmentId: legacyAsmId,
+                sessionId: sessionId,
+                trialAssessmentId: Value(taId),
+                resultStatus: const Value('NOT_OBSERVED'),
+                isCurrent: const Value(true),
+              ),
+            );
+
+        await _pinArmExportAnchors(
+          db,
+          trialId: trialId,
+          plotPk: plotPk,
+          armPlotNumber: 101,
+          trialAssessmentId: taId,
+          sessionId: sessionId,
+        );
+
+        await _insertCompatibilityProfile(
+          db: db,
+          trialId: trialId,
+          exportConfidence: ImportConfidence.high,
+          columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+          assessmentTokens: [
+            {
+              'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+              'armCode': 'AVEFA',
+              'timingCode': '1-Jul-26',
+              'unit': '%',
+              'ratingDate': null,
+              'assessmentKey': 'k',
+            },
+          ],
+        );
+
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001'],
+          seNames: const ['AVEFA'],
+          ratingDates: const ['1-Jul-26'],
+        );
+
+        final trialRow =
+            await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+                .getSingle();
+
+        final captured = <DiagnosticFinding>[];
+        final uc = makeUc(
+          pickShellPathOverride: () async => shellPath,
+          publishExportDiagnostics: (_, findings, __) {
+            captured
+              ..clear()
+              ..addAll(findings);
+          },
+        );
+        final r = await uc.execute(trial: trialRow);
+        expect(r.success, true);
+        final outPath = r.filePath;
+        expect(outPath, isNotNull);
+        final outSheet = Excel.decodeBytes(await File(outPath!).readAsBytes())
+            .sheets['Plot Data']!;
+        expect(_cellString(outSheet, 48, 2), '');
+
+        final nonRec = captured.where(
+          (f) =>
+              f.code ==
+              'arm_round_trip_non_recorded_ratings_in_shell_session',
+        );
+        expect(nonRec, isNotEmpty);
+        expect(nonRec.single.blocksExport, false);
+
+        expect(
+          captured.any((f) => f.code == 'arm_rating_shell_strict_structural_block'),
+          false,
+        );
+      },
+    );
+
+    test(
+      'TECHNICAL_ISSUE with text exports note into shell cell',
+      () async {
+        final trialRepo = TrialRepository(db);
+        final trialId =
+            await trialRepo.createTrial(name: 'TechTxt', workspaceType: 'efficacy');
+        final trtId = await TreatmentRepository(db).insertTreatment(
+          trialId: trialId,
+          code: '1',
+          name: 'Check',
+        );
+        final plotPk = await PlotRepository(db).insertPlot(
+          trialId: trialId,
+          plotId: '101',
+          rep: 1,
+          treatmentId: trtId,
+          plotSortIndex: 1,
+        );
+        final defId = await db.into(db.assessmentDefinitions).insert(
+              AssessmentDefinitionsCompanion.insert(
+                code: 'AVEFA',
+                name: 'A',
+                category: 'pest',
+                timingCode: const Value('1-Jul-26'),
+              ),
+            );
+        final legacyAsmId = await db.into(db.assessments).insert(
+              AssessmentsCompanion.insert(
+                trialId: trialId,
+                name: 'Legacy A',
+              ),
+            );
+        final taId = await db.into(db.trialAssessments).insert(
+              TrialAssessmentsCompanion.insert(
+                trialId: trialId,
+                assessmentDefinitionId: defId,
+                legacyAssessmentId: Value(legacyAsmId),
+                sortOrder: const Value(0),
+                pestCode: const Value('AVEFA'),
+              ),
+            );
+        final sessionId = await db.into(db.sessions).insert(
+              SessionsCompanion.insert(
+                trialId: trialId,
+                name: 'S1',
+                sessionDateLocal: '2026-01-01',
+              ),
+            );
+        await db.into(db.ratingRecords).insert(
+              RatingRecordsCompanion.insert(
+                trialId: trialId,
+                plotPk: plotPk,
+                assessmentId: legacyAsmId,
+                sessionId: sessionId,
+                trialAssessmentId: Value(taId),
+                resultStatus: const Value('TECHNICAL_ISSUE'),
+                textValue: const Value('probe failed'),
+                isCurrent: const Value(true),
+              ),
+            );
+
+        await _pinArmExportAnchors(
+          db,
+          trialId: trialId,
+          plotPk: plotPk,
+          armPlotNumber: 101,
+          trialAssessmentId: taId,
+          sessionId: sessionId,
+        );
+
+        await _insertCompatibilityProfile(
+          db: db,
+          trialId: trialId,
+          exportConfidence: ImportConfidence.high,
+          columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+          assessmentTokens: [
+            {
+              'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+              'armCode': 'AVEFA',
+              'timingCode': '1-Jul-26',
+              'unit': '%',
+              'ratingDate': null,
+              'assessmentKey': 'k',
+            },
+          ],
+        );
+
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001'],
+          seNames: const ['AVEFA'],
+          ratingDates: const ['1-Jul-26'],
+        );
+
+        final trialRow =
+            await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+                .getSingle();
+        final uc = makeUc(
+          pickShellPathOverride: () async => shellPath,
+        );
+        final r = await uc.execute(trial: trialRow);
+        expect(r.success, true);
+        final sheet = Excel.decodeBytes(await File(r.filePath!).readAsBytes())
+            .sheets['Plot Data']!;
+        expect(_cellString(sheet, 48, 2), 'probe failed');
+      },
+    );
+
+    test(
       'positional assessment column fallback emits arm_round_trip_fallback_assessment_match_used',
       () async {
         final trialRepo = TrialRepository(db);

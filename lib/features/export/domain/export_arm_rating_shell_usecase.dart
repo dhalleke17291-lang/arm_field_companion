@@ -23,6 +23,7 @@ import '../../ratings/rating_repository.dart';
 import '../../sessions/session_repository.dart';
 import '../export_confidence_policy.dart';
 import '../export_trial_usecase.dart' show PublishTrialExportDiagnostics;
+import 'arm_rating_shell_cell_value.dart';
 import 'arm_rating_shell_export_block_policy.dart';
 import 'arm_rating_shell_result.dart';
 import 'compute_arm_round_trip_diagnostics_usecase.dart';
@@ -391,7 +392,7 @@ class ExportArmRatingShellUseCase {
           assessmentId: legacyId,
           sessionId: sessionId,
         );
-        final valueStr = _ratingValueAsString(rating);
+        final valueStr = armRatingShellCellValueFromRating(rating);
         ratingValues.add(
           ArmRatingValue(
             plotNumber: pr.plotNumber,
@@ -491,16 +492,6 @@ class ExportArmRatingShellUseCase {
       return fallback.single;
     }
     return null;
-  }
-
-  String _ratingValueAsString(RatingRecord? rating) {
-    if (rating == null) return '';
-    if (rating.numericValue != null) {
-      return rating.numericValue!.toString();
-    }
-    final t = rating.textValue;
-    if (t != null && t.trim().isNotEmpty) return t;
-    return '';
   }
 
   /// Resolves shell column for a [TrialAssessment].
