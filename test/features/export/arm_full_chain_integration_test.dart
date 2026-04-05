@@ -45,7 +45,11 @@ ArmImportUseCase _makeArmImport(AppDatabase db) {
     SessionRepository(db),
     SaveRatingUseCase(
       RatingRepository(db),
-      RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+      RatingIntegrityGuard(
+        PlotRepository(db),
+        SessionRepository(db),
+        TreatmentRepository(db, AssignmentRepository(db)),
+      ),
     ),
     ArmCsvParser(),
     ArmImportSnapshotService(),
@@ -262,7 +266,11 @@ void main() {
 
       final saveUc = SaveRatingUseCase(
         ratingRepo,
-        RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+        RatingIntegrityGuard(
+          PlotRepository(db),
+          SessionRepository(db),
+          TreatmentRepository(db, AssignmentRepository(db)),
+        ),
       );
       final saveResult = await saveUc.execute(
         SaveRatingInput(

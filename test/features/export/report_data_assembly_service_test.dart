@@ -181,6 +181,13 @@ class MockTreatmentRepository implements TreatmentRepository {
       treatmentsForTrial.where((t) => t.id == id).firstOrNull;
 
   @override
+  Future<Treatment?> getTreatmentForTrial(int treatmentId, int trialId) async {
+    final t = await getTreatmentById(treatmentId);
+    if (t == null || t.trialId != trialId) return null;
+    return t;
+  }
+
+  @override
   Future<List<Treatment>> getDeletedTreatmentsForTrial(int trialId) async =>
       throw UnimplementedError();
 

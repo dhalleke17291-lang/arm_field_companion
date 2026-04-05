@@ -332,6 +332,7 @@ final updatePlotAssignmentUseCaseProvider =
   return UpdatePlotAssignmentUseCase(
     ref.watch(assignmentRepositoryProvider),
     ref.watch(sessionRepositoryProvider),
+    ref.watch(ratingIntegrityGuardProvider),
   );
 });
 
@@ -476,6 +477,7 @@ final ratingIntegrityGuardProvider = Provider<RatingIntegrityGuard>((ref) {
   return RatingIntegrityGuard(
     ref.watch(plotRepositoryProvider),
     ref.watch(sessionRepositoryProvider),
+    ref.watch(treatmentRepositoryProvider),
   );
 });
 
@@ -1015,7 +1017,10 @@ final latestImportEventForTrialProvider =
 // ===== Photos =====
 
 final savePhotoUseCaseProvider = Provider<SavePhotoUseCase>((ref) {
-  return SavePhotoUseCase(ref.watch(photoRepositoryProvider));
+  return SavePhotoUseCase(
+    ref.watch(photoRepositoryProvider),
+    ref.watch(ratingIntegrityGuardProvider),
+  );
 });
 
 /// Flags for a given plot in a session (for one-tap flag toggle on rating screen).

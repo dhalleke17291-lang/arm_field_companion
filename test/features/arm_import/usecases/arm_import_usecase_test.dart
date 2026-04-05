@@ -40,7 +40,11 @@ ArmImportUseCase _makeUseCase(
     SessionRepository(db),
     SaveRatingUseCase(
       RatingRepository(db),
-      RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+      RatingIntegrityGuard(
+        PlotRepository(db),
+        SessionRepository(db),
+        TreatmentRepository(db, AssignmentRepository(db)),
+      ),
     ),
     ArmCsvParser(),
     ArmImportSnapshotService(),
@@ -569,7 +573,11 @@ void main() {
       SessionRepository(db),
       SaveRatingUseCase(
         RatingRepository(db),
-        RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+        RatingIntegrityGuard(
+          PlotRepository(db),
+          SessionRepository(db),
+          TreatmentRepository(db, AssignmentRepository(db)),
+        ),
       ),
       ArmCsvParser(),
       ArmImportSnapshotService(),
@@ -608,7 +616,11 @@ void main() {
       SessionRepository(db),
       SaveRatingUseCase(
         RatingRepository(db),
-        RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+        RatingIntegrityGuard(
+          PlotRepository(db),
+          SessionRepository(db),
+          TreatmentRepository(db, AssignmentRepository(db)),
+        ),
       ),
       ArmCsvParser(),
       ArmImportSnapshotService(),
@@ -645,7 +657,11 @@ void main() {
       SessionRepository(db),
       SaveRatingUseCase(
         RatingRepository(db),
-        RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+        RatingIntegrityGuard(
+          PlotRepository(db),
+          SessionRepository(db),
+          TreatmentRepository(db, AssignmentRepository(db)),
+        ),
       ),
       ArmCsvParser(),
       ArmImportSnapshotService(),
@@ -841,7 +857,11 @@ void main() {
 
     final save = SaveRatingUseCase(
       RatingRepository(db),
-      RatingIntegrityGuard(PlotRepository(db), SessionRepository(db)),
+      RatingIntegrityGuard(
+        PlotRepository(db),
+        SessionRepository(db),
+        TreatmentRepository(db, AssignmentRepository(db)),
+      ),
     );
     final second = await save.execute(
       SaveRatingInput(

@@ -53,6 +53,14 @@ class TreatmentRepository {
         .getSingleOrNull();
   }
 
+  /// Active treatment [treatmentId] if it exists and belongs to [trialId]; otherwise null.
+  Future<Treatment?> getTreatmentForTrial(int treatmentId, int trialId) async {
+    final t = await getTreatmentById(treatmentId);
+    if (t == null) return null;
+    if (t.trialId != trialId) return null;
+    return t;
+  }
+
   /// Soft-deleted treatments for a trial (Recovery), newest deletion first.
   Future<List<Treatment>> getDeletedTreatmentsForTrial(int trialId) {
     return (_db.select(_db.treatments)

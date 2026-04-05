@@ -2,6 +2,8 @@ import '../../../core/database/app_database.dart';
 import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/trial_state.dart';
 import '../../../data/repositories/assignment_repository.dart';
+import '../../../domain/ratings/rating_integrity_exception.dart';
+import '../../../domain/ratings/rating_integrity_guard.dart';
 import '../../sessions/session_repository.dart';
 
 /// Updates plot treatment assignment(s) via Assignments table.
@@ -9,9 +11,13 @@ import '../../sessions/session_repository.dart';
 class UpdatePlotAssignmentUseCase {
   final AssignmentRepository _assignmentRepository;
   final SessionRepository _sessionRepository;
+  final AssignmentIntegrityChecks _assignmentIntegrity;
 
   UpdatePlotAssignmentUseCase(
-      this._assignmentRepository, this._sessionRepository);
+    this._assignmentRepository,
+    this._sessionRepository,
+    this._assignmentIntegrity,
+  );
 
   /// Update a single plot's treatment assignment (manual).
   /// Sets assignmentSource = manual, assignmentUpdatedAt = now.
@@ -31,6 +37,16 @@ class UpdatePlotAssignmentUseCase {
           getAssignmentsLockMessage(trial.status, hasSessionData));
     }
     try {
+      await _assignmentIntegrity.assertPlotBelongsToTrial(
+        plotPk: plotPk,
+        trialId: trial.id,
+      );
+      if (treatmentId != null) {
+        await _assignmentIntegrity.assertTreatmentBelongsToTrial(
+          treatmentId: treatmentId,
+          trialId: trial.id,
+        );
+      }
       await _assignmentRepository.upsert(
         trialId: trial.id,
         plotId: plotPk,
@@ -39,6 +55,8 @@ class UpdatePlotAssignmentUseCase {
         assignedAt: DateTime.now().toUtc(),
       );
       return UpdateAssignmentResult.success();
+    } on RatingIntegrityException catch (e) {
+      return UpdateAssignmentResult.failure(e.message);
     } on ProtocolEditBlockedException catch (e) {
       return UpdateAssignmentResult.failure(e.message);
     } catch (e) {
@@ -65,6 +83,21 @@ class UpdatePlotAssignmentUseCase {
       return UpdateAssignmentResult.success();
     }
     try {
+      for (final plotPk in plotPkToTreatmentId.keys) {
+        await _assignmentIntegrity.assertPlotBelongsToTrial(
+          plotPk: plotPk,
+          trialId: trial.id,
+        );
+      }
+      final treatmentIds = plotPkToTreatmentId.values
+          .whereType<int>()
+          .toSet();
+      for (final tid in treatmentIds) {
+        await _assignmentIntegrity.assertTreatmentBelongsToTrial(
+          treatmentId: tid,
+          trialId: trial.id,
+        );
+      }
       await _assignmentRepository.upsertBulk(
         trialId: trial.id,
         plotPkToTreatmentId: plotPkToTreatmentId,
@@ -72,6 +105,8 @@ class UpdatePlotAssignmentUseCase {
         assignedAt: DateTime.now().toUtc(),
       );
       return UpdateAssignmentResult.success();
+    } on RatingIntegrityException catch (e) {
+      return UpdateAssignmentResult.failure(e.message);
     } on ProtocolEditBlockedException catch (e) {
       return UpdateAssignmentResult.failure(e.message);
     } catch (e) {

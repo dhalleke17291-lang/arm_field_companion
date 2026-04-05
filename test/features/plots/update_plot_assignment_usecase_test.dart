@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/trial_state.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_exception.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
 import 'package:arm_field_companion/features/plots/usecases/update_plot_assignment_usecase.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
 
@@ -147,6 +149,20 @@ class MockSessionRepository implements SessionRepository {
   Future<int?> resolveSessionIdForRatingShell(Trial trial) async => null;
 }
 
+class MockAssignmentIntegrity implements AssignmentIntegrityChecks {
+  @override
+  Future<void> assertPlotBelongsToTrial({
+    required int plotPk,
+    required int trialId,
+  }) async {}
+
+  @override
+  Future<void> assertTreatmentBelongsToTrial({
+    required int treatmentId,
+    required int trialId,
+  }) async {}
+}
+
 Trial _trial({String status = 'ACTIVE'}) => Trial(
       id: 1,
       name: 'Test Trial',
@@ -183,7 +199,11 @@ void main() {
   setUp(() {
     mockRepo = MockAssignmentRepository();
     mockSessionRepo = MockSessionRepository();
-    useCase = UpdatePlotAssignmentUseCase(mockRepo, mockSessionRepo);
+    useCase = UpdatePlotAssignmentUseCase(
+      mockRepo,
+      mockSessionRepo,
+      MockAssignmentIntegrity(),
+    );
   });
 
   group('UpdatePlotAssignmentUseCase — updateOne', () {
@@ -252,6 +272,48 @@ void main() {
       expect(result.errorMessage, contains('Update failed'));
     });
 
+    test('INTEGRITY: plot check failure returns message and skips upsert',
+        () async {
+      final integrity = _ThrowingAssignmentIntegrity(
+        plotMessage: 'Plot wrong trial.',
+        plotCode: 'plot_wrong_trial',
+      );
+      final uc = UpdatePlotAssignmentUseCase(
+        mockRepo,
+        mockSessionRepo,
+        integrity,
+      );
+      final result = await uc.updateOne(
+        trial: _trial(),
+        plotPk: 10,
+        treatmentId: 5,
+      );
+      expect(result.success, false);
+      expect(result.errorMessage, 'Plot wrong trial.');
+      expect(mockRepo.upserted, isEmpty);
+    });
+
+    test('INTEGRITY: treatment check failure returns message and skips upsert',
+        () async {
+      final integrity = _ThrowingAssignmentIntegrity(
+        treatmentMessage: 'Treatment invalid.',
+        treatmentCode: 'treatment_not_found_wrong_trial_or_deleted',
+      );
+      final uc = UpdatePlotAssignmentUseCase(
+        mockRepo,
+        mockSessionRepo,
+        integrity,
+      );
+      final result = await uc.updateOne(
+        trial: _trial(),
+        plotPk: 10,
+        treatmentId: 5,
+      );
+      expect(result.success, false);
+      expect(result.errorMessage, 'Treatment invalid.');
+      expect(mockRepo.upserted, isEmpty);
+    });
+
     test('LOCK: rejects when trial has session data (assignments fixed)', () async {
       mockSessionRepo.trialHasSessionData = true;
       final result = await useCase.updateOne(
@@ -312,5 +374,93 @@ void main() {
         expect(entry['assignmentSource'], 'manual');
       }
     });
+
+    test('INTEGRITY: bulk fails entirely if any plot check fails', () async {
+      final integrity = _ThrowingAssignmentIntegrity(
+        plotMessage: 'Plot missing.',
+        plotCode: 'plot_not_found_or_deleted',
+        failPlotPk: 2,
+        trialId: 1,
+      );
+      final uc = UpdatePlotAssignmentUseCase(
+        mockRepo,
+        mockSessionRepo,
+        integrity,
+      );
+      final result = await uc.updateBulk(
+        trial: _trial(),
+        plotPkToTreatmentId: {1: 10, 2: 20, 3: 20},
+      );
+      expect(result.success, false);
+      expect(result.errorMessage, 'Plot missing.');
+      expect(mockRepo.upserted, isEmpty);
+    });
+
+    test('INTEGRITY: bulk fails entirely if any treatment check fails',
+        () async {
+      final integrity = _ThrowingAssignmentIntegrity(
+        treatmentMessage: 'Bad treatment.',
+        treatmentCode: 'treatment_not_found_wrong_trial_or_deleted',
+        failTreatmentId: 20,
+        trialId: 1,
+      );
+      final uc = UpdatePlotAssignmentUseCase(
+        mockRepo,
+        mockSessionRepo,
+        integrity,
+      );
+      final result = await uc.updateBulk(
+        trial: _trial(),
+        plotPkToTreatmentId: {1: 10, 2: 20, 3: 20},
+      );
+      expect(result.success, false);
+      expect(result.errorMessage, 'Bad treatment.');
+      expect(mockRepo.upserted, isEmpty);
+    });
   });
+}
+
+class _ThrowingAssignmentIntegrity implements AssignmentIntegrityChecks {
+  _ThrowingAssignmentIntegrity({
+    this.plotMessage,
+    this.plotCode,
+    this.treatmentMessage,
+    this.treatmentCode,
+    this.failPlotPk,
+    this.failTreatmentId,
+    this.trialId,
+  });
+
+  final String? plotMessage;
+  final String? plotCode;
+  final String? treatmentMessage;
+  final String? treatmentCode;
+  final int? failPlotPk;
+  final int? failTreatmentId;
+  final int? trialId;
+
+  @override
+  Future<void> assertPlotBelongsToTrial({
+    required int plotPk,
+    required int trialId,
+  }) async {
+    if (plotMessage != null &&
+        (failPlotPk == null || failPlotPk == plotPk) &&
+        (this.trialId == null || this.trialId == trialId)) {
+      throw RatingIntegrityException(plotMessage!, code: plotCode ?? 'test');
+    }
+  }
+
+  @override
+  Future<void> assertTreatmentBelongsToTrial({
+    required int treatmentId,
+    required int trialId,
+  }) async {
+    if (treatmentMessage != null &&
+        (failTreatmentId == null || failTreatmentId == treatmentId) &&
+        (this.trialId == null || this.trialId == trialId)) {
+      throw RatingIntegrityException(treatmentMessage!,
+          code: treatmentCode ?? 'test');
+    }
+  }
 }
