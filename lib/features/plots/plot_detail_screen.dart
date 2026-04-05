@@ -9,20 +9,9 @@ import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../../domain/ratings/save_rating_input.dart';
 import '../ratings/rating_scale_map.dart';
 import '../ratings/usecases/amend_plot_rating_usecase.dart';
+import 'plot_detail_form_controller.dart';
 import 'plot_notes_dialog.dart';
 import '../../core/widgets/app_standard_widgets.dart';
-
-const List<String> _plotDirectionOptions = [
-  'North',
-  'South',
-  'East',
-  'West',
-  'NE',
-  'NW',
-  'SE',
-  'SW',
-  'Other',
-];
 
 Future<void> _confirmAndSoftDeletePlot(
   BuildContext context,
@@ -818,6 +807,8 @@ class _PlotDetailsForm extends ConsumerStatefulWidget {
 }
 
 class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
+  final PlotDetailFormController _formController = PlotDetailFormController();
+
   late TextEditingController _plotLengthController;
   late TextEditingController _plotWidthController;
   late TextEditingController _plotAreaController;
@@ -833,6 +824,7 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
   bool _saving = false;
   bool _isGuardRow = false;
   bool _guardToggleBusy = false;
+  bool _controllersReady = false;
 
   @override
   void initState() {
@@ -852,74 +844,83 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
   }
 
   void _syncFromPlot(Plot plot) {
-    _plotLengthController =
-        TextEditingController(text: plot.plotLengthM?.toString() ?? '');
-    _plotWidthController =
-        TextEditingController(text: plot.plotWidthM?.toString() ?? '');
-    _plotAreaController =
-        TextEditingController(text: plot.plotAreaM2?.toString() ?? '');
-    _harvestLengthController =
-        TextEditingController(text: plot.harvestLengthM?.toString() ?? '');
-    _harvestWidthController =
-        TextEditingController(text: plot.harvestWidthM?.toString() ?? '');
-    _harvestAreaController =
-        TextEditingController(text: plot.harvestAreaM2?.toString() ?? '');
-    _directionOtherController =
-        TextEditingController(text: plot.plotDirection ?? '');
-    _soilSeriesController = TextEditingController(text: plot.soilSeries ?? '');
-    _plotNotesController = TextEditingController(text: plot.plotNotes ?? '');
-    final dir = plot.plotDirection?.trim() ?? '';
-    if (dir.isEmpty) {
-      _directionDropdown = null;
-    } else if (_plotDirectionOptions.contains(dir)) {
-      _directionDropdown = dir;
-      _directionOtherController.text = '';
-    } else {
-      _directionDropdown = 'Other';
-      _directionOtherController.text = dir;
+    final draft = _formController.fromPlot(plot);
+    if (_controllersReady) {
+      _plotLengthController.dispose();
+      _plotWidthController.dispose();
+      _plotAreaController.dispose();
+      _harvestLengthController.dispose();
+      _harvestWidthController.dispose();
+      _harvestAreaController.dispose();
+      _directionOtherController.dispose();
+      _soilSeriesController.dispose();
+      _plotNotesController.dispose();
     }
-    _plotAreaOverride = plot.plotAreaM2 != null &&
-        plot.plotLengthM != null &&
-        plot.plotWidthM != null &&
-        (plot.plotAreaM2! - (plot.plotLengthM! * plot.plotWidthM!)).abs() >
-            0.001;
-    _harvestAreaOverride = plot.harvestAreaM2 != null &&
-        plot.harvestLengthM != null &&
-        plot.harvestWidthM != null &&
-        (plot.harvestAreaM2! - (plot.harvestLengthM! * plot.harvestWidthM!))
-                .abs() >
-            0.001;
-    _isGuardRow = plot.isGuardRow;
+    _plotLengthController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.plotLength));
+    _plotWidthController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.plotWidth));
+    _plotAreaController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.plotArea));
+    _harvestLengthController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.harvestLength));
+    _harvestWidthController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.harvestWidth));
+    _harvestAreaController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.harvestArea));
+    _directionOtherController =
+        TextEditingController(text: draft.directionOtherText);
+    _soilSeriesController = TextEditingController(text: draft.soilSeries);
+    _plotNotesController = TextEditingController(text: draft.plotNotes);
+    _directionDropdown = draft.direction;
+    _plotAreaOverride = draft.plotAreaOverride;
+    _harvestAreaOverride = draft.harvestAreaOverride;
+    _isGuardRow = draft.isGuardRow;
+    _controllersReady = true;
   }
 
   @override
   void dispose() {
-    _plotLengthController.dispose();
-    _plotWidthController.dispose();
-    _plotAreaController.dispose();
-    _harvestLengthController.dispose();
-    _harvestWidthController.dispose();
-    _harvestAreaController.dispose();
-    _directionOtherController.dispose();
-    _soilSeriesController.dispose();
-    _plotNotesController.dispose();
+    if (_controllersReady) {
+      _plotLengthController.dispose();
+      _plotWidthController.dispose();
+      _plotAreaController.dispose();
+      _harvestLengthController.dispose();
+      _harvestWidthController.dispose();
+      _harvestAreaController.dispose();
+      _directionOtherController.dispose();
+      _soilSeriesController.dispose();
+      _plotNotesController.dispose();
+    }
     super.dispose();
-  }
-
-  double? _parseDouble(TextEditingController c) {
-    final s = c.text.trim();
-    if (s.isEmpty) return null;
-    return double.tryParse(s);
   }
 
   int _dimensionsFilledCount() {
     int n = 0;
-    if (_parseDouble(_plotLengthController) != null) n++;
-    if (_parseDouble(_plotWidthController) != null) n++;
-    if (_parseDouble(_plotAreaController) != null || _plotAreaOverride) n++;
-    if (_parseDouble(_harvestLengthController) != null) n++;
-    if (_parseDouble(_harvestWidthController) != null) n++;
-    if (_parseDouble(_harvestAreaController) != null || _harvestAreaOverride) {
+    if (PlotDetailFormController.parseDouble(_plotLengthController.text) !=
+        null) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_plotWidthController.text) !=
+        null) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_plotAreaController.text) !=
+            null ||
+        _plotAreaOverride) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_harvestLengthController.text) !=
+        null) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_harvestWidthController.text) !=
+        null) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_harvestAreaController.text) !=
+            null ||
+        _harvestAreaOverride) {
       n++;
     }
     if (_directionDropdown != null && _directionDropdown!.isNotEmpty) n++;
@@ -940,42 +941,42 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
-      final plotLen = _parseDouble(_plotLengthController);
-      final plotWid = _parseDouble(_plotWidthController);
-      final harvestLen = _parseDouble(_harvestLengthController);
-      final harvestWid = _parseDouble(_harvestWidthController);
-      double? plotArea = _plotAreaOverride
-          ? _parseDouble(_plotAreaController)
-          : (plotLen != null && plotWid != null ? plotLen * plotWid : null);
-      double? harvestArea = _harvestAreaOverride
-          ? _parseDouble(_harvestAreaController)
-          : (harvestLen != null && harvestWid != null
-              ? harvestLen * harvestWid
-              : null);
-      String? direction;
-      if (_directionDropdown == 'Other') {
-        direction = _directionOtherController.text.trim().isEmpty
-            ? null
-            : _directionOtherController.text.trim();
-      } else if (_directionDropdown != null && _directionDropdown!.isNotEmpty) {
-        direction = _directionDropdown;
+      final draft = PlotFormDraft(
+        plotLength:
+            PlotDetailFormController.parseDouble(_plotLengthController.text),
+        plotWidth:
+            PlotDetailFormController.parseDouble(_plotWidthController.text),
+        plotArea:
+            PlotDetailFormController.parseDouble(_plotAreaController.text),
+        harvestLength:
+            PlotDetailFormController.parseDouble(_harvestLengthController.text),
+        harvestWidth:
+            PlotDetailFormController.parseDouble(_harvestWidthController.text),
+        harvestArea:
+            PlotDetailFormController.parseDouble(_harvestAreaController.text),
+        plotAreaOverride: _plotAreaOverride,
+        harvestAreaOverride: _harvestAreaOverride,
+        direction: _directionDropdown,
+        isDirectionOther: _directionDropdown == 'Other',
+        directionOtherText: _directionOtherController.text,
+        soilSeries: _soilSeriesController.text,
+        plotNotes: _plotNotesController.text,
+        isGuardRow: _isGuardRow,
+      );
+      final payload = _formController.buildUpdatePayload(draft);
+      final result = await ref
+          .read(updatePlotDetailsUseCaseProvider)
+          .execute(widget.plot.id, payload);
+      if (!result.isSuccess) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.errorMessage ?? 'Save failed'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        return;
       }
-      await ref.read(plotRepositoryProvider).updatePlotDetails(
-            widget.plot.id,
-            plotLengthM: plotLen,
-            plotWidthM: plotWid,
-            plotAreaM2: plotArea,
-            harvestLengthM: harvestLen,
-            harvestWidthM: harvestWid,
-            harvestAreaM2: harvestArea,
-            plotDirection: direction,
-            soilSeries: _soilSeriesController.text.trim().isEmpty
-                ? null
-                : _soilSeriesController.text.trim(),
-            plotNotes: _plotNotesController.text.trim().isEmpty
-                ? null
-                : _plotNotesController.text.trim(),
-          );
       ref.invalidate(plotsForTrialProvider(widget.trial.id));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -995,10 +996,14 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
 
   @override
   Widget build(BuildContext context) {
-    final plotLen = _parseDouble(_plotLengthController);
-    final plotWid = _parseDouble(_plotWidthController);
-    final harvestLen = _parseDouble(_harvestLengthController);
-    final harvestWid = _parseDouble(_harvestWidthController);
+    final plotLen =
+        PlotDetailFormController.parseDouble(_plotLengthController.text);
+    final plotWid =
+        PlotDetailFormController.parseDouble(_plotWidthController.text);
+    final harvestLen =
+        PlotDetailFormController.parseDouble(_harvestLengthController.text);
+    final harvestWid =
+        PlotDetailFormController.parseDouble(_harvestWidthController.text);
     final calculatedPlotArea =
         (plotLen != null && plotWid != null) ? plotLen * plotWid : null;
     final calculatedHarvestArea = (harvestLen != null && harvestWid != null)
@@ -1032,9 +1037,22 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
                     _guardToggleBusy = true;
                   });
                   try {
-                    await ref
-                        .read(plotRepositoryProvider)
-                        .updatePlotGuardRow(widget.plot.id, v);
+                    final result = await ref
+                        .read(updatePlotGuardRowUseCaseProvider)
+                        .execute(widget.plot.id, v);
+                    if (!result.isSuccess) {
+                      if (!context.mounted) return;
+                      setState(() => _isGuardRow = !v);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            result.errorMessage ?? 'Update failed',
+                          ),
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      );
+                      return;
+                    }
                     ref.invalidate(plotsForTrialProvider(widget.trial.id));
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1227,7 +1245,7 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
               ),
               items: [
                 const DropdownMenuItem<String?>(value: null, child: Text('—')),
-                ..._plotDirectionOptions.map(
+                ...kPlotDirectionOptions.map(
                     (s) => DropdownMenuItem<String?>(value: s, child: Text(s))),
               ],
               onChanged: (v) => setState(() => _directionDropdown = v),

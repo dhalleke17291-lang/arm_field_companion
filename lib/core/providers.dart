@@ -17,6 +17,7 @@ import 'session_state.dart';
 import 'trial_state.dart';
 import '../features/trials/trial_repository.dart';
 import '../features/plots/plot_repository.dart';
+import '../features/plots/usecases/update_plot_details_usecase.dart';
 import '../features/plots/usecases/generate_rep_guard_plots_usecase.dart';
 import '../features/plots/usecases/update_plot_assignment_usecase.dart';
 import '../features/protocol_import/protocol_import_usecase.dart';
@@ -95,6 +96,16 @@ final trialRepositoryProvider = Provider<TrialRepository>((ref) {
 
 final plotRepositoryProvider = Provider<PlotRepository>((ref) {
   return PlotRepository(ref.watch(databaseProvider));
+});
+
+final updatePlotDetailsUseCaseProvider =
+    Provider<UpdatePlotDetailsUseCase>((ref) {
+  return UpdatePlotDetailsUseCase(ref.watch(plotRepositoryProvider));
+});
+
+final updatePlotGuardRowUseCaseProvider =
+    Provider<UpdatePlotGuardRowUseCase>((ref) {
+  return UpdatePlotGuardRowUseCase(ref.watch(plotRepositoryProvider));
 });
 
 final generateRepGuardPlotsUseCaseProvider =
