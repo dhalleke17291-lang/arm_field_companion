@@ -90,15 +90,14 @@ class _PlotContextCard extends StatelessWidget {
   }
 }
 
-/// Sliver list of rating history tiles (no provider access).
-class _PlotRatingHistoryList extends StatelessWidget {
+/// Sliver list of rating history tiles ([latestCorrectionForRatingProvider]).
+class _PlotRatingHistoryList extends ConsumerWidget {
   const _PlotRatingHistoryList({
     required this.ratings,
     required this.sessions,
     required this.assessments,
     required this.trial,
     required this.plot,
-    required this.onAmendmentTap,
     required this.onEditRatingTap,
     required this.onHistoryTap,
   });
@@ -109,13 +108,11 @@ class _PlotRatingHistoryList extends StatelessWidget {
   final Trial trial;
   final Plot plot;
   final void Function(RatingRecord rating, Assessment? assessment)
-      onAmendmentTap;
-  final void Function(RatingRecord rating, Assessment? assessment)
       onEditRatingTap;
   final void Function(RatingRecord rating, Assessment? assessment) onHistoryTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       sliver: SliverList(
@@ -127,6 +124,14 @@ class _PlotRatingHistoryList extends StatelessWidget {
             final assessment = assessments
                 .where((a) => a.id == rating.assessmentId)
                 .firstOrNull;
+            final correctionAsync =
+                ref.watch(latestCorrectionForRatingProvider(rating.id));
+            final hasCorrection = correctionAsync.maybeWhen(
+              data: (c) => c != null,
+              orElse: () => false,
+            );
+            final showEditedChip =
+                rating.previousId != null || hasCorrection;
             return Card(
               child: ListTile(
                 leading: Row(
@@ -170,10 +175,10 @@ class _PlotRatingHistoryList extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(session?.name ?? 'Unknown session'),
-                    if (rating.amended) ...[
+                    if (showEditedChip) ...[
                       const SizedBox(height: 4),
                       GestureDetector(
-                        onTap: () => onAmendmentTap(rating, assessment),
+                        onTap: () => onHistoryTap(rating, assessment),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
@@ -184,7 +189,7 @@ class _PlotRatingHistoryList extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
-                            'Amended',
+                            'Edited',
                             style: TextStyle(
                               fontSize: 10,
                               color: Colors.orange,
@@ -560,9 +565,6 @@ class PlotDetailScreen extends ConsumerWidget {
                         assessments: assessments,
                         trial: trial,
                         plot: plot,
-                        onAmendmentTap: (rating, assessment) =>
-                            _showAmendmentInfoSheet(
-                                context, ref, rating, assessment),
                         onEditRatingTap: (rating, assessment) =>
                             _showEditRatingSheet(
                                 context, ref, rating, assessment, trial, plot),
@@ -589,71 +591,6 @@ class PlotDetailScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-void _showAmendmentInfoSheet(
-  BuildContext context,
-  WidgetRef ref,
-  RatingRecord rating,
-  Assessment? assessment,
-) {
-  showModalBottomSheet(
-    context: context,
-    builder: (ctx) => Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Amendment details',
-            style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 16),
-          _infoRow(
-              ctx,
-              'Original value',
-              rating.originalValue ??
-                  (rating.numericValue?.toString() ?? rating.textValue ?? '—')),
-          _infoRow(ctx, 'Current value',
-              rating.numericValue?.toString() ?? rating.textValue ?? '—'),
-          _infoRow(
-              ctx,
-              'Amendment reason',
-              rating.amendmentReason?.isNotEmpty == true
-                  ? rating.amendmentReason!
-                  : 'No reason recorded'),
-          _infoRow(ctx, 'Amended by', rating.amendedBy ?? '—'),
-          _infoRow(
-              ctx,
-              'Amended at',
-              rating.amendedAt != null
-                  ? rating.amendedAt!.toIso8601String()
-                  : '—'),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget _infoRow(BuildContext context, String label, String value) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-            width: 120,
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant))),
-        Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
-      ],
-    ),
-  );
 }
 
 ({double min, double max}) _editRatingNumericBounds(

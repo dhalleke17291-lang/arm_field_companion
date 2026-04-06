@@ -7,6 +7,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../ratings/domain/get_edited_ratings_usecase.dart';
+import '../ratings/rating_lineage_sheet.dart';
 import '../../shared/widgets/app_card.dart';
 
 class EditedItemsScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,9 @@ class EditedItemsScreen extends ConsumerStatefulWidget {
 }
 
 class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
+  /// Non-correction edits: summary only; opens [showRatingLineageBottomSheet].
+  static const _kEditedHistoryLine = 'Edited — tap for full history';
+
   Future<List<_EditedItemWithDiff>>? _future;
 
   Future<List<_EditedItemWithDiff>> _ensureFuture() {
@@ -42,14 +46,8 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
         if (c != null) {
           diffLine = _correctionDiffLine(c);
         }
-      } else {
-        diffLine = _amendmentDiffLine(item.rating);
-        if (diffLine == null && item.rating.previousId != null) {
-          final prev = await repo.getRatingById(item.rating.previousId!);
-          if (prev != null) {
-            diffLine = _chainDiffLine(prev, item.rating);
-          }
-        }
+      } else if (item.rating.previousId != null || item.rating.amended) {
+        diffLine = _kEditedHistoryLine;
       }
       out.add(_EditedItemWithDiff(item, diffLine));
     }
@@ -90,42 +88,6 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
       }
     }
 
-    return null;
-  }
-
-  /// originalValue → current row only; no corrections, chain, or status inference.
-  static String? _amendmentDiffLine(RatingRecord r) {
-    if (!r.amended) return null;
-    final old = r.originalValue?.trim() ?? '';
-    if (old.isEmpty) return null;
-    final now = r.numericValue != null
-        ? r.numericValue!.toString()
-        : ((r.textValue != null && r.textValue!.trim().isNotEmpty)
-            ? r.textValue!.trim()
-            : '—');
-    if (old == now) return null;
-    return 'Was $old → Now $now';
-  }
-
-  /// One hop: immediate previous row vs current only.
-  static String? _chainDiffLine(RatingRecord prev, RatingRecord curr) {
-    if (prev.resultStatus != curr.resultStatus) {
-      return 'Status: ${prev.resultStatus} → ${curr.resultStatus}';
-    }
-    final on = prev.numericValue;
-    final nn = curr.numericValue;
-    if (on != null || nn != null) {
-      final o = on?.toString() ?? '—';
-      final n = nn?.toString() ?? '—';
-      if (o != n) return 'Was $o → Now $n';
-    }
-    final ot = prev.textValue?.trim() ?? '';
-    final nt = curr.textValue?.trim() ?? '';
-    if (ot.isNotEmpty || nt.isNotEmpty) {
-      if (ot != nt) {
-        return 'Was ${ot.isEmpty ? '—' : ot} → Now ${nt.isEmpty ? '—' : nt}';
-      }
-    }
     return null;
   }
 
@@ -238,17 +200,44 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
                     ),
                     if (row.diffLine != null) ...[
                       const SizedBox(height: 6),
-                      Text(
-                        row.diffLine!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          height: 1.25,
-                          color: AppDesignTokens.primaryText,
-                        ),
-                      ),
+                      row.diffLine == _kEditedHistoryLine
+                          ? GestureDetector(
+                              onTap: () => showRatingLineageBottomSheet(
+                                context: context,
+                                ref: ref,
+                                trialId: r.trialId,
+                                plotPk: r.plotPk,
+                                assessmentId: r.assessmentId,
+                                sessionId: r.sessionId,
+                                assessmentName:
+                                    item.assessmentLabel ?? 'Assessment',
+                                plotLabel: item.plotLabel,
+                              ),
+                              child: Text(
+                                row.diffLine!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.25,
+                                  color: AppDesignTokens.primary,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppDesignTokens.primary,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              row.diffLine!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                height: 1.25,
+                                color: AppDesignTokens.primaryText,
+                              ),
+                            ),
                     ],
                     if (r.amendmentReason != null &&
                         r.amendmentReason!.trim().isNotEmpty) ...[
@@ -279,6 +268,6 @@ class _EditedItemWithDiff {
   const _EditedItemWithDiff(this.item, this.diffLine);
 
   final EditedRatingListItem item;
-  /// Correction, else amendment, else one-hop chain diff.
+  /// Correction diff text, or the tappable “Edited — tap for full history” line.
   final String? diffLine;
 }
