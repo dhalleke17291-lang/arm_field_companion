@@ -791,12 +791,14 @@ class CurrentRatingParams {
   final int plotPk;
   final int assessmentId;
   final int sessionId;
+  final int? subUnitId;
 
   const CurrentRatingParams({
     required this.trialId,
     required this.plotPk,
     required this.assessmentId,
     required this.sessionId,
+    this.subUnitId,
   });
 
   @override
@@ -805,10 +807,12 @@ class CurrentRatingParams {
       other.trialId == trialId &&
       other.plotPk == plotPk &&
       other.assessmentId == assessmentId &&
-      other.sessionId == sessionId;
+      other.sessionId == sessionId &&
+      other.subUnitId == subUnitId;
 
   @override
-  int get hashCode => Object.hash(trialId, plotPk, assessmentId, sessionId);
+  int get hashCode =>
+      Object.hash(trialId, plotPk, assessmentId, sessionId, subUnitId);
 }
 
 final currentRatingProvider =
@@ -818,6 +822,7 @@ final currentRatingProvider =
         plotPk: params.plotPk,
         assessmentId: params.assessmentId,
         sessionId: params.sessionId,
+        subUnitId: params.subUnitId,
       );
 });
 

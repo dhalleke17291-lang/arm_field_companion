@@ -143,6 +143,48 @@ class IntegrityCheckRepository {
       ));
     }
 
+    // Multiple is_current rows for the same logical key (trial, plot, assessment, session, sub-unit).
+    final duplicateCurrentRows = await _db
+        .customSelect(
+          '''
+SELECT trial_id, plot_pk, assessment_id, session_id,
+       COALESCE(sub_unit_id, -1) AS sub_unit_key,
+       COUNT(*) AS cnt
+FROM rating_records
+WHERE is_current = 1 AND is_deleted = 0
+GROUP BY trial_id, plot_pk, assessment_id, session_id, COALESCE(sub_unit_id, -1)
+HAVING COUNT(*) > 1
+''',
+          readsFrom: {_db.ratingRecords},
+        )
+        .get();
+    if (duplicateCurrentRows.isNotEmpty) {
+      final plotPks = duplicateCurrentRows
+          .map((row) => row.read<int>('plot_pk'))
+          .toSet()
+          .toList()
+        ..sort();
+      final detail = StringBuffer()
+        ..write(
+          'Duplicate current rating rows for the same plot/assessment/session/sub-unit key. ',
+        )
+        ..write('Affected plot_pk values: ${plotPks.join(", ")}. ');
+      for (final row in duplicateCurrentRows) {
+        detail.write(
+          '[trial=${row.read<int>("trial_id")} plot_pk=${row.read<int>("plot_pk")} '
+          'assessment=${row.read<int>("assessment_id")} session=${row.read<int>("session_id")} '
+          'sub_unit_key=${row.read<int>("sub_unit_key")} count=${row.read<int>("cnt")}] ',
+        );
+      }
+      issues.add(IntegrityIssue(
+        code: 'duplicate_current_ratings',
+        summary: 'Duplicate current rating rows',
+        count: duplicateCurrentRows.length,
+        detail: detail.toString().trimRight(),
+        severity: IntegritySeverity.error,
+      ));
+    }
+
     return issues;
   }
 }

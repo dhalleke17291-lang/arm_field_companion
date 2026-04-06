@@ -19,12 +19,18 @@ class MockRatingRepository implements RatingRepository {
     required int sessionId,
     int? subUnitId,
   }) async {
-    return _records.where((r) =>
-        r.trialId == trialId &&
-        r.plotPk == plotPk &&
-        r.assessmentId == assessmentId &&
-        r.sessionId == sessionId &&
-        r.isCurrent).firstOrNull;
+    return _records.where((r) {
+      final subOk = subUnitId == null
+          ? r.subUnitId == null
+          : r.subUnitId == subUnitId;
+      return r.trialId == trialId &&
+          r.plotPk == plotPk &&
+          r.assessmentId == assessmentId &&
+          r.sessionId == sessionId &&
+          r.isCurrent &&
+          !r.isDeleted &&
+          subOk;
+    }).firstOrNull;
   }
 
   @override
@@ -33,6 +39,7 @@ class MockRatingRepository implements RatingRepository {
     required int plotPk,
     required int assessmentId,
     required int sessionId,
+    int? subUnitId,
   }) => Stream.value(null);
 
   @override
@@ -61,11 +68,15 @@ class MockRatingRepository implements RatingRepository {
     }
 
     for (int i = 0; i < _records.length; i++) {
-      if (_records[i].trialId == trialId &&
-          _records[i].plotPk == plotPk &&
-          _records[i].assessmentId == assessmentId &&
-          _records[i].sessionId == sessionId) {
-        _records[i] = _records[i].copyWith(isCurrent: false);
+      final r = _records[i];
+      final subOk =
+          subUnitId == null ? r.subUnitId == null : r.subUnitId == subUnitId;
+      if (r.trialId == trialId &&
+          r.plotPk == plotPk &&
+          r.assessmentId == assessmentId &&
+          r.sessionId == sessionId &&
+          subOk) {
+        _records[i] = r.copyWith(isCurrent: false);
       }
     }
 

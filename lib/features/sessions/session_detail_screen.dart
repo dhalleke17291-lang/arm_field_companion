@@ -149,7 +149,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.insights_outlined, color: Colors.white),
-            tooltip: 'Session summary',
+            tooltip: 'Session Checklist',
             onPressed: () {
               Navigator.push(
                 context,

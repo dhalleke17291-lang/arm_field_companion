@@ -1,3 +1,5 @@
+import 'dart:developer' show log;
+
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
@@ -9,6 +11,52 @@ class RatingRepository {
 
   RatingRepository(this._db);
 
+  /// Selects candidate **current** rows for the logical key used by
+  /// `idx_rating_current` (includes [subUnitId] null vs non-null).
+  SimpleSelectStatement<$RatingRecordsTable, RatingRecord>
+      _selectCurrentRatingsForLogicalKey({
+    required int trialId,
+    required int plotPk,
+    required int assessmentId,
+    required int sessionId,
+    required int? subUnitId,
+  }) {
+    return _db.select(_db.ratingRecords)
+      ..where((r) {
+        final base = r.trialId.equals(trialId) &
+            r.plotPk.equals(plotPk) &
+            r.assessmentId.equals(assessmentId) &
+            r.sessionId.equals(sessionId) &
+            r.isCurrent.equals(true) &
+            r.isDeleted.equals(false);
+        if (subUnitId == null) {
+          return base & r.subUnitId.isNull();
+        }
+        return base & r.subUnitId.equals(subUnitId);
+      });
+  }
+
+  /// Picks the canonical current row; if legacy duplicates exist, keeps the
+  /// highest [RatingRecord.id] and clears `is_current` on the rest.
+  Future<RatingRecord?> _pickCurrentAndDedupe(
+    List<RatingRecord> rows, {
+    required String logContext,
+  }) async {
+    if (rows.isEmpty) return null;
+    if (rows.length == 1) return rows.single;
+    final sorted = [...rows]..sort((a, b) => b.id.compareTo(a.id));
+    final keeper = sorted.first;
+    final otherIds = sorted.skip(1).map((r) => r.id).toList();
+    log(
+      '$logContext: duplicate current ratings (${rows.length}); '
+      'keeping id=${keeper.id}; clearing is_current on $otherIds',
+      name: 'RatingRepository',
+    );
+    await (_db.update(_db.ratingRecords)..where((r) => r.id.isIn(otherIds)))
+        .write(const RatingRecordsCompanion(isCurrent: Value(false)));
+    return keeper;
+  }
+
   // Get current rating for a plot/assessment/session combination
   Future<RatingRecord?> getCurrentRating({
     required int trialId,
@@ -16,16 +64,15 @@ class RatingRepository {
     required int assessmentId,
     required int sessionId,
     int? subUnitId,
-  }) {
-    return (_db.select(_db.ratingRecords)
-          ..where((r) =>
-              r.trialId.equals(trialId) &
-              r.plotPk.equals(plotPk) &
-              r.assessmentId.equals(assessmentId) &
-              r.sessionId.equals(sessionId) &
-              r.isCurrent.equals(true) &
-              r.isDeleted.equals(false)))
-        .getSingleOrNull();
+  }) async {
+    final rows = await _selectCurrentRatingsForLogicalKey(
+      trialId: trialId,
+      plotPk: plotPk,
+      assessmentId: assessmentId,
+      sessionId: sessionId,
+      subUnitId: subUnitId,
+    ).get();
+    return _pickCurrentAndDedupe(rows, logContext: 'getCurrentRating');
   }
 
   // Watch current rating reactively
@@ -34,16 +81,20 @@ class RatingRepository {
     required int plotPk,
     required int assessmentId,
     required int sessionId,
+    int? subUnitId,
   }) {
-    return (_db.select(_db.ratingRecords)
-          ..where((r) =>
-              r.trialId.equals(trialId) &
-              r.plotPk.equals(plotPk) &
-              r.assessmentId.equals(assessmentId) &
-              r.sessionId.equals(sessionId) &
-              r.isCurrent.equals(true) &
-              r.isDeleted.equals(false)))
-        .watchSingleOrNull();
+    return _selectCurrentRatingsForLogicalKey(
+      trialId: trialId,
+      plotPk: plotPk,
+      assessmentId: assessmentId,
+      sessionId: sessionId,
+      subUnitId: subUnitId,
+    ).watch().asyncMap(
+          (rows) => _pickCurrentAndDedupe(
+            rows,
+            logContext: 'watchCurrentRating',
+          ),
+        );
   }
 
   // Save rating — implements version chain invariant

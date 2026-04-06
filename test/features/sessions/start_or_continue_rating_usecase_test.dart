@@ -338,6 +338,7 @@ class _FakeRatingRepository implements RatingRepository {
     required int plotPk,
     required int assessmentId,
     required int sessionId,
+    int? subUnitId,
   }) {
     throw UnimplementedError();
   }

@@ -12,6 +12,7 @@ import '../diagnostics/edited_items_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import 'domain/session_completeness_report.dart';
 import 'session_completeness_screen.dart';
+import 'session_summary_assessment_coverage.dart';
 
 void _navigatePlotQueue(
   BuildContext context,
@@ -39,6 +40,90 @@ void _navigateSessionCompleteness(
       builder: (_) => SessionCompletenessScreen(trial: trial, session: session),
     ),
   );
+}
+
+const int _kSessionSummaryMaxCompletenessIssuesPreview = 5;
+
+/// Blockers first, then warnings; capped with optional "see all" link.
+List<Widget> _completenessIssuePreviewRows({
+  required BuildContext context,
+  required int trialId,
+  required int sessionId,
+  required List<SessionCompletenessIssue> issues,
+  required VoidCallback onSeeAll,
+}) {
+  final ordered = <SessionCompletenessIssue>[
+    ...issues.where((i) =>
+        i.severity == SessionCompletenessIssueSeverity.blocker),
+    ...issues.where((i) =>
+        i.severity == SessionCompletenessIssueSeverity.warning),
+  ];
+  if (ordered.isEmpty) return const [];
+
+  final preview =
+      ordered.take(_kSessionSummaryMaxCompletenessIssuesPreview).toList();
+  final out = <Widget>[
+    const SizedBox(height: AppDesignTokens.spacing12),
+    Text(
+      'Completeness Issues',
+      style: AppDesignTokens.headingStyle(
+        fontSize: 14,
+        color: AppDesignTokens.primaryText,
+      ),
+    ),
+  ];
+  for (final issue in preview) {
+    final isBlocker =
+        issue.severity == SessionCompletenessIssueSeverity.blocker;
+    final message = issue
+        .toDiagnosticFinding(trialId: trialId, sessionId: sessionId)
+        .message;
+    out.add(
+      Padding(
+        padding: const EdgeInsets.only(top: AppDesignTokens.spacing8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2, right: 10),
+              child: Icon(
+                Icons.fiber_manual_record,
+                size: 12,
+                color: isBlocker
+                    ? AppDesignTokens.missedColor
+                    : AppDesignTokens.warningFg,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.35,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  if (ordered.length > _kSessionSummaryMaxCompletenessIssuesPreview) {
+    out.add(
+      Padding(
+        padding: const EdgeInsets.only(top: AppDesignTokens.spacing8),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: onSeeAll,
+            child: const Text('See All in Session Completeness'),
+          ),
+        ),
+      ),
+    );
+  }
+  return out;
 }
 
 /// Read-only aggregate dashboard for one session (v1: metrics + navigation links).
@@ -186,6 +271,13 @@ class SessionSummaryScreen extends ConsumerWidget {
                                 SessionCompletenessIssueSeverity.warning)
                             .length;
 
+                        final coverageRows =
+                            computeSessionSummaryAssessmentCoverage(
+                          plotsForTrial: rawPlots,
+                          sessionAssessments: assessments,
+                          currentSessionRatings: ratings,
+                        );
+
                         return ListView(
                           padding:
                               const EdgeInsets.all(AppDesignTokens.spacing16),
@@ -268,6 +360,94 @@ class SessionSummaryScreen extends ConsumerWidget {
                                         ),
                                       ),
                                     ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: AppCard(
+                                padding: const EdgeInsets.all(
+                                    AppDesignTokens.spacing16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const _CardHeaderRow(
+                                        title: 'Assessment Coverage'),
+                                    const SizedBox(height: 6),
+                                    const _CaptionHint(
+                                      'Recorded ratings per assessment across target plots (non-guard)',
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (assessments.isEmpty)
+                                      Text(
+                                        'No assessments in this session.',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      )
+                                    else ...[
+                                      for (var i = 0;
+                                          i < coverageRows.length;
+                                          i++) ...[
+                                        if (i > 0)
+                                          const SizedBox(
+                                              height:
+                                                  AppDesignTokens.spacing12),
+                                        Text(
+                                          coverageRows[i].assessmentName,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppDesignTokens.primaryText,
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                            height: AppDesignTokens.spacing4),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                '${coverageRows[i].recordedCount} / ${coverageRows[i].targetPlotCount}',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: coverageRows[i]
+                                                          .isIncomplete
+                                                      ? AppDesignTokens
+                                                          .warningFg
+                                                      : AppDesignTokens
+                                                          .successFg,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(
+                                            height: AppDesignTokens.spacing8),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                              AppDesignTokens.radiusSmall),
+                                          child: LinearProgressIndicator(
+                                            value: coverageRows[i]
+                                                        .targetPlotCount >
+                                                    0
+                                                ? coverageRows[i]
+                                                    .progressFraction
+                                                : 0,
+                                            minHeight: AppDesignTokens.spacing8,
+                                            backgroundColor:
+                                                AppDesignTokens.divider,
+                                            color: coverageRows[i].isIncomplete
+                                                ? AppDesignTokens.warningFg
+                                                : AppDesignTokens.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ],
                                 ),
                               ),
@@ -387,6 +567,18 @@ class SessionSummaryScreen extends ConsumerWidget {
                                               ),
                                             ),
                                           ],
+                                          ..._completenessIssuePreviewRows(
+                                            context: context,
+                                            trialId: trial.id,
+                                            sessionId: session.id,
+                                            issues: report.issues,
+                                            onSeeAll: () =>
+                                                _navigateSessionCompleteness(
+                                              context,
+                                              trial,
+                                              session,
+                                            ),
+                                          ),
                                         ],
                                         const SizedBox(height: 10),
                                         Text(
