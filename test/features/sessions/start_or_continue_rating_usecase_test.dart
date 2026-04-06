@@ -30,6 +30,12 @@ class _FakeSessionRepository implements SessionRepository {
   }
 
   @override
+  Future<int> deduplicateSessionAssessments(int sessionId) async => 0;
+
+  @override
+  Future<int> deduplicateSessionAssessmentsForTrial(int trialId) async => 0;
+
+  @override
   Future<bool> isAssessmentInSession(int assessmentId, int sessionId) async {
     final list = _sessionAssessments[sessionId] ?? const [];
     return list.any((a) => a.id == assessmentId);

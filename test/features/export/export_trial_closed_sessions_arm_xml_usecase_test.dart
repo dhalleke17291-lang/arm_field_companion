@@ -112,6 +112,12 @@ class _MockSessionRepository implements SessionRepository {
 
   @override
   Future<int?> resolveSessionIdForRatingShell(Trial trial) async => null;
+
+  @override
+  Future<int> deduplicateSessionAssessments(int sessionId) async => 0;
+
+  @override
+  Future<int> deduplicateSessionAssessmentsForTrial(int trialId) async => 0;
 }
 
 class _FakePathProvider extends PathProviderPlatform {

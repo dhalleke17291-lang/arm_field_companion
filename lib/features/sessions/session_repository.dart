@@ -10,22 +10,28 @@ class SessionRepository {
 
   SessionRepository(this._db);
 
-  Future<Session?> getOpenSession(int trialId) {
-    return (_db.select(_db.sessions)
+  /// Open sessions for [trialId] (not unique in DB); returns most recently started.
+  Future<Session?> getOpenSession(int trialId) async {
+    final rows = await (_db.select(_db.sessions)
           ..where((s) =>
               s.trialId.equals(trialId) &
               s.endedAt.isNull() &
-              s.isDeleted.equals(false)))
-        .getSingleOrNull();
+              s.isDeleted.equals(false))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
+        .get();
+    return rows.isEmpty ? null : rows.first;
   }
 
+  /// Same semantics as [getOpenSession]; does not assume at most one open row.
   Stream<Session?> watchOpenSession(int trialId) {
     return (_db.select(_db.sessions)
           ..where((s) =>
               s.trialId.equals(trialId) &
               s.endedAt.isNull() &
-              s.isDeleted.equals(false)))
-        .watchSingleOrNull();
+              s.isDeleted.equals(false))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
+        .watch()
+        .map((rows) => rows.isEmpty ? null : rows.first);
   }
 
   Future<List<Session>> getSessionsForTrial(int trialId) {
@@ -59,6 +65,8 @@ class SessionRepository {
     String? raterName,
     int? createdByUserId,
   }) async {
+    await deduplicateSessionAssessmentsForTrial(trialId);
+
     final existing = await getOpenSession(trialId);
     if (existing != null) {
       throw OpenSessionExistsException(trialId);
@@ -133,6 +141,8 @@ class SessionRepository {
   }
 
   Future<List<Assessment>> getSessionAssessments(int sessionId) async {
+    await deduplicateSessionAssessments(sessionId);
+
     final sessionAssessmentRows = await (_db.select(_db.sessionAssessments)
           ..where((sa) => sa.sessionId.equals(sessionId))
           ..orderBy([
@@ -162,6 +172,45 @@ class SessionRepository {
               sa.assessmentId.equals(assessmentId)))
         .get();
     return rows.isNotEmpty;
+  }
+
+  /// Removes duplicate [session_assessments] rows for [sessionId], keeping the
+  /// lowest row [id] per (session_id, assessment_id).
+  ///
+  /// Returns the number of rows deleted. Safe to call repeatedly.
+  Future<int> deduplicateSessionAssessments(int sessionId) async {
+    return _db.transaction(() async {
+      final rows = await (_db.select(_db.sessionAssessments)
+            ..where((sa) => sa.sessionId.equals(sessionId))
+            ..orderBy([(sa) => OrderingTerm.asc(sa.id)]))
+          .get();
+      if (rows.length <= 1) return 0;
+
+      final byAssessment = <int, List<SessionAssessment>>{};
+      for (final r in rows) {
+        byAssessment.putIfAbsent(r.assessmentId, () => []).add(r);
+      }
+      var deleted = 0;
+      for (final list in byAssessment.values) {
+        if (list.length <= 1) continue;
+        list.sort((a, b) => a.id.compareTo(b.id));
+        final removeIds = list.skip(1).map((e) => e.id).toList();
+        deleted += await (_db.delete(_db.sessionAssessments)
+              ..where((sa) => sa.id.isIn(removeIds)))
+            .go();
+      }
+      return deleted;
+    });
+  }
+
+  /// Runs [deduplicateSessionAssessments] for every non-deleted session in [trialId].
+  Future<int> deduplicateSessionAssessmentsForTrial(int trialId) async {
+    final sessions = await getSessionsForTrial(trialId);
+    var total = 0;
+    for (final s in sessions) {
+      total += await deduplicateSessionAssessments(s.id);
+    }
+    return total;
   }
 
   /// Updates the rating order for this session. Same sequence applies to every plot.
