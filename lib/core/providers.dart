@@ -50,6 +50,8 @@ import '../features/export/domain/export_deleted_trial_recovery_zip_usecase.dart
 import '../features/export/export_trial_usecase.dart';
 import '../features/export/export_trial_pdf_report_usecase.dart';
 import '../features/export/domain/export_arm_rating_shell_usecase.dart';
+import '../features/export/domain/compute_arm_round_trip_diagnostics_usecase.dart';
+import '../features/export/usecases/arm_export_preflight_usecase.dart';
 import '../features/export/report_data_assembly_service.dart';
 import '../features/export/standalone_report_data.dart';
 import '../features/export/report_pdf_builder_service.dart';
@@ -970,6 +972,40 @@ final exportArmRatingShellUseCaseProvider =
           .setTrialSnapshot(trialId, findings, attemptLabel);
     },
   );
+});
+
+final computeArmRoundTripDiagnosticsUseCaseProvider =
+    Provider<ComputeArmRoundTripDiagnosticsUseCase>((ref) {
+  return ComputeArmRoundTripDiagnosticsUseCase(
+    plotRepository: ref.watch(plotRepositoryProvider),
+    trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+  );
+});
+
+final armExportPreflightUseCaseProvider =
+    Provider<ArmExportPreflightUseCase>((ref) {
+  return ArmExportPreflightUseCase(
+    trialRepository: ref.watch(trialRepositoryProvider),
+    plotRepository: ref.watch(plotRepositoryProvider),
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+    trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+    photoRepository: ref.watch(photoRepositoryProvider),
+    armImportPersistence: ref.watch(armImportPersistenceRepositoryProvider),
+    exportRepository: ref.watch(exportRepositoryProvider),
+    computeArmRoundTripDiagnostics:
+        ref.watch(computeArmRoundTripDiagnosticsUseCaseProvider),
+  );
+});
+
+/// Loads [ArmExportPreflight] for the ARM Rating Shell trust screen (no export).
+final armExportPreflightFutureProvider = FutureProvider.autoDispose
+    .family<ArmExportPreflight, int>((ref, trialId) async {
+  final uc = ref.watch(armExportPreflightUseCaseProvider);
+  return uc.execute(ref: ref, trialId: trialId);
 });
 
 /// Unified trial readiness report (blockers, warnings, passes). Used for readiness card and export gating.

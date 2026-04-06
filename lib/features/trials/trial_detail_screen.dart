@@ -26,6 +26,7 @@ import '../../core/providers.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../diagnostics/trial_readiness.dart';
 import '../../core/export_guard.dart';
+import '../export/arm_export_preflight_screen.dart';
 import '../export/export_format.dart';
 import '../export/export_trial_usecase.dart';
 import '../../core/widgets/loading_error_widgets.dart';
@@ -223,6 +224,28 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       }
       return;
     }
+    if (format == ExportFormat.armRatingShell) {
+      if (!mounted) return;
+      final result = await Navigator.push<String?>(
+        context,
+        MaterialPageRoute<String?>(
+          builder: (_) => ArmExportPreflightScreen(trial: widget.trial),
+        ),
+      );
+      if (!mounted) return;
+      if (result == null) return;
+      final trimmed = result.trim();
+      if (trimmed.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Export ready to share')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(trimmed)),
+        );
+      }
+      return;
+    }
     final guard = ref.read(exportGuardProvider);
     final ran = await guard.runExclusive(() async {
       setState(() => _isExporting = true);
@@ -232,62 +255,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         );
       }
       try {
-        if (format == ExportFormat.armRatingShell) {
-          final useCase = ref.read(exportArmRatingShellUseCaseProvider);
-          final result = await useCase.execute(
-            trial: widget.trial,
-            suppressShare: true,
-          );
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).clearSnackBars();
-          if (!result.success) {
-            final scheme = Theme.of(context).colorScheme;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  result.errorMessage ?? 'Export failed',
-                  style: TextStyle(color: scheme.onError),
-                ),
-                backgroundColor: scheme.error,
-              ),
-            );
-            return;
-          }
-          final path = result.filePath;
-          if (path == null) {
-            final scheme = Theme.of(context).colorScheme;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Export failed: missing file path',
-                  style: TextStyle(color: scheme.onError),
-                ),
-                backgroundColor: scheme.error,
-              ),
-            );
-            return;
-          }
-          final box = context.findRenderObject() as RenderBox?;
-          await Share.shareXFiles(
-            [XFile(path)],
-            text: '${widget.trial.name} – ARM Rating Shell',
-            sharePositionOrigin: box == null
-                ? const Rect.fromLTWH(0, 0, 100, 100)
-                : box.localToGlobal(Offset.zero) & box.size,
-          );
-          if (!mounted) return;
-          final warn = result.warningMessage?.trim();
-          if (warn != null && warn.isNotEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(warn)),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Export ready to share')),
-            );
-          }
-          return;
-        }
         if (format == ExportFormat.pdfReport) {
           final useCase = ref.read(exportTrialPdfReportUseCaseProvider);
           await useCase.execute(trial: widget.trial);
