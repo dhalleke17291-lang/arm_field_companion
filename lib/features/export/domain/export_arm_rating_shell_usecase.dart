@@ -109,11 +109,7 @@ class ExportArmRatingShellUseCase {
     );
     final gate = gateFromConfidence(profile?.exportConfidence);
     if (gate == ExportGate.block) {
-      var msg = kBlockedExportMessage;
-      final reason = profile?.exportBlockReason;
-      if (reason != null && reason.trim().isNotEmpty) {
-        msg = '$msg Reason: $reason';
-      }
+      final msg = composeBlockedExportMessage(profile?.exportBlockReason);
       final finding = gate.toDiagnosticFinding(trialId: trialPk, message: msg);
       if (finding != null) exportDiagnosticsBuffer.add(finding);
       publishExportDiagnostics();

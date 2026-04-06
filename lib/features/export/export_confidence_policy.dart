@@ -21,12 +21,20 @@ ExportGate gateFromConfidence(String? confidence) {
 }
 
 const kBlockedExportMessage =
-    'Blocked — import confidence is too low. Review data before exporting.';
+    'Export blocked — data needs review before ARM round-trip.';
 
 const kWarnExportMessage =
-    'Warnings — import confidence is low. Review data before use.';
+    'Export may need review — check imported data before relying on ARM export.';
 
-/// Thrown when [ExportGate.block] applies (e.g. compatibility profile confidence is blocked).
+/// Full user-facing message when export is blocked, optionally appending
+/// concrete reasons from [exportBlockReason] (no "Reason:" developer phrasing).
+String composeBlockedExportMessage(String? exportBlockReason) {
+  final detail = exportBlockReason?.trim();
+  if (detail == null || detail.isEmpty) return kBlockedExportMessage;
+  return '$kBlockedExportMessage\n\n$detail';
+}
+
+/// Thrown when [ExportGate.block] applies (trial not ready for ARM round-trip).
 class ExportBlockedByConfidenceException implements Exception {
   ExportBlockedByConfidenceException(this.message);
 

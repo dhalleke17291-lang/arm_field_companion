@@ -13,7 +13,8 @@ import 'report_pdf_builder_service.dart';
 /// Optional share override for testing. When non-null, used instead of Share.
 typedef ShareOverride = Future<void> Function(List<XFile> files, {String? text});
 
-/// Result of [ExportTrialPdfReportUseCase.execute]; [warningMessage] is set when import confidence was low.
+/// Result of [ExportTrialPdfReportUseCase.execute]; [warningMessage] is set when
+/// export gate is warn (stored profile confidence is low).
 class ExportPdfExecutionResult {
   const ExportPdfExecutionResult({this.warningMessage});
 
@@ -44,11 +45,7 @@ class ExportTrialPdfReportUseCase {
         .getLatestCompatibilityProfileForTrial(trial.id);
     final gate = gateFromConfidence(profile?.exportConfidence);
     if (gate == ExportGate.block) {
-      var msg = kBlockedExportMessage;
-      final reason = profile?.exportBlockReason;
-      if (reason != null && reason.trim().isNotEmpty) {
-        msg = '$msg Reason: $reason';
-      }
+      final msg = composeBlockedExportMessage(profile?.exportBlockReason);
       throw ExportBlockedByConfidenceException(msg);
     }
     String? confidenceWarningMessage;

@@ -1,4 +1,4 @@
-import '../domain/enums/import_confidence.dart';
+import '../domain/arm_export_block_reason.dart';
 import '../domain/models/compatibility_profile_payload.dart';
 import '../domain/models/import_snapshot_payload.dart';
 import '../domain/models/parsed_arm_csv.dart';
@@ -40,9 +40,7 @@ class CompatibilityProfileBuilder {
       identityFieldOrder: List<String>.from(snapshot.identityColumns),
       knownUnsupported: knownUnsupported,
       exportConfidence: parsed.importConfidence,
-      exportBlockReason: parsed.importConfidence == ImportConfidence.blocked
-          ? 'Export blocked at import confidence'
-          : null,
+      exportBlockReason: buildExportBlockReasonFromParsed(parsed),
     );
   }
 }

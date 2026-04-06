@@ -226,7 +226,7 @@ void main() {
         fail('expected ExportBlockedByConfidenceException');
       } on ExportBlockedByConfidenceException catch (e) {
         expect(e.toString(), contains(kBlockedExportMessage));
-        expect(e.toString(), contains('Reason: schema mismatch'));
+        expect(e.toString(), contains('schema mismatch'));
       }
       expect(mockAssembly.lastAssembled, isNull);
     });

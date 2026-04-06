@@ -34,7 +34,7 @@ void main() {
     expect(report.treatmentsDetected, 2);
     expect(report.assessmentsDetected, 1);
     expect(report.warnings, isEmpty);
-    expect(report.exportStatus, 'Ready to export to ARM');
+    expect(report.exportStatus, 'Ready');
   });
 
   test('sparse data adds warning', () {
@@ -88,10 +88,11 @@ void main() {
     expect(
       report.warnings,
       contains(
-        'Repeated assessment keys were detected. ARM export is blocked until issues are resolved.',
+        'Repeated assessment keys were detected. ARM round-trip export '
+        'cannot run safely until this is resolved.',
       ),
     );
-    expect(report.exportStatus, 'Export blocked — see details');
+    expect(report.exportStatus, 'Blocked');
   });
 
   test('medium unknown pattern contributes warning text', () {
@@ -125,6 +126,6 @@ void main() {
       report.warnings,
       contains('Unvalidated structure detected: missing-rep.'),
     );
-    expect(report.exportStatus, 'Export available with warnings');
+    expect(report.exportStatus, 'Needs review');
   });
 }

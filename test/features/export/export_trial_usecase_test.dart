@@ -126,7 +126,7 @@ void main() {
         fail('expected ExportBlockedByConfidenceException');
       } on ExportBlockedByConfidenceException catch (e) {
         expect(e.toString(), contains(kBlockedExportMessage));
-        expect(e.toString(), contains('Reason: bad layout'));
+        expect(e.toString(), contains('bad layout'));
       }
     });
 

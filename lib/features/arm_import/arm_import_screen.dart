@@ -75,43 +75,15 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
     }
   }
 
-  List<Widget> _buildImportStatusLines(ThemeData theme, ImportConfidence c) {
-    final bodyStyle = theme.textTheme.bodyMedium;
-    final emphasis = bodyStyle?.copyWith(fontWeight: FontWeight.w600);
+  String _exportReadinessLabel(ImportConfidence c) {
     switch (c) {
-      case ImportConfidence.blocked:
-        return [
-          Text(
-            'Import status: Needs review',
-            style: emphasis,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'ARM export is currently blocked due to structural issues',
-            style: bodyStyle,
-          ),
-        ];
-      case ImportConfidence.low:
-        return [
-          Text(
-            'Import status: Needs review',
-            style: emphasis,
-          ),
-        ];
-      case ImportConfidence.medium:
-        return [
-          Text(
-            'Import status: Review recommended',
-            style: emphasis,
-          ),
-        ];
       case ImportConfidence.high:
-        return [
-          Text(
-            'Import status: Good',
-            style: emphasis,
-          ),
-        ];
+        return 'ARM Export: Ready';
+      case ImportConfidence.medium:
+      case ImportConfidence.low:
+        return 'ARM Export: Needs Review';
+      case ImportConfidence.blocked:
+        return 'ARM Export: Blocked';
     }
   }
 
@@ -243,17 +215,45 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
           u.rawValue.trim(),
     };
 
+    final bodyStyle = theme.textTheme.bodyMedium;
+    final emphasis = bodyStyle?.copyWith(fontWeight: FontWeight.w600);
+    final hasWarningsOrIssues = r.confidence != ImportConfidence.high ||
+        r.warnings.isNotEmpty ||
+        r.unknownPatterns.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Trial imported successfully',
+          hasWarningsOrIssues
+              ? 'Import Completed With Warnings'
+              : 'Import Completed',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 12),
-        ..._buildImportStatusLines(theme, r.confidence),
+        const SizedBox(height: 8),
+        if (!hasWarningsOrIssues)
+          Text(
+            'The trial was created from your file. You can continue field work.',
+            style: bodyStyle,
+          )
+        else ...[
+          Text(
+            'The trial was created from your file.',
+            style: bodyStyle,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Some imported data may need review before ARM export.',
+            style: bodyStyle,
+          ),
+        ],
+        const SizedBox(height: 10),
+        Text(
+          _exportReadinessLabel(r.confidence),
+          style: emphasis,
+        ),
         const SizedBox(height: 8),
         Text('Plots detected: ${r.plotCount ?? '—'}'),
         Text('Treatments detected: ${r.treatmentCount ?? '—'}'),

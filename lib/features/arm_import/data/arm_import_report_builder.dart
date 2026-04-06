@@ -27,11 +27,12 @@ class ArmImportReportBuilder {
     if (parsed.hasRepeatedCodes) {
       if (parsed.importConfidence == ImportConfidence.blocked) {
         warnings.add(
-          'Repeated assessment keys were detected. ARM export is blocked until issues are resolved.',
+          'Repeated assessment keys were detected. ARM round-trip export '
+          'cannot run safely until this is resolved.',
         );
       } else {
         warnings.add(
-          'Repeated assessment keys were detected. Please review before exporting to ARM.',
+          'Repeated assessment keys were detected. Review before ARM export.',
         );
       }
     }
@@ -86,13 +87,12 @@ class ArmImportReportBuilder {
   String _exportStatusForConfidence(ImportConfidence c) {
     switch (c) {
       case ImportConfidence.high:
-        return 'Ready to export to ARM';
+        return 'Ready';
       case ImportConfidence.medium:
-        return 'Export available with warnings';
       case ImportConfidence.low:
-        return 'Export to ARM not available — use supplementary output only';
+        return 'Needs review';
       case ImportConfidence.blocked:
-        return 'Export blocked — see details';
+        return 'Blocked';
     }
   }
 }
