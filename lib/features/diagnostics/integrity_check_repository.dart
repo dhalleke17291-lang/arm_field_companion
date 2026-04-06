@@ -185,6 +185,50 @@ HAVING COUNT(*) > 1
       ));
     }
 
+    // Duplicate session_assessments rows (same session + assessment link).
+    final duplicateSessionAssessmentGroups = await _db
+        .customSelect(
+          '''
+SELECT session_id, assessment_id, COUNT(*) AS cnt
+FROM session_assessments
+GROUP BY session_id, assessment_id
+HAVING COUNT(*) > 1
+''',
+          readsFrom: {_db.sessionAssessments},
+        )
+        .get();
+    if (duplicateSessionAssessmentGroups.isNotEmpty) {
+      final sessionIds = duplicateSessionAssessmentGroups
+          .map((row) => row.read<int>('session_id'))
+          .toSet()
+          .toList()
+        ..sort();
+      final assessmentIds = duplicateSessionAssessmentGroups
+          .map((row) => row.read<int>('assessment_id'))
+          .toSet()
+          .toList()
+        ..sort();
+      final detail = StringBuffer()
+        ..write(
+          'More than one session_assessments row for the same session_id and assessment_id. ',
+        )
+        ..write('Affected session_id values: ${sessionIds.join(", ")}. ')
+        ..write('Affected assessment_id values: ${assessmentIds.join(", ")}. ');
+      for (final row in duplicateSessionAssessmentGroups) {
+        detail.write(
+          '[session=${row.read<int>("session_id")} '
+          'assessment=${row.read<int>("assessment_id")} count=${row.read<int>("cnt")}] ',
+        );
+      }
+      issues.add(IntegrityIssue(
+        code: 'duplicate_session_assessments',
+        summary: 'Duplicate session assessment links',
+        count: duplicateSessionAssessmentGroups.length,
+        detail: detail.toString().trimRight(),
+        severity: IntegritySeverity.error,
+      ));
+    }
+
     return issues;
   }
 }

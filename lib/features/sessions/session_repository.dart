@@ -153,13 +153,15 @@ class SessionRepository {
   }
 
   /// Whether [assessmentId] is linked to [sessionId] in [session_assessments].
+  ///
+  /// Existence-only: does not assume at most one row per (session, assessment).
   Future<bool> isAssessmentInSession(int assessmentId, int sessionId) async {
-    final row = await (_db.select(_db.sessionAssessments)
+    final rows = await (_db.select(_db.sessionAssessments)
           ..where((sa) =>
               sa.sessionId.equals(sessionId) &
               sa.assessmentId.equals(assessmentId)))
-        .getSingleOrNull();
-    return row != null;
+        .get();
+    return rows.isNotEmpty;
   }
 
   /// Updates the rating order for this session. Same sequence applies to every plot.
