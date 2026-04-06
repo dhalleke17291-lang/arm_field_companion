@@ -78,16 +78,26 @@ List<Trial> _deriveDisplayedTrials({
           .toList();
       break;
     case _TrialListStatusFilter.draft:
-      filtered =
-          filtered.where((t) => t.status.toLowerCase() == 'draft').toList();
+      // Match list badges: draft + open field session is "Active" in the UI
+      // ([effectiveTrialStatusForListDisplay]); exclude those from Draft so this
+      // tab only shows idle drafts (same idea as [trialIsListedAsActive] for Active).
+      filtered = filtered.where((t) {
+        if (t.status.trim().toLowerCase() != kTrialStatusDraft) return false;
+        return !trialIsListedAsActive(
+          trialStatus: t.status,
+          hasOpenFieldSession:
+              trialIdsWithOpenFieldSession.contains(t.id),
+        );
+      }).toList();
       break;
     case _TrialListStatusFilter.closed:
-      filtered =
-          filtered.where((t) => t.status.toLowerCase() == 'closed').toList();
+      filtered = filtered
+          .where((t) => t.status.trim().toLowerCase() == kTrialStatusClosed)
+          .toList();
       break;
     case _TrialListStatusFilter.archived:
       filtered = filtered
-          .where((t) => t.status.toLowerCase() == 'archived')
+          .where((t) => t.status.trim().toLowerCase() == kTrialStatusArchived)
           .toList();
       break;
   }

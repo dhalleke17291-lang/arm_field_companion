@@ -2378,19 +2378,21 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                   : AppDesignTokens.primary,
             ),
             const SizedBox(width: 5),
-            Text(
-              chipLabel,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.1,
-                color: plotAssignmentsLocked
-                    ? AppDesignTokens.secondaryText
-                    : AppDesignTokens.primary,
+            Flexible(
+              child: Text(
+                chipLabel,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.1,
+                  color: plotAssignmentsLocked
+                      ? AppDesignTokens.secondaryText
+                      : AppDesignTokens.primary,
+                ),
+                maxLines: 2,
+                softWrap: true,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 2,
-              softWrap: true,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -2411,12 +2413,16 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
               color: cs.onSurfaceVariant,
             ),
             const SizedBox(width: 6),
-            Text(
-              'Show guards',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: cs.onSurface,
+            Flexible(
+              child: Text(
+                'Show guards',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: cs.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Transform.scale(
