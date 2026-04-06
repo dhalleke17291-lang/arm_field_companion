@@ -2202,7 +2202,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     const SizedBox(width: 6),
                     Expanded(
                       flex: 1,
-                      child: _buildOtherStatusDropdown(context),
+                      child: _buildOtherStatusControl(context),
                     ),
                   ],
                 ),
@@ -3775,65 +3775,106 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
-  Widget _buildOtherStatusDropdown(BuildContext context) {
+  /// Opens a modal sheet instead of [PopupMenuButton] so status options stay
+  /// tappable under field conditions (avoids popup overlay / hit-test issues).
+  Future<void> _showOtherStatusSelectionSheet(BuildContext context) async {
+    final String? picked = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Select Status',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final e in _otherStatusOptions)
+                ListTile(
+                  title: Text(
+                    e.label,
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                  onTap: () => Navigator.pop(ctx, e.value),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || picked == null) return;
+    setState(() {
+      _userHasInteracted = true;
+      _selectedStatus = picked;
+      _valueController.clear();
+      if (picked != 'MISSING_CONDITION' && picked != 'TECHNICAL_ISSUE') {
+        _selectedMissingReasons.clear();
+      }
+    });
+  }
+
+  Widget _buildOtherStatusControl(BuildContext context) {
     final bool isSimpleOther =
         _selectedStatus == 'RECORDED' || _selectedStatus == 'MISSING_CONDITION';
     final String displayText =
-        isSimpleOther ? 'Other' : _statusDisplayLabel(_selectedStatus);
-    return PopupMenuButton<String>(
-      padding: EdgeInsets.zero,
-      offset: const Offset(0, 40),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE0DDD6)),
-        ),
-        alignment: Alignment.center,
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                displayText,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.onSurface,
+        isSimpleOther ? 'Other →' : _statusDisplayLabel(_selectedStatus);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => _showOtherStatusSelectionSheet(context),
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE0DDD6)),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  displayText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Icon(
-              Icons.arrow_drop_down,
-              size: 20,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ],
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       ),
-      itemBuilder: (context) => _otherStatusOptions
-          .map(
-            (e) => PopupMenuItem<String>(
-              value: e.value,
-              child: Text(
-                e.label,
-                style: const TextStyle(fontSize: 13),
-              ),
-            ),
-          )
-          .toList(),
-      onSelected: (String value) {
-        setState(() {
-          _selectedStatus = value;
-          _valueController.clear();
-          if (value != 'MISSING_CONDITION' && value != 'TECHNICAL_ISSUE') {
-            _selectedMissingReasons.clear();
-          }
-        });
-      },
     );
   }
 }
