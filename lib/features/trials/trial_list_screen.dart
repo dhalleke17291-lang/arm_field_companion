@@ -18,8 +18,7 @@ import '../../core/workspace/workspace_config.dart';
 import '../../core/workspace/workspace_filter.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../about/about_screen.dart';
-import '../arm_import/arm_import_screen.dart';
-import '../protocol_import/protocol_import_screen.dart';
+import '../import/ui/import_trial_sheet.dart';
 import 'usecases/create_trial_usecase.dart';
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
@@ -497,21 +496,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                         ),
                         _TrialListToolbarActions(
                           onExport: () => _exportAllTrials(context, ref),
-                          onImport: () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => const ProtocolImportScreen(),
-                            ),
-                          ),
-                          onArmImport: () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => const ArmImportScreen(),
-                            ),
-                          ),
+                          onOpenImportSheet: () => ImportTrialSheet.show(context),
                           onAbout: () => _showAppInfoDialog(context),
-                          showProtocolImports: widget.workspaceFilter !=
-                              TrialListFilter.standaloneOnly,
                         ),
                       ],
                     ),
@@ -624,7 +610,13 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (trials) {
-                if (trials.isEmpty) return _buildEmptyState(context, widget.workspaceFilter);
+                if (trials.isEmpty) {
+                  return _buildEmptyState(
+                    context,
+                    widget.workspaceFilter,
+                    onImportTrial: () => ImportTrialSheet.show(context),
+                  );
+                }
                 final displayed = _deriveDisplayedTrials(
                   trials: trials,
                   searchQuery: _searchQuery,
@@ -659,18 +651,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
         ],
       ),
       floatingActionButton: widget.workspaceFilter == TrialListFilter.protocolOnly
-          ? FilledButton.tonalIcon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ProtocolImportScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.file_download_outlined),
-              label: const Text('Import Protocol'),
-            )
+          ? null
           : FilledButton.tonalIcon(
               onPressed: () => _showCreateTrialDialog(context, ref),
               icon: const Icon(Icons.add),
@@ -745,7 +726,11 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
   }
 
   /// Empty state when no trials exist. Message varies by workspace filter.
-  Widget _buildEmptyState(BuildContext context, TrialListFilter filter) {
+  Widget _buildEmptyState(
+    BuildContext context,
+    TrialListFilter filter, {
+    required VoidCallback onImportTrial,
+  }) {
     final scheme = Theme.of(context).colorScheme;
     final (String title, String subtitle) = switch (filter) {
       TrialListFilter.standaloneOnly => (
@@ -796,6 +781,22 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing24),
+            FilledButton.icon(
+              onPressed: onImportTrial,
+              icon: const Icon(Icons.file_download_outlined, size: 22),
+              label: const Text('Import Trial'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDesignTokens.spacing24,
+                  vertical: AppDesignTokens.spacing16,
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -958,12 +959,12 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
   /// Manual create only: **Custom** (standalone) trials. Protocol trials are created
   /// via [ProtocolImportScreen] / ARM import — not from this dialog.
   /// Called from the FAB when [workspaceFilter] is [TrialListFilter.standaloneOnly]
-  /// or [TrialListFilter.all] (not from [TrialListFilter.protocolOnly]).
+  /// or [TrialListFilter.all] (protocol list has no FAB; use header or empty-state Import).
   Future<void> _showCreateTrialDialog(
       BuildContext context, WidgetRef ref) async {
     assert(
       widget.workspaceFilter != TrialListFilter.protocolOnly,
-      'Protocol list uses Import Protocol FAB, not manual create',
+      'Protocol list uses Import Trial sheet, not manual create FAB',
     );
     final nameController = TextEditingController();
     final cropController = TextEditingController();
@@ -1228,23 +1229,17 @@ class _ContinueLastSessionCard extends StatelessWidget {
 }
 
 /// Compact stat pill for header: value + label (e.g. "12" / "Trials").
-/// Grouped header actions: export, optional protocol/ARM imports, about.
+/// Grouped header actions: export, optional unified Import sheet, about.
 class _TrialListToolbarActions extends StatelessWidget {
   const _TrialListToolbarActions({
     required this.onExport,
-    required this.onImport,
-    required this.onArmImport,
+    required this.onOpenImportSheet,
     required this.onAbout,
-    this.showProtocolImports = true,
   });
 
   final VoidCallback onExport;
-  final VoidCallback onImport;
-  final VoidCallback onArmImport;
+  final VoidCallback onOpenImportSheet;
   final VoidCallback onAbout;
-
-  /// False on Custom Trials only — protocol CSV / ARM import belong on Protocol Trials.
-  final bool showProtocolImports;
 
   @override
   Widget build(BuildContext context) {
@@ -1269,20 +1264,12 @@ class _TrialListToolbarActions extends StatelessWidget {
             onPressed: onExport,
           ),
           sep(),
-          if (showProtocolImports) ...[
-            _TrialListToolbarIcon(
-              icon: Icons.file_download_outlined,
-              tooltip: 'Import Protocol',
-              onPressed: onImport,
-            ),
-            sep(),
-            _TrialListToolbarIcon(
-              icon: Icons.table_chart_outlined,
-              tooltip: 'Import ARM Trial',
-              onPressed: onArmImport,
-            ),
-            sep(),
-          ],
+          _TrialListToolbarIcon(
+            icon: Icons.download_outlined,
+            tooltip: 'Import',
+            onPressed: onOpenImportSheet,
+          ),
+          sep(),
           _TrialListToolbarIcon(
             icon: Icons.info_outline,
             tooltip: 'About',
