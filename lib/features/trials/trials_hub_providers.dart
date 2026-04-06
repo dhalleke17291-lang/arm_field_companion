@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
 import '../../core/trial_state.dart';
 import '../../core/workspace/workspace_filter.dart';
@@ -35,38 +36,61 @@ class TrialsHubStats {
   );
 }
 
-bool _isActive(String status) =>
-    status == kTrialStatusActive || status == kTrialStatusReady;
-
 bool _isComplete(String status) =>
     status == kTrialStatusClosed || status == kTrialStatusArchived;
 
+TrialsHubStats _computeTrialsHubStats(
+  List<Trial> allTrials,
+  Set<int> openTrialIds,
+) {
+  final customTrials =
+      allTrials.where((t) => isStandalone(t.workspaceType)).toList();
+  final protocolTrials =
+      allTrials.where((t) => isProtocol(t.workspaceType)).toList();
+
+  final customCropCount = customTrials
+      .map((t) => t.crop?.trim().toLowerCase())
+      .where((c) => c != null && c.isNotEmpty)
+      .toSet()
+      .length;
+
+  int listedActiveCount(List<Trial> trials) => trials
+      .where(
+        (t) => trialIsListedAsActive(
+          trialStatus: t.status,
+          hasOpenFieldSession: openTrialIds.contains(t.id),
+        ),
+      )
+      .length;
+
+  return TrialsHubStats(
+    customTrialCount: customTrials.length,
+    customActiveCount: listedActiveCount(customTrials),
+    customCompleteCount:
+        customTrials.where((t) => _isComplete(t.status)).length,
+    customCropCount: customCropCount,
+    protocolTrialCount: protocolTrials.length,
+    protocolActiveCount: listedActiveCount(protocolTrials),
+    protocolCompleteCount:
+        protocolTrials.where((t) => _isComplete(t.status)).length,
+  );
+}
+
 /// Live, reactive stats for Trials Hub (same classification as [customTrialsProvider] / [protocolTrialsProvider]).
+/// Active counts use [trialIsListedAsActive] with [openTrialIdsForFieldWorkProvider], matching [TrialListScreen]
+/// header pills and Active filter (draft + open field session counts as active).
 /// Trials with null, blank, or unknown [Trial.workspaceType] are counted in neither custom nor protocol totals.
-final trialsHubStatsProvider = StreamProvider.autoDispose<TrialsHubStats>((ref) async* {
-  final trialRepo = ref.watch(trialRepositoryProvider);
+final trialsHubStatsProvider =
+    Provider.autoDispose<AsyncValue<TrialsHubStats>>((ref) {
+  final trialsAsync = ref.watch(trialsStreamProvider);
+  final openIdsAsync = ref.watch(openTrialIdsForFieldWorkProvider);
 
-  await for (final allTrials in trialRepo.watchAllTrials()) {
-    final customTrials = allTrials.where((t) => isStandalone(t.workspaceType)).toList();
-    final protocolTrials = allTrials.where((t) => isProtocol(t.workspaceType)).toList();
-
-    final customCropCount = customTrials
-        .map((t) => t.crop?.trim().toLowerCase())
-        .where((c) => c != null && c.isNotEmpty)
-        .toSet()
-        .length;
-
-    yield TrialsHubStats(
-      customTrialCount: customTrials.length,
-      customActiveCount: customTrials.where((t) => _isActive(t.status)).length,
-      customCompleteCount:
-          customTrials.where((t) => _isComplete(t.status)).length,
-      customCropCount: customCropCount,
-      protocolTrialCount: protocolTrials.length,
-      protocolActiveCount:
-          protocolTrials.where((t) => _isActive(t.status)).length,
-      protocolCompleteCount:
-          protocolTrials.where((t) => _isComplete(t.status)).length,
-    );
-  }
+  return trialsAsync.when(
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+    data: (allTrials) {
+      final openIds = openIdsAsync.valueOrNull ?? <int>{};
+      return AsyncValue.data(_computeTrialsHubStats(allTrials, openIds));
+    },
+  );
 });
