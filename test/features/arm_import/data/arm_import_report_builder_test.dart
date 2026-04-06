@@ -88,7 +88,7 @@ void main() {
     expect(
       report.warnings,
       contains(
-        'Repeated assessment keys were detected. Export to ARM may be blocked.',
+        'Repeated assessment keys were detected. ARM export is blocked until issues are resolved.',
       ),
     );
     expect(report.exportStatus, 'Export blocked — see details');

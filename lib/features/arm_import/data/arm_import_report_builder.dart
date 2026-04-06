@@ -25,9 +25,15 @@ class ArmImportReportBuilder {
       );
     }
     if (parsed.hasRepeatedCodes) {
-      warnings.add(
-        'Repeated assessment keys were detected. Export to ARM may be blocked.',
-      );
+      if (parsed.importConfidence == ImportConfidence.blocked) {
+        warnings.add(
+          'Repeated assessment keys were detected. ARM export is blocked until issues are resolved.',
+        );
+      } else {
+        warnings.add(
+          'Repeated assessment keys were detected. Please review before exporting to ARM.',
+        );
+      }
     }
     for (final f in parsed.unknownPatterns) {
       if (f.severity == PatternSeverity.medium && f.affectsExport) {

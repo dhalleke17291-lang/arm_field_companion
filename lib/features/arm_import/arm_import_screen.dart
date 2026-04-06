@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../trials/trial_detail_screen.dart';
+import 'domain/enums/import_confidence.dart';
+import 'domain/models/unknown_pattern_flag.dart';
 import 'domain/results/arm_import_result.dart';
 
 /// Minimal entry point: pick an ARM CSV and run [ArmImportUseCase.execute].
@@ -70,6 +72,83 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
       if (mounted) {
         setState(() => _busy = false);
       }
+    }
+  }
+
+  List<Widget> _buildImportStatusLines(ThemeData theme, ImportConfidence c) {
+    final bodyStyle = theme.textTheme.bodyMedium;
+    final emphasis = bodyStyle?.copyWith(fontWeight: FontWeight.w600);
+    switch (c) {
+      case ImportConfidence.blocked:
+        return [
+          Text(
+            'Import status: Needs review',
+            style: emphasis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'ARM export is currently blocked due to structural issues',
+            style: bodyStyle,
+          ),
+        ];
+      case ImportConfidence.low:
+        return [
+          Text(
+            'Import status: Needs review',
+            style: emphasis,
+          ),
+        ];
+      case ImportConfidence.medium:
+        return [
+          Text(
+            'Import status: Review recommended',
+            style: emphasis,
+          ),
+        ];
+      case ImportConfidence.high:
+        return [
+          Text(
+            'Import status: Good',
+            style: emphasis,
+          ),
+        ];
+    }
+  }
+
+  String _displayWarningForUi(String w) {
+    if (w.contains('Export to ARM may be blocked')) {
+      return w.replaceFirst(
+        'Export to ARM may be blocked',
+        'ARM export is blocked until issues are resolved',
+      );
+    }
+    return w;
+  }
+
+  String _structureIssueUserMessage(UnknownPatternFlag u) {
+    switch (u.type) {
+      case 'repeated-assessment-key':
+        return 'Repeated assessment columns detected (${u.rawValue})';
+      case 'missing-or-invalid-plot-number':
+        return 'One or more rows have an invalid or missing plot number.';
+      case 'duplicate-plot-number':
+        return 'Duplicate plot number used: ${u.rawValue}.';
+      case 'missing-treatment-number':
+        return 'One or more rows are missing a treatment number.';
+      case 'missing-rep':
+        return 'One or more rows are missing a rep value.';
+      case 'assessment_definition':
+        final v = u.rawValue.trim();
+        if (v.isEmpty) {
+          return 'One or more assessment columns need review.';
+        }
+        return 'Assessment column needs review ($v).';
+      default:
+        final v = u.rawValue.trim();
+        if (v.isEmpty) {
+          return 'One or more structure issues need review.';
+        }
+        return 'Issue needs review: $v';
     }
   }
 
@@ -158,17 +237,24 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
       );
     }
 
+    final repeatedAssessmentKeys = <String>{
+      for (final u in r.unknownPatterns)
+        if (u.type == 'repeated-assessment-key' && u.rawValue.trim().isNotEmpty)
+          u.rawValue.trim(),
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Import complete',
+          'Trial imported successfully',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 12),
-        Text('Confidence: ${r.confidence.name}'),
+        ..._buildImportStatusLines(theme, r.confidence),
+        const SizedBox(height: 8),
         Text('Plots detected: ${r.plotCount ?? '—'}'),
         Text('Treatments detected: ${r.treatmentCount ?? '—'}'),
         Text('Assessments detected: ${r.assessmentCount ?? '—'}'),
@@ -184,14 +270,14 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
           ...r.warnings.map(
             (w) => Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Text('· $w'),
+              child: Text('· ${_displayWarningForUi(w)}'),
             ),
           ),
         ],
         if (r.unknownPatterns.isNotEmpty) ...[
           const SizedBox(height: 12),
           Text(
-            'Unknown patterns',
+            'Structure issues',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -200,12 +286,30 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
           ...r.unknownPatterns.map(
             (u) => Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                '· ${u.type}: ${u.rawValue} (${u.severity.name}, '
-                'export ${u.affectsExport ? 'affected' : 'not affected'})',
-              ),
+              child: Text('· ${_structureIssueUserMessage(u)}'),
             ),
           ),
+        ],
+        if (repeatedAssessmentKeys.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Detected sessions',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...(() {
+            final sorted = repeatedAssessmentKeys.toList()..sort();
+            return sorted.map(
+              (key) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '· $key → multiple occurrences (treated as separate sessions)',
+                ),
+              ),
+            );
+          })(),
         ],
         if (r.trialId != null) ...[
           const SizedBox(height: 20),
