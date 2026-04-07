@@ -80,6 +80,26 @@ class TrialAssessmentRepository {
     );
   }
 
+  /// Applies ARM Rating Shell link alignment (pest code / column index) without
+  /// [assertCanEditProtocolForTrialId] so metadata can be reconciled on active trials.
+  Future<void> applyArmShellLinkAlignment({
+    required int id,
+    String? pestCode,
+    int? armImportColumnIndex,
+  }) async {
+    final existing = await getById(id);
+    if (existing == null) return;
+    final companion = TrialAssessmentsCompanion(
+      pestCode: pestCode == null ? const Value.absent() : Value(pestCode),
+      armImportColumnIndex: armImportColumnIndex == null
+          ? const Value.absent()
+          : Value(armImportColumnIndex),
+      updatedAt: Value(DateTime.now().toUtc()),
+    );
+    await (_db.update(_db.trialAssessments)..where((t) => t.id.equals(id)))
+        .write(companion);
+  }
+
   /// Add a library definition to this trial (manual or protocol-driven).
   Future<int> addToTrial({
     required int trialId,

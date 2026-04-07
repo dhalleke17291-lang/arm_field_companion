@@ -1,20 +1,31 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/providers.dart';
 import '../../arm_import/arm_import_screen.dart';
+import '../../export/domain/shell_link_preview.dart';
 import '../../protocol_import/protocol_import_screen.dart';
 
-/// Bottom sheet: choose ARM CSV, Protocol CSV, or (when available) shell link.
+/// Bottom sheet: choose ARM CSV, Protocol CSV, or (trial context) shell link.
 class ImportTrialSheet extends StatelessWidget {
   const ImportTrialSheet({
     super.key,
     required this.parentContext,
+    this.trialId,
   });
 
   final BuildContext parentContext;
 
+  /// When non-null, "Link ARM Rating Shell" is enabled for this trial.
+  final int? trialId;
+
   /// Presents the sheet; routes use [parentContext] after the sheet is closed.
-  static Future<void> show(BuildContext parentContext) {
+  static Future<void> show(
+    BuildContext parentContext, {
+    int? trialId,
+  }) {
     return showModalBottomSheet<void>(
       context: parentContext,
       backgroundColor: Colors.white,
@@ -22,12 +33,16 @@ class ImportTrialSheet extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => ImportTrialSheet(parentContext: parentContext),
+      builder: (_) => ImportTrialSheet(
+        parentContext: parentContext,
+        trialId: trialId,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasTrial = trialId != null;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -90,17 +105,280 @@ class ImportTrialSheet extends StatelessWidget {
               },
             ),
             const SizedBox(height: AppDesignTokens.spacing8),
-            const _ImportOptionTile(
+            _ImportOptionTile(
               icon: Icons.link_outlined,
               title: 'Link ARM Rating Shell',
-              subtitle: 'Store an empty ARM shell for export back to ARM',
-              enabled: false,
-              trailingBadge: 'Coming soon',
+              subtitle: hasTrial
+                  ? 'Enrich trial metadata from ARM shell'
+                  : 'Store an empty ARM shell for export back to ARM',
+              enabled: hasTrial,
+              trailingBadge: hasTrial ? null : 'Coming soon',
+              onTap: hasTrial
+                  ? () => _onLinkArmShellTap(
+                        sheetContext: context,
+                        parentContext: parentContext,
+                        trialId: trialId!,
+                      )
+                  : null,
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+Future<void> _onLinkArmShellTap({
+  required BuildContext sheetContext,
+  required BuildContext parentContext,
+  required int trialId,
+}) async {
+  final container = ProviderScope.containerOf(parentContext);
+  Navigator.pop(sheetContext);
+
+  final pick = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: const ['xlsx'],
+    dialogTitle: 'Select ARM Rating Shell',
+  );
+  if (pick == null || pick.files.isEmpty) return;
+  final path = pick.files.single.path;
+  if (path == null || path.isEmpty) return;
+
+  final uc = container.read(armShellLinkUseCaseProvider);
+  final preview = await uc.preview(trialId, path);
+  if (!parentContext.mounted) return;
+
+  if (!preview.canApply) {
+    await showDialog<void>(
+      context: parentContext,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cannot Link Shell'),
+        content: SingleChildScrollView(
+          child: Text(
+            preview.blockerSummary.isEmpty
+                ? 'Link blocked.'
+                : preview.blockerSummary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  final applyNow = await showModalBottomSheet<bool>(
+    context: parentContext,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (ctx) => _ShellLinkConfirmSheet(preview: preview),
+  );
+
+  if (applyNow != true || !parentContext.mounted) return;
+
+  final result = await uc.apply(trialId, path);
+  if (!parentContext.mounted) return;
+
+  if (result.success) {
+    final n = result.fieldsUpdatedCount ?? 0;
+    container.invalidate(trialProvider(trialId));
+    container.invalidate(trialSetupProvider(trialId));
+    container.invalidate(trialAssessmentsForTrialProvider(trialId));
+    container.invalidate(trialsStreamProvider);
+
+    ScaffoldMessenger.of(parentContext).showSnackBar(
+      SnackBar(
+        content: Text(
+          n == 0
+              ? 'Shell linked. No field changes were needed.'
+              : 'Shell linked. Updated $n field change(s).',
+        ),
+      ),
+    );
+  } else {
+    final scheme = Theme.of(parentContext).colorScheme;
+    ScaffoldMessenger.of(parentContext).showSnackBar(
+      SnackBar(
+        content: Text(result.errorMessage ?? 'Link failed'),
+        backgroundColor: scheme.error,
+      ),
+    );
+  }
+}
+
+class _ShellLinkConfirmSheet extends StatelessWidget {
+  const _ShellLinkConfirmSheet({required this.preview});
+
+  final ShellLinkPreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final warnings = preview.issues
+        .where((i) => i.severity == ShellLinkIssueSeverity.warn)
+        .toList();
+
+    final changeLines = <String>[
+      for (final c in preview.trialFieldChanges)
+        _trialChangeLine(c),
+      for (final c in preview.assessmentFieldChanges)
+        _assessmentChangeLine(c),
+    ];
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Link ARM Rating Shell',
+            style: AppDesignTokens.headingStyle(
+              fontSize: 17,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Shell title',
+            style: AppDesignTokens.bodyCrispStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            preview.shellTitle.isEmpty ? '—' : preview.shellTitle,
+            style: AppDesignTokens.bodyStyle(
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Fields to update',
+            style: AppDesignTokens.bodyCrispStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.35,
+            ),
+            child: SingleChildScrollView(
+              child: changeLines.isEmpty
+                  ? Text(
+                      'No trial or assessment field changes.',
+                      style: AppDesignTokens.bodyStyle(
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final line in changeLines)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              '· $line',
+                              style: AppDesignTokens.bodyStyle(
+                                fontSize: 14,
+                                color: AppDesignTokens.primaryText,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
+          ),
+          if (warnings.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Warnings',
+              style: AppDesignTokens.bodyCrispStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.warningFg,
+              ),
+            ),
+            const SizedBox(height: 6),
+            for (final w in warnings)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '· ${w.message}',
+                  style: AppDesignTokens.bodyStyle(
+                    fontSize: 13,
+                    color: AppDesignTokens.warningFg,
+                  ),
+                ),
+              ),
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Apply'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _trialChangeLine(ShellTrialFieldChange c) {
+  final label = _trialFieldLabel(c.fieldName);
+  if (c.isFillEmpty) {
+    return '$label: set to "${c.newValue}"';
+  }
+  return '$label: "${c.oldValue}" → "${c.newValue}"';
+}
+
+String _assessmentChangeLine(ShellAssessmentFieldChange c) {
+  final label = c.fieldName == 'pestCode'
+      ? 'Pest code'
+      : 'Shell column index';
+  if (c.isFillEmpty) {
+    return 'Assessment ${c.trialAssessmentId} ($label): set to "${c.newValue}"';
+  }
+  return 'Assessment ${c.trialAssessmentId} ($label): "${c.oldValue ?? '—'}" → "${c.newValue}"';
+}
+
+String _trialFieldLabel(String fieldName) {
+  switch (fieldName) {
+    case 'name':
+      return 'Trial name';
+    case 'protocolNumber':
+      return 'Protocol number';
+    case 'cooperatorName':
+      return 'Cooperator';
+    case 'crop':
+      return 'Crop';
+    default:
+      return fieldName;
   }
 }
 

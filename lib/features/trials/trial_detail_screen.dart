@@ -46,6 +46,7 @@ import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
+import '../import/ui/import_trial_sheet.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -963,7 +964,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       tooltip: 'More',
       padding: const EdgeInsets.all(8),
       onSelected: (value) {
-        if (value == 'activity') {
+        if (value == 'import') {
+          ImportTrialSheet.show(context, trialId: trial.id);
+        } else if (value == 'activity') {
           Navigator.push<void>(
             context,
             MaterialPageRoute<void>(
@@ -974,12 +977,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           _confirmAndSoftDeleteTrial(context, trial);
         }
       },
-      itemBuilder: (context) => const [
-        PopupMenuItem<String>(
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'import',
+          child: Text('Import'),
+        ),
+        const PopupMenuItem<String>(
           value: 'activity',
           child: Text('Activity'),
         ),
-        PopupMenuItem<String>(
+        const PopupMenuItem<String>(
           value: 'delete_trial',
           child: Text('Delete trial'),
         ),

@@ -674,6 +674,18 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   late final GeneratedColumn<int> armImportSessionId = GeneratedColumn<int>(
       'arm_import_session_id', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _armLinkedShellPathMeta =
+      const VerificationMeta('armLinkedShellPath');
+  @override
+  late final GeneratedColumn<String> armLinkedShellPath =
+      GeneratedColumn<String>('arm_linked_shell_path', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armLinkedShellAtMeta =
+      const VerificationMeta('armLinkedShellAt');
+  @override
+  late final GeneratedColumn<DateTime> armLinkedShellAt =
+      GeneratedColumn<DateTime>('arm_linked_shell_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -720,7 +732,9 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         armImportedAt,
         armSourceFile,
         armVersion,
-        armImportSessionId
+        armImportSessionId,
+        armLinkedShellPath,
+        armLinkedShellAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -957,6 +971,18 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           armImportSessionId.isAcceptableOrUnknown(
               data['arm_import_session_id']!, _armImportSessionIdMeta));
     }
+    if (data.containsKey('arm_linked_shell_path')) {
+      context.handle(
+          _armLinkedShellPathMeta,
+          armLinkedShellPath.isAcceptableOrUnknown(
+              data['arm_linked_shell_path']!, _armLinkedShellPathMeta));
+    }
+    if (data.containsKey('arm_linked_shell_at')) {
+      context.handle(
+          _armLinkedShellAtMeta,
+          armLinkedShellAt.isAcceptableOrUnknown(
+              data['arm_linked_shell_at']!, _armLinkedShellAtMeta));
+    }
     return context;
   }
 
@@ -1056,6 +1082,10 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.string, data['${effectivePrefix}arm_version']),
       armImportSessionId: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}arm_import_session_id']),
+      armLinkedShellPath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}arm_linked_shell_path']),
+      armLinkedShellAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}arm_linked_shell_at']),
     );
   }
 
@@ -1122,6 +1152,12 @@ class Trial extends DataClass implements Insertable<Trial> {
   /// Session used for ARM import ratings; preferred for Rating Shell export.
   /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
   final int? armImportSessionId;
+
+  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
+  final String? armLinkedShellPath;
+
+  /// When [armLinkedShellPath] was last applied.
+  final DateTime? armLinkedShellAt;
   const Trial(
       {required this.id,
       required this.name,
@@ -1167,7 +1203,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.armImportedAt,
       this.armSourceFile,
       this.armVersion,
-      this.armImportSessionId});
+      this.armImportSessionId,
+      this.armLinkedShellPath,
+      this.armLinkedShellAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1290,6 +1328,12 @@ class Trial extends DataClass implements Insertable<Trial> {
     if (!nullToAbsent || armImportSessionId != null) {
       map['arm_import_session_id'] = Variable<int>(armImportSessionId);
     }
+    if (!nullToAbsent || armLinkedShellPath != null) {
+      map['arm_linked_shell_path'] = Variable<String>(armLinkedShellPath);
+    }
+    if (!nullToAbsent || armLinkedShellAt != null) {
+      map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt);
+    }
     return map;
   }
 
@@ -1408,6 +1452,12 @@ class Trial extends DataClass implements Insertable<Trial> {
       armImportSessionId: armImportSessionId == null && nullToAbsent
           ? const Value.absent()
           : Value(armImportSessionId),
+      armLinkedShellPath: armLinkedShellPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armLinkedShellPath),
+      armLinkedShellAt: armLinkedShellAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armLinkedShellAt),
     );
   }
 
@@ -1461,6 +1511,10 @@ class Trial extends DataClass implements Insertable<Trial> {
       armSourceFile: serializer.fromJson<String?>(json['armSourceFile']),
       armVersion: serializer.fromJson<String?>(json['armVersion']),
       armImportSessionId: serializer.fromJson<int?>(json['armImportSessionId']),
+      armLinkedShellPath:
+          serializer.fromJson<String?>(json['armLinkedShellPath']),
+      armLinkedShellAt:
+          serializer.fromJson<DateTime?>(json['armLinkedShellAt']),
     );
   }
   @override
@@ -1512,6 +1566,8 @@ class Trial extends DataClass implements Insertable<Trial> {
       'armSourceFile': serializer.toJson<String?>(armSourceFile),
       'armVersion': serializer.toJson<String?>(armVersion),
       'armImportSessionId': serializer.toJson<int?>(armImportSessionId),
+      'armLinkedShellPath': serializer.toJson<String?>(armLinkedShellPath),
+      'armLinkedShellAt': serializer.toJson<DateTime?>(armLinkedShellAt),
     };
   }
 
@@ -1560,7 +1616,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<DateTime?> armImportedAt = const Value.absent(),
           Value<String?> armSourceFile = const Value.absent(),
           Value<String?> armVersion = const Value.absent(),
-          Value<int?> armImportSessionId = const Value.absent()}) =>
+          Value<int?> armImportSessionId = const Value.absent(),
+          Value<String?> armLinkedShellPath = const Value.absent(),
+          Value<DateTime?> armLinkedShellAt = const Value.absent()}) =>
       Trial(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -1623,6 +1681,12 @@ class Trial extends DataClass implements Insertable<Trial> {
         armImportSessionId: armImportSessionId.present
             ? armImportSessionId.value
             : this.armImportSessionId,
+        armLinkedShellPath: armLinkedShellPath.present
+            ? armLinkedShellPath.value
+            : this.armLinkedShellPath,
+        armLinkedShellAt: armLinkedShellAt.present
+            ? armLinkedShellAt.value
+            : this.armLinkedShellAt,
       );
   Trial copyWithCompanion(TrialsCompanion data) {
     return Trial(
@@ -1706,6 +1770,12 @@ class Trial extends DataClass implements Insertable<Trial> {
       armImportSessionId: data.armImportSessionId.present
           ? data.armImportSessionId.value
           : this.armImportSessionId,
+      armLinkedShellPath: data.armLinkedShellPath.present
+          ? data.armLinkedShellPath.value
+          : this.armLinkedShellPath,
+      armLinkedShellAt: data.armLinkedShellAt.present
+          ? data.armLinkedShellAt.value
+          : this.armLinkedShellAt,
     );
   }
 
@@ -1756,7 +1826,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('armImportedAt: $armImportedAt, ')
           ..write('armSourceFile: $armSourceFile, ')
           ..write('armVersion: $armVersion, ')
-          ..write('armImportSessionId: $armImportSessionId')
+          ..write('armImportSessionId: $armImportSessionId, ')
+          ..write('armLinkedShellPath: $armLinkedShellPath, ')
+          ..write('armLinkedShellAt: $armLinkedShellAt')
           ..write(')'))
         .toString();
   }
@@ -1807,7 +1879,9 @@ class Trial extends DataClass implements Insertable<Trial> {
         armImportedAt,
         armSourceFile,
         armVersion,
-        armImportSessionId
+        armImportSessionId,
+        armLinkedShellPath,
+        armLinkedShellAt
       ]);
   @override
   bool operator ==(Object other) =>
@@ -1857,7 +1931,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.armImportedAt == this.armImportedAt &&
           other.armSourceFile == this.armSourceFile &&
           other.armVersion == this.armVersion &&
-          other.armImportSessionId == this.armImportSessionId);
+          other.armImportSessionId == this.armImportSessionId &&
+          other.armLinkedShellPath == this.armLinkedShellPath &&
+          other.armLinkedShellAt == this.armLinkedShellAt);
 }
 
 class TrialsCompanion extends UpdateCompanion<Trial> {
@@ -1906,6 +1982,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<String?> armSourceFile;
   final Value<String?> armVersion;
   final Value<int?> armImportSessionId;
+  final Value<String?> armLinkedShellPath;
+  final Value<DateTime?> armLinkedShellAt;
   const TrialsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -1952,6 +2030,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.armSourceFile = const Value.absent(),
     this.armVersion = const Value.absent(),
     this.armImportSessionId = const Value.absent(),
+    this.armLinkedShellPath = const Value.absent(),
+    this.armLinkedShellAt = const Value.absent(),
   });
   TrialsCompanion.insert({
     this.id = const Value.absent(),
@@ -1999,6 +2079,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.armSourceFile = const Value.absent(),
     this.armVersion = const Value.absent(),
     this.armImportSessionId = const Value.absent(),
+    this.armLinkedShellPath = const Value.absent(),
+    this.armLinkedShellAt = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Trial> custom({
     Expression<int>? id,
@@ -2046,6 +2128,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<String>? armSourceFile,
     Expression<String>? armVersion,
     Expression<int>? armImportSessionId,
+    Expression<String>? armLinkedShellPath,
+    Expression<DateTime>? armLinkedShellAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2094,6 +2178,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (armVersion != null) 'arm_version': armVersion,
       if (armImportSessionId != null)
         'arm_import_session_id': armImportSessionId,
+      if (armLinkedShellPath != null)
+        'arm_linked_shell_path': armLinkedShellPath,
+      if (armLinkedShellAt != null) 'arm_linked_shell_at': armLinkedShellAt,
     });
   }
 
@@ -2142,7 +2229,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<DateTime?>? armImportedAt,
       Value<String?>? armSourceFile,
       Value<String?>? armVersion,
-      Value<int?>? armImportSessionId}) {
+      Value<int?>? armImportSessionId,
+      Value<String?>? armLinkedShellPath,
+      Value<DateTime?>? armLinkedShellAt}) {
     return TrialsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -2189,6 +2278,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       armSourceFile: armSourceFile ?? this.armSourceFile,
       armVersion: armVersion ?? this.armVersion,
       armImportSessionId: armImportSessionId ?? this.armImportSessionId,
+      armLinkedShellPath: armLinkedShellPath ?? this.armLinkedShellPath,
+      armLinkedShellAt: armLinkedShellAt ?? this.armLinkedShellAt,
     );
   }
 
@@ -2330,6 +2421,12 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (armImportSessionId.present) {
       map['arm_import_session_id'] = Variable<int>(armImportSessionId.value);
     }
+    if (armLinkedShellPath.present) {
+      map['arm_linked_shell_path'] = Variable<String>(armLinkedShellPath.value);
+    }
+    if (armLinkedShellAt.present) {
+      map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt.value);
+    }
     return map;
   }
 
@@ -2380,7 +2477,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('armImportedAt: $armImportedAt, ')
           ..write('armSourceFile: $armSourceFile, ')
           ..write('armVersion: $armVersion, ')
-          ..write('armImportSessionId: $armImportSessionId')
+          ..write('armImportSessionId: $armImportSessionId, ')
+          ..write('armLinkedShellPath: $armLinkedShellPath, ')
+          ..write('armLinkedShellAt: $armLinkedShellAt')
           ..write(')'))
         .toString();
   }
@@ -26094,6 +26193,8 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<String?> armSourceFile,
   Value<String?> armVersion,
   Value<int?> armImportSessionId,
+  Value<String?> armLinkedShellPath,
+  Value<DateTime?> armLinkedShellAt,
 });
 typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<int> id,
@@ -26141,6 +26242,8 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<String?> armSourceFile,
   Value<String?> armVersion,
   Value<int?> armImportSessionId,
+  Value<String?> armLinkedShellPath,
+  Value<DateTime?> armLinkedShellAt,
 });
 
 class $$TrialsTableTableManager extends RootTableManager<
@@ -26205,6 +26308,8 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<String?> armSourceFile = const Value.absent(),
             Value<String?> armVersion = const Value.absent(),
             Value<int?> armImportSessionId = const Value.absent(),
+            Value<String?> armLinkedShellPath = const Value.absent(),
+            Value<DateTime?> armLinkedShellAt = const Value.absent(),
           }) =>
               TrialsCompanion(
             id: id,
@@ -26252,6 +26357,8 @@ class $$TrialsTableTableManager extends RootTableManager<
             armSourceFile: armSourceFile,
             armVersion: armVersion,
             armImportSessionId: armImportSessionId,
+            armLinkedShellPath: armLinkedShellPath,
+            armLinkedShellAt: armLinkedShellAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -26299,6 +26406,8 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<String?> armSourceFile = const Value.absent(),
             Value<String?> armVersion = const Value.absent(),
             Value<int?> armImportSessionId = const Value.absent(),
+            Value<String?> armLinkedShellPath = const Value.absent(),
+            Value<DateTime?> armLinkedShellAt = const Value.absent(),
           }) =>
               TrialsCompanion.insert(
             id: id,
@@ -26346,6 +26455,8 @@ class $$TrialsTableTableManager extends RootTableManager<
             armSourceFile: armSourceFile,
             armVersion: armVersion,
             armImportSessionId: armImportSessionId,
+            armLinkedShellPath: armLinkedShellPath,
+            armLinkedShellAt: armLinkedShellAt,
           ),
         ));
 }
@@ -26575,6 +26686,16 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<int> get armImportSessionId => $state.composableBuilder(
       column: $state.table.armImportSessionId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armLinkedShellPath => $state.composableBuilder(
+      column: $state.table.armLinkedShellPath,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get armLinkedShellAt => $state.composableBuilder(
+      column: $state.table.armLinkedShellAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -27192,6 +27313,16 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<int> get armImportSessionId => $state.composableBuilder(
       column: $state.table.armImportSessionId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armLinkedShellPath => $state.composableBuilder(
+      column: $state.table.armLinkedShellPath,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get armLinkedShellAt => $state.composableBuilder(
+      column: $state.table.armLinkedShellAt,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }

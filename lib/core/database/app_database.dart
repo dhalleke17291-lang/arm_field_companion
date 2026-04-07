@@ -82,6 +82,12 @@ class Trials extends Table {
   /// Session used for ARM import ratings; preferred for Rating Shell export.
   /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
   IntColumn get armImportSessionId => integer().nullable()();
+
+  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
+  TextColumn get armLinkedShellPath => text().nullable()();
+
+  /// When [armLinkedShellPath] was last applied.
+  DateTimeColumn get armLinkedShellAt => dateTime().nullable()();
 }
 
 class Treatments extends Table {
@@ -777,7 +783,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 41;
+  int get schemaVersion => 42;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1137,6 +1143,10 @@ SET status = 'completed',
             await m.addColumn(
                 trialAssessments, trialAssessments.armImportColumnIndex);
             await m.addColumn(trials, trials.armImportSessionId);
+          }
+          if (from < 42) {
+            await m.addColumn(trials, trials.armLinkedShellPath);
+            await m.addColumn(trials, trials.armLinkedShellAt);
           }
           await _createIndexes();
         },

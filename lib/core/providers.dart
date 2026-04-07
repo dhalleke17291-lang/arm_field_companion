@@ -49,6 +49,7 @@ import '../features/export/domain/export_deleted_session_recovery_zip_usecase.da
 import '../features/export/domain/export_deleted_trial_recovery_zip_usecase.dart';
 import '../features/export/export_trial_usecase.dart';
 import '../features/export/export_trial_pdf_report_usecase.dart';
+import '../features/export/domain/arm_shell_link_usecase.dart';
 import '../features/export/domain/export_arm_rating_shell_usecase.dart';
 import '../features/export/domain/compute_arm_round_trip_diagnostics_usecase.dart';
 import '../features/export/usecases/arm_export_preflight_usecase.dart';
@@ -976,6 +977,15 @@ final exportArmRatingShellUseCaseProvider =
           .read(trialExportDiagnosticsMapProvider.notifier)
           .setTrialSnapshot(trialId, findings, attemptLabel);
     },
+  );
+});
+
+final armShellLinkUseCaseProvider = Provider<ArmShellLinkUseCase>((ref) {
+  return ArmShellLinkUseCase(
+    ref.watch(databaseProvider),
+    ref.watch(trialRepositoryProvider),
+    ref.watch(trialAssessmentRepositoryProvider),
+    ref.watch(plotRepositoryProvider),
   );
 });
 
