@@ -226,6 +226,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     }
     if (format == ExportFormat.armRatingShell) {
       if (!mounted) return;
+      // TEMP DEBUG — remove after ARM shell column diagnosis
+      final tas =
+          await ref.read(trialAssessmentsForTrialProvider(widget.trial.id).future);
+      for (final ta in tas) {
+        debugPrint(
+          'TA id=${ta.id} pestCode=${ta.pestCode} armIdx=${ta.armImportColumnIndex} sort=${ta.sortOrder}',
+        );
+      }
+      if (!mounted) return;
       final result = await Navigator.push<String?>(
         context,
         MaterialPageRoute<String?>(

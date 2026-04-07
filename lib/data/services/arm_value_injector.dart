@@ -93,8 +93,11 @@ class ArmValueInjector {
       }
 
       final trimmed = v.value.trim();
+      if (trimmed.isEmpty) {
+        continue;
+      }
       final numVal = double.tryParse(trimmed);
-      final isNumeric = trimmed.isNotEmpty && numVal != null;
+      final isNumeric = numVal != null;
       final cellValue = isNumeric ? numVal.toString() : v.value;
       _writeCell(
         plotDoc,
@@ -187,6 +190,10 @@ class ArmValueInjector {
     String value,
     bool isNumeric,
   ) {
+    if (value.trim().isEmpty) {
+      return;
+    }
+
     final rowNumStr = '${rowIdx0 + 1}';
     final cellRef = _cellRef(colIdx, rowIdx0);
 
@@ -219,18 +226,33 @@ class ArmValueInjector {
       }
     }
 
-    final cell = cEl ??
-        XmlElement(
-          XmlName('c'),
-          [XmlAttribute(XmlName('r'), cellRef)],
-          [],
-        );
-
-    if (isNumeric) {
-      cell.attributes.removeWhere((a) => a.name.local == 't');
-    } else {
-      _setOrReplaceAttribute(cell, 't', 'str');
+    if (cEl != null) {
+      _setCellTypeAndValue(cEl, value, isNumeric);
+      return;
     }
+
+    final newCell = XmlElement(
+      XmlName('c'),
+      [
+        XmlAttribute(XmlName('r'), cellRef),
+        XmlAttribute(
+          XmlName('t'),
+          isNumeric ? 'n' : 'str',
+        ),
+      ],
+      [
+        XmlElement(XmlName('v'), [], [XmlText(value)]),
+      ],
+    );
+    _insertCellInRowColumnOrder(rowEl, newCell, colIdx);
+  }
+
+  void _setCellTypeAndValue(
+    XmlElement cell,
+    String value,
+    bool isNumeric,
+  ) {
+    _setOrReplaceAttribute(cell, 't', isNumeric ? 'n' : 'str');
 
     XmlElement? vEl;
     for (final ch in cell.childElements) {
@@ -247,10 +269,35 @@ class ArmValueInjector {
         XmlElement(XmlName('v'), [], [XmlText(value)]),
       );
     }
+  }
 
-    if (cEl == null) {
-      rowEl.children.add(cell);
+  /// Inserts [cell] among [rowEl]'s `<c>` children so column order is ascending.
+  void _insertCellInRowColumnOrder(
+    XmlElement rowEl,
+    XmlElement cell,
+    int targetColIdx,
+  ) {
+    final children = rowEl.children;
+    var insertAt = 0;
+    for (var i = 0; i < children.length; i++) {
+      final child = children[i];
+      if (child is! XmlElement || child.name.local != 'c') {
+        insertAt = i + 1;
+        continue;
+      }
+      final r = child.getAttribute('r');
+      final otherCol = r != null ? _columnIndexFromCellRef(r) : null;
+      if (otherCol == null) {
+        insertAt = i + 1;
+        continue;
+      }
+      if (otherCol > targetColIdx) {
+        children.insert(i, cell);
+        return;
+      }
+      insertAt = i + 1;
     }
+    children.insert(insertAt, cell);
   }
 
   void _setOrReplaceAttribute(XmlElement e, String name, String value) {
@@ -261,4 +308,11 @@ class ArmValueInjector {
   // Build Excel cell reference e.g. C49
   String _cellRef(int colIdx, int rowIdx) =>
       '${columnIndexToLettersZeroBased(colIdx)}${rowIdx + 1}';
+}
+
+/// 0-based column index from an Excel cell reference (e.g. `C49` → 2).
+int? _columnIndexFromCellRef(String cellRef) {
+  final m = RegExp(r'^([A-Za-z]+)(\d+)$').firstMatch(cellRef.trim());
+  if (m == null) return null;
+  return columnLettersToIndexZeroBased(m.group(1)!);
 }

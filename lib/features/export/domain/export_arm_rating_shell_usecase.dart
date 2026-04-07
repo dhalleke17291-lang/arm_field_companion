@@ -299,6 +299,14 @@ class ExportArmRatingShellUseCase {
     final parser = ArmShellParser(shellPath);
     final shellImport = await parser.parse();
 
+    // TEMP DEBUG — remove after ARM shell column diagnosis
+    for (final col in shellImport.assessmentColumns) {
+      debugPrint(
+        'SHELL col idx=${col.columnIndex} letter=${col.columnLetter} '
+        'seName=${col.seName} ratingType=${col.ratingType}',
+      );
+    }
+
     final sortedAssessments = List<TrialAssessment>.from(assessments);
     final withColIdx =
         assessments.where((a) => a.armImportColumnIndex != null).length;
@@ -363,6 +371,16 @@ class ExportArmRatingShellUseCase {
 
     final positionalFallbackTrialAssessmentIds = <int>{};
     final ratingValues = <ArmRatingValue>[];
+    // TEMP DEBUG — remove after diagnosis
+    debugPrint(
+      'EXPORT-DBG sessionId=$sessionId assessmentCount=${sortedAssessments.length}',
+    );
+    for (final ta in sortedAssessments) {
+      debugPrint(
+        'EXPORT-DBG TA id=${ta.id} legacyId=${ta.legacyAssessmentId} '
+        'pestCode=${ta.pestCode} armIdx=${ta.armImportColumnIndex}',
+      );
+    }
     for (final pr in shellImport.plotRows) {
       final plot = _plotForShellPlotNumber(shellDataPlots, pr.plotNumber);
       if (plot == null) {
@@ -399,6 +417,11 @@ class ExportArmRatingShellUseCase {
           sessionId: sessionId,
         );
         final valueStr = armRatingShellCellValueFromRating(rating);
+        // TEMP DEBUG — remove after diagnosis
+        debugPrint(
+          'EXPORT-DBG plot=${pr.plotNumber} ta=${ta.id} legacyId=$legacyId '
+          'rating=${rating?.id} value=$valueStr',
+        );
         ratingValues.add(
           ArmRatingValue(
             plotNumber: pr.plotNumber,
@@ -408,6 +431,11 @@ class ExportArmRatingShellUseCase {
         );
       }
     }
+    // TEMP DEBUG — remove after diagnosis
+    debugPrint(
+      'EXPORT-DBG totalValues=${ratingValues.length} '
+      'nonEmpty=${ratingValues.where((v) => v.value.trim().isNotEmpty).length}',
+    );
 
     if (positionalFallbackTrialAssessmentIds.isNotEmpty) {
       final ids = positionalFallbackTrialAssessmentIds.toList()..sort();
