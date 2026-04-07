@@ -64,7 +64,8 @@ void main() {
     );
   });
 
-  test('repeated assessment key adds warning and blocked status', () {
+  test('distinct columns with same logical key — high confidence, semantic repeat note',
+      () {
     final headers = [
       'Plot No.',
       'trt',
@@ -84,15 +85,14 @@ void main() {
 
     final report = builder.build(parsed);
 
-    expect(report.confidence, ImportConfidence.blocked);
+    expect(report.confidence, ImportConfidence.high);
     expect(
       report.warnings,
       contains(
-        'Repeated assessment keys were detected. ARM round-trip export '
-        'cannot run safely until this is resolved.',
+        contains('Multiple columns share the same assessment identity'),
       ),
     );
-    expect(report.exportStatus, 'Blocked');
+    expect(report.exportStatus, 'Ready');
   });
 
   test('medium unknown pattern contributes warning text', () {

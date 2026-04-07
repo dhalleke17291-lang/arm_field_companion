@@ -25,7 +25,8 @@ void main() {
     expect(buildExportBlockReasonFromParsed(parsed), isNull);
   });
 
-  test('blocked with repeated-assessment-key builds concrete reason', () {
+  test('blocked with duplicate-assessment-column-instance builds concrete reason',
+      () {
     const parsed = ParsedArmCsv(
       sourceFileName: 'x.csv',
       sourceRoute: 'arm_csv_v1_unvalidated',
@@ -37,10 +38,10 @@ void main() {
       assessments: [],
       unknownPatterns: [
         UnknownPatternFlag(
-          type: 'repeated-assessment-key',
+          type: 'duplicate-assessment-column-instance',
           severity: PatternSeverity.high,
           affectsExport: true,
-          rawValue: 'AVEFA',
+          rawValue: 'CONTRO|1-Jul-26|%|col3',
         ),
       ],
       hasSubsamples: false,
@@ -51,8 +52,35 @@ void main() {
     );
     final r = buildExportBlockReasonFromParsed(parsed);
     expect(r, isNotNull);
-    expect(r, contains('AVEFA'));
-    expect(r, contains('cannot yet be mapped'));
+    expect(r, contains('CONTRO|1-Jul-26|%|col3'));
+    expect(r, contains('safe ARM round-trip export'));
+  });
+
+  test('repeated semantic assessment flag alone does not build block reason', () {
+    const parsed = ParsedArmCsv(
+      sourceFileName: 'x.csv',
+      sourceRoute: 'arm_csv_v1_unvalidated',
+      armVersionHint: null,
+      rawHeaders: [],
+      columnOrder: [],
+      columns: [],
+      dataRows: [],
+      assessments: [],
+      unknownPatterns: [
+        UnknownPatternFlag(
+          type: 'repeated-semantic-assessment-key',
+          severity: PatternSeverity.low,
+          affectsExport: false,
+          rawValue: 'CONTRO|1-Jul-26|%',
+        ),
+      ],
+      hasSubsamples: false,
+      hasMultiApplication: false,
+      hasSparseData: false,
+      hasRepeatedCodes: true,
+      importConfidence: ImportConfidence.high,
+    );
+    expect(buildExportBlockReasonFromParsed(parsed), isNull);
   });
 
   test('blocked with no high flags uses identity fallback', () {

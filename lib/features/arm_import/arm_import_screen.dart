@@ -101,6 +101,11 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
     switch (u.type) {
       case 'repeated-assessment-key':
         return 'Repeated assessment columns detected (${u.rawValue})';
+      case 'repeated-semantic-assessment-key':
+        return 'Same assessment identity on multiple columns (${u.rawValue}); '
+            'each column is kept separate for export.';
+      case 'duplicate-assessment-column-instance':
+        return 'Duplicate assessment column instance (${u.rawValue}).';
       case 'missing-or-invalid-plot-number':
         return 'One or more rows have an invalid or missing plot number.';
       case 'duplicate-plot-number':
@@ -211,7 +216,9 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
 
     final repeatedAssessmentKeys = <String>{
       for (final u in r.unknownPatterns)
-        if (u.type == 'repeated-assessment-key' && u.rawValue.trim().isNotEmpty)
+        if ((u.type == 'repeated-assessment-key' ||
+                u.type == 'repeated-semantic-assessment-key') &&
+            u.rawValue.trim().isNotEmpty)
           u.rawValue.trim(),
     };
 

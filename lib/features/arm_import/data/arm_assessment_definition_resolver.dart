@@ -30,14 +30,12 @@ class ArmAssessmentDefinitionResolver {
     final warnings = <String>[];
     final unknownPatterns = <UnknownPatternFlag>[];
     final map = <String, int>{};
-    final seenKeys = <String>{};
 
     for (final token in assessments) {
       final key = token.assessmentKey;
-      if (seenKeys.contains(key)) {
+      if (map.containsKey(key)) {
         continue;
       }
-      seenKeys.add(key);
 
       final trimmedCode = token.armCode.trim();
       if (trimmedCode.isEmpty) {

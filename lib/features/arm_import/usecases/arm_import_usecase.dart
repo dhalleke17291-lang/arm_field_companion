@@ -358,32 +358,21 @@ class ArmImportUseCase {
     }
   }
 
-  /// One [TrialAssessment] per unique [AssessmentToken.assessmentKey], column order.
+  /// One [TrialAssessment] per physical assessment column ([AssessmentToken.columnIndex]).
   Future<List<String>> _insertTrialAssessmentsFromResolved({
     required ParsedArmCsv parsed,
     required int trialId,
     required Map<String, int> assessmentKeyToDefinitionId,
   }) async {
     final linkWarnings = <String>[];
-    final seenKeys = <String>{};
     var sortOrder = 0;
     for (final token in parsed.assessments) {
       final key = token.assessmentKey;
-      if (seenKeys.contains(key)) continue;
-      seenKeys.add(key);
       final defId = assessmentKeyToDefinitionId[key];
       if (defId == null) {
         linkWarnings.add('Assessment could not be linked: $key');
         continue;
       }
-      final existing = await _trialAssessmentRepository.getByTrialAndDefinition(
-        trialId,
-        defId,
-      );
-      if (existing != null) {
-        continue;
-      }
-      final colIdx = _armImportColumnIndexForKey(parsed, key);
       await _trialAssessmentRepository.addToTrial(
         trialId: trialId,
         assessmentDefinitionId: defId,
@@ -395,7 +384,7 @@ class ArmImportUseCase {
         sortOrder: sortOrder,
         isActive: true,
         pestCode: token.armCode,
-        armImportColumnIndex: colIdx,
+        armImportColumnIndex: token.columnIndex,
       );
       sortOrder++;
     }
@@ -481,24 +470,22 @@ class ArmImportUseCase {
     return out;
   }
 
-  /// [AssessmentToken.assessmentKey] → legacy [Assessments.id] for rating rows.
-  Future<Map<String, int>> _buildAssessmentKeyToLegacyAssessmentId({
+  /// CSV [AssessmentToken.columnIndex] → legacy [Assessments.id] for rating rows.
+  Future<Map<int, int>> _buildColumnIndexToLegacyAssessmentId({
     required int trialId,
     required ParsedArmCsv parsed,
     required Map<String, int> assessmentKeyToDefinitionId,
   }) async {
     final trialAssessments = await _trialAssessmentRepository.getForTrial(trialId);
-    final out = <String, int>{};
-    final seenKeys = <String>{};
+    final out = <int, int>{};
     for (final token in parsed.assessments) {
       final key = token.assessmentKey;
-      if (seenKeys.contains(key)) continue;
-      seenKeys.add(key);
       final defId = assessmentKeyToDefinitionId[key];
       if (defId == null) continue;
       TrialAssessment? trialAssess;
       for (final t in trialAssessments) {
-        if (t.assessmentDefinitionId == defId) {
+        if (t.assessmentDefinitionId == defId &&
+            t.armImportColumnIndex == token.columnIndex) {
           trialAssess = t;
           break;
         }
@@ -511,7 +498,7 @@ class ArmImportUseCase {
       );
       if (ids.length == 1) {
         final legacyId = ids.first;
-        out[key] = legacyId;
+        out[token.columnIndex] = legacyId;
         await _trialAssessmentRepository.updateLegacyAssessmentId(
           trialAssess.id,
           legacyId,
@@ -534,12 +521,12 @@ class ArmImportUseCase {
     if (rowIndexToPlotPk.isEmpty) {
       return;
     }
-    final assessmentKeyToLegacy = await _buildAssessmentKeyToLegacyAssessmentId(
+    final columnIndexToLegacy = await _buildColumnIndexToLegacyAssessmentId(
       trialId: trialId,
       parsed: parsed,
       assessmentKeyToDefinitionId: assessmentKeyToDefinitionId,
     );
-    if (assessmentKeyToLegacy.isEmpty) {
+    if (columnIndexToLegacy.isEmpty) {
       return;
     }
 
@@ -570,11 +557,12 @@ class ArmImportUseCase {
       for (final col in assessmentColumns) {
         final token = col.assessmentToken!;
         final key = token.assessmentKey;
-        final legacyId = assessmentKeyToLegacy[key];
+        final legacyId = columnIndexToLegacy[token.columnIndex];
         if (legacyId == null) {
           continue;
         }
-        final raw = row[col.header];
+        final raw =
+            row[armImportDataRowKeyForColumnIndex(col.index)] ?? row[col.header];
         if (raw == null || raw.trim().isEmpty) {
           continue;
         }
@@ -637,15 +625,6 @@ class ArmImportUseCase {
       }
     }
   }
-}
-
-/// First CSV column index for [assessmentKey] ([ArmColumnClassification.index]).
-int? _armImportColumnIndexForKey(ParsedArmCsv parsed, String assessmentKey) {
-  for (final c in parsed.columns) {
-    final t = c.assessmentToken;
-    if (t != null && t.assessmentKey == assessmentKey) return c.index;
-  }
-  return null;
 }
 
 String? _findHeaderByRole(

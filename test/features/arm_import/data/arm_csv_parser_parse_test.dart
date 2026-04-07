@@ -53,7 +53,8 @@ void main() {
     expect(parsed.hasSparseData, isTrue);
   });
 
-  test('repeated assessment key — flag and blocked confidence', () {
+  test('same logical assessmentKey on distinct columns — per-column identity, not blocked',
+      () {
     final headers = [
       'Plot No.',
       'trt',
@@ -73,12 +74,20 @@ void main() {
 
     expect(parsed.hasRepeatedCodes, isTrue);
     expect(
-      parsed.unknownPatterns
-          .where((f) => f.type == 'repeated-assessment-key')
-          .length,
-      1,
+      parsed.unknownPatterns.where((f) => f.type == 'repeated-assessment-key'),
+      isEmpty,
     );
-    expect(parsed.importConfidence, ImportConfidence.blocked);
+    expect(
+      parsed.unknownPatterns.where((f) => f.type == 'repeated-semantic-assessment-key'),
+      hasLength(1),
+    );
+    expect(parsed.importConfidence, ImportConfidence.high);
+    expect(parsed.assessments.length, 2);
+    expect(
+      parsed.assessments[0].columnInstanceKey,
+      isNot(equals(parsed.assessments[1].columnInstanceKey)),
+    );
+    expect(parsed.assessments[0].assessmentKey, parsed.assessments[1].assessmentKey);
   });
 
   test('tryParseAssessmentToken accepts mixed-case Yield; armCode YIELD unit bu/ac', () {
@@ -87,6 +96,7 @@ void main() {
     expect(t!.armCode, 'YIELD');
     expect(t.unit, 'bu/ac');
     expect(t.timingCode, '1-Sep-26');
+    expect(t.columnIndex, 0);
   });
 
   test('missing rep column — identity incomplete — blocked', () {

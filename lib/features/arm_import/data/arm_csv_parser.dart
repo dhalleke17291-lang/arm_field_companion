@@ -10,6 +10,20 @@ import '../domain/models/parsed_row_check_result.dart';
 import '../domain/models/unknown_pattern_flag.dart';
 import '../domain/enums/import_confidence.dart';
 
+/// Stable map key for a cell in [ParsedArmCsv.dataRows] by 0-based CSV column index.
+/// Use this for assessment import when two columns share the same [header] text.
+String armImportDataRowKeyForColumnIndex(int columnIndex) =>
+    '__armImportCol$columnIndex';
+
+// --- Verified ARM assessment identity wiring (import/export) ---
+// - [AssessmentToken.assessmentKey]: semantic only (armCode|timing|unit), defined on token.
+// - [AssessmentToken.columnInstanceKey]: semantic + '|col' + columnIndex; not a replacement for assessmentKey.
+// - [ArmImportUseCase._insertTrialAssessmentsFromResolved]: one TrialAssessment per physical column; no dedupe by assessmentKey.
+// - [ArmImportUseCase._buildColumnIndexToLegacyAssessmentId] + [_importRatingsFromParsedCsv]: map by columnIndex.
+// - [ImportConfidence.blocked]: only from high severity + affectsExport (e.g. duplicate column instance, plot issues);
+//   repeated *semantic* keys add [repeated-semantic-assessment-key] (low, non-export-blocking).
+// - Shell export: [ArmAssessmentMatcher] pins by armImportColumnIndex first; [ArmAssessmentIdentity] is per TrialAssessment row.
+
 /// ARM CSV header parsing and classification.
 class ArmCsvParser {
   static const Map<String, String> _identityHeaderRoles = {
@@ -59,7 +73,7 @@ class ArmCsvParser {
       );
     }
 
-    final token = tryParseAssessmentToken(header);
+    final token = tryParseAssessmentToken(header, columnIndex: index);
     if (token != null) {
       return ArmColumnClassification(
         header: header,
@@ -78,7 +92,12 @@ class ArmCsvParser {
 
   /// ARM assessment headers are whitespace-separated (no pipe delimiters in source CSV).
   /// [rawHeader] on the token is the original [header] string (untrimmed).
-  AssessmentToken? tryParseAssessmentToken(String header) {
+  ///
+  /// [columnIndex] defaults to 0 for call sites that only parse shape (e.g. shell export).
+  AssessmentToken? tryParseAssessmentToken(
+    String header, {
+    int columnIndex = 0,
+  }) {
     final trimmed = header.trim();
     if (trimmed.isEmpty) return null;
 
@@ -110,6 +129,7 @@ class ArmCsvParser {
       armCode: armCode.toUpperCase(),
       timingCode: timingCode,
       unit: unit,
+      columnIndex: columnIndex,
       ratingDate: ratingDate,
     );
   }
@@ -172,7 +192,9 @@ class ArmCsvParser {
       for (final col in columns) {
         final value = col.index < row.length ? row[col.index] : null;
         final stringValue = value?.toString();
-        rowMap[col.header] = _parseNullableCell(stringValue);
+        final parsedCell = _parseNullableCell(stringValue);
+        rowMap[col.header] = parsedCell;
+        rowMap[armImportDataRowKeyForColumnIndex(col.index)] = parsedCell;
       }
 
       final plotCol =
@@ -282,21 +304,48 @@ class ArmCsvParser {
     List<Map<String, String?>> rows,
     List<ArmColumnClassification> columns,
   ) {
-    final assessmentHeaders = columns
+    final assessmentCols = columns
         .where((c) => c.kind == ArmColumnKind.assessment)
-        .map((c) => c.header)
         .toList(growable: false);
 
     for (final row in rows) {
-      for (final header in assessmentHeaders) {
-        if (row[header] == null) return true;
+      for (final col in assessmentCols) {
+        final v = row[armImportDataRowKeyForColumnIndex(col.index)];
+        if (v == null) return true;
       }
     }
 
     return false;
   }
 
-  bool _detectRepeatedAssessmentKeys(
+  /// Same [AssessmentToken.assessmentKey] on more than one column — informational for UI / grouping;
+  /// does **not** block export when each column has its own anchor (import creates one TrialAssessment per column).
+  bool _detectRepeatedSemanticAssessmentKeys(
+    List<AssessmentToken> assessments,
+    List<UnknownPatternFlag> flags,
+  ) {
+    final keyToIndices = <String, Set<int>>{};
+    for (final t in assessments) {
+      keyToIndices.putIfAbsent(t.assessmentKey, () => {}).add(t.columnIndex);
+    }
+    var any = false;
+    for (final e in keyToIndices.entries) {
+      if (e.value.length > 1) {
+        any = true;
+        flags.add(UnknownPatternFlag(
+          type: 'repeated-semantic-assessment-key',
+          severity: PatternSeverity.low,
+          affectsExport: false,
+          rawValue: e.key,
+        ));
+      }
+    }
+    return any;
+  }
+
+  /// Defensive: duplicate [AssessmentToken.columnInstanceKey] (same column index twice in list — invalid).
+  /// This **is** export-blocking: round-trip cannot trust anchors.
+  bool _detectDuplicateColumnInstanceKeys(
     List<AssessmentToken> assessments,
     List<UnknownPatternFlag> flags,
   ) {
@@ -304,13 +353,13 @@ class ArmCsvParser {
     var repeated = false;
 
     for (final token in assessments) {
-      if (!seen.add(token.assessmentKey)) {
+      if (!seen.add(token.columnInstanceKey)) {
         repeated = true;
         flags.add(UnknownPatternFlag(
-          type: 'repeated-assessment-key',
+          type: 'duplicate-assessment-column-instance',
           severity: PatternSeverity.high,
           affectsExport: true,
-          rawValue: token.assessmentKey,
+          rawValue: token.columnInstanceKey,
         ));
       }
     }
@@ -364,8 +413,11 @@ class ArmCsvParser {
         .toList(growable: false);
 
     final hasSparseData = _detectSparseData(parsedRows, columns);
-    final hasRepeatedCodes =
-        _detectRepeatedAssessmentKeys(assessments, flags);
+    final hasRepeatedSemantic =
+        _detectRepeatedSemanticAssessmentKeys(assessments, flags);
+    final hasDuplicateInstance =
+        _detectDuplicateColumnInstanceKeys(assessments, flags);
+    final hasRepeatedCodes = hasRepeatedSemantic || hasDuplicateInstance;
     final confidence = _scoreConfidence(flags, columns);
 
     return ParsedArmCsv(

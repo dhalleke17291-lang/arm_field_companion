@@ -27,8 +27,15 @@ class ArmImportReportBuilder {
     if (parsed.hasRepeatedCodes) {
       if (parsed.importConfidence == ImportConfidence.blocked) {
         warnings.add(
-          'Repeated assessment keys were detected. ARM round-trip export '
-          'cannot run safely until this is resolved.',
+          'Assessment column layout or export anchor issues were detected. '
+          'ARM round-trip export cannot run safely until this is resolved.',
+        );
+      } else if (parsed.unknownPatterns.any(
+            (f) => f.type == 'repeated-semantic-assessment-key',
+          )) {
+        warnings.add(
+          'Multiple columns share the same assessment identity (code, timing, '
+          'and unit). Each column is stored separately with its own export anchor.',
         );
       } else {
         warnings.add(

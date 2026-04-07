@@ -26,12 +26,14 @@ void main() {
       armCode: 'ZZ_UNIQUE_A',
       timingCode: 'T1',
       unit: '%',
+      columnIndex: 3,
     );
     const t2 = AssessmentToken(
       rawHeader: 'H2',
       armCode: 'ZZ_UNIQUE_B',
       timingCode: 'T1',
       unit: '%',
+      columnIndex: 4,
     );
 
     final r = await resolver.resolveAll(
@@ -55,16 +57,24 @@ void main() {
   });
 
   test('duplicate assessmentKeys do not create duplicate definitions', () async {
-    const t = AssessmentToken(
+    const t1 = AssessmentToken(
       rawHeader: 'H',
       armCode: 'ZZ_DUP_ONE',
       timingCode: 'T1',
       unit: '%',
+      columnIndex: 3,
+    );
+    const t2 = AssessmentToken(
+      rawHeader: 'H2',
+      armCode: 'ZZ_DUP_ONE',
+      timingCode: 'T1',
+      unit: '%',
+      columnIndex: 4,
     );
 
     final r = await resolver.resolveAll(
       trialId: 1,
-      assessments: [t, t],
+      assessments: [t1, t2],
     );
 
     expect(r.assessmentKeyToDefinitionId.length, 1);
@@ -72,7 +82,7 @@ void main() {
     final rows = await (db.select(db.assessmentDefinitions)
           ..where((d) => d.code.equals(
                 ArmAssessmentDefinitionResolver.definitionCodeForAssessmentKey(
-                  t.assessmentKey,
+                  t1.assessmentKey,
                 ),
               )))
         .get();
@@ -85,6 +95,7 @@ void main() {
       armCode: '   ',
       timingCode: 'T1',
       unit: '%',
+      columnIndex: 3,
     );
 
     final r = await resolver.resolveAll(

@@ -29,7 +29,16 @@ String? buildExportBlockReasonFromParsed(ParsedArmCsv parsed) {
 
 String _sentenceForHighExportBlockingFlag(UnknownPatternFlag f) {
   switch (f.type) {
+    case 'duplicate-assessment-column-instance':
+      final key = f.rawValue.trim();
+      if (key.isEmpty) {
+        return 'Duplicate assessment column anchors were detected; ARM '
+            'round-trip export is not safe.';
+      }
+      return 'Ambiguous duplicate assessment column instance "$key" prevents '
+          'safe ARM round-trip export.';
     case 'repeated-assessment-key':
+      // Legacy flag type; treat like unsafe column layout.
       final key = f.rawValue.trim();
       if (key.isEmpty) {
         return 'Some imported assessment occurrences cannot yet be mapped '

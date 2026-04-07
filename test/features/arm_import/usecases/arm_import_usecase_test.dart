@@ -11,6 +11,7 @@ import 'package:arm_field_companion/features/arm_import/data/arm_import_report_b
 import 'package:arm_field_companion/features/arm_import/data/arm_import_snapshot_service.dart';
 import 'package:arm_field_companion/features/arm_import/data/compatibility_profile_builder.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/assessment_token.dart';
+import 'package:arm_field_companion/features/arm_import/domain/enums/import_confidence.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/resolved_arm_assessment_definitions.dart';
 import 'package:arm_field_companion/features/arm_import/domain/results/arm_import_result.dart';
@@ -469,7 +470,7 @@ void main() {
     expect(tas[1].sortOrder, 1);
   });
 
-  test('duplicate assessment key does not create duplicate trial assessments',
+  test('identical assessment headers on two columns create two trial assessments',
       () async {
     final unique = DateTime.now().microsecondsSinceEpoch;
     final fileName = 'ta_dupkey_$unique.csv';
@@ -480,11 +481,30 @@ void main() {
     final r = await uc.execute(content, sourceFileName: fileName);
 
     expect(r.success, true);
+    expect(r.confidence, ImportConfidence.high);
     final tid = r.trialId!;
     final tas = await (db.select(db.trialAssessments)
-          ..where((t) => t.trialId.equals(tid)))
+          ..where((t) => t.trialId.equals(tid))
+          ..orderBy([(t) => OrderingTerm.asc(t.armImportColumnIndex)]))
         .get();
-    expect(tas, hasLength(1));
+    expect(tas, hasLength(2));
+    expect(tas[0].assessmentDefinitionId, tas[1].assessmentDefinitionId);
+    expect(tas[0].armImportColumnIndex, 3);
+    expect(tas[1].armImportColumnIndex, 4);
+
+    final sid = r.importSessionId!;
+    final plot = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid)))
+        .getSingle();
+    final ratings = await (db.select(db.ratingRecords)
+          ..where((rr) =>
+              rr.trialId.equals(tid) &
+              rr.sessionId.equals(sid) &
+              rr.plotPk.equals(plot.id) &
+              rr.isCurrent.equals(true)))
+        .get();
+    expect(ratings.length, 2);
+    expect(ratings.map((e) => e.numericValue).toSet(), {5.0, 6.0});
   });
 
   test('import creates session and session_assessments for legacy assessments',
@@ -761,6 +781,44 @@ void main() {
     expect(ratings.single.numericValue, 5.0);
     expect(ratings.single.textValue, isNull);
     expect(ratings.single.isCurrent, isTrue);
+  });
+
+  test('two columns with same assessmentKey get separate trial assessments and ratings',
+      () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final fileName = 'dup_assess_$unique.csv';
+    final uc = _makeUseCase(db);
+    const content =
+        'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %,XYZZZ 1-Jul-26 CONTRO %\n101,1,1,5,9\n';
+
+    final r = await uc.execute(content, sourceFileName: fileName);
+
+    expect(r.success, isTrue);
+    expect(r.confidence, ImportConfidence.high);
+    final tid = r.trialId!;
+    final sid = r.importSessionId!;
+
+    final tasQuery = db.select(db.trialAssessments)
+      ..where((t) => t.trialId.equals(tid))
+      ..orderBy([(t) => OrderingTerm.asc(t.armImportColumnIndex)]);
+    final tas = await tasQuery.get();
+    expect(tas.length, 2);
+    expect(tas[0].armImportColumnIndex, 3);
+    expect(tas[1].armImportColumnIndex, 4);
+    expect(tas[0].assessmentDefinitionId, tas[1].assessmentDefinitionId);
+
+    final plot = await (db.select(db.plots)
+          ..where((p) => p.trialId.equals(tid)))
+        .getSingle();
+    final ratings = await (db.select(db.ratingRecords)
+          ..where((rr) =>
+              rr.trialId.equals(tid) &
+              rr.sessionId.equals(sid) &
+              rr.plotPk.equals(plot.id) &
+              rr.isCurrent.equals(true)))
+        .get();
+    expect(ratings.length, 2);
+    expect(ratings.map((e) => e.numericValue).toSet(), {5.0, 9.0});
   });
 
   test('import persists text rating when cell is non-numeric', () async {

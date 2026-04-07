@@ -106,7 +106,7 @@ void main() {
     expect(snap.plotCount, 1);
   });
 
-  test('repeated assessment key carries through into unknownPatterns', () {
+  test('same logical key on two columns — snapshot lists both column indices', () {
     final headers = [
       'Plot No.',
       'trt',
@@ -135,7 +135,19 @@ void main() {
     expect(snap.hasRepeatedCodes, isTrue);
     expect(
       snap.unknownPatterns.any((m) => m['type'] == 'repeated-assessment-key'),
+      isFalse,
+    );
+    expect(
+      snap.unknownPatterns.any((m) => m['type'] == 'repeated-semantic-assessment-key'),
       isTrue,
+    );
+    final tokens = snap.assessmentTokens;
+    expect(tokens.length, 2);
+    expect(tokens[0]['columnIndex'], 3);
+    expect(tokens[1]['columnIndex'], 4);
+    expect(
+      tokens[0]['columnInstanceKey'],
+      isNot(equals(tokens[1]['columnInstanceKey'])),
     );
   });
 

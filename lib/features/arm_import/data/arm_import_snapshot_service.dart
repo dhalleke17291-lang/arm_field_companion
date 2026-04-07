@@ -35,6 +35,8 @@ class ArmImportSnapshotService {
         'armCode': a.armCode,
         'timingCode': a.timingCode,
         'unit': a.unit,
+        'columnIndex': a.columnIndex,
+        'columnInstanceKey': a.columnInstanceKey,
         'ratingDate': a.ratingDate?.toUtc().toIso8601String(),
         'assessmentKey': a.assessmentKey,
       };
