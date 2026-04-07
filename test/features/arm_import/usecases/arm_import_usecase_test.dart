@@ -190,8 +190,8 @@ void main() {
           ..where((t) => t.trialId.equals(tid)))
         .get();
     expect(tas, hasLength(1));
-    // Plot No., trt, reps = 0..2; assessment column index 3
-    expect(tas.single.armImportColumnIndex, 3);
+    // CSV assessment col 3 → shell-aligned index 2 (Plot Data assessments start at col 2).
+    expect(tas.single.armImportColumnIndex, 2);
   });
 
   test('ERA column sets trial location', () async {
@@ -489,8 +489,8 @@ void main() {
         .get();
     expect(tas, hasLength(2));
     expect(tas[0].assessmentDefinitionId, tas[1].assessmentDefinitionId);
-    expect(tas[0].armImportColumnIndex, 3);
-    expect(tas[1].armImportColumnIndex, 4);
+    expect(tas[0].armImportColumnIndex, 2);
+    expect(tas[1].armImportColumnIndex, 3);
 
     final sid = r.importSessionId!;
     final plot = await (db.select(db.plots)
@@ -803,8 +803,8 @@ void main() {
       ..orderBy([(t) => OrderingTerm.asc(t.armImportColumnIndex)]);
     final tas = await tasQuery.get();
     expect(tas.length, 2);
-    expect(tas[0].armImportColumnIndex, 3);
-    expect(tas[1].armImportColumnIndex, 4);
+    expect(tas[0].armImportColumnIndex, 2);
+    expect(tas[1].armImportColumnIndex, 3);
     expect(tas[0].assessmentDefinitionId, tas[1].assessmentDefinitionId);
 
     final plot = await (db.select(db.plots)

@@ -25,7 +25,33 @@ import '../domain/models/arm_column_classification.dart';
 import '../domain/models/parsed_arm_csv.dart';
 import '../domain/models/resolved_arm_assessment_definitions.dart';
 import '../domain/models/unknown_pattern_flag.dart';
+import '../domain/models/assessment_token.dart';
 import '../domain/results/arm_import_result.dart';
+
+/// 0-based sheet column where ARM Rating Shell assessment metadata starts
+/// ([ArmShellParser] loop); must match shell parser.
+const int _kArmShellFirstAssessmentColumnIndex = 2;
+
+int? _minAssessmentCsvColumnIndex(List<AssessmentToken> assessments) {
+  if (assessments.isEmpty) return null;
+  var m = assessments.first.columnIndex;
+  for (var i = 1; i < assessments.length; i++) {
+    final c = assessments[i].columnIndex;
+    if (c < m) m = c;
+  }
+  return m;
+}
+
+/// Maps a CSV assessment column to [ArmColumnMap.columnIndex] space for shell export pin.
+/// [tokenCsvColumnIndex] is raw CSV position; [firstAssessmentCsvColumnIndex] is the
+/// leftmost assessment column in that import (see [AssessmentToken.columnIndex]).
+int _shellAlignedArmImportColumnIndex({
+  required int tokenCsvColumnIndex,
+  required int firstAssessmentCsvColumnIndex,
+}) {
+  return _kArmShellFirstAssessmentColumnIndex +
+      (tokenCsvColumnIndex - firstAssessmentCsvColumnIndex);
+}
 
 /// Orchestrates ARM CSV import: parse → snapshot/profile/report → persist (metadata only in this step).
 class ArmImportUseCase {
@@ -168,11 +194,15 @@ class ArmImportUseCase {
           assessments: parsed.assessments,
         );
 
+        final firstAssessmentCsvIdx =
+            _minAssessmentCsvColumnIndex(parsed.assessments) ?? 0;
+
         linkWarnings = await _insertTrialAssessmentsFromResolved(
           parsed: parsed,
           trialId: trialId,
           assessmentKeyToDefinitionId:
               resolvedAssessments.assessmentKeyToDefinitionId,
+          firstAssessmentCsvColumnIndex: firstAssessmentCsvIdx,
         );
 
         importSessionId = await _createOrReuseImportSession(trialId: trialId);
@@ -211,6 +241,8 @@ class ArmImportUseCase {
           importSessionId: importSessionId!,
           assessmentKeyToDefinitionId:
               resolvedAssessments.assessmentKeyToDefinitionId,
+          firstAssessmentCsvColumnIndex:
+              _minAssessmentCsvColumnIndex(parsed.assessments) ?? 0,
         );
       }
 
@@ -358,11 +390,14 @@ class ArmImportUseCase {
     }
   }
 
-  /// One [TrialAssessment] per physical assessment column ([AssessmentToken.columnIndex]).
+  /// One [TrialAssessment] per physical assessment column.
+  /// [armImportColumnIndex] is stored in **shell sheet** space (first assessment = 2),
+  /// not raw CSV index; see [_shellAlignedArmImportColumnIndex].
   Future<List<String>> _insertTrialAssessmentsFromResolved({
     required ParsedArmCsv parsed,
     required int trialId,
     required Map<String, int> assessmentKeyToDefinitionId,
+    required int firstAssessmentCsvColumnIndex,
   }) async {
     final linkWarnings = <String>[];
     var sortOrder = 0;
@@ -373,6 +408,10 @@ class ArmImportUseCase {
         linkWarnings.add('Assessment could not be linked: $key');
         continue;
       }
+      final shellIdx = _shellAlignedArmImportColumnIndex(
+        tokenCsvColumnIndex: token.columnIndex,
+        firstAssessmentCsvColumnIndex: firstAssessmentCsvColumnIndex,
+      );
       await _trialAssessmentRepository.addToTrial(
         trialId: trialId,
         assessmentDefinitionId: defId,
@@ -384,7 +423,7 @@ class ArmImportUseCase {
         sortOrder: sortOrder,
         isActive: true,
         pestCode: token.armCode,
-        armImportColumnIndex: token.columnIndex,
+        armImportColumnIndex: shellIdx,
       );
       sortOrder++;
     }
@@ -471,10 +510,12 @@ class ArmImportUseCase {
   }
 
   /// CSV [AssessmentToken.columnIndex] → legacy [Assessments.id] for rating rows.
+  /// Matches [TrialAssessment] rows by shell-aligned [TrialAssessment.armImportColumnIndex].
   Future<Map<int, int>> _buildColumnIndexToLegacyAssessmentId({
     required int trialId,
     required ParsedArmCsv parsed,
     required Map<String, int> assessmentKeyToDefinitionId,
+    required int firstAssessmentCsvColumnIndex,
   }) async {
     final trialAssessments = await _trialAssessmentRepository.getForTrial(trialId);
     final out = <int, int>{};
@@ -482,10 +523,14 @@ class ArmImportUseCase {
       final key = token.assessmentKey;
       final defId = assessmentKeyToDefinitionId[key];
       if (defId == null) continue;
+      final shellIdx = _shellAlignedArmImportColumnIndex(
+        tokenCsvColumnIndex: token.columnIndex,
+        firstAssessmentCsvColumnIndex: firstAssessmentCsvColumnIndex,
+      );
       TrialAssessment? trialAssess;
       for (final t in trialAssessments) {
         if (t.assessmentDefinitionId == defId &&
-            t.armImportColumnIndex == token.columnIndex) {
+            t.armImportColumnIndex == shellIdx) {
           trialAssess = t;
           break;
         }
@@ -513,6 +558,7 @@ class ArmImportUseCase {
     required int trialId,
     required int importSessionId,
     required Map<String, int> assessmentKeyToDefinitionId,
+    required int firstAssessmentCsvColumnIndex,
   }) async {
     final rowIndexToPlotPk = await _buildRowIndexToPlotPk(
       parsed: parsed,
@@ -525,6 +571,7 @@ class ArmImportUseCase {
       trialId: trialId,
       parsed: parsed,
       assessmentKeyToDefinitionId: assessmentKeyToDefinitionId,
+      firstAssessmentCsvColumnIndex: firstAssessmentCsvColumnIndex,
     );
     if (columnIndexToLegacy.isEmpty) {
       return;

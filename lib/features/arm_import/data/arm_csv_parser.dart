@@ -19,7 +19,8 @@ String armImportDataRowKeyForColumnIndex(int columnIndex) =>
 // - [AssessmentToken.assessmentKey]: semantic only (armCode|timing|unit), defined on token.
 // - [AssessmentToken.columnInstanceKey]: semantic + '|col' + columnIndex; not a replacement for assessmentKey.
 // - [ArmImportUseCase._insertTrialAssessmentsFromResolved]: one TrialAssessment per physical column; no dedupe by assessmentKey.
-// - [ArmImportUseCase._buildColumnIndexToLegacyAssessmentId] + [_importRatingsFromParsedCsv]: map by columnIndex.
+// - [TrialAssessment.armImportColumnIndex]: shell sheet index (first assessment column = 2), not raw CSV index.
+// - [ArmImportUseCase._buildColumnIndexToLegacyAssessmentId] + [_importRatingsFromParsedCsv]: CSV map keys use [AssessmentToken.columnIndex]; DB rows match via shell-aligned index.
 // - [ImportConfidence.blocked]: only from high severity + affectsExport (e.g. duplicate column instance, plot issues);
 //   repeated *semantic* keys add [repeated-semantic-assessment-key] (low, non-export-blocking).
 // - Shell export: [ArmAssessmentMatcher] pins by armImportColumnIndex first; [ArmAssessmentIdentity] is per TrialAssessment row.

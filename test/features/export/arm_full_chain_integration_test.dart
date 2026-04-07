@@ -239,14 +239,10 @@ void main() {
             ..where((t) => t.trialId.equals(trialId)))
           .get();
       expect(tas, hasLength(1));
-      expect(tas.single.armImportColumnIndex, 3);
-
-      // Align anchor with standard shell layout (first assessment column index 2);
-      // CSV reports 3 because of header layout; [ArmShellParser] requires col 2+ filled.
-      await (db.update(db.trialAssessments)
-            ..where((t) => t.id.equals(tas.single.id)))
-          .write(
-        const TrialAssessmentsCompanion(armImportColumnIndex: Value(2)),
+      expect(
+        tas.single.armImportColumnIndex,
+        2,
+        reason: 'Import stores shell-aligned index (CSV col 3 → sheet col 2)',
       );
       expect(tas.single.legacyAssessmentId, isNotNull);
 
