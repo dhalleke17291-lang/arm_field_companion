@@ -1,14 +1,18 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../arm_import/arm_import_screen.dart';
 import '../../export/domain/shell_link_preview.dart';
 import '../../protocol_import/protocol_import_screen.dart';
 
-/// Bottom sheet: choose ARM CSV, Protocol CSV, or (trial context) shell link.
+/// Bottom sheet: choose ARM CSV, Protocol CSV, or shell link.
+///
+/// [trialId] when set skips trial selection for shell link (e.g. trial detail).
 class ImportTrialSheet extends StatelessWidget {
   const ImportTrialSheet({
     super.key,
@@ -18,7 +22,7 @@ class ImportTrialSheet extends StatelessWidget {
 
   final BuildContext parentContext;
 
-  /// When non-null, "Link ARM Rating Shell" is enabled for this trial.
+  /// Pre-selected trial for shell link; null opens ARM-linked trial picker.
   final int? trialId;
 
   /// Presents the sheet; routes use [parentContext] after the sheet is closed.
@@ -42,7 +46,6 @@ class ImportTrialSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTrial = trialId != null;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -108,18 +111,12 @@ class ImportTrialSheet extends StatelessWidget {
             _ImportOptionTile(
               icon: Icons.link_outlined,
               title: 'Link ARM Rating Shell',
-              subtitle: hasTrial
-                  ? 'Enrich trial metadata from ARM shell'
-                  : 'Store an empty ARM shell for export back to ARM',
-              enabled: hasTrial,
-              trailingBadge: hasTrial ? null : 'Coming soon',
-              onTap: hasTrial
-                  ? () => _onLinkArmShellTap(
-                        sheetContext: context,
-                        parentContext: parentContext,
-                        trialId: trialId!,
-                      )
-                  : null,
+              subtitle: 'Enrich trial metadata from ARM shell',
+              onTap: () => _onLinkArmShellTap(
+                    sheetContext: context,
+                    parentContext: parentContext,
+                    trialId: trialId,
+                  ),
             ),
           ],
         ),
@@ -128,13 +125,65 @@ class ImportTrialSheet extends StatelessWidget {
   }
 }
 
+/// Returns selected trial id, or null if the dialog was dismissed.
+Future<int?> _showArmLinkedTrialPickerDialog(
+  BuildContext context,
+  List<Trial> trials,
+) {
+  return showDialog<int>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Choose Trial'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final t in trials)
+              ListTile(
+                title: Text(t.name),
+                onTap: () => Navigator.pop(ctx, t.id),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 Future<void> _onLinkArmShellTap({
   required BuildContext sheetContext,
   required BuildContext parentContext,
-  required int trialId,
+  int? trialId,
 }) async {
   final container = ProviderScope.containerOf(parentContext);
   Navigator.pop(sheetContext);
+
+  var resolvedId = trialId;
+  if (resolvedId == null) {
+    final db = container.read(databaseProvider);
+    final armLinked = await (db.select(db.trials)
+          ..where((t) => t.isDeleted.equals(false) & t.isArmLinked.equals(true))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+    if (!parentContext.mounted) return;
+    if (armLinked.isEmpty) {
+      ScaffoldMessenger.of(parentContext).showSnackBar(
+        const SnackBar(
+          content: Text('No ARM-linked trials. Import a CSV first.'),
+        ),
+      );
+      return;
+    }
+    if (armLinked.length == 1) {
+      resolvedId = armLinked.single.id;
+    } else {
+      resolvedId = await _showArmLinkedTrialPickerDialog(
+        parentContext,
+        armLinked,
+      );
+      if (resolvedId == null || !parentContext.mounted) return;
+    }
+  }
 
   final pick = await FilePicker.platform.pickFiles(
     type: FileType.custom,
@@ -146,7 +195,7 @@ Future<void> _onLinkArmShellTap({
   if (path == null || path.isEmpty) return;
 
   final uc = container.read(armShellLinkUseCaseProvider);
-  final preview = await uc.preview(trialId, path);
+  final preview = await uc.preview(resolvedId, path);
   if (!parentContext.mounted) return;
 
   if (!preview.canApply) {
@@ -184,22 +233,25 @@ Future<void> _onLinkArmShellTap({
 
   if (applyNow != true || !parentContext.mounted) return;
 
-  final result = await uc.apply(trialId, path);
+  final result = await uc.apply(resolvedId, path);
   if (!parentContext.mounted) return;
 
   if (result.success) {
-    final n = result.fieldsUpdatedCount ?? 0;
-    container.invalidate(trialProvider(trialId));
-    container.invalidate(trialSetupProvider(trialId));
-    container.invalidate(trialAssessmentsForTrialProvider(trialId));
+    final matched = result.totalAssessmentsMatched ?? 0;
+    final unmatched = result.totalAssessmentsUnmatched ?? 0;
+    final total = matched + unmatched;
+    final f = result.fieldsUpdated ?? result.fieldsUpdatedCount ?? 0;
+    container.invalidate(trialProvider(resolvedId));
+    container.invalidate(trialSetupProvider(resolvedId));
+    container.invalidate(trialAssessmentsForTrialProvider(resolvedId));
     container.invalidate(trialsStreamProvider);
 
     ScaffoldMessenger.of(parentContext).showSnackBar(
       SnackBar(
         content: Text(
-          n == 0
-              ? 'Shell linked. No field changes were needed.'
-              : 'Shell linked. Updated $n field change(s).',
+          total == 0
+              ? 'Shell linked. $f field update(s).'
+              : 'Shell linked for $matched of $total assessments. $f fields updated.',
         ),
       ),
     );
@@ -358,9 +410,15 @@ String _trialChangeLine(ShellTrialFieldChange c) {
 }
 
 String _assessmentChangeLine(ShellAssessmentFieldChange c) {
-  final label = c.fieldName == 'pestCode'
-      ? 'Pest code'
-      : 'Shell column index';
+  final label = switch (c.fieldName) {
+    'pestCode' => 'Pest code',
+    'arm_shell_column_id' => 'ARM shell column ID',
+    'arm_shell_rating_date' => 'Shell rating date',
+    'se_name' => 'SE name',
+    'se_description' => 'SE description',
+    'arm_rating_type' => 'Rating type',
+    _ => c.fieldName,
+  };
   if (c.isFillEmpty) {
     return 'Assessment ${c.trialAssessmentId} ($label): set to "${c.newValue}"';
   }
@@ -388,26 +446,20 @@ class _ImportOptionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.onTap,
-    this.enabled = true,
-    this.trailingBadge,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
-  final bool enabled;
-  final String? trailingBadge;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: enabled
-          ? AppDesignTokens.cardSurface
-          : AppDesignTokens.cardSurface.withValues(alpha: 0.55),
+      color: AppDesignTokens.cardSurface,
       borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
       child: InkWell(
-        onTap: enabled ? onTap : null,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -420,9 +472,7 @@ class _ImportOptionTile extends StatelessWidget {
               Icon(
                 icon,
                 size: 24,
-                color: enabled
-                    ? AppDesignTokens.primary
-                    : AppDesignTokens.secondaryText,
+                color: AppDesignTokens.primary,
               ),
               const SizedBox(width: AppDesignTokens.spacing12),
               Expanded(
@@ -431,12 +481,10 @@ class _ImportOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: enabled
-                            ? AppDesignTokens.primaryText
-                            : AppDesignTokens.secondaryText,
+                        color: AppDesignTokens.primaryText,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -446,24 +494,13 @@ class _ImportOptionTile extends StatelessWidget {
                         fontSize: 13,
                         height: 1.35,
                         color: AppDesignTokens.secondaryText.withValues(
-                          alpha: enabled ? 0.9 : 0.65,
+                          alpha: 0.9,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              if (trailingBadge != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  trailingBadge!,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-              ],
             ],
           ),
         ),

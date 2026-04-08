@@ -209,6 +209,21 @@ class TrialAssessments extends Table {
 
   /// Original CSV column index for this assessment (ARM import); guides export ordering.
   IntColumn get armImportColumnIndex => integer().nullable()();
+
+  /// ARM shell column ID (row 7) for this trial assessment when linked from a Rating Shell.
+  TextColumn get armShellColumnId => text().nullable()();
+
+  /// ARM shell rating date cell (row 15), display string as in shell.
+  TextColumn get armShellRatingDate => text().nullable()();
+
+  /// SE Name from shell (row 17), display-oriented; may differ in casing from [pestCode].
+  TextColumn get seName => text().nullable()();
+
+  /// SE Description from shell (row 14).
+  TextColumn get seDescription => text().nullable()();
+
+  /// Rating type from shell (row 20).
+  TextColumn get armRatingType => text().nullable()();
 }
 
 class Plots extends Table {
@@ -783,7 +798,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 42;
+  int get schemaVersion => 43;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1147,6 +1162,15 @@ SET status = 'completed',
           if (from < 42) {
             await m.addColumn(trials, trials.armLinkedShellPath);
             await m.addColumn(trials, trials.armLinkedShellAt);
+          }
+          if (from < 43) {
+            await m.addColumn(
+                trialAssessments, trialAssessments.armShellColumnId);
+            await m.addColumn(
+                trialAssessments, trialAssessments.armShellRatingDate);
+            await m.addColumn(trialAssessments, trialAssessments.seName);
+            await m.addColumn(trialAssessments, trialAssessments.seDescription);
+            await m.addColumn(trialAssessments, trialAssessments.armRatingType);
           }
           await _createIndexes();
         },

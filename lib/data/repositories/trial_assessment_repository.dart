@@ -80,24 +80,79 @@ class TrialAssessmentRepository {
     );
   }
 
-  /// Applies ARM Rating Shell link alignment (pest code / column index) without
-  /// [assertCanEditProtocolForTrialId] so metadata can be reconciled on active trials.
-  Future<void> applyArmShellLinkAlignment({
+  /// Applies ARM Rating Shell metadata on one trial assessment without
+  /// [assertCanEditProtocolForTrialId]. Never modifies [armImportColumnIndex].
+  ///
+  /// Only non-empty [shell*] values are applied. Empty shell strings are ignored.
+  /// Non-empty existing values are not replaced by empty shell values (callers
+  /// should omit empty keys).
+  /// Returns whether any column was written.
+  Future<bool> applyArmShellLinkFields({
     required int id,
     String? pestCode,
-    int? armImportColumnIndex,
+    String? armShellColumnId,
+    String? armShellRatingDate,
+    String? seName,
+    String? seDescription,
+    String? armRatingType,
   }) async {
     final existing = await getById(id);
-    if (existing == null) return;
+    if (existing == null) return false;
+
+    String? mergePest(String? incoming) {
+      if (incoming == null) return null;
+      final s = incoming.trim();
+      if (s.isEmpty) return null;
+      final e = existing.pestCode?.trim() ?? '';
+      if (e.isNotEmpty && e.toUpperCase() == s.toUpperCase()) return null;
+      return s;
+    }
+
+    String? mergeText(String? current, String? incoming) {
+      if (incoming == null) return null;
+      final s = incoming.trim();
+      if (s.isEmpty) return null;
+      final c = current?.trim() ?? '';
+      if (c.isNotEmpty && c == s) return null;
+      return s;
+    }
+
+    final nextPest = mergePest(pestCode);
+    final nextColId = mergeText(existing.armShellColumnId, armShellColumnId);
+    final nextRatingDate =
+        mergeText(existing.armShellRatingDate, armShellRatingDate);
+    final nextSeName = mergeText(existing.seName, seName);
+    final nextSeDesc = mergeText(existing.seDescription, seDescription);
+    final nextRatingType = mergeText(existing.armRatingType, armRatingType);
+
     final companion = TrialAssessmentsCompanion(
-      pestCode: pestCode == null ? const Value.absent() : Value(pestCode),
-      armImportColumnIndex: armImportColumnIndex == null
+      pestCode:
+          nextPest == null ? const Value.absent() : Value(nextPest),
+      armShellColumnId:
+          nextColId == null ? const Value.absent() : Value(nextColId),
+      armShellRatingDate: nextRatingDate == null
           ? const Value.absent()
-          : Value(armImportColumnIndex),
+          : Value(nextRatingDate),
+      seName: nextSeName == null ? const Value.absent() : Value(nextSeName),
+      seDescription:
+          nextSeDesc == null ? const Value.absent() : Value(nextSeDesc),
+      armRatingType: nextRatingType == null
+          ? const Value.absent()
+          : Value(nextRatingType),
       updatedAt: Value(DateTime.now().toUtc()),
     );
+
+    final touched = nextPest != null ||
+        nextColId != null ||
+        nextRatingDate != null ||
+        nextSeName != null ||
+        nextSeDesc != null ||
+        nextRatingType != null;
+    if (!touched) return false;
+
     await (_db.update(_db.trialAssessments)..where((t) => t.id.equals(id)))
         .write(companion);
+    return true;
   }
 
   /// Add a library definition to this trial (manual or protocol-driven).

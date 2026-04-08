@@ -5,6 +5,7 @@ class ArmColumnMap {
     required this.columnLetter,
     required this.columnIndex,
     this.ratingDate,
+    this.seDescription,
     this.seName,
     this.ratingType,
     this.ratingUnit,
@@ -23,6 +24,9 @@ class ArmColumnMap {
   final int columnIndex;
 
   final String? ratingDate;
+
+  /// Row 14 — SE Description (0-based index).
+  final String? seDescription;
   final String? seName;
   final String? ratingType;
   final String? ratingUnit;

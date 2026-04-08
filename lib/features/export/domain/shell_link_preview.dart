@@ -57,7 +57,7 @@ class ShellAssessmentFieldChange {
 
   final int trialAssessmentId;
 
-  /// e.g. `pestCode`, `armImportColumnIndex`
+  /// e.g. `pestCode`, `se_name`, `arm_shell_column_id`
   final String fieldName;
   final String? oldValue;
   final String newValue;
@@ -145,18 +145,30 @@ class LinkShellResult {
     this.preview,
     this.fieldsUpdatedCount,
     this.assessmentsMatchedCount,
+    this.totalAssessmentsMatched,
+    this.totalAssessmentsUnmatched,
+    this.fieldsUpdated,
+    this.warningMessages,
   });
 
   factory LinkShellResult.success({
     required ShellLinkPreview preview,
     required int fieldsUpdatedCount,
     required int assessmentsMatchedCount,
+    required int totalAssessmentsMatched,
+    required int totalAssessmentsUnmatched,
+    required int fieldsUpdated,
+    List<String> warningMessages = const [],
   }) {
     return LinkShellResult._(
       success: true,
       preview: preview,
       fieldsUpdatedCount: fieldsUpdatedCount,
       assessmentsMatchedCount: assessmentsMatchedCount,
+      totalAssessmentsMatched: totalAssessmentsMatched,
+      totalAssessmentsUnmatched: totalAssessmentsUnmatched,
+      fieldsUpdated: fieldsUpdated,
+      warningMessages: warningMessages,
     );
   }
 
@@ -172,4 +184,16 @@ class LinkShellResult {
   final ShellLinkPreview? preview;
   final int? fieldsUpdatedCount;
   final int? assessmentsMatchedCount;
+
+  /// Shell column matches (same as [ShellLinkPreview.matchedAssessmentColumnCount]).
+  final int? totalAssessmentsMatched;
+
+  /// Trial assessments with no matching shell column.
+  final int? totalAssessmentsUnmatched;
+
+  /// Scalar fields written (trial + per-assessment columns).
+  final int? fieldsUpdated;
+
+  /// [ShellLinkIssueSeverity.warn] messages from the preview used for apply.
+  final List<String>? warningMessages;
 }

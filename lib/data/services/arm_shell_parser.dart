@@ -22,6 +22,7 @@ import '../../domain/models/arm_shell_import.dart';
 ///
 /// Assessment columns (c=2 onward, until empty ID cell):
 ///   r=7:  ARM Column ID (identity anchor)
+///   r=14: SE Description
 ///   r=15: Rating date
 ///   r=17: SE Name
 ///   r=20: Rating type
@@ -77,6 +78,7 @@ class ArmShellParser {
           columnLetter: columnIndexToLettersZeroBased(colIdx),
           columnIndex: colIdx,
           ratingDate: _cellString(sheet, 15, colIdx),
+          seDescription: _cellString(sheet, 14, colIdx),
           seName: _cellString(sheet, 17, colIdx),
           ratingType: _cellString(sheet, 20, colIdx),
           ratingUnit: _cellString(sheet, 21, colIdx),

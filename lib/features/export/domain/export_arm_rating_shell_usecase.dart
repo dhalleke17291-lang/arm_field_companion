@@ -83,6 +83,8 @@ class ExportArmRatingShellUseCase {
     required Trial trial,
     /// When true, file is written but [Share] / [shareOverride] are skipped (UI shares with sheet origin).
     bool suppressShare = false,
+    /// When set, skips the file picker (e.g. after preflight already chose the shell).
+    String? selectedShellPath,
   }) async {
     if (!trial.isArmLinked) {
       throw StateError(
@@ -243,7 +245,10 @@ class ExportArmRatingShellUseCase {
     final sessionId = roundTripReport.resolvedShellSessionId!;
 
     final String? shellPath;
-    if (pickShellPathOverride != null) {
+    final preselected = selectedShellPath?.trim();
+    if (preselected != null && preselected.isNotEmpty) {
+      shellPath = preselected;
+    } else if (pickShellPathOverride != null) {
       shellPath = await pickShellPathOverride!();
       if (shellPath == null) {
         exportDiagnosticsBuffer.add(

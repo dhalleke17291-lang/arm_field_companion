@@ -15,6 +15,44 @@ import '../../plots/plot_repository.dart';
 import 'arm_shell_data_plots.dart';
 import 'shell_link_preview.dart';
 
+void _proposeShellTaField(
+  List<ShellAssessmentFieldChange> out, {
+  required int trialAssessmentId,
+  required String fieldName,
+  required String? currentDb,
+  required String? shellRaw,
+  bool caseInsensitiveEqual = false,
+}) {
+  final shellVal = shellRaw?.trim() ?? '';
+  if (shellVal.isEmpty) return;
+  final cur = currentDb?.trim();
+  if (cur != null && cur.isNotEmpty) {
+    final same = caseInsensitiveEqual
+        ? cur.toUpperCase() == shellVal.toUpperCase()
+        : cur == shellVal;
+    if (same) return;
+    out.add(
+      ShellAssessmentFieldChange(
+        trialAssessmentId: trialAssessmentId,
+        fieldName: fieldName,
+        oldValue: cur,
+        newValue: shellVal,
+        isFillEmpty: false,
+      ),
+    );
+  } else {
+    out.add(
+      ShellAssessmentFieldChange(
+        trialAssessmentId: trialAssessmentId,
+        fieldName: fieldName,
+        oldValue: currentDb,
+        newValue: shellVal,
+        isFillEmpty: true,
+      ),
+    );
+  }
+}
+
 /// Preview then apply ARM Rating Shell metadata onto a trial (no rating values).
 class ArmShellLinkUseCase {
   ArmShellLinkUseCase(
@@ -103,15 +141,16 @@ class ArmShellLinkUseCase {
       }
       for (final e in byTa.entries) {
         final m = e.value;
-        final pest = m['pestCode'];
-        final idxStr = m['armImportColumnIndex'];
-        final idx = idxStr != null ? int.tryParse(idxStr) : null;
-        await _trialAssessmentRepository.applyArmShellLinkAlignment(
+        final wrote = await _trialAssessmentRepository.applyArmShellLinkFields(
           id: e.key,
-          pestCode: pest,
-          armImportColumnIndex: idx,
+          pestCode: m['pestCode'],
+          armShellColumnId: m['arm_shell_column_id'],
+          armShellRatingDate: m['arm_shell_rating_date'],
+          seName: m['se_name'],
+          seDescription: m['se_description'],
+          armRatingType: m['arm_rating_type'],
         );
-        assessmentWriteCount++;
+        if (wrote) assessmentWriteCount++;
       }
 
       await _trialRepository.updateTrialSetup(
@@ -127,13 +166,15 @@ class ArmShellLinkUseCase {
           .where((i) => i.severity == ShellLinkIssueSeverity.warn)
           .map((i) => i.code)
           .toList();
+      final fieldsUpdatedScalar =
+          trialFieldWriteCount + preview.assessmentFieldChanges.length;
       final metadata = jsonEncode({
         'shellFileName': preview.shellFileName,
         'shellPath': shellPath,
-        'fieldsUpdatedCount': trialFieldWriteCount + preview.assessmentFieldChanges.length,
+        'fieldsUpdatedCount': fieldsUpdatedScalar,
         'assessmentsMatchedCount': preview.matchedAssessmentColumnCount,
         'trialFieldWrites': trialFieldWriteCount,
-        'assessmentAlignmentWrites': assessmentWriteCount,
+        'assessmentRowsUpdated': assessmentWriteCount,
         'warnings': warnCodes,
       });
 
@@ -147,10 +188,20 @@ class ArmShellLinkUseCase {
           );
     });
 
+    final warnMsgs = preview.issues
+        .where((i) => i.severity == ShellLinkIssueSeverity.warn)
+        .map((i) => i.message)
+        .toList();
+    final fieldsUpdatedScalar =
+        trialFieldWriteCount + preview.assessmentFieldChanges.length;
     return LinkShellResult.success(
       preview: preview,
-      fieldsUpdatedCount: trialFieldWriteCount + preview.assessmentFieldChanges.length,
+      fieldsUpdatedCount: fieldsUpdatedScalar,
       assessmentsMatchedCount: preview.matchedAssessmentColumnCount,
+      totalAssessmentsMatched: preview.matchedAssessmentColumnCount,
+      totalAssessmentsUnmatched: preview.unmatchedTrialAssessments.length,
+      fieldsUpdated: fieldsUpdatedScalar,
+      warningMessages: warnMsgs,
     );
   }
 
@@ -359,17 +410,41 @@ class ArmShellLinkUseCase {
         }
       }
 
-      if (ta.armImportColumnIndex != col.columnIndex) {
-        assessmentFieldChanges.add(
-          ShellAssessmentFieldChange(
-            trialAssessmentId: ta.id,
-            fieldName: 'armImportColumnIndex',
-            oldValue: ta.armImportColumnIndex?.toString(),
-            newValue: col.columnIndex.toString(),
-            isFillEmpty: ta.armImportColumnIndex == null,
-          ),
-        );
-      }
+      _proposeShellTaField(
+        assessmentFieldChanges,
+        trialAssessmentId: ta.id,
+        fieldName: 'arm_shell_column_id',
+        currentDb: ta.armShellColumnId,
+        shellRaw: col.armColumnId,
+      );
+      _proposeShellTaField(
+        assessmentFieldChanges,
+        trialAssessmentId: ta.id,
+        fieldName: 'arm_shell_rating_date',
+        currentDb: ta.armShellRatingDate,
+        shellRaw: col.ratingDate,
+      );
+      _proposeShellTaField(
+        assessmentFieldChanges,
+        trialAssessmentId: ta.id,
+        fieldName: 'se_name',
+        currentDb: ta.seName,
+        shellRaw: col.seName,
+      );
+      _proposeShellTaField(
+        assessmentFieldChanges,
+        trialAssessmentId: ta.id,
+        fieldName: 'se_description',
+        currentDb: ta.seDescription,
+        shellRaw: col.seDescription,
+      );
+      _proposeShellTaField(
+        assessmentFieldChanges,
+        trialAssessmentId: ta.id,
+        fieldName: 'arm_rating_type',
+        currentDb: ta.armRatingType,
+        shellRaw: col.ratingType,
+      );
     }
 
     final unmatchedShellColumns = <ShellUnmatchedShellColumn>[];

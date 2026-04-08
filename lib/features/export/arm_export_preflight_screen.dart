@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -7,7 +8,10 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/diagnostics/diagnostic_finding.dart';
 import '../../core/providers.dart';
 
+import 'domain/arm_shell_metadata_enrichment.dart';
 import 'usecases/arm_export_preflight_usecase.dart';
+
+enum _ShellEnrichExportChoice { enrichAndExport, exportWithout, cancel }
 
 /// Full-screen ARM Rating Shell pre-export trust summary and export action.
 class ArmExportPreflightScreen extends ConsumerStatefulWidget {
@@ -31,10 +35,127 @@ class _ArmExportPreflightScreenState
       _exportError = null;
     });
     try {
+      final pick = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['xlsx'],
+        dialogTitle: 'Select ARM Rating Shell for ${widget.trial.name}',
+      );
+      if (!mounted) return;
+      if (pick == null || pick.files.isEmpty) {
+        setState(() => _exportBusy = false);
+        return;
+      }
+      final shellPath = pick.files.single.path;
+      if (shellPath == null || shellPath.isEmpty) {
+        setState(() => _exportBusy = false);
+        return;
+      }
+
+      var trial = await ref.read(trialRepositoryProvider).getTrialById(
+            widget.trial.id,
+          );
+      if (trial == null || !mounted) {
+        setState(() => _exportBusy = false);
+        return;
+      }
+
+      final linkUc = ref.read(armShellLinkUseCaseProvider);
+      final shellPreview = await linkUc.preview(trial.id, shellPath);
+      if (!mounted) {
+        setState(() => _exportBusy = false);
+        return;
+      }
+
+      if (shouldOfferShellMetadataEnrichmentBeforeExport(
+        trial: trial,
+        selectedShellPath: shellPath,
+        preview: shellPreview,
+      )) {
+        setState(() => _exportBusy = false);
+        final choice = await showDialog<_ShellEnrichExportChoice>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Shell Metadata'),
+            content: const Text(
+              'Shell metadata available. Enrich trial before export?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () =>
+                    Navigator.pop(ctx, _ShellEnrichExportChoice.cancel),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(
+                  ctx,
+                  _ShellEnrichExportChoice.exportWithout,
+                ),
+                child: const Text('Export Without Enriching'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(
+                  ctx,
+                  _ShellEnrichExportChoice.enrichAndExport,
+                ),
+                child: const Text('Enrich & Export'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        if (choice == null || choice == _ShellEnrichExportChoice.cancel) {
+          return;
+        }
+
+        setState(() => _exportBusy = true);
+        if (choice == _ShellEnrichExportChoice.enrichAndExport) {
+          final applyResult = await linkUc.apply(trial.id, shellPath);
+          if (!mounted) {
+            setState(() => _exportBusy = false);
+            return;
+          }
+          if (!applyResult.success) {
+            setState(() {
+              _exportBusy = false;
+              _exportError = applyResult.errorMessage ?? 'Enrich failed';
+            });
+            return;
+          }
+          ref.invalidate(trialProvider(trial.id));
+          ref.invalidate(trialSetupProvider(trial.id));
+          ref.invalidate(trialAssessmentsForTrialProvider(trial.id));
+          ref.invalidate(trialsStreamProvider);
+          final m = applyResult.totalAssessmentsMatched ?? 0;
+          final u = applyResult.totalAssessmentsUnmatched ?? 0;
+          final total = m + u;
+          final f = applyResult.fieldsUpdated ?? 0;
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  total == 0
+                      ? 'Shell linked. $f field update(s).'
+                      : 'Shell linked for $m of $total assessments. $f fields updated.',
+                ),
+              ),
+            );
+          }
+        }
+
+        trial = await ref.read(trialRepositoryProvider).getTrialById(
+              widget.trial.id,
+            );
+        if (trial == null || !mounted) {
+          setState(() => _exportBusy = false);
+          return;
+        }
+      }
+
       final useCase = ref.read(exportArmRatingShellUseCaseProvider);
       final result = await useCase.execute(
-        trial: widget.trial,
+        trial: trial,
         suppressShare: true,
+        selectedShellPath: shellPath,
       );
       if (!mounted) return;
       if (!result.success) {
@@ -58,7 +179,7 @@ class _ArmExportPreflightScreenState
         [
           XFile(path),
         ],
-        text: '${widget.trial.name} – ARM Rating Shell',
+        text: '${trial.name} – ARM Rating Shell',
         sharePositionOrigin: box == null
             ? const Rect.fromLTWH(0, 0, 100, 100)
             : box.localToGlobal(Offset.zero) & box.size,

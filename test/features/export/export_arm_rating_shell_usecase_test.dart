@@ -138,6 +138,7 @@ Future<String> writeArmShellFixture(
   required List<int> plotNumbers,
   required List<String> armColumnIds,
   required List<String> seNames,
+  List<String>? seDescriptions,
   List<String>? ratingDates,
   List<String>? ratingTypes,
   List<String>? ratingUnits,
@@ -168,6 +169,13 @@ Future<String> writeArmShellFixture(
   for (var i = 0; i < armColumnIds.length; i++) {
     final col = 2 + i;
     setText(7, col, armColumnIds[i]);
+    setText(
+      14,
+      col,
+      seDescriptions != null && i < seDescriptions.length
+          ? seDescriptions[i]
+          : '',
+    );
     setText(
       15,
       col,
@@ -486,6 +494,19 @@ void main() {
         capturedCodes.contains('arm_round_trip_fallback_assessment_match_used'),
         false,
       );
+
+      final ucNoPick = makeUc(
+        publishExportDiagnostics: (_, findings, __) {
+          capturedCodes.addAll(findings.map((f) => f.code));
+        },
+      );
+      final r2 = await ucNoPick.execute(
+        trial: trialRow,
+        selectedShellPath: shellPath,
+        suppressShare: true,
+      );
+      expect(r2.success, isTrue, reason: r2.errorMessage);
+
       final path = r.filePath;
       if (path == null) fail('expected file path');
       final bytes = await File(path).readAsBytes();
