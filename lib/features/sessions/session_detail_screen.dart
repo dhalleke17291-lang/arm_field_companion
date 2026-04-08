@@ -922,7 +922,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 final ta = taByLegacy[a.id];
                 final chipLabel = ta != null
                     ? AssessmentDisplayHelper.compactName(ta)
-                    : a.name;
+                    : AssessmentDisplayHelper.legacyAssessmentDisplayName(a.name);
                 return Padding(
                   padding:
                       const EdgeInsets.only(right: AppDesignTokens.spacing8),
@@ -1044,7 +1044,11 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                               : null;
                           final ratingTitle = ta != null
                               ? AssessmentDisplayHelper.compactName(ta)
-                              : (assessment?.name ?? 'Assessment');
+                              : (assessment != null
+                                  ? AssessmentDisplayHelper
+                                      .legacyAssessmentDisplayName(
+                                          assessment.name)
+                                  : 'Assessment');
                           return ListTile(
                             dense: true,
                             title: Text(ratingTitle),
