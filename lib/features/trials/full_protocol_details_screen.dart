@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/trial_state.dart';
 import '../../core/providers.dart';
+import '../../core/ui/assessment_display_helper.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
@@ -18,7 +19,8 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
-    final assessmentsAsync = ref.watch(assessmentsForTrialProvider(trial.id));
+    final assessmentsAsync = ref.watch(
+        trialAssessmentsWithDefinitionsForTrialProvider(trial.id));
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final assignmentsAsync = ref.watch(assignmentsForTrialProvider(trial.id));
 
@@ -93,15 +95,39 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
                           color: AppDesignTokens.secondaryText, fontSize: 14))
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: list
-                          .map((a) => Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Text(a.name,
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppDesignTokens.primaryText)),
-                              ))
-                          .toList(),
+                      children: list.map((pair) {
+                        final ta = pair.$1;
+                        final def = pair.$2;
+                        final dateShort =
+                            AssessmentDisplayHelper.ratingDateShort(ta);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  AssessmentDisplayHelper.fullName(ta,
+                                      def: def),
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      color: AppDesignTokens.primaryText),
+                                ),
+                              ),
+                              if (dateShort != null) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  dateShort,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppDesignTokens.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
             ),
           ),

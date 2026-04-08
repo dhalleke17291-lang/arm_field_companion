@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
@@ -263,6 +264,89 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppDesignTokens.spacing16),
           children: [
+            if (widget.trial.armLinkedShellPath != null &&
+                widget.trial.armLinkedShellPath!.trim().isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.45),
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusCard),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outlineVariant
+                        .withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.link,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ARM Shell linked',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            p.basename(
+                                widget.trial.armLinkedShellPath!.trim()),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                          if (widget.trial.armLinkedShellAt != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              DateFormat.yMMMd().add_jm().format(widget
+                                  .trial.armLinkedShellAt!
+                                  .toLocal()),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    fontSize: 11,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                        .withValues(alpha: 0.85),
+                                  ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppDesignTokens.spacing16),
+            ],
             _SectionCard(
               title: 'Protocol',
               children: [

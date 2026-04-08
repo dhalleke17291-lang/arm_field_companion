@@ -5,6 +5,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
+import '../../core/ui/assessment_display_helper.dart';
 import '../../core/plot_display.dart';
 import '../../core/plot_sort.dart';
 import '../../core/export_guard.dart';
@@ -838,6 +839,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     List<Treatment> treatments,
     Map<int, int?> plotIdToTreatmentId,
   ) {
+    final tas =
+        ref.watch(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            <TrialAssessment>[];
+    final taByLegacy = <int, TrialAssessment>{};
+    for (final ta in tas) {
+      final lid = ta.legacyAssessmentId;
+      if (lid != null) taByLegacy[lid] = ta;
+    }
     final scheme = Theme.of(context).colorScheme;
     final ratedCount = ratings.map((r) => r.plotPk).toSet().length;
     final treatmentMap = {for (final t in treatments) t.id: t};
@@ -908,13 +917,21 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   horizontal: AppDesignTokens.spacing8,
                   vertical: AppDesignTokens.spacing8),
               itemCount: assessments.length,
-              itemBuilder: (context, index) => Padding(
-                padding: const EdgeInsets.only(right: AppDesignTokens.spacing8),
-                child: Chip(
-                  label: Text(assessments[index].name,
-                      style: const TextStyle(fontSize: 12)),
-                ),
-              ),
+              itemBuilder: (context, index) {
+                final a = assessments[index];
+                final ta = taByLegacy[a.id];
+                final chipLabel = ta != null
+                    ? AssessmentDisplayHelper.compactName(ta)
+                    : a.name;
+                return Padding(
+                  padding:
+                      const EdgeInsets.only(right: AppDesignTokens.spacing8),
+                  child: Chip(
+                    label: Text(chipLabel,
+                        style: const TextStyle(fontSize: 12)),
+                  ),
+                );
+              },
             ),
           ),
 
@@ -1022,9 +1039,15 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                           final assessment = assessments
                               .where((a) => a.id == rating.assessmentId)
                               .firstOrNull;
+                          final ta = assessment != null
+                              ? taByLegacy[assessment.id]
+                              : null;
+                          final ratingTitle = ta != null
+                              ? AssessmentDisplayHelper.compactName(ta)
+                              : (assessment?.name ?? 'Assessment');
                           return ListTile(
                             dense: true,
-                            title: Text(assessment?.name ?? 'Assessment'),
+                            title: Text(ratingTitle),
                             trailing: Text(
                               rating.resultStatus == 'RECORDED'
                                   ? '${rating.numericValue ?? "-"} ${assessment?.unit ?? ""}'

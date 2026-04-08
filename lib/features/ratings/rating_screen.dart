@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/ui/assessment_display_helper.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
 import '../../core/session_lock.dart';
@@ -369,6 +370,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots with a rating'
         : '$ratedCount / $totalPlots plots with a rating';
 
+    final trialAssessments =
+        ref.watch(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            <TrialAssessment>[];
+    final taByLegacy = <int, TrialAssessment>{};
+    for (final ta in trialAssessments) {
+      final lid = ta.legacyAssessmentId;
+      if (lid != null) taByLegacy[lid] = ta;
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) async {
@@ -449,7 +459,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         plotPk: widget.plot.id,
                         assessmentId: _currentAssessment.id,
                         sessionId: widget.session.id,
-                        assessmentName: _currentAssessment.name,
+                        assessmentName: _ratingAssessmentDisplayLabel(
+                            _currentAssessment, taByLegacy),
                         plotLabel:
                             getDisplayPlotLabel(widget.plot, widget.allPlots),
                       );
@@ -546,7 +557,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         _buildContextCard(context),
                         if (!isSessionEditable(widget.session))
                           _buildClosedSessionBanner(context),
-                        _buildAssessmentSelector(context),
+                        _buildAssessmentSelectorPanel(context, taByLegacy),
                         existingRatingAsync.when(
                           loading: () => const Padding(
                             padding: EdgeInsets.all(48),
@@ -1269,7 +1280,57 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
-  Widget _buildAssessmentSelector(BuildContext context) {
+  Widget _buildAssessmentSelectorPanel(
+      BuildContext context, Map<int, TrialAssessment> taByLegacy) {
+    final desc = _shellDescriptionForCurrentAssessment(taByLegacy);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildAssessmentSelector(context, taByLegacy),
+        if (desc != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppDesignTokens.spacing16,
+              0,
+              AppDesignTokens.spacing16,
+              6,
+            ),
+            child: Text(
+              desc,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String? _shellDescriptionForCurrentAssessment(
+      Map<int, TrialAssessment> taByLegacy) {
+    final ta = taByLegacy[_currentAssessment.id];
+    return ta != null ? AssessmentDisplayHelper.description(ta) : null;
+  }
+
+  String _ratingAssessmentDisplayLabel(
+      Assessment assessment, Map<int, TrialAssessment> taByLegacy) {
+    final ta = taByLegacy[assessment.id];
+    if (ta != null) return AssessmentDisplayHelper.compactName(ta);
+    return assessment.name;
+  }
+
+  String _ratingAssessmentChipLabel(
+      Assessment assessment, Map<int, TrialAssessment> taByLegacy) {
+    final ta = taByLegacy[assessment.id];
+    if (ta != null) return AssessmentDisplayHelper.compactName(ta);
+    return _assessmentPillLabel(assessment);
+  }
+
+  Widget _buildAssessmentSelector(
+      BuildContext context, Map<int, TrialAssessment> taByLegacy) {
     if (widget.assessments.length == 1) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -1286,7 +1347,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             ),
             const SizedBox(width: AppDesignTokens.spacing8),
             Text(
-              _currentAssessment.name,
+              _ratingAssessmentDisplayLabel(_currentAssessment, taByLegacy),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -1320,7 +1381,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   index < widget.assessments.length;
                   index++) ...[
                 if (index > 0) const SizedBox(width: 6),
-                _buildAssessmentChip(context, index),
+                _buildAssessmentChip(context, index, taByLegacy),
               ],
             ],
           ),
@@ -1342,10 +1403,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     return name;
   }
 
-  Widget _buildAssessmentChip(BuildContext context, int index) {
+  Widget _buildAssessmentChip(
+      BuildContext context, int index, Map<int, TrialAssessment> taByLegacy) {
     final assessment = widget.assessments[index];
     final isSelected = assessment.id == _currentAssessment.id;
-    final label = _assessmentPillLabel(assessment);
+    final label = _ratingAssessmentChipLabel(assessment, taByLegacy);
     return GestureDetector(
       onTap: () {
         setState(() {

@@ -1,9 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:arm_field_companion/core/assessment_result_direction.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/features/trials/full_protocol_details_screen.dart';
+
+List<(TrialAssessment, AssessmentDefinition)> _singleYieldAssessmentPair() {
+  final now = DateTime(2026, 1, 1);
+  final def = AssessmentDefinition(
+    id: 100,
+    code: 'YLD',
+    name: 'Yield',
+    category: 'crop',
+    dataType: 'numeric',
+    unit: 'kg',
+    isSystem: false,
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+    resultDirection: AssessmentResultDirection.higherBetter,
+  );
+  final ta = TrialAssessment(
+    id: 1,
+    trialId: 1,
+    assessmentDefinitionId: 100,
+    required: false,
+    selectedFromProtocol: true,
+    selectedManually: false,
+    defaultInSessions: true,
+    sortOrder: 0,
+    isActive: true,
+    legacyAssessmentId: 20,
+    createdAt: now,
+    updatedAt: now,
+  );
+  return [(ta, def)];
+}
 
 void main() {
   late Trial trial;
@@ -107,6 +140,9 @@ void main() {
                 .overrideWith((ref) => Stream.value(treatments)),
             assessmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assessments)),
+            trialAssessmentsWithDefinitionsForTrialProvider(1).overrideWith(
+                (ref) => Stream.value(
+                    const <(TrialAssessment, AssessmentDefinition)>[])),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
             assignmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assignments)),
@@ -132,6 +168,9 @@ void main() {
                 .overrideWith((ref) => Stream.value(treatments)),
             assessmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assessments)),
+            trialAssessmentsWithDefinitionsForTrialProvider(1).overrideWith(
+                (ref) => Stream.value(
+                    const <(TrialAssessment, AssessmentDefinition)>[])),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
             assignmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assignments)),
@@ -160,6 +199,9 @@ void main() {
                 .overrideWith((ref) => Stream.value(treatments)),
             assessmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assessments)),
+            trialAssessmentsWithDefinitionsForTrialProvider(1).overrideWith(
+                (ref) => Stream.value(
+                    const <(TrialAssessment, AssessmentDefinition)>[])),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
             assignmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assignments)),
@@ -186,6 +228,8 @@ void main() {
                 .overrideWith((ref) => Stream.value(treatments)),
             assessmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assessments)),
+            trialAssessmentsWithDefinitionsForTrialProvider(1).overrideWith(
+                (ref) => Stream.value(_singleYieldAssessmentPair())),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
             assignmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assignments)),
@@ -211,6 +255,9 @@ void main() {
                 .overrideWith((ref) => Stream.value(treatments)),
             assessmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assessments)),
+            trialAssessmentsWithDefinitionsForTrialProvider(1).overrideWith(
+                (ref) => Stream.value(
+                    const <(TrialAssessment, AssessmentDefinition)>[])),
             plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
             assignmentsForTrialProvider(1)
                 .overrideWith((ref) => Stream.value(assignments)),
@@ -236,6 +283,8 @@ void main() {
             treatmentsForTrialProvider(1)
                 .overrideWith((ref) => const Stream.empty()),
             assessmentsForTrialProvider(1)
+                .overrideWith((ref) => const Stream.empty()),
+            trialAssessmentsWithDefinitionsForTrialProvider(1)
                 .overrideWith((ref) => const Stream.empty()),
             plotsForTrialProvider(1)
                 .overrideWith((ref) => const Stream.empty()),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/assessment_result_direction.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/ui/assessment_display_helper.dart';
 import '../../../core/providers.dart';
 import '../../../core/trial_state.dart';
 import '../../../core/workspace/workspace_config.dart';
@@ -178,7 +179,8 @@ class AssessmentsTab extends ConsumerWidget {
                   final displayNumber = entry.key + 1;
                   final ta = entry.value.$1;
                   final def = entry.value.$2;
-                  final name = ta.displayNameOverride ?? def.name;
+                  final dateShort = AssessmentDisplayHelper.ratingDateShort(ta);
+                  final seDesc = AssessmentDisplayHelper.description(ta);
                   return Container(
                     margin:
                         const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
@@ -212,13 +214,39 @@ class AssessmentsTab extends ConsumerWidget {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        name,
+                                        AssessmentDisplayHelper.compactName(
+                                            ta,
+                                            def: def),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: AppDesignTokens.primaryText,
                                         ),
                                       ),
                                     ),
+                                    if (dateShort != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: 6, right: 4),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: scheme.secondaryContainer
+                                                .withValues(alpha: 0.65),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            dateShort,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color:
+                                                  scheme.onSecondaryContainer,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     if (ta.isActive)
                                       const Icon(
                                         Icons.check_circle_outline,
@@ -233,6 +261,18 @@ class AssessmentsTab extends ConsumerWidget {
                                       ),
                                   ],
                                 ),
+                                if (seDesc != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    seDesc,
+                                    style: const TextStyle(
+                                      color: AppDesignTokens.secondaryText,
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                                 const SizedBox(height: 2),
                                 Text(
                                   '${def.dataType}${def.unit != null ? ' (${def.unit})' : ''}'

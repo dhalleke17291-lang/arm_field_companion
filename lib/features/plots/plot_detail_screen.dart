@@ -4,6 +4,7 @@ import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_display.dart';
+import '../../core/ui/assessment_display_helper.dart';
 import '../../core/providers.dart';
 import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../../domain/ratings/save_rating_input.dart';
@@ -96,6 +97,7 @@ class _PlotRatingHistoryList extends ConsumerWidget {
     required this.ratings,
     required this.sessions,
     required this.assessments,
+    required this.taByLegacyAssessmentId,
     required this.trial,
     required this.plot,
     required this.onEditRatingTap,
@@ -105,6 +107,8 @@ class _PlotRatingHistoryList extends ConsumerWidget {
   final List<RatingRecord> ratings;
   final List<Session> sessions;
   final List<Assessment> assessments;
+  /// [TrialAssessment] keyed by [TrialAssessment.legacyAssessmentId].
+  final Map<int, TrialAssessment> taByLegacyAssessmentId;
   final Trial trial;
   final Plot plot;
   final void Function(RatingRecord rating, Assessment? assessment)
@@ -124,6 +128,12 @@ class _PlotRatingHistoryList extends ConsumerWidget {
             final assessment = assessments
                 .where((a) => a.id == rating.assessmentId)
                 .firstOrNull;
+            final ta = assessment != null
+                ? taByLegacyAssessmentId[assessment.id]
+                : null;
+            final historyTitle = ta != null
+                ? AssessmentDisplayHelper.minimalName(ta)
+                : (assessment?.name ?? 'Assessment');
             final correctionAsync =
                 ref.watch(latestCorrectionForRatingProvider(rating.id));
             final hasCorrection = correctionAsync.maybeWhen(
@@ -168,7 +178,7 @@ class _PlotRatingHistoryList extends ConsumerWidget {
                   ],
                 ),
                 title: Text(
-                  assessment?.name ?? 'Assessment',
+                  historyTitle,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Column(
@@ -333,6 +343,13 @@ class PlotDetailScreen extends ConsumerWidget {
     final sessions = ref.watch(sessionsForTrialProvider(trial.id)).value ?? [];
     final assessments =
         ref.watch(assessmentsForTrialProvider(trial.id)).value ?? [];
+    final trialAssessments =
+        ref.watch(trialAssessmentsForTrialProvider(trial.id)).value ?? [];
+    final taByLegacy = <int, TrialAssessment>{};
+    for (final ta in trialAssessments) {
+      final lid = ta.legacyAssessmentId;
+      if (lid != null) taByLegacy[lid] = ta;
+    }
     final plotContextAsync = ref.watch(plotContextProvider(plot.id));
     final plots = ref.watch(plotsForTrialProvider(trial.id)).value ?? [];
     final assignments =
@@ -563,22 +580,30 @@ class PlotDetailScreen extends ConsumerWidget {
                         ratings: ratings,
                         sessions: sessions,
                         assessments: assessments,
+                        taByLegacyAssessmentId: taByLegacy,
                         trial: trial,
                         plot: plot,
                         onEditRatingTap: (rating, assessment) =>
                             _showEditRatingSheet(
                                 context, ref, rating, assessment, trial, plot),
-                        onHistoryTap: (rating, assessment) =>
-                            showRatingLineageBottomSheet(
-                          context: context,
-                          ref: ref,
-                          trialId: trial.id,
-                          plotPk: plot.id,
-                          assessmentId: rating.assessmentId,
-                          sessionId: rating.sessionId,
-                          assessmentName: assessment?.name ?? 'Assessment',
-                          plotLabel: getDisplayPlotLabel(plotToShow, plots),
-                        ),
+                        onHistoryTap: (rating, assessment) {
+                          final ta = assessment != null
+                              ? taByLegacy[assessment.id]
+                              : null;
+                          final lineageName = ta != null
+                              ? AssessmentDisplayHelper.minimalName(ta)
+                              : (assessment?.name ?? 'Assessment');
+                          showRatingLineageBottomSheet(
+                            context: context,
+                            ref: ref,
+                            trialId: trial.id,
+                            plotPk: plot.id,
+                            assessmentId: rating.assessmentId,
+                            sessionId: rating.sessionId,
+                            assessmentName: lineageName,
+                            plotLabel: getDisplayPlotLabel(plotToShow, plots),
+                          );
+                        },
                       ),
                     ],
             ),

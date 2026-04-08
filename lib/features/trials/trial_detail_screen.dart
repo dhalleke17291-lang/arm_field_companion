@@ -783,14 +783,18 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  /// Crop • location only under trial name (lifecycle status is on Trial status strip).
+  /// Crop • cooperator • location under trial name (omits empty segments).
   String _trialSubtitleLine(Trial trial) {
     final parts = <String>[];
-    if (trial.crop != null && trial.crop!.isNotEmpty) {
-      parts.add(trial.crop!);
+    if (trial.crop != null && trial.crop!.trim().isNotEmpty) {
+      parts.add(trial.crop!.trim());
     }
-    if (trial.location != null && trial.location!.isNotEmpty) {
-      parts.add(trial.location!);
+    if (trial.cooperatorName != null &&
+        trial.cooperatorName!.trim().isNotEmpty) {
+      parts.add(trial.cooperatorName!.trim());
+    }
+    if (trial.location != null && trial.location!.trim().isNotEmpty) {
+      parts.add(trial.location!.trim());
     }
     return parts.join(' • ');
   }
@@ -1217,6 +1221,23 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                 maxLines: 4,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                              if (currentTrial.protocolNumber != null &&
+                                  currentTrial.protocolNumber!
+                                      .trim()
+                                      .isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Protocol: ${currentTrial.protocolNumber!.trim()}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white
+                                        .withValues(alpha: 0.78),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                               if (_trialSubtitleLine(currentTrial)
                                   .isNotEmpty) ...[
                                 const SizedBox(height: 4),
@@ -1371,6 +1392,23 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                       maxLines: 4,
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                    if (currentTrial.protocolNumber != null &&
+                                        currentTrial.protocolNumber!
+                                            .trim()
+                                            .isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Protocol: ${currentTrial.protocolNumber!.trim()}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.78),
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                     if (_trialSubtitleLine(currentTrial)
                                         .isNotEmpty) ...[
                                       const SizedBox(height: 4),
