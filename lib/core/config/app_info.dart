@@ -5,7 +5,7 @@ import '../app_info.dart' show kAppVersion;
 abstract final class AppInfo {
   AppInfo._();
 
-  static const String appName = 'Ag-Quest Field Companion';
+  static const String appName = 'Agnexis';
 
   /// Mirrors [kAppVersion] (pubspec.yaml) for manifest/README traceability.
   static String get appVersion => kAppVersion;

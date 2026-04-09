@@ -827,7 +827,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                                 await Share.shareXFiles(
                                   [XFile(result.filePath!)],
                                   text:
-                                      'Ag-Quest Field Companion export: ${widget.trial.name} / ${widget.session.name}',
+                                      'Agnexis export: ${widget.trial.name} / ${widget.session.name}',
                                 );
                               } catch (e) {
                                 if (!mounted || !context.mounted) return;

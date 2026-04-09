@@ -44,7 +44,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Ag-Quest Field Companion',
+      title: 'Agnexis',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       home: const SplashScreen(),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Design tokens for Ag-Quest Field Companion.
+/// Design tokens for Agnexis.
 /// Use these for consistent colors, spacing, and radii across the app.
 /// Do not duplicate; extend with new tokens as needed.
 class AppDesignTokens {

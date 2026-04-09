@@ -110,7 +110,7 @@ class CsvExportService {
       '"Photo reference","See photos_manifest.csv for full photo index"',
     );
     sb.writeln('"Target format version","${ArmFieldMapping.targetVersion}"');
-    sb.writeln('"Generator","Ag-Quest Field Companion"');
+    sb.writeln('"Generator","Agnexis"');
     return sb.toString();
   }
 }

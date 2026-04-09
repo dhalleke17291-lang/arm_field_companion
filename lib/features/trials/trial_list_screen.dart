@@ -371,7 +371,7 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
     await Share.shareXFiles(
       files,
       text:
-          'Ag-Quest Field Companion – ${files.length} trial export(s), $exportedCount session(s)',
+          'Agnexis – ${files.length} trial export(s), $exportedCount session(s)',
       sharePositionOrigin: box == null
           ? const Rect.fromLTWH(0, 0, 100, 100)
           : box.localToGlobal(Offset.zero) & box.size,

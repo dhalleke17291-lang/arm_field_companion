@@ -12,7 +12,7 @@ import '../rating_repository.dart';
 
 export '../../../domain/ratings/save_rating_input.dart';
 
-/// SaveRatingUseCase — centerpiece of Ag-Quest Field Companion
+/// SaveRatingUseCase — centerpiece of Agnexis
 ///
 /// Enforces all spec invariants:
 /// 1. [RatingValueValidator] — result status vs value columns + assessment rules
