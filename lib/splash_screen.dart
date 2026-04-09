@@ -189,7 +189,7 @@ class _SplashScreenState extends State<SplashScreen>
                       builder: (_, __) => Opacity(
                         opacity: _subtitleOpacity.value,
                         child: Text(
-                          'Professional field trial data collection for ARM workflows',
+                          'Professional field trial data collection for structured import workflows',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.55),

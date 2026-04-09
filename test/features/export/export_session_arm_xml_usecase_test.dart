@@ -167,7 +167,7 @@ void main() {
         isSessionClosed: true,
       );
       expect(result.success, false);
-      expect(result.errorMessage, contains('ARM XML export failed'));
+      expect(result.errorMessage, contains('XML export failed'));
     });
   });
 }

@@ -38,7 +38,7 @@ class _ArmExportPreflightScreenState
       final pick = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['xlsx'],
-        dialogTitle: 'Select ARM Rating Shell for ${widget.trial.name}',
+        dialogTitle: 'Select Excel Rating Sheet for ${widget.trial.name}',
       );
       if (!mounted) return;
       if (pick == null || pick.files.isEmpty) {
@@ -179,7 +179,7 @@ class _ArmExportPreflightScreenState
         [
           XFile(path),
         ],
-        text: '${trial.name} – ARM Rating Shell',
+        text: '${trial.name} – Excel Rating Sheet',
         sharePositionOrigin: box == null
             ? const Rect.fromLTWH(0, 0, 100, 100)
             : box.localToGlobal(Offset.zero) & box.size,
@@ -208,7 +208,7 @@ class _ArmExportPreflightScreenState
         backgroundColor: AppDesignTokens.primary,
         foregroundColor: AppDesignTokens.onPrimary,
         title: Text(
-          'ARM Rating Shell Export',
+          'Export Rating Sheet',
           style: AppDesignTokens.headerTitleStyle(
             fontSize: 18,
             color: AppDesignTokens.onPrimary,

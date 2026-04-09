@@ -200,7 +200,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               const PopupMenuItem(
                   value: 'csv', child: Text('Session Data (CSV)')),
               const PopupMenuItem(
-                  value: 'arm_xml', child: Text('Session (ARM XML)')),
+                  value: 'arm_xml', child: Text('Session (XML)')),
             ],
           ),
           PopupMenuButton<String>(
@@ -473,7 +473,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       final usecase = ref.read(exportSessionArmXmlUsecaseProvider);
       try {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Exporting ARM XML...')),
+          const SnackBar(content: Text('Exporting XML...')),
         );
         final currentUser = await ref.read(currentUserProvider.future);
         final result = await usecase.exportSessionToArmXml(
@@ -496,7 +496,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
-              title: const Text('ARM XML Export Failed'),
+              title: const Text('XML Export Failed'),
               content: SelectableText(result.errorMessage ?? 'Unknown error'),
               actions: [
                 FilledButton(
@@ -511,12 +511,12 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('ARM XML Export Complete'),
+            title: const Text('XML Export Complete'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Session exported as ARM-style XML.'),
+                const Text('Session exported as structured XML.'),
                 const SizedBox(height: 8),
                 const Text('Saved to:',
                     style: TextStyle(fontWeight: FontWeight.bold)),
@@ -539,7 +539,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   await Share.shareXFiles(
                     [XFile(result.filePath!)],
                     subject:
-                        '${widget.trial.name} - ${widget.session.name} ARM Export',
+                        '${widget.trial.name} - ${widget.session.name} XML Export',
                     sharePositionOrigin: box == null
                         ? const Rect.fromLTWH(0, 0, 100, 100)
                         : box.localToGlobal(Offset.zero) & box.size,
@@ -558,7 +558,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'ARM XML export failed: $e',
+                'XML export failed: $e',
                 style: TextStyle(color: scheme.onError),
               ),
               backgroundColor: scheme.error,

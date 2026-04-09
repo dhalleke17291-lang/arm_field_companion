@@ -297,7 +297,7 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'ARM Shell linked',
+                            'Rating sheet linked',
                             style: Theme.of(context)
                                 .textTheme
                                 .labelLarge

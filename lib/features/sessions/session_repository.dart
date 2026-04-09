@@ -367,7 +367,7 @@ class SessionRepository {
   }
 
   /// Prefer [Trial.armImportSessionId] when set; else [ArmImportUseCase] session
-  /// (name contains `'ARM Import'`); else closest [Session.startedAt] to
+  /// (name contains Import session marker); else closest [Session.startedAt] to
   /// [Trial.armImportedAt]; else most recent non-deleted session.
   Future<int?> resolveSessionIdForRatingShell(Trial trial) async {
     final sessions = await (_db.select(_db.sessions)
@@ -390,7 +390,7 @@ class SessionRepository {
 
     if (trial.isArmLinked) {
       for (final s in sessions) {
-        if (s.name.contains('ARM Import')) {
+        if (s.name.contains('Import Session') || s.name.contains('ARM Import')) {
           return s.id;
         }
       }

@@ -20,7 +20,7 @@ String? buildExportBlockReasonFromParsed(ParsedArmCsv parsed) {
   if (ordered.isEmpty) {
     ordered.add(
       'Required plot, treatment, or rep columns are missing or could not be '
-      'read reliably, so ARM round-trip export is not safe.',
+      'read reliably, so rating sheet round-trip export is not safe.',
     );
   }
 
@@ -32,39 +32,39 @@ String _sentenceForHighExportBlockingFlag(UnknownPatternFlag f) {
     case 'duplicate-assessment-column-instance':
       final key = f.rawValue.trim();
       if (key.isEmpty) {
-        return 'Duplicate assessment column anchors were detected; ARM '
-            'round-trip export is not safe.';
+        return 'Duplicate assessment column anchors were detected; rating '
+            'sheet round-trip export is not safe.';
       }
       return 'Ambiguous duplicate assessment column instance "$key" prevents '
-          'safe ARM round-trip export.';
+          'safe rating sheet round-trip export.';
     case 'repeated-assessment-key':
       // Legacy flag type; treat like unsafe column layout.
       final key = f.rawValue.trim();
       if (key.isEmpty) {
         return 'Some imported assessment occurrences cannot yet be mapped '
-            'safely back to ARM.';
+            'safely back to the rating sheet.';
       }
       return 'Repeated assessment columns for "$key" cannot yet be mapped '
-          'safely back to ARM.';
+          'safely back to the rating sheet.';
     case 'missing-or-invalid-plot-number':
       return 'One or more rows have invalid or missing plot numbers, which '
-          'makes ARM round-trip export unsafe.';
+          'makes rating sheet round-trip export unsafe.';
     case 'duplicate-plot-number':
-      return 'Duplicate plot numbers were found, which makes ARM round-trip '
-          'export unsafe.';
+      return 'Duplicate plot numbers were found, which makes rating sheet '
+          'round-trip export unsafe.';
     case 'missing-treatment-number':
       return 'One or more rows are missing treatment numbers, which makes '
-          'ARM round-trip export unsafe.';
+          'rating sheet round-trip export unsafe.';
     case 'assessment_definition':
       final v = f.rawValue.trim();
       if (v.isEmpty) {
         return 'One or more assessment columns could not be aligned with '
-            'definitions; ARM round-trip export is not safe.';
+            'definitions; rating sheet round-trip export is not safe.';
       }
       return 'Assessment column "$v" could not be aligned with definitions; '
-          'ARM round-trip export is not safe.';
+          'rating sheet round-trip export is not safe.';
     default:
-      return 'A structural issue in the imported file prevents safe ARM '
-          'round-trip export.';
+      return 'A structural issue in the imported file prevents safe rating '
+          'sheet round-trip export.';
   }
 }

@@ -133,7 +133,7 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                       subtitle: 'Pre-validated methodologies',
                       description:
                           'Structured trials based on standardized protocols',
-                      descriptionFootnote: '(ARM compatible)',
+                      descriptionFootnote: '(Import compatible)',
                       icon: Icons.assignment_outlined,
                       imageAsset:
                           'assets/images/trials/protocol_trials_greenhouse.jpg',

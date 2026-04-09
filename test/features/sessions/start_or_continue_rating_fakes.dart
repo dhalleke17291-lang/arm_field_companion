@@ -117,7 +117,9 @@ class FakeSessionRepository implements SessionRepository {
     if (list.isEmpty) return null;
     if (trial.isArmLinked) {
       for (final s in list) {
-        if (s.name.contains('ARM Import')) return s.id;
+        if (s.name.contains('Import Session') || s.name.contains('ARM Import')) {
+          return s.id;
+        }
       }
       final anchor = trial.armImportedAt;
       if (anchor != null) {

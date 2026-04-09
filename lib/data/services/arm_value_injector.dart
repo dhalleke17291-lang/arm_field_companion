@@ -110,7 +110,7 @@ class ArmValueInjector {
 
     if (invalidBoundsEncountered) {
       throw StateError(
-        'ARM shell injection aborted: one or more cells had row/col indices '
+        'Rating sheet injection aborted: one or more cells had row/col indices '
         'outside allowed plot-data bounds (row index >= 48, column index >= 2). '
         'See debug log for details.',
       );

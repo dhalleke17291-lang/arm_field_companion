@@ -88,7 +88,7 @@ class ExportArmRatingShellUseCase {
   }) async {
     if (!trial.isArmLinked) {
       throw StateError(
-        'ExportArmRatingShellUseCase must only be called for ARM-linked trials. '
+        'ExportArmRatingShellUseCase must only be called for imported trials. '
         'Use ExportTrialUseCase for standalone trials.',
       );
     }
@@ -268,7 +268,7 @@ class ExportArmRatingShellUseCase {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['xlsx'],
-        dialogTitle: 'Select ARM Rating Shell for ${trial.name}',
+        dialogTitle: 'Select Excel Rating Sheet for ${trial.name}',
       );
       if (result == null || result.files.isEmpty) {
         exportDiagnosticsBuffer.add(
@@ -471,7 +471,7 @@ class ExportArmRatingShellUseCase {
       } else {
         await Share.shareXFiles(
           [XFile(filePath, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
-          text: '${trial.name} – ARM Rating Shell',
+          text: '${trial.name} – Excel Rating Sheet',
         );
       }
     }

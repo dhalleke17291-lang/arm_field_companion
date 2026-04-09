@@ -530,7 +530,7 @@ void main() {
     final sess = await (db.select(db.sessions)
           ..where((s) => s.id.equals(sid)))
         .getSingle();
-    expect(sess.name, 'ARM Import Session');
+    expect(sess.name, 'Import Session');
     expect(sess.trialId, tid);
 
     final sas = await (db.select(db.sessionAssessments)
@@ -656,7 +656,7 @@ void main() {
     );
 
     expect(r.success, false);
-    expect(r.errorMessage, contains('ARM import failed:'));
+    expect(r.errorMessage, contains('CSV import failed:'));
     expect(r.errorMessage, contains('resolver boom'));
 
     final trialsAfter = await db.select(db.trials).get();
@@ -697,7 +697,7 @@ void main() {
     );
 
     expect(r.success, false);
-    expect(r.errorMessage, contains('ARM import failed:'));
+    expect(r.errorMessage, contains('CSV import failed:'));
     expect(r.errorMessage, contains('simulated failure'));
 
     final trialsAfter = await db.select(db.trials).get();

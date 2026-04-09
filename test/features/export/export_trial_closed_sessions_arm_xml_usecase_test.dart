@@ -287,7 +287,7 @@ void main() {
         trialName: 'Trial',
       );
       expect(result.success, false);
-      expect(result.errorMessage, contains('Batch ARM XML'));
+      expect(result.errorMessage, contains('Batch XML'));
     });
   });
 }

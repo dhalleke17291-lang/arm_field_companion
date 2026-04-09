@@ -28,7 +28,7 @@ class ArmImportReportBuilder {
       if (parsed.importConfidence == ImportConfidence.blocked) {
         warnings.add(
           'Assessment column layout or export anchor issues were detected. '
-          'ARM round-trip export cannot run safely until this is resolved.',
+          'Rating sheet round-trip export cannot run safely until this is resolved.',
         );
       } else if (parsed.unknownPatterns.any(
             (f) => f.type == 'repeated-semantic-assessment-key',
@@ -39,7 +39,7 @@ class ArmImportReportBuilder {
         );
       } else {
         warnings.add(
-          'Repeated assessment keys were detected. Review before ARM export.',
+          'Repeated assessment keys were detected. Review before rating sheet export.',
         );
       }
     }

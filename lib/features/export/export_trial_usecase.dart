@@ -234,7 +234,7 @@ class ExportTrialUseCase {
 
     if (format == ExportFormat.armRatingShell) {
       throw ArgumentError(
-        'ARM Rating Shell must use ExportArmRatingShellUseCase, not ExportTrialUseCase.',
+        'Excel Rating Sheet must use ExportArmRatingShellUseCase, not ExportTrialUseCase.',
       );
     }
     final profile = await _armImportPersistenceRepository
@@ -403,7 +403,7 @@ class ExportTrialUseCase {
       final zipFile = await _buildArmHandoffPackage(
           bundle, trial, validation, photos);
       await Share.shareXFiles([XFile(zipFile.path, mimeType: 'application/zip')],
-          text: '${trial.name} – ARM Import Assistant package');
+          text: '${trial.name} – Import Assistant package');
     }
 
     publishExportDiagnostics();
@@ -418,7 +418,7 @@ class ExportTrialUseCase {
       [
         'observations.csv',
         '_file_note',
-        'Primary long-format observations (one row per rating). Use for analysis; in handoff ZIP, headers map to ARM via arm_mapping.csv.',
+        'Primary long-format observations (one row per rating). Use for analysis; in handoff ZIP, headers map to external codes via arm_mapping.csv.',
         ''
       ],
       ['observations.csv', 'trial_id', 'Trial database identifier', ''],

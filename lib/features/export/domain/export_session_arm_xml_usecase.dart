@@ -186,7 +186,7 @@ class ExportSessionArmXmlUsecase {
       return ArmXmlExportResult.ok(path);
     } catch (e, st) {
       return ArmXmlExportResult.failure(
-        'ARM XML export failed: ${e.toString()}\n${st.toString().split('\n').take(3).join('\n')}',
+        'XML export failed: ${e.toString()}\n${st.toString().split('\n').take(3).join('\n')}',
       );
     }
   }

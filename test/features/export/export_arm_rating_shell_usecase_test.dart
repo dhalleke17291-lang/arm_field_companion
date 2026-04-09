@@ -1463,7 +1463,7 @@ void main() {
       final armSessionId = await db.into(db.sessions).insert(
             SessionsCompanion.insert(
               trialId: trialId,
-              name: 'ARM Import Session',
+              name: 'Import Session',
               sessionDateLocal: '2026-03-01',
               startedAt: Value(armT),
             ),

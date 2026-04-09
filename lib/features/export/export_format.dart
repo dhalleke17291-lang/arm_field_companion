@@ -16,13 +16,13 @@ extension ExportFormatDetails on ExportFormat {
       case ExportFormat.flatCsv:
         return 'Trial CSV bundle';
       case ExportFormat.armHandoff:
-        return 'ARM Import Assistant';
+        return 'Import Assistant';
       case ExportFormat.zipBundle:
         return 'ZIP bundle with photos';
       case ExportFormat.pdfReport:
         return 'PDF field report';
       case ExportFormat.armRatingShell:
-        return 'ARM Rating Shell';
+        return 'Excel Rating Sheet';
     }
   }
 
@@ -37,7 +37,7 @@ extension ExportFormatDetails on ExportFormat {
       case ExportFormat.pdfReport:
         return 'Plot-by-plot report with embedded photos for sponsor or GLP submission';
       case ExportFormat.armRatingShell:
-        return 'Export as Excel file for ARM data collector';
+        return 'Export as Excel rating sheet for data collection';
     }
   }
 

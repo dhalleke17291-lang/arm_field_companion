@@ -80,8 +80,8 @@ class ImportTrialSheet extends StatelessWidget {
             const SizedBox(height: AppDesignTokens.spacing16),
             _ImportOptionTile(
               icon: Icons.table_chart_outlined,
-              title: 'Import from ARM (CSV)',
-              subtitle: 'Use an ARM export CSV for ARM-linked trials',
+              title: 'Import from CSV',
+              subtitle: 'Use an exported CSV for imported trials',
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push<void>(
@@ -110,8 +110,8 @@ class ImportTrialSheet extends StatelessWidget {
             const SizedBox(height: AppDesignTokens.spacing8),
             _ImportOptionTile(
               icon: Icons.link_outlined,
-              title: 'Link ARM Rating Shell',
-              subtitle: 'Enrich trial metadata from ARM shell',
+              title: 'Link Rating Sheet',
+              subtitle: 'Enrich trial metadata from Excel rating sheet',
               onTap: () => _onLinkArmShellTap(
                     sheetContext: context,
                     parentContext: parentContext,
@@ -169,7 +169,7 @@ Future<void> _onLinkArmShellTap({
     if (armLinked.isEmpty) {
       ScaffoldMessenger.of(parentContext).showSnackBar(
         const SnackBar(
-          content: Text('No ARM-linked trials. Import a CSV first.'),
+          content: Text('No imported trials. Import a CSV first.'),
         ),
       );
       return;
@@ -188,7 +188,7 @@ Future<void> _onLinkArmShellTap({
   final pick = await FilePicker.platform.pickFiles(
     type: FileType.custom,
     allowedExtensions: const ['xlsx'],
-    dialogTitle: 'Select ARM Rating Shell',
+    dialogTitle: 'Select Excel Rating Sheet',
   );
   if (pick == null || pick.files.isEmpty) return;
   final path = pick.files.single.path;
@@ -292,7 +292,7 @@ class _ShellLinkConfirmSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Link ARM Rating Shell',
+            'Link Rating Sheet',
             style: AppDesignTokens.headingStyle(
               fontSize: 17,
               color: AppDesignTokens.primaryText,
@@ -412,7 +412,7 @@ String _trialChangeLine(ShellTrialFieldChange c) {
 String _assessmentChangeLine(ShellAssessmentFieldChange c) {
   final label = switch (c.fieldName) {
     'pestCode' => 'Pest code',
-    'arm_shell_column_id' => 'ARM shell column ID',
+    'arm_shell_column_id' => 'Column ID',
     'arm_shell_rating_date' => 'Shell rating date',
     'se_name' => 'SE name',
     'se_description' => 'SE description',

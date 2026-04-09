@@ -168,7 +168,7 @@ bool canEditProtocol(Trial trial) {
 
 /// Trial type from ARM linkage only (not [Trial.workspaceType]).
 String trialTypeLabel(Trial trial) {
-  return trial.isArmLinked ? 'ARM-linked trial' : 'Custom trial';
+  return trial.isArmLinked ? 'Imported trial' : 'Custom trial';
 }
 
 /// Structure layer: whether treatments/plots/assessments may be edited (ARM or lifecycle).
@@ -200,7 +200,7 @@ String plotAssignmentsLockChipLabel(Trial trial, bool hasSessionData) {
 
 /// User-facing message when structure edits are blocked for ARM-linked trials.
 const String kArmProtocolStructureLockMessage =
-    'This trial is ARM-linked. Structure cannot be changed.';
+    'This trial is imported. Structure cannot be changed.';
 
 String getArmProtocolLockMessage() => kArmProtocolStructureLockMessage;
 

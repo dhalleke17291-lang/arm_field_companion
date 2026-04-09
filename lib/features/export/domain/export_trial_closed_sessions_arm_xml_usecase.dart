@@ -79,7 +79,7 @@ class ExportTrialClosedSessionsArmXmlUsecase {
           filePath: zipPath, sessionCount: closed.length);
     } catch (e, st) {
       return BatchExportResult.failure(
-          'Batch ARM XML export failed: ${e.toString()}\n${st.toString().split('\n').take(3).join('\n')}');
+          'Batch XML export failed: ${e.toString()}\n${st.toString().split('\n').take(3).join('\n')}');
     }
   }
 }

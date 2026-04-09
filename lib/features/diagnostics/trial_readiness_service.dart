@@ -109,7 +109,7 @@ class TrialReadinessService {
           label:
               '$plotsWithoutTreatmentCount plot(s) have no treatment assigned',
           detail: 'Assign treatments to all plots before '
-              'export to ensure correct ARM mapping.',
+              'export to ensure correct column mapping.',
           severity: TrialCheckSeverity.warning,
         ));
       } else {

@@ -54,7 +54,7 @@ class ArmShellParser {
     final sheet = sheets['Plot Data'];
     if (sheet == null) {
       throw ArgumentError(
-        'Rating shell sheet not found — expected "Plot Data" (ARM Rating Shell format).',
+        'Rating sheet not found — expected "Plot Data" (Excel rating sheet format).',
       );
     }
 
@@ -99,8 +99,8 @@ class ArmShellParser {
     }
     if (headerRowIdx < 0) {
       throw ArgumentError(
-        'ARM Rating Shell invalid: 041TRT header row not found. '
-        'Verify this file was exported from ARM.',
+        'Excel rating sheet invalid: 041TRT header row not found. '
+        'Verify this file matches the expected rating sheet layout.',
       );
     }
 

@@ -117,7 +117,7 @@ class ArmExportPreflightUseCase {
     if (!trial.isArmLinked) {
       return _failurePreflight(
         trialId: trialId,
-        message: 'ARM Rating Shell export is only for ARM-linked trials.',
+        message: 'Excel Rating Sheet export is only for imported trials.',
       );
     }
 

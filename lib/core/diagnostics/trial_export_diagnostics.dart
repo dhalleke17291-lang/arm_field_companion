@@ -11,7 +11,7 @@ import 'diagnostic_finding.dart';
 const String kTrialExportAttemptLabel = 'Trial Export';
 
 /// Shown in trial readiness sheet — identifies [ExportArmRatingShellUseCase] snapshots.
-const String kArmRatingShellExportAttemptLabel = 'ARM Rating Shell';
+const String kArmRatingShellExportAttemptLabel = 'Excel Rating Sheet';
 
 /// JSON envelope inside [TrialExportDiagnostic.findingsJson].
 const int kExportDiagnosticsPayloadVersion = 1;

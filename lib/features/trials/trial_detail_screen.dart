@@ -218,7 +218,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'ARM Rating Shell export is only available for ARM-linked trials.',
+              'Excel Rating Sheet export is only available for imported trials.',
             ),
           ),
         );
@@ -2220,7 +2220,7 @@ class SessionsView extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                           content: Text(value == 'arm_xml'
-                              ? 'Exporting ARM XML...'
+                              ? 'Exporting XML...'
                               : 'Exporting...')),
                     );
                     final result = value == 'arm_xml'
@@ -2283,7 +2283,7 @@ class SessionsView extends ConsumerWidget {
                   ),
                   const PopupMenuItem(
                     value: 'arm_xml',
-                    child: Text('Closed Sessions (ARM XML ZIP)'),
+                    child: Text('Closed Sessions (XML ZIP)'),
                   ),
                 ],
               ),
@@ -3096,7 +3096,7 @@ UnifiedSeverity _mapDiagnosticSeverity(DiagnosticSeverity s) =>
 String _sourceLabel(DiagnosticSource source) {
   return switch (source) {
     DiagnosticSource.exportValidation => 'export',
-    DiagnosticSource.armConfidence => 'ARM',
+    DiagnosticSource.armConfidence => 'Import',
     DiagnosticSource.readiness => '',
     DiagnosticSource.sessionCompleteness => '',
     DiagnosticSource.attention => '',

@@ -53,7 +53,7 @@ void main() {
     final r = buildExportBlockReasonFromParsed(parsed);
     expect(r, isNotNull);
     expect(r, contains('CONTRO|1-Jul-26|%|col3'));
-    expect(r, contains('safe ARM round-trip export'));
+    expect(r, contains('safe rating sheet round-trip export'));
   });
 
   test('repeated semantic assessment flag alone does not build block reason', () {

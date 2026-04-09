@@ -235,7 +235,7 @@ class WorkspaceConfig {
   static const standalone = WorkspaceConfig(
     type: WorkspaceType.standalone,
     displayName: 'Standalone Trial',
-    shortDescription: 'Independent trial — no ARM required, PDF and CSV report',
+    shortDescription: 'Independent trial — no CSV import required, PDF and CSV report',
     visibleTabs: [
       TrialTab.plots,
       TrialTab.assessments,
@@ -336,12 +336,12 @@ String exportEntryTooltipMessage(
 }) {
   final config = safeConfigFromString(workspaceType);
   if (isArmLinked) {
-    return 'This trial is ARM-linked. Export includes CSV, ARM Import Assistant, ZIP with photos, PDF, and ARM Rating Shell where available.';
+    return 'This trial is imported. Export includes CSV, Import Assistant, ZIP with photos, PDF, and Excel Rating Sheet where available.';
   }
   if (config.isStandalone) {
-    return 'Export trial data (PDF or CSV bundle). ARM Rating Shell is only for ARM-linked trials.';
+    return 'Export trial data (PDF or CSV bundle). Excel Rating Sheet is only for imported trials.';
   }
-  return 'Export trial data (CSV, ZIP with photos, or PDF). ARM Rating Shell is only for ARM-linked trials.';
+  return 'Export trial data (CSV, ZIP with photos, or PDF). Excel Rating Sheet is only for imported trials.';
 }
 
 /// Parses a stored [workspaceType] string to a [WorkspaceConfig].

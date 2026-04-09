@@ -66,7 +66,7 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _result = ArmImportResult.failure('ARM import failed: $e');
+        _result = ArmImportResult.failure('CSV import failed: $e');
       });
     } finally {
       if (mounted) {
@@ -78,20 +78,20 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
   String _exportReadinessLabel(ImportConfidence c) {
     switch (c) {
       case ImportConfidence.high:
-        return 'ARM Export: Ready';
+        return 'Rating sheet export: Ready';
       case ImportConfidence.medium:
       case ImportConfidence.low:
-        return 'ARM Export: Needs Review';
+        return 'Rating sheet export: Needs Review';
       case ImportConfidence.blocked:
-        return 'ARM Export: Blocked';
+        return 'Rating sheet export: Blocked';
     }
   }
 
   String _displayWarningForUi(String w) {
-    if (w.contains('Export to ARM may be blocked')) {
+    if (w.contains('Rating sheet export may be blocked')) {
       return w.replaceFirst(
-        'Export to ARM may be blocked',
-        'ARM export is blocked until issues are resolved',
+        'Rating sheet export may be blocked',
+        'Rating sheet export is blocked until issues are resolved',
       );
     }
     return w;
@@ -157,7 +157,7 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(
-        title: 'Import ARM Trial',
+        title: 'Import Trial (CSV)',
         titleFontSize: 18,
       ),
       body: SingleChildScrollView(
@@ -176,7 +176,7 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.upload_file),
-                label: Text(_busy ? 'Importing…' : 'Select ARM CSV File'),
+                label: Text(_busy ? 'Importing…' : 'Select CSV File'),
               ),
             ),
             if (!_busy && _result != null) ...[
@@ -252,7 +252,7 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Some imported data may need review before ARM export.',
+            'Some imported data may need review before rating sheet export.',
             style: bodyStyle,
           ),
         ],

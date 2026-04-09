@@ -73,8 +73,8 @@ class ComputeArmRoundTripDiagnosticsUseCase {
           code: ArmRoundTripDiagnosticCode.guardHasArmPlotNumber,
           severity: ArmRoundTripDiagnosticSeverity.warning,
           message:
-              '${guardsWithArm.length} guard row(s) have an ARM plot number set; '
-              'shell export uses data plots only.',
+              '${guardsWithArm.length} guard row(s) have an import plot number set; '
+              'rating sheet export uses data plots only.',
           detail: 'Plot ids: ${pks.join(", ")}',
           trialId: trialId,
         ),
@@ -89,7 +89,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
           code: ArmRoundTripDiagnosticCode.missingArmPlotNumber,
           severity: ArmRoundTripDiagnosticSeverity.info,
           message:
-              '${missingArm.length} data plot(s) have no ARM plot number (armPlotNumber).',
+              '${missingArm.length} data plot(s) have no import plot number (armPlotNumber).',
           detail: 'Plot ids: ${pks.join(", ")}',
           trialId: trialId,
         ),

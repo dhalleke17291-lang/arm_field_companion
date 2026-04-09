@@ -83,32 +83,32 @@ ArmRatingShellStrictBlockResult evaluateArmRatingShellStrictBlock(
 
   if (codes.contains(ArmRoundTripDiagnosticCode.duplicateArmPlotNumber)) {
     return ArmRatingShellStrictBlockResult.block(
-      'ARM Rating Shell export blocked: duplicate armPlotNumber on plots. '
-      'Resolve duplicate ARM plot numbers before exporting.',
+      'Rating sheet export blocked: duplicate armPlotNumber on plots. '
+      'Resolve duplicate import plot numbers before exporting.',
     );
   }
   if (codes.contains(ArmRoundTripDiagnosticCode.duplicateArmImportColumnIndex)) {
     return ArmRatingShellStrictBlockResult.block(
-      'ARM Rating Shell export blocked: duplicate armImportColumnIndex on '
+      'Rating sheet export blocked: duplicate armImportColumnIndex on '
       'trial assessments. Fix column indexes before exporting.',
     );
   }
   if (codes.contains(ArmRoundTripDiagnosticCode.missingArmPlotNumber)) {
     return ArmRatingShellStrictBlockResult.block(
-      'ARM Rating Shell export blocked: one or more data plots are missing '
-      'armPlotNumber. Assign ARM plot numbers before exporting.',
+      'Rating sheet export blocked: one or more data plots are missing '
+      'armPlotNumber. Assign import plot numbers before exporting.',
     );
   }
   if (codes.contains(ArmRoundTripDiagnosticCode.missingArmImportColumnIndex)) {
     return ArmRatingShellStrictBlockResult.block(
-      'ARM Rating Shell export blocked: one or more trial assessments are '
+      'Rating sheet export blocked: one or more trial assessments are '
       'missing armImportColumnIndex. Set column indexes before exporting.',
     );
   }
 
   if (report.resolvedShellSessionId == null) {
     return ArmRatingShellStrictBlockResult.block(
-      'ARM Rating Shell export blocked: no session is available for rating '
+      'Rating sheet export blocked: no session is available for rating '
       'export. Add or restore a session for this trial before exporting.',
     );
   }
@@ -116,10 +116,10 @@ ArmRatingShellStrictBlockResult evaluateArmRatingShellStrictBlock(
   if (positionalFallbackTriggersPhase3 &&
       deterministicAssessmentAnchorsExpected) {
     return ArmRatingShellStrictBlockResult.block(
-      'ARM Rating Shell export blocked: assessment columns were matched by '
-      'shell position instead of ARM column anchors. With high import '
+      'Rating sheet export blocked: assessment columns were matched by '
+      'sheet position instead of column anchors. With high import '
       'confidence and full armImportColumnIndex data, fix column identity '
-      '(pest code, unit, or shell layout) before exporting.',
+      '(pest code, unit, or sheet layout) before exporting.',
     );
   }
 

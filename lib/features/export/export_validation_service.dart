@@ -67,7 +67,7 @@ class ExportValidationService {
           category: 'Plot',
           type: 'plot_missing_label',
           field: 'plotId',
-          message: 'Plot has no label — will not map to ARM',
+          message: 'Plot has no label — will not map to the rating sheet',
           plotId: plot.id,
         ));
       }

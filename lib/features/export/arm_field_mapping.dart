@@ -6,7 +6,7 @@
 class ArmFieldMapping {
   /// Set this to the exact ARM version in use at the receiving end.
   /// Example: 'ARM 2025.5' or 'ARM-aligned — version unconfirmed'
-  static const String targetVersion = 'ARM-aligned — version unconfirmed';
+  static const String targetVersion = 'Import-aligned — version unconfirmed';
 
   /// Keys = exact current app CSV header strings (from observations export)
   /// Values = ARM-aligned field codes
@@ -125,7 +125,7 @@ class ArmFieldMapping {
   /// Human-readable mapping rows for the arm_mapping.csv handoff file.
   /// Each entry: [app_column, arm_field, arm_meaning, units, notes]
   static const List<List<String>> mappingGuide = [
-    ['plot_label', 'PLOTNO', 'Plot number', '', 'Matches ARM plot number in trial structure'],
+    ['plot_label', 'PLOTNO', 'Plot number', '', 'Matches import plot number in trial structure'],
     ['rep', 'REPNO', 'Replicate number', '', ''],
     ['treatment_code', 'TRTNO', 'Treatment number', '', 'Numeric code e.g. T1=1, T2=2'],
     ['treatment_name', 'TRTNAME', 'Treatment name', '', ''],

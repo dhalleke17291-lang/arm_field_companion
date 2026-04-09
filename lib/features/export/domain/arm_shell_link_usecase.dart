@@ -182,7 +182,7 @@ class ArmShellLinkUseCase {
             AuditEventsCompanion.insert(
               trialId: Value(trialId),
               eventType: 'arm_shell_linked',
-              description: 'ARM Rating Shell linked: ${preview.shellFileName}',
+              description: 'Rating sheet linked: ${preview.shellFileName}',
               metadata: Value(metadata),
             ),
           );

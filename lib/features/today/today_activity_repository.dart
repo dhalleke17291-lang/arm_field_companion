@@ -188,7 +188,7 @@ class TodayActivityRepository {
       final trialName = e.trialId != null
           ? ((await _db.getTrialById(e.trialId!))?.name ?? 'Trial ${e.trialId}')
           : 'Export';
-      final format = e.description.contains('XML') ? 'ARM XML' : 'CSV';
+      final format = e.description.contains('XML') ? 'XML' : 'CSV';
       events.add(ExportDoneEvent(
         at: e.createdAt,
         trialName: trialName,

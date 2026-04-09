@@ -21,10 +21,10 @@ ExportGate gateFromConfidence(String? confidence) {
 }
 
 const kBlockedExportMessage =
-    'Export blocked — data needs review before ARM round-trip.';
+    'Export blocked — data needs review before rating sheet round-trip.';
 
 const kWarnExportMessage =
-    'Export may need review — check imported data before relying on ARM export.';
+    'Export may need review — check imported data before relying on rating sheet export.';
 
 /// Full user-facing message when export is blocked, optionally appending
 /// concrete reasons from [exportBlockReason] (no "Reason:" developer phrasing).

@@ -273,9 +273,9 @@ class ArmImportUseCase {
         assessmentCount: snapshotPayload.assessmentCount,
       );
     } on DuplicateTrialException catch (e) {
-      return ArmImportResult.failure('ARM import failed: $e');
+      return ArmImportResult.failure('CSV import failed: $e');
     } catch (e) {
-      return ArmImportResult.failure('ARM import failed: $e');
+      return ArmImportResult.failure('CSV import failed: $e');
     }
   }
 
@@ -457,7 +457,7 @@ class ArmImportUseCase {
     try {
       final session = await _sessionRepository.createSession(
         trialId: trialId,
-        name: 'ARM Import Session',
+        name: 'Import Session',
         sessionDateLocal: _sessionDateLocalToday(),
         assessmentIds: legacyAssessmentIds,
         raterName: null,
@@ -762,7 +762,7 @@ class _ArmTreatmentRow {
 
 String _trialNameFromSourceFile(String sourceFileName) {
   final base = p.basename(sourceFileName.trim());
-  if (base.isEmpty) return 'ARM import';
+  if (base.isEmpty) return 'CSV import';
   final dot = base.lastIndexOf('.');
   if (dot <= 0) return base;
   return base.substring(0, dot);

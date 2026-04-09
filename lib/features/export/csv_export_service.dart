@@ -65,10 +65,10 @@ class CsvExportService {
     sb.writeln('"","" ');
     sb.writeln('"FILE GUIDE",""');
     sb.writeln(
-      '"observations.csv","Primary observations table in this package—for analysis and ARM-oriented import (see arm_mapping.csv for field names)."',
+      '"observations.csv","Primary observations table in this package—for analysis and CSV-oriented import (see arm_mapping.csv for field names)."',
     );
     sb.writeln(
-      '"observations_arm_transfer.csv","Manual-transfer-friendly observations with explicit IDs and result status when typing into ARM by hand."',
+      '"observations_arm_transfer.csv","Manual-transfer-friendly observations with explicit IDs and result status when typing into an external system by hand."',
     );
     sb.writeln(
       '"data_dictionary.csv","Column reference for every CSV file in this bundle."',
@@ -76,7 +76,7 @@ class CsvExportService {
     sb.writeln('"","" ');
     sb.writeln('"RECOMMENDED IMPORT ORDER",""');
     sb.writeln(
-      '"Step 1","Confirm trial structure exists in ARM with matching plot/rep/treatment layout"',
+      '"Step 1","Confirm trial structure exists in your target system with matching plot/rep/treatment layout"',
     );
     sb.writeln(
       '"Step 2","Import observations.csv using PLOTNO / REPNO / TRTNO as keys"',
@@ -89,10 +89,10 @@ class CsvExportService {
       '"Step 4","Review validation_report.csv for any errors or warnings before import"',
     );
     sb.writeln(
-      '"Step 5","Verify TRAIT names match ARM trait codes in your trial protocol"',
+      '"Step 5","Verify TRAIT names match trait codes in your trial protocol"',
     );
     sb.writeln(
-      '"Step 6","After import, cross-check rated plot count in ARM against sessions.csv"',
+      '"Step 6","After import, cross-check rated plot count in your target system against sessions.csv"',
     );
     sb.writeln('"","" ');
     sb.writeln('"VALIDATION SUMMARY",""');
@@ -109,7 +109,7 @@ class CsvExportService {
     sb.writeln(
       '"Photo reference","See photos_manifest.csv for full photo index"',
     );
-    sb.writeln('"ARM version","${ArmFieldMapping.targetVersion}"');
+    sb.writeln('"Target format version","${ArmFieldMapping.targetVersion}"');
     sb.writeln('"Generator","Ag-Quest Field Companion"');
     return sb.toString();
   }
