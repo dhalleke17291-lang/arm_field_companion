@@ -7,6 +7,7 @@ import '../../core/widgets/gradient_screen_header.dart';
 import '../diagnostics/diagnostics_screen.dart';
 import '../recovery/recovery_screen.dart';
 import '../users/user_selection_screen.dart';
+import 'more_backup_actions.dart';
 
 void _openUserSelection(BuildContext context) {
   Navigator.push(
@@ -90,6 +91,22 @@ class MoreScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: AppDesignTokens.spacing12),
+            _buildActionCard(
+              context,
+              icon: Icons.backup_outlined,
+              title: 'Backup',
+              subtitle: 'Export encrypted backup of all trial data',
+              onTap: () => runBackupFlow(context, ref),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing12),
+            _buildActionCard(
+              context,
+              icon: Icons.restore_outlined,
+              title: 'Restore from Backup',
+              subtitle: 'Replace all data from a backup file',
+              onTap: () => runRestoreFlow(context, ref),
+            ),
           ],
         ),
       ),
@@ -119,7 +136,7 @@ class MoreScreen extends ConsumerWidget {
             border: Border.all(color: AppDesignTokens.borderCrisp),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x08000000),
+                color: AppDesignTokens.shadowLight,
                 blurRadius: 4,
                 offset: Offset(0, 2),
               ),

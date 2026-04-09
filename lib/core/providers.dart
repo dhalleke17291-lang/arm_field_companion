@@ -14,6 +14,8 @@ import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
+import '../features/backup/backup_service.dart';
+import '../features/backup/restore_service.dart';
 import 'trial_operational_watch_merge.dart';
 import 'session_state.dart';
 import 'trial_state.dart';
@@ -1330,4 +1332,12 @@ final trialApplicationsForTrialProvider = StreamProvider.autoDispose
 final applicationsForTrialProvider =
     StreamProvider.family<List<ApplicationEvent>, int>((ref, trialId) {
   return ref.watch(applicationRepositoryProvider).watchEventsForTrial(trialId);
+});
+
+final backupServiceProvider = Provider<BackupService>((ref) {
+  return BackupService(ref.watch(databaseProvider));
+});
+
+final restoreServiceProvider = Provider<RestoreService>((ref) {
+  return RestoreService(ref.watch(databaseProvider));
 });
