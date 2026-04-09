@@ -743,6 +743,36 @@ class YieldDetails extends Table {
   TextColumn get createdBy => text().nullable()();
 }
 
+/// Manual field weather snapshot; one row per parent (e.g. rating session).
+class WeatherSnapshots extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get uuid => text().unique()();
+  IntColumn get trialId => integer().references(Trials, #id,
+      onDelete: KeyAction.cascade)();
+  TextColumn get parentType =>
+      text().withDefault(const Constant('rating_session'))();
+  IntColumn get parentId => integer().references(Sessions, #id,
+      onDelete: KeyAction.cascade)();
+  TextColumn get source => text().withDefault(const Constant('manual'))();
+  RealColumn get temperature => real().nullable()();
+  TextColumn get temperatureUnit =>
+      text().withDefault(const Constant('C'))();
+  RealColumn get humidity => real().nullable()();
+  RealColumn get windSpeed => real().nullable()();
+  TextColumn get windSpeedUnit =>
+      text().withDefault(const Constant('km/h'))();
+  TextColumn get windDirection => text().nullable()();
+  TextColumn get cloudCover => text().nullable()();
+  TextColumn get precipitation => text().nullable()();
+  TextColumn get soilCondition => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  /// UTC epoch milliseconds when conditions were observed.
+  IntColumn get recordedAt => integer()();
+  IntColumn get createdAt => integer()();
+  IntColumn get modifiedAt => integer()();
+  TextColumn get createdBy => text()();
+}
+
 /// Latest export-time diagnostics snapshot per trial (replaced on each publish).
 class TrialExportDiagnostics extends Table {
   IntColumn get trialId => integer().references(Trials, #id)();
@@ -790,6 +820,7 @@ class TrialExportDiagnostics extends Table {
   TrialContacts,
   YieldDetails,
   TrialExportDiagnostics,
+  WeatherSnapshots,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -798,7 +829,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 43;
+  int get schemaVersion => 45;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1172,6 +1203,27 @@ SET status = 'completed',
             await m.addColumn(trialAssessments, trialAssessments.seDescription);
             await m.addColumn(trialAssessments, trialAssessments.armRatingType);
           }
+          if (from < 44) {
+            await m.createTable(weatherSnapshots);
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_snapshots_parent ON weather_snapshots(parent_type, parent_id)',
+            );
+          }
+          // v44 tables lacked ON DELETE CASCADE on trial/session FKs; recreate so
+          // deleting a trial or session removes dependent weather rows.
+          if (from < 45) {
+            await customStatement(
+              'ALTER TABLE weather_snapshots RENAME TO weather_snapshots_old',
+            );
+            await m.createTable(weatherSnapshots);
+            await customStatement(
+              'INSERT INTO weather_snapshots SELECT * FROM weather_snapshots_old',
+            );
+            await customStatement('DROP TABLE weather_snapshots_old');
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_snapshots_parent ON weather_snapshots(parent_type, parent_id)',
+            );
+          }
           await _createIndexes();
         },
       );
@@ -1257,6 +1309,9 @@ SET status = 'completed',
     ''');
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_seeding_events_trial ON seeding_events(trial_id)',
+    );
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_snapshots_parent ON weather_snapshots(parent_type, parent_id)',
     );
   }
 }

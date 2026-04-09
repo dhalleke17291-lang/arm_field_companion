@@ -25989,6 +25989,948 @@ class TrialExportDiagnosticsCompanion
   }
 }
 
+class $WeatherSnapshotsTable extends WeatherSnapshots
+    with TableInfo<$WeatherSnapshotsTable, WeatherSnapshot> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WeatherSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+      'uuid', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trials (id) ON DELETE CASCADE'));
+  static const VerificationMeta _parentTypeMeta =
+      const VerificationMeta('parentType');
+  @override
+  late final GeneratedColumn<String> parentType = GeneratedColumn<String>(
+      'parent_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('rating_session'));
+  static const VerificationMeta _parentIdMeta =
+      const VerificationMeta('parentId');
+  @override
+  late final GeneratedColumn<int> parentId = GeneratedColumn<int>(
+      'parent_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES sessions (id) ON DELETE CASCADE'));
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('manual'));
+  static const VerificationMeta _temperatureMeta =
+      const VerificationMeta('temperature');
+  @override
+  late final GeneratedColumn<double> temperature = GeneratedColumn<double>(
+      'temperature', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _temperatureUnitMeta =
+      const VerificationMeta('temperatureUnit');
+  @override
+  late final GeneratedColumn<String> temperatureUnit = GeneratedColumn<String>(
+      'temperature_unit', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('C'));
+  static const VerificationMeta _humidityMeta =
+      const VerificationMeta('humidity');
+  @override
+  late final GeneratedColumn<double> humidity = GeneratedColumn<double>(
+      'humidity', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _windSpeedMeta =
+      const VerificationMeta('windSpeed');
+  @override
+  late final GeneratedColumn<double> windSpeed = GeneratedColumn<double>(
+      'wind_speed', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _windSpeedUnitMeta =
+      const VerificationMeta('windSpeedUnit');
+  @override
+  late final GeneratedColumn<String> windSpeedUnit = GeneratedColumn<String>(
+      'wind_speed_unit', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('km/h'));
+  static const VerificationMeta _windDirectionMeta =
+      const VerificationMeta('windDirection');
+  @override
+  late final GeneratedColumn<String> windDirection = GeneratedColumn<String>(
+      'wind_direction', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cloudCoverMeta =
+      const VerificationMeta('cloudCover');
+  @override
+  late final GeneratedColumn<String> cloudCover = GeneratedColumn<String>(
+      'cloud_cover', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _precipitationMeta =
+      const VerificationMeta('precipitation');
+  @override
+  late final GeneratedColumn<String> precipitation = GeneratedColumn<String>(
+      'precipitation', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _soilConditionMeta =
+      const VerificationMeta('soilCondition');
+  @override
+  late final GeneratedColumn<String> soilCondition = GeneratedColumn<String>(
+      'soil_condition', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _recordedAtMeta =
+      const VerificationMeta('recordedAt');
+  @override
+  late final GeneratedColumn<int> recordedAt = GeneratedColumn<int>(
+      'recorded_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _modifiedAtMeta =
+      const VerificationMeta('modifiedAt');
+  @override
+  late final GeneratedColumn<int> modifiedAt = GeneratedColumn<int>(
+      'modified_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _createdByMeta =
+      const VerificationMeta('createdBy');
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+      'created_by', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        uuid,
+        trialId,
+        parentType,
+        parentId,
+        source,
+        temperature,
+        temperatureUnit,
+        humidity,
+        windSpeed,
+        windSpeedUnit,
+        windDirection,
+        cloudCover,
+        precipitation,
+        soilCondition,
+        notes,
+        recordedAt,
+        createdAt,
+        modifiedAt,
+        createdBy
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'weather_snapshots';
+  @override
+  VerificationContext validateIntegrity(Insertable<WeatherSnapshot> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('uuid')) {
+      context.handle(
+          _uuidMeta, uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta));
+    } else if (isInserting) {
+      context.missing(_uuidMeta);
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('parent_type')) {
+      context.handle(
+          _parentTypeMeta,
+          parentType.isAcceptableOrUnknown(
+              data['parent_type']!, _parentTypeMeta));
+    }
+    if (data.containsKey('parent_id')) {
+      context.handle(_parentIdMeta,
+          parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta));
+    } else if (isInserting) {
+      context.missing(_parentIdMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    }
+    if (data.containsKey('temperature')) {
+      context.handle(
+          _temperatureMeta,
+          temperature.isAcceptableOrUnknown(
+              data['temperature']!, _temperatureMeta));
+    }
+    if (data.containsKey('temperature_unit')) {
+      context.handle(
+          _temperatureUnitMeta,
+          temperatureUnit.isAcceptableOrUnknown(
+              data['temperature_unit']!, _temperatureUnitMeta));
+    }
+    if (data.containsKey('humidity')) {
+      context.handle(_humidityMeta,
+          humidity.isAcceptableOrUnknown(data['humidity']!, _humidityMeta));
+    }
+    if (data.containsKey('wind_speed')) {
+      context.handle(_windSpeedMeta,
+          windSpeed.isAcceptableOrUnknown(data['wind_speed']!, _windSpeedMeta));
+    }
+    if (data.containsKey('wind_speed_unit')) {
+      context.handle(
+          _windSpeedUnitMeta,
+          windSpeedUnit.isAcceptableOrUnknown(
+              data['wind_speed_unit']!, _windSpeedUnitMeta));
+    }
+    if (data.containsKey('wind_direction')) {
+      context.handle(
+          _windDirectionMeta,
+          windDirection.isAcceptableOrUnknown(
+              data['wind_direction']!, _windDirectionMeta));
+    }
+    if (data.containsKey('cloud_cover')) {
+      context.handle(
+          _cloudCoverMeta,
+          cloudCover.isAcceptableOrUnknown(
+              data['cloud_cover']!, _cloudCoverMeta));
+    }
+    if (data.containsKey('precipitation')) {
+      context.handle(
+          _precipitationMeta,
+          precipitation.isAcceptableOrUnknown(
+              data['precipitation']!, _precipitationMeta));
+    }
+    if (data.containsKey('soil_condition')) {
+      context.handle(
+          _soilConditionMeta,
+          soilCondition.isAcceptableOrUnknown(
+              data['soil_condition']!, _soilConditionMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+          _recordedAtMeta,
+          recordedAt.isAcceptableOrUnknown(
+              data['recorded_at']!, _recordedAtMeta));
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('modified_at')) {
+      context.handle(
+          _modifiedAtMeta,
+          modifiedAt.isAcceptableOrUnknown(
+              data['modified_at']!, _modifiedAtMeta));
+    } else if (isInserting) {
+      context.missing(_modifiedAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(_createdByMeta,
+          createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta));
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WeatherSnapshot map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WeatherSnapshot(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      uuid: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uuid'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      parentType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}parent_type'])!,
+      parentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}parent_id'])!,
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      temperature: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}temperature']),
+      temperatureUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}temperature_unit'])!,
+      humidity: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}humidity']),
+      windSpeed: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}wind_speed']),
+      windSpeedUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}wind_speed_unit'])!,
+      windDirection: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}wind_direction']),
+      cloudCover: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cloud_cover']),
+      precipitation: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}precipitation']),
+      soilCondition: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_condition']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      recordedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}recorded_at'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+      modifiedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}modified_at'])!,
+      createdBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_by'])!,
+    );
+  }
+
+  @override
+  $WeatherSnapshotsTable createAlias(String alias) {
+    return $WeatherSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
+  final int id;
+  final String uuid;
+  final int trialId;
+  final String parentType;
+  final int parentId;
+  final String source;
+  final double? temperature;
+  final String temperatureUnit;
+  final double? humidity;
+  final double? windSpeed;
+  final String windSpeedUnit;
+  final String? windDirection;
+  final String? cloudCover;
+  final String? precipitation;
+  final String? soilCondition;
+  final String? notes;
+
+  /// UTC epoch milliseconds when conditions were observed.
+  final int recordedAt;
+  final int createdAt;
+  final int modifiedAt;
+  final String createdBy;
+  const WeatherSnapshot(
+      {required this.id,
+      required this.uuid,
+      required this.trialId,
+      required this.parentType,
+      required this.parentId,
+      required this.source,
+      this.temperature,
+      required this.temperatureUnit,
+      this.humidity,
+      this.windSpeed,
+      required this.windSpeedUnit,
+      this.windDirection,
+      this.cloudCover,
+      this.precipitation,
+      this.soilCondition,
+      this.notes,
+      required this.recordedAt,
+      required this.createdAt,
+      required this.modifiedAt,
+      required this.createdBy});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['uuid'] = Variable<String>(uuid);
+    map['trial_id'] = Variable<int>(trialId);
+    map['parent_type'] = Variable<String>(parentType);
+    map['parent_id'] = Variable<int>(parentId);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || temperature != null) {
+      map['temperature'] = Variable<double>(temperature);
+    }
+    map['temperature_unit'] = Variable<String>(temperatureUnit);
+    if (!nullToAbsent || humidity != null) {
+      map['humidity'] = Variable<double>(humidity);
+    }
+    if (!nullToAbsent || windSpeed != null) {
+      map['wind_speed'] = Variable<double>(windSpeed);
+    }
+    map['wind_speed_unit'] = Variable<String>(windSpeedUnit);
+    if (!nullToAbsent || windDirection != null) {
+      map['wind_direction'] = Variable<String>(windDirection);
+    }
+    if (!nullToAbsent || cloudCover != null) {
+      map['cloud_cover'] = Variable<String>(cloudCover);
+    }
+    if (!nullToAbsent || precipitation != null) {
+      map['precipitation'] = Variable<String>(precipitation);
+    }
+    if (!nullToAbsent || soilCondition != null) {
+      map['soil_condition'] = Variable<String>(soilCondition);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['recorded_at'] = Variable<int>(recordedAt);
+    map['created_at'] = Variable<int>(createdAt);
+    map['modified_at'] = Variable<int>(modifiedAt);
+    map['created_by'] = Variable<String>(createdBy);
+    return map;
+  }
+
+  WeatherSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return WeatherSnapshotsCompanion(
+      id: Value(id),
+      uuid: Value(uuid),
+      trialId: Value(trialId),
+      parentType: Value(parentType),
+      parentId: Value(parentId),
+      source: Value(source),
+      temperature: temperature == null && nullToAbsent
+          ? const Value.absent()
+          : Value(temperature),
+      temperatureUnit: Value(temperatureUnit),
+      humidity: humidity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(humidity),
+      windSpeed: windSpeed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(windSpeed),
+      windSpeedUnit: Value(windSpeedUnit),
+      windDirection: windDirection == null && nullToAbsent
+          ? const Value.absent()
+          : Value(windDirection),
+      cloudCover: cloudCover == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cloudCover),
+      precipitation: precipitation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(precipitation),
+      soilCondition: soilCondition == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilCondition),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      recordedAt: Value(recordedAt),
+      createdAt: Value(createdAt),
+      modifiedAt: Value(modifiedAt),
+      createdBy: Value(createdBy),
+    );
+  }
+
+  factory WeatherSnapshot.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WeatherSnapshot(
+      id: serializer.fromJson<int>(json['id']),
+      uuid: serializer.fromJson<String>(json['uuid']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      parentType: serializer.fromJson<String>(json['parentType']),
+      parentId: serializer.fromJson<int>(json['parentId']),
+      source: serializer.fromJson<String>(json['source']),
+      temperature: serializer.fromJson<double?>(json['temperature']),
+      temperatureUnit: serializer.fromJson<String>(json['temperatureUnit']),
+      humidity: serializer.fromJson<double?>(json['humidity']),
+      windSpeed: serializer.fromJson<double?>(json['windSpeed']),
+      windSpeedUnit: serializer.fromJson<String>(json['windSpeedUnit']),
+      windDirection: serializer.fromJson<String?>(json['windDirection']),
+      cloudCover: serializer.fromJson<String?>(json['cloudCover']),
+      precipitation: serializer.fromJson<String?>(json['precipitation']),
+      soilCondition: serializer.fromJson<String?>(json['soilCondition']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      recordedAt: serializer.fromJson<int>(json['recordedAt']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      modifiedAt: serializer.fromJson<int>(json['modifiedAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'uuid': serializer.toJson<String>(uuid),
+      'trialId': serializer.toJson<int>(trialId),
+      'parentType': serializer.toJson<String>(parentType),
+      'parentId': serializer.toJson<int>(parentId),
+      'source': serializer.toJson<String>(source),
+      'temperature': serializer.toJson<double?>(temperature),
+      'temperatureUnit': serializer.toJson<String>(temperatureUnit),
+      'humidity': serializer.toJson<double?>(humidity),
+      'windSpeed': serializer.toJson<double?>(windSpeed),
+      'windSpeedUnit': serializer.toJson<String>(windSpeedUnit),
+      'windDirection': serializer.toJson<String?>(windDirection),
+      'cloudCover': serializer.toJson<String?>(cloudCover),
+      'precipitation': serializer.toJson<String?>(precipitation),
+      'soilCondition': serializer.toJson<String?>(soilCondition),
+      'notes': serializer.toJson<String?>(notes),
+      'recordedAt': serializer.toJson<int>(recordedAt),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'modifiedAt': serializer.toJson<int>(modifiedAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+    };
+  }
+
+  WeatherSnapshot copyWith(
+          {int? id,
+          String? uuid,
+          int? trialId,
+          String? parentType,
+          int? parentId,
+          String? source,
+          Value<double?> temperature = const Value.absent(),
+          String? temperatureUnit,
+          Value<double?> humidity = const Value.absent(),
+          Value<double?> windSpeed = const Value.absent(),
+          String? windSpeedUnit,
+          Value<String?> windDirection = const Value.absent(),
+          Value<String?> cloudCover = const Value.absent(),
+          Value<String?> precipitation = const Value.absent(),
+          Value<String?> soilCondition = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
+          int? recordedAt,
+          int? createdAt,
+          int? modifiedAt,
+          String? createdBy}) =>
+      WeatherSnapshot(
+        id: id ?? this.id,
+        uuid: uuid ?? this.uuid,
+        trialId: trialId ?? this.trialId,
+        parentType: parentType ?? this.parentType,
+        parentId: parentId ?? this.parentId,
+        source: source ?? this.source,
+        temperature: temperature.present ? temperature.value : this.temperature,
+        temperatureUnit: temperatureUnit ?? this.temperatureUnit,
+        humidity: humidity.present ? humidity.value : this.humidity,
+        windSpeed: windSpeed.present ? windSpeed.value : this.windSpeed,
+        windSpeedUnit: windSpeedUnit ?? this.windSpeedUnit,
+        windDirection:
+            windDirection.present ? windDirection.value : this.windDirection,
+        cloudCover: cloudCover.present ? cloudCover.value : this.cloudCover,
+        precipitation:
+            precipitation.present ? precipitation.value : this.precipitation,
+        soilCondition:
+            soilCondition.present ? soilCondition.value : this.soilCondition,
+        notes: notes.present ? notes.value : this.notes,
+        recordedAt: recordedAt ?? this.recordedAt,
+        createdAt: createdAt ?? this.createdAt,
+        modifiedAt: modifiedAt ?? this.modifiedAt,
+        createdBy: createdBy ?? this.createdBy,
+      );
+  WeatherSnapshot copyWithCompanion(WeatherSnapshotsCompanion data) {
+    return WeatherSnapshot(
+      id: data.id.present ? data.id.value : this.id,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      parentType:
+          data.parentType.present ? data.parentType.value : this.parentType,
+      parentId: data.parentId.present ? data.parentId.value : this.parentId,
+      source: data.source.present ? data.source.value : this.source,
+      temperature:
+          data.temperature.present ? data.temperature.value : this.temperature,
+      temperatureUnit: data.temperatureUnit.present
+          ? data.temperatureUnit.value
+          : this.temperatureUnit,
+      humidity: data.humidity.present ? data.humidity.value : this.humidity,
+      windSpeed: data.windSpeed.present ? data.windSpeed.value : this.windSpeed,
+      windSpeedUnit: data.windSpeedUnit.present
+          ? data.windSpeedUnit.value
+          : this.windSpeedUnit,
+      windDirection: data.windDirection.present
+          ? data.windDirection.value
+          : this.windDirection,
+      cloudCover:
+          data.cloudCover.present ? data.cloudCover.value : this.cloudCover,
+      precipitation: data.precipitation.present
+          ? data.precipitation.value
+          : this.precipitation,
+      soilCondition: data.soilCondition.present
+          ? data.soilCondition.value
+          : this.soilCondition,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      recordedAt:
+          data.recordedAt.present ? data.recordedAt.value : this.recordedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      modifiedAt:
+          data.modifiedAt.present ? data.modifiedAt.value : this.modifiedAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeatherSnapshot(')
+          ..write('id: $id, ')
+          ..write('uuid: $uuid, ')
+          ..write('trialId: $trialId, ')
+          ..write('parentType: $parentType, ')
+          ..write('parentId: $parentId, ')
+          ..write('source: $source, ')
+          ..write('temperature: $temperature, ')
+          ..write('temperatureUnit: $temperatureUnit, ')
+          ..write('humidity: $humidity, ')
+          ..write('windSpeed: $windSpeed, ')
+          ..write('windSpeedUnit: $windSpeedUnit, ')
+          ..write('windDirection: $windDirection, ')
+          ..write('cloudCover: $cloudCover, ')
+          ..write('precipitation: $precipitation, ')
+          ..write('soilCondition: $soilCondition, ')
+          ..write('notes: $notes, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('modifiedAt: $modifiedAt, ')
+          ..write('createdBy: $createdBy')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      uuid,
+      trialId,
+      parentType,
+      parentId,
+      source,
+      temperature,
+      temperatureUnit,
+      humidity,
+      windSpeed,
+      windSpeedUnit,
+      windDirection,
+      cloudCover,
+      precipitation,
+      soilCondition,
+      notes,
+      recordedAt,
+      createdAt,
+      modifiedAt,
+      createdBy);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WeatherSnapshot &&
+          other.id == this.id &&
+          other.uuid == this.uuid &&
+          other.trialId == this.trialId &&
+          other.parentType == this.parentType &&
+          other.parentId == this.parentId &&
+          other.source == this.source &&
+          other.temperature == this.temperature &&
+          other.temperatureUnit == this.temperatureUnit &&
+          other.humidity == this.humidity &&
+          other.windSpeed == this.windSpeed &&
+          other.windSpeedUnit == this.windSpeedUnit &&
+          other.windDirection == this.windDirection &&
+          other.cloudCover == this.cloudCover &&
+          other.precipitation == this.precipitation &&
+          other.soilCondition == this.soilCondition &&
+          other.notes == this.notes &&
+          other.recordedAt == this.recordedAt &&
+          other.createdAt == this.createdAt &&
+          other.modifiedAt == this.modifiedAt &&
+          other.createdBy == this.createdBy);
+}
+
+class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
+  final Value<int> id;
+  final Value<String> uuid;
+  final Value<int> trialId;
+  final Value<String> parentType;
+  final Value<int> parentId;
+  final Value<String> source;
+  final Value<double?> temperature;
+  final Value<String> temperatureUnit;
+  final Value<double?> humidity;
+  final Value<double?> windSpeed;
+  final Value<String> windSpeedUnit;
+  final Value<String?> windDirection;
+  final Value<String?> cloudCover;
+  final Value<String?> precipitation;
+  final Value<String?> soilCondition;
+  final Value<String?> notes;
+  final Value<int> recordedAt;
+  final Value<int> createdAt;
+  final Value<int> modifiedAt;
+  final Value<String> createdBy;
+  const WeatherSnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.uuid = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.parentType = const Value.absent(),
+    this.parentId = const Value.absent(),
+    this.source = const Value.absent(),
+    this.temperature = const Value.absent(),
+    this.temperatureUnit = const Value.absent(),
+    this.humidity = const Value.absent(),
+    this.windSpeed = const Value.absent(),
+    this.windSpeedUnit = const Value.absent(),
+    this.windDirection = const Value.absent(),
+    this.cloudCover = const Value.absent(),
+    this.precipitation = const Value.absent(),
+    this.soilCondition = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.modifiedAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+  });
+  WeatherSnapshotsCompanion.insert({
+    this.id = const Value.absent(),
+    required String uuid,
+    required int trialId,
+    this.parentType = const Value.absent(),
+    required int parentId,
+    this.source = const Value.absent(),
+    this.temperature = const Value.absent(),
+    this.temperatureUnit = const Value.absent(),
+    this.humidity = const Value.absent(),
+    this.windSpeed = const Value.absent(),
+    this.windSpeedUnit = const Value.absent(),
+    this.windDirection = const Value.absent(),
+    this.cloudCover = const Value.absent(),
+    this.precipitation = const Value.absent(),
+    this.soilCondition = const Value.absent(),
+    this.notes = const Value.absent(),
+    required int recordedAt,
+    required int createdAt,
+    required int modifiedAt,
+    required String createdBy,
+  })  : uuid = Value(uuid),
+        trialId = Value(trialId),
+        parentId = Value(parentId),
+        recordedAt = Value(recordedAt),
+        createdAt = Value(createdAt),
+        modifiedAt = Value(modifiedAt),
+        createdBy = Value(createdBy);
+  static Insertable<WeatherSnapshot> custom({
+    Expression<int>? id,
+    Expression<String>? uuid,
+    Expression<int>? trialId,
+    Expression<String>? parentType,
+    Expression<int>? parentId,
+    Expression<String>? source,
+    Expression<double>? temperature,
+    Expression<String>? temperatureUnit,
+    Expression<double>? humidity,
+    Expression<double>? windSpeed,
+    Expression<String>? windSpeedUnit,
+    Expression<String>? windDirection,
+    Expression<String>? cloudCover,
+    Expression<String>? precipitation,
+    Expression<String>? soilCondition,
+    Expression<String>? notes,
+    Expression<int>? recordedAt,
+    Expression<int>? createdAt,
+    Expression<int>? modifiedAt,
+    Expression<String>? createdBy,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (uuid != null) 'uuid': uuid,
+      if (trialId != null) 'trial_id': trialId,
+      if (parentType != null) 'parent_type': parentType,
+      if (parentId != null) 'parent_id': parentId,
+      if (source != null) 'source': source,
+      if (temperature != null) 'temperature': temperature,
+      if (temperatureUnit != null) 'temperature_unit': temperatureUnit,
+      if (humidity != null) 'humidity': humidity,
+      if (windSpeed != null) 'wind_speed': windSpeed,
+      if (windSpeedUnit != null) 'wind_speed_unit': windSpeedUnit,
+      if (windDirection != null) 'wind_direction': windDirection,
+      if (cloudCover != null) 'cloud_cover': cloudCover,
+      if (precipitation != null) 'precipitation': precipitation,
+      if (soilCondition != null) 'soil_condition': soilCondition,
+      if (notes != null) 'notes': notes,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (modifiedAt != null) 'modified_at': modifiedAt,
+      if (createdBy != null) 'created_by': createdBy,
+    });
+  }
+
+  WeatherSnapshotsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? uuid,
+      Value<int>? trialId,
+      Value<String>? parentType,
+      Value<int>? parentId,
+      Value<String>? source,
+      Value<double?>? temperature,
+      Value<String>? temperatureUnit,
+      Value<double?>? humidity,
+      Value<double?>? windSpeed,
+      Value<String>? windSpeedUnit,
+      Value<String?>? windDirection,
+      Value<String?>? cloudCover,
+      Value<String?>? precipitation,
+      Value<String?>? soilCondition,
+      Value<String?>? notes,
+      Value<int>? recordedAt,
+      Value<int>? createdAt,
+      Value<int>? modifiedAt,
+      Value<String>? createdBy}) {
+    return WeatherSnapshotsCompanion(
+      id: id ?? this.id,
+      uuid: uuid ?? this.uuid,
+      trialId: trialId ?? this.trialId,
+      parentType: parentType ?? this.parentType,
+      parentId: parentId ?? this.parentId,
+      source: source ?? this.source,
+      temperature: temperature ?? this.temperature,
+      temperatureUnit: temperatureUnit ?? this.temperatureUnit,
+      humidity: humidity ?? this.humidity,
+      windSpeed: windSpeed ?? this.windSpeed,
+      windSpeedUnit: windSpeedUnit ?? this.windSpeedUnit,
+      windDirection: windDirection ?? this.windDirection,
+      cloudCover: cloudCover ?? this.cloudCover,
+      precipitation: precipitation ?? this.precipitation,
+      soilCondition: soilCondition ?? this.soilCondition,
+      notes: notes ?? this.notes,
+      recordedAt: recordedAt ?? this.recordedAt,
+      createdAt: createdAt ?? this.createdAt,
+      modifiedAt: modifiedAt ?? this.modifiedAt,
+      createdBy: createdBy ?? this.createdBy,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (parentType.present) {
+      map['parent_type'] = Variable<String>(parentType.value);
+    }
+    if (parentId.present) {
+      map['parent_id'] = Variable<int>(parentId.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (temperature.present) {
+      map['temperature'] = Variable<double>(temperature.value);
+    }
+    if (temperatureUnit.present) {
+      map['temperature_unit'] = Variable<String>(temperatureUnit.value);
+    }
+    if (humidity.present) {
+      map['humidity'] = Variable<double>(humidity.value);
+    }
+    if (windSpeed.present) {
+      map['wind_speed'] = Variable<double>(windSpeed.value);
+    }
+    if (windSpeedUnit.present) {
+      map['wind_speed_unit'] = Variable<String>(windSpeedUnit.value);
+    }
+    if (windDirection.present) {
+      map['wind_direction'] = Variable<String>(windDirection.value);
+    }
+    if (cloudCover.present) {
+      map['cloud_cover'] = Variable<String>(cloudCover.value);
+    }
+    if (precipitation.present) {
+      map['precipitation'] = Variable<String>(precipitation.value);
+    }
+    if (soilCondition.present) {
+      map['soil_condition'] = Variable<String>(soilCondition.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<int>(recordedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (modifiedAt.present) {
+      map['modified_at'] = Variable<int>(modifiedAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeatherSnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('uuid: $uuid, ')
+          ..write('trialId: $trialId, ')
+          ..write('parentType: $parentType, ')
+          ..write('parentId: $parentId, ')
+          ..write('source: $source, ')
+          ..write('temperature: $temperature, ')
+          ..write('temperatureUnit: $temperatureUnit, ')
+          ..write('humidity: $humidity, ')
+          ..write('windSpeed: $windSpeed, ')
+          ..write('windSpeedUnit: $windSpeedUnit, ')
+          ..write('windDirection: $windDirection, ')
+          ..write('cloudCover: $cloudCover, ')
+          ..write('precipitation: $precipitation, ')
+          ..write('soilCondition: $soilCondition, ')
+          ..write('notes: $notes, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('modifiedAt: $modifiedAt, ')
+          ..write('createdBy: $createdBy')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -26042,6 +26984,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $YieldDetailsTable yieldDetails = $YieldDetailsTable(this);
   late final $TrialExportDiagnosticsTable trialExportDiagnostics =
       $TrialExportDiagnosticsTable(this);
+  late final $WeatherSnapshotsTable weatherSnapshots =
+      $WeatherSnapshotsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -26080,7 +27024,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         cropDescriptions,
         trialContacts,
         yieldDetails,
-        trialExportDiagnostics
+        trialExportDiagnostics,
+        weatherSnapshots
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -26091,6 +27036,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
             result: [
               TableUpdate('trial_application_products',
                   kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trials',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('weather_snapshots', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('sessions',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('weather_snapshots', kind: UpdateKind.delete),
             ],
           ),
         ],
@@ -27316,6 +28275,20 @@ class $$TrialsTableFilterComposer
                     $state.db.trialExportDiagnostics,
                     joinBuilder,
                     parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter weatherSnapshotsRefs(
+      ComposableFilter Function($$WeatherSnapshotsTableFilterComposer f) f) {
+    final $$WeatherSnapshotsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.weatherSnapshots,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$WeatherSnapshotsTableFilterComposer(ComposerState($state.db,
+                    $state.db.weatherSnapshots, joinBuilder, parentComposers)));
     return f(composer);
   }
 }
@@ -30992,6 +31965,20 @@ class $$SessionsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$AuditEventsTableFilterComposer(ComposerState($state.db,
                 $state.db.auditEvents, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter weatherSnapshotsRefs(
+      ComposableFilter Function($$WeatherSnapshotsTableFilterComposer f) f) {
+    final $$WeatherSnapshotsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.weatherSnapshots,
+            getReferencedColumn: (t) => t.parentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$WeatherSnapshotsTableFilterComposer(ComposerState($state.db,
+                    $state.db.weatherSnapshots, joinBuilder, parentComposers)));
     return f(composer);
   }
 }
@@ -38135,6 +39122,397 @@ class $$TrialExportDiagnosticsTableOrderingComposer
   }
 }
 
+typedef $$WeatherSnapshotsTableCreateCompanionBuilder
+    = WeatherSnapshotsCompanion Function({
+  Value<int> id,
+  required String uuid,
+  required int trialId,
+  Value<String> parentType,
+  required int parentId,
+  Value<String> source,
+  Value<double?> temperature,
+  Value<String> temperatureUnit,
+  Value<double?> humidity,
+  Value<double?> windSpeed,
+  Value<String> windSpeedUnit,
+  Value<String?> windDirection,
+  Value<String?> cloudCover,
+  Value<String?> precipitation,
+  Value<String?> soilCondition,
+  Value<String?> notes,
+  required int recordedAt,
+  required int createdAt,
+  required int modifiedAt,
+  required String createdBy,
+});
+typedef $$WeatherSnapshotsTableUpdateCompanionBuilder
+    = WeatherSnapshotsCompanion Function({
+  Value<int> id,
+  Value<String> uuid,
+  Value<int> trialId,
+  Value<String> parentType,
+  Value<int> parentId,
+  Value<String> source,
+  Value<double?> temperature,
+  Value<String> temperatureUnit,
+  Value<double?> humidity,
+  Value<double?> windSpeed,
+  Value<String> windSpeedUnit,
+  Value<String?> windDirection,
+  Value<String?> cloudCover,
+  Value<String?> precipitation,
+  Value<String?> soilCondition,
+  Value<String?> notes,
+  Value<int> recordedAt,
+  Value<int> createdAt,
+  Value<int> modifiedAt,
+  Value<String> createdBy,
+});
+
+class $$WeatherSnapshotsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $WeatherSnapshotsTable,
+    WeatherSnapshot,
+    $$WeatherSnapshotsTableFilterComposer,
+    $$WeatherSnapshotsTableOrderingComposer,
+    $$WeatherSnapshotsTableCreateCompanionBuilder,
+    $$WeatherSnapshotsTableUpdateCompanionBuilder> {
+  $$WeatherSnapshotsTableTableManager(
+      _$AppDatabase db, $WeatherSnapshotsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$WeatherSnapshotsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$WeatherSnapshotsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> uuid = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<String> parentType = const Value.absent(),
+            Value<int> parentId = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<double?> temperature = const Value.absent(),
+            Value<String> temperatureUnit = const Value.absent(),
+            Value<double?> humidity = const Value.absent(),
+            Value<double?> windSpeed = const Value.absent(),
+            Value<String> windSpeedUnit = const Value.absent(),
+            Value<String?> windDirection = const Value.absent(),
+            Value<String?> cloudCover = const Value.absent(),
+            Value<String?> precipitation = const Value.absent(),
+            Value<String?> soilCondition = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> recordedAt = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+            Value<int> modifiedAt = const Value.absent(),
+            Value<String> createdBy = const Value.absent(),
+          }) =>
+              WeatherSnapshotsCompanion(
+            id: id,
+            uuid: uuid,
+            trialId: trialId,
+            parentType: parentType,
+            parentId: parentId,
+            source: source,
+            temperature: temperature,
+            temperatureUnit: temperatureUnit,
+            humidity: humidity,
+            windSpeed: windSpeed,
+            windSpeedUnit: windSpeedUnit,
+            windDirection: windDirection,
+            cloudCover: cloudCover,
+            precipitation: precipitation,
+            soilCondition: soilCondition,
+            notes: notes,
+            recordedAt: recordedAt,
+            createdAt: createdAt,
+            modifiedAt: modifiedAt,
+            createdBy: createdBy,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String uuid,
+            required int trialId,
+            Value<String> parentType = const Value.absent(),
+            required int parentId,
+            Value<String> source = const Value.absent(),
+            Value<double?> temperature = const Value.absent(),
+            Value<String> temperatureUnit = const Value.absent(),
+            Value<double?> humidity = const Value.absent(),
+            Value<double?> windSpeed = const Value.absent(),
+            Value<String> windSpeedUnit = const Value.absent(),
+            Value<String?> windDirection = const Value.absent(),
+            Value<String?> cloudCover = const Value.absent(),
+            Value<String?> precipitation = const Value.absent(),
+            Value<String?> soilCondition = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            required int recordedAt,
+            required int createdAt,
+            required int modifiedAt,
+            required String createdBy,
+          }) =>
+              WeatherSnapshotsCompanion.insert(
+            id: id,
+            uuid: uuid,
+            trialId: trialId,
+            parentType: parentType,
+            parentId: parentId,
+            source: source,
+            temperature: temperature,
+            temperatureUnit: temperatureUnit,
+            humidity: humidity,
+            windSpeed: windSpeed,
+            windSpeedUnit: windSpeedUnit,
+            windDirection: windDirection,
+            cloudCover: cloudCover,
+            precipitation: precipitation,
+            soilCondition: soilCondition,
+            notes: notes,
+            recordedAt: recordedAt,
+            createdAt: createdAt,
+            modifiedAt: modifiedAt,
+            createdBy: createdBy,
+          ),
+        ));
+}
+
+class $$WeatherSnapshotsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $WeatherSnapshotsTable> {
+  $$WeatherSnapshotsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get parentType => $state.composableBuilder(
+      column: $state.table.parentType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get temperature => $state.composableBuilder(
+      column: $state.table.temperature,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get temperatureUnit => $state.composableBuilder(
+      column: $state.table.temperatureUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get humidity => $state.composableBuilder(
+      column: $state.table.humidity,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get windSpeed => $state.composableBuilder(
+      column: $state.table.windSpeed,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get windSpeedUnit => $state.composableBuilder(
+      column: $state.table.windSpeedUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get windDirection => $state.composableBuilder(
+      column: $state.table.windDirection,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cloudCover => $state.composableBuilder(
+      column: $state.table.cloudCover,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get precipitation => $state.composableBuilder(
+      column: $state.table.precipitation,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilCondition => $state.composableBuilder(
+      column: $state.table.soilCondition,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get recordedAt => $state.composableBuilder(
+      column: $state.table.recordedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get modifiedAt => $state.composableBuilder(
+      column: $state.table.modifiedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get createdBy => $state.composableBuilder(
+      column: $state.table.createdBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableFilterComposer get parentId {
+    final $$SessionsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.parentId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableFilterComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$WeatherSnapshotsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $WeatherSnapshotsTable> {
+  $$WeatherSnapshotsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get parentType => $state.composableBuilder(
+      column: $state.table.parentType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get temperature => $state.composableBuilder(
+      column: $state.table.temperature,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get temperatureUnit => $state.composableBuilder(
+      column: $state.table.temperatureUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get humidity => $state.composableBuilder(
+      column: $state.table.humidity,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get windSpeed => $state.composableBuilder(
+      column: $state.table.windSpeed,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get windSpeedUnit => $state.composableBuilder(
+      column: $state.table.windSpeedUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get windDirection => $state.composableBuilder(
+      column: $state.table.windDirection,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cloudCover => $state.composableBuilder(
+      column: $state.table.cloudCover,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get precipitation => $state.composableBuilder(
+      column: $state.table.precipitation,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilCondition => $state.composableBuilder(
+      column: $state.table.soilCondition,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get recordedAt => $state.composableBuilder(
+      column: $state.table.recordedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get modifiedAt => $state.composableBuilder(
+      column: $state.table.modifiedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get createdBy => $state.composableBuilder(
+      column: $state.table.createdBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableOrderingComposer get parentId {
+    final $$SessionsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.parentId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -38210,4 +39588,6 @@ class $AppDatabaseManager {
   $$TrialExportDiagnosticsTableTableManager get trialExportDiagnostics =>
       $$TrialExportDiagnosticsTableTableManager(
           _db, _db.trialExportDiagnostics);
+  $$WeatherSnapshotsTableTableManager get weatherSnapshots =>
+      $$WeatherSnapshotsTableTableManager(_db, _db.weatherSnapshots);
 }

@@ -26,7 +26,10 @@ import '../../data/repositories/application_repository.dart';
 import '../../data/repositories/application_product_repository.dart';
 import '../../data/repositories/seeding_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
+import '../photos/photo_export_name_builder.dart';
 import '../photos/photo_repository.dart';
+import '../weather/weather_export_builder.dart';
+import '../../data/repositories/weather_snapshot_repository.dart';
 import 'csv_export_service.dart';
 import 'trial_export_bundle.dart';
 
@@ -59,6 +62,7 @@ class ExportTrialUseCase {
     required RatingRepository ratingRepository,
     required AssignmentRepository assignmentRepository,
     required PhotoRepository photoRepository,
+    required WeatherSnapshotRepository weatherSnapshotRepository,
     required ArmImportPersistenceRepository armImportPersistenceRepository,
     PublishTrialExportDiagnostics? publishExportDiagnostics,
   })  : _trialRepository = trialRepository,
@@ -71,6 +75,7 @@ class ExportTrialUseCase {
         _ratingRepository = ratingRepository,
         _assignmentRepository = assignmentRepository,
         _photoRepository = photoRepository,
+        _weatherSnapshotRepository = weatherSnapshotRepository,
         _armImportPersistenceRepository = armImportPersistenceRepository,
         _publishExportDiagnostics = publishExportDiagnostics;
 
@@ -88,6 +93,7 @@ class ExportTrialUseCase {
   final RatingRepository _ratingRepository;
   final AssignmentRepository _assignmentRepository;
   final PhotoRepository _photoRepository;
+  final WeatherSnapshotRepository _weatherSnapshotRepository;
   final ArmImportPersistenceRepository _armImportPersistenceRepository;
 
   static const List<String> _observationsHeaders = [
@@ -363,6 +369,15 @@ class ExportTrialUseCase {
     );
 
     if (armAligned) {
+      final weatherSnapshots =
+          await _weatherSnapshotRepository.getWeatherSnapshotsForTrial(trialPk);
+      final sessionByIdForWeather = {for (final s in sessions) s.id: s};
+      final activeWeatherSnapshots = weatherSnapshots.where((w) {
+        if (w.parentType == kWeatherParentTypeRatingSession) {
+          return sessionByIdForWeather[w.parentId] != null;
+        }
+        return true;
+      }).toList();
       final photos = await _photoRepository.getPhotosForTrial(trialPk);
       final assessmentMap = <int, export_validation.AssessmentDefinition>{};
       for (final session in sessions) {
@@ -401,7 +416,16 @@ class ExportTrialUseCase {
         );
       }
       final zipFile = await _buildArmHandoffPackage(
-          bundle, trial, validation, photos);
+        bundle,
+        trial,
+        validation,
+        photos,
+        plotMap: plotMap,
+        assignmentByPlot: assignmentByPlot,
+        treatmentMap: treatmentMap,
+        sessionById: {for (final s in sessions) s.id: s},
+        weatherSnapshots: activeWeatherSnapshots,
+      );
       await Share.shareXFiles([XFile(zipFile.path, mimeType: 'application/zip')],
           text: '${trial.name} – Import Assistant package');
     }
@@ -1175,12 +1199,88 @@ class ExportTrialUseCase {
     );
   }
 
+  /// Assigns standard export basenames; sequence suffixes resolve stem collisions.
+  List<_ScheduledPhotoExport> _schedulePhotoExportNames({
+    required List<Photo> photos,
+    required Trial trial,
+    required Map<int, Plot> plotMap,
+    required Map<int, Assignment> assignmentByPlot,
+    required Map<int, Treatment> treatmentMap,
+  }) {
+    final work = <_PhotoExportWork>[];
+    for (final photo in photos) {
+      final plot = plotMap[photo.plotPk];
+      final assignment = plot != null ? assignmentByPlot[plot.id] : null;
+      final treatmentId = assignment?.treatmentId ?? plot?.treatmentId;
+      final treatment =
+          treatmentId != null ? treatmentMap[treatmentId] : null;
+      final stem = buildPhotoExportNameStem(
+        trial: trial,
+        plot: plot,
+        assignment: assignment,
+        treatment: treatment,
+        photoCreatedAt: photo.createdAt,
+      );
+      work.add(_PhotoExportWork(
+        photo: photo,
+        plot: plot,
+        assignment: assignment,
+        treatment: treatment,
+        stem: stem,
+      ));
+    }
+    work.sort((a, b) {
+      final c = a.stem.compareTo(b.stem);
+      if (c != 0) return c;
+      final t = a.photo.createdAt.compareTo(b.photo.createdAt);
+      if (t != 0) return t;
+      return a.photo.id.compareTo(b.photo.id);
+    });
+    final stemCounts = <String, int>{};
+    for (final w in work) {
+      stemCounts[w.stem] = (stemCounts[w.stem] ?? 0) + 1;
+    }
+    var currentStem = '';
+    var indexInStem = 0;
+    final out = <_ScheduledPhotoExport>[];
+    for (final w in work) {
+      if (w.stem != currentStem) {
+        currentStem = w.stem;
+        indexInStem = 0;
+      }
+      indexInStem++;
+      final total = stemCounts[w.stem]!;
+      final seq = total == 1 ? 0 : indexInStem;
+      final exportBaseName = buildPhotoExportFileName(
+        photo: w.photo,
+        trial: trial,
+        plot: w.plot,
+        assignment: w.assignment,
+        treatment: w.treatment,
+        sequenceNumber: seq,
+      );
+      out.add(_ScheduledPhotoExport(
+        photo: w.photo,
+        plot: w.plot,
+        assignment: w.assignment,
+        treatment: w.treatment,
+        exportBaseName: exportBaseName,
+      ));
+    }
+    return out;
+  }
+
   Future<File> _buildArmHandoffPackage(
     TrialExportBundle bundle,
     Trial trial,
     export_validation.ExportValidationReport validation,
-    List<Photo> photos,
-  ) async {
+    List<Photo> photos, {
+    required Map<int, Plot> plotMap,
+    required Map<int, Assignment> assignmentByPlot,
+    required Map<int, Treatment> treatmentMap,
+    required Map<int, Session> sessionById,
+    required List<WeatherSnapshot> weatherSnapshots,
+  }) async {
     final archive = Archive();
     final tempDir = await getTemporaryDirectory();
     final date = DateFormat('yyyyMMdd').format(DateTime.now());
@@ -1207,8 +1307,15 @@ class ExportTrialUseCase {
     archive.addFile(
         ArchiveFile('arm_mapping.csv', mappingBytes.length, mappingBytes));
 
+    final weatherSummary = trialZipShouldIncludeWeatherCsv(weatherSnapshots)
+        ? 'Included: weather.csv (${weatherSnapshots.length} snapshot(s)).'
+        : null;
     final guideCsv = CsvExportService.buildImportGuideCsv(
-        trial.name, date, validation);
+      trial.name,
+      date,
+      validation,
+      weatherSummary: weatherSummary,
+    );
     final guideBytes = utf8.encode(guideCsv);
     archive.addFile(
         ArchiveFile('import_guide.csv', guideBytes.length, guideBytes));
@@ -1219,53 +1326,88 @@ class ExportTrialUseCase {
     archive.addFile(ArchiveFile(
         'validation_report.csv', validationBytes.length, validationBytes));
 
-    final successfullyExported = <String>[];
+    final scheduled = _schedulePhotoExportNames(
+      photos: photos,
+      trial: trial,
+      plotMap: plotMap,
+      assignmentByPlot: assignmentByPlot,
+      treatmentMap: treatmentMap,
+    );
+
+    final successfullyExported = <Photo, String>{};
     final missingPhotos = <String>[];
-    for (var i = 0; i < photos.length; i += 10) {
-      final batch = photos.sublist(i, math.min(i + 10, photos.length));
-      for (final photo in batch) {
+    for (var i = 0; i < scheduled.length; i += 10) {
+      final batch = scheduled.sublist(i, math.min(i + 10, scheduled.length));
+      for (final item in batch) {
         try {
-          final file = File(photo.filePath);
+          final file = File(item.photo.filePath);
           if (await file.exists()) {
             final bytes = await file.readAsBytes();
-            final fileName = p.basename(photo.filePath);
-            archive.addFile(
-                ArchiveFile('photos/$fileName', bytes.length, bytes));
-            successfullyExported.add(fileName);
+            archive.addFile(ArchiveFile(
+                'photos/${item.exportBaseName}', bytes.length, bytes));
+            successfullyExported[item.photo] = item.exportBaseName;
           } else {
-            missingPhotos.add(p.basename(photo.filePath));
+            missingPhotos.add(p.basename(item.photo.filePath));
           }
         } catch (_) {
-          missingPhotos.add(p.basename(photo.filePath));
+          missingPhotos.add(p.basename(item.photo.filePath));
         }
       }
     }
 
     if (successfullyExported.isNotEmpty) {
-      final manifest = StringBuffer();
-      manifest.writeln(
-          'file_name,plot_id,session_id,captured_at,sequence_number');
-      var seq = 0;
-      for (final photo in photos.where(
-          (ph) => successfullyExported.contains(p.basename(ph.filePath)))) {
-        manifest.writeln([
-          p.basename(photo.filePath),
-          photo.plotPk,
-          photo.sessionId,
-          photo.createdAt.toIso8601String(),
-          seq++,
-        ].join(','));
+      final manifestRows = <List<String>>[];
+      for (final item in scheduled) {
+        final exportName = successfullyExported[item.photo];
+        if (exportName == null) continue;
+        final plotLabel = item.plot == null
+            ? ''
+            : (item.plot!.armPlotNumber != null
+                ? item.plot!.armPlotNumber.toString()
+                : item.plot!.plotId);
+        manifestRows.add([
+          exportName,
+          p.basename(item.photo.filePath),
+          trial.name,
+          plotLabel,
+          item.treatment?.code ?? '',
+          DateFormat('MMM-d-yyyy', 'en_US')
+              .format(item.photo.createdAt.toLocal()),
+          item.photo.caption ?? '',
+        ]);
       }
-      final mBytes = utf8.encode(manifest.toString());
+      final manifestCsv = CsvExportService.buildCsv(
+        [
+          'export_filename',
+          'original_filename',
+          'trial',
+          'plot',
+          'treatment',
+          'date',
+          'caption',
+        ],
+        manifestRows,
+      );
+      final mBytes = utf8.encode(manifestCsv);
       archive.addFile(ArchiveFile(
           'photos/photos_manifest.csv', mBytes.length, mBytes));
     }
 
     if (missingPhotos.isNotEmpty) {
-      final mBytes =
-          utf8.encode('file_name\n${missingPhotos.join('\n')}');
+      final mBytes = utf8.encode(
+          CsvExportService.buildCsv(['original_filename'],
+              missingPhotos.map((n) => [n]).toList()));
       archive.addFile(ArchiveFile(
           'photos/photos_missing.csv', mBytes.length, mBytes));
+    }
+
+    if (trialZipShouldIncludeWeatherCsv(weatherSnapshots)) {
+      final weatherCsv = buildWeatherExportCsv(
+        snapshots: weatherSnapshots,
+        sessionsById: sessionById,
+      );
+      final wBytes = utf8.encode(weatherCsv);
+      archive.addFile(ArchiveFile('weather.csv', wBytes.length, wBytes));
     }
 
     final zipBytes = ZipEncoder().encode(archive);
@@ -1277,6 +1419,38 @@ class ExportTrialUseCase {
     await zipFile.writeAsBytes(zipBytes);
     return zipFile;
   }
+}
+
+class _PhotoExportWork {
+  _PhotoExportWork({
+    required this.photo,
+    required this.plot,
+    required this.assignment,
+    required this.treatment,
+    required this.stem,
+  });
+
+  final Photo photo;
+  final Plot? plot;
+  final Assignment? assignment;
+  final Treatment? treatment;
+  final String stem;
+}
+
+class _ScheduledPhotoExport {
+  _ScheduledPhotoExport({
+    required this.photo,
+    required this.plot,
+    required this.assignment,
+    required this.treatment,
+    required this.exportBaseName,
+  });
+
+  final Photo photo;
+  final Plot? plot;
+  final Assignment? assignment;
+  final Treatment? treatment;
+  final String exportBaseName;
 }
 
 class ExportTrialException implements Exception {

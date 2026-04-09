@@ -16,7 +16,9 @@ import '../../core/session_walk_order_store.dart';
 import 'package:share_plus/share_plus.dart';
 import 'arrange_plots_screen.dart';
 import '../plots/plot_queue_screen.dart';
+import '../../data/repositories/weather_snapshot_repository.dart';
 import '../ratings/rating_screen.dart';
+import '../weather/weather_capture_form.dart';
 import '../ratings/rating_scale_map.dart';
 import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
@@ -140,6 +142,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final plotIdToTreatmentId = {
       for (var a in assignments) a.plotId: a.treatmentId
     };
+    final weatherRecorded =
+        ref.watch(weatherSnapshotForSessionProvider(session.id)).valueOrNull !=
+            null;
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
@@ -148,6 +153,27 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         subtitle: session.sessionDateLocal,
         titleFontSize: 17,
         actions: [
+          IconButton(
+            icon: Icon(
+              weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
+              color: AppDesignTokens.onPrimary,
+            ),
+            tooltip: 'Weather',
+            onPressed: () async {
+              final repo = ref.read(weatherSnapshotRepositoryProvider);
+              final snap = await repo.getWeatherSnapshotForParent(
+                kWeatherParentTypeRatingSession,
+                session.id,
+              );
+              if (!context.mounted) return;
+              await showWeatherCaptureBottomSheet(
+                context,
+                trial: trial,
+                session: session,
+                initialSnapshot: snap,
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.insights_outlined, color: Colors.white),
             tooltip: 'Session Checklist',

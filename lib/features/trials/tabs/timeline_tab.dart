@@ -17,6 +17,7 @@ class _TrialTimelineEvent {
     this.subtitle,
     this.timingText,
     this.beforeFirstApplication = false,
+    this.ratingSessionId,
   });
 
   final DateTime date;
@@ -25,6 +26,8 @@ class _TrialTimelineEvent {
   final String? subtitle;
   final String? timingText;
   final bool beforeFirstApplication;
+  /// Set for rating sessions only (weather badge).
+  final int? ratingSessionId;
 }
 
 /// Date group: header + events on a continuous vertical rail.
@@ -36,7 +39,7 @@ class _TimelineDateGroup {
 }
 
 /// Read-only trial timeline: date-grouped seeding, applications, sessions.
-/// No schema, repository, or provider changes — derived from existing providers.
+/// Weather cloud badge on session rows uses [weatherSnapshotForSessionProvider].
 class TimelineTab extends ConsumerWidget {
   const TimelineTab({super.key, required this.trial});
 
@@ -124,6 +127,7 @@ class TimelineTab extends ConsumerWidget {
             subtitle: session.name,
             timingText: timingText,
             beforeFirstApplication: beforeFirst,
+            ratingSessionId: session.id,
           ));
         }
 
@@ -215,7 +219,7 @@ class _TimelineDateGroupSection extends StatelessWidget {
 }
 
 /// One event row: 2px rail segment + filled circle (color by type) + content (title, subtitle, timing, warning).
-class _TimelineEventRow extends StatelessWidget {
+class _TimelineEventRow extends ConsumerWidget {
   const _TimelineEventRow({
     required this.event,
     required this.isFirst,
@@ -244,13 +248,24 @@ class _TimelineEventRow extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final circleColor = switch (event.type) {
       _TimelineEventType.seeding => scheme.primary,
       _TimelineEventType.application => scheme.secondary,
       _TimelineEventType.session => scheme.tertiary,
     };
+    final hasWeather = event.type == _TimelineEventType.session &&
+            event.ratingSessionId != null
+        ? ref
+            .watch(
+              weatherSnapshotForSessionProvider(event.ratingSessionId!),
+            )
+            .maybeWhen(
+              data: (w) => w != null,
+              orElse: () => false,
+            )
+        : false;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,13 +329,29 @@ class _TimelineEventRow extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            event.title,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: scheme.onSurface,
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  event.title,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: scheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              if (hasWeather)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: Icon(
+                                    Icons.cloud,
+                                    size: 16,
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
                           ),
                           if (event.subtitle != null &&
                               event.subtitle!.trim().isNotEmpty) ...[

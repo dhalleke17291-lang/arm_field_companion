@@ -2534,6 +2534,16 @@ class SessionsView extends ConsumerWidget {
                               foregroundColor: AppDesignTokens.secondaryText,
                             ),
                           ..._sessionStatusChips(isOpen, needsAttention),
+                          if (ref
+                                  .watch(weatherSnapshotForSessionProvider(
+                                      session.id))
+                                  .valueOrNull !=
+                              null)
+                            const Icon(
+                              Icons.cloud,
+                              size: 16,
+                              color: AppDesignTokens.secondaryText,
+                            ),
                         ],
                       ),
                     ],

@@ -23,6 +23,9 @@ class AppDesignTokens {
   /// Card surface (white).
   static const Color cardSurface = Color(0xFFFFFFFF);
 
+  /// Fully transparent (e.g. modal sheet scrim / barrier).
+  static const Color transparent = Color(0x00000000);
+
   /// Secondary / muted text.
   static const Color secondaryText = Color(0xFF6B7280);
 

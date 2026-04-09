@@ -55,8 +55,9 @@ class CsvExportService {
   static String buildImportGuideCsv(
     String trialName,
     String exportDate,
-    ExportValidationReport validation,
-  ) {
+    ExportValidationReport validation, {
+    String? weatherSummary,
+  }) {
     final sb = StringBuffer();
     sb.writeln('section,content');
     sb.writeln('"Target","${ArmFieldMapping.targetVersion}"');
@@ -104,11 +105,15 @@ class CsvExportService {
     sb.writeln('"","" ');
     sb.writeln('"NOTES",""');
     sb.writeln(
-      '"Photo files","Photos are named with trial/plot/session/date/time/sequence"',
+      '"Photo files","Photos use TrialName_T####_MMM-d-yyyy_P###[_NN].jpg (see photos_manifest.csv)"',
     );
     sb.writeln(
       '"Photo reference","See photos_manifest.csv for full photo index"',
     );
+    if (weatherSummary != null && weatherSummary.isNotEmpty) {
+      final esc = weatherSummary.replaceAll('"', '""');
+      sb.writeln('"weather_summary","$esc"');
+    }
     sb.writeln('"Target format version","${ArmFieldMapping.targetVersion}"');
     sb.writeln('"Generator","Agnexis"');
     return sb.toString();

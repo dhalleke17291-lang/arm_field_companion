@@ -7,6 +7,7 @@ import "../data/repositories/trial_assessment_repository.dart";
 import "../data/repositories/application_repository.dart";
 import "../data/repositories/application_product_repository.dart";
 import "../data/repositories/seeding_repository.dart";
+import '../data/repositories/weather_snapshot_repository.dart';
 import "../domain/models/plot_context.dart";
 import "../domain/ratings/rating_integrity_guard.dart";
 import "../domain/usecases/resolve_plot_treatment.dart";
@@ -359,6 +360,21 @@ final ratingRepositoryProvider = Provider<RatingRepository>((ref) {
 
 final photoRepositoryProvider = Provider<PhotoRepository>((ref) {
   return PhotoRepository(ref.watch(databaseProvider));
+});
+
+final weatherSnapshotRepositoryProvider =
+    Provider<WeatherSnapshotRepository>((ref) {
+  return WeatherSnapshotRepository(ref.watch(databaseProvider));
+});
+
+/// Latest weather snapshot for a rating session (one row per session).
+final weatherSnapshotForSessionProvider =
+    StreamProvider.autoDispose
+      .family<WeatherSnapshot?, int>((ref, sessionId) {
+  return ref.watch(weatherSnapshotRepositoryProvider).watchWeatherSnapshotForParent(
+        kWeatherParentTypeRatingSession,
+        sessionId,
+      );
 });
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
@@ -952,6 +968,7 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     ratingRepository: ref.watch(ratingRepositoryProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     photoRepository: ref.watch(photoRepositoryProvider),
+    weatherSnapshotRepository: ref.watch(weatherSnapshotRepositoryProvider),
     armImportPersistenceRepository:
         ref.watch(armImportPersistenceRepositoryProvider),
     publishExportDiagnostics: (trialId, findings, attemptLabel) {

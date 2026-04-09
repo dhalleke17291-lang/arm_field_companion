@@ -11,6 +11,7 @@ import 'package:arm_field_companion/features/arm_import/domain/models/import_sna
 import 'package:arm_field_companion/features/export/export_confidence_policy.dart';
 import 'package:arm_field_companion/features/export/export_format.dart';
 import 'package:arm_field_companion/features/export/export_trial_usecase.dart';
+import 'package:arm_field_companion/data/repositories/weather_snapshot_repository.dart';
 import 'package:arm_field_companion/features/photos/photo_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
@@ -81,6 +82,7 @@ ExportTrialUseCase _makeUseCase(AppDatabase db) {
     ratingRepository: RatingRepository(db),
     assignmentRepository: AssignmentRepository(db),
     photoRepository: PhotoRepository(db),
+    weatherSnapshotRepository: WeatherSnapshotRepository(db),
     armImportPersistenceRepository: ArmImportPersistenceRepository(db),
   );
 }
