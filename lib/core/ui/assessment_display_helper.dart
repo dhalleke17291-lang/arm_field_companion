@@ -5,10 +5,16 @@ import '../database/app_database.dart';
 /// Display strings for [TrialAssessment] shell-linked metadata (and definition fallback).
 class AssessmentDisplayHelper {
   /// Removes internal legacy row suffix ` — TA{id}` from [Assessment.name] for UI.
+  ///
+  /// Also removes trailing empty parentheses (` ()` or `()`) left after shell
+  /// metadata formatting (e.g. `"CONTRO () — TA25"` → `"CONTRO"`).
   static String legacyAssessmentDisplayName(String name) {
-    final stripped =
-        name.replaceFirst(RegExp(r' — TA\d+$'), '').trim();
-    return stripped.isEmpty ? name.trim() : stripped;
+    var s = name.replaceFirst(RegExp(r' — TA\d+$'), '').trim();
+    final trailingEmptyParens = RegExp(r'(?: \(\)|\(\))\s*$');
+    while (trailingEmptyParens.hasMatch(s)) {
+      s = s.replaceFirst(trailingEmptyParens, '').trim();
+    }
+    return s.isEmpty ? name.trim() : s;
   }
 
   /// Researcher-facing line for chips, pills, list tiles.
