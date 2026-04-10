@@ -12,12 +12,18 @@ class MockTrialRepository implements TrialRepository {
   }
 
   @override
+  Future<bool> trialNameExists(String name) async {
+    return _trials.any((t) => t.name == name);
+  }
+
+  @override
   Future<int> createTrial({
     required String name,
     String? crop,
     String? location,
     String? season,
     String workspaceType = 'efficacy',
+    String? experimentalDesign,
   }) async {
     final existing = _trials.where((t) => t.name == name).firstOrNull;
     if (existing != null) throw DuplicateTrialException(name);

@@ -29,6 +29,8 @@ import '../features/sessions/session_repository.dart';
 import '../features/ratings/rating_repository.dart';
 import '../features/photos/photo_repository.dart';
 import '../features/trials/usecases/create_trial_usecase.dart';
+import '../features/trials/standalone/create_standalone_trial_wizard_usecase.dart';
+import '../features/trials/standalone/generate_standalone_plot_layout_usecase.dart';
 import '../features/trials/usecases/update_treatment_usecase.dart';
 import '../features/trials/usecases/delete_treatment_usecase.dart';
 import '../features/ratings/usecases/amend_plot_rating_usecase.dart';
@@ -485,6 +487,30 @@ final userByIdProvider =
 
 final createTrialUseCaseProvider = Provider<CreateTrialUseCase>((ref) {
   return CreateTrialUseCase(ref.watch(trialRepositoryProvider));
+});
+
+final createStandaloneTrialWizardUseCaseProvider =
+    Provider<CreateStandaloneTrialWizardUseCase>((ref) {
+  return CreateStandaloneTrialWizardUseCase(
+    ref.watch(databaseProvider),
+    ref.watch(trialRepositoryProvider),
+    ref.watch(treatmentRepositoryProvider),
+    ref.watch(plotRepositoryProvider),
+    ref.watch(assignmentRepositoryProvider),
+    ref.watch(assessmentDefinitionRepositoryProvider),
+    ref.watch(trialAssessmentRepositoryProvider),
+  );
+});
+
+final generateStandalonePlotLayoutUseCaseProvider =
+    Provider<GenerateStandalonePlotLayoutUseCase>((ref) {
+  return GenerateStandalonePlotLayoutUseCase(
+    ref.watch(databaseProvider),
+    ref.watch(trialRepositoryProvider),
+    ref.watch(treatmentRepositoryProvider),
+    ref.watch(plotRepositoryProvider),
+    ref.watch(assignmentRepositoryProvider),
+  );
 });
 
 final updateTreatmentUseCaseProvider = Provider<UpdateTreatmentUseCase>((ref) {

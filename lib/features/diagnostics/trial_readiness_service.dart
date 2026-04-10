@@ -59,9 +59,12 @@ class TrialReadinessService {
       ));
     }
 
-    final assessments =
+    final legacyAssessments =
         await ref.read(assessmentsForTrialProvider(trialPk).future);
-    if (assessments.isEmpty) {
+    final trialAssessmentRepo = ref.read(trialAssessmentRepositoryProvider);
+    final trialAssessments = await trialAssessmentRepo.getForTrial(trialPk);
+    final hasAssessments = legacyAssessments.isNotEmpty || trialAssessments.isNotEmpty;
+    if (!hasAssessments) {
       checks.add(const TrialReadinessCheck(
         code: 'no_assessments',
         label: 'No assessments defined',

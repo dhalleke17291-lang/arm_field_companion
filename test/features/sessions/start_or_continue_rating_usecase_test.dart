@@ -135,9 +135,13 @@ class _FakeTrialRepository implements TrialRepository {
     String? location,
     String? season,
     String workspaceType = 'efficacy',
+    String? experimentalDesign,
   }) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<bool> trialNameExists(String name) async => false;
 
   @override
   Future<bool> updateTrial(Trial trial) async {

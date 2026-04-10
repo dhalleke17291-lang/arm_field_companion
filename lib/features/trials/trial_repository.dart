@@ -33,6 +33,7 @@ class TrialRepository {
     // Default: efficacy. All creation paths should pass this explicitly.
     // See workspace_config.dart for type list.
     String workspaceType = 'efficacy',
+    String? experimentalDesign,
   }) async {
     // Duplicate name check — silent overwrite forbidden per spec
     final existing = await (_db.select(_db.trials)
@@ -50,9 +51,18 @@ class TrialRepository {
             location: Value(location),
             season: Value(season),
             workspaceType: Value(workspaceType),
+            experimentalDesign: Value(experimentalDesign),
             status: const Value(kTrialStatusDraft),
           ),
         );
+  }
+
+  /// Whether a non-deleted trial already uses this exact name (case-sensitive).
+  Future<bool> trialNameExists(String name) async {
+    final existing = await (_db.select(_db.trials)
+          ..where((t) => t.name.equals(name) & t.isDeleted.equals(false)))
+        .getSingleOrNull();
+    return existing != null;
   }
 
   // Update trial

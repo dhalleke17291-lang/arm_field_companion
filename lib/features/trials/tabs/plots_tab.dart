@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +11,9 @@ import '../../../core/plot_display.dart';
 import '../../../core/providers.dart';
 import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/trial_state.dart';
+import '../../../core/workspace/workspace_filter.dart';
+import 'add_treatment_sheet.dart';
+import '../standalone/standalone_generate_plot_layout_sheet.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -842,96 +844,70 @@ Future<void> showAssignTreatmentDialogForTrial({
   );
 }
 
-class _AddTestPlotsDialog extends StatefulWidget {
-  const _AddTestPlotsDialog();
-
-  @override
-  State<_AddTestPlotsDialog> createState() => _AddTestPlotsDialogState();
-}
-
-class _AddTestPlotsDialogState extends State<_AddTestPlotsDialog> {
-  late final TextEditingController _repsController;
-  late final TextEditingController _plotsPerRepController;
-
-  @override
-  void initState() {
-    super.initState();
-    _repsController = TextEditingController(text: '6');
-    _plotsPerRepController = TextEditingController(text: '8');
-  }
-
-  @override
-  void dispose() {
-    _repsController.dispose();
-    _plotsPerRepController.dispose();
-    super.dispose();
-  }
-
-  int get _reps => (int.tryParse(_repsController.text) ?? 6).clamp(1, 99);
-  int get _plotsPerRep =>
-      (int.tryParse(_plotsPerRepController.text) ?? 8).clamp(1, 99);
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Add Test Plots'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Create plots by reps and plots per rep (e.g. 6 reps × 8 plots = 48).',
-              style:
-                  TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
+/// Extra actions when [trial] is standalone, has no plots, and structure is editable.
+Widget? _standalonePlotsEmptyExtra(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  int treatmentCount,
+) {
+  if (!canEditProtocol(trial)) return null;
+  if (!isStandalone(trial.workspaceType)) return null;
+  if (treatmentCount >= 2) {
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'No plots yet. Generate your plot layout from your treatments and study design.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppDesignTokens.secondaryText,
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _repsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Reps',
-                border: OutlineInputBorder(),
-                hintText: '6',
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _plotsPerRepController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Plots per rep',
-                border: OutlineInputBorder(),
-                hintText: '8',
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Total: ${_reps * _plotsPerRep} plots',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppDesignTokens.primaryText,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () =>
-              Navigator.pop(context, (reps: _reps, plotsPerRep: _plotsPerRep)),
-          child: const Text('Add Plots'),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: FilledButton(
+            onPressed: () => showStandaloneGeneratePlotLayoutDialog(
+              context: context,
+              ref: ref,
+              trial: trial,
+            ),
+            child: const Text('Generate Plot Layout'),
+          ),
         ),
       ],
     );
   }
+  return Column(
+    children: [
+      const SizedBox(height: 16),
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24),
+        child: Text(
+          'No plots yet. Add treatments first, then generate your plot layout.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: FilledButton(
+          onPressed: () =>
+              showAddTreatmentSheet(context, ref, trial: trial),
+          child: const Text('Add Treatment'),
+        ),
+      ),
+    ],
+  );
 }
 
 /// Pinned bar for navigating to plot details. Used as Scaffold.bottomNavigationBar when Plots tab uses unified scroll.
@@ -1028,7 +1004,13 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
       ),
       data: (plots) {
         if (plots.isEmpty) {
-          final showTestPlotsButton = canEditProtocol(trial);
+          final treatmentCount = treatmentsAsync.value?.length ?? 0;
+          final extra = _standalonePlotsEmptyExtra(
+            context,
+            ref,
+            trial,
+            treatmentCount,
+          );
           if (widget.embeddedInScroll) {
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -1045,7 +1027,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                   0,
                   0,
                   0,
-                  treatmentsAsync.value?.length ?? 0,
+                  treatmentCount,
                   treatmentComponentCount,
                   ratedPlotsCount,
                   sessionCount,
@@ -1054,10 +1036,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                   seedingDate,
                   treatmentsAsync.value ?? [],
                 ),
-                if (showTestPlotsButton) ...[
-                  const SizedBox(height: 16),
-                  _AddTestPlotsButton(trial: trial),
-                ],
+                if (extra != null) extra,
               ],
             );
           }
@@ -1075,7 +1054,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 0,
                 0,
                 0,
-                treatmentsAsync.value?.length ?? 0,
+                treatmentCount,
                 treatmentComponentCount,
                 ratedPlotsCount,
                 sessionCount,
@@ -1084,10 +1063,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 seedingDate,
                 treatmentsAsync.value ?? [],
               ),
-              if (showTestPlotsButton) ...[
-                const SizedBox(height: 16),
-                _AddTestPlotsButton(trial: trial),
-              ],
+              if (extra != null) extra,
             ],
           );
         }
@@ -3112,7 +3088,6 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
 }
 
 /// Empty state for PlotDetailsScreen when trial has no plots.
-/// Shows "Add Test Plots" button only when trial has zero plots (caller ensures empty).
 class _PlotDetailsEmptyContent extends ConsumerWidget {
   final Trial trial;
 
@@ -3121,68 +3096,39 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final canEditStructure = canEditProtocol(trial);
+    final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
+    final treatmentCount = treatmentsAsync.value?.length ?? 0;
+    final String subtitle;
+    if (!canEditStructure) {
+      subtitle = protocolEditBlockedMessage(trial);
+    } else if (isStandalone(trial.workspaceType)) {
+      subtitle =
+          '${trialTypeAndStructureCompactLine(trial)}. Open Trial Setup to configure site details, or use the actions below to build your plot layout.';
+    } else {
+      subtitle =
+          '${trialTypeAndStructureCompactLine(trial)}. Import plots via CSV.';
+    }
+    final extra = canEditStructure
+        ? _standalonePlotsEmptyExtra(
+            context,
+            ref,
+            trial,
+            treatmentCount,
+          )
+        : null;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         AppEmptyState(
           icon: Icons.grid_on,
           title: 'No Plots Yet',
-          subtitle: canEditStructure
-              ? '${trialTypeAndStructureCompactLine(trial)}. Import plots via CSV or add test plots below.'
-              : protocolEditBlockedMessage(trial),
+          subtitle: subtitle,
         ),
-        if (canEditStructure) ...[
+        if (extra != null) ...[
           const SizedBox(height: 24),
-          _AddTestPlotsButton(trial: trial),
+          extra,
         ],
       ],
-    );
-  }
-}
-
-/// Temporary dev button: creates 4 reps × 6 plots (101–106, 201–206, 301–306, 401–406).
-/// Only shown when trial has no plots; disappears after creation.
-class _AddTestPlotsButton extends ConsumerWidget {
-  final Trial trial;
-
-  const _AddTestPlotsButton({required this.trial});
-
-  Future<void> _addTestPlots(WidgetRef ref) async {
-    final repo = ref.read(plotRepositoryProvider);
-    final companions = <PlotsCompanion>[];
-    for (var rep = 1; rep <= 4; rep++) {
-      final base = rep * 100;
-      for (var i = 1; i <= 6; i++) {
-        final plotId = '${base + i}';
-        companions.add(PlotsCompanion.insert(
-          trialId: trial.id,
-          plotId: plotId,
-          rep: drift.Value(rep),
-          plotSortIndex: drift.Value(i - 1),
-        ));
-      }
-    }
-    await repo.insertPlotsBulk(companions);
-    ref.invalidate(plotsForTrialProvider(trial.id));
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: () => _addTestPlots(ref),
-          icon: const Icon(Icons.add_chart, size: 20),
-          label: const Text('Add Test Plots'),
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF2D5A40),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -14,12 +14,10 @@ import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/trial_state.dart';
 import '../../core/database/app_database.dart';
-import '../../core/workspace/workspace_config.dart';
 import '../../core/workspace/workspace_filter.dart';
-import '../../core/widgets/app_dialog.dart';
 import '../about/about_screen.dart';
 import '../import/ui/import_trial_sheet.dart';
-import 'usecases/create_trial_usecase.dart';
+import 'standalone/trial_creation_wizard.dart';
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
 import 'trial_detail_screen.dart';
@@ -653,7 +651,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
       floatingActionButton: widget.workspaceFilter == TrialListFilter.protocolOnly
           ? null
           : FilledButton.tonalIcon(
-              onPressed: () => _showCreateTrialDialog(context, ref),
+              onPressed: () => _openStandaloneTrialWizard(context),
               icon: const Icon(Icons.add),
               label: const Text('New Custom Trial'),
             ),
@@ -956,105 +954,15 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     );
   }
 
-  /// Manual create only: **Custom** (standalone) trials. Protocol trials are created
-  /// via [ProtocolImportScreen] / ARM import — not from this dialog.
-  /// Called from the FAB when [workspaceFilter] is [TrialListFilter.standaloneOnly]
-  /// or [TrialListFilter.all] (protocol list has no FAB; use header or empty-state Import).
-  Future<void> _showCreateTrialDialog(
-      BuildContext context, WidgetRef ref) async {
+  /// Opens [TrialCreationWizard] for new standalone trials.
+  void _openStandaloneTrialWizard(BuildContext context) {
     assert(
       widget.workspaceFilter != TrialListFilter.protocolOnly,
       'Protocol list uses Import Trial sheet, not manual create FAB',
     );
-    final nameController = TextEditingController();
-    final cropController = TextEditingController();
-    final locationController = TextEditingController();
-    final seasonController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (context) => AppDialog(
-        title: 'New Custom Trial',
-        scrollable: true,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Trial Name *',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: cropController,
-              decoration: const InputDecoration(
-                labelText: 'Crop',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: locationController,
-              decoration: const InputDecoration(
-                labelText: 'Location',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: seasonController,
-              decoration: const InputDecoration(
-                labelText: 'Season',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final useCase = ref.read(createTrialUseCaseProvider);
-              final result = await useCase.execute(CreateTrialInput(
-                name: nameController.text,
-                crop: cropController.text.isEmpty ? null : cropController.text,
-                location: locationController.text.isEmpty
-                    ? null
-                    : locationController.text,
-                season: seasonController.text.isEmpty
-                    ? null
-                    : seasonController.text,
-                workspaceType: WorkspaceType.standalone.name,
-              ));
-
-              if (context.mounted) {
-                Navigator.pop(context);
-                if (result.success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Trial "${result.trial?.name}" created'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(result.errorMessage ?? 'Error'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => const TrialCreationWizard(),
       ),
     );
   }
