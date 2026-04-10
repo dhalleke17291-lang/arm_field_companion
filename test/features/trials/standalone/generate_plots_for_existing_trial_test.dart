@@ -45,6 +45,7 @@ void main() {
       GenerateStandalonePlotLayoutInput(
         trialId: trialId,
         repCount: 4,
+        plotsPerRep: 3,
         experimentalDesign: PlotGenerationEngine.designRcbd,
       ),
     );

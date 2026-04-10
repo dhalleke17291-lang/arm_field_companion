@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
@@ -64,6 +65,14 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
   late List<_TreatmentRowState> _treatmentRows;
 
   var _repCount = 4;
+  var _plotsPerRep = 4;
+  var _guardRowsEnabled = false;
+  var _guardsPerRepEnd = 1;
+  final _plotLengthController = TextEditingController();
+  final _plotWidthController = TextEditingController();
+  final _alleyWidthController = TextEditingController();
+  double? _latitude;
+  double? _longitude;
 
   final List<_AssessmentDraft> _assessments = [];
   bool _customAssessmentExpanded = false;
@@ -82,6 +91,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
     super.initState();
     _seasonController.text = '${DateTime.now().year}';
     _treatmentRows = _buildTreatmentRows(_treatmentCount);
+    _plotsPerRep = _treatmentRows.length;
     _nameController.addListener(() => setState(() {}));
   }
 
@@ -115,7 +125,59 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
     _customUnitController.dispose();
     _customMinController.dispose();
     _customMaxController.dispose();
+    _plotLengthController.dispose();
+    _plotWidthController.dispose();
+    _alleyWidthController.dispose();
     super.dispose();
+  }
+
+  Future<void> _useCurrentGps() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Location services are disabled. Enable and try again.',
+          ),
+        ),
+      );
+      return;
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location permission denied.')),
+      );
+      return;
+    }
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+      setState(() {
+        _latitude = pos.latitude;
+        _longitude = pos.longitude;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location updated from GPS.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not get location: $e')),
+      );
+    }
+  }
+
+  double? _parseOptionalDouble(String s) {
+    final t = s.trim();
+    if (t.isEmpty) return null;
+    return double.tryParse(t);
   }
 
   Future<bool> _confirmDiscard() async {
@@ -201,6 +263,9 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
         }
       }
       _treatmentCount = n;
+      if (_plotsPerRep < _treatmentRows.length) {
+        _plotsPerRep = _treatmentRows.length;
+      }
     });
   }
 
@@ -282,6 +347,13 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
         experimentalDesign: _design,
         treatments: treatments,
         repCount: _repCount,
+        plotsPerRep: _plotsPerRep,
+        guardRowsPerRep: _guardRowsEnabled ? _guardsPerRepEnd : 0,
+        plotLengthM: _parseOptionalDouble(_plotLengthController.text),
+        plotWidthM: _parseOptionalDouble(_plotWidthController.text),
+        alleyLengthM: _parseOptionalDouble(_alleyWidthController.text),
+        latitude: _latitude,
+        longitude: _longitude,
         assessments: assessmentInputs,
         performedByUserId: userId,
       ),
@@ -673,34 +745,75 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
     );
   }
 
-  Widget _buildStepPlots(BuildContext context) {
+  int get _guardRowsPerRepEffective =>
+      _guardRowsEnabled ? _guardsPerRepEnd : 0;
+
+  String _formatRepLayoutLine(int rep, List<PlotLayoutRow> rowPlots) {
+    final lead = <String>[];
+    final data = <String>[];
+    final trail = <String>[];
+    var i = 0;
+    while (i < rowPlots.length && rowPlots[i].isGuardRow) {
+      lead.add('[G] ${rowPlots[i].plotId}');
+      i++;
+    }
+    while (i < rowPlots.length && !rowPlots[i].isGuardRow) {
+      data.add(rowPlots[i].plotId);
+      i++;
+    }
+    while (i < rowPlots.length) {
+      final p = rowPlots[i];
+      if (p.isGuardRow) {
+        trail.add('${p.plotId} [G]');
+      }
+      i++;
+    }
+    final segs = <String>[];
+    if (lead.isNotEmpty) segs.add(lead.join(' '));
+    if (data.isNotEmpty) segs.add(data.join(' '));
+    if (trail.isNotEmpty) segs.add(trail.join(' '));
+    return 'Rep $rep: ${segs.join(' | ')}';
+  }
+
+  List<String> _plotLayoutPreviewLines() {
     final tCount = _treatmentRows.length;
-    final total = tCount * _repCount;
     final preview = PlotGenerationEngine.generate(
       treatmentCount: tCount,
+      plotsPerRep: _plotsPerRep,
       repCount: _repCount,
       experimentalDesign: _design,
+      guardRowsPerRep: _guardRowsPerRepEffective,
       random: Random(_previewRandomSeed),
     );
+
+    final dataTotal = _plotsPerRep * _repCount;
+    final guardTotal =
+        _guardRowsEnabled ? _guardsPerRepEnd * 2 * _repCount : 0;
     final lines = <String>[
-      '$tCount treatments × $_repCount reps = $total plots',
+      '$tCount treatments × $_plotsPerRep plots per rep × $_repCount reps = '
+          '$dataTotal data plots'
+          '${guardTotal > 0 ? ' + $guardTotal guard plots = ${dataTotal + guardTotal} total' : ''}',
       'Design: $_design — ${_designSubtitle(_design)}',
       'Rep-based numbering (default)',
       '',
     ];
+
     for (var r = 1; r <= _repCount; r++) {
-      final start = r * 100 + 1;
-      final end = r * 100 + tCount;
-      lines.add('Rep $r: Plot $start–$end');
+      final rowPlots = preview.plots.where((p) => p.rep == r).toList();
+      lines.add(_formatRepLayoutLine(r, rowPlots));
     }
+
     lines.add('');
     lines.add('Assignment preview:');
     var idx = 0;
     for (var r = 1; r <= _repCount; r++) {
       final codes = <String>[];
-      for (var p = 0; p < tCount; p++) {
-        final ti = preview.treatmentIndexPerPlot[idx];
-        codes.add(_treatmentRows[ti].codeController.text.trim());
+      while (idx < preview.plots.length && preview.plots[idx].rep == r) {
+        final p = preview.plots[idx];
+        if (!p.isGuardRow) {
+          final ti = preview.treatmentIndexPerPlot[idx];
+          codes.add(_treatmentRows[ti].codeController.text.trim());
+        }
         idx++;
       }
       final suffix = _design == PlotGenerationEngine.designNonRandomized
@@ -708,6 +821,13 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
           : 'randomized';
       lines.add('Rep $r: ${codes.join(', ')} ($suffix)');
     }
+
+    return lines;
+  }
+
+  Widget _buildStepPlots(BuildContext context) {
+    final tMin = _treatmentRows.length;
+    final lines = _plotLayoutPreviewLines();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -719,7 +839,10 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
               const Expanded(
                 child: Text(
                   'How many reps?',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
+                  ),
                 ),
               ),
               IconButton(
@@ -733,6 +856,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
+                  color: AppDesignTokens.primaryText,
                 ),
               ),
               IconButton(
@@ -744,25 +868,183 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
             ],
           ),
         ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppDesignTokens.cardSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppDesignTokens.borderCrisp),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Plots per rep (minimum: $tMin for your treatments)',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
               ),
-              child: Text(
-                lines.join('\n'),
+              IconButton(
+                onPressed: _plotsPerRep > tMin
+                    ? () => setState(() => _plotsPerRep--)
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline),
+              ),
+              Text(
+                '$_plotsPerRep',
                 style: const TextStyle(
-                  fontSize: 13,
-                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
                   color: AppDesignTokens.primaryText,
                 ),
               ),
+              IconButton(
+                onPressed: _plotsPerRep < 50
+                    ? () => setState(() => _plotsPerRep++)
+                    : null,
+                icon: const Icon(Icons.add_circle_outline),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'Add guard rows',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+            value: _guardRowsEnabled,
+            onChanged: (v) => setState(() => _guardRowsEnabled = v),
+          ),
+        ),
+        if (_guardRowsEnabled)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Guards per rep end',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: _guardsPerRepEnd > 1
+                      ? () => setState(() => _guardsPerRepEnd--)
+                      : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text(
+                  '$_guardsPerRepEnd',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _guardsPerRepEnd < 3
+                      ? () => setState(() => _guardsPerRepEnd++)
+                      : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ExpansionTile(
+                  initiallyExpanded: false,
+                  title: const Text(
+                    'Plot dimensions (optional)',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                  children: [
+                    TextField(
+                      controller: _plotLengthController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: FormStyles.inputDecoration(
+                        labelText: 'Plot length (meters)',
+                        hintText: 'e.g. 10',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _plotWidthController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: FormStyles.inputDecoration(
+                        labelText: 'Plot width (meters)',
+                        hintText: 'e.g. 3',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _alleyWidthController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: FormStyles.inputDecoration(
+                        labelText: 'Alley width (meters)',
+                        hintText: 'e.g. 1.5',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _submitting ? null : _useCurrentGps,
+                  icon: const Icon(Icons.gps_fixed, size: 18),
+                  label: const Text('Use current location'),
+                ),
+                if (_latitude != null && _longitude != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Latitude: ${_latitude!.toStringAsFixed(6)}, '
+                    'longitude: ${_longitude!.toStringAsFixed(6)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.cardSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppDesignTokens.borderCrisp),
+                  ),
+                  child: Text(
+                    lines.join('\n'),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.35,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -960,9 +1242,13 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
 
   Widget _buildStepConfirm(BuildContext context) {
     final tCount = _treatmentRows.length;
-    final plots = tCount * _repCount;
+    final dataPlots = _plotsPerRep * _repCount;
+    final guardPlots =
+        _guardRowsEnabled ? _guardsPerRepEnd * 2 * _repCount : 0;
+    final totalPlots = dataPlots + guardPlots;
     const startPlot = 101;
-    final endPlot = _repCount * 100 + tCount;
+    final slotsPerRep = _plotsPerRep + _guardRowsPerRepEffective * 2;
+    final endPlot = _repCount * 100 + slotsPerRep;
     final assessNames =
         _assessments.map((a) => a.name).join(', ');
     final summary = [
@@ -976,8 +1262,12 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
       'Design: $_design',
       'Treatments: $tCount',
       'Reps: $_repCount',
-      'Plots: $plots',
-      'Numbering: Rep-based ($startPlot–$endPlot)',
+      'Plots per rep: $_plotsPerRep',
+      if (guardPlots > 0)
+        'Plots: $dataPlots data + $guardPlots guard = $totalPlots total'
+      else
+        'Plots: $totalPlots',
+      'Numbering: Rep-based ($startPlot–$endPlot per rep pattern)',
       'Assignments: ${_assignmentSummaryLine(_design)}',
       if (_assessments.isNotEmpty)
         'Assessments: ${_assessments.length} ($assessNames)'

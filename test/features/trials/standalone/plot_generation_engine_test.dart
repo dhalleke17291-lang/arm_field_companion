@@ -9,6 +9,7 @@ void main() {
   test('RCBD 4×4: 16 plots, each treatment once per rep', () {
     final g = PlotGenerationEngine.generate(
       treatmentCount: 4,
+      plotsPerRep: 4,
       repCount: 4,
       experimentalDesign: PlotGenerationEngine.designRcbd,
       random: r42,
@@ -27,6 +28,7 @@ void main() {
   test('RCBD 2×1: 2 plots', () {
     final g = PlotGenerationEngine.generate(
       treatmentCount: 2,
+      plotsPerRep: 2,
       repCount: 1,
       experimentalDesign: PlotGenerationEngine.designRcbd,
       random: Random(1),
@@ -38,6 +40,7 @@ void main() {
   test('RCBD 10×3: 30 plots', () {
     final g = PlotGenerationEngine.generate(
       treatmentCount: 10,
+      plotsPerRep: 10,
       repCount: 3,
       experimentalDesign: PlotGenerationEngine.designRcbd,
       random: Random(0),
@@ -52,6 +55,7 @@ void main() {
   test('CRD 4×4: each treatment exactly 4 times', () {
     final g = PlotGenerationEngine.generate(
       treatmentCount: 4,
+      plotsPerRep: 4,
       repCount: 4,
       experimentalDesign: PlotGenerationEngine.designCrd,
       random: Random(99),
@@ -67,6 +71,7 @@ void main() {
   test('Non-randomized 4×4: identical order each rep', () {
     final g = PlotGenerationEngine.generate(
       treatmentCount: 4,
+      plotsPerRep: 4,
       repCount: 4,
       experimentalDesign: PlotGenerationEngine.designNonRandomized,
     );
@@ -82,6 +87,7 @@ void main() {
   test('Non-randomized 3×2: T1,T2,T3 both reps', () {
     final g = PlotGenerationEngine.generate(
       treatmentCount: 3,
+      plotsPerRep: 3,
       repCount: 2,
       experimentalDesign: PlotGenerationEngine.designNonRandomized,
     );
@@ -91,6 +97,7 @@ void main() {
   test('Plot numbering and global sort index', () {
     final g = PlotGenerationEngine.generate(
       treatmentCount: 4,
+      plotsPerRep: 4,
       repCount: 3,
       experimentalDesign: PlotGenerationEngine.designNonRandomized,
     );
@@ -113,5 +120,85 @@ void main() {
       final rep = i ~/ 4 + 1;
       expect(g.plots[i].rep, rep);
     }
+  });
+
+  test('RCBD 4 treatments, 6 plots per rep, 4 reps: 24 data, each trt ≥ once per rep', () {
+    final g = PlotGenerationEngine.generate(
+      treatmentCount: 4,
+      plotsPerRep: 6,
+      repCount: 4,
+      experimentalDesign: PlotGenerationEngine.designRcbd,
+      random: Random(5),
+    );
+    expect(g.plots.length, 24);
+    expect(g.plots.every((p) => !p.isGuardRow), true);
+    for (var rep = 0; rep < 4; rep++) {
+      final slice = g.treatmentIndexPerPlot.sublist(rep * 6, rep * 6 + 6);
+      for (var t = 0; t < 4; t++) {
+        expect(slice.contains(t), true);
+      }
+    }
+  });
+
+  test('4 treatments, 4 plots per rep, 4 reps, 2 guard rows per end: 32 total', () {
+    final g = PlotGenerationEngine.generate(
+      treatmentCount: 4,
+      plotsPerRep: 4,
+      repCount: 4,
+      experimentalDesign: PlotGenerationEngine.designRcbd,
+      guardRowsPerRep: 2,
+      random: Random(1),
+    );
+    expect(g.plots.length, 32);
+    expect(g.plots.where((p) => p.isGuardRow).length, 16);
+    expect(
+      g.treatmentIndexPerPlot
+          .where((i) => i == PlotGenerationEngine.noTreatmentIndex)
+          .length,
+      16,
+    );
+    final dataIdx =
+        g.treatmentIndexPerPlot.where((i) => i >= 0).toList();
+    expect(dataIdx.length, 16);
+  });
+
+  test('Guard plots have no treatment index', () {
+    final g = PlotGenerationEngine.generate(
+      treatmentCount: 2,
+      plotsPerRep: 2,
+      repCount: 1,
+      experimentalDesign: PlotGenerationEngine.designNonRandomized,
+      guardRowsPerRep: 1,
+    );
+    expect(g.plots.length, 4);
+    for (var i = 0; i < g.plots.length; i++) {
+      if (g.plots[i].isGuardRow) {
+        expect(g.treatmentIndexPerPlot[i], PlotGenerationEngine.noTreatmentIndex);
+      } else {
+        expect(g.treatmentIndexPerPlot[i], greaterThanOrEqualTo(0));
+      }
+    }
+  });
+
+  test('plotsPerRep < treatmentCount throws', () {
+    expect(
+      () => PlotGenerationEngine.generate(
+        treatmentCount: 4,
+        plotsPerRep: 3,
+        repCount: 1,
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('Non-randomized 3 treatments, 6 plots per rep: cycles', () {
+    final g = PlotGenerationEngine.generate(
+      treatmentCount: 3,
+      plotsPerRep: 6,
+      repCount: 1,
+      experimentalDesign: PlotGenerationEngine.designNonRandomized,
+    );
+    expect(g.treatmentIndexPerPlot, [0, 1, 2, 0, 1, 2]);
   });
 }

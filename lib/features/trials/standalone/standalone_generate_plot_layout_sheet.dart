@@ -1,28 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/database/app_database.dart';
 import 'generate_standalone_plot_layout_usecase.dart';
 import 'plot_generation_engine.dart';
 
-/// Dialog: reps + design (when missing), then [GenerateStandalonePlotLayoutUseCase].
+/// Dialog: reps, plots per rep, optional guards, design (when missing), then
+/// [GenerateStandalonePlotLayoutUseCase].
 Future<void> showStandaloneGeneratePlotLayoutDialog({
   required BuildContext context,
   required WidgetRef ref,
   required Trial trial,
 }) async {
+  final treatments = await ref
+      .read(treatmentRepositoryProvider)
+      .getTreatmentsForTrial(trial.id);
+  if (treatments.length < 2) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add at least two treatments first')),
+      );
+    }
+    return;
+  }
+  if (!context.mounted) return;
+  treatments.sort((a, b) => a.id.compareTo(b.id));
+  final tCount = treatments.length;
+
   var reps = 4;
+  var plotsPerRep = tCount;
   var design = trial.experimentalDesign?.trim().isNotEmpty == true
       ? trial.experimentalDesign!.trim()
       : PlotGenerationEngine.designRcbd;
+  var guardEnabled = false;
+  var guardsPerEnd = 1;
 
+  final showDesignPicker =
+      trial.experimentalDesign == null || trial.experimentalDesign!.trim().isEmpty;
+
+  if (!context.mounted) return;
   final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setLocal) {
-        final showDesignPicker =
-            trial.experimentalDesign == null || trial.experimentalDesign!.trim().isEmpty;
         return AlertDialog(
           title: const Text('Generate Plot Layout'),
           content: SingleChildScrollView(
@@ -32,24 +54,120 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
               children: [
                 Row(
                   children: [
-                    const Text('Reps'),
-                    const Spacer(),
+                    const Expanded(
+                      child: Text(
+                        'Reps',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                      ),
+                    ),
                     IconButton(
                       onPressed: reps > 1 ? () => setLocal(() => reps--) : null,
                       icon: const Icon(Icons.remove_circle_outline),
                     ),
-                    Text('$reps'),
+                    Text(
+                      '$reps',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
                     IconButton(
                       onPressed: reps < 8 ? () => setLocal(() => reps++) : null,
                       icon: const Icon(Icons.add_circle_outline),
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Plots per rep (min $tCount)',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: plotsPerRep > tCount
+                          ? () => setLocal(() => plotsPerRep--)
+                          : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    Text(
+                      '$plotsPerRep',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: plotsPerRep < 50
+                          ? () => setLocal(() => plotsPerRep++)
+                          : null,
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+                  ],
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'Add guard rows',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                  value: guardEnabled,
+                  onChanged: (v) => setLocal(() => guardEnabled = v),
+                ),
+                if (guardEnabled)
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Guards per rep end',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppDesignTokens.primaryText,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: guardsPerEnd > 1
+                            ? () => setLocal(() => guardsPerEnd--)
+                            : null,
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Text(
+                        '$guardsPerEnd',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: guardsPerEnd < 3
+                            ? () => setLocal(() => guardsPerEnd++)
+                            : null,
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
                 if (showDesignPicker) ...[
                   const SizedBox(height: 12),
                   Text(
                     'Study design',
-                    style: Theme.of(ctx).textTheme.labelLarge,
+                    style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                          color: AppDesignTokens.primaryText,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -95,6 +213,8 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
     GenerateStandalonePlotLayoutInput(
       trialId: trial.id,
       repCount: reps,
+      plotsPerRep: plotsPerRep,
+      guardRowsPerRep: guardEnabled ? guardsPerEnd : 0,
       experimentalDesign: design,
     ),
   );

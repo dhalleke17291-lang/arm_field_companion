@@ -13,12 +13,16 @@ class GenerateStandalonePlotLayoutInput {
   const GenerateStandalonePlotLayoutInput({
     required this.trialId,
     required this.repCount,
+    required this.plotsPerRep,
+    this.guardRowsPerRep = 0,
     required this.experimentalDesign,
     this.random,
   });
 
   final int trialId;
   final int repCount;
+  final int plotsPerRep;
+  final int guardRowsPerRep;
   final String experimentalDesign;
   final Random? random;
 }
@@ -64,6 +68,9 @@ class GenerateStandalonePlotLayoutUseCase {
     if (input.repCount < 1 || input.repCount > 8) {
       return GenerateStandalonePlotLayoutResult.failure('Reps must be between 1 and 8');
     }
+    if (input.guardRowsPerRep < 0 || input.guardRowsPerRep > 3) {
+      return GenerateStandalonePlotLayoutResult.failure('Guards per rep end must be 0–3');
+    }
 
     final trial = await _trialRepository.getTrialById(input.trialId);
     if (trial == null) {
@@ -77,6 +84,12 @@ class GenerateStandalonePlotLayoutUseCase {
     treatments.sort((a, b) => a.id.compareTo(b.id));
     if (treatments.length < 2) {
       return GenerateStandalonePlotLayoutResult.failure('Add at least two treatments first');
+    }
+    final tCount = treatments.length;
+    if (input.plotsPerRep < tCount || input.plotsPerRep > 50) {
+      return GenerateStandalonePlotLayoutResult.failure(
+        'Plots per rep must be between $tCount and 50',
+      );
     }
 
     final existingPlots = await _plotRepository.getPlotsForTrial(input.trialId);
@@ -101,8 +114,10 @@ class GenerateStandalonePlotLayoutUseCase {
 
         final gen = PlotGenerationEngine.generate(
           treatmentCount: treatments.length,
+          plotsPerRep: input.plotsPerRep,
           repCount: input.repCount,
           experimentalDesign: resolvedDesign,
+          guardRowsPerRep: input.guardRowsPerRep,
           random: input.random,
         );
 
@@ -113,6 +128,7 @@ class GenerateStandalonePlotLayoutUseCase {
                 plotId: p.plotId,
                 plotSortIndex: Value(p.plotSortIndex),
                 rep: Value(p.rep),
+                isGuardRow: Value(p.isGuardRow),
               ),
             )
             .toList();
@@ -131,6 +147,9 @@ class GenerateStandalonePlotLayoutUseCase {
         final at = DateTime.now().toUtc();
         for (var i = 0; i < plotRows.length; i++) {
           final tIdx = gen.treatmentIndexPerPlot[i];
+          if (tIdx == PlotGenerationEngine.noTreatmentIndex) {
+            continue;
+          }
           final tid = idByIndex[tIdx];
           if (tid == null) {
             throw StateError('Invalid treatment index $tIdx');

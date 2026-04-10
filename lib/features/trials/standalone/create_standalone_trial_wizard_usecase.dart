@@ -48,6 +48,13 @@ class CreateStandaloneTrialWizardInput {
     required this.experimentalDesign,
     required this.treatments,
     required this.repCount,
+    required this.plotsPerRep,
+    this.guardRowsPerRep = 0,
+    this.plotLengthM,
+    this.plotWidthM,
+    this.alleyLengthM,
+    this.latitude,
+    this.longitude,
     required this.assessments,
     this.performedByUserId,
     this.random,
@@ -60,6 +67,15 @@ class CreateStandaloneTrialWizardInput {
   final String experimentalDesign;
   final List<StandaloneWizardTreatmentInput> treatments;
   final int repCount;
+  /// Data plots per rep (>= treatment count).
+  final int plotsPerRep;
+  /// Guard plots at each end of every rep (0 = none).
+  final int guardRowsPerRep;
+  final double? plotLengthM;
+  final double? plotWidthM;
+  final double? alleyLengthM;
+  final double? latitude;
+  final double? longitude;
   final List<StandaloneWizardAssessmentInput> assessments;
   final int? performedByUserId;
   final Random? random;
@@ -125,6 +141,15 @@ class CreateStandaloneTrialWizardUseCase {
     if (input.repCount < 1 || input.repCount > 8) {
       return CreateStandaloneTrialWizardResult.failure('Reps must be between 1 and 8');
     }
+    final tCount = input.treatments.length;
+    if (input.plotsPerRep < tCount || input.plotsPerRep > 50) {
+      return CreateStandaloneTrialWizardResult.failure(
+        'Plots per rep must be between $tCount and 50',
+      );
+    }
+    if (input.guardRowsPerRep < 0 || input.guardRowsPerRep > 3) {
+      return CreateStandaloneTrialWizardResult.failure('Guards per rep end must be 0–3');
+    }
 
     try {
       late int trialId;
@@ -137,6 +162,34 @@ class CreateStandaloneTrialWizardUseCase {
           workspaceType: 'standalone',
           experimentalDesign: input.experimentalDesign,
         );
+
+        final hasPhysical = input.plotLengthM != null ||
+            input.plotWidthM != null ||
+            input.alleyLengthM != null ||
+            input.latitude != null ||
+            input.longitude != null;
+        if (hasPhysical) {
+          await _trialRepository.updateTrialSetup(
+            trialId,
+            TrialsCompanion(
+              plotLengthM: input.plotLengthM != null
+                  ? Value(input.plotLengthM!)
+                  : const Value.absent(),
+              plotWidthM: input.plotWidthM != null
+                  ? Value(input.plotWidthM!)
+                  : const Value.absent(),
+              alleyLengthM: input.alleyLengthM != null
+                  ? Value(input.alleyLengthM!)
+                  : const Value.absent(),
+              latitude: input.latitude != null
+                  ? Value(input.latitude!)
+                  : const Value.absent(),
+              longitude: input.longitude != null
+                  ? Value(input.longitude!)
+                  : const Value.absent(),
+            ),
+          );
+        }
 
         final treatmentIds = <int>[];
         for (final t in input.treatments) {
@@ -157,8 +210,10 @@ class CreateStandaloneTrialWizardUseCase {
 
         final gen = PlotGenerationEngine.generate(
           treatmentCount: treatmentIds.length,
+          plotsPerRep: input.plotsPerRep,
           repCount: input.repCount,
           experimentalDesign: input.experimentalDesign,
+          guardRowsPerRep: input.guardRowsPerRep,
           random: input.random,
         );
 
@@ -169,6 +224,7 @@ class CreateStandaloneTrialWizardUseCase {
                 plotId: p.plotId,
                 plotSortIndex: Value(p.plotSortIndex),
                 rep: Value(p.rep),
+                isGuardRow: Value(p.isGuardRow),
               ),
             )
             .toList();
@@ -182,6 +238,9 @@ class CreateStandaloneTrialWizardUseCase {
         final at = DateTime.now().toUtc();
         for (var i = 0; i < plotRows.length; i++) {
           final tIdx = gen.treatmentIndexPerPlot[i];
+          if (tIdx == PlotGenerationEngine.noTreatmentIndex) {
+            continue;
+          }
           final tid = treatmentIds[tIdx];
           await _assignmentRepository.upsert(
             trialId: trialId,

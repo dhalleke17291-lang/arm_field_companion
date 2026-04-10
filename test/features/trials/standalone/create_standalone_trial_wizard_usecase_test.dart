@@ -54,6 +54,7 @@ void main() {
           StandaloneWizardTreatmentInput(code: 'TRT4'),
         ],
         repCount: 4,
+        plotsPerRep: 4,
         assessments: const [
           StandaloneWizardAssessmentInput(
             name: '% control',
@@ -110,6 +111,7 @@ void main() {
           StandaloneWizardTreatmentInput(code: 'B'),
         ],
         repCount: 2,
+        plotsPerRep: 2,
         assessments: const [],
         random: Random(0),
       ),
@@ -131,6 +133,7 @@ void main() {
           StandaloneWizardTreatmentInput(code: 'B'),
         ],
         repCount: 1,
+        plotsPerRep: 2,
         assessments: [],
       ),
     );
@@ -149,6 +152,7 @@ void main() {
           StandaloneWizardTreatmentInput(code: 'B'),
         ],
         repCount: 1,
+        plotsPerRep: 2,
         assessments: const [],
         random: Random(1),
       ),
@@ -163,6 +167,7 @@ void main() {
           StandaloneWizardTreatmentInput(code: 'B'),
         ],
         repCount: 1,
+        plotsPerRep: 2,
         assessments: const [],
         random: Random(2),
       ),
@@ -185,6 +190,7 @@ void main() {
           StandaloneWizardTreatmentInput(code: 'TRT2'),
         ],
         repCount: 4,
+        plotsPerRep: 2,
         assessments: const [
           StandaloneWizardAssessmentInput(
             name: '% control',
@@ -234,5 +240,49 @@ void main() {
     expect(sessionResult.success, true);
     expect(sessionResult.session, isNotNull);
     expect(sessionResult.session!.trialId, trialId);
+  });
+
+  test('wizard with guard rows, physical dimensions, and GPS on trial', () async {
+    final uc = buildUseCase();
+    final result = await uc.execute(
+      CreateStandaloneTrialWizardInput(
+        trialName: 'Grd ${DateTime.now().microsecondsSinceEpoch}',
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        treatments: const [
+          StandaloneWizardTreatmentInput(code: 'A'),
+          StandaloneWizardTreatmentInput(code: 'B'),
+        ],
+        repCount: 2,
+        plotsPerRep: 2,
+        guardRowsPerRep: 1,
+        plotLengthM: 10.5,
+        plotWidthM: 3.25,
+        alleyLengthM: 1.5,
+        latitude: 45.123456,
+        longitude: -75.987654,
+        assessments: const [],
+        random: Random(3),
+      ),
+    );
+
+    expect(result.success, true);
+    final trialId = result.trialId!;
+    final trial = await TrialRepository(db).getTrialById(trialId);
+    expect(trial, isNotNull);
+    expect(trial!.plotLengthM, 10.5);
+    expect(trial.plotWidthM, 3.25);
+    expect(trial.alleyLengthM, 1.5);
+    expect(trial.latitude, closeTo(45.123456, 1e-5));
+    expect(trial.longitude, closeTo(-75.987654, 1e-5));
+
+    final plots = await PlotRepository(db).getPlotsForTrial(trialId);
+    expect(plots.length, 8);
+    expect(plots.where((p) => p.isGuardRow).length, 4);
+
+    final assigns = await AssignmentRepository(db).getForTrial(trialId);
+    expect(assigns.length, 4);
+    for (final p in plots.where((x) => x.isGuardRow)) {
+      expect(assigns.any((a) => a.plotId == p.id), false);
+    }
   });
 }
