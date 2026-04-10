@@ -8,6 +8,7 @@ class GradientScreenHeader extends StatelessWidget
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleLine2,
     this.leading,
     this.actions,
     this.titleFontSize = 22,
@@ -15,6 +16,8 @@ class GradientScreenHeader extends StatelessWidget
 
   final String title;
   final String? subtitle;
+  /// Optional second line under [subtitle] (e.g. BBCH · DAT · DAS).
+  final String? subtitleLine2;
   final Widget? leading;
   final List<Widget>? actions;
   final double titleFontSize;
@@ -78,6 +81,20 @@ class GradientScreenHeader extends StatelessWidget
                             fontWeight: FontWeight.w500,
                           ).copyWith(letterSpacing: 0.2),
                           maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (subtitleLine2 != null &&
+                          subtitleLine2!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitleLine2!,
+                          style: AppDesignTokens.bodyCrispStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.82),
+                            fontWeight: FontWeight.w500,
+                          ).copyWith(letterSpacing: 0.15),
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],

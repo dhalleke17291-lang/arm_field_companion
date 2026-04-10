@@ -60,6 +60,9 @@ class FakeSessionRepository implements SessionRepository {
       sessions.where((s) => s.sessionDateLocal == dateLocal).toList();
 
   @override
+  Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {}
+
+  @override
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -67,6 +70,7 @@ class FakeSessionRepository implements SessionRepository {
     required List<int> assessmentIds,
     String? raterName,
     int? createdByUserId,
+    int? cropStageBbch,
   }) async {
     final s = sessionToReturnFromCreate;
     if (s != null) return s;

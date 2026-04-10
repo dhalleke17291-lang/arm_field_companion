@@ -38,6 +38,7 @@ class ArmFieldMapping {
     'days_after_seeding': 'DAYS_AFTER_SEEDING',
     'days_after_first_application': 'DAYS_AFTER_FIRST_APP',
     'export_timestamp': 'EXPORT_TIMESTAMP',
+    'session_crop_stage_bbch': 'SESSION_BBCH',
   };
 
   /// Keys = exact current app CSV header strings (from applications export)
@@ -116,6 +117,9 @@ class ArmFieldMapping {
     'plot_count_rated': 'PLOT_COUNT_RATED',
     'notes': 'NOTES',
     'export_timestamp': 'EXPORT_TIMESTAMP',
+    'crop_stage_bbch': 'SESSION_BBCH',
+    'days_after_seeding': 'SESSION_DAS',
+    'days_after_first_application': 'SESSION_DAT',
   };
 
   /// Returns the mapped ARM code if found, otherwise returns original unchanged.

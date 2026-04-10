@@ -26,6 +26,7 @@ import '../features/plots/usecases/generate_rep_guard_plots_usecase.dart';
 import '../features/plots/usecases/update_plot_assignment_usecase.dart';
 import '../features/protocol_import/protocol_import_usecase.dart';
 import '../features/sessions/session_repository.dart';
+import '../features/sessions/session_timing_helper.dart';
 import '../features/ratings/rating_repository.dart';
 import '../features/photos/photo_repository.dart';
 import '../features/trials/usecases/create_trial_usecase.dart';
@@ -412,6 +413,35 @@ final protocolImportUseCaseProvider = Provider<ProtocolImportUseCase>((ref) {
 
 final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
   return SessionRepository(ref.watch(databaseProvider));
+});
+
+/// Latest non-deleted session row by id (e.g. after BBCH update).
+final sessionByIdProvider = FutureProvider.autoDispose.family<Session?, int>(
+    (ref, sessionId) {
+  return ref.watch(sessionRepositoryProvider).getSessionById(sessionId);
+});
+
+/// DAS/DAT from seeding + applied applications; BBCH from session.
+final sessionTimingContextProvider =
+    FutureProvider.autoDispose.family<SessionTimingContext, int>(
+        (ref, sessionId) async {
+  final sessionRepo = ref.watch(sessionRepositoryProvider);
+  final session = await sessionRepo.getSessionById(sessionId);
+  if (session == null) {
+    return const SessionTimingContext();
+  }
+  final seeding = await ref
+      .watch(seedingRepositoryProvider)
+      .getSeedingEventForTrial(session.trialId);
+  final applications = await ref
+      .watch(applicationRepositoryProvider)
+      .getApplicationsForTrial(session.trialId);
+  return buildSessionTimingContext(
+    sessionStartedAt: session.startedAt,
+    cropStageBbch: session.cropStageBbch,
+    seeding: seeding,
+    applications: applications,
+  );
 });
 
 final ratingRepositoryProvider = Provider<RatingRepository>((ref) {

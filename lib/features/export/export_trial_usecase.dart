@@ -134,6 +134,7 @@ class ExportTrialUseCase {
     'days_after_first_application',
     'photo_files',
     'export_timestamp',
+    'session_crop_stage_bbch',
   ];
 
   static const List<String> _observationsArmTransferHeaders = [
@@ -233,6 +234,9 @@ class ExportTrialUseCase {
     'rater_name',
     'notes',
     'export_timestamp',
+    'crop_stage_bbch',
+    'days_after_seeding',
+    'days_after_first_application',
   ];
 
   Future<TrialExportBundle> execute({
@@ -415,6 +419,8 @@ class ExportTrialUseCase {
     final sessionsCsv = await _buildSessionsCsv(
       sessions,
       exportTimestamp,
+      seedingDate: seedingDate,
+      firstAppDate: firstAppDate,
       armAligned: armAligned,
     );
 
@@ -595,6 +601,12 @@ class ExportTrialUseCase {
         'export_timestamp',
         'UTC timestamp when export was generated',
         'ISO 8601'
+      ],
+      [
+        'observations.csv',
+        'session_crop_stage_bbch',
+        'BBCH growth stage recorded on the rating session',
+        '0–99'
       ],
       [
         'observations_arm_transfer.csv',
@@ -854,6 +866,30 @@ class ExportTrialUseCase {
       ['sessions.csv', 'rater_name', 'Person who conducted session', ''],
       ['sessions.csv', 'notes', 'Session notes', ''],
       ['sessions.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
+      [
+        'sessions.csv',
+        'crop_stage_bbch',
+        'BBCH growth stage recorded for the session',
+        '0–99'
+      ],
+      [
+        'sessions.csv',
+        'days_after_seeding',
+        'Days from completed seeding to session start',
+        'days'
+      ],
+      [
+        'sessions.csv',
+        'days_after_first_application',
+        'Days from first applied application to session start',
+        'days'
+      ],
+      [
+        'weather.csv',
+        'crop_stage_bbch',
+        'BBCH from the parent rating session',
+        '0–99'
+      ],
       // metadata
       ['metadata', 'export_timestamp', exportTimestamp, 'ISO 8601'],
       ['metadata', 'app_version', appVersion, ''],
@@ -965,6 +1001,7 @@ class ExportTrialUseCase {
           daysAfterFirstApp != null ? _cell(daysAfterFirstApp) : '',
           _cell(photoFiles.isEmpty ? null : photoFiles),
           exportTimestamp,
+          _cell(session.cropStageBbch),
         ]);
       }
     }
@@ -1211,12 +1248,20 @@ class ExportTrialUseCase {
   Future<String> _buildSessionsCsv(
     List<Session> sessions,
     String exportTimestamp, {
+    required DateTime? seedingDate,
+    required DateTime? firstAppDate,
     bool armAligned = false,
   }) async {
     final rows = <List<String>>[];
     for (final s in sessions) {
       final ratings = await _ratingRepository.getCurrentRatingsForSession(s.id);
       final plotCountRated = ratings.map((r) => r.plotPk).toSet().length;
+      final int? das = seedingDate != null
+          ? s.startedAt.difference(seedingDate).inDays
+          : null;
+      final int? daf = firstAppDate != null
+          ? s.startedAt.difference(firstAppDate).inDays
+          : null;
       rows.add([
         _cell(s.name),
         _cell(s.sessionDateLocal),
@@ -1225,6 +1270,9 @@ class ExportTrialUseCase {
         _cell(s.raterName),
         '', // notes not on Session in schema
         exportTimestamp,
+        _cell(s.cropStageBbch),
+        das != null ? _cell(das) : '',
+        daf != null ? _cell(daf) : '',
       ]);
     }
     return CsvExportService.buildCsv(

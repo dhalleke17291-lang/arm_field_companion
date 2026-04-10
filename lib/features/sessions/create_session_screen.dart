@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
+import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../sessions/usecases/create_session_usecase.dart';
@@ -20,6 +21,7 @@ class CreateSessionScreen extends ConsumerStatefulWidget {
 class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   final _nameController = TextEditingController();
   final _raterController = TextEditingController();
+  final _bbchController = TextEditingController();
   final Set<int> _selectedLegacyAssessmentIds = {};
   final Set<int> _selectedTrialAssessmentIds = {};
   bool _isCreating = false;
@@ -52,6 +54,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   void dispose() {
     _nameController.dispose();
     _raterController.dispose();
+    _bbchController.dispose();
     super.dispose();
   }
 
@@ -131,6 +134,29 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               hintText: 'Your name',
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          const Text('Crop Growth Stage (BBCH)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _bbchController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'e.g. 32',
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'BBCH scale: 0–9 germination, 10–19 leaf development, 20–29 '
+            'tillering, 30–39 stem elongation, 50–59 inflorescence, 60–69 '
+            'flowering, 70–79 fruit/grain, 80–89 ripening, 90–99 senescence',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppDesignTokens.secondaryText,
             ),
           ),
           const SizedBox(height: 20),
@@ -378,6 +404,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       assessmentIds: assessmentIds,
       raterName: raterName,
       createdByUserId: userId,
+      cropStageBbchRaw: _bbchController.text,
     ));
 
     if (!mounted || !context.mounted) return;

@@ -36,6 +36,10 @@ class MockSessionRepository implements SessionRepository {
   ) async {}
 
   @override
+  @override
+  Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {}
+
+  @override
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -43,6 +47,7 @@ class MockSessionRepository implements SessionRepository {
     required List<int> assessmentIds,
     String? raterName,
     int? createdByUserId,
+    int? cropStageBbch,
   }) async {
     await deduplicateSessionAssessmentsForTrial(trialId);
     final existing = await getOpenSession(trialId);
@@ -59,6 +64,9 @@ class MockSessionRepository implements SessionRepository {
       createdByUserId: null,
       status: 'open',
       isDeleted: false,
+      deletedAt: null,
+      deletedBy: null,
+      cropStageBbch: cropStageBbch,
     );
     _sessions.add(session);
     return session;
@@ -189,6 +197,18 @@ void main() {
 
       expect(result.success, false);
       expect(result.errorMessage, contains('must not be empty'));
+    });
+
+    test('invalid BBCH rejected', () async {
+      final result = await useCase.execute(const CreateSessionInput(
+        trialId: 1,
+        name: 'S',
+        sessionDateLocal: '2026-03-04',
+        assessmentIds: [1],
+        cropStageBbchRaw: '100',
+      ));
+      expect(result.success, false);
+      expect(result.errorMessage, contains('99'));
     });
 
     test('SUCCESS: two trials can have separate open sessions', () async {

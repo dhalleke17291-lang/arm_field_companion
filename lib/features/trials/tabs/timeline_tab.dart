@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import '../../sessions/session_timing_helper.dart';
 
 enum _TimelineEventType { seeding, application, session }
 
@@ -113,10 +114,23 @@ class TimelineTab extends ConsumerWidget {
         }
 
         for (final session in sessions) {
+          final timingCtx = buildSessionTimingContext(
+            sessionStartedAt: session.startedAt,
+            cropStageBbch: session.cropStageBbch,
+            seeding: seedingEvent,
+            applications: applications,
+          );
           final days = seedingDate != null
               ? session.startedAt.difference(seedingDate).inDays
               : null;
-          final timingText = days != null ? '$days days after seeding' : null;
+          final String? timingText;
+          if (timingCtx.displayLine.isNotEmpty) {
+            timingText = timingCtx.displayLine;
+          } else if (days != null) {
+            timingText = '$days days after seeding';
+          } else {
+            timingText = null;
+          }
           final beforeFirst = firstApplicationDate != null &&
               !session.startedAt.isAfter(firstApplicationDate) &&
               session.startedAt.isBefore(firstApplicationDate);

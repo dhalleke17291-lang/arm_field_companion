@@ -64,6 +64,7 @@ class SessionRepository {
     required List<int> assessmentIds,
     String? raterName,
     int? createdByUserId,
+    int? cropStageBbch,
   }) async {
     await deduplicateSessionAssessmentsForTrial(trialId);
 
@@ -80,6 +81,9 @@ class SessionRepository {
               sessionDateLocal: sessionDateLocal,
               raterName: Value(raterName),
               createdByUserId: Value(createdByUserId),
+              cropStageBbch: cropStageBbch != null
+                  ? Value(cropStageBbch)
+                  : const Value.absent(),
             ),
           );
 
@@ -231,6 +235,16 @@ class SessionRepository {
     return (_db.select(_db.sessions)
           ..where((s) => s.id.equals(sessionId) & s.isDeleted.equals(false)))
         .getSingleOrNull();
+  }
+
+  /// Updates optional BBCH growth stage (0–99) for an existing session.
+  Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {
+    await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
+        .write(SessionsCompanion(
+      cropStageBbch: cropStageBbch == null
+          ? const Value(null)
+          : Value(cropStageBbch),
+    ));
   }
 
   /// Soft-delete session and all rating_records for that session.

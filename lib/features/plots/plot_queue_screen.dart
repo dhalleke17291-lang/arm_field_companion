@@ -473,15 +473,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                             flaggedPlotIdsForSessionProvider(widget.session.id))
                         .valueOrNull ??
                     <int>{};
-                final seedingEvent = ref
-                    .watch(seedingEventForTrialProvider(widget.trial.id))
-                    .valueOrNull;
-                final int? dasDays =
-                    (seedingEvent != null && seedingEvent.status == 'completed')
-                        ? widget.session.startedAt
-                            .difference(seedingEvent.seedingDate)
-                            .inDays
-                        : null;
+                final timingLine = ref
+                    .watch(sessionTimingContextProvider(widget.session.id))
+                    .maybeWhen(
+                      data: (t) => t.displayLine,
+                      orElse: () => '',
+                    );
                 return _buildQueue(
                     context,
                     plots,
@@ -492,7 +489,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     plotIdToTreatmentId,
                     flaggedIds,
                     plotPksWithCorrections,
-                    dasDays: dasDays);
+                    timingDisplayLine: timingLine);
               },
             ),
           ),
@@ -511,7 +508,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Map<int, int?> plotIdToTreatmentId,
     Set<int> flaggedIds,
     Set<int> plotPksWithCorrections, {
-    int? dasDays,
+    String timingDisplayLine = '',
   }) {
     final ratingsByPlot = <int, List<RatingRecord>>{};
     for (final r in ratings) {
@@ -544,8 +541,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final scheme = Theme.of(context).colorScheme;
     final hasFieldRow = plots.any((p) => p.fieldRow != null);
     const serpentineGreen = Color(0xFF2D5A40);
-    final contextLine = dasDays != null
-        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots with a rating'
+    final contextLine = timingDisplayLine.trim().isNotEmpty
+        ? '$timingDisplayLine · $ratedCount / $totalPlots plots with a rating'
         : '$ratedCount / $totalPlots plots with a rating';
 
     return Column(

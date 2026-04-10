@@ -312,6 +312,9 @@ class Sessions extends Table {
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
+
+  /// Optional BBCH growth stage (0–99) at rating session; null if not recorded.
+  IntColumn get cropStageBbch => integer().nullable()();
 }
 
 class SessionAssessments extends Table {
@@ -829,7 +832,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 45;
+  int get schemaVersion => 46;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1223,6 +1226,9 @@ SET status = 'completed',
             await customStatement(
               'CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_snapshots_parent ON weather_snapshots(parent_type, parent_id)',
             );
+          }
+          if (from < 46) {
+            await m.addColumn(sessions, sessions.cropStageBbch);
           }
           await _createIndexes();
         },

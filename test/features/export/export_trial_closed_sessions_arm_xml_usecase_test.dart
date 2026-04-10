@@ -57,6 +57,9 @@ class _MockSessionRepository implements SessionRepository {
   Future<Session?> getSessionById(int id) async => throw UnimplementedError();
 
   @override
+  Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {}
+
+  @override
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -64,6 +67,7 @@ class _MockSessionRepository implements SessionRepository {
     required List<int> assessmentIds,
     String? raterName,
     int? createdByUserId,
+    int? cropStageBbch,
   }) async =>
       throw UnimplementedError();
 

@@ -681,6 +681,26 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                   color: AppDesignTokens.secondaryText,
                 ),
               ),
+              ref.watch(sessionTimingContextProvider(session.id)).maybeWhen(
+                    data: (t) {
+                      if (t.displayLine.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                            top: AppDesignTokens.spacing8),
+                        child: Text(
+                          t.displayLine,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
+                  ),
               const SizedBox(height: AppDesignTokens.spacing12),
               _buildStatsRow(
                 ratingCount: ratingCountAsync.valueOrNull ?? 0,

@@ -17,6 +17,9 @@ void main() {
         createdByUserId: null,
         status: 'open',
         isDeleted: false,
+        deletedAt: null,
+        deletedBy: null,
+        cropStageBbch: 40,
       );
       final recordedUtc =
           DateTime.utc(2026, 6, 15, 18, 30).millisecondsSinceEpoch;
@@ -51,6 +54,10 @@ void main() {
             'session_date,session_status,recorded_at,temperature,'),
         isTrue,
       );
+      expect(csv.contains('crop_stage_bbch'), isTrue);
+      final lines = csv.split('\n').where((l) => l.isNotEmpty).toList();
+      expect(lines.length, greaterThanOrEqualTo(2));
+      expect(lines[1].endsWith(',40'), isTrue);
       expect(csv.contains(',open,'), isTrue);
       expect(csv.contains('2026-06-15'), isTrue);
       expect(csv.contains('20'), isTrue);
@@ -73,6 +80,9 @@ void main() {
         createdByUserId: null,
         status: 'open',
         isDeleted: false,
+        deletedAt: null,
+        deletedBy: null,
+        cropStageBbch: null,
       );
       final t = DateTime.utc(2026, 1, 1).millisecondsSinceEpoch;
       final snap = WeatherSnapshot(
@@ -103,6 +113,7 @@ void main() {
       ).split('\n')[1];
       expect(dataLine.startsWith('2026-01-01,open,'), isTrue);
       expect(dataLine.contains(',,C,'), isTrue);
+      expect(dataLine.endsWith(','), isTrue);
     });
   });
 

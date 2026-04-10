@@ -2749,6 +2749,27 @@ class SessionsView extends ConsumerWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      ref
+                          .watch(sessionTimingContextProvider(session.id))
+                          .maybeWhen(
+                            data: (t) {
+                              if (t.displayLine.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  t.displayLine,
+                                  style: subtitleStyle?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            },
+                            orElse: () => const SizedBox.shrink(),
+                          ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: AppDesignTokens.spacing8,

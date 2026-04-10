@@ -9443,6 +9443,12 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
       'deleted_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cropStageBbchMeta =
+      const VerificationMeta('cropStageBbch');
+  @override
+  late final GeneratedColumn<int> cropStageBbch = GeneratedColumn<int>(
+      'crop_stage_bbch', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -9456,7 +9462,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         status,
         isDeleted,
         deletedAt,
-        deletedBy
+        deletedBy,
+        cropStageBbch
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9525,6 +9532,12 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       context.handle(_deletedByMeta,
           deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
     }
+    if (data.containsKey('crop_stage_bbch')) {
+      context.handle(
+          _cropStageBbchMeta,
+          cropStageBbch.isAcceptableOrUnknown(
+              data['crop_stage_bbch']!, _cropStageBbchMeta));
+    }
     return context;
   }
 
@@ -9558,6 +9571,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
       deletedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
+      cropStageBbch: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}crop_stage_bbch']),
     );
   }
 
@@ -9580,6 +9595,9 @@ class Session extends DataClass implements Insertable<Session> {
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
+
+  /// Optional BBCH growth stage (0–99) at rating session; null if not recorded.
+  final int? cropStageBbch;
   const Session(
       {required this.id,
       required this.trialId,
@@ -9592,7 +9610,8 @@ class Session extends DataClass implements Insertable<Session> {
       required this.status,
       required this.isDeleted,
       this.deletedAt,
-      this.deletedBy});
+      this.deletedBy,
+      this.cropStageBbch});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -9617,6 +9636,9 @@ class Session extends DataClass implements Insertable<Session> {
     }
     if (!nullToAbsent || deletedBy != null) {
       map['deleted_by'] = Variable<String>(deletedBy);
+    }
+    if (!nullToAbsent || cropStageBbch != null) {
+      map['crop_stage_bbch'] = Variable<int>(cropStageBbch);
     }
     return map;
   }
@@ -9645,6 +9667,9 @@ class Session extends DataClass implements Insertable<Session> {
       deletedBy: deletedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedBy),
+      cropStageBbch: cropStageBbch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropStageBbch),
     );
   }
 
@@ -9664,6 +9689,7 @@ class Session extends DataClass implements Insertable<Session> {
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
+      cropStageBbch: serializer.fromJson<int?>(json['cropStageBbch']),
     );
   }
   @override
@@ -9682,6 +9708,7 @@ class Session extends DataClass implements Insertable<Session> {
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
+      'cropStageBbch': serializer.toJson<int?>(cropStageBbch),
     };
   }
 
@@ -9697,7 +9724,8 @@ class Session extends DataClass implements Insertable<Session> {
           String? status,
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
-          Value<String?> deletedBy = const Value.absent()}) =>
+          Value<String?> deletedBy = const Value.absent(),
+          Value<int?> cropStageBbch = const Value.absent()}) =>
       Session(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -9713,6 +9741,8 @@ class Session extends DataClass implements Insertable<Session> {
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
+        cropStageBbch:
+            cropStageBbch.present ? cropStageBbch.value : this.cropStageBbch,
       );
   Session copyWithCompanion(SessionsCompanion data) {
     return Session(
@@ -9732,6 +9762,9 @@ class Session extends DataClass implements Insertable<Session> {
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
+      cropStageBbch: data.cropStageBbch.present
+          ? data.cropStageBbch.value
+          : this.cropStageBbch,
     );
   }
 
@@ -9749,7 +9782,8 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('status: $status, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('cropStageBbch: $cropStageBbch')
           ..write(')'))
         .toString();
   }
@@ -9767,7 +9801,8 @@ class Session extends DataClass implements Insertable<Session> {
       status,
       isDeleted,
       deletedAt,
-      deletedBy);
+      deletedBy,
+      cropStageBbch);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -9783,7 +9818,8 @@ class Session extends DataClass implements Insertable<Session> {
           other.status == this.status &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
-          other.deletedBy == this.deletedBy);
+          other.deletedBy == this.deletedBy &&
+          other.cropStageBbch == this.cropStageBbch);
 }
 
 class SessionsCompanion extends UpdateCompanion<Session> {
@@ -9799,6 +9835,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
+  final Value<int?> cropStageBbch;
   const SessionsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -9812,6 +9849,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.cropStageBbch = const Value.absent(),
   });
   SessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -9826,6 +9864,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
+    this.cropStageBbch = const Value.absent(),
   })  : trialId = Value(trialId),
         name = Value(name),
         sessionDateLocal = Value(sessionDateLocal);
@@ -9842,6 +9881,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
+    Expression<int>? cropStageBbch,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -9856,6 +9896,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
+      if (cropStageBbch != null) 'crop_stage_bbch': cropStageBbch,
     });
   }
 
@@ -9871,7 +9912,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       Value<String>? status,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
-      Value<String?>? deletedBy}) {
+      Value<String?>? deletedBy,
+      Value<int?>? cropStageBbch}) {
     return SessionsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -9885,6 +9927,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      cropStageBbch: cropStageBbch ?? this.cropStageBbch,
     );
   }
 
@@ -9927,6 +9970,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (deletedBy.present) {
       map['deleted_by'] = Variable<String>(deletedBy.value);
     }
+    if (cropStageBbch.present) {
+      map['crop_stage_bbch'] = Variable<int>(cropStageBbch.value);
+    }
     return map;
   }
 
@@ -9944,7 +9990,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('status: $status, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
-          ..write('deletedBy: $deletedBy')
+          ..write('deletedBy: $deletedBy, ')
+          ..write('cropStageBbch: $cropStageBbch')
           ..write(')'))
         .toString();
   }
@@ -31658,6 +31705,7 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<int?> cropStageBbch,
 });
 typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<int> id,
@@ -31672,6 +31720,7 @@ typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
+  Value<int?> cropStageBbch,
 });
 
 class $$SessionsTableTableManager extends RootTableManager<
@@ -31703,6 +31752,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<int?> cropStageBbch = const Value.absent(),
           }) =>
               SessionsCompanion(
             id: id,
@@ -31717,6 +31767,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            cropStageBbch: cropStageBbch,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -31731,6 +31782,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
+            Value<int?> cropStageBbch = const Value.absent(),
           }) =>
               SessionsCompanion.insert(
             id: id,
@@ -31745,6 +31797,7 @@ class $$SessionsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
+            cropStageBbch: cropStageBbch,
           ),
         ));
 }
@@ -31799,6 +31852,11 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get deletedBy => $state.composableBuilder(
       column: $state.table.deletedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get cropStageBbch => $state.composableBuilder(
+      column: $state.table.cropStageBbch,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -32033,6 +32091,11 @@ class $$SessionsTableOrderingComposer
 
   ColumnOrderings<String> get deletedBy => $state.composableBuilder(
       column: $state.table.deletedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get cropStageBbch => $state.composableBuilder(
+      column: $state.table.cropStageBbch,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

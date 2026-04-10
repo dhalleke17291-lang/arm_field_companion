@@ -421,6 +421,9 @@ class MockSessionRepository implements SessionRepository {
   Stream<Session?> watchOpenSession(int trialId) => Stream.value(null);
 
   @override
+  Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {}
+
+  @override
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -428,6 +431,7 @@ class MockSessionRepository implements SessionRepository {
     required List<int> assessmentIds,
     String? raterName,
     int? createdByUserId,
+    int? cropStageBbch,
   }) async =>
       throw UnimplementedError();
 

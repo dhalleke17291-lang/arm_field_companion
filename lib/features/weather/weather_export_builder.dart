@@ -40,6 +40,7 @@ String buildWeatherExportCsv({
     'precipitation',
     'soil_condition',
     'notes',
+    'crop_stage_bbch',
   ];
   final rows = <List<String>>[];
   for (final w in snapshots) {
@@ -66,6 +67,7 @@ String buildWeatherExportCsv({
       w.precipitation ?? '',
       w.soilCondition ?? '',
       w.notes ?? '',
+      session?.cropStageBbch != null ? session!.cropStageBbch.toString() : '',
     ]);
   }
   return CsvExportService.buildCsv(headers, rows);

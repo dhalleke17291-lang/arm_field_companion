@@ -62,6 +62,9 @@ class _FakeSessionRepository implements SessionRepository {
       _sessions.where((s) => s.sessionDateLocal == dateLocal).toList();
 
   @override
+  Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {}
+
+  @override
   Future<Session> createSession({
     required int trialId,
     required String name,
@@ -69,6 +72,7 @@ class _FakeSessionRepository implements SessionRepository {
     required List<int> assessmentIds,
     String? raterName,
     int? createdByUserId,
+    int? cropStageBbch,
   }) async {
     throw UnimplementedError();
   }
@@ -550,6 +554,9 @@ void main() {
         createdByUserId: null,
         status: 'open',
         isDeleted: false,
+        deletedAt: null,
+        deletedBy: null,
+        cropStageBbch: null,
       );
 
       // Three plots in simple order, no grid to keep the test easy to follow.

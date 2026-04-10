@@ -29,6 +29,7 @@ import 'session_summary_screen.dart';
 import 'session_export_trust_dialog.dart';
 import 'session_export_trust_messaging.dart';
 import '../../core/widgets/loading_error_widgets.dart';
+import 'session_timing_helper.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -128,10 +129,81 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     }
   }
 
+  Future<void> _showCropStageBbchEditor(
+      BuildContext context, WidgetRef ref, Session session) async {
+    final controller =
+        TextEditingController(text: session.cropStageBbch?.toString() ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool? saved;
+    try {
+      saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Crop Growth Stage (BBCH)'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'BBCH (0–99)',
+              hintText: 'e.g. 32',
+              border: OutlineInputBorder(),
+            ),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return null;
+              return validateCropStageBbchInput(v);
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final v = controller.text.trim();
+              if (v.isEmpty) {
+                await ref
+                    .read(sessionRepositoryProvider)
+                    .updateSessionCropStageBbch(session.id, null);
+                if (ctx.mounted) Navigator.pop(ctx, true);
+                return;
+              }
+              if (formKey.currentState?.validate() != true) return;
+              final parsed = parseCropStageBbchOrNull(v);
+              await ref.read(sessionRepositoryProvider).updateSessionCropStageBbch(
+                    session.id,
+                    parsed,
+                  );
+              if (ctx.mounted) Navigator.pop(ctx, true);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    } finally {
+      controller.dispose();
+    }
+    if (saved == true && context.mounted) {
+      ref.invalidate(sessionByIdProvider(session.id));
+      ref.invalidate(sessionTimingContextProvider(session.id));
+      ref.invalidate(sessionsForTrialProvider(widget.trial.id));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final trial = widget.trial;
-    final session = widget.session;
+    final sessionSnap = ref.watch(sessionByIdProvider(widget.session.id));
+    final session = sessionSnap.valueOrNull ?? widget.session;
+    final timingForHeader =
+        ref.watch(sessionTimingContextProvider(session.id)).maybeWhen(
+              data: (t) => t.displayLineDatDasOnly,
+              orElse: () => '',
+            );
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
@@ -151,8 +223,18 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       appBar: GradientScreenHeader(
         title: session.name,
         subtitle: session.sessionDateLocal,
+        subtitleLine2:
+            timingForHeader.isEmpty ? null : timingForHeader,
         titleFontSize: 17,
         actions: [
+          IconButton(
+            icon: Icon(
+              session.cropStageBbch != null ? Icons.eco : Icons.eco_outlined,
+              color: AppDesignTokens.onPrimary,
+            ),
+            tooltip: 'Crop Growth Stage (BBCH)',
+            onPressed: () => _showCropStageBbchEditor(context, ref, session),
+          ),
           IconButton(
             icon: Icon(
               weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
@@ -278,6 +360,18 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 }),
             data: (assessments) => Column(
               children: [
+                if (session.cropStageBbch != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ActionChip(
+                        label: Text('BBCH ${session.cropStageBbch}'),
+                        onPressed: () =>
+                            _showCropStageBbchEditor(context, ref, session),
+                      ),
+                    ),
+                  ),
                 _SessionDockBar(
                   selectedIndex: _selectedTabIndex,
                   onSelected: (index) =>
