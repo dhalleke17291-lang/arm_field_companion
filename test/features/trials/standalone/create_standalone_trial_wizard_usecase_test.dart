@@ -279,6 +279,19 @@ void main() {
     final plots = await PlotRepository(db).getPlotsForTrial(trialId);
     expect(plots.length, 8);
     expect(plots.where((p) => p.isGuardRow).length, 4);
+    expect(
+      plots.map((p) => p.plotId).toList(),
+      [
+        'G1-S1', '101', '102', 'G1-E1',
+        'G2-S1', '201', '202', 'G2-E1',
+      ],
+    );
+    for (final p in plots.where((x) => x.isGuardRow)) {
+      expect(RegExp(r'^G\d+-[SE]\d+$').hasMatch(p.plotId), true);
+    }
+    for (final p in plots.where((x) => !x.isGuardRow)) {
+      expect(RegExp(r'^\d+$').hasMatch(p.plotId), true);
+    }
 
     final assigns = await AssignmentRepository(db).getForTrial(trialId);
     expect(assigns.length, 4);

@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/assessment_result_direction.dart';
 import '../../../core/database/app_database.dart';
-import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../assessments/assessment_library.dart';
 import '../../assessments/assessment_library_picker.dart';
@@ -25,35 +25,16 @@ Future<void> showAddCustomAssessmentSheet(
   WidgetRef ref, {
   required Trial trial,
 }) async {
-  await showModalBottomSheet<void>(
+  await showAppDraggableModalSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
     useRootNavigator: true,
-    backgroundColor: AppDesignTokens.cardSurface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    clipBehavior: Clip.antiAlias,
-    showDragHandle: false,
-    builder: (sheetContext) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-      ),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.75,
-        minChildSize: 0.45,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, scrollController) => _AddCustomAssessmentSheetBody(
-          trial: trial,
-          scrollController: scrollController,
-          parentContext: context,
-          onClose: () {
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-          },
-        ),
-      ),
+    sheetBuilder: (sheetContext, scrollController) => _AddCustomAssessmentSheetBody(
+      trial: trial,
+      scrollController: scrollController,
+      parentContext: context,
+      onClose: () {
+        if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+      },
     ),
   );
 }

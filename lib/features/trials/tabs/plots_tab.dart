@@ -789,13 +789,17 @@ Future<void> showAssignTreatmentDialogForTrial({
       ref.read(assignmentsForTrialProvider(trial.id)).value ?? [];
   final a = assignmentsList.where((x) => x.plotId == plot.id).firstOrNull;
   int? selectedId = a?.treatmentId ?? plot.treatmentId;
-  final displayNum = getDisplayPlotLabel(plot, plots);
+  final displayLabel = getDisplayPlotLabel(plot, plots);
 
   await showDialog(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setDialogState) => AlertDialog(
-        title: Text('Assign Treatment — Plot $displayNum'),
+        title: Text(
+          plot.isGuardRow
+              ? 'Assign Treatment — $displayLabel'
+              : 'Assign Treatment — Plot $displayLabel',
+        ),
         content: DropdownButtonFormField<int>(
           initialValue: selectedId,
           decoration: const InputDecoration(
@@ -1244,7 +1248,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  '$totalPlots plots · ${treatments.length} treatments · $replicateCount reps',
+                  totalPlots == dataPlotCount
+                      ? '$totalPlots plots · ${treatments.length} treatments · $replicateCount reps'
+                      : '$totalPlots layout plot rows · $dataPlotCount data plots · ${treatments.length} treatments · $replicateCount reps',
                   style: TextStyle(
                       fontSize: 11, color: Colors.grey.shade400),
                 ),
@@ -1360,7 +1366,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        '$totalPlots plots · ${treatments.length} treatments · $replicateCount reps',
+                        totalPlots == dataPlotCount
+                            ? '$totalPlots plots · ${treatments.length} treatments · $replicateCount reps'
+                            : '$totalPlots layout plot rows · $dataPlotCount data plots · ${treatments.length} treatments · $replicateCount reps',
                         style: TextStyle(
                             fontSize: 11, color: Colors.grey.shade400),
                       ),
@@ -1829,7 +1837,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildPlotsHeaderForDetails(context, ref, plots, hasSessionData),
+              _buildPlotsHeaderForDetails(
+                  context, ref, plots, displayPlots, hasSessionData),
               const SizedBox(height: 12),
               Divider(
                 height: 1,
@@ -2304,7 +2313,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   }
 
   Widget _buildPlotsHeaderForDetails(BuildContext context, WidgetRef ref,
-      List<Plot> plots, bool hasSessionData) {
+      List<Plot> allTrialPlots, List<Plot> plotsForBulkAssign,
+      bool hasSessionData) {
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
     final structureLocked = !canEditProtocol(widget.trial);
@@ -2313,12 +2323,15 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     final assignmentsList =
         ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
-    final assignedCount = plots
+    final dataPlots =
+        allTrialPlots.where((p) => !p.isGuardRow).toList(growable: false);
+    final guardCount = allTrialPlots.length - dataPlots.length;
+    final assignedCount = dataPlots
         .where((p) =>
             (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) != null)
         .length;
-    final unassignedCount = plots.length - assignedCount;
-    final summaryLine = plots.isEmpty
+    final unassignedCount = dataPlots.length - assignedCount;
+    final summaryLine = allTrialPlots.isEmpty
         ? 'No plots'
         : unassignedCount == 0
             ? 'All $assignedCount assigned'
@@ -2432,7 +2445,11 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '${plots.length} plots',
+          allTrialPlots.isEmpty
+              ? 'No plots'
+              : guardCount > 0
+                  ? '${dataPlots.length} data plots · $guardCount guards'
+                  : '${allTrialPlots.length} plots',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -2462,7 +2479,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                 onPressed: plotAssignmentsLocked
                     ? null
                     : () =>
-                        _showBulkAssignSheet(context, ref, widget.trial, plots),
+                        _showBulkAssignSheet(
+                            context, ref, widget.trial, plotsForBulkAssign),
                 icon: Icon(
                   Icons.grid_view_rounded,
                   size: 18,
@@ -2539,7 +2557,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             assignment?.treatmentId ?? plot.treatmentId;
         final effectiveSource =
             assignment?.assignmentSource ?? plot.assignmentSource;
-        final displayNum = getDisplayPlotLabel(plot, allPlots);
+        final displayLabel = getDisplayPlotLabel(plot, allPlots);
         final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap,
             treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
@@ -2589,14 +2607,20 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                     BorderRadius.circular(AppDesignTokens.radiusXSmall),
               ),
               child: Text(
-                displayNum,
+                displayLabel,
                 style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: plot.isGuardRow ? 11 : 13,
                     color: leadingFg),
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            title: Text('Plot $displayNum',
+            title: Text(
+                plot.isGuardRow
+                    ? getGuardRowListTitle(plot)
+                    : 'Plot $displayLabel',
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
@@ -2637,20 +2661,6 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                         ),
                     ],
                   ),
-                  if (plot.isGuardRow)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Guard',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.15,
-                          color: AppDesignTokens.secondaryText
-                              .withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -4109,7 +4119,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
             assignment?.treatmentId ?? plot.treatmentId;
         final effectiveSource =
             assignment?.assignmentSource ?? plot.assignmentSource;
-        final displayNum = getDisplayPlotLabel(plot, allPlots);
+        final displayLabel = getDisplayPlotLabel(plot, allPlots);
         final treatmentLabel = getTreatmentDisplayLabel(plot, treatmentMap,
             treatmentIdOverride: effectiveTreatmentId);
         final sourceLabel = getAssignmentSourceLabel(
@@ -4136,14 +4146,20 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                displayNum,
+                displayLabel,
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                    fontSize: plot.isGuardRow ? 11 : 13,
                     color: leadingFg),
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            title: Text('Plot $displayNum',
+            title: Text(
+                plot.isGuardRow
+                    ? getGuardRowListTitle(plot)
+                    : 'Plot $displayLabel',
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isGuardUnused
@@ -4178,19 +4194,6 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                               fontStyle: FontStyle.italic)),
                   ],
                 ),
-                if (plot.isGuardRow)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Text(
-                      'Guard',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppDesignTokens.secondaryText
-                            .withValues(alpha: 0.88),
-                      ),
-                    ),
-                  ),
               ],
             ),
             trailing: const Icon(Icons.chevron_right, size: 18),

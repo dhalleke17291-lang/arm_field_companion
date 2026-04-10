@@ -160,6 +160,47 @@ void main() {
     final dataIdx =
         g.treatmentIndexPerPlot.where((i) => i >= 0).toList();
     expect(dataIdx.length, 16);
+    expect(
+      g.plots.map((p) => p.plotId).toList(),
+      [
+        'G1-S1', 'G1-S2', '101', '102', '103', '104', 'G1-E1', 'G1-E2',
+        'G2-S1', 'G2-S2', '201', '202', '203', '204', 'G2-E1', 'G2-E2',
+        'G3-S1', 'G3-S2', '301', '302', '303', '304', 'G3-E1', 'G3-E2',
+        'G4-S1', 'G4-S2', '401', '402', '403', '404', 'G4-E1', 'G4-E2',
+      ],
+    );
+    final dataIds = g.plots.where((p) => !p.isGuardRow).map((p) => p.plotId).toSet();
+    final guardIds = g.plots.where((p) => p.isGuardRow).map((p) => p.plotId).toSet();
+    expect(dataIds.intersection(guardIds), isEmpty);
+  });
+
+  test('guards use G-rep-S/E; data uses rep×100+1..plotsPerRep (no id collision)', () {
+    final g = PlotGenerationEngine.generate(
+      treatmentCount: 2,
+      plotsPerRep: 6,
+      repCount: 2,
+      experimentalDesign: PlotGenerationEngine.designNonRandomized,
+      guardRowsPerRep: 2,
+    );
+    expect(g.plots.length, 20);
+    expect(g.plots.take(2).map((p) => p.plotId).toList(), ['G1-S1', 'G1-S2']);
+    expect(
+      g.plots.skip(2).take(6).map((p) => p.plotId).toList(),
+      ['101', '102', '103', '104', '105', '106'],
+    );
+    expect(g.plots.skip(8).take(2).map((p) => p.plotId).toList(), ['G1-E1', 'G1-E2']);
+    expect(g.plots.skip(10).take(2).map((p) => p.plotId).toList(), ['G2-S1', 'G2-S2']);
+    expect(
+      g.plots.skip(12).take(6).map((p) => p.plotId).toList(),
+      ['201', '202', '203', '204', '205', '206'],
+    );
+    expect(g.plots.skip(18).map((p) => p.plotId).toList(), ['G2-E1', 'G2-E2']);
+    final dataIds = g.plots.where((p) => !p.isGuardRow).map((p) => p.plotId).toSet();
+    final guardIds = g.plots.where((p) => p.isGuardRow).map((p) => p.plotId).toSet();
+    expect(dataIds.intersection(guardIds), isEmpty);
+    for (final p in g.plots.where((x) => x.isGuardRow)) {
+      expect(RegExp(r'^G\d+-[SE]\d+$').hasMatch(p.plotId), true);
+    }
   });
 
   test('Guard plots have no treatment index', () {
@@ -171,6 +212,7 @@ void main() {
       guardRowsPerRep: 1,
     );
     expect(g.plots.length, 4);
+    expect(g.plots.map((p) => p.plotId).toList(), ['G1-S1', '101', '102', 'G1-E1']);
     for (var i = 0; i < g.plots.length; i++) {
       if (g.plots[i].isGuardRow) {
         expect(g.treatmentIndexPerPlot[i], PlotGenerationEngine.noTreatmentIndex);

@@ -1,12 +1,19 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
 
-/// User-facing plot number: rep * 100 + positionInRep (e.g. 101, 102, … 109, 201, …).
+/// User-facing plot number: rep * 100 + positionInRep (e.g. 101, 102, … 106, 201, …).
 /// Plot position and treatment assignment are separate; this is position only.
-/// Use [sameTrialPlots] sorted by rep, then plotSortIndex, then id (repository order).
+///
+/// Uses only **non–guard** plots in the rep for [positionInRep], so experimental
+/// numbers stay stable when guard rows are present in [sameTrialPlots] or when
+/// the UI passes a guard-filtered list. Guard rows use [getGuardDisplayLabel]
+/// instead (see [getDisplayPlotLabel]).
 int? getDisplayPlotNumber(Plot plot, List<Plot> sameTrialPlots) {
   final rep = plot.rep;
   if (rep == null) return null;
-  final inRep = sameTrialPlots.where((p) => p.rep == rep).toList()
+  if (plot.isGuardRow) return null;
+  final inRep = sameTrialPlots
+      .where((p) => p.rep == rep && !p.isGuardRow)
+      .toList()
     ..sort((a, b) {
       final sa = a.plotSortIndex ?? a.id;
       final sb = b.plotSortIndex ?? b.id;
@@ -26,11 +33,27 @@ String getDisplayPlotNumberFallback(Plot plot) {
   return 'P${plot.id}';
 }
 
-/// Display label for guard rows: G{rep}-L → G{rep*100}, G{rep}-R → G{rep*100+10}.
-/// Returns null if [plot] is not a guard row or plotId does not match.
-String? getGuardDisplayLabel(Plot plot) {
+int _nonGuardPlotCountInRep(List<Plot> sameTrialPlots, int rep) {
+  return sameTrialPlots.where((p) => p.rep == rep && !p.isGuardRow).length;
+}
+
+/// Display label for guard rows from stored [plot.plotId] patterns:
+/// - `G{rep}-S{n}` / `G{rep}-E{n}` (wizard layout) → returned as-is by
+///   [getDisplayPlotLabel]; this function returns null for those.
+/// - `G{rep}-L` → **G{rep×100}** (left / rep-flank guard)
+/// - `G{rep}-R` → **G{rep×100 + N + 1}** where **N** is the count of non-guard
+///   plots in that rep in [sameTrialPlots] (same rep membership as
+///   [getDisplayPlotNumber]; not affected by guard visibility when the list
+///   contains every data plot for the trial).
+///
+/// Returns null if [plot] is not a guard row, [plotId] is empty, or pattern unknown.
+String? getGuardDisplayLabel(Plot plot, List<Plot> sameTrialPlots) {
   if (!plot.isGuardRow || plot.plotId.isEmpty) return null;
   final id = plot.plotId;
+  if (RegExp(r'^G\d+-S\d+$').hasMatch(id) ||
+      RegExp(r'^G\d+-E\d+$').hasMatch(id)) {
+    return null;
+  }
   final leftMatch = RegExp(r'^G(\d+)-L$').firstMatch(id);
   if (leftMatch != null) {
     final rep = int.tryParse(leftMatch.group(1) ?? '') ?? 0;
@@ -39,15 +62,37 @@ String? getGuardDisplayLabel(Plot plot) {
   final rightMatch = RegExp(r'^G(\d+)-R$').firstMatch(id);
   if (rightMatch != null) {
     final rep = int.tryParse(rightMatch.group(1) ?? '') ?? 0;
-    return 'G${rep * 100 + 10}';
+    final n = _nonGuardPlotCountInRep(sameTrialPlots, rep);
+    return 'G${rep * 100 + n + 1}';
   }
   return null;
 }
 
-/// Single label for UI: for guard rows G100/G110; else "101" or fallback (plotId / P{id}).
+/// Title Case list / app bar title for guard rows (`G{rep}-S{n}` / `G{rep}-E{n}`,
+/// or legacy `G{rep}-L` / `G{rep}-R`).
+String getGuardRowListTitle(Plot plot) {
+  if (!plot.isGuardRow) return '';
+  final id = plot.plotId;
+  if (RegExp(r'^G\d+-S\d+$').hasMatch(id)) return 'Guard (Start)';
+  if (RegExp(r'^G\d+-E\d+$').hasMatch(id)) return 'Guard (End)';
+  if (RegExp(r'^G\d+-L$').hasMatch(id)) return 'Guard (Start)';
+  if (RegExp(r'^G\d+-R$').hasMatch(id)) return 'Guard (End)';
+  return 'Guard Row';
+}
+
+/// Single label for UI badge/chip: wizard guards show [plot.plotId] (`G1-S1`, …);
+/// rep-flank guards use [getGuardDisplayLabel] (e.g. G100, G107); legacy numeric
+/// guard [plotId]s show `Guard`. Non-guard: experimental number or fallback.
 String getDisplayPlotLabel(Plot plot, List<Plot> sameTrialPlots) {
-  final guardLabel = getGuardDisplayLabel(plot);
-  if (guardLabel != null) return guardLabel;
+  if (plot.isGuardRow) {
+    final id = plot.plotId;
+    if (RegExp(r'^G\d+-S\d+$').hasMatch(id) ||
+        RegExp(r'^G\d+-E\d+$').hasMatch(id)) {
+      return id;
+    }
+    return getGuardDisplayLabel(plot, sameTrialPlots) ??
+        (RegExp(r'^\d+$').hasMatch(id) ? 'Guard' : (id.isNotEmpty ? id : 'Guard'));
+  }
   final n = getDisplayPlotNumber(plot, sameTrialPlots);
   return n != null ? '$n' : getDisplayPlotNumberFallback(plot);
 }

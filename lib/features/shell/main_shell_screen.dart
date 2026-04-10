@@ -86,7 +86,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                           size: 26,
                           color: selected
                               ? AppDesignTokens.primary
-                              : AppDesignTokens.iconSubtle,
+                              : AppDesignTokens.primaryText,
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -94,10 +94,10 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight:
-                                selected ? FontWeight.w700 : FontWeight.w500,
+                                selected ? FontWeight.w700 : FontWeight.w600,
                             color: selected
                                 ? AppDesignTokens.primary
-                                : AppDesignTokens.secondaryText,
+                                : AppDesignTokens.primaryText,
                           ),
                         ),
                       ],

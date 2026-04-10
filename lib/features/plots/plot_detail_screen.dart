@@ -366,7 +366,9 @@ class PlotDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: GradientScreenHeader(
-        title: 'Plot $displayNum',
+        title: plotToShow.isGuardRow
+            ? getGuardRowListTitle(plotToShow)
+            : 'Plot $displayNum',
         subtitle: plotToShow.rep != null ? 'Rep ${plotToShow.rep}' : null,
         titleFontSize: 17,
         actions: [

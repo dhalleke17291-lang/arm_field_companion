@@ -81,21 +81,19 @@ class PlotGenerationEngine {
     var flatDataIdx = 0;
 
     for (var r = 1; r <= repCount; r++) {
-      var localPos = 1;
       for (var g = 0; g < guardRowsPerRep; g++) {
         plots.add(PlotLayoutRow(
-          plotId: '${r * 100 + localPos}',
+          plotId: 'G$r-S${g + 1}',
           rep: r,
           plotSortIndex: sort,
           isGuardRow: true,
         ));
         treatmentIndexPerPlot.add(noTreatmentIndex);
         sort++;
-        localPos++;
       }
       for (var p = 0; p < plotsPerRep; p++) {
         plots.add(PlotLayoutRow(
-          plotId: '${r * 100 + localPos}',
+          plotId: '${r * 100 + p + 1}',
           rep: r,
           plotSortIndex: sort,
           isGuardRow: false,
@@ -103,18 +101,16 @@ class PlotGenerationEngine {
         treatmentIndexPerPlot.add(flatDataPattern[flatDataIdx]);
         flatDataIdx++;
         sort++;
-        localPos++;
       }
       for (var g = 0; g < guardRowsPerRep; g++) {
         plots.add(PlotLayoutRow(
-          plotId: '${r * 100 + localPos}',
+          plotId: 'G$r-E${g + 1}',
           rep: r,
           plotSortIndex: sort,
           isGuardRow: true,
         ));
         treatmentIndexPerPlot.add(noTreatmentIndex);
         sort++;
-        localPos++;
       }
     }
 

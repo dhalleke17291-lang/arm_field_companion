@@ -1352,8 +1352,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       BuildContext context, WidgetRef ref, Trial currentTrial) {
     final effectiveStatus =
         _effectiveTrialStatus(ref, currentTrial) ?? currentTrial.status;
+    // Vertical scroll only; [_hubScrollController] is reserved for the
+    // horizontal module hub ListView (see [_TrialModuleHub]).
     return SingleChildScrollView(
-      controller: _hubScrollController,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1455,8 +1456,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
           _buildTrialStatusBar(context, ref, currentTrial,
               displayStatus: effectiveStatus),
-          TrialCompletionSummaryCard(trialId: currentTrial.id),
-          _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
           const SizedBox(height: AppDesignTokens.spacing8),
           Builder(
             builder: (_) {
@@ -1483,7 +1482,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               );
             },
           ),
-          const SizedBox(height: AppDesignTokens.spacing8),
+          TrialCompletionSummaryCard(trialId: currentTrial.id),
+          _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
+          const SizedBox(height: AppDesignTokens.spacing12),
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
             child: _buildSessionsBar(
@@ -1629,39 +1630,41 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ),
                 _buildTrialStatusBar(context, ref, currentTrial,
                     displayStatus: effectiveStatus),
-                TrialCompletionSummaryCard(trialId: currentTrial.id),
-                _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
-                const SizedBox(height: AppDesignTokens.spacing8),
-                SizedBox(
-                  height: 110,
-                  child: _TrialModuleHub(
-                    scrollController: _hubScrollController,
-                    workspaceConfig: workspaceConfig,
-                    selectedIndex: effectiveSelectedIndex,
-                    onSelected: (index) {
-                      setState(() => _selectedTabIndex = index);
-                    },
-                    onUserScroll: _dismissHubHint,
-                  ),
-                ),
-                const SizedBox(height: AppDesignTokens.spacing8),
-                if (_selectedTabIndex != _sessionsIndex) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: _buildSessionsBar(
-                      context,
-                      ref,
-                      widget.trial.id,
-                      ref.watch(sessionsForTrialProvider(widget.trial.id)),
-                      ref.watch(seedingEventForTrialProvider(widget.trial.id)),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
               ],
             ),
           ),
         ),
+        // Pinned below the capped header scroll so tabs stay reachable when
+        // summary cards fill most of [maxHeaderHeight] (e.g. Seeding tab).
+        const SizedBox(height: AppDesignTokens.spacing8),
+        SizedBox(
+          height: 110,
+          child: _TrialModuleHub(
+            scrollController: _hubScrollController,
+            workspaceConfig: workspaceConfig,
+            selectedIndex: effectiveSelectedIndex,
+            onSelected: (index) {
+              setState(() => _selectedTabIndex = index);
+            },
+            onUserScroll: _dismissHubHint,
+          ),
+        ),
+        TrialCompletionSummaryCard(trialId: currentTrial.id),
+        _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
+        const SizedBox(height: AppDesignTokens.spacing12),
+        if (_selectedTabIndex != _sessionsIndex) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: _buildSessionsBar(
+              context,
+              ref,
+              widget.trial.id,
+              ref.watch(sessionsForTrialProvider(widget.trial.id)),
+              ref.watch(seedingEventForTrialProvider(widget.trial.id)),
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
         Expanded(
           child: IndexedStack(
             index: _selectedTabIndex == _sessionsIndex
@@ -1951,19 +1954,22 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                       primary != null && isSessionOpenForFieldWork(primary);
                   String? progressText;
                   if (primary != null) {
-                    final ratings = ref
-                            .watch(sessionRatingsProvider(primary.id))
-                            .valueOrNull ??
-                        [];
                     final plots =
                         ref.watch(plotsForTrialProvider(trialId)).valueOrNull ??
                             [];
-                    final ratedCount =
-                        ratings.map((r) => r.plotPk).toSet().length;
-                    final totalCount = plots.length;
-                    if (totalCount > 0) {
+                    final layoutCount = plots.length;
+                    final dataPlotCount =
+                        plots.where((p) => !p.isGuardRow).length;
+                    final ratedAsync =
+                        ref.watch(ratedPlotsCountForTrialProvider(trialId));
+                    if (dataPlotCount > 0 && ratedAsync.hasValue) {
+                      final ratedTrial = ratedAsync.value ?? 0;
                       progressText =
-                          '$ratedCount/$totalCount plots with a rating (navigation)';
+                          '$ratedTrial/$dataPlotCount data plots rated';
+                      if (layoutCount != dataPlotCount) {
+                        progressText =
+                            '$progressText\n$layoutCount layout rows including guards';
+                      }
                     }
                   }
                   final dateText = primary != null
@@ -2170,44 +2176,65 @@ class _TrialModuleHub extends StatelessWidget {
         .where((item) => workspaceConfig.visibleTabs.contains(item.$4))
         .toList();
 
-    final listView = ListView.separated(
-      controller: scrollController,
-      scrollDirection: Axis.horizontal,
-      padding:
-          const EdgeInsets.only(left: AppDesignTokens.spacing16, right: 48),
-      physics: const BouncingScrollPhysics(),
-      itemCount: items.length,
-      separatorBuilder: (_, __) =>
-          const SizedBox(width: AppDesignTokens.spacing12),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return _DockTile(
-          icon: item.$2,
-          label: item.$3,
-          selected: selectedIndex == item.$1,
-          onTap: () => onSelected(item.$1),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 380;
+        final padLeft = narrow ? 8.0 : AppDesignTokens.spacing16;
+        final padRight = narrow ? 12.0 : 48.0;
+        final sepW = narrow ? 6.0 : AppDesignTokens.spacing12;
+
+        final listView = ListView.separated(
+          controller: scrollController,
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.hardEdge,
+          padding: EdgeInsets.only(left: padLeft, right: padRight),
+          physics: const BouncingScrollPhysics(),
+          itemCount: items.length,
+          separatorBuilder: (_, __) => SizedBox(width: sepW),
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return _DockTile(
+              icon: item.$2,
+              label: item.$3,
+              compact: narrow,
+              selected: selectedIndex == item.$1,
+              onTap: () => onSelected(item.$1),
+            );
+          },
+        );
+
+        final content = onUserScroll != null
+            ? NotificationListener<ScrollStartNotification>(
+                onNotification: (ScrollStartNotification notification) {
+                  if (notification.dragDetails != null) {
+                    onUserScroll!();
+                  }
+                  return false;
+                },
+                child: listView,
+              )
+            : listView;
+
+        return ClipRect(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppDesignTokens.backgroundSurface,
+              border: Border(
+                bottom: BorderSide(
+                  color: AppDesignTokens.borderCrisp.withValues(alpha: 0.45),
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: AppDesignTokens.spacing8,
+                bottom: AppDesignTokens.spacing8,
+              ),
+              child: content,
+            ),
+          ),
         );
       },
-    );
-
-    final content = onUserScroll != null
-        ? NotificationListener<ScrollStartNotification>(
-            onNotification: (ScrollStartNotification notification) {
-              if (notification.dragDetails != null) {
-                onUserScroll!();
-              }
-              return false;
-            },
-            child: listView,
-          )
-        : listView;
-
-    return Container(
-      height: 110,
-      width: double.infinity,
-      padding: const EdgeInsets.only(
-          top: AppDesignTokens.spacing8, bottom: AppDesignTokens.spacing8),
-      child: content,
     );
   }
 }
@@ -2216,54 +2243,68 @@ class _DockTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool selected;
+  final bool compact;
   final VoidCallback onTap;
 
   const _DockTile({
     required this.icon,
     required this.label,
+    this.compact = false,
     required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hPad = compact ? 6.0 : AppDesignTokens.spacing12;
+    final vPad = compact ? 6.0 : AppDesignTokens.spacing8;
+    final iconSize = selected
+        ? (compact ? 22.0 : 26.0)
+        : (compact ? 19.0 : 22.0);
+    final fontSize = selected
+        ? (compact ? 11.5 : 13.0)
+        : (compact ? 11.0 : 12.0);
+
     return AnimatedScale(
-      scale: selected ? 1.12 : 0.96,
+      alignment: Alignment.center,
+      scale: selected ? 1.05 : 1.0,
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppDesignTokens.spacing12,
-              vertical: AppDesignTokens.spacing8),
+          padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
                 color: selected
                     ? AppDesignTokens.primary
-                    : AppDesignTokens.iconSubtle,
-                size: selected ? 26 : 22,
+                    : AppDesignTokens.primaryText,
+                size: iconSize,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: compact ? 2 : 4),
               Text(
                 label,
+                maxLines: 1,
+                softWrap: false,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: selected
                       ? AppDesignTokens.primary
-                      : AppDesignTokens.secondaryText,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: selected ? 13 : 12,
+                      : AppDesignTokens.primaryText,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  fontSize: fontSize,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: compact ? 2 : 4),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 height: 2,
-                width: selected ? 20 : 0,
+                width: selected ? (compact ? 16 : 20) : 0,
                 decoration: BoxDecoration(
                   color: AppDesignTokens.primary,
                   borderRadius: BorderRadius.circular(1),

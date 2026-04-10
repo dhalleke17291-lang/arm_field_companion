@@ -158,7 +158,7 @@ class TrialCompletionSummaryCard extends ConsumerWidget {
         return Card(
           margin: const EdgeInsets.fromLTRB(
             AppDesignTokens.spacing16,
-            0,
+            AppDesignTokens.spacing8,
             AppDesignTokens.spacing16,
             AppDesignTokens.spacing8,
           ),
@@ -200,14 +200,24 @@ class TrialCompletionSummaryCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  ratedAny == null
-                      ? '${(overall * 100).round()}% · $nAssess assessments · $completeAssess of $nAssess complete'
-                      : '${(overall * 100).round()}% · $ratedAny/$totalDataPlots data plots rated · $nAssess assessments · $completeAssess of $nAssess complete',
+                  '${(overall * 100).round()}% plot-assessment coverage',
                   style: const TextStyle(
                     fontSize: 12,
                     height: 1.35,
                     fontWeight: FontWeight.w600,
                     color: AppDesignTokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  ratedAny == null
+                      ? '$nAssess assessments · $completeAssess of $nAssess complete'
+                      : '$ratedAny/$totalDataPlots data plots with any current rating · $nAssess assessments · $completeAssess of $nAssess complete',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                    color: AppDesignTokens.secondaryText,
                   ),
                 ),
               ],

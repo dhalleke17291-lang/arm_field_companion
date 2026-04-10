@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 
 const List<String> _kTreatmentTypes = [
@@ -34,33 +34,14 @@ Future<void> showAddTreatmentSheet(
   WidgetRef ref, {
   required Trial trial,
 }) async {
-  await showModalBottomSheet<void>(
+  await showAppDraggableModalSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: AppDesignTokens.cardSurface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    clipBehavior: Clip.antiAlias,
-    showDragHandle: false,
-    builder: (ctx) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(ctx).viewInsets.bottom,
-      ),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.75,
-        minChildSize: 0.45,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, scrollController) => _AddTreatmentSheetBody(
-          trial: trial,
-          scrollController: scrollController,
-          onDone: () {
-            if (ctx.mounted) Navigator.pop(ctx);
-          },
-        ),
-      ),
+    sheetBuilder: (ctx, scrollController) => _AddTreatmentSheetBody(
+      trial: trial,
+      scrollController: scrollController,
+      onDone: () {
+        if (ctx.mounted) Navigator.pop(ctx);
+      },
     ),
   );
 }

@@ -9,6 +9,7 @@ import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
+import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 
@@ -117,70 +118,32 @@ class SeedingTab extends ConsumerWidget {
 
   void _openSeedingEventSheet(
       BuildContext context, WidgetRef ref, SeedingEvent? existing) {
-    showModalBottomSheet<void>(
+    showAppDraggableModalSheet<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppDesignTokens.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      showDragHandle: false,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-        ),
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          minChildSize: 0.45,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (_, scrollController) => _SeedingEventFormSheet(
-            trial: trial,
-            existing: existing,
-            scrollController: scrollController,
-            onSaved: () {
-              ref.invalidate(seedingEventForTrialProvider(trial.id));
-              if (context.mounted) Navigator.pop(sheetContext);
-            },
-          ),
-        ),
+      sheetBuilder: (sheetContext, scrollController) => _SeedingEventFormSheet(
+        trial: trial,
+        existing: existing,
+        scrollController: scrollController,
+        onSaved: () {
+          ref.invalidate(seedingEventForTrialProvider(trial.id));
+          if (context.mounted) Navigator.pop(sheetContext);
+        },
       ),
     );
   }
 
   void _openEmergenceSheet(
       BuildContext context, WidgetRef ref, SeedingEvent event) {
-    showModalBottomSheet<void>(
+    showAppDraggableModalSheet<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppDesignTokens.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      showDragHandle: false,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-        ),
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          minChildSize: 0.45,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (_, scrollController) => _EmergenceOnlySheet(
-            trial: trial,
-            existing: event,
-            scrollController: scrollController,
-            onSaved: () {
-              ref.invalidate(seedingEventForTrialProvider(trial.id));
-              if (context.mounted) Navigator.pop(sheetContext);
-            },
-          ),
-        ),
+      sheetBuilder: (sheetContext, scrollController) => _EmergenceOnlySheet(
+        trial: trial,
+        existing: event,
+        scrollController: scrollController,
+        onSaved: () {
+          ref.invalidate(seedingEventForTrialProvider(trial.id));
+          if (context.mounted) Navigator.pop(sheetContext);
+        },
       ),
     );
   }

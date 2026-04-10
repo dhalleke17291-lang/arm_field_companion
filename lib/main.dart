@@ -241,7 +241,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
-        dragHandleColor: Color(0xFFE5E2DC),
+        dragHandleColor: AppDesignTokens.dragHandle,
         dragHandleSize: Size(48, 5),
         showDragHandle: true,
       ),

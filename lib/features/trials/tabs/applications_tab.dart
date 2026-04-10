@@ -7,6 +7,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
+import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import 'application_sheet_content.dart';
@@ -462,51 +463,32 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     TrialApplicationEvent? existing,
   ) async {
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
+    await showAppDraggableModalSheet<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppDesignTokens.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      showDragHandle: false,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          minChildSize: 0.45,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (_, scrollController) => ApplicationSheetContent(
-            trial: widget.trial,
-            existing: existing,
-            scrollController: scrollController,
-            rateUnits: _rateUnits,
-            applicationMethods: _applicationMethods,
-            nozzleTypes: _nozzleTypes,
-            pressureUnits: _pressureUnits,
-            speedUnits: _speedUnits,
-            waterVolumeUnits: _waterVolumeUnits,
-            adjuvantRateUnits: _adjuvantRateUnits,
-            treatedAreaUnits: _treatedAreaUnits,
-            soilMoistureOptions: _soilMoistureOptions,
-            onSaved: () {
-              ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
-              if (context.mounted) Navigator.pop(ctx);
-            },
-            onDelete: existing != null
-                ? () async {
-                    final repo = ref.read(applicationRepositoryProvider);
-                    await repo.deleteApplication(existing.id);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  }
-                : null,
-          ),
-        ),
+      sheetBuilder: (ctx, scrollController) => ApplicationSheetContent(
+        trial: widget.trial,
+        existing: existing,
+        scrollController: scrollController,
+        rateUnits: _rateUnits,
+        applicationMethods: _applicationMethods,
+        nozzleTypes: _nozzleTypes,
+        pressureUnits: _pressureUnits,
+        speedUnits: _speedUnits,
+        waterVolumeUnits: _waterVolumeUnits,
+        adjuvantRateUnits: _adjuvantRateUnits,
+        treatedAreaUnits: _treatedAreaUnits,
+        soilMoistureOptions: _soilMoistureOptions,
+        onSaved: () {
+          ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
+          if (context.mounted) Navigator.pop(ctx);
+        },
+        onDelete: existing != null
+            ? () async {
+                final repo = ref.read(applicationRepositoryProvider);
+                await repo.deleteApplication(existing.id);
+                if (ctx.mounted) Navigator.pop(ctx);
+              }
+            : null,
       ),
     );
   }
