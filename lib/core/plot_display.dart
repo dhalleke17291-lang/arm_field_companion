@@ -48,8 +48,9 @@ int _nonGuardPlotCountInRep(List<Plot> sameTrialPlots, int rep) {
 ///
 /// Returns null if [plot] is not a guard row, [plotId] is empty, or pattern unknown.
 String? getGuardDisplayLabel(Plot plot, List<Plot> sameTrialPlots) {
-  if (!plot.isGuardRow || plot.plotId.isEmpty) return null;
-  final id = plot.plotId;
+  if (!plot.isGuardRow) return null;
+  final id = plot.plotId.trim();
+  if (id.isEmpty) return null;
   if (RegExp(r'^G\d+-S\d+$').hasMatch(id) ||
       RegExp(r'^G\d+-E\d+$').hasMatch(id)) {
     return null;
@@ -72,7 +73,7 @@ String? getGuardDisplayLabel(Plot plot, List<Plot> sameTrialPlots) {
 /// or legacy `G{rep}-L` / `G{rep}-R`).
 String getGuardRowListTitle(Plot plot) {
   if (!plot.isGuardRow) return '';
-  final id = plot.plotId;
+  final id = plot.plotId.trim();
   if (RegExp(r'^G\d+-S\d+$').hasMatch(id)) return 'Guard (Start)';
   if (RegExp(r'^G\d+-E\d+$').hasMatch(id)) return 'Guard (End)';
   if (RegExp(r'^G\d+-L$').hasMatch(id)) return 'Guard (Start)';
@@ -85,7 +86,7 @@ String getGuardRowListTitle(Plot plot) {
 /// guard [plotId]s show `Guard`. Non-guard: experimental number or fallback.
 String getDisplayPlotLabel(Plot plot, List<Plot> sameTrialPlots) {
   if (plot.isGuardRow) {
-    final id = plot.plotId;
+    final id = plot.plotId.trim();
     if (RegExp(r'^G\d+-S\d+$').hasMatch(id) ||
         RegExp(r'^G\d+-E\d+$').hasMatch(id)) {
       return id;

@@ -3597,16 +3597,6 @@ class _PlotGridTileState extends State<_PlotGridTile> {
                   maxLines: 1,
                   textAlign: TextAlign.center,
                 ),
-                if (plot.isGuardRow)
-                  Text(
-                    'Guard',
-                    style: TextStyle(
-                      color: subColor,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
                 Text(
                   treatment != null
                       ? treatment.code
