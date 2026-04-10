@@ -122,14 +122,15 @@ class StartOrContinueRatingUseCase {
       }
 
       final plots = await _plotRepository.getPlotsForTrial(trial.id);
-      if (plots.isEmpty) {
+      final dataPlots = plotsForWalkOrder(plots);
+      if (dataPlots.isEmpty) {
         return StartOrContinueRatingResult.failure(
-            'No plots in this trial. Import plots before rating.');
+            'No data plots in this trial. Import plots or disable guard-only layout before rating.');
       }
 
       final mode = input.walkOrderMode ?? WalkOrderMode.serpentine;
       final orderedPlots = sortPlotsByWalkOrder(
-        plots,
+        dataPlots,
         mode,
         customPlotIds: input.customPlotIds,
       );

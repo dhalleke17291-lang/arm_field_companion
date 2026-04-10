@@ -176,6 +176,7 @@ class ExportTrialUseCase {
     'plot_direction',
     'soil_series',
     'plot_notes',
+    'is_guard',
     'export_timestamp',
   ];
 
@@ -728,6 +729,12 @@ class ExportTrialUseCase {
       ['plot_assignments.csv', 'plot_direction', 'Plot direction/orientation', ''],
       ['plot_assignments.csv', 'soil_series', 'Soil series', ''],
       ['plot_assignments.csv', 'plot_notes', 'Plot notes', ''],
+      [
+        'plot_assignments.csv',
+        'is_guard',
+        'True if plot is a guard/border row (not a data plot)',
+        '',
+      ],
       ['plot_assignments.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
       // applications.csv
       ['applications.csv', 'date', 'Date of application event', 'YYYY-MM-DD'],
@@ -1072,6 +1079,7 @@ class ExportTrialUseCase {
         _cell(plot.plotDirection),
         _cell(plot.soilSeries),
         _cell(plot.plotNotes),
+        plot.isGuardRow ? 'true' : 'false',
         exportTimestamp,
       ]);
     }

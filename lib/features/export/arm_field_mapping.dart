@@ -91,6 +91,7 @@ class ArmFieldMapping {
     'plot_direction': 'PLOT_DIRECTION',
     'soil_series': 'SOIL_SERIES',
     'plot_notes': 'PLOT_NOTES',
+    'is_guard': 'IS_GUARD',
     'export_timestamp': 'EXPORT_TIMESTAMP',
   };
 

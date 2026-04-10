@@ -364,11 +364,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final ratedPks =
         ref.watch(ratedPlotPksProvider(widget.session.id)).valueOrNull ??
             <int>{};
-    final totalPlots = widget.allPlots.length;
-    final ratedCount = ratedPks.length;
+    final dataPlotPks =
+        widget.allPlots.where((p) => !p.isGuardRow).map((p) => p.id).toSet();
+    final totalDataPlots = dataPlotPks.length;
+    final ratedCount = ratedPks.where(dataPlotPks.contains).length;
     final contextLine = dasDays != null
-        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots with a rating'
-        : '$ratedCount / $totalPlots plots with a rating';
+        ? 'Day $dasDays after seeding · $ratedCount / $totalDataPlots plots with a rating'
+        : '$ratedCount / $totalDataPlots plots with a rating';
 
     final trialAssessments =
         ref.watch(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
@@ -1107,8 +1109,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final secondaryLine = secondaryParts.join(' · ');
     final tertiaryLine =
         widget.session.name.trim().isNotEmpty ? widget.session.name : 'Session';
+    final walkPlotCount =
+        widget.allPlots.where((p) => !p.isGuardRow).length;
     final progressText =
-        '${widget.currentPlotIndex + 1} of ${widget.allPlots.length}';
+        '${widget.currentPlotIndex + 1} of $walkPlotCount';
     final showFilteredChip = widget.isFilteredMode &&
         widget.filteredPlotIds != null &&
         widget.filteredPlotIds!.isNotEmpty;
@@ -1263,13 +1267,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
-              value: widget.allPlots.isEmpty
+              value: walkPlotCount == 0
                   ? 0
-                  : (widget.currentPlotIndex + 1) / widget.allPlots.length,
+                  : (widget.currentPlotIndex + 1) / walkPlotCount,
               minHeight: 2,
               backgroundColor: AppDesignTokens.borderCrisp,
               valueColor: AlwaysStoppedAnimation<Color>(
-                widget.currentPlotIndex >= widget.allPlots.length - 1
+                widget.currentPlotIndex >= walkPlotCount - 1
                     ? AppDesignTokens.successFg
                     : AppDesignTokens.primary,
               ),

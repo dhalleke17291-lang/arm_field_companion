@@ -122,7 +122,7 @@ class ReportDataAssemblyService {
     }
 
     final plotSummaries = <PlotReportSummary>[];
-    for (final plot in plots) {
+    for (final plot in plots.where((p) => !p.isGuardRow)) {
       final assignment = assignmentByPlot[plot.id];
       final treatmentId = assignment?.treatmentId ?? plot.treatmentId;
       final treatment = treatmentId != null ? treatmentMap[treatmentId] : null;

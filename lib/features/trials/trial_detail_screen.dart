@@ -478,10 +478,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final correctionsAsync =
         ref.watch(sessionIdsWithCorrectionsForTrialProvider(trial.id));
 
-    final totalPlots = plotsAsync.valueOrNull?.length;
+    final plots = plotsAsync.valueOrNull;
+    final dataPlotCount =
+        plots?.where((p) => !p.isGuardRow).length;
     final rated = ratedAsync.valueOrNull;
-    final int? unrated = totalPlots != null && rated != null && totalPlots > 0
-        ? (totalPlots - rated).clamp(0, totalPlots)
+    final int? unrated = dataPlotCount != null &&
+            rated != null &&
+            dataPlotCount > 0
+        ? (dataPlotCount - rated).clamp(0, dataPlotCount)
         : null;
 
     final corrections = correctionsAsync.valueOrNull?.length ?? 0;

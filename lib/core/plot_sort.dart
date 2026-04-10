@@ -1,5 +1,9 @@
 import 'database/app_database.dart';
 
+/// Data plots only — guard rows ([Plot.isGuardRow]) are excluded from walk / rating order.
+List<Plot> plotsForWalkOrder(List<Plot> plots) =>
+    plots.where((p) => !p.isGuardRow).toList();
+
 /// Walk order mode for session plot navigation (numbering is unchanged; only navigation order).
 enum WalkOrderMode {
   /// 101 → 102 → 103 → 201 → 202... (rep asc, then plot order within rep).
@@ -14,8 +18,9 @@ enum WalkOrderMode {
 
 /// Sorts plots in numeric order: rep ascending, then plot order within rep (plotSortIndex / numeric plotId).
 /// Does not change plot IDs or labels; only the sequence used for navigation.
+/// Excludes [Plot.isGuardRow] plots (layout-only; not part of the rating walk).
 List<Plot> sortPlotsNumeric(List<Plot> plots) {
-  final sorted = [...plots];
+  final sorted = [...plotsForWalkOrder(plots)];
   sorted.sort((a, b) {
     final repCmp = (a.rep ?? 999).compareTo(b.rep ?? 999);
     if (repCmp != 0) return repCmp;
@@ -26,25 +31,28 @@ List<Plot> sortPlotsNumeric(List<Plot> plots) {
 
 /// Returns plots in the requested walk order.
 /// For [WalkOrderMode.custom], pass [customPlotIds] (ordered plot PKs); if null or empty, falls back to serpentine.
+/// Excludes guard rows — see [plotsForWalkOrder].
 List<Plot> sortPlotsByWalkOrder(
   List<Plot> plots,
   WalkOrderMode mode, {
   List<int>? customPlotIds,
 }) {
+  final dataPlots = plotsForWalkOrder(plots);
   switch (mode) {
     case WalkOrderMode.numeric:
-      return sortPlotsNumeric(plots);
+      return sortPlotsNumeric(dataPlots);
     case WalkOrderMode.serpentine:
-      return sortPlotsSerpentine(plots);
+      return sortPlotsSerpentine(dataPlots);
     case WalkOrderMode.custom:
       if (customPlotIds != null && customPlotIds.isNotEmpty) {
-        return sortPlotsByCustomOrder(plots, customPlotIds);
+        return sortPlotsByCustomOrder(dataPlots, customPlotIds);
       }
-      return sortPlotsSerpentine(plots);
+      return sortPlotsSerpentine(dataPlots);
   }
 }
 
 /// Sorts plots to match [orderedPlotIds] (plot PKs). Plots not in the list are appended at the end in existing order.
+/// Expects [plots] to already exclude guard rows (call via [sortPlotsByWalkOrder]).
 List<Plot> sortPlotsByCustomOrder(List<Plot> plots, List<int> orderedPlotIds) {
   final idToPlot = {for (final p in plots) p.id: p};
   final result = <Plot>[];
@@ -62,7 +70,9 @@ List<Plot> sortPlotsByCustomOrder(List<Plot> plots, List<int> orderedPlotIds) {
 ///
 /// When fieldRow/fieldColumn exist: row 1 forward, row 2 backward, row 3 forward, etc.
 /// When not: group by rep, sort within rep by plotSortIndex/plotId; odd reps forward, even reps backward.
+/// Excludes [Plot.isGuardRow] when [plots] is the full trial list — prefer [plotsForWalkOrder] first.
 List<Plot> sortPlotsSerpentine(List<Plot> plots) {
+  plots = plotsForWalkOrder(plots);
   final hasGrid = plots.any(
     (p) => p.fieldRow != null && p.fieldColumn != null,
   );

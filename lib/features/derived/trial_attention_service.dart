@@ -184,15 +184,17 @@ class TrialAttentionService {
 
     // PLOTS
     final plots = await plotRepository.getPlotsForTrial(trialId);
-    final totalPlotCount = plots.length;
+    final anyPlots = plots.isNotEmpty;
 
-    if (totalPlotCount == 0) {
+    if (!anyPlots) {
       items.add(AttentionItem(
         type: AttentionType.setupIncomplete,
         label: 'No plots set up yet',
         severity: _setupIncompleteNoPlotsSeverity(),
       ));
     } else {
+      final dataPlots = plots.where((p) => !p.isGuardRow).toList();
+      final totalPlotCount = dataPlots.length;
       final assignments =
           await assignmentRepository.getForTrial(trialId);
       final unassigned =

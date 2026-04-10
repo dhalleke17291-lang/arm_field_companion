@@ -129,6 +129,7 @@ class GenerateStandalonePlotLayoutUseCase {
                 plotSortIndex: Value(p.plotSortIndex),
                 rep: Value(p.rep),
                 isGuardRow: Value(p.isGuardRow),
+                excludeFromAnalysis: Value(p.isGuardRow),
               ),
             )
             .toList();

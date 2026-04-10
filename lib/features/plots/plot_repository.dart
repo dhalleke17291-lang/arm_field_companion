@@ -95,6 +95,7 @@ class PlotRepository {
             soilSeries: Value(soilSeries),
             plotNotes: Value(plotNotes),
             isGuardRow: Value(isGuardRow),
+            excludeFromAnalysis: Value(isGuardRow),
           ),
         );
   }
@@ -104,8 +105,12 @@ class PlotRepository {
     final plot = await getPlotByPk(plotPk);
     if (plot == null) return;
     await assertCanEditProtocolForTrialId(_db, plot.trialId);
-    await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
-        .write(PlotsCompanion(isGuardRow: Value(isGuardRow)));
+    await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
+      PlotsCompanion(
+        isGuardRow: Value(isGuardRow),
+        excludeFromAnalysis: Value(isGuardRow),
+      ),
+    );
   }
 
   Future<void> insertPlotsBulk(List<PlotsCompanion> plots) async {

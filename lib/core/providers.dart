@@ -284,8 +284,12 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
         )
         .toList();
 
-    final totalPlots = plots.length;
-    final allReps = plots.map((p) => p.rep).whereType<int>().toSet();
+    final dataPlots = plots.where((p) => !p.isGuardRow).toList();
+    final totalPlots = dataPlots.length;
+    final dataPlotLabels = dataPlots.map((p) => p.plotId).toSet();
+    final filteredRatingRows =
+        ratingRows.where((r) => dataPlotLabels.contains(r.plotId)).toList();
+    final allReps = dataPlots.map((p) => p.rep).whereType<int>().toSet();
 
     final result = <int, AssessmentStatistics>{};
     for (final pair in assessmentPairs) {
@@ -296,7 +300,7 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
       final unit = def.unit ?? '';
       final direction = _normalizeResultDirection(def.resultDirection);
       result[ta.id] = computeAssessmentStatistics(
-        ratingRows,
+        filteredRatingRows,
         name,
         ta.id,
         unit,
@@ -318,6 +322,9 @@ final trialRatingRowsProvider = StreamProvider.autoDispose
   return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) async {
     final exportRepo = ref.read(exportRepositoryProvider);
     final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
+    final plots = await ref.watch(plotsForTrialProvider(trialId).future);
+    final dataPlotLabels =
+        plots.where((p) => !p.isGuardRow).map((p) => p.plotId).toSet();
     return rawRows
         .map(
           (r) => RatingResultRow(
@@ -333,6 +340,7 @@ final trialRatingRowsProvider = StreamProvider.autoDispose
             ),
           ),
         )
+        .where((r) => dataPlotLabels.contains(r.plotId))
         .toList();
   });
 });
@@ -824,6 +832,7 @@ final sessionAssessmentsProvider =
 });
 
 /// Plot PKs with at least one **current** rating in the session (any assessment).
+/// Excludes guard rows ([Plot.isGuardRow]) — same semantics as rating walk order.
 ///
 /// **Navigation / plot-queue progress** only—not [SessionCompletenessReport] /
 /// per-assessment completeness. Use [sessionCompletenessReportProvider] for
@@ -837,7 +846,15 @@ final ratedPlotPksProvider =
             r.isCurrent.equals(true) &
             r.isDeleted.equals(false)))
       .watch()
-      .map((ratings) => ratings.map((r) => r.plotPk).toSet());
+      .asyncMap((ratings) async {
+    if (ratings.isEmpty) return <int>{};
+    final pks = ratings.map((r) => r.plotPk).toSet();
+    final plotRows = await (db.select(db.plots)..where((p) => p.id.isIn(pks)))
+        .get();
+    final guardPks =
+        plotRows.where((p) => p.isGuardRow).map((p) => p.id).toSet();
+    return pks.difference(guardPks);
+  });
 });
 
 class CurrentRatingParams {

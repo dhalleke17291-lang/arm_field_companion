@@ -1027,6 +1027,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                   0,
                   0,
                   0,
+                  0,
                   treatmentCount,
                   treatmentComponentCount,
                   ratedPlotsCount,
@@ -1048,6 +1049,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 context,
                 ref,
                 trial,
+                0,
                 0,
                 0,
                 0,
@@ -1089,6 +1091,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             }
           }
         }
+        final dataPlotCount = plots.where((p) => !p.isGuardRow).length;
         if (widget.embeddedInScroll) {
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -1100,6 +1103,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 ref,
                 trial,
                 plots.length,
+                dataPlotCount,
                 rowCount,
                 columnCount,
                 repNumbers.length,
@@ -1127,6 +1131,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 ref,
                 trial,
                 plots.length,
+                dataPlotCount,
                 rowCount,
                 columnCount,
                 repNumbers.length,
@@ -1175,6 +1180,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     WidgetRef ref,
     Trial trial,
     int totalPlots,
+    int dataPlotCount,
     int rowCount,
     int columnCount,
     int replicateCount,
@@ -1215,7 +1221,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                           fontSize: 12, color: Colors.grey.shade500),
                     ),
                     Text(
-                      '$ratedPlotsCount of $totalPlots',
+                      '$ratedPlotsCount of $dataPlotCount',
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -1227,9 +1233,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
-                    value: totalPlots == 0
+                    value: dataPlotCount == 0
                         ? 0.0
-                        : ratedPlotsCount / totalPlots,
+                        : ratedPlotsCount / dataPlotCount,
                     backgroundColor: const Color(0xFFE8E5E0),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                         Color(0xFF2D5A40)),
@@ -1286,6 +1292,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     WidgetRef ref,
     Trial trial,
     int totalPlots,
+    int dataPlotCount,
     int rowCount,
     int columnCount,
     int replicateCount,
@@ -1330,7 +1337,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                                 fontSize: 12, color: Colors.grey.shade500),
                           ),
                           Text(
-                            '$ratedPlotsCount of $totalPlots',
+                            '$ratedPlotsCount of $dataPlotCount',
                             style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -1342,9 +1349,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
-                          value: totalPlots == 0
+                          value: dataPlotCount == 0
                               ? 0.0
-                              : ratedPlotsCount / totalPlots,
+                              : ratedPlotsCount / dataPlotCount,
                           backgroundColor: const Color(0xFFE8E5E0),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                               Color(0xFF2D5A40)),

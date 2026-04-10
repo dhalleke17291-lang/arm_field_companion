@@ -10,6 +10,7 @@ Plot _plot({
   int? fieldColumn,
   int? rep,
   int? plotSortIndex,
+  bool isGuardRow = false,
 }) =>
     Plot(
       id: id,
@@ -25,7 +26,7 @@ Plot _plot({
       notes: null,
       assignmentSource: null,
       assignmentUpdatedAt: null,
-      isGuardRow: false,
+      isGuardRow: isGuardRow,
       isDeleted: false,
       excludeFromAnalysis: false,
     );
@@ -134,6 +135,36 @@ void main() {
       expect(sorted.first.id, 1);
       expect(sorted[1].id, 2);
       expect(sorted.last.id, 99);
+    });
+  });
+
+  group('guard rows excluded from walk order', () {
+    test('sortPlotsSerpentine drops guard plots', () {
+      final plots = [
+        _plot(id: 1, plotId: '101', rep: 1, plotSortIndex: 1),
+        _plot(id: 2, plotId: 'G1-L', rep: 1, plotSortIndex: 0, isGuardRow: true),
+        _plot(id: 3, plotId: '102', rep: 1, plotSortIndex: 2),
+      ];
+      final sorted = sortPlotsSerpentine(plots);
+      expect(sorted.map((p) => p.id).toList(), [1, 3]);
+      expect(sorted.every((p) => !p.isGuardRow), true);
+    });
+
+    test('sortPlotsByWalkOrder serpentine drops guard plots', () {
+      final plots = [
+        _plot(id: 9, plotId: 'G', rep: 1, plotSortIndex: 0, isGuardRow: true),
+        _plot(id: 1, plotId: '101', rep: 1, plotSortIndex: 1),
+      ];
+      final sorted = sortPlotsByWalkOrder(plots, WalkOrderMode.serpentine);
+      expect(sorted.map((p) => p.id).toList(), [1]);
+    });
+
+    test('plotsForWalkOrder is used by sort entrypoints', () {
+      final plots = [
+        _plot(id: 1, plotId: '101', rep: 1, plotSortIndex: 1),
+        _plot(id: 2, plotId: 'G', isGuardRow: true),
+      ];
+      expect(plotsForWalkOrder(plots).length, 1);
     });
   });
 

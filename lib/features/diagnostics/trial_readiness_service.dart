@@ -96,12 +96,13 @@ class TrialReadinessService {
     }
 
     if (plots.isNotEmpty) {
+      final dataPlots = plots.where((p) => !p.isGuardRow).toList();
       final plotPkToAssignmentTreatment = <int, int?>{};
       for (final a in assignments) {
         plotPkToAssignmentTreatment[a.plotId] = a.treatmentId;
       }
       var plotsWithoutTreatmentCount = 0;
-      for (final p in plots) {
+      for (final p in dataPlots) {
         final effective =
             plotPkToAssignmentTreatment[p.id] ?? p.treatmentId;
         if (effective == null) plotsWithoutTreatmentCount++;
@@ -219,14 +220,16 @@ class TrialReadinessService {
 
     final ratedCount =
         await ref.read(ratedPlotsCountForTrialProvider(trialPk).future);
-    final unratedCount = plots.length - ratedCount;
+    final dataPlotsCount = plots.where((p) => !p.isGuardRow).length;
+    final unratedCount =
+        (dataPlotsCount - ratedCount).clamp(0, dataPlotsCount);
     if (unratedCount > 0) {
       checks.add(TrialReadinessCheck(
         code: 'unrated_plots',
         label: '$unratedCount plots have no ratings',
         severity: TrialCheckSeverity.warning,
       ));
-    } else if (plots.isNotEmpty) {
+    } else if (dataPlotsCount > 0) {
       checks.add(const TrialReadinessCheck(
         code: 'all_rated_ok',
         label: 'All plots rated',

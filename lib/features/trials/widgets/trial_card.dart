@@ -16,8 +16,9 @@ String? _ratedPlotsProgressLine(
   final plots = plotsAsync.valueOrNull;
   final rated = ratedAsync.valueOrNull;
   if (plots == null || rated == null) return null;
-  if (plots.isEmpty) return null;
-  return 'Rated plots $rated/${plots.length}';
+  final dataCount = plots.where((p) => !p.isGuardRow).length;
+  if (dataCount == 0) return null;
+  return 'Rated plots $rated/$dataCount';
 }
 
 /// Readiness checklist line; null when loading/error, no issues, or fully ready (line hidden).

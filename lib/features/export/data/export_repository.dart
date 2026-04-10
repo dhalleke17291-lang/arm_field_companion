@@ -29,7 +29,8 @@ class ExportRepository {
       ..where(rr.sessionId.equals(sessionId) &
           rr.isCurrent.equals(true) &
           rr.isDeleted.equals(false) &
-          p.isDeleted.equals(false))
+          p.isDeleted.equals(false) &
+          p.isGuardRow.equals(false))
       ..orderBy([
         drift.OrderingTerm.asc(p.rep),
         drift.OrderingTerm.asc(p.plotSortIndex),
@@ -153,7 +154,8 @@ class ExportRepository {
       ..where(rr.trialId.equals(trialId) &
           rr.isCurrent.equals(true) &
           rr.isDeleted.equals(false) &
-          p.isDeleted.equals(false))
+          p.isDeleted.equals(false) &
+          p.isGuardRow.equals(false))
       ..orderBy([
         drift.OrderingTerm.asc(p.rep),
         drift.OrderingTerm.asc(p.plotSortIndex),

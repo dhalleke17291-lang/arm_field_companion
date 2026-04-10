@@ -436,15 +436,20 @@ class RatingRepository {
     return ratings.map((r) => r.plotPk).toSet();
   }
 
-  /// Count of distinct plots with at least one current rating for this trial (Trial Summary).
+  /// Count of distinct **data** plots (non–guard row) with at least one current rating.
   Future<int> getRatedPlotCountForTrial(int trialId) async {
-    final ratings = await (_db.select(_db.ratingRecords)
-          ..where((r) =>
-              r.trialId.equals(trialId) &
-              r.isCurrent.equals(true) &
-              r.isDeleted.equals(false)))
-        .get();
-    return ratings.map((r) => r.plotPk).toSet().length;
+    final q = _db.select(_db.ratingRecords).join([
+      innerJoin(_db.plots, _db.plots.id.equalsExp(_db.ratingRecords.plotPk)),
+    ])
+      ..where(
+        _db.ratingRecords.trialId.equals(trialId) &
+            _db.ratingRecords.isCurrent.equals(true) &
+            _db.ratingRecords.isDeleted.equals(false) &
+            _db.plots.isDeleted.equals(false) &
+            _db.plots.isGuardRow.equals(false),
+      );
+    final rows = await q.map((row) => row.readTable(_db.ratingRecords).plotPk).get();
+    return rows.toSet().length;
   }
 
   // --- Correction (immutable; original rating unchanged) ---
