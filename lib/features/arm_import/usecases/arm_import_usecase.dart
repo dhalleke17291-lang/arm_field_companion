@@ -93,13 +93,14 @@ class ArmImportUseCase {
     required String sourceFileName,
   }) async {
     try {
-      if (content.isEmpty) {
+      var working = ArmCsvParser.stripLeadingUtf8Bom(content);
+      if (working.isEmpty) {
         return ArmImportResult.failure('Import file is empty or invalid.');
       }
 
       // Normalize newlines so Windows CRLF / old Mac CR do not leave stray \r in
       // header/cell strings (which breaks role matching and can mis-align rows).
-      final csvTextForParse = content
+      final csvTextForParse = working
           .replaceAll('\r\n', '\n')
           .replaceAll('\r', '\n');
 

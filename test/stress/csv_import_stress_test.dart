@@ -302,7 +302,7 @@ void main() {
       expect(await plotCount(rc.trialId!), 16);
     });
 
-    test('9 UTF-8 BOM: strip before import matches clean header', () async {
+    test('9 UTF-8 BOM: import strips BOM so first header parses', () async {
       final u = DateTime.now().microsecondsSinceEpoch;
       final body = _stressCsv(
         'AVEFA 1-Jul-26 CONTRO %',
@@ -310,10 +310,8 @@ void main() {
       );
       final withBom = '\uFEFF$body';
       expect(withBom.startsWith('\uFEFF'), isTrue);
-      // ArmImportUseCase does not strip BOM; many file pickers do. Normalize like a reader would.
-      final normalized = withBom.replaceFirst(RegExp(r'^\uFEFF'), '');
       final r = await stressArmImportUseCase(db)
-          .execute(normalized, sourceFileName: 'bom_utf8_$u.csv');
+          .execute(withBom, sourceFileName: 'bom_utf8_$u.csv');
       expect(r.success, isTrue);
       final tid = r.trialId!;
       final plots = await (db.select(db.plots)

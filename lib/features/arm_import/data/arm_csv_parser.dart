@@ -27,6 +27,12 @@ String armImportDataRowKeyForColumnIndex(int columnIndex) =>
 
 /// ARM CSV header parsing and classification.
 class ArmCsvParser {
+  /// Excel on Windows often saves UTF-8 CSV with a leading BOM; remove it so the
+  /// first header cell matches identity roles (e.g. `Plot No.` not `\uFEFFPlot No.`).
+  static String stripLeadingUtf8Bom(String content) {
+    return content.startsWith('\uFEFF') ? content.substring(1) : content;
+  }
+
   static const Map<String, String> _identityHeaderRoles = {
     'Plot No.': 'plotNumber',
     'trt': 'treatmentNumber',

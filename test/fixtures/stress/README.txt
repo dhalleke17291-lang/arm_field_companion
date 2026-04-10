@@ -7,4 +7,4 @@ Optional mirrors (for human review / diff tools):
   - minimal_trial.csv — two plots, one assessment
   - count_assessment.csv — CNTLIV integer column
 
-UTF-8 BOM: ArmImportUseCase does not strip BOM; tests normalize like a file reader before import.
+UTF-8 BOM: ArmImportUseCase strips a leading UTF-8 BOM before parsing (Excel-on-Windows exports).
