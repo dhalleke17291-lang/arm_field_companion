@@ -16,8 +16,10 @@ import '../ratings/rating_scale_map.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
+import '../../data/repositories/weather_snapshot_repository.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/session_export_trust_dialog.dart';
+import '../weather/weather_capture_form.dart';
 
 typedef _PlotQueueOpenRating = Future<void> Function(
   Plot plot,
@@ -403,6 +405,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             .watch(plotPksWithCorrectionsForSessionProvider(widget.session.id))
             .valueOrNull ??
         <int>{};
+    final weatherRecorded =
+        ref.watch(weatherSnapshotForSessionProvider(widget.session.id))
+                .valueOrNull !=
+            null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
@@ -412,6 +418,27 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             '${widget.session.name} · Walk order: ${SessionWalkOrderStore.labelForMode(_walkOrderMode)}',
         titleFontSize: 17,
         actions: [
+          IconButton(
+            icon: Icon(
+              weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
+              color: AppDesignTokens.onPrimary,
+            ),
+            tooltip: 'Weather',
+            onPressed: () async {
+              final repo = ref.read(weatherSnapshotRepositoryProvider);
+              final snap = await repo.getWeatherSnapshotForParent(
+                kWeatherParentTypeRatingSession,
+                widget.session.id,
+              );
+              if (!context.mounted) return;
+              await showWeatherCaptureBottomSheet(
+                context,
+                trial: widget.trial,
+                session: widget.session,
+                initialSnapshot: snap,
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.directions_walk),
             tooltip: 'Change walk order',
