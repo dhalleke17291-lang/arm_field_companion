@@ -169,6 +169,8 @@ class TrialAssessmentRepository {
     /// ARM assessment code (e.g. CONTRO, AVEFA); stored in [TrialAssessments.pestCode].
     String? pestCode,
     int? armImportColumnIndex,
+    /// Optional machine tag (e.g. curated library source id); not shown in rating UI.
+    String? instructionOverride,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.into(_db.trialAssessments).insert(
@@ -184,6 +186,7 @@ class TrialAssessmentRepository {
             isActive: Value(isActive),
             pestCode: Value(pestCode),
             armImportColumnIndex: Value(armImportColumnIndex),
+            instructionOverride: Value(instructionOverride),
           ),
         );
   }

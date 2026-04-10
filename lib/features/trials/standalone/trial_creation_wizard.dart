@@ -8,6 +8,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/gradient_screen_header.dart';
+import '../../assessments/assessment_library_picker.dart';
 import '../trial_detail_screen.dart';
 import 'create_standalone_trial_wizard_usecase.dart';
 import 'plot_generation_engine.dart';
@@ -33,6 +34,8 @@ class _AssessmentDraft {
     this.scaleMin,
     this.scaleMax,
     required this.dataType,
+    this.librarySourceId,
+    this.definitionCategory,
   });
 
   final String name;
@@ -40,6 +43,8 @@ class _AssessmentDraft {
   final double? scaleMin;
   final double? scaleMax;
   final String dataType;
+  final String? librarySourceId;
+  final String? definitionCategory;
 }
 
 /// Full-screen flow: new standalone trial with structure in one session.
@@ -283,7 +288,37 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
         scaleMin: min,
         scaleMax: max,
         dataType: dataType,
+        librarySourceId: null,
+        definitionCategory: null,
       ));
+    });
+  }
+
+  Future<void> _openAssessmentLibrary() async {
+    final skip = _assessments
+        .map((a) => a.librarySourceId)
+        .whereType<String>()
+        .toSet();
+    final picks = await AssessmentLibraryPicker.open(
+      context,
+      libraryEntryIdsAlreadyChosen: skip,
+    );
+    if (picks == null || picks.isEmpty) return;
+    if (!mounted) return;
+    setState(() {
+      for (final e in picks) {
+        _assessments.add(
+          _AssessmentDraft(
+            name: e.name,
+            unit: e.unit,
+            scaleMin: e.scaleMin,
+            scaleMax: e.scaleMax,
+            dataType: e.dataType,
+            librarySourceId: e.id,
+            definitionCategory: e.category,
+          ),
+        );
+      }
     });
   }
 
@@ -301,6 +336,8 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
         scaleMin: min,
         scaleMax: max,
         dataType: _customDataType,
+        librarySourceId: null,
+        definitionCategory: null,
       ));
       _customNameController.clear();
     });
@@ -334,6 +371,8 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
             scaleMin: a.scaleMin,
             scaleMax: a.scaleMax,
             dataType: a.dataType,
+            curatedLibraryEntryId: a.librarySourceId,
+            definitionCategory: a.definitionCategory,
           ),
         )
         .toList();
@@ -1076,39 +1115,62 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ActionChip(
-                label: const Text('% control (0–100)'),
-                onPressed: () => _addPresetAssessment(
-                  name: '% control',
-                  unit: '%',
-                  min: 0,
-                  max: 100,
-                  dataType: 'numeric',
+              FilledButton.icon(
+                onPressed: _submitting ? null : _openAssessmentLibrary,
+                icon: const Icon(Icons.library_books_outlined, size: 20),
+                label: const Text('Browse Library'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppDesignTokens.primary,
+                  foregroundColor: AppDesignTokens.onPrimary,
                 ),
               ),
-              ActionChip(
-                label: const Text('% injury (0–100)'),
-                onPressed: () => _addPresetAssessment(
-                  name: '% injury',
-                  unit: '%',
-                  min: 0,
-                  max: 100,
-                  dataType: 'numeric',
+              const SizedBox(height: 12),
+              const Text(
+                'Quick presets',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText,
                 ),
               ),
-              ActionChip(
-                label: const Text('Count (0–999)'),
-                onPressed: () => _addPresetAssessment(
-                  name: 'Count',
-                  unit: 'count',
-                  min: 0,
-                  max: 999,
-                  dataType: 'count',
-                ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    label: const Text('% control (0–100)'),
+                    onPressed: () => _addPresetAssessment(
+                      name: '% control',
+                      unit: '%',
+                      min: 0,
+                      max: 100,
+                      dataType: 'numeric',
+                    ),
+                  ),
+                  ActionChip(
+                    label: const Text('% injury (0–100)'),
+                    onPressed: () => _addPresetAssessment(
+                      name: '% injury',
+                      unit: '%',
+                      min: 0,
+                      max: 100,
+                      dataType: 'numeric',
+                    ),
+                  ),
+                  ActionChip(
+                    label: const Text('Count (0–999)'),
+                    onPressed: () => _addPresetAssessment(
+                      name: 'Count',
+                      unit: 'count',
+                      min: 0,
+                      max: 999,
+                      dataType: 'count',
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

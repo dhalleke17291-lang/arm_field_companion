@@ -8,6 +8,7 @@ import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../plots/plot_repository.dart';
 import '../../../data/repositories/assignment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
+import '../../assessments/assessment_library.dart';
 import '../trial_repository.dart';
 import 'plot_generation_engine.dart';
 
@@ -30,6 +31,8 @@ class StandaloneWizardAssessmentInput {
     this.scaleMin,
     this.scaleMax,
     this.dataType = 'numeric',
+    this.curatedLibraryEntryId,
+    this.definitionCategory,
   });
 
   final String name;
@@ -37,6 +40,10 @@ class StandaloneWizardAssessmentInput {
   final double? scaleMin;
   final double? scaleMax;
   final String dataType;
+  /// When set, [insertCustom] uses a `LIB_*` code and [addToTrial] stores the library breadcrumb.
+  final String? curatedLibraryEntryId;
+  /// Assessment definition category (curated discipline); defaults to `custom` when null.
+  final String? definitionCategory;
 }
 
 class CreateStandaloneTrialWizardInput {
@@ -256,11 +263,20 @@ class CreateStandaloneTrialWizardUseCase {
           final a = input.assessments[i];
           final n = a.name.trim();
           if (n.isEmpty) continue;
-          final code = 'CUSTOM_${trialId}_${i}_${DateTime.now().microsecondsSinceEpoch}';
+          final libId = a.curatedLibraryEntryId?.trim();
+          final fromLibrary = libId != null && libId.isNotEmpty;
+          final code = fromLibrary
+              ? 'LIB_${libId}_${trialId}_${DateTime.now().microsecondsSinceEpoch}_$i'
+              : 'CUSTOM_${trialId}_${i}_${DateTime.now().microsecondsSinceEpoch}';
+          final category = (fromLibrary &&
+                  a.definitionCategory != null &&
+                  a.definitionCategory!.trim().isNotEmpty)
+              ? a.definitionCategory!.trim()
+              : 'custom';
           final defId = await _definitionRepository.insertCustom(
             code: code,
             name: n,
-            category: 'custom',
+            category: category,
             dataType: a.dataType,
             unit: a.unit?.trim().isEmpty ?? true ? null : a.unit!.trim(),
             scaleMin: a.scaleMin,
@@ -279,6 +295,9 @@ class CreateStandaloneTrialWizardUseCase {
             assessmentDefinitionId: defId,
             displayNameOverride: n,
             selectedManually: true,
+            instructionOverride: fromLibrary
+                ? curatedLibraryInstructionTag(libId)
+                : null,
           );
         }
       });

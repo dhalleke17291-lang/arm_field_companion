@@ -31,6 +31,7 @@ import '../features/photos/photo_repository.dart';
 import '../features/trials/usecases/create_trial_usecase.dart';
 import '../features/trials/standalone/create_standalone_trial_wizard_usecase.dart';
 import '../features/trials/standalone/generate_standalone_plot_layout_usecase.dart';
+import '../features/assessments/add_curated_library_assessments_to_trial_usecase.dart';
 import '../features/trials/usecases/update_treatment_usecase.dart';
 import '../features/trials/usecases/delete_treatment_usecase.dart';
 import '../features/ratings/usecases/amend_plot_rating_usecase.dart';
@@ -497,6 +498,14 @@ final createStandaloneTrialWizardUseCaseProvider =
     ref.watch(treatmentRepositoryProvider),
     ref.watch(plotRepositoryProvider),
     ref.watch(assignmentRepositoryProvider),
+    ref.watch(assessmentDefinitionRepositoryProvider),
+    ref.watch(trialAssessmentRepositoryProvider),
+  );
+});
+
+final addCuratedLibraryAssessmentsToTrialUseCaseProvider =
+    Provider<AddCuratedLibraryAssessmentsToTrialUseCase>((ref) {
+  return AddCuratedLibraryAssessmentsToTrialUseCase(
     ref.watch(assessmentDefinitionRepositoryProvider),
     ref.watch(trialAssessmentRepositoryProvider),
   );

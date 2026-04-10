@@ -7,7 +7,9 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
-import '../assessment_library_picker_dialog.dart';
+import '../../assessments/assessment_library.dart';
+import '../../assessments/assessment_library_picker.dart';
+import '../../../core/protocol_edit_blocked_exception.dart';
 
 const List<String> _kAssessmentMethods = [
   'Visual rating',
@@ -165,10 +167,52 @@ class _AddCustomAssessmentSheetBodyState
         ),
         children: [
           TextButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-              AssessmentLibraryPickerDialog.show(
-                  widget.parentContext, widget.trial.id);
+            onPressed: () async {
+              final trialId = widget.trial.id;
+              final container = ProviderScope.containerOf(context);
+              final pairs = await container.read(
+                trialAssessmentsWithDefinitionsForTrialProvider(trialId).future,
+              );
+              final existing = curatedLibraryIdsFromInstructionOverrides(
+                pairs.map((p) => p.$1.instructionOverride),
+              );
+              if (context.mounted) Navigator.of(context).pop();
+              if (!widget.parentContext.mounted) return;
+              final picks = await AssessmentLibraryPicker.open(
+                widget.parentContext,
+                libraryEntryIdsAlreadyChosen: existing,
+              );
+              if (picks == null || picks.isEmpty) return;
+              try {
+                await container
+                    .read(addCuratedLibraryAssessmentsToTrialUseCaseProvider)
+                    .execute(
+                      trialId: trialId,
+                      selections: picks,
+                      skipLibraryEntryIds: existing,
+                    );
+                container.invalidate(
+                  trialAssessmentsWithDefinitionsForTrialProvider(trialId),
+                );
+              } on ProtocolEditBlockedException catch (e) {
+                if (!widget.parentContext.mounted) return;
+                ScaffoldMessenger.of(widget.parentContext).showSnackBar(
+                  SnackBar(
+                    content: Text(e.message),
+                    backgroundColor:
+                        Theme.of(widget.parentContext).colorScheme.error,
+                  ),
+                );
+              } catch (e) {
+                if (!widget.parentContext.mounted) return;
+                ScaffoldMessenger.of(widget.parentContext).showSnackBar(
+                  SnackBar(
+                    content: Text('Save failed: $e'),
+                    backgroundColor:
+                        Theme.of(widget.parentContext).colorScheme.error,
+                  ),
+                );
+              }
             },
             icon: const Icon(Icons.library_books_outlined, size: 20),
             label: const Text('Add from library instead'),

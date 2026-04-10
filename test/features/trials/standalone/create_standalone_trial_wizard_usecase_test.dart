@@ -6,6 +6,7 @@ import 'package:arm_field_companion/data/repositories/assignment_repository.dart
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
+import 'package:arm_field_companion/features/assessments/assessment_library.dart';
 import 'package:arm_field_companion/features/trials/standalone/create_standalone_trial_wizard_usecase.dart';
 import 'package:arm_field_companion/features/trials/standalone/plot_generation_engine.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
@@ -284,5 +285,45 @@ void main() {
     for (final p in plots.where((x) => x.isGuardRow)) {
       expect(assigns.any((a) => a.plotId == p.id), false);
     }
+  });
+
+  test('curated library assessment stores instruction override and LIB code', () async {
+    final uc = buildUseCase();
+    final result = await uc.execute(
+      CreateStandaloneTrialWizardInput(
+        trialName: 'Lib ${DateTime.now().microsecondsSinceEpoch}',
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        treatments: const [
+          StandaloneWizardTreatmentInput(code: 'A'),
+          StandaloneWizardTreatmentInput(code: 'B'),
+        ],
+        repCount: 1,
+        plotsPerRep: 2,
+        assessments: const [
+          StandaloneWizardAssessmentInput(
+            name: '% weed control',
+            unit: '%',
+            scaleMin: 0,
+            scaleMax: 100,
+            dataType: 'numeric',
+            curatedLibraryEntryId: 'herb_weed_control',
+            definitionCategory: 'Herbicide Efficacy',
+          ),
+        ],
+        random: Random(99),
+      ),
+    );
+    expect(result.success, true);
+    final trialId = result.trialId!;
+    final tas = await TrialAssessmentRepository(db).getForTrial(trialId);
+    expect(tas.length, 1);
+    expect(
+      tas.single.instructionOverride,
+      curatedLibraryInstructionTag('herb_weed_control'),
+    );
+    final defs = await AssessmentDefinitionRepository(db).getAll(activeOnly: false);
+    final def = defs.firstWhere((d) => d.id == tas.single.assessmentDefinitionId);
+    expect(def.code.startsWith('LIB_herb_weed_control_${trialId}_'), true);
+    expect(def.category, 'Herbicide Efficacy');
   });
 }
