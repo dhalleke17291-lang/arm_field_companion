@@ -38,6 +38,7 @@ import 'tabs/seeding_tab.dart';
 import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
 import 'tabs/timeline_tab.dart';
+import 'widgets/trial_assessment_completion_widgets.dart';
 import 'trial_setup_screen.dart';
 import '../diagnostics/audit_log_screen.dart';
 import '../diagnostics/edited_items_screen.dart';
@@ -267,9 +268,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           return;
         }
         final useCase = ref.read(exportTrialUseCaseProvider);
+        final readinessReport =
+            await ref.read(trialReadinessProvider(widget.trial.id).future);
         final bundle = await useCase.execute(
           trial: widget.trial,
           format: format,
+          trialReadinessPrecheck: readinessReport,
         );
         if (!mounted) return;
         // Flat CSV path unchanged: write files and share
@@ -337,6 +341,21 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
           );
         }
+      } on ExportBlockedByReadinessException catch (e) {
+        if (mounted) {
+          final scheme = Theme.of(context).colorScheme;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Export blocked — ${e.message}',
+                style: TextStyle(color: scheme.onError),
+              ),
+              backgroundColor: scheme.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
       } catch (e) {
         if (!mounted) return;
         final scheme = Theme.of(context).colorScheme;
@@ -386,9 +405,125 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       _showReadinessSheet(context, ref, trial, report, showExportAnyway: true);
       return;
     }
+    if (_trialExportPrecheckShowsInfos(report, trial) && context.mounted) {
+      final go =
+          await _showTrialExportPrecheckDialog(context, ref, trial, report);
+      if (!context.mounted) return;
+      if (go != true) return;
+    }
     final format = await _showExportSheet(sheetFormats);
     if (!mounted || format == null) return;
     _runExport(format);
+  }
+
+  bool _trialExportPrecheckShowsInfos(TrialReadinessReport report, Trial trial) {
+    final standalone =
+        trial.workspaceType.trim().toLowerCase() == 'standalone';
+    if (!standalone) return false;
+    return report.checks.any((c) =>
+        (c.code == 'no_seeding' || c.code == 'no_applications') &&
+        c.severity == TrialCheckSeverity.info);
+  }
+
+  Future<bool?> _showTrialExportPrecheckDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Trial trial,
+    TrialReadinessReport report,
+  ) async {
+    final completion =
+        await ref.read(trialAssessmentCompletionProvider(trial.id).future);
+    final plots = await ref.read(plotsForTrialProvider(trial.id).future);
+    final rated =
+        await ref.read(ratedPlotsCountForTrialProvider(trial.id).future);
+    final nData = plots.where((p) => !p.isGuardRow).length;
+    if (!context.mounted) return false;
+
+    final lines = <Widget>[
+      Text(
+        '$rated/$nData data plots with any current rating',
+        style: const TextStyle(fontSize: 14, height: 1.35),
+      ),
+    ];
+    for (final e in ([...completion.entries]
+      ..sort((a, b) => a.key.compareTo(b.key)))) {
+      final c = e.value;
+      final ok = c.isComplete;
+      lines.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                ok ? Icons.check_circle_outline : Icons.warning_amber_rounded,
+                size: 18,
+                color: ok
+                    ? AppDesignTokens.successFg
+                    : AppDesignTokens.warningFg,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${c.assessmentName}: ${c.ratedPlotCount}/${c.totalDataPlots} complete',
+                  style: const TextStyle(fontSize: 14, height: 1.35),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    for (final c in report.checks) {
+      if (c.severity != TrialCheckSeverity.info) continue;
+      if (c.code != 'no_seeding' && c.code != 'no_applications') continue;
+      lines.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 18,
+                color: AppDesignTokens.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  c.label,
+                  style: const TextStyle(fontSize: 14, height: 1.35),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ready to export'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: lines,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openReadinessReview(
@@ -490,14 +625,60 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
     final corrections = correctionsAsync.valueOrNull?.length ?? 0;
     final correctionsLoaded = correctionsAsync.hasValue;
-    final hasPlotOrCorrectionLines = (unrated != null && unrated > 0) ||
+    final completionMap =
+        ref.watch(trialAssessmentCompletionProvider(trial.id)).valueOrNull;
+    final showPerAssessment =
+        completionMap != null && completionMap.length > 1;
+    final hasPlotOrCorrectionLines = showPerAssessment ||
+        (!showPerAssessment && unrated != null && unrated > 0) ||
         (correctionsLoaded && corrections > 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (unrated != null && unrated > 0) ...[
+        if (showPerAssessment) ...[
+          const Text(
+            'Per-assessment (data plots)',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          for (final e in ([...completionMap.entries]
+            ..sort((a, b) => a.key.compareTo(b.key))))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    e.value.isComplete
+                        ? Icons.check_circle_outline
+                        : Icons.warning_amber_rounded,
+                    size: 16,
+                    color: e.value.isComplete
+                        ? AppDesignTokens.successFg
+                        : AppDesignTokens.warningFg,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${e.value.assessmentName}: ${e.value.ratedPlotCount}/${e.value.totalDataPlots}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ] else if (unrated != null && unrated > 0) ...[
           Text(
             '$unrated plot${unrated == 1 ? '' : 's'} without any rating in this trial (navigation)',
             style: const TextStyle(
@@ -1274,6 +1455,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
           _buildTrialStatusBar(context, ref, currentTrial,
               displayStatus: effectiveStatus),
+          TrialCompletionSummaryCard(trialId: currentTrial.id),
           _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
           const SizedBox(height: AppDesignTokens.spacing8),
           Builder(
@@ -1447,6 +1629,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ),
                 _buildTrialStatusBar(context, ref, currentTrial,
                     displayStatus: effectiveStatus),
+                TrialCompletionSummaryCard(trialId: currentTrial.id),
                 _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
                 const SizedBox(height: AppDesignTokens.spacing8),
                 SizedBox(

@@ -10,10 +10,14 @@ class TrialExportBundle {
     required this.sessionsCsv,
     required this.dataDictionaryCsv,
     this.warningMessage,
+    this.preflightNotes,
   });
 
   /// Set when import compatibility confidence was low (warn path).
   final String? warningMessage;
+
+  /// Export validation warnings/info (non-blocking) from preflight for flat CSV.
+  final List<String>? preflightNotes;
 
   final String observationsCsv;
   /// ARM-aligned manual-transfer companion; does not replace observations.csv.

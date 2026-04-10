@@ -196,6 +196,11 @@ class MockRatingRepository implements RatingRepository {
   }
 
   @override
+  Future<Map<int, int>> getRatedDataPlotCountsPerLegacyAssessment(
+          int trialId) async =>
+      {};
+
+  @override
   Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) async => null;
 
   @override

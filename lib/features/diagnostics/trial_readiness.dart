@@ -1,6 +1,6 @@
 import '../../../core/diagnostics/diagnostic_finding.dart';
 
-enum TrialCheckSeverity { pass, warning, blocker }
+enum TrialCheckSeverity { pass, info, warning, blocker }
 
 class TrialReadinessCheck {
   const TrialReadinessCheck({
@@ -29,6 +29,8 @@ class TrialReadinessReport {
       checks.where((c) => c.severity == TrialCheckSeverity.warning).length;
   int get passCount =>
       checks.where((c) => c.severity == TrialCheckSeverity.pass).length;
+  int get infoCount =>
+      checks.where((c) => c.severity == TrialCheckSeverity.info).length;
   bool get canExport => blockerCount == 0;
   TrialReadinessStatus get status => blockerCount > 0
       ? TrialReadinessStatus.notReady
@@ -46,6 +48,7 @@ extension TrialReadinessCheckExtension on TrialReadinessCheck {
       severity: switch (severity) {
         TrialCheckSeverity.blocker => DiagnosticSeverity.blocker,
         TrialCheckSeverity.warning => DiagnosticSeverity.warning,
+        TrialCheckSeverity.info => DiagnosticSeverity.info,
         TrialCheckSeverity.pass => DiagnosticSeverity.info,
       },
       message: label,

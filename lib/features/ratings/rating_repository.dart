@@ -452,6 +452,30 @@ class RatingRepository {
     return rows.toSet().length;
   }
 
+  /// Distinct **data** plot PK counts per legacy [RatingRecord.assessmentId]
+  /// (current, non-deleted ratings; guard plots excluded).
+  Future<Map<int, int>> getRatedDataPlotCountsPerLegacyAssessment(
+      int trialId) async {
+    final q = _db.select(_db.ratingRecords).join([
+      innerJoin(_db.plots, _db.plots.id.equalsExp(_db.ratingRecords.plotPk)),
+    ])
+      ..where(
+        _db.ratingRecords.trialId.equals(trialId) &
+            _db.ratingRecords.isCurrent.equals(true) &
+            _db.ratingRecords.isDeleted.equals(false) &
+            _db.plots.isDeleted.equals(false) &
+            _db.plots.isGuardRow.equals(false),
+      );
+    final rows = await q.map((row) => row.readTable(_db.ratingRecords)).get();
+    final byAssessment = <int, Set<int>>{};
+    for (final r in rows) {
+      byAssessment.putIfAbsent(r.assessmentId, () => {}).add(r.plotPk);
+    }
+    return {
+      for (final e in byAssessment.entries) e.key: e.value.length,
+    };
+  }
+
   // --- Correction (immutable; original rating unchanged) ---
 
   Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) {

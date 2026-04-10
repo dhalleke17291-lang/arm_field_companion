@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/diagnostics/diagnostic_finding.dart';
+import '../diagnostics/trial_readiness.dart';
 import '../../core/diagnostics/trial_export_diagnostics.dart'
     show kTrialExportAttemptLabel;
 import '../arm_import/data/arm_import_persistence_repository.dart';
@@ -42,6 +43,15 @@ typedef PublishTrialExportDiagnostics = void Function(
 
 class ExportBlockedByValidationException implements Exception {
   const ExportBlockedByValidationException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+class ExportBlockedByReadinessException implements Exception {
+  const ExportBlockedByReadinessException(this.message);
 
   final String message;
 
@@ -225,7 +235,11 @@ class ExportTrialUseCase {
     'export_timestamp',
   ];
 
-  Future<TrialExportBundle> execute({required Trial trial, required ExportFormat format}) async {
+  Future<TrialExportBundle> execute({
+    required Trial trial,
+    required ExportFormat format,
+    TrialReadinessReport? trialReadinessPrecheck,
+  }) async {
     final trialPk = trial.id;
     final exportDiagnosticsBuffer = <DiagnosticFinding>[];
 
@@ -264,6 +278,13 @@ class ExportTrialUseCase {
       if (finding != null) exportDiagnosticsBuffer.add(finding);
     }
 
+    if (trialReadinessPrecheck != null &&
+        !trialReadinessPrecheck.canExport) {
+      publishExportDiagnostics();
+      throw const ExportBlockedByReadinessException(
+          'Export blocked by trial readiness.');
+    }
+
     final exportTimestamp = DateTime.now().toUtc().toIso8601String();
     final armAligned =
         format == ExportFormat.armHandoff || format == ExportFormat.zipBundle;
@@ -279,6 +300,49 @@ class ExportTrialUseCase {
     final sessions = await _sessionRepository.getSessionsForTrial(trialPk);
     final assignments = await _assignmentRepository.getForTrial(trialPk);
     final assignmentByPlot = {for (final a in assignments) a.plotId: a};
+
+    final records = <RatingRecord>[];
+    for (final session in sessions) {
+      records.addAll(
+          await _ratingRepository.getCurrentRatingsForSession(session.id));
+    }
+    final photos = await _photoRepository.getPhotosForTrial(trialPk);
+    final assessmentDefs = <int, export_validation.AssessmentDefinition>{};
+    for (final session in sessions) {
+      final sessionAssessments =
+          await _sessionRepository.getSessionAssessments(session.id);
+      for (final a in sessionAssessments) {
+        assessmentDefs[a.id] =
+            export_validation.AssessmentDefinition(id: a.id, name: a.name);
+      }
+    }
+    final validation = export_validation.ExportValidationService().validate(
+      plots: plots,
+      assignments: assignments,
+      assessments: assessmentDefs.values.toList(),
+      records: records,
+      sessions: sessions,
+      photos: photos,
+    );
+    for (final issue in validation.issues) {
+      exportDiagnosticsBuffer.add(issue.toDiagnosticFinding(trialPk));
+    }
+    if (validation.issues
+        .any((i) => i.severity == export_validation.IssueSeverity.error)) {
+      publishExportDiagnostics();
+      throw ExportBlockedByValidationException(
+        validation.issues
+            .where((i) => i.severity == export_validation.IssueSeverity.error)
+            .map((i) => i.message)
+            .join('\n'),
+      );
+    }
+    final preflightNotes = validation.issues
+        .where((i) =>
+            i.severity == export_validation.IssueSeverity.warning ||
+            i.severity == export_validation.IssueSeverity.info)
+        .map((i) => i.message)
+        .toList();
 
     // DAS uses completed seeding only — matches plot_queue and
     // rating_screen which both gate on status == 'completed'.
@@ -367,6 +431,7 @@ class ExportTrialUseCase {
       sessionsCsv: sessionsCsv,
       dataDictionaryCsv: dataDictionaryCsv,
       warningMessage: confidenceWarningMessage,
+      preflightNotes: preflightNotes.isEmpty ? null : preflightNotes,
     );
 
     if (armAligned) {
@@ -379,43 +444,6 @@ class ExportTrialUseCase {
         }
         return true;
       }).toList();
-      final photos = await _photoRepository.getPhotosForTrial(trialPk);
-      final assessmentMap = <int, export_validation.AssessmentDefinition>{};
-      for (final session in sessions) {
-        final sessionAssessments =
-            await _sessionRepository.getSessionAssessments(session.id);
-        for (final a in sessionAssessments) {
-          assessmentMap[a.id] =
-              export_validation.AssessmentDefinition(id: a.id, name: a.name);
-        }
-      }
-      final records = <RatingRecord>[];
-      for (final session in sessions) {
-        final ratings =
-            await _ratingRepository.getCurrentRatingsForSession(session.id);
-        records.addAll(ratings);
-      }
-      final validation = export_validation.ExportValidationService().validate(
-        plots: plots,
-        assignments: assignments,
-        assessments: assessmentMap.values.toList(),
-        records: records,
-        sessions: sessions,
-        photos: photos,
-      );
-      for (final issue in validation.issues) {
-        exportDiagnosticsBuffer.add(issue.toDiagnosticFinding(trialPk));
-      }
-      if (validation.issues
-          .any((i) => i.severity == export_validation.IssueSeverity.error)) {
-        publishExportDiagnostics();
-        throw ExportBlockedByValidationException(
-          validation.issues
-              .where((i) => i.severity == export_validation.IssueSeverity.error)
-              .map((i) => i.message)
-              .join('\n'),
-        );
-      }
       final zipFile = await _buildArmHandoffPackage(
         bundle,
         trial,

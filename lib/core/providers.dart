@@ -74,6 +74,7 @@ import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
+import '../features/diagnostics/assessment_completion.dart';
 import '../features/diagnostics/trial_readiness.dart';
 import '../features/diagnostics/trial_readiness_service.dart';
 import 'diagnostics/diagnostic_finding.dart';
@@ -220,6 +221,52 @@ final trialAssessmentsWithDefinitionsForTrialProvider =
   return ref
       .watch(trialAssessmentRepositoryProvider)
       .watchForTrialWithDefinitions(trialId);
+});
+
+/// Per–trial-assessment progress: distinct data plots with a **current** rating
+/// for that legacy assessment id. Keys are [TrialAssessment.id] or negative
+/// legacy [Assessment.id] for unlinked rows. See [AssessmentCompletion].
+final trialAssessmentCompletionProvider = StreamProvider.autoDispose
+    .family<Map<int, AssessmentCompletion>, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) async {
+    final ratingRepo = ref.read(ratingRepositoryProvider);
+    final plots = await ref.read(plotsForTrialProvider(trialId).future);
+    final totalDataPlots = plots.where((p) => !p.isGuardRow).length;
+    final counts =
+        await ratingRepo.getRatedDataPlotCountsPerLegacyAssessment(trialId);
+    final pairs = await ref
+        .read(trialAssessmentsWithDefinitionsForTrialProvider(trialId).future);
+    final legacy = await ref.read(assessmentsForTrialProvider(trialId).future);
+    final taRepo = ref.read(trialAssessmentRepositoryProvider);
+    final out = <int, AssessmentCompletion>{};
+    final linkedLegacy = <int>{};
+    for (final (ta, def) in pairs) {
+      final lid = await taRepo.resolveLegacyAssessmentId(ta);
+      if (lid != null) linkedLegacy.add(lid);
+      final rated = lid != null ? (counts[lid] ?? 0) : 0;
+      final name = ta.displayNameOverride?.trim().isNotEmpty == true
+          ? ta.displayNameOverride!.trim()
+          : def.name;
+      out[ta.id] = AssessmentCompletion(
+        trialAssessmentId: ta.id,
+        assessmentName: name,
+        ratedPlotCount: rated,
+        totalDataPlots: totalDataPlots,
+      );
+    }
+    for (final a in legacy) {
+      if (linkedLegacy.contains(a.id)) continue;
+      final rated = counts[a.id] ?? 0;
+      out[-a.id] = AssessmentCompletion(
+        trialAssessmentId: -a.id,
+        assessmentName: a.name,
+        ratedPlotCount: rated,
+        totalDataPlots: totalDataPlots,
+      );
+    }
+    return out;
+  });
 });
 
 String _normalizeResultDirection(String? value) {
@@ -1289,17 +1336,13 @@ final treatmentComponentsCountForTrialProvider =
   });
 });
 
-/// Count of distinct plots with at least one current rating for this trial (Trial Summary).
+/// Distinct **data** plots (non–guard) with at least one current rating — matches
+/// [RatingRepository.getRatedPlotCountForTrial].
 final ratedPlotsCountForTrialProvider =
     StreamProvider.autoDispose.family<int, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
-  return (db.select(db.ratingRecords)
-        ..where((r) =>
-            r.trialId.equals(trialId) &
-            r.isCurrent.equals(true) &
-            r.isDeleted.equals(false)))
-      .watch()
-      .map((rows) => rows.map((r) => r.plotPk).toSet().length);
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) =>
+      ref.read(ratingRepositoryProvider).getRatedPlotCountForTrial(trialId));
 });
 
 final resolvePlotTreatmentProvider = Provider<ResolvePlotTreatment>((ref) {

@@ -274,6 +274,23 @@ class TrialAssessmentRepository {
     return r != null;
   }
 
+  /// Legacy [Assessments.id] for this row: stored [TrialAssessment.legacyAssessmentId],
+  /// else a row named `"$displayName — TA$id"` for this trial (after [getOrCreateLegacyAssessmentIdsForTrialAssessments]).
+  Future<int?> resolveLegacyAssessmentId(TrialAssessment ta) async {
+    if (ta.legacyAssessmentId != null) return ta.legacyAssessmentId;
+    final def = await (_db.select(_db.assessmentDefinitions)
+          ..where((d) => d.id.equals(ta.assessmentDefinitionId)))
+        .getSingleOrNull();
+    if (def == null) return null;
+    final displayName = ta.displayNameOverride ?? def.name;
+    final uniqueName = '$displayName — TA${ta.id}';
+    final existing = await (_db.select(_db.assessments)
+          ..where(
+              (a) => a.trialId.equals(ta.trialId) & a.name.equals(uniqueName)))
+        .getSingleOrNull();
+    return existing?.id;
+  }
+
   /// Resolves trial assessment IDs to legacy Assessment IDs for session creation.
   /// Creates legacy Assessment rows (with unique name "DisplayName — TA{id}") when needed.
   Future<List<int>> getOrCreateLegacyAssessmentIdsForTrialAssessments(

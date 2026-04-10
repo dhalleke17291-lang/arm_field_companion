@@ -29,7 +29,12 @@ class TrialReadinessService {
       return TrialReadinessReport(checks: checks);
     }
 
+    final isStandalone =
+        trial.workspaceType.trim().toLowerCase() == 'standalone';
+
     final plots = await plotRepo.getPlotsForTrial(trialPk);
+    final dataPlots = plots.where((p) => !p.isGuardRow).toList();
+    final dataPlotsCount = dataPlots.length;
     if (plots.isEmpty) {
       checks.add(const TrialReadinessCheck(
         code: 'no_plots',
@@ -96,7 +101,6 @@ class TrialReadinessService {
     }
 
     if (plots.isNotEmpty) {
-      final dataPlots = plots.where((p) => !p.isGuardRow).toList();
       final plotPkToAssignmentTreatment = <int, int?>{};
       for (final a in assignments) {
         plotPkToAssignmentTreatment[a.plotId] = a.treatmentId;
@@ -161,10 +165,11 @@ class TrialReadinessService {
 
     final seeding = await seedingRepo.getSeedingEventForTrial(trialPk);
     if (seeding == null) {
-      checks.add(const TrialReadinessCheck(
+      checks.add(TrialReadinessCheck(
         code: 'no_seeding',
         label: 'Seeding event not recorded',
-        severity: TrialCheckSeverity.warning,
+        severity:
+            isStandalone ? TrialCheckSeverity.info : TrialCheckSeverity.warning,
       ));
     } else {
       checks.add(const TrialReadinessCheck(
@@ -176,10 +181,11 @@ class TrialReadinessService {
 
     final applications = await applicationRepo.getApplicationsForTrial(trialPk);
     if (applications.isEmpty) {
-      checks.add(const TrialReadinessCheck(
+      checks.add(TrialReadinessCheck(
         code: 'no_applications',
         label: 'No application events recorded',
-        severity: TrialCheckSeverity.warning,
+        severity:
+            isStandalone ? TrialCheckSeverity.info : TrialCheckSeverity.warning,
       ));
     } else {
       checks.add(const TrialReadinessCheck(
@@ -220,7 +226,6 @@ class TrialReadinessService {
 
     final ratedCount =
         await ref.read(ratedPlotsCountForTrialProvider(trialPk).future);
-    final dataPlotsCount = plots.where((p) => !p.isGuardRow).length;
     final unratedCount =
         (dataPlotsCount - ratedCount).clamp(0, dataPlotsCount);
     if (unratedCount > 0) {
@@ -233,6 +238,66 @@ class TrialReadinessService {
       checks.add(const TrialReadinessCheck(
         code: 'all_rated_ok',
         label: 'All plots rated',
+        severity: TrialCheckSeverity.pass,
+      ));
+    }
+
+    final ratedByAssessment =
+        await ratingRepo.getRatedDataPlotCountsPerLegacyAssessment(trialPk);
+    final pairs = await ref
+        .read(trialAssessmentsWithDefinitionsForTrialProvider(trialPk).future);
+    final linkedLegacyIds = <int>{};
+    for (final (ta, _) in pairs) {
+      final lid = await trialAssessmentRepo.resolveLegacyAssessmentId(ta);
+      if (lid != null) linkedLegacyIds.add(lid);
+    }
+    final assessmentTargets = <({int stableId, String name, int? legacyId})>[];
+    for (final (ta, def) in pairs) {
+      final name = ta.displayNameOverride?.trim().isNotEmpty == true
+          ? ta.displayNameOverride!.trim()
+          : def.name;
+      final lid = await trialAssessmentRepo.resolveLegacyAssessmentId(ta);
+      assessmentTargets.add((stableId: ta.id, name: name, legacyId: lid));
+    }
+    for (final a in legacyAssessments) {
+      if (linkedLegacyIds.contains(a.id)) continue;
+      assessmentTargets
+          .add((stableId: -a.id, name: a.name, legacyId: a.id));
+    }
+
+    for (final t in assessmentTargets) {
+      final lid = t.legacyId;
+      final ratedFor = lid != null ? (ratedByAssessment[lid] ?? 0) : 0;
+      final unratedForAssessment = dataPlotsCount - ratedFor;
+      if (dataPlotsCount > 0) {
+        if (unratedForAssessment > 0) {
+          checks.add(TrialReadinessCheck(
+            code: 'assessment_incomplete_${t.stableId}',
+            label: '${t.name}: $ratedFor/$dataPlotsCount plots rated',
+            detail:
+                '$unratedForAssessment plots still need rating for this assessment.',
+            severity: TrialCheckSeverity.warning,
+          ));
+        } else {
+          checks.add(TrialReadinessCheck(
+            code: 'assessment_complete_${t.stableId}',
+            label: '${t.name}: all plots rated',
+            severity: TrialCheckSeverity.pass,
+          ));
+        }
+      }
+    }
+
+    if (assessmentTargets.isNotEmpty &&
+        dataPlotsCount > 0 &&
+        assessmentTargets.every((t) {
+          final lid = t.legacyId;
+          final ratedFor = lid != null ? (ratedByAssessment[lid] ?? 0) : 0;
+          return ratedFor >= dataPlotsCount;
+        })) {
+      checks.add(const TrialReadinessCheck(
+        code: 'all_assessments_complete',
+        label: 'All assessments complete on all plots',
         severity: TrialCheckSeverity.pass,
       ));
     }

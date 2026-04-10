@@ -16,6 +16,7 @@ enum UnifiedSeverity {
 UnifiedSeverity mapTrialCheckSeverity(TrialCheckSeverity severity) {
   return switch (severity) {
     TrialCheckSeverity.pass => UnifiedSeverity.pass,
+    TrialCheckSeverity.info => UnifiedSeverity.info,
     TrialCheckSeverity.warning => UnifiedSeverity.warning,
     TrialCheckSeverity.blocker => UnifiedSeverity.blocker,
   };

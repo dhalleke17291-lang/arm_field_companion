@@ -428,6 +428,11 @@ class _FakeRatingRepository implements RatingRepository {
   Future<int> getRatedPlotCountForTrial(int trialId) async => 0;
 
   @override
+  Future<Map<int, int>> getRatedDataPlotCountsPerLegacyAssessment(
+          int trialId) async =>
+      {};
+
+  @override
   Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) async {
     throw UnimplementedError();
   }
