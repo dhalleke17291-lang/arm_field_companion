@@ -7157,11 +7157,6 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
   late final GeneratedColumn<int> fieldColumn = GeneratedColumn<int>(
       'field_column', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
-  @override
-  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
-      'notes', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _assignmentSourceMeta =
       const VerificationMeta('assignmentSource');
   @override
@@ -7306,7 +7301,6 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
         column,
         fieldRow,
         fieldColumn,
-        notes,
         assignmentSource,
         assignmentUpdatedAt,
         plotLengthM,
@@ -7386,10 +7380,6 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           _fieldColumnMeta,
           fieldColumn.isAcceptableOrUnknown(
               data['field_column']!, _fieldColumnMeta));
-    }
-    if (data.containsKey('notes')) {
-      context.handle(
-          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
     if (data.containsKey('assignment_source')) {
       context.handle(
@@ -7532,8 +7522,6 @@ class $PlotsTable extends Plots with TableInfo<$PlotsTable, Plot> {
           .read(DriftSqlType.int, data['${effectivePrefix}field_row']),
       fieldColumn: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}field_column']),
-      notes: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       assignmentSource: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}assignment_source']),
       assignmentUpdatedAt: attachedDatabase.typeMapping.read(
@@ -7595,7 +7583,6 @@ class Plot extends DataClass implements Insertable<Plot> {
   final String? column;
   final int? fieldRow;
   final int? fieldColumn;
-  final String? notes;
 
   /// Assignment provenance: 'imported' | 'manual' | null (unknown).
   final String? assignmentSource;
@@ -7636,7 +7623,6 @@ class Plot extends DataClass implements Insertable<Plot> {
       this.column,
       this.fieldRow,
       this.fieldColumn,
-      this.notes,
       this.assignmentSource,
       this.assignmentUpdatedAt,
       this.plotLengthM,
@@ -7683,9 +7669,6 @@ class Plot extends DataClass implements Insertable<Plot> {
     }
     if (!nullToAbsent || fieldColumn != null) {
       map['field_column'] = Variable<int>(fieldColumn);
-    }
-    if (!nullToAbsent || notes != null) {
-      map['notes'] = Variable<String>(notes);
     }
     if (!nullToAbsent || assignmentSource != null) {
       map['assignment_source'] = Variable<String>(assignmentSource);
@@ -7765,8 +7748,6 @@ class Plot extends DataClass implements Insertable<Plot> {
       fieldColumn: fieldColumn == null && nullToAbsent
           ? const Value.absent()
           : Value(fieldColumn),
-      notes:
-          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       assignmentSource: assignmentSource == null && nullToAbsent
           ? const Value.absent()
           : Value(assignmentSource),
@@ -7838,7 +7819,6 @@ class Plot extends DataClass implements Insertable<Plot> {
       column: serializer.fromJson<String?>(json['column']),
       fieldRow: serializer.fromJson<int?>(json['fieldRow']),
       fieldColumn: serializer.fromJson<int?>(json['fieldColumn']),
-      notes: serializer.fromJson<String?>(json['notes']),
       assignmentSource: serializer.fromJson<String?>(json['assignmentSource']),
       assignmentUpdatedAt:
           serializer.fromJson<DateTime?>(json['assignmentUpdatedAt']),
@@ -7878,7 +7858,6 @@ class Plot extends DataClass implements Insertable<Plot> {
       'column': serializer.toJson<String?>(column),
       'fieldRow': serializer.toJson<int?>(fieldRow),
       'fieldColumn': serializer.toJson<int?>(fieldColumn),
-      'notes': serializer.toJson<String?>(notes),
       'assignmentSource': serializer.toJson<String?>(assignmentSource),
       'assignmentUpdatedAt': serializer.toJson<DateTime?>(assignmentUpdatedAt),
       'plotLengthM': serializer.toJson<double?>(plotLengthM),
@@ -7913,7 +7892,6 @@ class Plot extends DataClass implements Insertable<Plot> {
           Value<String?> column = const Value.absent(),
           Value<int?> fieldRow = const Value.absent(),
           Value<int?> fieldColumn = const Value.absent(),
-          Value<String?> notes = const Value.absent(),
           Value<String?> assignmentSource = const Value.absent(),
           Value<DateTime?> assignmentUpdatedAt = const Value.absent(),
           Value<double?> plotLengthM = const Value.absent(),
@@ -7946,7 +7924,6 @@ class Plot extends DataClass implements Insertable<Plot> {
         column: column.present ? column.value : this.column,
         fieldRow: fieldRow.present ? fieldRow.value : this.fieldRow,
         fieldColumn: fieldColumn.present ? fieldColumn.value : this.fieldColumn,
-        notes: notes.present ? notes.value : this.notes,
         assignmentSource: assignmentSource.present
             ? assignmentSource.value
             : this.assignmentSource,
@@ -7997,7 +7974,6 @@ class Plot extends DataClass implements Insertable<Plot> {
       fieldRow: data.fieldRow.present ? data.fieldRow.value : this.fieldRow,
       fieldColumn:
           data.fieldColumn.present ? data.fieldColumn.value : this.fieldColumn,
-      notes: data.notes.present ? data.notes.value : this.notes,
       assignmentSource: data.assignmentSource.present
           ? data.assignmentSource.value
           : this.assignmentSource,
@@ -8060,7 +8036,6 @@ class Plot extends DataClass implements Insertable<Plot> {
           ..write('column: $column, ')
           ..write('fieldRow: $fieldRow, ')
           ..write('fieldColumn: $fieldColumn, ')
-          ..write('notes: $notes, ')
           ..write('assignmentSource: $assignmentSource, ')
           ..write('assignmentUpdatedAt: $assignmentUpdatedAt, ')
           ..write('plotLengthM: $plotLengthM, ')
@@ -8097,7 +8072,6 @@ class Plot extends DataClass implements Insertable<Plot> {
         column,
         fieldRow,
         fieldColumn,
-        notes,
         assignmentSource,
         assignmentUpdatedAt,
         plotLengthM,
@@ -8133,7 +8107,6 @@ class Plot extends DataClass implements Insertable<Plot> {
           other.column == this.column &&
           other.fieldRow == this.fieldRow &&
           other.fieldColumn == this.fieldColumn &&
-          other.notes == this.notes &&
           other.assignmentSource == this.assignmentSource &&
           other.assignmentUpdatedAt == this.assignmentUpdatedAt &&
           other.plotLengthM == this.plotLengthM &&
@@ -8167,7 +8140,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
   final Value<String?> column;
   final Value<int?> fieldRow;
   final Value<int?> fieldColumn;
-  final Value<String?> notes;
   final Value<String?> assignmentSource;
   final Value<DateTime?> assignmentUpdatedAt;
   final Value<double?> plotLengthM;
@@ -8199,7 +8171,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.column = const Value.absent(),
     this.fieldRow = const Value.absent(),
     this.fieldColumn = const Value.absent(),
-    this.notes = const Value.absent(),
     this.assignmentSource = const Value.absent(),
     this.assignmentUpdatedAt = const Value.absent(),
     this.plotLengthM = const Value.absent(),
@@ -8232,7 +8203,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     this.column = const Value.absent(),
     this.fieldRow = const Value.absent(),
     this.fieldColumn = const Value.absent(),
-    this.notes = const Value.absent(),
     this.assignmentSource = const Value.absent(),
     this.assignmentUpdatedAt = const Value.absent(),
     this.plotLengthM = const Value.absent(),
@@ -8266,7 +8236,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     Expression<String>? column,
     Expression<int>? fieldRow,
     Expression<int>? fieldColumn,
-    Expression<String>? notes,
     Expression<String>? assignmentSource,
     Expression<DateTime>? assignmentUpdatedAt,
     Expression<double>? plotLengthM,
@@ -8299,7 +8268,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       if (column != null) 'column': column,
       if (fieldRow != null) 'field_row': fieldRow,
       if (fieldColumn != null) 'field_column': fieldColumn,
-      if (notes != null) 'notes': notes,
       if (assignmentSource != null) 'assignment_source': assignmentSource,
       if (assignmentUpdatedAt != null)
         'assignment_updated_at': assignmentUpdatedAt,
@@ -8337,7 +8305,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       Value<String?>? column,
       Value<int?>? fieldRow,
       Value<int?>? fieldColumn,
-      Value<String?>? notes,
       Value<String?>? assignmentSource,
       Value<DateTime?>? assignmentUpdatedAt,
       Value<double?>? plotLengthM,
@@ -8369,7 +8336,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
       column: column ?? this.column,
       fieldRow: fieldRow ?? this.fieldRow,
       fieldColumn: fieldColumn ?? this.fieldColumn,
-      notes: notes ?? this.notes,
       assignmentSource: assignmentSource ?? this.assignmentSource,
       assignmentUpdatedAt: assignmentUpdatedAt ?? this.assignmentUpdatedAt,
       plotLengthM: plotLengthM ?? this.plotLengthM,
@@ -8426,9 +8392,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
     }
     if (fieldColumn.present) {
       map['field_column'] = Variable<int>(fieldColumn.value);
-    }
-    if (notes.present) {
-      map['notes'] = Variable<String>(notes.value);
     }
     if (assignmentSource.present) {
       map['assignment_source'] = Variable<String>(assignmentSource.value);
@@ -8508,7 +8471,6 @@ class PlotsCompanion extends UpdateCompanion<Plot> {
           ..write('column: $column, ')
           ..write('fieldRow: $fieldRow, ')
           ..write('fieldColumn: $fieldColumn, ')
-          ..write('notes: $notes, ')
           ..write('assignmentSource: $assignmentSource, ')
           ..write('assignmentUpdatedAt: $assignmentUpdatedAt, ')
           ..write('plotLengthM: $plotLengthM, ')
@@ -12473,18 +12435,18 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   static const VerificationMeta _plotPkMeta = const VerificationMeta('plotPk');
   @override
   late final GeneratedColumn<int> plotPk = GeneratedColumn<int>(
-      'plot_pk', aliasedName, false,
+      'plot_pk', aliasedName, true,
       type: DriftSqlType.int,
-      requiredDuringInsert: true,
+      requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES plots (id)'));
   static const VerificationMeta _sessionIdMeta =
       const VerificationMeta('sessionId');
   @override
   late final GeneratedColumn<int> sessionId = GeneratedColumn<int>(
-      'session_id', aliasedName, false,
+      'session_id', aliasedName, true,
       type: DriftSqlType.int,
-      requiredDuringInsert: true,
+      requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES sessions (id)'));
   static const VerificationMeta _contentMeta =
@@ -12507,9 +12469,55 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   late final GeneratedColumn<String> raterName = GeneratedColumn<String>(
       'rater_name', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, trialId, plotPk, sessionId, content, createdAt, raterName];
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedByMeta =
+      const VerificationMeta('updatedBy');
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+      'updated_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedByMeta =
+      const VerificationMeta('deletedBy');
+  @override
+  late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
+      'deleted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        plotPk,
+        sessionId,
+        content,
+        createdAt,
+        raterName,
+        updatedAt,
+        updatedBy,
+        isDeleted,
+        deletedAt,
+        deletedBy
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -12532,14 +12540,10 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     if (data.containsKey('plot_pk')) {
       context.handle(_plotPkMeta,
           plotPk.isAcceptableOrUnknown(data['plot_pk']!, _plotPkMeta));
-    } else if (isInserting) {
-      context.missing(_plotPkMeta);
     }
     if (data.containsKey('session_id')) {
       context.handle(_sessionIdMeta,
           sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta));
-    } else if (isInserting) {
-      context.missing(_sessionIdMeta);
     }
     if (data.containsKey('content')) {
       context.handle(_contentMeta,
@@ -12555,6 +12559,26 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
       context.handle(_raterNameMeta,
           raterName.isAcceptableOrUnknown(data['rater_name']!, _raterNameMeta));
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(_updatedByMeta,
+          updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta));
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('deleted_by')) {
+      context.handle(_deletedByMeta,
+          deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
+    }
     return context;
   }
 
@@ -12569,15 +12593,25 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
       trialId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
       plotPk: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}plot_pk'])!,
+          .read(DriftSqlType.int, data['${effectivePrefix}plot_pk']),
       sessionId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}session_id'])!,
+          .read(DriftSqlType.int, data['${effectivePrefix}session_id']),
       content: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}content'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       raterName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}rater_name']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+      updatedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}updated_by']),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      deletedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
     );
   }
 
@@ -12590,30 +12624,57 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
 class Note extends DataClass implements Insertable<Note> {
   final int id;
   final int trialId;
-  final int plotPk;
-  final int sessionId;
+  final int? plotPk;
+  final int? sessionId;
   final String content;
   final DateTime createdAt;
   final String? raterName;
+  final DateTime? updatedAt;
+  final String? updatedBy;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final String? deletedBy;
   const Note(
       {required this.id,
       required this.trialId,
-      required this.plotPk,
-      required this.sessionId,
+      this.plotPk,
+      this.sessionId,
       required this.content,
       required this.createdAt,
-      this.raterName});
+      this.raterName,
+      this.updatedAt,
+      this.updatedBy,
+      required this.isDeleted,
+      this.deletedAt,
+      this.deletedBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['trial_id'] = Variable<int>(trialId);
-    map['plot_pk'] = Variable<int>(plotPk);
-    map['session_id'] = Variable<int>(sessionId);
+    if (!nullToAbsent || plotPk != null) {
+      map['plot_pk'] = Variable<int>(plotPk);
+    }
+    if (!nullToAbsent || sessionId != null) {
+      map['session_id'] = Variable<int>(sessionId);
+    }
     map['content'] = Variable<String>(content);
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || raterName != null) {
       map['rater_name'] = Variable<String>(raterName);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || updatedBy != null) {
+      map['updated_by'] = Variable<String>(updatedBy);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || deletedBy != null) {
+      map['deleted_by'] = Variable<String>(deletedBy);
     }
     return map;
   }
@@ -12622,13 +12683,29 @@ class Note extends DataClass implements Insertable<Note> {
     return NotesCompanion(
       id: Value(id),
       trialId: Value(trialId),
-      plotPk: Value(plotPk),
-      sessionId: Value(sessionId),
+      plotPk:
+          plotPk == null && nullToAbsent ? const Value.absent() : Value(plotPk),
+      sessionId: sessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionId),
       content: Value(content),
       createdAt: Value(createdAt),
       raterName: raterName == null && nullToAbsent
           ? const Value.absent()
           : Value(raterName),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      updatedBy: updatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedBy),
+      isDeleted: Value(isDeleted),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      deletedBy: deletedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedBy),
     );
   }
 
@@ -12638,11 +12715,16 @@ class Note extends DataClass implements Insertable<Note> {
     return Note(
       id: serializer.fromJson<int>(json['id']),
       trialId: serializer.fromJson<int>(json['trialId']),
-      plotPk: serializer.fromJson<int>(json['plotPk']),
-      sessionId: serializer.fromJson<int>(json['sessionId']),
+      plotPk: serializer.fromJson<int?>(json['plotPk']),
+      sessionId: serializer.fromJson<int?>(json['sessionId']),
       content: serializer.fromJson<String>(json['content']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       raterName: serializer.fromJson<String?>(json['raterName']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      updatedBy: serializer.fromJson<String?>(json['updatedBy']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      deletedBy: serializer.fromJson<String?>(json['deletedBy']),
     );
   }
   @override
@@ -12651,30 +12733,45 @@ class Note extends DataClass implements Insertable<Note> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'trialId': serializer.toJson<int>(trialId),
-      'plotPk': serializer.toJson<int>(plotPk),
-      'sessionId': serializer.toJson<int>(sessionId),
+      'plotPk': serializer.toJson<int?>(plotPk),
+      'sessionId': serializer.toJson<int?>(sessionId),
       'content': serializer.toJson<String>(content),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'raterName': serializer.toJson<String?>(raterName),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'updatedBy': serializer.toJson<String?>(updatedBy),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'deletedBy': serializer.toJson<String?>(deletedBy),
     };
   }
 
   Note copyWith(
           {int? id,
           int? trialId,
-          int? plotPk,
-          int? sessionId,
+          Value<int?> plotPk = const Value.absent(),
+          Value<int?> sessionId = const Value.absent(),
           String? content,
           DateTime? createdAt,
-          Value<String?> raterName = const Value.absent()}) =>
+          Value<String?> raterName = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent(),
+          Value<String?> updatedBy = const Value.absent(),
+          bool? isDeleted,
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<String?> deletedBy = const Value.absent()}) =>
       Note(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
-        plotPk: plotPk ?? this.plotPk,
-        sessionId: sessionId ?? this.sessionId,
+        plotPk: plotPk.present ? plotPk.value : this.plotPk,
+        sessionId: sessionId.present ? sessionId.value : this.sessionId,
         content: content ?? this.content,
         createdAt: createdAt ?? this.createdAt,
         raterName: raterName.present ? raterName.value : this.raterName,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+        updatedBy: updatedBy.present ? updatedBy.value : this.updatedBy,
+        isDeleted: isDeleted ?? this.isDeleted,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
       );
   Note copyWithCompanion(NotesCompanion data) {
     return Note(
@@ -12685,6 +12782,11 @@ class Note extends DataClass implements Insertable<Note> {
       content: data.content.present ? data.content.value : this.content,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       raterName: data.raterName.present ? data.raterName.value : this.raterName,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
     );
   }
 
@@ -12697,14 +12799,30 @@ class Note extends DataClass implements Insertable<Note> {
           ..write('sessionId: $sessionId, ')
           ..write('content: $content, ')
           ..write('createdAt: $createdAt, ')
-          ..write('raterName: $raterName')
+          ..write('raterName: $raterName, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(
-      id, trialId, plotPk, sessionId, content, createdAt, raterName);
+      id,
+      trialId,
+      plotPk,
+      sessionId,
+      content,
+      createdAt,
+      raterName,
+      updatedAt,
+      updatedBy,
+      isDeleted,
+      deletedAt,
+      deletedBy);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -12715,17 +12833,27 @@ class Note extends DataClass implements Insertable<Note> {
           other.sessionId == this.sessionId &&
           other.content == this.content &&
           other.createdAt == this.createdAt &&
-          other.raterName == this.raterName);
+          other.raterName == this.raterName &&
+          other.updatedAt == this.updatedAt &&
+          other.updatedBy == this.updatedBy &&
+          other.isDeleted == this.isDeleted &&
+          other.deletedAt == this.deletedAt &&
+          other.deletedBy == this.deletedBy);
 }
 
 class NotesCompanion extends UpdateCompanion<Note> {
   final Value<int> id;
   final Value<int> trialId;
-  final Value<int> plotPk;
-  final Value<int> sessionId;
+  final Value<int?> plotPk;
+  final Value<int?> sessionId;
   final Value<String> content;
   final Value<DateTime> createdAt;
   final Value<String?> raterName;
+  final Value<DateTime?> updatedAt;
+  final Value<String?> updatedBy;
+  final Value<bool> isDeleted;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> deletedBy;
   const NotesCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -12734,18 +12862,26 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.content = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.raterName = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   });
   NotesCompanion.insert({
     this.id = const Value.absent(),
     required int trialId,
-    required int plotPk,
-    required int sessionId,
+    this.plotPk = const Value.absent(),
+    this.sessionId = const Value.absent(),
     required String content,
     this.createdAt = const Value.absent(),
     this.raterName = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deletedBy = const Value.absent(),
   })  : trialId = Value(trialId),
-        plotPk = Value(plotPk),
-        sessionId = Value(sessionId),
         content = Value(content);
   static Insertable<Note> custom({
     Expression<int>? id,
@@ -12755,6 +12891,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<String>? content,
     Expression<DateTime>? createdAt,
     Expression<String>? raterName,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? updatedBy,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? deletedBy,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -12764,17 +12905,27 @@ class NotesCompanion extends UpdateCompanion<Note> {
       if (content != null) 'content': content,
       if (createdAt != null) 'created_at': createdAt,
       if (raterName != null) 'rater_name': raterName,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deletedBy != null) 'deleted_by': deletedBy,
     });
   }
 
   NotesCompanion copyWith(
       {Value<int>? id,
       Value<int>? trialId,
-      Value<int>? plotPk,
-      Value<int>? sessionId,
+      Value<int?>? plotPk,
+      Value<int?>? sessionId,
       Value<String>? content,
       Value<DateTime>? createdAt,
-      Value<String?>? raterName}) {
+      Value<String?>? raterName,
+      Value<DateTime?>? updatedAt,
+      Value<String?>? updatedBy,
+      Value<bool>? isDeleted,
+      Value<DateTime?>? deletedAt,
+      Value<String?>? deletedBy}) {
     return NotesCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -12783,6 +12934,11 @@ class NotesCompanion extends UpdateCompanion<Note> {
       content: content ?? this.content,
       createdAt: createdAt ?? this.createdAt,
       raterName: raterName ?? this.raterName,
+      updatedAt: updatedAt ?? this.updatedAt,
+      updatedBy: updatedBy ?? this.updatedBy,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 
@@ -12810,6 +12966,21 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (raterName.present) {
       map['rater_name'] = Variable<String>(raterName.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (deletedBy.present) {
+      map['deleted_by'] = Variable<String>(deletedBy.value);
+    }
     return map;
   }
 
@@ -12822,7 +12993,12 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('sessionId: $sessionId, ')
           ..write('content: $content, ')
           ..write('createdAt: $createdAt, ')
-          ..write('raterName: $raterName')
+          ..write('raterName: $raterName, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deletedBy: $deletedBy')
           ..write(')'))
         .toString();
   }
@@ -30617,7 +30793,6 @@ typedef $$PlotsTableCreateCompanionBuilder = PlotsCompanion Function({
   Value<String?> column,
   Value<int?> fieldRow,
   Value<int?> fieldColumn,
-  Value<String?> notes,
   Value<String?> assignmentSource,
   Value<DateTime?> assignmentUpdatedAt,
   Value<double?> plotLengthM,
@@ -30650,7 +30825,6 @@ typedef $$PlotsTableUpdateCompanionBuilder = PlotsCompanion Function({
   Value<String?> column,
   Value<int?> fieldRow,
   Value<int?> fieldColumn,
-  Value<String?> notes,
   Value<String?> assignmentSource,
   Value<DateTime?> assignmentUpdatedAt,
   Value<double?> plotLengthM,
@@ -30700,7 +30874,6 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<String?> column = const Value.absent(),
             Value<int?> fieldRow = const Value.absent(),
             Value<int?> fieldColumn = const Value.absent(),
-            Value<String?> notes = const Value.absent(),
             Value<String?> assignmentSource = const Value.absent(),
             Value<DateTime?> assignmentUpdatedAt = const Value.absent(),
             Value<double?> plotLengthM = const Value.absent(),
@@ -30733,7 +30906,6 @@ class $$PlotsTableTableManager extends RootTableManager<
             column: column,
             fieldRow: fieldRow,
             fieldColumn: fieldColumn,
-            notes: notes,
             assignmentSource: assignmentSource,
             assignmentUpdatedAt: assignmentUpdatedAt,
             plotLengthM: plotLengthM,
@@ -30766,7 +30938,6 @@ class $$PlotsTableTableManager extends RootTableManager<
             Value<String?> column = const Value.absent(),
             Value<int?> fieldRow = const Value.absent(),
             Value<int?> fieldColumn = const Value.absent(),
-            Value<String?> notes = const Value.absent(),
             Value<String?> assignmentSource = const Value.absent(),
             Value<DateTime?> assignmentUpdatedAt = const Value.absent(),
             Value<double?> plotLengthM = const Value.absent(),
@@ -30799,7 +30970,6 @@ class $$PlotsTableTableManager extends RootTableManager<
             column: column,
             fieldRow: fieldRow,
             fieldColumn: fieldColumn,
-            notes: notes,
             assignmentSource: assignmentSource,
             assignmentUpdatedAt: assignmentUpdatedAt,
             plotLengthM: plotLengthM,
@@ -30864,11 +31034,6 @@ class $$PlotsTableFilterComposer
 
   ColumnFilters<int> get fieldColumn => $state.composableBuilder(
       column: $state.table.fieldColumn,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get notes => $state.composableBuilder(
-      column: $state.table.notes,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -31189,11 +31354,6 @@ class $$PlotsTableOrderingComposer
 
   ColumnOrderings<int> get fieldColumn => $state.composableBuilder(
       column: $state.table.fieldColumn,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get notes => $state.composableBuilder(
-      column: $state.table.notes,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -33256,20 +33416,30 @@ class $$RatingCorrectionsTableOrderingComposer
 typedef $$NotesTableCreateCompanionBuilder = NotesCompanion Function({
   Value<int> id,
   required int trialId,
-  required int plotPk,
-  required int sessionId,
+  Value<int?> plotPk,
+  Value<int?> sessionId,
   required String content,
   Value<DateTime> createdAt,
   Value<String?> raterName,
+  Value<DateTime?> updatedAt,
+  Value<String?> updatedBy,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
   Value<int> id,
   Value<int> trialId,
-  Value<int> plotPk,
-  Value<int> sessionId,
+  Value<int?> plotPk,
+  Value<int?> sessionId,
   Value<String> content,
   Value<DateTime> createdAt,
   Value<String?> raterName,
+  Value<DateTime?> updatedAt,
+  Value<String?> updatedBy,
+  Value<bool> isDeleted,
+  Value<DateTime?> deletedAt,
+  Value<String?> deletedBy,
 });
 
 class $$NotesTableTableManager extends RootTableManager<
@@ -33291,11 +33461,16 @@ class $$NotesTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<int> trialId = const Value.absent(),
-            Value<int> plotPk = const Value.absent(),
-            Value<int> sessionId = const Value.absent(),
+            Value<int?> plotPk = const Value.absent(),
+            Value<int?> sessionId = const Value.absent(),
             Value<String> content = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<String?> raterName = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String?> updatedBy = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               NotesCompanion(
             id: id,
@@ -33305,15 +33480,25 @@ class $$NotesTableTableManager extends RootTableManager<
             content: content,
             createdAt: createdAt,
             raterName: raterName,
+            updatedAt: updatedAt,
+            updatedBy: updatedBy,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int trialId,
-            required int plotPk,
-            required int sessionId,
+            Value<int?> plotPk = const Value.absent(),
+            Value<int?> sessionId = const Value.absent(),
             required String content,
             Value<DateTime> createdAt = const Value.absent(),
             Value<String?> raterName = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String?> updatedBy = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<String?> deletedBy = const Value.absent(),
           }) =>
               NotesCompanion.insert(
             id: id,
@@ -33323,6 +33508,11 @@ class $$NotesTableTableManager extends RootTableManager<
             content: content,
             createdAt: createdAt,
             raterName: raterName,
+            updatedAt: updatedAt,
+            updatedBy: updatedBy,
+            isDeleted: isDeleted,
+            deletedAt: deletedAt,
+            deletedBy: deletedBy,
           ),
         ));
 }
@@ -33347,6 +33537,31 @@ class $$NotesTableFilterComposer
 
   ColumnFilters<String> get raterName => $state.composableBuilder(
       column: $state.table.raterName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get updatedBy => $state.composableBuilder(
+      column: $state.table.updatedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -33407,6 +33622,31 @@ class $$NotesTableOrderingComposer
 
   ColumnOrderings<String> get raterName => $state.composableBuilder(
       column: $state.table.raterName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get updatedBy => $state.composableBuilder(
+      column: $state.table.updatedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get deletedAt => $state.composableBuilder(
+      column: $state.table.deletedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deletedBy => $state.composableBuilder(
+      column: $state.table.deletedBy,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

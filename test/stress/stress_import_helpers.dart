@@ -18,6 +18,7 @@ import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/data/repositories/application_product_repository.dart';
 import 'package:arm_field_companion/data/repositories/application_repository.dart';
 import 'package:arm_field_companion/data/repositories/seeding_repository.dart';
+import 'package:arm_field_companion/data/repositories/notes_repository.dart';
 import 'package:arm_field_companion/data/repositories/weather_snapshot_repository.dart';
 import 'package:arm_field_companion/features/export/export_trial_usecase.dart';
 import 'package:arm_field_companion/features/photos/photo_repository.dart';
@@ -64,6 +65,7 @@ ExportTrialUseCase exportStressTrialUseCase(AppDatabase db) {
     assignmentRepository: AssignmentRepository(db),
     photoRepository: PhotoRepository(db),
     weatherSnapshotRepository: WeatherSnapshotRepository(db),
+    notesRepository: NotesRepository(db),
     armImportPersistenceRepository: ArmImportPersistenceRepository(db),
   );
 }

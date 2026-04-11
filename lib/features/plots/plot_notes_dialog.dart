@@ -14,14 +14,14 @@ Future<void> showPlotNotesDialog(
   Trial trial, {
   List<Plot>? sameTrialPlots,
 }) async {
-  final controller = TextEditingController(text: plot.notes ?? '');
+  final controller = TextEditingController(text: plot.plotNotes ?? '');
   final displayLabel =
       getDisplayPlotLabel(plot, sameTrialPlots ?? [plot]);
   try {
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Notes — Plot $displayLabel'),
+        title: Text('Plot Notes — Plot $displayLabel'),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(

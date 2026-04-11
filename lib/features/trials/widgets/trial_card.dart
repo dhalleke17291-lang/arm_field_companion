@@ -18,7 +18,11 @@ String? _ratedPlotsProgressLine(
   if (plots == null || rated == null) return null;
   final dataCount = plots.where((p) => !p.isGuardRow).length;
   if (dataCount == 0) return null;
-  return 'Rated plots $rated/$dataCount';
+  final excluded = plots
+      .where((p) => !p.isGuardRow && p.excludeFromAnalysis == true)
+      .length;
+  final suffix = excluded > 0 ? ' · $excluded excluded' : '';
+  return 'Rated plots $rated/$dataCount$suffix';
 }
 
 /// Readiness checklist line; null when loading/error, no issues, or fully ready (line hidden).

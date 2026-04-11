@@ -446,14 +446,15 @@ class RatingRepository {
             _db.ratingRecords.isCurrent.equals(true) &
             _db.ratingRecords.isDeleted.equals(false) &
             _db.plots.isDeleted.equals(false) &
-            _db.plots.isGuardRow.equals(false),
+            _db.plots.isGuardRow.equals(false) &
+            _db.plots.excludeFromAnalysis.equals(false),
       );
     final rows = await q.map((row) => row.readTable(_db.ratingRecords).plotPk).get();
     return rows.toSet().length;
   }
 
   /// Distinct **data** plot PK counts per legacy [RatingRecord.assessmentId]
-  /// (current, non-deleted ratings; guard plots excluded).
+  /// (current, non-deleted ratings; guard and analysis-excluded plots omitted).
   Future<Map<int, int>> getRatedDataPlotCountsPerLegacyAssessment(
       int trialId) async {
     final q = _db.select(_db.ratingRecords).join([
@@ -464,7 +465,8 @@ class RatingRepository {
             _db.ratingRecords.isCurrent.equals(true) &
             _db.ratingRecords.isDeleted.equals(false) &
             _db.plots.isDeleted.equals(false) &
-            _db.plots.isGuardRow.equals(false),
+            _db.plots.isGuardRow.equals(false) &
+            _db.plots.excludeFromAnalysis.equals(false),
       );
     final rows = await q.map((row) => row.readTable(_db.ratingRecords)).get();
     final byAssessment = <int, Set<int>>{};

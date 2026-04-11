@@ -1,4 +1,5 @@
 import '../../core/database/app_database.dart';
+import '../../core/plot_analysis_eligibility.dart';
 import '../plots/plot_repository.dart';
 import '../sessions/session_repository.dart';
 import '../photos/photo_repository.dart';
@@ -122,7 +123,7 @@ class ReportDataAssemblyService {
     }
 
     final plotSummaries = <PlotReportSummary>[];
-    for (final plot in plots.where((p) => !p.isGuardRow)) {
+    for (final plot in plots.where(isAnalyzablePlot)) {
       final assignment = assignmentByPlot[plot.id];
       final treatmentId = assignment?.treatmentId ?? plot.treatmentId;
       final treatment = treatmentId != null ? treatmentMap[treatmentId] : null;

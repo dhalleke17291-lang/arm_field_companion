@@ -325,6 +325,22 @@ class FakePlotRepository implements PlotRepository {
   Future<PlotRestoreResult> restorePlot(int plotPk,
           {String? restoredBy, int? restoredByUserId}) async =>
       PlotRestoreResult.failure('Not implemented');
+
+  @override
+  Future<void> setPlotExcludedFromAnalysis(
+    int plotPk, {
+    required String exclusionReason,
+    required String damageType,
+    String? performedBy,
+    int? performedByUserId,
+  }) async {}
+
+  @override
+  Future<void> clearPlotExcludedFromAnalysis(
+    int plotPk, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {}
 }
 
 class FakeRatingRepository implements RatingRepository {

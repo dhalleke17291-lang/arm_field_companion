@@ -8,6 +8,7 @@ class TrialExportBundle {
     required this.applicationsCsv,
     required this.seedingCsv,
     required this.sessionsCsv,
+    required this.notesCsv,
     required this.dataDictionaryCsv,
     this.warningMessage,
     this.preflightNotes,
@@ -27,5 +28,6 @@ class TrialExportBundle {
   final String applicationsCsv;
   final String seedingCsv;
   final String sessionsCsv;
+  final String notesCsv;
   final String dataDictionaryCsv;
 }

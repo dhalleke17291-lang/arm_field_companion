@@ -194,13 +194,13 @@ class PlotRepository {
     return plots.map((p) => p.rep).whereType<int>().toSet().toList()..sort();
   }
 
-  /// Updates notes for a single plot.
-  Future<void> updatePlotNotes(int plotPk, String? notes) async {
+  /// Updates quick / dialog plot notes (stored on [Plots.plotNotes]).
+  Future<void> updatePlotNotes(int plotPk, String? plotNotes) async {
     final plot = await getPlotByPk(plotPk);
     if (plot == null) return;
     await assertPlotNotesEditableForTrialId(_db, plot.trialId);
     await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
-        .write(PlotsCompanion(notes: Value(notes)));
+        .write(PlotsCompanion(plotNotes: Value(plotNotes)));
   }
 
   /// Updates plot dimension and field-detail fields. Omitted params are left unchanged.
@@ -437,6 +437,88 @@ class PlotRepository {
           );
 
       return PlotRestoreResult.ok();
+    });
+  }
+
+  /// Excludes a **data** plot from analysis aggregates (execution action; allowed when
+  /// protocol is ARM-locked). Does not use [assertCanEditProtocolForTrialId].
+  ///
+  /// Guard rows cannot be toggled here; they remain excluded via layout rules.
+  Future<void> setPlotExcludedFromAnalysis(
+    int plotPk, {
+    required String exclusionReason,
+    required String damageType,
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    final plot = await getPlotByPk(plotPk);
+    if (plot == null || plot.isGuardRow) return;
+
+    final trimmedReason = exclusionReason.trim();
+    if (trimmedReason.isEmpty) return;
+
+    final trimmedDamage = damageType.trim();
+    if (trimmedDamage.isEmpty) return;
+
+    await _db.transaction(() async {
+      await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
+        PlotsCompanion(
+          excludeFromAnalysis: const Value(true),
+          exclusionReason: Value(trimmedReason),
+          damageType: Value(trimmedDamage),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(plot.trialId),
+              plotPk: Value(plotPk),
+              eventType: 'PLOT_EXCLUDED_FROM_ANALYSIS',
+              description: 'Plot excluded from analysis',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'plot_id': plot.plotId,
+                'exclusion_reason': trimmedReason,
+                'damage_type': trimmedDamage,
+              })),
+            ),
+          );
+    });
+  }
+
+  /// Clears researcher exclusion so the plot counts toward analysis again.
+  /// Does not use [assertCanEditProtocolForTrialId]. No-op for guard rows.
+  Future<void> clearPlotExcludedFromAnalysis(
+    int plotPk, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    final plot = await getPlotByPk(plotPk);
+    if (plot == null || plot.isGuardRow) return;
+
+    await _db.transaction(() async {
+      await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk))).write(
+        const PlotsCompanion(
+          excludeFromAnalysis: Value(false),
+          exclusionReason: Value(null),
+          damageType: Value(null),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(plot.trialId),
+              plotPk: Value(plotPk),
+              eventType: 'PLOT_INCLUDED_IN_ANALYSIS',
+              description: 'Plot included in analysis again',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'plot_id': plot.plotId,
+              })),
+            ),
+          );
     });
   }
 }

@@ -194,7 +194,9 @@ class TrialAttentionService {
       ));
     } else {
       final dataPlots = plots.where((p) => !p.isGuardRow).toList();
-      final totalPlotCount = dataPlots.length;
+      final analyzablePlots =
+          dataPlots.where((p) => p.excludeFromAnalysis != true).toList();
+      final analyzablePlotCount = analyzablePlots.length;
       final assignments =
           await assignmentRepository.getForTrial(trialId);
       final unassigned =
@@ -224,7 +226,7 @@ class TrialAttentionService {
           trialAssessRows.isNotEmpty || legacyAssessRows.isNotEmpty;
       if (hasAssessmentsConfigured &&
           ratedCount == 0 &&
-          totalPlotCount > 0 &&
+          analyzablePlotCount > 0 &&
           completedSessions.isEmpty) {
         items.add(const AttentionItem(
           type: AttentionType.statisticalAnalysisPending,
@@ -234,21 +236,21 @@ class TrialAttentionService {
         ));
       }
 
-      if (ratedCount < totalPlotCount && completedSessions.isNotEmpty) {
+      if (ratedCount < analyzablePlotCount && completedSessions.isNotEmpty) {
         items.add(AttentionItem(
           type: AttentionType.plotsPartiallyRated,
-          label: '$ratedCount of $totalPlotCount plots rated',
+          label: '$ratedCount of $analyzablePlotCount analyzable plots rated',
           severity: _plotsPartiallyRatedSeverity(),
           count: ratedCount,
         ));
       }
 
-      if (ratedCount == totalPlotCount && totalPlotCount > 0) {
+      if (ratedCount == analyzablePlotCount && analyzablePlotCount > 0) {
         items.add(AttentionItem(
           type: AttentionType.dataCollectionComplete,
-          label: 'All $totalPlotCount plots rated',
+          label: 'All $analyzablePlotCount analyzable plots rated',
           severity: AttentionSeverity.info,
-          count: totalPlotCount,
+          count: analyzablePlotCount,
         ));
       }
     }

@@ -427,7 +427,8 @@ class SessionRepository {
     return sessions.first.id;
   }
 
-  /// True when this trial has any row in rating_records, notes, photos, or plot_flags.
+  /// True when this trial has any row in rating_records, photos, or plot_flags.
+  /// Field observations ([Notes] table) intentionally do not lock assignments.
   Stream<bool> watchTrialHasSessionData(int trialId) {
     final id = Variable<int>(trialId);
     return _db
@@ -436,17 +437,14 @@ class SessionRepository {
 SELECT EXISTS(
   SELECT 1 FROM rating_records WHERE trial_id = ? LIMIT 1
   UNION ALL
-  SELECT 1 FROM notes WHERE trial_id = ? LIMIT 1
-  UNION ALL
   SELECT 1 FROM photos WHERE trial_id = ? AND is_deleted = 0 LIMIT 1
   UNION ALL
   SELECT 1 FROM plot_flags WHERE trial_id = ? LIMIT 1
 ) AS has_data
 ''',
-          variables: <Variable>[id, id, id, id],
+          variables: <Variable>[id, id, id],
           readsFrom: {
             _db.ratingRecords,
-            _db.notes,
             _db.photos,
             _db.plotFlags,
           },

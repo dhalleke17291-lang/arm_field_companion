@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/plot_analysis_eligibility.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/plot_display.dart';
 import '../../../core/providers.dart';
@@ -1035,6 +1036,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                   treatmentCount,
                   treatmentComponentCount,
                   ratedPlotsCount,
+                  0,
+                  0,
                   sessionCount,
                   applicationCount,
                   lastApplication,
@@ -1063,6 +1066,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 treatmentCount,
                 treatmentComponentCount,
                 ratedPlotsCount,
+                0,
+                0,
                 sessionCount,
                 applicationCount,
                 lastApplication,
@@ -1096,6 +1101,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
           }
         }
         final dataPlotCount = plots.where((p) => !p.isGuardRow).length;
+        final analyzablePlotCount = plots.where(isAnalyzablePlot).length;
+        final excludedFromAnalysisCount = dataPlotCount - analyzablePlotCount;
         if (widget.embeddedInScroll) {
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -1116,6 +1123,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 treatments.length,
                 treatmentComponentCount,
                 ratedPlotsCount,
+                analyzablePlotCount,
+                excludedFromAnalysisCount,
                 sessionCount,
                 applicationCount,
                 lastApplication,
@@ -1144,6 +1153,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 treatments.length,
                 treatmentComponentCount,
                 ratedPlotsCount,
+                analyzablePlotCount,
+                excludedFromAnalysisCount,
                 sessionCount,
                 applicationCount,
                 lastApplication,
@@ -1193,12 +1204,16 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     int treatmentCount,
     int treatmentComponentCount,
     int ratedPlotsCount,
+    int analyzablePlotCount,
+    int excludedFromAnalysisCount,
     int sessionCount,
     int applicationCount,
     TrialApplicationEvent? lastApplication,
     DateTime? seedingDate,
     List<Treatment> treatments,
   ) {
+    final ratedLine = '$ratedPlotsCount/$dataPlotCount data plots rated'
+        '${excludedFromAnalysisCount > 0 ? ' · $excludedFromAnalysisCount excluded' : ''}';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Column(
@@ -1225,11 +1240,12 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                           fontSize: 12, color: Colors.grey.shade500),
                     ),
                     Text(
-                      '$ratedPlotsCount of $dataPlotCount',
+                      ratedLine,
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF2D5A40)),
+                      textAlign: TextAlign.end,
                     ),
                   ],
                 ),
@@ -1237,9 +1253,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
-                    value: dataPlotCount == 0
+                    value: analyzablePlotCount == 0
                         ? 0.0
-                        : ratedPlotsCount / dataPlotCount,
+                        : ratedPlotsCount / analyzablePlotCount,
                     backgroundColor: const Color(0xFFE8E5E0),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                         Color(0xFF2D5A40)),
@@ -1307,12 +1323,16 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     int treatmentCount,
     int treatmentComponentCount,
     int ratedPlotsCount,
+    int analyzablePlotCount,
+    int excludedFromAnalysisCount,
     int sessionCount,
     int applicationCount,
     TrialApplicationEvent? lastApplication,
     DateTime? seedingDate,
     List<Treatment> treatments,
   ) {
+    final ratedLine = '$ratedPlotsCount/$dataPlotCount data plots rated'
+        '${excludedFromAnalysisCount > 0 ? ' · $excludedFromAnalysisCount excluded' : ''}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1342,12 +1362,15 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                             style: TextStyle(
                                 fontSize: 12, color: Colors.grey.shade500),
                           ),
-                          Text(
-                            '$ratedPlotsCount of $dataPlotCount',
-                            style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF2D5A40)),
+                          Flexible(
+                            child: Text(
+                              ratedLine,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF2D5A40)),
+                              textAlign: TextAlign.end,
+                            ),
                           ),
                         ],
                       ),
@@ -1355,9 +1378,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
-                          value: dataPlotCount == 0
+                          value: analyzablePlotCount == 0
                               ? 0.0
-                              : ratedPlotsCount / dataPlotCount,
+                              : ratedPlotsCount / analyzablePlotCount,
                           backgroundColor: const Color(0xFFE8E5E0),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                               Color(0xFF2D5A40)),
@@ -2661,6 +2684,18 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                         ),
                     ],
                   ),
+                  if (!plot.isGuardRow && plot.excludeFromAnalysis == true)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Excluded from analysis',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.warningFg,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -4184,6 +4219,18 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                               fontStyle: FontStyle.italic)),
                   ],
                 ),
+                if (!plot.isGuardRow && plot.excludeFromAnalysis == true)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Excluded from analysis',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.warningFg,
+                      ),
+                    ),
+                  ),
               ],
             ),
             trailing: const Icon(Icons.chevron_right, size: 18),

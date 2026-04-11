@@ -120,7 +120,7 @@ String getModeLockMessage(String? status, String? workspaceType) {
 }
 
 /// True when plot assignments must not be edited (protocol lock or trial has session data).
-/// [hasSessionData] = true only when a session has actual data (ratings, notes, photos, flags).
+/// [hasSessionData] = true when the trial has ratings, photos, or plot flags — not field notes.
 bool isAssignmentsLocked(String? status, bool hasSessionData) {
   return isProtocolLocked(status) || hasSessionData;
 }
@@ -221,7 +221,8 @@ String protocolEditBlockedMessage(Trial trial) {
   return getProtocolLockMessage(trial.status);
 }
 
-/// True if the trial has any ratings, notes, photos, or plot flags (any session).
+/// True if the trial has any ratings, photos, or plot flags (any session).
+/// [Notes] (field observations) are excluded so they do not lock assignments.
 ///
 /// Uses small Drift selects (not raw SQL) so results are correct inside nested
 /// transactions (e.g. ARM import assigning plots before commit).
@@ -231,11 +232,6 @@ Future<bool> trialHasAnySessionData(AppDatabase db, int trialId) async {
         ..limit(1))
       .getSingleOrNull();
   if (rating != null) return true;
-  final note = await (db.select(db.notes)
-        ..where((n) => n.trialId.equals(trialId))
-        ..limit(1))
-      .getSingleOrNull();
-  if (note != null) return true;
   final photo = await (db.select(db.photos)
         ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false))
         ..limit(1))

@@ -316,6 +316,22 @@ class _FakePlotRepository implements PlotRepository {
   Future<PlotRestoreResult> restorePlot(int plotPk,
           {String? restoredBy, int? restoredByUserId}) async =>
       PlotRestoreResult.failure('Not implemented');
+
+  @override
+  Future<void> setPlotExcludedFromAnalysis(
+    int plotPk, {
+    required String exclusionReason,
+    required String damageType,
+    String? performedBy,
+    int? performedByUserId,
+  }) async {}
+
+  @override
+  Future<void> clearPlotExcludedFromAnalysis(
+    int plotPk, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {}
 }
 
 class _FakeRatingRepository implements RatingRepository {
@@ -568,16 +584,30 @@ void main() {
           plotSortIndex: 1,
           rep: 1,
           treatmentId: null,
-          notes: null,
           row: null,
           column: null,
           fieldRow: null,
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          plotLengthM: null,
+          plotWidthM: null,
+          plotAreaM2: null,
+          harvestLengthM: null,
+          harvestWidthM: null,
+          harvestAreaM2: null,
+          plotDirection: null,
+          soilSeries: null,
+          plotNotes: null,
           isGuardRow: false,
           isDeleted: false,
+          deletedAt: null,
+          deletedBy: null,
           excludeFromAnalysis: false,
+          exclusionReason: null,
+          damageType: null,
+          armPlotNumber: null,
+          armImportDataRowIndex: null,
         ),
         Plot(
           id: 102,
@@ -586,16 +616,30 @@ void main() {
           plotSortIndex: 2,
           rep: 1,
           treatmentId: null,
-          notes: null,
           row: null,
           column: null,
           fieldRow: null,
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          plotLengthM: null,
+          plotWidthM: null,
+          plotAreaM2: null,
+          harvestLengthM: null,
+          harvestWidthM: null,
+          harvestAreaM2: null,
+          plotDirection: null,
+          soilSeries: null,
+          plotNotes: null,
           isGuardRow: false,
           isDeleted: false,
+          deletedAt: null,
+          deletedBy: null,
           excludeFromAnalysis: false,
+          exclusionReason: null,
+          damageType: null,
+          armPlotNumber: null,
+          armImportDataRowIndex: null,
         ),
         Plot(
           id: 103,
@@ -604,16 +648,30 @@ void main() {
           plotSortIndex: 3,
           rep: 1,
           treatmentId: null,
-          notes: null,
           row: null,
           column: null,
           fieldRow: null,
           fieldColumn: null,
           assignmentSource: null,
           assignmentUpdatedAt: null,
+          plotLengthM: null,
+          plotWidthM: null,
+          plotAreaM2: null,
+          harvestLengthM: null,
+          harvestWidthM: null,
+          harvestAreaM2: null,
+          plotDirection: null,
+          soilSeries: null,
+          plotNotes: null,
           isGuardRow: false,
           isDeleted: false,
+          deletedAt: null,
+          deletedBy: null,
           excludeFromAnalysis: false,
+          exclusionReason: null,
+          damageType: null,
+          armPlotNumber: null,
+          armImportDataRowIndex: null,
         ),
       ];
 

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/plot_analysis_eligibility.dart';
 import '../../core/providers.dart';
 import 'trial_readiness.dart';
 
@@ -35,6 +36,8 @@ class TrialReadinessService {
     final plots = await plotRepo.getPlotsForTrial(trialPk);
     final dataPlots = plots.where((p) => !p.isGuardRow).toList();
     final dataPlotsCount = dataPlots.length;
+    final analyzablePlotCount = plots.where(isAnalyzablePlot).length;
+    final excludedFromAnalysisCount = dataPlotsCount - analyzablePlotCount;
     if (plots.isEmpty) {
       checks.add(const TrialReadinessCheck(
         code: 'no_plots',
@@ -227,18 +230,31 @@ class TrialReadinessService {
     final ratedCount =
         await ref.read(ratedPlotsCountForTrialProvider(trialPk).future);
     final unratedCount =
-        (dataPlotsCount - ratedCount).clamp(0, dataPlotsCount);
+        (analyzablePlotCount - ratedCount).clamp(0, analyzablePlotCount);
     if (unratedCount > 0) {
       checks.add(TrialReadinessCheck(
         code: 'unrated_plots',
-        label: '$unratedCount plots have no ratings',
+        label: '$unratedCount analyzable plot${unratedCount == 1 ? '' : 's'} '
+            'have no ratings',
         severity: TrialCheckSeverity.warning,
       ));
-    } else if (dataPlotsCount > 0) {
+    } else if (analyzablePlotCount > 0) {
       checks.add(const TrialReadinessCheck(
         code: 'all_rated_ok',
-        label: 'All plots rated',
+        label: 'All analyzable plots rated',
         severity: TrialCheckSeverity.pass,
+      ));
+    }
+
+    if (excludedFromAnalysisCount > 0) {
+      checks.add(TrialReadinessCheck(
+        code: 'plots_excluded_from_analysis',
+        label:
+            '$excludedFromAnalysisCount plot${excludedFromAnalysisCount == 1 ? '' : 's'} excluded from analysis',
+        detail:
+            'Excluded plots can still be rated in the field but do not count '
+            'toward completion or export statistics.',
+        severity: TrialCheckSeverity.info,
       ));
     }
 
@@ -268,20 +284,21 @@ class TrialReadinessService {
     for (final t in assessmentTargets) {
       final lid = t.legacyId;
       final ratedFor = lid != null ? (ratedByAssessment[lid] ?? 0) : 0;
-      final unratedForAssessment = dataPlotsCount - ratedFor;
-      if (dataPlotsCount > 0) {
+      final unratedForAssessment = analyzablePlotCount - ratedFor;
+      if (analyzablePlotCount > 0) {
         if (unratedForAssessment > 0) {
           checks.add(TrialReadinessCheck(
             code: 'assessment_incomplete_${t.stableId}',
-            label: '${t.name}: $ratedFor/$dataPlotsCount plots rated',
+            label:
+                '${t.name}: $ratedFor/$analyzablePlotCount analyzable plots rated',
             detail:
-                '$unratedForAssessment plots still need rating for this assessment.',
+                '$unratedForAssessment analyzable plot${unratedForAssessment == 1 ? '' : 's'} still need rating for this assessment.',
             severity: TrialCheckSeverity.warning,
           ));
         } else {
           checks.add(TrialReadinessCheck(
             code: 'assessment_complete_${t.stableId}',
-            label: '${t.name}: all plots rated',
+            label: '${t.name}: all analyzable plots rated',
             severity: TrialCheckSeverity.pass,
           ));
         }
@@ -289,15 +306,15 @@ class TrialReadinessService {
     }
 
     if (assessmentTargets.isNotEmpty &&
-        dataPlotsCount > 0 &&
+        analyzablePlotCount > 0 &&
         assessmentTargets.every((t) {
           final lid = t.legacyId;
           final ratedFor = lid != null ? (ratedByAssessment[lid] ?? 0) : 0;
-          return ratedFor >= dataPlotsCount;
+          return ratedFor >= analyzablePlotCount;
         })) {
       checks.add(const TrialReadinessCheck(
         code: 'all_assessments_complete',
-        label: 'All assessments complete on all plots',
+        label: 'All assessments complete on all analyzable plots',
         severity: TrialCheckSeverity.pass,
       ));
     }

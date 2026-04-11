@@ -1,18 +1,17 @@
-import 'package:arm_field_companion/core/database/app_database.dart'
-    show AppDatabase, Trial;
-import 'package:arm_field_companion/data/repositories/application_product_repository.dart';
-import 'package:arm_field_companion/data/repositories/application_repository.dart';
-import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
+import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/data/repositories/notes_repository.dart';
-import 'package:arm_field_companion/data/repositories/seeding_repository.dart';
-import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
-import 'package:arm_field_companion/data/repositories/weather_snapshot_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/domain/enums/import_confidence.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/import_snapshot_payload.dart';
 import 'package:arm_field_companion/features/export/export_format.dart';
 import 'package:arm_field_companion/features/export/export_trial_usecase.dart';
+import 'package:arm_field_companion/data/repositories/application_product_repository.dart';
+import 'package:arm_field_companion/data/repositories/application_repository.dart';
+import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
+import 'package:arm_field_companion/data/repositories/seeding_repository.dart';
+import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
+import 'package:arm_field_companion/data/repositories/weather_snapshot_repository.dart';
 import 'package:arm_field_companion/features/photos/photo_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
@@ -21,11 +20,8 @@ import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<void> _insertCompatibilityProfile({
-  required AppDatabase db,
-  required int trialId,
-  required ImportConfidence exportConfidence,
-}) async {
+Future<void> _insertHighConfidenceProfile(
+    AppDatabase db, int trialId) async {
   final repo = ArmImportPersistenceRepository(db);
   const snapPayload = ImportSnapshotPayload(
     sourceFile: 't.csv',
@@ -48,20 +44,19 @@ Future<void> _insertCompatibilityProfile({
     hasRepeatedCodes: false,
     rawFileChecksum: 'chk',
   );
-  final snapshotId =
-      await repo.insertImportSnapshot(snapPayload, trialId: trialId);
-  final profilePayload = CompatibilityProfilePayload(
+  final snapshotId = await repo.insertImportSnapshot(snapPayload, trialId: trialId);
+  const profilePayload = CompatibilityProfilePayload(
     exportRoute: 'arm_xml_v1',
     columnMap: {},
     plotMap: {},
     treatmentMap: {},
     dataStartRow: 2,
     headerEndRow: 1,
-    identityRowMarkers: const [],
-    columnOrderOnExport: const [],
-    identityFieldOrder: const [],
-    knownUnsupported: const [],
-    exportConfidence: exportConfidence,
+    identityRowMarkers: [],
+    columnOrderOnExport: [],
+    identityFieldOrder: [],
+    knownUnsupported: [],
+    exportConfidence: ImportConfidence.high,
     exportBlockReason: null,
   );
   await repo.insertCompatibilityProfile(
@@ -71,7 +66,7 @@ Future<void> _insertCompatibilityProfile({
   );
 }
 
-ExportTrialUseCase _makeUseCase(AppDatabase db) {
+ExportTrialUseCase _exportUseCase(AppDatabase db) {
   return ExportTrialUseCase(
     trialRepository: TrialRepository(db),
     plotRepository: PlotRepository(db),
@@ -89,17 +84,6 @@ ExportTrialUseCase _makeUseCase(AppDatabase db) {
   );
 }
 
-Trial _trialFromId(int id) => Trial(
-      id: id,
-      name: 'T',
-      status: 'active',
-      workspaceType: 'efficacy',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      isDeleted: false,
-      isArmLinked: false,
-    );
-
 void main() {
   late AppDatabase db;
 
@@ -111,25 +95,31 @@ void main() {
     await db.close();
   });
 
-  test('flat CSV export runs validation and records preflight warnings', () async {
+  test('trial flat export notes.csv lists trial-level field note', () async {
     final trialRepo = TrialRepository(db);
     final trialId =
-        await trialRepo.createTrial(name: 'Preflight', workspaceType: 'efficacy');
-    await _insertCompatibilityProfile(
-      db: db,
-      trialId: trialId,
-      exportConfidence: ImportConfidence.high,
-    );
+        await trialRepo.createTrial(name: 'ExportNote', workspaceType: 'efficacy');
+    await _insertHighConfidenceProfile(db, trialId);
     await PlotRepository(db).insertPlot(trialId: trialId, plotId: '101');
-    final uc = _makeUseCase(db);
-    final trial = _trialFromId(trialId);
-
-    final bundle = await uc.execute(trial: trial, format: ExportFormat.flatCsv);
-    expect(bundle.preflightNotes, isNotNull);
-    expect(bundle.preflightNotes, isNotEmpty);
-    expect(
-      bundle.preflightNotes!.join(' '),
-      contains('treatment'),
+    await NotesRepository(db).createNote(
+      trialId: trialId,
+      content: 'Trial-level observation',
+      createdBy: 'Exporter',
     );
+    final bundle = await _exportUseCase(db).execute(
+      trial: Trial(
+        id: trialId,
+        name: 'ExportNote',
+        status: 'active',
+        workspaceType: 'efficacy',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isDeleted: false,
+        isArmLinked: false,
+      ),
+      format: ExportFormat.flatCsv,
+    );
+    expect(bundle.notesCsv, contains('Trial-level observation'));
+    expect(bundle.notesCsv, contains('ExportNote'));
   });
 }

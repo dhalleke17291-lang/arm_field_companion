@@ -1,4 +1,5 @@
 import '../../../core/database/app_database.dart';
+import '../../../core/plot_analysis_eligibility.dart';
 import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
 import '../domain/session_close_attention_summary.dart';
@@ -64,7 +65,7 @@ class EvaluateSessionClosePolicyUseCase {
 }
 
 /// Matches plot-queue / session summary semantics for pre-close warning only.
-/// Excludes guard rows ([Plot.isGuardRow]) from navigation/data-quality counts.
+/// Uses [isAnalyzablePlot] (non-guard, not excluded from analysis).
 SessionCloseAttentionSummary _computeSessionCloseAttentionSummary({
   required List<Plot> plots,
   required Set<int> ratedPks,
@@ -72,7 +73,7 @@ SessionCloseAttentionSummary _computeSessionCloseAttentionSummary({
   required List<RatingRecord> ratings,
   required Set<int> corrections,
 }) {
-  final targetPlots = plots.where((p) => !p.isGuardRow).toList();
+  final targetPlots = plots.where(isAnalyzablePlot).toList();
   final targetPlotPkSet = targetPlots.map((p) => p.id).toSet();
 
   final totalPlots = targetPlots.length;

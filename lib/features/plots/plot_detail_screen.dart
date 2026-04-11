@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
+import '../../core/plot_analysis_eligibility.dart';
 import '../../core/plot_display.dart';
 import '../../core/ui/assessment_display_helper.dart';
 import '../../core/providers.dart';
@@ -13,6 +14,7 @@ import '../ratings/rating_scale_map.dart';
 import '../ratings/usecases/amend_plot_rating_usecase.dart';
 import 'plot_detail_form_controller.dart';
 import 'plot_notes_dialog.dart';
+import '../notes/field_note_editor_sheet.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/app_standard_widgets.dart';
 import '../../domain/models/plot_context.dart';
@@ -256,6 +258,301 @@ class _PlotRatingHistoryList extends ConsumerWidget {
   }
 }
 
+const _plotDamageTypeLabels = <String, String>{
+  'mechanical': 'Mechanical',
+  'weather': 'Weather',
+  'animal': 'Animal',
+  'disease': 'Disease',
+  'contamination': 'Contamination',
+  'other': 'Other',
+};
+
+void _invalidatePlotAnalysisProviders(
+    WidgetRef ref, int trialId, int plotPk) {
+  ref.invalidate(plotsForTrialProvider(trialId));
+  ref.invalidate(trialAssessmentCompletionProvider(trialId));
+  ref.invalidate(ratedPlotsCountForTrialProvider(trialId));
+  ref.invalidate(trialReadinessProvider(trialId));
+  ref.invalidate(plotRatingHistoryProvider(
+      PlotRatingParams(trialId: trialId, plotPk: plotPk)));
+  ref.invalidate(plotContextProvider(plotPk));
+}
+
+Widget _plotAnalysisSection(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Plot plot,
+) {
+  final primaryStyle = TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 13,
+    color: Theme.of(context).colorScheme.primary,
+  );
+  if (plot.isGuardRow) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Analysis', style: primaryStyle),
+        const SizedBox(height: 6),
+        Text(
+          'Guard rows are excluded from analysis and completion totals by definition.',
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  final excluded = !isAnalyzablePlot(plot);
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text('Analysis', style: primaryStyle),
+      const SizedBox(height: 8),
+      if (excluded) ...[
+        Text(
+          'Excluded from analysis',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: AppDesignTokens.warningFg,
+          ),
+        ),
+        if (plot.exclusionReason != null &&
+            plot.exclusionReason!.trim().isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            plot.exclusionReason!.trim(),
+            style: const TextStyle(fontSize: 13),
+          ),
+        ],
+        if (plot.damageType != null && plot.damageType!.trim().isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Damage type: ${_plotDamageTypeLabels[plot.damageType!.trim()] ?? plot.damageType}',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.restart_alt, size: 18),
+          label: const Text('Include in Analysis Again'),
+          onPressed: () =>
+              _confirmIncludePlotInAnalysis(context, ref, trial, plot),
+        ),
+      ] else ...[
+        Text(
+          'This plot counts toward trial completion and export statistics.',
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.report_off_outlined, size: 18),
+          label: const Text('Exclude from Analysis'),
+          onPressed: () => _showExcludePlotFromAnalysisDialog(
+            context,
+            ref,
+            trial,
+            plot,
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+Future<void> _showExcludePlotFromAnalysisDialog(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Plot plot,
+) async {
+  final reasonController = TextEditingController();
+  String? selectedDamage;
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Exclude from Analysis'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'This plot will stay in the rating workflow but will not '
+                    'count toward completion, readiness, or export statistics.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Reason (required)',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Damage type',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _plotDamageTypeLabels.entries.map((e) {
+                      final selected = selectedDamage == e.key;
+                      return ChoiceChip(
+                        label: Text(e.value),
+                        selected: selected,
+                        onSelected: (_) =>
+                            setState(() => selectedDamage = e.key),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (reasonController.text.trim().isEmpty ||
+                      selectedDamage == null) {
+                    return;
+                  }
+                  Navigator.pop(ctx, true);
+                },
+                child: const Text('Exclude Plot'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+
+  if (confirmed != true) {
+    reasonController.dispose();
+    return;
+  }
+  if (reasonController.text.trim().isEmpty || selectedDamage == null) {
+    reasonController.dispose();
+    return;
+  }
+  final damageType = selectedDamage!;
+
+  try {
+    final user = await ref.read(currentUserProvider.future);
+    final userId = await ref.read(currentUserIdProvider.future);
+    await ref.read(plotRepositoryProvider).setPlotExcludedFromAnalysis(
+          plot.id,
+          exclusionReason: reasonController.text,
+          damageType: damageType,
+          performedBy: user?.displayName,
+          performedByUserId: userId,
+        );
+    if (!context.mounted) return;
+    _invalidatePlotAnalysisProviders(ref, trial.id, plot.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Plot excluded from analysis')),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Could not update plot'),
+        content: SelectableText('$e'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  } finally {
+    reasonController.dispose();
+  }
+}
+
+Future<void> _confirmIncludePlotInAnalysis(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Plot plot,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Include in Analysis'),
+      content: const Text(
+        'This plot will count toward completion, readiness, and export statistics again.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Include Plot'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  try {
+    final user = await ref.read(currentUserProvider.future);
+    final userId = await ref.read(currentUserIdProvider.future);
+    await ref.read(plotRepositoryProvider).clearPlotExcludedFromAnalysis(
+          plot.id,
+          performedBy: user?.displayName,
+          performedByUserId: userId,
+        );
+    if (!context.mounted) return;
+    _invalidatePlotAnalysisProviders(ref, trial.id, plot.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Plot included in analysis')),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Could not update plot'),
+        content: SelectableText('$e'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 Future<void> _confirmAndSoftDeletePlot(
   BuildContext context,
   WidgetRef ref,
@@ -351,6 +648,7 @@ class PlotDetailScreen extends ConsumerWidget {
       if (lid != null) taByLegacy[lid] = ta;
     }
     final plotContextAsync = ref.watch(plotContextProvider(plot.id));
+    final notesAsync = ref.watch(notesForTrialProvider(trial.id));
     final plots = ref.watch(plotsForTrialProvider(trial.id)).value ?? [];
     final assignments =
         ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
@@ -466,14 +764,14 @@ class PlotDetailScreen extends ConsumerWidget {
                         trial: trial,
                       ),
                       const Divider(),
-                      if (plotToShow.notes != null &&
-                          plotToShow.notes!.trim().isNotEmpty)
+                      if (plotToShow.plotNotes != null &&
+                          plotToShow.plotNotes!.trim().isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Notes',
+                              Text('Plot Notes',
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
@@ -482,7 +780,7 @@ class PlotDetailScreen extends ConsumerWidget {
                                           .primary)),
                               const SizedBox(height: 4),
                               Text(
-                                plotToShow.notes!.trim(),
+                                plotToShow.plotNotes!.trim(),
                                 style: const TextStyle(fontSize: 13),
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
@@ -492,15 +790,92 @@ class PlotDetailScreen extends ConsumerWidget {
                         )
                       else
                         const StandardDetailRow(
-                            label: 'Notes', value: 'No notes'),
+                            label: 'Plot Notes', value: 'No plot notes'),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.edit_note, size: 18),
-                        label: Text(plotToShow.notes?.trim().isNotEmpty == true
-                            ? 'Edit Notes'
-                            : 'Add Notes'),
+                        label: Text(plotToShow.plotNotes?.trim().isNotEmpty == true
+                            ? 'Edit Plot Notes'
+                            : 'Add Plot Notes'),
                         onPressed: () => showPlotNotesDialog(
                             context, ref, plotToShow, trial,
                             sameTrialPlots: plots),
+                      ),
+                      notesAsync.when(
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                        data: (allNotes) {
+                          final linked = allNotes
+                              .where((n) => n.plotPk == plotToShow.id)
+                              .toList();
+                          if (linked.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  onPressed: () => showFieldNoteEditorSheet(
+                                    context,
+                                    ref,
+                                    trial: trial,
+                                    initialPlotPk: plotToShow.id,
+                                  ),
+                                  icon: const Icon(Icons.sticky_note_2_outlined,
+                                      size: 18),
+                                  label: const Text('Add Field Note'),
+                                ),
+                              ),
+                            );
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Linked Field Notes',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                for (final n in linked)
+                                  ListTile(
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text(
+                                      n.content,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                    onTap: () => showFieldNoteEditorSheet(
+                                      context,
+                                      ref,
+                                      trial: trial,
+                                      existing: n,
+                                    ),
+                                  ),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: TextButton.icon(
+                                    onPressed: () => showFieldNoteEditorSheet(
+                                      context,
+                                      ref,
+                                      trial: trial,
+                                      initialPlotPk: plotToShow.id,
+                                    ),
+                                    icon: const Icon(Icons.add, size: 18),
+                                    label: const Text('Add Field Note'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                       const Divider(),
                       plotContextAsync.when(
@@ -515,6 +890,13 @@ class PlotDetailScreen extends ConsumerWidget {
                           plotContext: ctx,
                           assignmentSourceLabel: assignmentSourceLabel,
                         ),
+                      ),
+                      const Divider(),
+                      _plotAnalysisSection(
+                        context,
+                        ref,
+                        trial,
+                        plotToShow,
                       ),
                     ],
                   ),

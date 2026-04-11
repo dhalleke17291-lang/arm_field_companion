@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
+import '../../../core/plot_analysis_eligibility.dart';
 
 /// ExportRepository
 /// Builds export rows for a session using your exact Drift field names.
@@ -63,6 +64,7 @@ class ExportRepository {
         // Plot
         'plot_id': plot.plotId,
         'rep': plot.rep,
+        'plot_excluded': !isAnalyzablePlot(plot),
         // Treatment via Assignment (Plot → Assignment → Treatment)
         'treatment_id': assignment?.treatmentId ?? plot.treatmentId,
         'treatment_code': treatment?.code,
@@ -201,6 +203,7 @@ class ExportRepository {
         'value': value,
         'result_status': effectiveStatus,
         'result_direction': definition?.resultDirection ?? 'neutral',
+        'plot_excluded': !isAnalyzablePlot(plot),
       };
     }).toList();
   }

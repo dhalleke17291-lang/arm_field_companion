@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/plot_analysis_eligibility.dart';
 import '../../core/diagnostics/diagnostic_finding.dart';
 import '../diagnostics/trial_readiness.dart';
 import '../../core/diagnostics/trial_export_diagnostics.dart'
@@ -27,6 +28,7 @@ import '../../data/repositories/application_repository.dart';
 import '../../data/repositories/application_product_repository.dart';
 import '../../data/repositories/seeding_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
+import '../../data/repositories/notes_repository.dart';
 import '../photos/photo_export_name_builder.dart';
 import '../photos/photo_repository.dart';
 import '../weather/weather_export_builder.dart';
@@ -73,6 +75,7 @@ class ExportTrialUseCase {
     required AssignmentRepository assignmentRepository,
     required PhotoRepository photoRepository,
     required WeatherSnapshotRepository weatherSnapshotRepository,
+    required NotesRepository notesRepository,
     required ArmImportPersistenceRepository armImportPersistenceRepository,
     PublishTrialExportDiagnostics? publishExportDiagnostics,
   })  : _trialRepository = trialRepository,
@@ -86,6 +89,7 @@ class ExportTrialUseCase {
         _assignmentRepository = assignmentRepository,
         _photoRepository = photoRepository,
         _weatherSnapshotRepository = weatherSnapshotRepository,
+        _notesRepository = notesRepository,
         _armImportPersistenceRepository = armImportPersistenceRepository,
         _publishExportDiagnostics = publishExportDiagnostics;
 
@@ -104,6 +108,7 @@ class ExportTrialUseCase {
   final AssignmentRepository _assignmentRepository;
   final PhotoRepository _photoRepository;
   final WeatherSnapshotRepository _weatherSnapshotRepository;
+  final NotesRepository _notesRepository;
   final ArmImportPersistenceRepository _armImportPersistenceRepository;
 
   static const List<String> _observationsHeaders = [
@@ -133,6 +138,7 @@ class ExportTrialUseCase {
     'days_after_seeding',
     'days_after_first_application',
     'photo_files',
+    'plot_excluded',
     'export_timestamp',
     'session_crop_stage_bbch',
   ];
@@ -188,6 +194,9 @@ class ExportTrialUseCase {
     'soil_series',
     'plot_notes',
     'is_guard',
+    'is_excluded',
+    'exclusion_reason',
+    'damage_type',
     'export_timestamp',
   ];
 
@@ -237,6 +246,19 @@ class ExportTrialUseCase {
     'crop_stage_bbch',
     'days_after_seeding',
     'days_after_first_application',
+  ];
+
+  static const List<String> _fieldNotesHeaders = [
+    'note_id',
+    'trial_name',
+    'plot_id',
+    'session_name',
+    'content',
+    'created_at',
+    'created_by',
+    'updated_at',
+    'updated_by',
+    'export_timestamp',
   ];
 
   Future<TrialExportBundle> execute({
@@ -424,6 +446,15 @@ class ExportTrialUseCase {
       armAligned: armAligned,
     );
 
+    final fieldNotes = await _notesRepository.getNotesForTrial(trialPk);
+    final notesCsv = _buildFieldNotesCsv(
+      trial: trial,
+      notes: fieldNotes,
+      plots: plots,
+      sessions: sessions,
+      exportTimestamp: exportTimestamp,
+    );
+
     const appVersion = '1.0.0';
     final dataDictionaryCsv = _buildDataDictionary(exportTimestamp, appVersion);
 
@@ -435,6 +466,7 @@ class ExportTrialUseCase {
       applicationsCsv: applicationsCsv,
       seedingCsv: seedingCsv,
       sessionsCsv: sessionsCsv,
+      notesCsv: notesCsv,
       dataDictionaryCsv: dataDictionaryCsv,
       warningMessage: confidenceWarningMessage,
       preflightNotes: preflightNotes.isEmpty ? null : preflightNotes,
@@ -594,6 +626,12 @@ class ExportTrialUseCase {
         'observations.csv',
         'photo_files',
         'Comma-separated filenames of photos attached to this plot/session',
+        ''
+      ],
+      [
+        'observations.csv',
+        'plot_excluded',
+        'True if plot is excluded from analysis (guard row or researcher exclusion)',
         ''
       ],
       [
@@ -775,6 +813,24 @@ class ExportTrialUseCase {
         'True if plot is a guard/border row (not a data plot)',
         '',
       ],
+      [
+        'plot_assignments.csv',
+        'is_excluded',
+        'True if plot is excluded from analysis (includes guard rows)',
+        '',
+      ],
+      [
+        'plot_assignments.csv',
+        'exclusion_reason',
+        'Researcher-provided reason when excluded from analysis',
+        '',
+      ],
+      [
+        'plot_assignments.csv',
+        'damage_type',
+        'Damage category when excluded (mechanical, weather, animal, disease, contamination, other)',
+        '',
+      ],
       ['plot_assignments.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
       // applications.csv
       ['applications.csv', 'date', 'Date of application event', 'YYYY-MM-DD'],
@@ -883,6 +939,22 @@ class ExportTrialUseCase {
         'days_after_first_application',
         'Days from first applied application to session start',
         'days'
+      ],
+      // notes.csv (field observations; soft-deleted notes omitted from export)
+      ['notes.csv', 'note_id', 'Database identifier of the note', ''],
+      ['notes.csv', 'trial_name', 'Trial name at export', ''],
+      ['notes.csv', 'plot_id', 'Linked plot display id if any', ''],
+      ['notes.csv', 'session_name', 'Linked rating session name if any', ''],
+      ['notes.csv', 'content', 'Note text', ''],
+      ['notes.csv', 'created_at', 'When the note was created', 'ISO 8601 UTC'],
+      ['notes.csv', 'created_by', 'Display name of author', ''],
+      ['notes.csv', 'updated_at', 'Last edit time if edited', 'ISO 8601 UTC'],
+      ['notes.csv', 'updated_by', 'Display name of last editor', ''],
+      [
+        'notes.csv',
+        'export_timestamp',
+        'UTC timestamp when export was generated',
+        'ISO 8601'
       ],
       [
         'weather.csv',
@@ -1000,6 +1072,7 @@ class ExportTrialUseCase {
           daysAfterSeeding != null ? _cell(daysAfterSeeding) : '',
           daysAfterFirstApp != null ? _cell(daysAfterFirstApp) : '',
           _cell(photoFiles.isEmpty ? null : photoFiles),
+          plot != null && !isAnalyzablePlot(plot) ? 'true' : 'false',
           exportTimestamp,
           _cell(session.cropStageBbch),
         ]);
@@ -1145,6 +1218,9 @@ class ExportTrialUseCase {
         _cell(plot.soilSeries),
         _cell(plot.plotNotes),
         plot.isGuardRow ? 'true' : 'false',
+        plot.excludeFromAnalysis ? 'true' : 'false',
+        _cell(plot.exclusionReason),
+        _cell(plot.damageType),
         exportTimestamp,
       ]);
     }
@@ -1283,6 +1359,40 @@ class ExportTrialUseCase {
     );
   }
 
+  String _buildFieldNotesCsv({
+    required Trial trial,
+    required List<Note> notes,
+    required List<Plot> plots,
+    required List<Session> sessions,
+    required String exportTimestamp,
+  }) {
+    final plotByPk = {for (final p in plots) p.id: p};
+    final sessionById = {for (final s in sessions) s.id: s};
+    final rows = <List<String>>[];
+    for (final n in notes.where((x) => !x.isDeleted)) {
+      final plotLabel = n.plotPk != null
+          ? (plotByPk[n.plotPk!]?.plotId ?? n.plotPk.toString())
+          : '';
+      final sessionName =
+          n.sessionId != null ? (sessionById[n.sessionId!]?.name ?? '') : '';
+      rows.add([
+        _cell(n.id),
+        _cell(trial.name),
+        _cell(plotLabel),
+        _cell(sessionName),
+        _cell(n.content),
+        _cell(n.createdAt.toUtc().toIso8601String()),
+        _cell(n.raterName),
+        n.updatedAt != null
+            ? _cell(n.updatedAt!.toUtc().toIso8601String())
+            : '',
+        _cell(n.updatedBy),
+        exportTimestamp,
+      ]);
+    }
+    return CsvExportService.buildCsv(_fieldNotesHeaders, rows);
+  }
+
   /// Assigns standard export basenames; sequence suffixes resolve stem collisions.
   List<_ScheduledPhotoExport> _schedulePhotoExportNames({
     required List<Photo> photos,
@@ -1379,6 +1489,7 @@ class ExportTrialUseCase {
       'applications.csv': bundle.applicationsCsv,
       'seeding.csv': bundle.seedingCsv,
       'sessions.csv': bundle.sessionsCsv,
+      'notes.csv': bundle.notesCsv,
       'data_dictionary.csv': bundle.dataDictionaryCsv,
     };
     for (final entry in csvFiles.entries) {

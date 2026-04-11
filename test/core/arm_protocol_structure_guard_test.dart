@@ -355,7 +355,7 @@ void main() {
 
       await plotRepo.updatePlotNotes(plotPk, 'field note');
       final p = await plotRepo.getPlotByPk(plotPk);
-      expect(p?.notes, 'field note');
+      expect(p?.plotNotes, 'field note');
     });
 
     test('ARM-linked trial blocks updatePlotNotes', () async {

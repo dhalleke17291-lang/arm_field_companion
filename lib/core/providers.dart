@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../data/repositories/notes_repository.dart';
 import "../data/repositories/treatment_repository.dart";
 import "../data/repositories/assignment_repository.dart";
 import "../data/repositories/assessment_definition_repository.dart";
@@ -76,6 +77,7 @@ import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
 import '../features/diagnostics/assessment_completion.dart';
+import 'plot_analysis_eligibility.dart';
 import '../features/diagnostics/trial_readiness.dart';
 import '../features/diagnostics/trial_readiness_service.dart';
 import 'diagnostics/diagnostic_finding.dart';
@@ -121,6 +123,16 @@ final trialRepositoryProvider = Provider<TrialRepository>((ref) {
 
 final plotRepositoryProvider = Provider<PlotRepository>((ref) {
   return PlotRepository(ref.watch(databaseProvider));
+});
+
+final notesRepositoryProvider = Provider<NotesRepository>((ref) {
+  return NotesRepository(ref.watch(databaseProvider));
+});
+
+/// Non-deleted field observations for a trial (newest first).
+final notesForTrialProvider =
+    StreamProvider.autoDispose.family<List<Note>, int>((ref, trialId) {
+  return ref.watch(notesRepositoryProvider).watchNotesForTrial(trialId);
 });
 
 final updatePlotDetailsUseCaseProvider =
@@ -234,6 +246,8 @@ final trialAssessmentCompletionProvider = StreamProvider.autoDispose
     final ratingRepo = ref.read(ratingRepositoryProvider);
     final plots = await ref.read(plotsForTrialProvider(trialId).future);
     final totalDataPlots = plots.where((p) => !p.isGuardRow).length;
+    final analyzablePlotCount = plots.where(isAnalyzablePlot).length;
+    final excludedFromAnalysisCount = totalDataPlots - analyzablePlotCount;
     final counts =
         await ratingRepo.getRatedDataPlotCountsPerLegacyAssessment(trialId);
     final pairs = await ref
@@ -253,7 +267,9 @@ final trialAssessmentCompletionProvider = StreamProvider.autoDispose
         trialAssessmentId: ta.id,
         assessmentName: name,
         ratedPlotCount: rated,
+        analyzablePlotCount: analyzablePlotCount,
         totalDataPlots: totalDataPlots,
+        excludedFromAnalysisCount: excludedFromAnalysisCount,
       );
     }
     for (final a in legacy) {
@@ -263,7 +279,9 @@ final trialAssessmentCompletionProvider = StreamProvider.autoDispose
         trialAssessmentId: -a.id,
         assessmentName: a.name,
         ratedPlotCount: rated,
+        analyzablePlotCount: analyzablePlotCount,
         totalDataPlots: totalDataPlots,
+        excludedFromAnalysisCount: excludedFromAnalysisCount,
       );
     }
     return out;
@@ -332,12 +350,12 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
         )
         .toList();
 
-    final dataPlots = plots.where((p) => !p.isGuardRow).toList();
-    final totalPlots = dataPlots.length;
-    final dataPlotLabels = dataPlots.map((p) => p.plotId).toSet();
+    final analyzablePlots = plots.where(isAnalyzablePlot).toList();
+    final totalPlots = analyzablePlots.length;
+    final analyzablePlotLabels = analyzablePlots.map((p) => p.plotId).toSet();
     final filteredRatingRows =
-        ratingRows.where((r) => dataPlotLabels.contains(r.plotId)).toList();
-    final allReps = dataPlots.map((p) => p.rep).whereType<int>().toSet();
+        ratingRows.where((r) => analyzablePlotLabels.contains(r.plotId)).toList();
+    final allReps = analyzablePlots.map((p) => p.rep).whereType<int>().toSet();
 
     final result = <int, AssessmentStatistics>{};
     for (final pair in assessmentPairs) {
@@ -371,8 +389,8 @@ final trialRatingRowsProvider = StreamProvider.autoDispose
     final exportRepo = ref.read(exportRepositoryProvider);
     final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
     final plots = await ref.watch(plotsForTrialProvider(trialId).future);
-    final dataPlotLabels =
-        plots.where((p) => !p.isGuardRow).map((p) => p.plotId).toSet();
+    final analyzablePlotLabels =
+        plots.where(isAnalyzablePlot).map((p) => p.plotId).toSet();
     return rawRows
         .map(
           (r) => RatingResultRow(
@@ -388,7 +406,7 @@ final trialRatingRowsProvider = StreamProvider.autoDispose
             ),
           ),
         )
-        .where((r) => dataPlotLabels.contains(r.plotId))
+        .where((r) => analyzablePlotLabels.contains(r.plotId))
         .toList();
   });
 });
@@ -1100,6 +1118,7 @@ final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     photoRepository: ref.watch(photoRepositoryProvider),
     weatherSnapshotRepository: ref.watch(weatherSnapshotRepositoryProvider),
+    notesRepository: ref.watch(notesRepositoryProvider),
     armImportPersistenceRepository:
         ref.watch(armImportPersistenceRepositoryProvider),
     publishExportDiagnostics: (trialId, findings, attemptLabel) {

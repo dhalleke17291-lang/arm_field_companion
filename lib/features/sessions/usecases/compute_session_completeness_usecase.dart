@@ -1,3 +1,4 @@
+import '../../../core/plot_analysis_eligibility.dart';
 import '../../../domain/ratings/result_status.dart';
 import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
@@ -38,7 +39,7 @@ class ComputeSessionCompletenessUseCase {
         await _sessionRepository.getSessionAssessments(sessionId);
     if (assessments.isEmpty) {
       final plots = await _plotRepository.getPlotsForTrial(session.trialId);
-      final targetPlots = plots.where((p) => !p.isGuardRow).toList();
+      final targetPlots = plots.where(isAnalyzablePlot).toList();
       final expected = targetPlots.length;
       return SessionCompletenessReport(
         expectedPlots: expected,
@@ -55,7 +56,7 @@ class ComputeSessionCompletenessUseCase {
     }
 
     final plots = await _plotRepository.getPlotsForTrial(session.trialId);
-    final targetPlots = plots.where((p) => !p.isGuardRow).toList();
+    final targetPlots = plots.where(isAnalyzablePlot).toList();
     final expectedPlots = targetPlots.length;
 
     final ratings =

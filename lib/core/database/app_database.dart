@@ -238,7 +238,6 @@ class Plots extends Table {
   TextColumn get column => text().nullable()();
   IntColumn get fieldRow => integer().nullable()();
   IntColumn get fieldColumn => integer().nullable()();
-  TextColumn get notes => text().nullable()();
 
   /// Assignment provenance: 'imported' | 'manual' | null (unknown).
   TextColumn get assignmentSource => text().nullable()();
@@ -392,11 +391,16 @@ class RatingCorrections extends Table {
 class Notes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
-  IntColumn get plotPk => integer().references(Plots, #id)();
-  IntColumn get sessionId => integer().references(Sessions, #id)();
+  IntColumn get plotPk => integer().nullable().references(Plots, #id)();
+  IntColumn get sessionId => integer().nullable().references(Sessions, #id)();
   TextColumn get content => text()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get raterName => text().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  TextColumn get updatedBy => text().nullable()();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 class Photos extends Table {
@@ -832,7 +836,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 46;
+  int get schemaVersion => 47;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1229,6 +1233,47 @@ SET status = 'completed',
           }
           if (from < 46) {
             await m.addColumn(sessions, sessions.cropStageBbch);
+          }
+          if (from < 47) {
+            await customStatement('''
+UPDATE plots SET plot_notes = CASE
+  WHEN notes IS NOT NULL AND TRIM(notes) != '' AND plot_notes IS NOT NULL AND TRIM(plot_notes) != ''
+    THEN notes || char(10) || '---' || char(10) || plot_notes
+  WHEN notes IS NOT NULL AND TRIM(notes) != ''
+    THEN notes
+  ELSE plot_notes
+END
+WHERE notes IS NOT NULL AND TRIM(notes) != ''
+   OR plot_notes IS NOT NULL
+''');
+            await customStatement('ALTER TABLE plots DROP COLUMN notes');
+            await customStatement('ALTER TABLE notes RENAME TO notes_old');
+            await m.createTable(notes);
+            await customStatement('''
+INSERT INTO notes (
+  id, trial_id, plot_pk, session_id, content, created_at, rater_name,
+  updated_at, updated_by, is_deleted, deleted_at, deleted_by
+)
+SELECT
+  id,
+  trial_id,
+  plot_pk,
+  session_id,
+  content,
+  CASE WHEN typeof(created_at) = 'text' THEN strftime('%s', created_at) ELSE created_at END,
+  rater_name,
+  NULL,
+  NULL,
+  0,
+  NULL,
+  NULL
+FROM notes_old
+''');
+            await customStatement('DROP TABLE notes_old');
+            await customStatement('''
+INSERT OR REPLACE INTO sqlite_sequence (name, seq)
+SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
+''');
           }
           await _createIndexes();
         },

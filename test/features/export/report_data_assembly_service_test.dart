@@ -162,6 +162,24 @@ class MockPlotRepository implements PlotRepository {
   Future<PlotRestoreResult> restorePlot(int plotPk,
           {String? restoredBy, int? restoredByUserId}) async =>
       throw UnimplementedError();
+
+  @override
+  Future<void> setPlotExcludedFromAnalysis(
+    int plotPk, {
+    required String exclusionReason,
+    required String damageType,
+    String? performedBy,
+    int? performedByUserId,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> clearPlotExcludedFromAnalysis(
+    int plotPk, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async =>
+      throw UnimplementedError();
 }
 
 class MockTreatmentRepository implements TreatmentRepository {

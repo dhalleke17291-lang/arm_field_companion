@@ -310,6 +310,57 @@ void main() {
       expect(r.issues.single.assessmentId, inSession);
     });
 
+    test('analysis-excluded data plot is skipped for session completeness',
+        () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'T8', workspaceType: 'efficacy');
+      final plotRepo = PlotRepository(db);
+      final analyzablePk =
+          await plotRepo.insertPlot(trialId: trialId, plotId: 'OK');
+      final excludedPk =
+          await plotRepo.insertPlot(trialId: trialId, plotId: 'BAD');
+      await plotRepo.setPlotExcludedFromAnalysis(
+        excludedPk,
+        exclusionReason: 'Contamination',
+        damageType: 'contamination',
+      );
+
+      final a1 = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(trialId: trialId, name: 'A1'),
+          );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-04-01',
+            ),
+          );
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sessionId,
+              assessmentId: a1,
+              sortOrder: const Value(0),
+            ),
+          );
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: trialId,
+              plotPk: analyzablePk,
+              assessmentId: a1,
+              sessionId: sessionId,
+              resultStatus: const Value(ResultStatusDb.recorded),
+              isCurrent: const Value(true),
+            ),
+          );
+
+      final r = await useCase.execute(sessionId: sessionId);
+      expect(r.expectedPlots, 1);
+      expect(r.completedPlots, 1);
+      expect(r.canClose, isTrue);
+      expect(r.issues, isEmpty);
+    });
+
     test('zero target plots with assessments → vacuously complete', () async {
       final trialRepo = TrialRepository(db);
       final trialId =

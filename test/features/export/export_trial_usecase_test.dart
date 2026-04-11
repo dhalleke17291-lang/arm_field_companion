@@ -18,6 +18,7 @@ import 'package:arm_field_companion/features/diagnostics/trial_readiness.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
+import 'package:arm_field_companion/data/repositories/notes_repository.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -88,6 +89,7 @@ ExportTrialUseCase _makeUseCase(AppDatabase db) {
     assignmentRepository: AssignmentRepository(db),
     photoRepository: PhotoRepository(db),
     weatherSnapshotRepository: WeatherSnapshotRepository(db),
+    notesRepository: NotesRepository(db),
     armImportPersistenceRepository: ArmImportPersistenceRepository(db),
   );
 }
@@ -200,6 +202,46 @@ void main() {
         ),
         throwsA(isA<ExportBlockedByReadinessException>()),
       );
+    });
+
+    test('flat CSV bundle includes notes.csv for field notes', () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'NotesTrial', workspaceType: 'efficacy');
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+      );
+      await _seedPlotForExportTrial(db, trialId);
+      final plotPk = await PlotRepository(db)
+          .insertPlot(trialId: trialId, plotId: '202');
+      final notesRepo = NotesRepository(db);
+      await notesRepo.createNote(
+        trialId: trialId,
+        plotPk: plotPk,
+        sessionId: null,
+        content: 'Deer tracks near rep 3',
+        createdBy: 'Tester',
+      );
+      final uc = _makeUseCase(db);
+      final trial = Trial(
+        id: trialId,
+        name: 'NotesTrial',
+        status: 'active',
+        workspaceType: 'efficacy',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isDeleted: false,
+        isArmLinked: false,
+      );
+      final bundle =
+          await uc.execute(trial: trial, format: ExportFormat.flatCsv);
+      expect(bundle.notesCsv, contains('note_id'));
+      expect(bundle.notesCsv, contains('Deer tracks near rep 3'));
+      expect(bundle.notesCsv, contains('NotesTrial'));
+      expect(bundle.notesCsv, contains('202'));
+      expect(bundle.dataDictionaryCsv, contains('notes.csv'));
     });
   });
 }

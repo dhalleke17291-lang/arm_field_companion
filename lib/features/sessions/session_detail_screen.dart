@@ -30,6 +30,7 @@ import 'session_export_trust_dialog.dart';
 import 'session_export_trust_messaging.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import 'session_timing_helper.dart';
+import '../notes/field_note_editor_sheet.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
   final Trial trial;
@@ -423,6 +424,90 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     ],
                   ),
                 ),
+                ref.watch(notesForTrialProvider(trial.id)).when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (trialNotes) {
+                        final sessionNotes = trialNotes
+                            .where((n) => n.sessionId == session.id)
+                            .toList();
+                        return Padding(
+                          padding:
+                              const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Card(
+                            elevation: 0,
+                            color: AppDesignTokens.sectionHeaderBg,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: const BorderSide(
+                                  color: AppDesignTokens.borderCrisp),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Linked Field Notes',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      const Spacer(),
+                                      TextButton.icon(
+                                        onPressed: () =>
+                                            showFieldNoteEditorSheet(
+                                          context,
+                                          ref,
+                                          trial: trial,
+                                          initialSessionId: session.id,
+                                        ),
+                                        icon: const Icon(Icons.add, size: 18),
+                                        label: const Text('Add'),
+                                      ),
+                                    ],
+                                  ),
+                                  if (sessionNotes.isEmpty)
+                                    Text(
+                                      'No field notes linked to this session.',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: AppDesignTokens
+                                                .secondaryText,
+                                          ),
+                                    )
+                                  else
+                                    for (final n in sessionNotes)
+                                      ListTile(
+                                        dense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                        title: Text(
+                                          n.content,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        onTap: () => showFieldNoteEditorSheet(
+                                          context,
+                                          ref,
+                                          trial: trial,
+                                          existing: n,
+                                        ),
+                                      ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                 Expanded(
                   child: IndexedStack(
                     index: _selectedTabIndex,

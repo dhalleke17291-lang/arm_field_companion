@@ -101,7 +101,8 @@ class _AssessmentCompletionRow extends StatelessWidget {
               ),
             ),
             Text(
-              '${completion.ratedPlotCount}/${completion.totalDataPlots} · $pct%',
+              '${completion.ratedPlotCount}/${completion.analyzablePlotCount} · $pct%'
+              '${completion.excludedFromAnalysisCount > 0 ? ' · ${completion.excludedFromAnalysisCount} excluded' : ''}',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -114,7 +115,7 @@ class _AssessmentCompletionRow extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
-            value: completion.totalDataPlots <= 0
+            value: completion.analyzablePlotCount <= 0
                 ? 0
                 : completion.progressFraction,
             minHeight: 6,
@@ -143,14 +144,16 @@ class TrialCompletionSummaryCard extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (map) {
         if (map.isEmpty) return const SizedBox.shrink();
-        final totalDataPlots =
-            map.values.isEmpty ? 0 : map.values.first.totalDataPlots;
+        final first = map.values.first;
+        final analyzablePlotCount = first.analyzablePlotCount;
+        final totalDataPlots = first.totalDataPlots;
+        final excludedFromAnalysisCount = first.excludedFromAnalysisCount;
         final nAssess = map.length;
         final completeAssess =
             map.values.where((c) => c.isComplete).length;
         final sumPairs =
             map.values.fold<int>(0, (s, c) => s + c.ratedPlotCount);
-        final denomPairs = nAssess * totalDataPlots;
+        final denomPairs = nAssess * analyzablePlotCount;
         final overall = denomPairs <= 0
             ? 0.0
             : (sumPairs / denomPairs).clamp(0.0, 1.0);
@@ -212,7 +215,9 @@ class TrialCompletionSummaryCard extends ConsumerWidget {
                 Text(
                   ratedAny == null
                       ? '$nAssess assessments · $completeAssess of $nAssess complete'
-                      : '$ratedAny/$totalDataPlots data plots with any current rating · $nAssess assessments · $completeAssess of $nAssess complete',
+                      : '$ratedAny/$totalDataPlots data plots rated'
+                          '${excludedFromAnalysisCount > 0 ? ' · $excludedFromAnalysisCount excluded' : ''}'
+                          ' · $nAssess assessments · $completeAssess of $nAssess complete',
                   style: const TextStyle(
                     fontSize: 11,
                     height: 1.35,

@@ -8,7 +8,7 @@ import '../../../core/providers.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../sessions/session_timing_helper.dart';
 
-enum _TimelineEventType { seeding, application, session }
+enum _TimelineEventType { seeding, application, session, note }
 
 class _TrialTimelineEvent {
   const _TrialTimelineEvent({
@@ -52,6 +52,7 @@ class TimelineTab extends ConsumerWidget {
     final applicationsAsync =
         ref.watch(trialApplicationsForTrialProvider(trial.id));
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
+    final notesAsync = ref.watch(notesForTrialProvider(trial.id));
 
     return seedingAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -67,6 +68,7 @@ class TimelineTab extends ConsumerWidget {
       data: (seedingEvent) {
         final applications = applicationsAsync.valueOrNull ?? [];
         final sessions = sessionsAsync.valueOrNull ?? [];
+        final fieldNotes = notesAsync.valueOrNull ?? [];
         final seedingDate = seedingEvent?.seedingDate;
 
         // "Before first application" warning uses first APPLIED date only.
@@ -145,6 +147,23 @@ class TimelineTab extends ConsumerWidget {
           ));
         }
 
+        for (final note in fieldNotes) {
+          final days = seedingDate != null
+              ? note.createdAt.difference(seedingDate).inDays
+              : null;
+          final timingText = days != null ? '$days days after seeding' : null;
+          final preview = note.content.trim();
+          events.add(_TrialTimelineEvent(
+            date: note.createdAt,
+            type: _TimelineEventType.note,
+            title: 'Field note',
+            subtitle: preview.length > 80
+                ? '${preview.substring(0, 80)}…'
+                : preview,
+            timingText: timingText,
+          ));
+        }
+
         events.sort((a, b) => a.date.compareTo(b.date));
 
         if (events.isEmpty) {
@@ -152,7 +171,7 @@ class TimelineTab extends ConsumerWidget {
             icon: Icons.timeline,
             title: 'No events recorded yet',
             subtitle:
-                'Seeding, applications, and rating sessions will appear here.',
+                'Seeding, applications, rating sessions, and field notes will appear here.',
           );
         }
 
@@ -258,6 +277,8 @@ class _TimelineEventRow extends ConsumerWidget {
         return Icons.water_drop_outlined;
       case _TimelineEventType.session:
         return Icons.assignment_outlined;
+      case _TimelineEventType.note:
+        return Icons.sticky_note_2_outlined;
     }
   }
 
@@ -268,6 +289,7 @@ class _TimelineEventRow extends ConsumerWidget {
       _TimelineEventType.seeding => scheme.primary,
       _TimelineEventType.application => scheme.secondary,
       _TimelineEventType.session => scheme.tertiary,
+      _TimelineEventType.note => scheme.primaryContainer,
     };
     final hasWeather = event.type == _TimelineEventType.session &&
             event.ratingSessionId != null

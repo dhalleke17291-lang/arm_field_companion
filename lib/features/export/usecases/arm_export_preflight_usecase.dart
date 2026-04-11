@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/plot_analysis_eligibility.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../diagnostics/trial_readiness.dart';
@@ -124,7 +125,8 @@ class ArmExportPreflightUseCase {
     final plotsAll = await _plotRepository.getPlotsForTrial(trialId);
     final dataPlots =
         plotsAll.where((p) => !p.isDeleted && !p.isGuardRow).toList();
-    final totalPlots = dataPlots.length;
+    final analyzablePlots = dataPlots.where(isAnalyzablePlot).toList();
+    final totalPlots = analyzablePlots.length;
 
     final trialAssessments =
         await _trialAssessmentRepository.getForTrial(trialId);
@@ -249,7 +251,7 @@ class ArmExportPreflightUseCase {
         correctedRatings =
             corrRows.map((c) => c.ratingId).toSet().length;
       }
-      final dataPlotIds = dataPlots.map((p) => p.id).toSet();
+      final dataPlotIds = analyzablePlots.map((p) => p.id).toSet();
       final recordedPks = sessionRatings
           .where((r) =>
               dataPlotIds.contains(r.plotPk) && r.resultStatus == 'RECORDED')

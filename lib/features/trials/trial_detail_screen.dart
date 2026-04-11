@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/plot_analysis_eligibility.dart';
 import '../../core/diagnostics/diagnostic_finding.dart';
 import '../../core/diagnostics/unified_severity.dart';
 import '../../core/session_state.dart';
@@ -48,6 +49,7 @@ import '../derived/derived_snapshot_provider.dart'
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
 import '../import/ui/import_trial_sheet.dart';
+import '../notes/field_notes_trial_section.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -293,6 +295,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             'applications',
             'seeding',
             'sessions',
+            'notes',
             'data_dictionary',
           ];
           final contents = [
@@ -303,6 +306,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             bundle.applicationsCsv,
             bundle.seedingCsv,
             bundle.sessionsCsv,
+            bundle.notesCsv,
             bundle.dataDictionaryCsv,
           ];
           for (var i = 0; i < names.length; i++) {
@@ -616,11 +620,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final plots = plotsAsync.valueOrNull;
     final dataPlotCount =
         plots?.where((p) => !p.isGuardRow).length;
+    final analyzableCount = plots?.where(isAnalyzablePlot).length;
+    final excludedCount = dataPlotCount != null && analyzableCount != null
+        ? (dataPlotCount - analyzableCount).clamp(0, dataPlotCount)
+        : 0;
     final rated = ratedAsync.valueOrNull;
-    final int? unrated = dataPlotCount != null &&
+    final int? unrated = analyzableCount != null &&
             rated != null &&
-            dataPlotCount > 0
-        ? (dataPlotCount - rated).clamp(0, dataPlotCount)
+            analyzableCount > 0
+        ? (analyzableCount - rated).clamp(0, analyzableCount)
         : null;
 
     final corrections = correctionsAsync.valueOrNull?.length ?? 0;
@@ -631,6 +639,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         completionMap != null && completionMap.length > 1;
     final hasPlotOrCorrectionLines = showPerAssessment ||
         (!showPerAssessment && unrated != null && unrated > 0) ||
+        excludedCount > 0 ||
         (correctionsLoaded && corrections > 0);
 
     return Column(
@@ -667,7 +676,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '${e.value.assessmentName}: ${e.value.ratedPlotCount}/${e.value.totalDataPlots}',
+                      '${e.value.assessmentName}: ${e.value.ratedPlotCount}/${e.value.analyzablePlotCount}'
+                      '${e.value.excludedFromAnalysisCount > 0 ? ' (${e.value.excludedFromAnalysisCount} excluded)' : ''}',
                       style: const TextStyle(
                         fontSize: 12,
                         height: 1.35,
@@ -680,11 +690,22 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
         ] else if (unrated != null && unrated > 0) ...[
           Text(
-            '$unrated plot${unrated == 1 ? '' : 's'} without any rating in this trial (navigation)',
+            '$unrated analyzable plot${unrated == 1 ? '' : 's'} without any rating in this trial (navigation)',
             style: const TextStyle(
               fontSize: 12,
               height: 1.35,
               color: AppDesignTokens.primaryText,
+            ),
+          ),
+        ],
+        if (excludedCount > 0) ...[
+          if (unrated != null && unrated > 0) const SizedBox(height: 6),
+          Text(
+            '$excludedCount plot${excludedCount == 1 ? '' : 's'} excluded from analysis',
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: AppDesignTokens.secondaryText,
             ),
           ),
         ],
@@ -1484,6 +1505,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
           TrialCompletionSummaryCard(trialId: currentTrial.id),
           _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
+          FieldNotesTrialSection(trial: currentTrial),
           const SizedBox(height: AppDesignTokens.spacing12),
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
@@ -1651,6 +1673,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ),
         TrialCompletionSummaryCard(trialId: currentTrial.id),
         _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
+        FieldNotesTrialSection(trial: currentTrial),
         const SizedBox(height: AppDesignTokens.spacing12),
         if (_selectedTabIndex != _sessionsIndex) ...[
           Padding(
@@ -1964,8 +1987,13 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                         ref.watch(ratedPlotsCountForTrialProvider(trialId));
                     if (dataPlotCount > 0 && ratedAsync.hasValue) {
                       final ratedTrial = ratedAsync.value ?? 0;
+                      final excludedNav = plots
+                          .where((p) =>
+                              !p.isGuardRow && p.excludeFromAnalysis == true)
+                          .length;
                       progressText =
-                          '$ratedTrial/$dataPlotCount data plots rated';
+                          '$ratedTrial/$dataPlotCount data plots rated'
+                          '${excludedNav > 0 ? ' · $excludedNav excluded' : ''}';
                       if (layoutCount != dataPlotCount) {
                         progressText =
                             '$progressText\n$layoutCount layout rows including guards';

@@ -25,6 +25,7 @@ class ArmFieldMapping {
     'confidence': 'CONFIDENCE',
     'rating_method': 'METHOD',
     'photo_files': 'PHOTOFILES',
+    'plot_excluded': 'PLOT_EXCLUDED',
     'trial_id': 'TRIALID',
     'trial_name': 'TRIALNAME',
     'session_name': 'SESSIONNAME',
@@ -93,6 +94,9 @@ class ArmFieldMapping {
     'soil_series': 'SOIL_SERIES',
     'plot_notes': 'PLOT_NOTES',
     'is_guard': 'IS_GUARD',
+    'is_excluded': 'IS_EXCLUDED',
+    'exclusion_reason': 'EXCL_REASON',
+    'damage_type': 'DAMAGE_TYPE',
     'export_timestamp': 'EXPORT_TIMESTAMP',
   };
 
@@ -144,5 +148,12 @@ class ArmFieldMapping {
     ['assessment_type', 'METHOD', 'Assessment type', '', 'e.g. Visual rating, Measured'],
     ['rating_time', 'TIMING', 'Assessment timing', '', 'e.g. 7DAT, BBCH65'],
     ['photo_files', 'PHOTOFILES', 'Photo filenames', '', 'Pipe-separated list of photo filenames'],
+    [
+      'plot_excluded',
+      'PLOT_EXCLUDED',
+      'True if plot is excluded from analysis (guard or researcher exclusion)',
+      '',
+      'Observations may still exist for excluded plots'
+    ],
   ];
 }

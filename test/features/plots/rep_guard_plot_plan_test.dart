@@ -16,7 +16,6 @@ Plot _p(
     plotSortIndex: plotSortIndex,
     rep: rep,
     treatmentId: null,
-    notes: null,
     row: null,
     column: null,
     fieldRow: null,

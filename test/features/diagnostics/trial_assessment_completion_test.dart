@@ -68,6 +68,43 @@ void main() {
     final map = await _completionMap(db, trialId);
     expect(map.length, 1);
     expect(map.values.single.totalDataPlots, 1);
+    expect(map.values.single.analyzablePlotCount, 1);
+    expect(map.values.single.excludedFromAnalysisCount, 0);
+  });
+
+  test('analysis-excluded data plot reduces analyzable count only', () async {
+    final trialId = await TrialRepository(db).createTrial(
+      name: 'ex',
+      workspaceType: 'standalone',
+    );
+    await PlotRepository(db).insertPlot(trialId: trialId, plotId: '101');
+    final pk2 =
+        await PlotRepository(db).insertPlot(trialId: trialId, plotId: '102');
+    await PlotRepository(db).setPlotExcludedFromAnalysis(
+      pk2,
+      exclusionReason: 'Damage',
+      damageType: 'mechanical',
+    );
+    final defId = await db.into(db.assessmentDefinitions).insert(
+          AssessmentDefinitionsCompanion.insert(
+            code: 'c2',
+            name: 'M',
+            category: 'custom',
+            isSystem: const Value(false),
+            isActive: const Value(true),
+          ),
+        );
+    await db.into(db.trialAssessments).insert(
+          TrialAssessmentsCompanion.insert(
+            trialId: trialId,
+            assessmentDefinitionId: defId,
+          ),
+        );
+    final map = await _completionMap(db, trialId);
+    final c = map.values.single;
+    expect(c.totalDataPlots, 2);
+    expect(c.analyzablePlotCount, 1);
+    expect(c.excludedFromAnalysisCount, 1);
   });
 
   test('two assessments: A1 all rated, A2 none', () async {
