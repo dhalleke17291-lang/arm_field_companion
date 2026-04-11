@@ -688,6 +688,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 ),
               ),
               IconButton(
+                tooltip: 'Decrease treatments',
                 onPressed: () => _setTreatmentCount(_treatmentCount - 1),
                 icon: const Icon(Icons.remove_circle_outline),
               ),
@@ -699,6 +700,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 ),
               ),
               IconButton(
+                tooltip: 'Increase treatments',
                 onPressed: () => _setTreatmentCount(_treatmentCount + 1),
                 icon: const Icon(Icons.add_circle_outline),
               ),
@@ -885,6 +887,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 ),
               ),
               IconButton(
+                tooltip: 'Decrease reps',
                 onPressed: _repCount > 1
                     ? () => setState(() => _repCount--)
                     : null,
@@ -899,6 +902,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 ),
               ),
               IconButton(
+                tooltip: 'Increase reps',
                 onPressed: _repCount < 8
                     ? () => setState(() => _repCount++)
                     : null,
@@ -921,6 +925,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 ),
               ),
               IconButton(
+                tooltip: 'Decrease plots per rep',
                 onPressed: _plotsPerRep > tMin
                     ? () => setState(() => _plotsPerRep--)
                     : null,
@@ -935,6 +940,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 ),
               ),
               IconButton(
+                tooltip: 'Increase plots per rep',
                 onPressed: _plotsPerRep < 50
                     ? () => setState(() => _plotsPerRep++)
                     : null,
@@ -973,6 +979,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Decrease guards',
                   onPressed: _guardsPerRepEnd > 1
                       ? () => setState(() => _guardsPerRepEnd--)
                       : null,
@@ -987,6 +994,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Increase guards',
                   onPressed: _guardsPerRepEnd < 3
                       ? () => setState(() => _guardsPerRepEnd++)
                       : null,
@@ -1275,6 +1283,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 title: Text(a.name),
                 subtitle: Text('${a.dataType} · ${a.unit ?? '—'}'),
                 trailing: IconButton(
+                  tooltip: 'Remove assessment',
                   icon: const Icon(Icons.close),
                   onPressed: () => setState(() => _assessments.removeAt(i)),
                 ),

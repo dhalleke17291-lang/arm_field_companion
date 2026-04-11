@@ -14,6 +14,34 @@ class AppLoadingView extends StatelessWidget {
   }
 }
 
+/// Compact inline error hint — use where a silent SizedBox.shrink() previously
+/// hid failures (cards, chips, small sections).
+class AppErrorHint extends StatelessWidget {
+  final Object error;
+  const AppErrorHint({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 14, color: theme.colorScheme.error),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              'Failed to load',
+              style: TextStyle(fontSize: 12, color: theme.colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Shared error view with optional retry.
 class AppErrorView extends StatelessWidget {
   final Object error;

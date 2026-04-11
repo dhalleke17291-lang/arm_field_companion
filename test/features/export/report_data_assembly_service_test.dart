@@ -284,6 +284,13 @@ class MockTreatmentRepository implements TreatmentRepository {
       throw UnimplementedError();
 
   @override
+  Future<void> deleteTreatment(int id) async => throw UnimplementedError();
+
+  @override
+  Future<void> deleteComponent(int componentId) async =>
+      throw UnimplementedError();
+
+  @override
   Future<TreatmentComponent?> getDeletedComponentById(int componentId) async =>
       throw UnimplementedError();
 

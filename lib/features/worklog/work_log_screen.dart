@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_sort.dart';
+import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/providers.dart';
 import '../../core/session_resume_store.dart';
-import '../../core/trial_state.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/last_session_store.dart';
 import '../../core/workspace/workspace_config.dart';
@@ -20,30 +19,6 @@ import '../sessions/session_detail_screen.dart';
 import '../trials/trial_detail_screen.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../ratings/rating_screen.dart';
-import '../ratings/rating_scale_map.dart';
-
-/// Same filter as [workLogSessionsProvider], but backed by Drift [watch] so the
-/// list updates when sessions change without manual invalidation.
-final _workLogSessionsStreamProvider =
-    StreamProvider.autoDispose.family<List<Session>, String>((ref, dateLocal) {
-  final db = ref.watch(databaseProvider);
-  return ref.watch(currentUserIdProvider).when(
-        data: (userId) => (db.select(db.sessions)
-              ..where((s) {
-                var pred = s.sessionDateLocal.equals(dateLocal) &
-                    s.isDeleted.equals(false);
-                if (userId != null) {
-                  pred = pred & s.createdByUserId.equals(userId);
-                }
-                return pred;
-              })
-              ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
-            .watch(),
-        loading: () => Stream.value(<Session>[]),
-        error: (e, st) => Stream<List<Session>>.fromFuture(
-            Future<List<Session>>.error(e, st)),
-      );
-});
 
 /// Wall-clock date string for "today" in local time (yyyy-MM-dd).
 String workLogTodayDateLocal() {
@@ -102,443 +77,6 @@ String _formatDuration(DateTime start, DateTime end) {
   return '${m}m';
 }
 
-Widget _workLogWorkspaceBadge(bool isCustom) {
-  return Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: AppDesignTokens.spacing8,
-      vertical: AppDesignTokens.spacing4,
-    ),
-    decoration: BoxDecoration(
-      color: AppDesignTokens.primaryTint.withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(999),
-    ),
-    child: Text(
-      isCustom ? 'Custom' : 'Protocol',
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: AppDesignTokens.primary,
-      ),
-    ),
-  );
-}
-
-Widget _workLogOpenClosedBadge(bool isOpen) {
-  return Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: AppDesignTokens.spacing8,
-      vertical: AppDesignTokens.spacing4,
-    ),
-    decoration: BoxDecoration(
-      color: isOpen
-          ? AppDesignTokens.openSessionBgLight
-          : AppDesignTokens.emptyBadgeBg,
-      borderRadius: BorderRadius.circular(999),
-    ),
-    child: Text(
-      isOpen ? 'Open' : 'Closed',
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: isOpen
-            ? AppDesignTokens.openSessionBg
-            : AppDesignTokens.secondaryText,
-      ),
-    ),
-  );
-}
-
-Widget _workLogStatPill(String label, Color bg, Color fg) {
-  return Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: AppDesignTokens.spacing8,
-      vertical: AppDesignTokens.spacing4,
-    ),
-    decoration: BoxDecoration(
-      color: bg,
-      borderRadius: BorderRadius.circular(999),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: fg,
-      ),
-    ),
-  );
-}
-
-Widget _workLogStatsRow({
-  required int ratingCount,
-  required int flagCount,
-  required int photoCount,
-}) {
-  if (ratingCount == 0 && flagCount == 0 && photoCount == 0) {
-    return const Text(
-      'No activity recorded',
-      style: TextStyle(
-        fontSize: 13,
-        color: AppDesignTokens.secondaryText,
-      ),
-    );
-  }
-  return Wrap(
-    spacing: AppDesignTokens.spacing8,
-    runSpacing: AppDesignTokens.spacing8,
-    children: [
-      _workLogStatPill(
-        '$ratingCount plots with a rating',
-        AppDesignTokens.successBg,
-        AppDesignTokens.successFg,
-      ),
-      _workLogStatPill(
-        '$flagCount flagged',
-        AppDesignTokens.warningBg,
-        AppDesignTokens.warningFg,
-      ),
-      _workLogStatPill(
-        '$photoCount photos',
-        AppDesignTokens.primaryTint,
-        AppDesignTokens.primary,
-      ),
-    ],
-  );
-}
-
-Widget _workLogAttentionChips(
-  BuildContext context,
-  AsyncValue<List<AttentionItem>> attentionAsync,
-  Trial? trial,
-  void Function(BuildContext context, AttentionItem item, Trial trial)
-      onAttentionTap,
-) {
-  if (trial == null) return const SizedBox.shrink();
-  return attentionAsync.when(
-    loading: () => const SizedBox.shrink(),
-    error: (_, __) => const SizedBox.shrink(),
-    data: (items) {
-      final filtered = items
-          .where((i) =>
-              i.type != AttentionType.openSession &&
-              i.type != AttentionType.noSessionsYet &&
-              (i.severity == AttentionSeverity.high ||
-                  i.severity == AttentionSeverity.medium))
-          .take(2)
-          .toList();
-      if (filtered.isEmpty) return const SizedBox.shrink();
-      return Padding(
-        padding: const EdgeInsets.only(
-          top: AppDesignTokens.spacing8,
-        ),
-        child: Wrap(
-          spacing: 6,
-          runSpacing: AppDesignTokens.spacing4,
-          children: filtered
-              .map((item) => _WorkLogAttentionChip(
-                    item: item,
-                    trial: trial,
-                    onTap: () => onAttentionTap(context, item, trial),
-                  ))
-              .toList(),
-        ),
-      );
-    },
-  );
-}
-
-/// Own [Consumer] subtree so [ref.watch] is not tied to parent [AsyncValue.when] branches.
-class _WorkLogSessionCard extends ConsumerWidget {
-  const _WorkLogSessionCard({
-    required this.session,
-    required this.isResumable,
-    required this.onCardTap,
-    required this.onDeleteSession,
-    required this.onAttentionChipTap,
-  });
-
-  final Session session;
-  final bool isResumable;
-  final void Function(BuildContext context, Session session, bool isResumable)
-      onCardTap;
-  final void Function(BuildContext context, Session session) onDeleteSession;
-  final void Function(BuildContext context, AttentionItem item, Trial trial)
-      onAttentionChipTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final trialAsync = ref.watch(trialProvider(session.trialId));
-    final ratingCountAsync =
-        ref.watch(ratingCountForSessionProvider(session.id));
-    final flagCountAsync = ref.watch(flagCountForSessionProvider(session.id));
-    final photoCountAsync = ref.watch(photoCountForSessionProvider(session.id));
-    final attentionAsync = ref.watch(trialAttentionProvider(session.trialId));
-    final timingAsync = ref.watch(sessionTimingContextProvider(session.id));
-
-    final trial = trialAsync.valueOrNull;
-    final trialName = trial?.name ?? 'Trial';
-    final isOpen = session.endedAt == null;
-    final startStr = _formatTime(session.startedAt);
-    final endStr =
-        session.endedAt != null ? _formatTime(session.endedAt!) : 'Open';
-    final durationStr = session.endedAt != null
-        ? ' (${_formatDuration(session.startedAt, session.endedAt!)})'
-        : '';
-
-    final wt = workspaceTypeFromStringOrNull(trial?.workspaceType) ??
-        WorkspaceType.efficacy;
-    final isCustom = WorkspaceConfig.forType(wt).mode == TrialMode.standalone;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => onCardTap(context, session, isResumable),
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
-          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-          decoration: BoxDecoration(
-            color: AppDesignTokens.cardSurface,
-            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-            border: Border.all(color: AppDesignTokens.borderCrisp),
-            boxShadow: AppDesignTokens.cardShadow,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          session.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppDesignTokens.primaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          trialName,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (trial != null) _workLogWorkspaceBadge(isCustom),
-                      const SizedBox(width: AppDesignTokens.spacing8),
-                      _workLogOpenClosedBadge(isOpen),
-                      const SizedBox(width: AppDesignTokens.spacing4),
-                      PopupMenuButton<String>(
-                        icon: const Icon(
-                          Icons.more_vert,
-                          size: 20,
-                          color: AppDesignTokens.secondaryText,
-                        ),
-                        tooltip: 'More actions',
-                        onSelected: (value) {
-                          if (value == 'delete_session') {
-                            onDeleteSession(context, session);
-                          }
-                        },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem<String>(
-                            value: 'delete_session',
-                            child: Text('Move to Recovery'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppDesignTokens.spacing12),
-              Text(
-                '$startStr → $endStr$durationStr',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
-              timingAsync.maybeWhen(
-                data: (t) {
-                  if (t.displayLine.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding:
-                        const EdgeInsets.only(top: AppDesignTokens.spacing8),
-                    child: Text(
-                      t.displayLine,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppDesignTokens.secondaryText,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                },
-                orElse: () => const SizedBox.shrink(),
-              ),
-              const SizedBox(height: AppDesignTokens.spacing12),
-              _workLogStatsRow(
-                ratingCount: ratingCountAsync.valueOrNull ?? 0,
-                flagCount: flagCountAsync.valueOrNull ?? 0,
-                photoCount: photoCountAsync.valueOrNull ?? 0,
-              ),
-              _workLogAttentionChips(
-                context,
-                attentionAsync,
-                trial,
-                onAttentionChipTap,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WorkLogSmartEmptyState extends ConsumerWidget {
-  const _WorkLogSmartEmptyState({
-    required this.isToday,
-    this.onGoToTrials,
-    required this.onAttentionTap,
-  });
-
-  final bool isToday;
-  final VoidCallback? onGoToTrials;
-  final void Function(BuildContext context, AttentionItem item, Trial trial)
-      onAttentionTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final allTrialsAsync = ref.watch(trialsStreamProvider);
-    final activeTrials = allTrialsAsync.valueOrNull
-            ?.where((t) => t.status == kTrialStatusActive)
-            .toList() ??
-        [];
-
-    final subtext = isToday
-        ? 'Start a session to begin field work'
-        : 'No sessions were recorded on this date';
-
-    Widget? sectionB;
-    if (isToday && activeTrials.isNotEmpty) {
-      final trialIds = activeTrials.map((t) => t.id).toList();
-      final displayItems = _topAttentionStripDisplayItems(ref, trialIds);
-      if (displayItems.isEmpty) {
-        sectionB = const Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.check_circle,
-              size: 18,
-              color: AppDesignTokens.successFg,
-            ),
-            SizedBox(width: AppDesignTokens.spacing8),
-            Expanded(
-              child: Text(
-                'All active trials are on track',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppDesignTokens.successFg,
-                ),
-              ),
-            ),
-          ],
-        );
-      } else {
-        sectionB = Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(
-                bottom: AppDesignTokens.spacing8,
-              ),
-              child: Text(
-                "Today's focus",
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppDesignTokens.primaryText,
-                ),
-              ),
-            ),
-            _TopAttentionStrip(
-              trialIds: trialIds,
-              onAttentionTap: (item, trial) =>
-                  onAttentionTap(context, item, trial),
-            ),
-          ],
-        );
-      }
-    }
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDesignTokens.spacing24,
-          vertical: AppDesignTokens.spacing16,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.event_note_outlined,
-              size: 48,
-              color: AppDesignTokens.secondaryText,
-            ),
-            const SizedBox(height: AppDesignTokens.spacing16),
-            const Text(
-              'Nothing recorded today',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppDesignTokens.primaryText,
-              ),
-            ),
-            const SizedBox(height: AppDesignTokens.spacing8),
-            Text(
-              subtext,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-            const SizedBox(height: AppDesignTokens.spacing24),
-            if (sectionB != null) ...[
-              sectionB,
-              const SizedBox(height: AppDesignTokens.spacing24),
-            ],
-            if (onGoToTrials != null) ...[
-              FilledButton.icon(
-                onPressed: onGoToTrials,
-                icon: const Icon(Icons.folder_outlined, size: 20),
-                label: const Text('Go to Trials'),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class WorkLogScreen extends ConsumerStatefulWidget {
   const WorkLogScreen({
     super.key,
@@ -594,7 +132,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
   @override
   Widget build(BuildContext context) {
     final sessionsAsync =
-        ref.watch(_workLogSessionsStreamProvider(_selectedDateLocal));
+        ref.watch(workLogSessionsProvider(_selectedDateLocal));
     final subtitle = formatWorkLogSubtitle(_selectedDateLocal);
 
     return Scaffold(
@@ -635,11 +173,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (sessions) {
                 if (sessions.isEmpty) {
-                  return _WorkLogSmartEmptyState(
-                    isToday: _selectedDateLocal == workLogTodayDateLocal(),
-                    onGoToTrials: widget.onGoToTrials,
-                    onAttentionTap: _onAttentionChipTap,
-                  );
+                  return _buildEmptyState(widget.onGoToTrials);
                 }
                 final openSessions =
                     sessions.where((s) => s.endedAt == null).toList();
@@ -668,12 +202,10 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                           if (openSessions.isNotEmpty) ...[
                             _sectionHeader('Continue Working', isFirst: true),
                             ...openSessions.map(
-                              (s) => _WorkLogSessionCard(
-                                session: s,
+                              (s) => _buildSessionCard(
+                                context,
+                                s,
                                 isResumable: true,
-                                onCardTap: _onSessionCardTap,
-                                onDeleteSession: _confirmAndSoftDeleteSession,
-                                onAttentionChipTap: _onAttentionChipTap,
                               ),
                             ),
                           ],
@@ -683,12 +215,10 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                               isFirst: openSessions.isEmpty,
                             ),
                             ...closedSessions.map(
-                              (s) => _WorkLogSessionCard(
-                                session: s,
+                              (s) => _buildSessionCard(
+                                context,
+                                s,
                                 isResumable: false,
-                                onCardTap: _onSessionCardTap,
-                                onDeleteSession: _confirmAndSoftDeleteSession,
-                                onAttentionChipTap: _onAttentionChipTap,
                               ),
                             ),
                           ],
@@ -768,6 +298,52 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(VoidCallback? onGoToTrials) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing24,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.event_note_outlined,
+              size: 64,
+              color: AppDesignTokens.secondaryText,
+            ),
+            const SizedBox(height: AppDesignTokens.spacing16),
+            const Text(
+              'No activity yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            const Text(
+              'Start a trial or record your first session to see activity here',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            if (onGoToTrials != null) ...[
+              const SizedBox(height: AppDesignTokens.spacing24),
+              FilledButton.icon(
+                onPressed: onGoToTrials,
+                icon: const Icon(Icons.folder_outlined, size: 20),
+                label: const Text('Go to Trials'),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -867,15 +443,6 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     }
     LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
     if (!context.mounted) return;
-    final scaleMap = buildRatingScaleMap(
-      trialAssessments: ref
-              .read(trialAssessmentsForTrialProvider(resolvedTrial.id))
-              .valueOrNull ??
-          <TrialAssessment>[],
-      definitions: ref.read(assessmentDefinitionsProvider).valueOrNull ??
-          <AssessmentDefinition>[],
-      trialIdForLog: resolvedTrial.id,
-    );
     // Use push (not pushAndRemoveUntil) to avoid disposing MainShell/Work Log
     // while ref.watch dependents are still active; pop returns to Work Log.
     Navigator.push(
@@ -889,9 +456,170 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
           allPlots: plots,
           currentPlotIndex: startIndex,
           initialAssessmentIndex: initialAssessmentIndex,
-          scaleMap: scaleMap,
         ),
       ),
+    );
+  }
+
+  Widget _buildSessionCard(
+    BuildContext context,
+    Session session, {
+    required bool isResumable,
+  }) {
+    final trialAsync = ref.watch(trialProvider(session.trialId));
+    final ratingCountAsync =
+        ref.watch(ratingCountForSessionProvider(session.id));
+    final flagCountAsync = ref.watch(flagCountForSessionProvider(session.id));
+    final photoCountAsync = ref.watch(photoCountForSessionProvider(session.id));
+    final attentionAsync = ref.watch(trialAttentionProvider(session.trialId));
+
+    final trial = trialAsync.valueOrNull;
+    final trialName = trial?.name ?? 'Trial';
+    final isOpen = session.endedAt == null;
+    final startStr = _formatTime(session.startedAt);
+    final endStr =
+        session.endedAt != null ? _formatTime(session.endedAt!) : 'Open';
+    final durationStr = session.endedAt != null
+        ? ' (${_formatDuration(session.startedAt, session.endedAt!)})'
+        : '';
+
+    final wt = workspaceTypeFromStringOrNull(trial?.workspaceType) ??
+        WorkspaceType.efficacy;
+    final isCustom = WorkspaceConfig.forType(wt).mode == TrialMode.standalone;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _onSessionCardTap(context, session, isResumable),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          decoration: BoxDecoration(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+            boxShadow: AppDesignTokens.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          session.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppDesignTokens.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          trialName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (trial != null) _buildWorkspaceBadge(isCustom),
+                      const SizedBox(width: AppDesignTokens.spacing8),
+                      _buildOpenClosedBadge(isOpen),
+                      const SizedBox(width: AppDesignTokens.spacing4),
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          size: 20,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                        tooltip: 'More actions',
+                        onSelected: (value) {
+                          if (value == 'delete_session') {
+                            _confirmAndSoftDeleteSession(context, session);
+                          }
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem<String>(
+                            value: 'delete_session',
+                            child: Text('Move to Recovery'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppDesignTokens.spacing12),
+              Text(
+                '$startStr → $endStr$durationStr',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              const SizedBox(height: AppDesignTokens.spacing12),
+              _buildStatsRow(
+                ratingCount: ratingCountAsync.valueOrNull ?? 0,
+                flagCount: flagCountAsync.valueOrNull ?? 0,
+                photoCount: photoCountAsync.valueOrNull ?? 0,
+              ),
+              _buildAttentionChips(
+                attentionAsync: attentionAsync,
+                trial: trial,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttentionChips({
+    required AsyncValue<List<AttentionItem>> attentionAsync,
+    required Trial? trial,
+  }) {
+    if (trial == null) return const SizedBox.shrink();
+    return attentionAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (e, __) => AppErrorHint(error: e),
+      data: (items) {
+        final filtered = items
+            .where((i) =>
+                i.type != AttentionType.openSession &&
+                i.type != AttentionType.noSessionsYet &&
+                (i.severity == AttentionSeverity.high ||
+                    i.severity == AttentionSeverity.medium))
+            .take(2)
+            .toList();
+        if (filtered.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(
+            top: AppDesignTokens.spacing8,
+          ),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: AppDesignTokens.spacing4,
+            children: filtered
+                .map((item) => _WorkLogAttentionChip(
+                      item: item,
+                      trial: trial,
+                      onTap: () => _onAttentionChipTap(context, item, trial),
+                    ))
+                .toList(),
+          ),
+        );
+      },
     );
   }
 
@@ -908,9 +636,9 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
       AttentionType.setupIncomplete => 0,
       AttentionType.plotsPartiallyRated => 0,
       AttentionType.dataCollectionComplete => 0,
-      AttentionType.statisticalAnalysisPending => 3,
       AttentionType.openSession => null,
       AttentionType.noSessionsYet => null,
+      AttentionType.statisticalAnalysisPending => 0,
     };
     if (tabIndex == null) return;
     Navigator.push(
@@ -959,7 +687,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
           );
       if (!context.mounted) return;
       final trialId = session.trialId;
-      ref.invalidate(_workLogSessionsStreamProvider(_selectedDateLocal));
+      ref.invalidate(workLogSessionsProvider(_selectedDateLocal));
       ref.invalidate(sessionsForTrialProvider(trialId));
       ref.invalidate(deletedSessionsProvider);
       ref.invalidate(deletedSessionsForTrialRecoveryProvider(trialId));
@@ -989,39 +717,110 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
       );
     }
   }
-}
 
-/// Same filter/rank as [_TopAttentionStrip] for empty-state "all on track" check.
-List<({AttentionItem item, int trialId})> _topAttentionStripDisplayItems(
-  WidgetRef ref,
-  List<int> trialIds,
-) {
-  final stripItems = <({AttentionItem item, int trialId})>[];
-
-  for (final trialId in trialIds) {
-    final async = ref.watch(trialAttentionProvider(trialId));
-    final items = async.valueOrNull;
-    if (items == null) continue;
-    final filtered = items.where((i) =>
-        i.type != AttentionType.openSession &&
-        i.type != AttentionType.noSessionsYet &&
-        (i.severity == AttentionSeverity.high ||
-            i.severity == AttentionSeverity.medium));
-    if (filtered.isNotEmpty) {
-      stripItems.add((item: filtered.first, trialId: trialId));
-    }
+  Widget _buildWorkspaceBadge(bool isCustom) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing8,
+        vertical: AppDesignTokens.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.primaryTint.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        isCustom ? 'Custom' : 'Protocol',
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppDesignTokens.primary,
+        ),
+      ),
+    );
   }
 
-  stripItems.sort((a, b) {
-    final severityCompare =
-        a.item.severity.index.compareTo(b.item.severity.index);
-    if (severityCompare != 0) return severityCompare;
-    final indexA = trialIds.indexOf(a.trialId);
-    final indexB = trialIds.indexOf(b.trialId);
-    return indexA.compareTo(indexB);
-  });
+  Widget _buildOpenClosedBadge(bool isOpen) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing8,
+        vertical: AppDesignTokens.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: isOpen
+            ? AppDesignTokens.openSessionBgLight
+            : AppDesignTokens.emptyBadgeBg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        isOpen ? 'Open' : 'Closed',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: isOpen
+              ? AppDesignTokens.openSessionBg
+              : AppDesignTokens.secondaryText,
+        ),
+      ),
+    );
+  }
 
-  return stripItems.take(3).toList();
+  Widget _buildStatsRow({
+    required int ratingCount,
+    required int flagCount,
+    required int photoCount,
+  }) {
+    if (ratingCount == 0 && flagCount == 0 && photoCount == 0) {
+      return const Text(
+        'No activity recorded',
+        style: TextStyle(
+          fontSize: 13,
+          color: AppDesignTokens.secondaryText,
+        ),
+      );
+    }
+    return Wrap(
+      spacing: AppDesignTokens.spacing8,
+      runSpacing: AppDesignTokens.spacing8,
+      children: [
+        _statPill(
+          '$ratingCount plots rated',
+          AppDesignTokens.successBg,
+          AppDesignTokens.successFg,
+        ),
+        _statPill(
+          '$flagCount flagged',
+          AppDesignTokens.warningBg,
+          AppDesignTokens.warningFg,
+        ),
+        _statPill(
+          '$photoCount photos',
+          AppDesignTokens.primaryTint,
+          AppDesignTokens.primary,
+        ),
+      ],
+    );
+  }
+
+  Widget _statPill(String label, Color bg, Color fg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing8,
+        vertical: AppDesignTokens.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: fg,
+        ),
+      ),
+    );
+  }
 }
 
 /// Compact top strip: cross-trial summary of highest-priority attention items.
@@ -1037,7 +836,32 @@ class _TopAttentionStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final displayItems = _topAttentionStripDisplayItems(ref, trialIds);
+    final stripItems = <({AttentionItem item, int trialId})>[];
+
+    for (final trialId in trialIds) {
+      final async = ref.watch(trialAttentionProvider(trialId));
+      final items = async.valueOrNull;
+      if (items == null) continue;
+      final filtered = items.where((i) =>
+          i.type != AttentionType.openSession &&
+          i.type != AttentionType.noSessionsYet &&
+          (i.severity == AttentionSeverity.high ||
+              i.severity == AttentionSeverity.medium));
+      if (filtered.isNotEmpty) {
+        stripItems.add((item: filtered.first, trialId: trialId));
+      }
+    }
+
+    stripItems.sort((a, b) {
+      final severityCompare =
+          a.item.severity.index.compareTo(b.item.severity.index);
+      if (severityCompare != 0) return severityCompare;
+      final indexA = trialIds.indexOf(a.trialId);
+      final indexB = trialIds.indexOf(b.trialId);
+      return indexA.compareTo(indexB);
+    });
+
+    final displayItems = stripItems.take(3).toList();
     if (displayItems.isEmpty) return const SizedBox.shrink();
 
     return Padding(

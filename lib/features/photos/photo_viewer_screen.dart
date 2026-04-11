@@ -72,7 +72,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
                     minScale: 1,
                     maxScale: 4,
                     child: file.existsSync()
-                        ? Image.file(file, fit: BoxFit.contain)
+                        ? Image.file(file, fit: BoxFit.contain, semanticLabel: 'Plot photo', cacheWidth: 1200)
                         : Padding(
                             padding: const EdgeInsets.all(16),
                             child: Text(

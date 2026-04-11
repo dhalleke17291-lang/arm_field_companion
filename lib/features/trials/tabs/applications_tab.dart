@@ -4,12 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
-import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
-import '../../../core/widgets/app_standard_widgets.dart';
-import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
-import '../../../shared/widgets/app_empty_state.dart';
 import 'application_sheet_content.dart';
 
 /// Applications tab for trial detail: list and add/edit application events.
@@ -88,44 +84,42 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
       ),
       data: (list) {
         final sorted = _sorted(list);
-        return Column(
-          children: [
-            Expanded(
-              child: list.isEmpty
-                  ? _buildEmpty(context, ref)
-                  : _buildList(context, ref, sorted),
-            ),
-            TabListBottomAddButton(
-              label: 'Add Application',
-              onPressed: () => _showApplicationSheet(context, ref, null),
-            ),
-          ],
-        );
+        return list.isEmpty
+            ? _buildEmpty(context, ref)
+            : _buildList(context, ref, sorted);
       },
     );
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return const AppEmptyState(
-      icon: Icons.opacity,
-      title: 'No application event yet',
-      subtitle: 'Record an application for this trial',
-      action: null,
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'No applications yet',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: () => _showApplicationSheet(context, ref, null),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add Application'),
+          ),
+        ],
+      ),
     );
   }
 
-  String _lastUpdatedLine(WidgetRef ref, TrialApplicationEvent e) {
-    final at = e.lastEditedAt!;
-    final timeStr = DateFormat('MMM d, yyyy HH:mm').format(at.toLocal());
-    var bySuffix = '';
-    if (e.lastEditedByUserId != null) {
-      final u = ref.watch(userByIdProvider(e.lastEditedByUserId!));
-      bySuffix = u.maybeWhen(
-        data: (user) => user != null ? ' by ${user.displayName}' : '',
-        orElse: () => '',
-      );
-    }
-    return 'Last updated $timeStr$bySuffix';
+  static String _applicationLabel(int index) {
+    if (index < 26) return String.fromCharCode(65 + index);
+    final q = index ~/ 26;
+    final r = index % 26;
+    return '${String.fromCharCode(64 + q)}${String.fromCharCode(65 + r)}';
   }
 
   Widget _buildApplicationTile(
@@ -134,133 +128,107 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     TrialApplicationEvent e,
     int index,
   ) {
-    return Consumer(
-      builder: (context, cRef, _) {
-        final isPending = e.status == 'pending';
-        final displayNumber = index + 1;
-        final plannedDateStr =
-            DateFormat('MMM d, yyyy').format(e.applicationDate);
-        final productsAsync =
-            cRef.watch(trialApplicationProductsForEventProvider(e.id));
-        final prods = productsAsync.valueOrNull;
-        final String primaryLine;
-        final String? rateLine;
-        if (prods == null || prods.isEmpty) {
-          primaryLine = e.productName?.trim().isNotEmpty == true
-              ? e.productName!.trim()
-              : 'No product specified';
-          rateLine = (e.rate != null && e.rateUnit != null)
-              ? '${e.rate} ${e.rateUnit}'
-              : null;
-        } else if (prods.length == 1) {
-          final p = prods.first;
-          primaryLine = p.productName;
-          rateLine = (p.rate != null && p.rateUnit != null)
-              ? '${p.rate} ${p.rateUnit}'
-              : (p.rate != null ? '${p.rate}' : null);
-        } else {
-          primaryLine = '${prods.first.productName} + ${prods.length - 1} more';
-          rateLine = '${prods.length} products';
-        }
-        final appliedAtStr = e.appliedAt != null
-            ? DateFormat('MMM d, yyyy HH:mm').format(e.appliedAt!)
-            : null;
+    final isPending = e.status == 'pending';
+    final label = _applicationLabel(index);
+    final plannedDateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
+    final productsAsync =
+        ref.watch(trialApplicationProductsForEventProvider(e.id));
+    final prods = productsAsync.valueOrNull;
+    final String primaryLine;
+    final String? rateLine;
+    if (prods == null || prods.isEmpty) {
+      primaryLine = e.productName?.trim().isNotEmpty == true
+          ? e.productName!.trim()
+          : 'No product specified';
+      rateLine = (e.rate != null && e.rateUnit != null)
+          ? '${e.rate} ${e.rateUnit}'
+          : null;
+    } else if (prods.length == 1) {
+      final p = prods.first;
+      primaryLine = p.productName;
+      rateLine = (p.rate != null && p.rateUnit != null)
+          ? '${p.rate} ${p.rateUnit}'
+          : (p.rate != null ? '${p.rate}' : null);
+    } else {
+      primaryLine = '${prods.first.productName} + ${prods.length - 1} more';
+      rateLine = '${prods.length} products';
+    }
+    final appliedAtStr = e.appliedAt != null
+        ? DateFormat('MMM d, yyyy HH:mm').format(e.appliedAt!)
+        : null;
 
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: InkWell(
-            onTap: () => _showApplicationSheet(context, cRef, e),
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: InkWell(
+        onTap: () => _showApplicationSheet(context, ref, e),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  TrialItemNumberBadge(number: displayNumber),
-                  const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                primaryLine,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  color: AppDesignTokens.primaryText,
-                                ),
-                              ),
-                            ),
-                            _StatusChip(isPending: isPending),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          plannedDateStr,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        ),
-                        if (rateLine != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            rateLine,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppDesignTokens.secondaryText,
-                            ),
-                          ),
-                        ],
-                        if (e.lastEditedAt != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            _lastUpdatedLine(cRef, e),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppDesignTokens.secondaryText,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (isPending)
-                              FilledButton.tonal(
-                                onPressed: () =>
-                                    _showApplySheet(context, cRef, e),
-                                child: const Text('Apply Now'),
-                              )
-                            else
-                              Text(
-                                appliedAtStr != null
-                                    ? 'Applied on $appliedAtStr'
-                                    : 'Applied',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppDesignTokens.successFg,
-                                ),
-                              ),
-                            TextButton(
-                              onPressed: () =>
-                                  _showApplicationSheet(context, cRef, e),
-                              child: const Text('Edit'),
-                            ),
-                          ],
-                        ),
-                      ],
+                    child: Text(
+                      primaryLine,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: AppDesignTokens.primaryText,
+                      ),
                     ),
+                  ),
+                  _StatusChip(isPending: isPending),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$label · $plannedDateStr',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              if (rateLine != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  rateLine,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (isPending)
+                    FilledButton.tonal(
+                      onPressed: () => _showApplySheet(context, ref, e),
+                      child: const Text('Apply Now'),
+                    )
+                  else
+                    Text(
+                      appliedAtStr != null
+                          ? 'Applied on $appliedAtStr'
+                          : 'Applied',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.successFg,
+                      ),
+                    ),
+                  TextButton(
+                    onPressed: () => _showApplicationSheet(context, ref, e),
+                    child: const Text('Edit'),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -274,13 +242,6 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppDesignTokens.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      showDragHandle: false,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -291,85 +252,74 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(ctx).viewInsets.bottom,
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  FormStyles.formSheetHorizontalPadding,
-                  FormStyles.formSheetFieldSpacing,
-                  FormStyles.formSheetHorizontalPadding,
-                  FormStyles.formSheetSectionSpacing,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Mark as applied',
-                      style: Theme.of(ctx).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: FormStyles.formSheetFieldSpacing),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              final d = await showDatePicker(
-                                context: ctx,
-                                initialDate: selectedDate,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now().add(
-                                  const Duration(days: 365),
-                                ),
-                              );
-                              if (d != null) {
-                                setSheetState(() => selectedDate = d);
-                              }
-                            },
-                            icon: const Icon(Icons.calendar_today, size: 18),
-                            label: Text(dateStr),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              final t = await showTimePicker(
-                                context: ctx,
-                                initialTime: selectedTime,
-                              );
-                              if (t != null) {
-                                setSheetState(() => selectedTime = t);
-                              }
-                            },
-                            icon: const Icon(Icons.access_time, size: 18),
-                            label: Text(timeStr),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: FormStyles.formSheetSectionSpacing),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size(0, FormStyles.buttonHeight),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                FormStyles.buttonRadius,
-                              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Mark as applied',
+                        style: Theme.of(ctx).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final d = await showDatePicker(
+                                  context: ctx,
+                                  initialDate: selectedDate,
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 365),
+                                  ),
+                                );
+                                if (d != null) {
+                                  setSheetState(() => selectedDate = d);
+                                }
+                              },
+                              icon: const Icon(Icons.calendar_today, size: 18),
+                              label: Text(dateStr),
                             ),
                           ),
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Save'),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final t = await showTimePicker(
+                                  context: ctx,
+                                  initialTime: selectedTime,
+                                );
+                                if (t != null) {
+                                  setSheetState(() => selectedTime = t);
+                                }
+                              },
+                              icon: const Icon(Icons.access_time, size: 18),
+                              label: Text(timeStr),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Save'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -385,13 +335,9 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
         selectedTime.hour,
         selectedTime.minute,
       );
-      final userId = await ref.read(currentUserIdProvider.future);
-      final user = await ref.read(currentUserProvider.future);
       await ref.read(applicationRepositoryProvider).markApplicationApplied(
             id: e.id,
             appliedAt: appliedAt,
-            performedBy: user?.displayName,
-            performedByUserId: userId,
           );
       ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
       if (context.mounted) {
@@ -407,54 +353,70 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
 
   Widget _buildList(
       BuildContext context, WidgetRef ref, List<TrialApplicationEvent> list) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(
-        0,
-        AppDesignTokens.spacing12,
-        0,
-        AppDesignTokens.spacing8,
-      ),
-      itemCount: list.length,
-      itemBuilder: (context, index) {
-        final e = list[index];
-        return Dismissible(
-          key: Key(e.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            color: Colors.red,
-            child: const Icon(Icons.delete, color: Colors.white),
+    return Stack(
+      children: [
+        ListView.builder(
+          padding: const EdgeInsets.fromLTRB(
+            0,
+            AppDesignTokens.spacing12,
+            0,
+            80,
           ),
-          confirmDismiss: (direction) async {
-            return await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Delete Application?'),
-                content: const Text(
-                  'This application will be permanently deleted.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Cancel'),
-                  ),
-                  FilledButton(
-                    style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Delete'),
-                  ),
-                ],
+          itemCount: list.length,
+          itemBuilder: (context, index) {
+            final e = list[index];
+            return Dismissible(
+              key: Key(e.id),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                color: Colors.red,
+                child: const Icon(Icons.delete, color: Colors.white),
               ),
+              confirmDismiss: (direction) async {
+                return await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete Application?'),
+                    content: const Text(
+                      'This application will be permanently deleted.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        style:
+                            FilledButton.styleFrom(backgroundColor: Colors.red),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              onDismissed: (_) {
+                ref.read(applicationRepositoryProvider).deleteApplication(e.id);
+                ref.invalidate(
+                    trialApplicationsForTrialProvider(widget.trial.id));
+              },
+              child: _buildApplicationTile(context, ref, e, index),
             );
           },
-          onDismissed: (_) {
-            ref.read(applicationRepositoryProvider).deleteApplication(e.id);
-            ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
-          },
-          child: _buildApplicationTile(context, ref, e, index),
-        );
-      },
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton.extended(
+            heroTag: 'add_application',
+            onPressed: () => _showApplicationSheet(context, ref, null),
+            icon: const Icon(Icons.add),
+            label: const Text('Add Application'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -464,32 +426,49 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     TrialApplicationEvent? existing,
   ) async {
     if (!context.mounted) return;
-    await showAppDraggableModalSheet<void>(
+    await showModalBottomSheet<void>(
       context: context,
-      sheetBuilder: (ctx, scrollController) => ApplicationSheetContent(
-        trial: widget.trial,
-        existing: existing,
-        scrollController: scrollController,
-        rateUnits: _rateUnits,
-        applicationMethods: _applicationMethods,
-        nozzleTypes: _nozzleTypes,
-        pressureUnits: _pressureUnits,
-        speedUnits: _speedUnits,
-        waterVolumeUnits: _waterVolumeUnits,
-        adjuvantRateUnits: _adjuvantRateUnits,
-        treatedAreaUnits: _treatedAreaUnits,
-        soilMoistureOptions: _soilMoistureOptions,
-        onSaved: () {
-          ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
-          if (context.mounted) Navigator.pop(ctx);
-        },
-        onDelete: existing != null
-            ? () async {
-                final repo = ref.read(applicationRepositoryProvider);
-                await repo.deleteApplication(existing.id);
-                if (ctx.mounted) Navigator.pop(ctx);
-              }
-            : null,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) => ApplicationSheetContent(
+            trial: widget.trial,
+            existing: existing,
+            scrollController: scrollController,
+            rateUnits: _rateUnits,
+            applicationMethods: _applicationMethods,
+            nozzleTypes: _nozzleTypes,
+            pressureUnits: _pressureUnits,
+            speedUnits: _speedUnits,
+            waterVolumeUnits: _waterVolumeUnits,
+            adjuvantRateUnits: _adjuvantRateUnits,
+            treatedAreaUnits: _treatedAreaUnits,
+            soilMoistureOptions: _soilMoistureOptions,
+            onSaved: () {
+              ref.invalidate(
+                  trialApplicationsForTrialProvider(widget.trial.id));
+              if (context.mounted) Navigator.pop(ctx);
+            },
+            onDelete: existing != null
+                ? () async {
+                    final repo = ref.read(applicationRepositoryProvider);
+                    await repo.deleteApplication(existing.id);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  }
+                : null,
+          ),
+        ),
       ),
     );
   }

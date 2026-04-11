@@ -836,7 +836,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 47;
+  int get schemaVersion => 48;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1364,6 +1364,30 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_snapshots_parent ON weather_snapshots(parent_type, parent_id)',
     );
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_treatments_trial
+      ON treatments(trial_id, is_deleted)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_trial_assessments_trial
+      ON trial_assessments(trial_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_assignments_plot
+      ON assignments(plot_id, trial_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_assessments_trial
+      ON assessments(trial_id, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_trials_workspace
+      ON trials(workspace_type, is_deleted)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_sessions_trial
+      ON sessions(trial_id)
+    ''');
   }
 }
 

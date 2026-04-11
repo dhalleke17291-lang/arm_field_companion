@@ -53,6 +53,8 @@ class PhotoViewScreen extends StatelessWidget {
                       child: Image.file(
                         file,
                         fit: BoxFit.contain,
+                        semanticLabel: 'Plot photo',
+                        cacheWidth: 1200,
                       ),
                     ),
                   )

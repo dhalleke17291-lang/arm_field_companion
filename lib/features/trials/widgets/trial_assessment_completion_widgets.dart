@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/providers.dart';
 import '../../diagnostics/assessment_completion.dart';
 
@@ -21,7 +22,7 @@ class TrialAssessmentCompletionCard extends ConsumerWidget {
     final async = ref.watch(trialAssessmentCompletionProvider(trialId));
     return async.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, __) => AppErrorHint(error: e),
       data: (map) {
         if (map.isEmpty) return const SizedBox.shrink();
         final entries = map.entries.toList()
@@ -141,7 +142,7 @@ class TrialCompletionSummaryCard extends ConsumerWidget {
     final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trialId));
     return completionAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, __) => AppErrorHint(error: e),
       data: (map) {
         if (map.isEmpty) return const SizedBox.shrink();
         final first = map.values.first;

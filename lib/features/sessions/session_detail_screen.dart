@@ -474,7 +474,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   }) {
     return notesAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, __) => AppErrorHint(error: e),
       data: (trialNotes) {
         final sessionNotes =
             trialNotes.where((n) => n.sessionId == session.id).toList();
@@ -1523,19 +1523,19 @@ class _SessionExportTrustCaption extends ConsumerWidget {
 
     return plotsAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, __) => AppErrorHint(error: e),
       data: (plots) => ratedAsync.when(
         loading: () => const SizedBox.shrink(),
-        error: (_, __) => const SizedBox.shrink(),
+        error: (e, __) => AppErrorHint(error: e),
         data: (ratedPks) => ratingsAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (e, __) => AppErrorHint(error: e),
           data: (ratings) => correctionsAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (e, __) => AppErrorHint(error: e),
             data: (corrections) => reportAsync.when(
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (e, __) => AppErrorHint(error: e),
               data: (report) {
                 final unratedPlots =
                     plots.where((p) => !ratedPks.contains(p.id)).length;
@@ -1633,7 +1633,7 @@ class _SessionProgressFromDerived extends ConsumerWidget {
         ref.watch(derivedSnapshotForSessionProvider(sessionId));
     return snapshotAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, __) => AppErrorHint(error: e),
       data: (snapshot) {
         if (snapshot == null) return const SizedBox.shrink();
         return Padding(

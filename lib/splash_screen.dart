@@ -129,6 +129,7 @@ class _SplashScreenState extends State<SplashScreen>
                               height: 96,
                               fit: BoxFit.cover,
                               filterQuality: FilterQuality.medium,
+                              semanticLabel: 'App logo',
                             ),
                           ),
                         ),

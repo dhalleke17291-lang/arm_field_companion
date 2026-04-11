@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/widgets/gradient_screen_header.dart';
+import '../../core/widgets/loading_error_widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
@@ -319,7 +320,7 @@ Widget _plotAnalysisSection(
       Text('Analysis', style: primaryStyle),
       const SizedBox(height: 8),
       if (excluded) ...[
-        Text(
+        const Text(
           'Excluded from analysis',
           style: TextStyle(
             fontWeight: FontWeight.w600,
@@ -809,7 +810,7 @@ class PlotDetailScreen extends ConsumerWidget {
                       ),
                       notesAsync.when(
                         loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
+                        error: (e, __) => AppErrorHint(error: e),
                         data: (allNotes) {
                           final linked = allNotes
                               .where((n) => n.plotPk == plotToShow.id)

@@ -935,7 +935,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(7),
                 child: exists
-                    ? Image.file(file, fit: BoxFit.cover)
+                    ? Image.file(file, fit: BoxFit.cover, semanticLabel: 'Photo thumbnail', cacheWidth: 176, cacheHeight: 176)
                     : Center(
                         child: Icon(
                           Icons.broken_image_outlined,
@@ -4004,7 +4004,7 @@ class _PhotoViewerScreenState extends State<_PhotoViewerScreen> {
                     child: Center(
                       child: exists
                           ? InteractiveViewer(
-                              child: Image.file(file, fit: BoxFit.contain),
+                              child: Image.file(file, fit: BoxFit.contain, semanticLabel: 'Plot photo full view', cacheWidth: 1200),
                             )
                           : Column(
                               mainAxisAlignment: MainAxisAlignment.center,

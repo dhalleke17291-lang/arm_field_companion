@@ -64,6 +64,7 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Decrease reps',
                       onPressed: reps > 1 ? () => setLocal(() => reps--) : null,
                       icon: const Icon(Icons.remove_circle_outline),
                     ),
@@ -76,6 +77,7 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Increase reps',
                       onPressed: reps < 8 ? () => setLocal(() => reps++) : null,
                       icon: const Icon(Icons.add_circle_outline),
                     ),
@@ -94,6 +96,7 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Decrease plots per rep',
                       onPressed: plotsPerRep > tCount
                           ? () => setLocal(() => plotsPerRep--)
                           : null,
@@ -108,6 +111,7 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Increase plots per rep',
                       onPressed: plotsPerRep < 50
                           ? () => setLocal(() => plotsPerRep++)
                           : null,
@@ -140,6 +144,7 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Decrease guards',
                         onPressed: guardsPerEnd > 1
                             ? () => setLocal(() => guardsPerEnd--)
                             : null,
@@ -154,6 +159,7 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Increase guards',
                         onPressed: guardsPerEnd < 3
                             ? () => setLocal(() => guardsPerEnd++)
                             : null,

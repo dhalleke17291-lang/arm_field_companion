@@ -157,7 +157,7 @@ class _FieldNoteEditorSheetState extends ConsumerState<_FieldNoteEditorSheet> {
                 if (existing == null) ...[
                   const SizedBox(height: AppDesignTokens.spacing12),
                   DropdownButtonFormField<int?>(
-                    value: _plotPk,
+                    initialValue: _plotPk,
                     decoration: const InputDecoration(
                       labelText: 'Link to plot',
                       border: OutlineInputBorder(),
@@ -178,7 +178,7 @@ class _FieldNoteEditorSheetState extends ConsumerState<_FieldNoteEditorSheet> {
                   ),
                   const SizedBox(height: AppDesignTokens.spacing12),
                   DropdownButtonFormField<int?>(
-                    value: _sessionId,
+                    initialValue: _sessionId,
                     decoration: const InputDecoration(
                       labelText: 'Link to session',
                       border: OutlineInputBorder(),

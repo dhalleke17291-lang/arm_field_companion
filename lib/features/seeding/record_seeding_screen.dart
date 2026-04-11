@@ -278,6 +278,8 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
 
   Widget _field(String label, TextEditingController controller,
       {String? hint, TextInputType? keyboardType}) {
+    final isNumeric = keyboardType == TextInputType.number ||
+        keyboardType == const TextInputType.numberWithOptions(decimal: true);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -291,6 +293,14 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
             controller: controller,
             keyboardType: keyboardType,
             style: const TextStyle(fontSize: 14),
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: isNumeric
+                ? (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    if (double.tryParse(v.trim()) == null) return 'Invalid number';
+                    return null;
+                  }
+                : null,
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
               hintText: hint,

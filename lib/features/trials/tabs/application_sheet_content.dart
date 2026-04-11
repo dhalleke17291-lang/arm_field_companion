@@ -577,6 +577,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                       Expanded(
                           child: Divider(color: Colors.grey.shade200)),
                       IconButton(
+                        tooltip: 'Remove product',
                         icon: Icon(Icons.remove_circle_outline,
                             color: Colors.grey.shade400, size: 18),
                         onPressed: () {

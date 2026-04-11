@@ -7,6 +7,7 @@ import '../../core/app_info.dart';
 import '../../core/config/app_info.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/export_guard.dart';
+import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/providers.dart';
 import '../../core/last_session_store.dart';
 import '../../core/session_resume_store.dart';
@@ -502,7 +503,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                     // Row 2: compact stat chips (when trials exist)
                     trialsAsync.when(
                       loading: () => const SizedBox(height: 6),
-                      error: (_, __) => const SizedBox(height: 6),
+                      error: (e, __) => AppErrorHint(error: e),
                       data: (trials) {
                         if (trials.isEmpty) {
                           return const SizedBox(height: 6);
@@ -535,7 +536,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                     // Row 3: search field (shared for Custom and Protocol Trials)
                     trialsAsync.when(
                       loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (e, __) => AppErrorHint(error: e),
                       data: (trials) {
                         if (trials.isEmpty) return const SizedBox.shrink();
                         return Padding(
@@ -1019,7 +1020,7 @@ class _ContinueLastSessionSection extends ConsumerWidget {
     final lastSessionAsync = ref.watch(lastSessionContextProvider);
     return lastSessionAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, __) => AppErrorHint(error: e),
       data: (ctx) {
         if (ctx == null) return const SizedBox.shrink();
         if (!_trialMatchesWorkspaceFilter(ctx.trial, workspaceFilter)) {

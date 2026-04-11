@@ -327,6 +327,7 @@ class _AgTrialCardState extends State<_AgTrialCard>
                         child: Image.asset(
                           widget.imageAsset,
                           fit: BoxFit.cover,
+                          semanticLabel: 'Trial category background',
                           errorBuilder: (_, __, ___) => Container(
                             color: widget.accentColor.withValues(alpha: 0.3),
                           ),

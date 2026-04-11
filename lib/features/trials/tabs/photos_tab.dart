@@ -146,7 +146,7 @@ class PhotosTab extends ConsumerWidget {
                                     height: 88,
                                     color: AppDesignTokens.borderCrisp,
                                     child: file.existsSync()
-                                        ? Image.file(file, fit: BoxFit.cover)
+                                        ? Image.file(file, fit: BoxFit.cover, semanticLabel: 'Photo thumbnail', cacheWidth: 176, cacheHeight: 176)
                                         : const Center(
                                             child: Icon(Icons.broken_image,
                                                 color: AppDesignTokens

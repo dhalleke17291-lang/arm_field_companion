@@ -2208,7 +2208,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         ref.watch(applicationsForTrialProvider(widget.trial.id));
     return eventsAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (e, _) => const SizedBox.shrink(),
+      error: (e, _) => AppErrorHint(error: e),
       data: (events) {
         final completed = events.where((e) => e.status == 'completed').toList();
         if (events.isEmpty || completed.isEmpty) {
@@ -2691,8 +2691,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                     ],
                   ),
                   if (!plot.isGuardRow && plot.excludeFromAnalysis == true)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4),
                       child: Text(
                         'Excluded from analysis',
                         style: TextStyle(
@@ -4068,7 +4068,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         ref.watch(applicationsForTrialProvider(widget.trial.id));
     return eventsAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (e, _) => const SizedBox.shrink(),
+      error: (e, _) => AppErrorHint(error: e),
       data: (events) {
         final completed = events.where((e) => e.status == 'completed').toList();
         if (events.isEmpty || completed.isEmpty) {
@@ -4219,8 +4219,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   ],
                 ),
                 if (!plot.isGuardRow && plot.excludeFromAnalysis == true)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
                     child: Text(
                       'Excluded from analysis',
                       style: TextStyle(

@@ -23,6 +23,7 @@ void main() {
     final result = parser.classifyHeaders(headers);
 
     for (final col in result) {
+      // ignore: avoid_print
       print(
         '${col.index}: "${col.header}" -> ${col.kind}'
         '${col.identityRole != null ? ' [${col.identityRole}]' : ''}'

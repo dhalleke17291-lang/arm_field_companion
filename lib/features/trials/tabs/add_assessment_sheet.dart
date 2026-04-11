@@ -204,6 +204,9 @@ class _AddCustomAssessmentSheetBodyState
             decoration: FormStyles.inputDecoration(
               labelText: 'Assessment name',
             ),
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Name is required' : null,
           ),
           const SizedBox(height: FormStyles.formSheetFieldSpacing),
           DropdownButtonFormField<String?>(
@@ -237,6 +240,12 @@ class _AddCustomAssessmentSheetBodyState
                   decoration: FormStyles.inputDecoration(
                     labelText: 'Scale min',
                   ),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    if (double.tryParse(v.trim()) == null) return 'Invalid number';
+                    return null;
+                  },
                 ),
               ),
               const SizedBox(width: FormStyles.formSheetFieldSpacing),
@@ -247,6 +256,12 @@ class _AddCustomAssessmentSheetBodyState
                   decoration: FormStyles.inputDecoration(
                     labelText: 'Scale max',
                   ),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    if (double.tryParse(v.trim()) == null) return 'Invalid number';
+                    return null;
+                  },
                 ),
               ),
             ],

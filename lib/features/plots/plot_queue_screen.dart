@@ -12,14 +12,11 @@ import '../../core/export_guard.dart';
 import '../../core/providers.dart';
 import '../../core/session_resume_store.dart';
 import '../ratings/rating_screen.dart';
-import '../ratings/rating_scale_map.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
-import '../../data/repositories/weather_snapshot_repository.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/session_export_trust_dialog.dart';
-import '../weather/weather_capture_form.dart';
 
 typedef _PlotQueueOpenRating = Future<void> Function(
   Plot plot,
@@ -82,10 +79,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
 
   GlobalKey _keyForPlotRow(int plotPk) =>
       _plotRowKeys.putIfAbsent(plotPk, GlobalKey.new);
-
-  /// Plots in the rating walk; guard rows are excluded (see Plots tab for full list).
-  List<Plot> _queuePlotsExcludingGuards(List<Plot> raw) =>
-      raw.where((p) => !p.isGuardRow).toList();
 
   /// Same filter pipeline as [_buildQueue] (full walk order in, filtered out).
   List<Plot> _plotsAfterQueueFilters(
@@ -166,21 +159,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     });
   }
 
-  /// Maps [Assessment.id] to [AssessmentDefinition] scale via [TrialAssessment.legacyAssessmentId].
-  Map<int, ({double? scaleMin, double? scaleMax})> _ratingScaleMap() {
-    final trialAssessments = ref
-            .read(trialAssessmentsForTrialProvider(widget.trial.id))
-            .valueOrNull ??
-        <TrialAssessment>[];
-    final definitions = ref.read(assessmentDefinitionsProvider).valueOrNull ??
-        <AssessmentDefinition>[];
-    return buildRatingScaleMap(
-      trialAssessments: trialAssessments,
-      definitions: definitions,
-      trialIdForLog: widget.trial.id,
-    );
-  }
-
   Future<void> _openRatingFromQueue(
     BuildContext context,
     Plot plot,
@@ -214,7 +192,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           filteredPlotIds: filteredPlotIds,
           isFilteredMode: isFilteredMode,
           navigationModeLabel: navigationModeLabel,
-          scaleMap: _ratingScaleMap(),
         ),
       ),
     );
@@ -234,10 +211,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               <int>{};
       final raw =
           ref.read(plotsForTrialProvider(widget.trial.id)).valueOrNull ?? [];
-      final queuePlots = _queuePlotsExcludingGuards(raw);
-      if (raw.isEmpty || queuePlots.isEmpty || walkPlots.isEmpty) return;
+      if (raw.isEmpty || walkPlots.isEmpty) return;
       final walk = sortPlotsByWalkOrder(
-        queuePlots,
+        raw,
         _walkOrderMode,
         customPlotIds: _customPlotIds,
       );
@@ -405,10 +381,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             .watch(plotPksWithCorrectionsForSessionProvider(widget.session.id))
             .valueOrNull ??
         <int>{};
-    final weatherRecorded =
-        ref.watch(weatherSnapshotForSessionProvider(widget.session.id))
-                .valueOrNull !=
-            null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
@@ -418,27 +390,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             '${widget.session.name} · Walk order: ${SessionWalkOrderStore.labelForMode(_walkOrderMode)}',
         titleFontSize: 17,
         actions: [
-          IconButton(
-            icon: Icon(
-              weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
-              color: AppDesignTokens.onPrimary,
-            ),
-            tooltip: 'Weather',
-            onPressed: () async {
-              final repo = ref.read(weatherSnapshotRepositoryProvider);
-              final snap = await repo.getWeatherSnapshotForParent(
-                kWeatherParentTypeRatingSession,
-                widget.session.id,
-              );
-              if (!context.mounted) return;
-              await showWeatherCaptureBottomSheet(
-                context,
-                trial: widget.trial,
-                session: widget.session,
-                initialSnapshot: snap,
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.directions_walk),
             tooltip: 'Change walk order',
@@ -473,12 +424,15 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                             flaggedPlotIdsForSessionProvider(widget.session.id))
                         .valueOrNull ??
                     <int>{};
-                final timingLine = ref
-                    .watch(sessionTimingContextProvider(widget.session.id))
-                    .maybeWhen(
-                      data: (t) => t.displayLine,
-                      orElse: () => '',
-                    );
+                final seedingEvent = ref
+                    .watch(seedingEventForTrialProvider(widget.trial.id))
+                    .valueOrNull;
+                final int? dasDays =
+                    (seedingEvent != null && seedingEvent.status == 'completed')
+                        ? widget.session.startedAt
+                            .difference(seedingEvent.seedingDate)
+                            .inDays
+                        : null;
                 return _buildQueue(
                     context,
                     plots,
@@ -489,7 +443,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     plotIdToTreatmentId,
                     flaggedIds,
                     plotPksWithCorrections,
-                    timingDisplayLine: timingLine);
+                    dasDays: dasDays);
               },
             ),
           ),
@@ -508,17 +462,16 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Map<int, int?> plotIdToTreatmentId,
     Set<int> flaggedIds,
     Set<int> plotPksWithCorrections, {
-    String timingDisplayLine = '',
+    int? dasDays,
   }) {
     final ratingsByPlot = <int, List<RatingRecord>>{};
     for (final r in ratings) {
       ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
     }
 
-    final queuePlots = _queuePlotsExcludingGuards(rawPlots);
     // Apply session walk order (numeric, serpentine, or custom) for rating navigation
     final plots = sortPlotsByWalkOrder(
-      queuePlots,
+      rawPlots,
       _walkOrderMode,
       customPlotIds: _customPlotIds,
     );
@@ -541,9 +494,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final scheme = Theme.of(context).colorScheme;
     final hasFieldRow = plots.any((p) => p.fieldRow != null);
     const serpentineGreen = Color(0xFF2D5A40);
-    final contextLine = timingDisplayLine.trim().isNotEmpty
-        ? '$timingDisplayLine · $ratedCount / $totalPlots plots with a rating'
-        : '$ratedCount / $totalPlots plots with a rating';
+    final contextLine = dasDays != null
+        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots rated'
+        : '$ratedCount / $totalPlots plots rated';
 
     return Column(
       children: [
@@ -596,7 +549,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '$ratedCount / $totalPlots with a rating',
+                  '$ratedCount / $totalPlots rated',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
@@ -757,11 +710,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                       const SizedBox(height: 16),
                       Text(
                           plots.isEmpty
-                              ? (rawPlots.isEmpty
-                                  ? 'No plots in this trial'
-                                  : 'No plots in rating queue')
+                              ? 'No plots in this trial'
                               : (_emptyQueueIsAllRatedUnratedOnly()
-                                  ? 'No unrated plots in this view'
+                                  ? 'All plots rated!'
                                   : 'No plots match filters'),
                           style: const TextStyle(
                               fontSize: 20, fontWeight: FontWeight.bold)),
@@ -770,7 +721,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                         plots.isEmpty
                             ? 'Go to the Plots tab to import plots first.'
                             : (_emptyQueueIsAllRatedUnratedOnly()
-                                ? 'Session completeness is separate — review before closing if needed.'
+                                ? 'You can export and share this session now.'
                                 : 'Clear filters below to see all plots again.'),
                         style: TextStyle(
                             color:
@@ -851,7 +802,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                                 await Share.shareXFiles(
                                   [XFile(result.filePath!)],
                                   text:
-                                      'Agnexis export: ${widget.trial.name} / ${widget.session.name}',
+                                      'Ag-Quest Field Companion export: ${widget.trial.name} / ${widget.session.name}',
                                 );
                               } catch (e) {
                                 if (!mounted || !context.mounted) return;
@@ -1034,13 +985,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       );
       return;
     }
-    final queuePlots = _queuePlotsExcludingGuards(rawPlots);
-    if (queuePlots.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No plots in rating queue')),
-      );
-      return;
-    }
     if (assessments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No assessments in this session')),
@@ -1049,7 +993,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     }
     if (!context.mounted) return;
     final plots = sortPlotsByWalkOrder(
-      queuePlots,
+      rawPlots,
       _walkOrderMode,
       customPlotIds: _customPlotIds,
     );
@@ -1152,7 +1096,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     });
   }
 
-  /// Empty list + unrated-only on full trial (no other filters) → no plots lack a current rating in this view.
+  /// Empty list + unrated-only on full trial (no other filters) → "all rated" UX.
   bool _emptyQueueIsAllRatedUnratedOnly() {
     return _showUnratedOnly &&
         _repFilter == null &&
@@ -1406,7 +1350,7 @@ class _PlotQueueTile extends StatelessWidget {
   final bool isFilteredModeForRating;
   final String? navigationModeLabelForRating;
 
-  /// Long-press on row with a current rating: session value summary sheet (optional).
+  /// Long-press on rated row: session value summary sheet (optional).
   final VoidCallback? onShowRatedSummary;
   final bool highlightRow;
   final GlobalKey rowKey;
@@ -1446,7 +1390,7 @@ class _PlotQueueTile extends StatelessWidget {
         if (isFlagged) 'Flagged',
         if (hasIssues) 'Issues',
         if (hasEdited) 'Edited',
-        if (isRated) 'Has Rating',
+        if (isRated) 'Rated',
       ];
       statusSubtitle = Padding(
         padding: const EdgeInsets.only(top: 2),
@@ -1521,7 +1465,7 @@ class _PlotQueueTile extends StatelessWidget {
                           ),
                         ),
                         child: const Text(
-                          'Has Rating',
+                          'Rated',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,

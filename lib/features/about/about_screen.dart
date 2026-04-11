@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/widgets/gradient_screen_header.dart';
+import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/app_info.dart';
 import '../../core/config/app_info.dart';
 import '../../core/providers.dart';
@@ -54,7 +55,7 @@ class AboutScreen extends ConsumerWidget {
               const SizedBox(height: 32),
               userAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (e, __) => AppErrorHint(error: e),
                 data: (user) {
                   if (user == null) {
                     return OutlinedButton.icon(

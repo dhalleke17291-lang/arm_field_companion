@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/session_state.dart';
@@ -323,7 +324,7 @@ class _TrialQuickActions extends ConsumerWidget {
 
     return openSessionAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, __) => AppErrorHint(error: e),
       data: (openSession) {
         final hasOpenSession = openSession != null;
         final colorScheme = Theme.of(context).colorScheme;
