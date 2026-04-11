@@ -1325,7 +1325,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final currentTrial = trialAsync.valueOrNull ?? widget.trial;
 
     final viewportHeight = MediaQuery.sizeOf(context).height;
-    final maxHeaderHeight = viewportHeight * 0.45;
+    final maxHeaderHeight = viewportHeight * 0.30;
 
     final isPlotsTab = _selectedTabIndex == 0;
     return Scaffold(
@@ -1703,12 +1703,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ),
                 _buildTrialStatusBar(context, ref, currentTrial,
                     displayStatus: effectiveStatus),
+                TrialCompletionSummaryCard(trialId: currentTrial.id),
+                _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
+                const SizedBox(height: AppDesignTokens.spacing12),
               ],
             ),
           ),
         ),
-        // Pinned below the capped header scroll so tabs stay reachable when
-        // summary cards fill most of [maxHeaderHeight] (e.g. Seeding tab).
+        // Pinned: module hub (tab navigation). Completion + readiness scroll
+        // inside [maxHeaderHeight] above to free vertical space for tab body.
         const SizedBox(height: AppDesignTokens.spacing8),
         SizedBox(
           height: 110,
@@ -1722,8 +1725,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             onUserScroll: _dismissHubHint,
           ),
         ),
-        TrialCompletionSummaryCard(trialId: currentTrial.id),
-        _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
         const SizedBox(height: AppDesignTokens.spacing12),
         if (_selectedTabIndex != _sessionsIndex) ...[
           Padding(

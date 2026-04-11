@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import 'application_sheet_content.dart';
 
@@ -92,26 +93,28 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'No applications yet',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppDesignTokens.secondaryText,
+    return Column(
+      children: [
+        const Expanded(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'No applications yet',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => _showApplicationSheet(context, ref, null),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Application'),
-          ),
-        ],
-      ),
+        ),
+        TabListBottomAddButton(
+          label: 'Add Application',
+          onPressed: () => _showApplicationSheet(context, ref, null),
+        ),
+      ],
     );
   }
 
