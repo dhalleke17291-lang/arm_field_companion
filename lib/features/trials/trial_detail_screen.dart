@@ -1184,18 +1184,15 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     final trialAsync = ref.watch(trialProvider(widget.trial.id));
     final currentTrial = trialAsync.valueOrNull ?? widget.trial;
 
-    final isPlotsTab = _selectedTabIndex == 0;
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       body: Stack(
         children: [
-          isPlotsTab
-              ? _buildUnifiedScrollBody(context, ref, currentTrial)
-              : _buildSplitBody(
-                  context,
-                  ref,
-                  currentTrial,
-                ),
+          _buildSplitBody(
+            context,
+            ref,
+            currentTrial,
+          ),
           if (_isExporting)
             Positioned.fill(
               child: Container(
@@ -1205,8 +1202,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             ),
         ],
       ),
-      bottomNavigationBar:
-          isPlotsTab ? PlotDetailsBar(trial: currentTrial) : null,
+      bottomNavigationBar: null,
     );
   }
 
@@ -1255,148 +1251,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         setState(() => _selectedTabIndex = 3);
         break;
     }
-  }
-
-  Widget _buildUnifiedScrollBody(
-      BuildContext context, WidgetRef ref, Trial currentTrial) {
-    // Vertical scroll only; [_hubScrollController] is reserved for the
-    // horizontal module hub ListView (see [_TrialModuleHub]).
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppDesignTokens.primary,
-                      AppDesignTokens.primaryLight,
-                    ],
-                  ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppDesignTokens.spacing16,
-                      AppDesignTokens.spacing12,
-                      AppDesignTokens.spacing16,
-                      AppDesignTokens.spacing12,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          iconSize: 24,
-                          padding: const EdgeInsets.all(8),
-                          style: IconButton.styleFrom(
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          tooltip: 'Back',
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                currentTrial.name,
-                                style: AppDesignTokens.headerTitleStyle(
-                                  fontSize: 20,
-                                  color: Colors.white,
-                                  letterSpacing: -0.3,
-                                ),
-                                softWrap: true,
-                                maxLines: 4,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (currentTrial.protocolNumber != null &&
-                                  currentTrial.protocolNumber!
-                                      .trim()
-                                      .isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Protocol: ${currentTrial.protocolNumber!.trim()}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white
-                                        .withValues(alpha: 0.78),
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                              if (_trialSubtitleLine(currentTrial)
-                                  .isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  _trialSubtitleLine(currentTrial),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white.withValues(alpha: 0.92),
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: AppDesignTokens.spacing8),
-                        _buildTrialNotesHeaderButton(context, currentTrial),
-                        _buildTrialOverflowMenu(context, currentTrial),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              _buildTrialDetailActionsBar(context, ref, currentTrial),
-            ],
-          ),
-          Builder(
-            builder: (_) {
-              final workspaceConfig =
-                  safeConfigFromString(currentTrial.workspaceType);
-              final visibleIndices = _visibleFixedIndices(workspaceConfig);
-              final effectiveSelectedIndex = _effectiveSelectedIndex(
-                candidate: _selectedTabIndex == _sessionsIndex
-                    ? _previousTabIndex
-                    : _selectedTabIndex,
-                visibleIndices: visibleIndices,
-              );
-              return SizedBox(
-                height: 110,
-                child: _TrialModuleHub(
-                  scrollController: _hubScrollController,
-                  workspaceConfig: workspaceConfig,
-                  selectedIndex: effectiveSelectedIndex,
-                  onSelected: (index) {
-                    setState(() => _selectedTabIndex = index);
-                  },
-                  onUserScroll: _dismissHubHint,
-                ),
-              );
-            },
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: PlotsTab(trial: currentTrial, embeddedInScroll: true),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
   }
 
   Widget _buildSplitBody(
@@ -1530,7 +1384,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ? _sessionsIndex
                 : effectiveSelectedIndex,
             children: [
-              PlotsTab(trial: currentTrial),
+              PlotsTab(trial: currentTrial, embeddedInScroll: false),
               SeedingTab(trial: currentTrial),
               ApplicationsTab(trial: currentTrial),
               AssessmentsTab(trial: currentTrial),
