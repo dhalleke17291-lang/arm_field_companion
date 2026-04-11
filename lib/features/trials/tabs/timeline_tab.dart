@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
+import '../../../core/ui/field_note_timestamp_format.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../sessions/session_timing_helper.dart';
 
@@ -19,6 +20,7 @@ class _TrialTimelineEvent {
     this.timingText,
     this.beforeFirstApplication = false,
     this.ratingSessionId,
+    this.noteTimestampCaption,
   });
 
   final DateTime date;
@@ -29,6 +31,8 @@ class _TrialTimelineEvent {
   final bool beforeFirstApplication;
   /// Set for rating sessions only (weather badge).
   final int? ratingSessionId;
+  /// Field note: full date · time line (matches list/detail surfaces).
+  final String? noteTimestampCaption;
 }
 
 /// Date group: header + events on a continuous vertical rail.
@@ -161,6 +165,7 @@ class TimelineTab extends ConsumerWidget {
                 ? '${preview.substring(0, 80)}…'
                 : preview,
             timingText: timingText,
+            noteTimestampCaption: formatFieldNoteTimestampLine(note),
           ));
         }
 
@@ -389,6 +394,18 @@ class _TimelineEventRow extends ConsumerWidget {
                                 ),
                             ],
                           ),
+                          if (event.noteTimestampCaption != null &&
+                              event.noteTimestampCaption!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              event.noteTimestampCaption!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                           if (event.subtitle != null &&
                               event.subtitle!.trim().isNotEmpty) ...[
                             const SizedBox(height: 2),
