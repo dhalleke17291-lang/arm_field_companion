@@ -4,12 +4,81 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/assessment_result_direction.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/form_styles.dart';
+import '../../../core/ui/assessment_display_helper.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../assessments/assessment_library.dart';
 import '../../assessments/assessment_library_picker.dart';
 import '../../../core/protocol_edit_blocked_exception.dart';
+
+/// Normalized display names already on the trial (library + unlinked legacy).
+Set<String> _existingTrialAssessmentNamesNormalized({
+  required List<(TrialAssessment, AssessmentDefinition)> pairs,
+  required List<Assessment> legacy,
+}) {
+  final linkedLegacyIds = pairs
+      .map((e) => e.$1.legacyAssessmentId)
+      .whereType<int>()
+      .toSet();
+  final out = <String>{};
+  for (final p in pairs) {
+    out.add(
+      AssessmentDisplayHelper.compactName(p.$1, def: p.$2).trim().toLowerCase(),
+    );
+  }
+  for (final a in legacy) {
+    if (linkedLegacyIds.contains(a.id)) continue;
+    out.add(
+      AssessmentDisplayHelper.legacyAssessmentDisplayName(a.name)
+          .trim()
+          .toLowerCase(),
+    );
+  }
+  return out;
+}
+
+Future<Set<String>> _loadExistingTrialAssessmentNamesNormalizedForTrial(
+  int trialId, {
+  required Future<List<(TrialAssessment, AssessmentDefinition)>> pairsFuture,
+  required Future<List<Assessment>> legacyFuture,
+}) async {
+  return _existingTrialAssessmentNamesNormalized(
+    pairs: await pairsFuture,
+    legacy: await legacyFuture,
+  );
+}
+
+Future<bool> _confirmDuplicateAssessmentNames(
+  BuildContext context, {
+  required List<String> displayNames,
+}) async {
+  if (displayNames.isEmpty) return true;
+  final unique = displayNames.toSet().toList()..sort();
+  final preview = unique.take(3).join(', ');
+  final suffix = unique.length > 3 ? '…' : '';
+  final message = unique.length == 1
+      ? 'An assessment named \'${unique.first}\' already exists on this trial. Add anyway?'
+      : '${unique.length} selected assessments already exist on this trial ($preview$suffix). Add anyway?';
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Duplicate name'),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Add anyway'),
+        ),
+      ],
+    ),
+  );
+  return ok == true;
+}
 
 const List<String> _kAssessmentMethods = [
   'Visual rating',
@@ -87,6 +156,36 @@ class _AddCustomAssessmentSheetBodyState
   Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
+    final existing = await _loadExistingTrialAssessmentNamesNormalizedForTrial(
+      widget.trial.id,
+      pairsFuture: ref.read(
+        trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id).future,
+      ),
+      legacyFuture:
+          ref.read(assessmentsForTrialProvider(widget.trial.id).future),
+    );
+    if (existing.contains(name.toLowerCase()) && mounted) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Duplicate name'),
+          content: Text(
+            'An assessment named \'$name\' already exists on this trial. Add anyway?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Add anyway'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
     try {
       final defRepo = ref.read(assessmentDefinitionRepositoryProvider);
       final code =
@@ -164,6 +263,27 @@ class _AddCustomAssessmentSheetBodyState
                 libraryEntryIdsAlreadyChosen: existing,
               );
               if (picks == null || picks.isEmpty) return;
+              final namesExisting =
+                  await _loadExistingTrialAssessmentNamesNormalizedForTrial(
+                trialId,
+                pairsFuture: container.read(
+                  trialAssessmentsWithDefinitionsForTrialProvider(trialId).future,
+                ),
+                legacyFuture:
+                    container.read(assessmentsForTrialProvider(trialId).future),
+              );
+              final dupLabels = picks
+                  .map((e) => e.name.trim())
+                  .where((n) => namesExisting.contains(n.toLowerCase()))
+                  .toList();
+              if (dupLabels.isNotEmpty) {
+                if (!widget.parentContext.mounted) return;
+                final proceed = await _confirmDuplicateAssessmentNames(
+                  widget.parentContext,
+                  displayNames: dupLabels,
+                );
+                if (!proceed) return;
+              }
               try {
                 await container
                     .read(addCuratedLibraryAssessmentsToTrialUseCaseProvider)

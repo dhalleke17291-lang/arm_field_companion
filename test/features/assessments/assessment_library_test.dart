@@ -71,4 +71,16 @@ void main() {
     ]);
     expect(from, {'a', 'b'});
   });
+
+  test('curatedLibraryAssessmentDefinitionCode stays within schema limit', () {
+    const longId =
+        'herb_specific_weed_control_1_177592621730481_0_extra_suffix_chars';
+    final code = curatedLibraryAssessmentDefinitionCode(
+      trialId: 177592621730481,
+      libraryEntryId: longId,
+      disambiguator: 0,
+    );
+    expect(code.length, lessThanOrEqualTo(50));
+    expect(code.startsWith('LIB_177592621730481_'), true);
+  });
 }

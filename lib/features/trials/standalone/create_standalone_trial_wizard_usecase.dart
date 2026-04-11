@@ -267,7 +267,11 @@ class CreateStandaloneTrialWizardUseCase {
           final libId = a.curatedLibraryEntryId?.trim();
           final fromLibrary = libId != null && libId.isNotEmpty;
           final code = fromLibrary
-              ? 'LIB_${libId}_${trialId}_${DateTime.now().microsecondsSinceEpoch}_$i'
+              ? curatedLibraryAssessmentDefinitionCode(
+                  trialId: trialId,
+                  libraryEntryId: libId,
+                  disambiguator: i,
+                )
               : 'CUSTOM_${trialId}_${i}_${DateTime.now().microsecondsSinceEpoch}';
           final category = (fromLibrary &&
                   a.definitionCategory != null &&

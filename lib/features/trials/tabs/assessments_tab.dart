@@ -14,8 +14,6 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../../derived/domain/trial_statistics.dart';
 import 'assessment_results_screen.dart';
 import 'add_assessment_sheet.dart';
-import '../widgets/trial_assessment_completion_widgets.dart';
-
 /// Assessments tab for trial detail: library + custom assessments list.
 class AssessmentsTab extends ConsumerWidget {
   const AssessmentsTab({super.key, required this.trial});
@@ -130,20 +128,6 @@ class AssessmentsTab extends ConsumerWidget {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (!locked) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          trialTypeAndStructureCompactLine(trial),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                            fontSize: 11,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -157,8 +141,6 @@ class AssessmentsTab extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             children: [
-              TrialAssessmentCompletionCard(trialId: trial.id),
-              const SizedBox(height: 12),
               if (libraryList.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.only(left: 4, top: 4, bottom: 6),

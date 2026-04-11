@@ -18,10 +18,14 @@ class AddCuratedLibraryAssessmentsToTrialUseCase {
     required List<LibraryAssessment> selections,
     Set<String> skipLibraryEntryIds = const {},
   }) async {
-    for (final entry in selections) {
+    for (var i = 0; i < selections.length; i++) {
+      final entry = selections[i];
       if (skipLibraryEntryIds.contains(entry.id)) continue;
-      final code =
-          'LIB_${entry.id}_${trialId}_${DateTime.now().microsecondsSinceEpoch}';
+      final code = curatedLibraryAssessmentDefinitionCode(
+        trialId: trialId,
+        libraryEntryId: entry.id,
+        disambiguator: i,
+      );
       final defId = await _definitionRepository.insertCustom(
         code: code,
         name: entry.name,

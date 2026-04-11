@@ -1890,12 +1890,12 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                 color: colorScheme.outlineVariant.withValues(alpha: 0.35),
               ),
               const SizedBox(height: 10),
-              _buildListLayoutToggleForDetails(context, ref, plots),
-              _buildAddRepGuardsRow(
+              _buildListLayoutToggleForDetails(
                 context,
                 ref,
-                widget.trial,
-                padding: const EdgeInsets.only(top: 8, bottom: 2),
+                plots,
+                displayPlots,
+                hasSessionData,
               ),
               if (_showLayoutView) ...[
                 const SizedBox(height: 6),
@@ -2264,8 +2264,24 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   }
 
   Widget _buildListLayoutToggleForDetails(
-      BuildContext context, WidgetRef ref, List<Plot> plots) {
+    BuildContext context,
+    WidgetRef ref,
+    List<Plot> allPlots,
+    List<Plot> plotsForBulkAssign,
+    bool hasSessionData,
+  ) {
     final cs = Theme.of(context).colorScheme;
+    final plotAssignmentsLocked =
+        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+    final structureLocked = !canEditProtocol(widget.trial);
+    final assignmentMessage =
+        getAssignmentsLockMessage(widget.trial.status, hasSessionData);
+    final bulkTooltip = plotAssignmentsLocked
+        ? (structureLocked
+            ? protocolEditBlockedMessage(widget.trial)
+            : assignmentMessage)
+        : 'Assign treatments to multiple plots';
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -2318,30 +2334,82 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           ),
         ),
         const SizedBox(width: 4),
-        IconButton(
-          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          padding: EdgeInsets.zero,
+        if (_showLayoutView)
+          IconButton(
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            padding: EdgeInsets.zero,
+            style: IconButton.styleFrom(
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+              foregroundColor: cs.onSurfaceVariant,
+            ),
+            icon: const Icon(Icons.open_in_full_rounded, size: 20),
+            tooltip: 'Open in full screen',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => _PlotsFullScreenPage(
+                    trial: widget.trial,
+                    isLayoutView: _showLayoutView,
+                    initialLayoutLayer: _layoutLayer,
+                    selectedAppEvent: _selectedAppEvent,
+                    appPlotRecords: _appPlotRecords,
+                  ),
+                ),
+              );
+            },
+          ),
+        PopupMenuButton<void>(
+          tooltip: 'Tools',
+          icon: const Icon(Icons.more_vert_rounded, size: 22),
           style: IconButton.styleFrom(
+            foregroundColor: cs.onSurfaceVariant,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
-            foregroundColor: cs.onSurfaceVariant,
           ),
-          icon: const Icon(Icons.open_in_full_rounded, size: 20),
-          tooltip: 'Open in full screen',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => _PlotsFullScreenPage(
-                  trial: widget.trial,
-                  isLayoutView: _showLayoutView,
-                  initialLayoutLayer: _layoutLayer,
-                  selectedAppEvent: _selectedAppEvent,
-                  appPlotRecords: _appPlotRecords,
+          itemBuilder: (ctx) => [
+            PopupMenuItem<void>(
+              enabled: !plotAssignmentsLocked,
+              onTap: plotAssignmentsLocked
+                  ? null
+                  : () {
+                      _showBulkAssignSheet(
+                        context,
+                        ref,
+                        widget.trial,
+                        plotsForBulkAssign,
+                      );
+                    },
+              child: Tooltip(
+                message: bulkTooltip,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    Icons.grid_view_rounded,
+                    size: 20,
+                    color: plotAssignmentsLocked
+                        ? AppDesignTokens.iconSubtle
+                        : AppDesignTokens.primary,
+                  ),
+                  title: const Text('Bulk Assign'),
                 ),
               ),
-            );
-          },
+            ),
+            PopupMenuItem<void>(
+              enabled: canEditProtocol(widget.trial),
+              onTap: canEditProtocol(widget.trial)
+                  ? () => _runGenerateRepGuardPlots(context, ref, widget.trial.id)
+                  : null,
+              child: ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.add_moderator_outlined, size: 20),
+                title: const Text('Add Rep Guards'),
+              ),
+            ),
+          ],
         ),
       ],
     );

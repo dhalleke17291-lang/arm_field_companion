@@ -336,7 +336,8 @@ void main() {
     );
     final defs = await AssessmentDefinitionRepository(db).getAll(activeOnly: false);
     final def = defs.firstWhere((d) => d.id == tas.single.assessmentDefinitionId);
-    expect(def.code.startsWith('LIB_herb_weed_control_${trialId}_'), true);
+    expect(def.code.startsWith('LIB_${trialId}_'), true);
+    expect(def.code.length, lessThanOrEqualTo(50));
     expect(def.category, 'Herbicide Efficacy');
   });
 }

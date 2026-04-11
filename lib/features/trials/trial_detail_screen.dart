@@ -25,7 +25,6 @@ import '../plots/plot_queue_screen.dart';
 import 'full_protocol_details_screen.dart';
 import '../../core/providers.dart';
 import '../../core/design/app_design_tokens.dart';
-import '../../core/ui/field_note_timestamp_format.dart';
 import 'plot_layout_model.dart';
 import '../diagnostics/trial_readiness.dart';
 import '../../core/export_guard.dart';
@@ -113,38 +112,34 @@ String _sessionDisplayLabel(Session session) {
   return stripped.isNotEmpty ? stripped : 'Session';
 }
 
-({Color bg, Color fg, Color border}) _trialStatusPillStyle(String status) {
+/// Pill colors for the pinned trial status chrome (filled chip, no border).
+({Color bg, Color fg}) _trialStatusChromePillColors(String status) {
   switch (status) {
     case kTrialStatusDraft:
       return (
-        bg: AppDesignTokens.emptyBadgeBg,
-        fg: AppDesignTokens.emptyBadgeFg,
-        border: AppDesignTokens.borderCrisp,
+        bg: const Color(0xFFE5E7EB),
+        fg: AppDesignTokens.primaryText,
       );
     case kTrialStatusReady:
       return (
-        bg: AppDesignTokens.primaryTint,
-        fg: AppDesignTokens.primary,
-        border: AppDesignTokens.primary.withValues(alpha: 0.35),
+        bg: const Color(0xFF2563EB),
+        fg: Colors.white,
       );
     case kTrialStatusActive:
       return (
-        bg: AppDesignTokens.openSessionBgLight,
-        fg: AppDesignTokens.openSessionBg,
-        border: AppDesignTokens.openSessionBg.withValues(alpha: 0.4),
+        bg: AppDesignTokens.primaryGreen,
+        fg: Colors.white,
       );
     case kTrialStatusClosed:
     case kTrialStatusArchived:
       return (
-        bg: const Color(0xFFF3F4F6),
-        fg: const Color(0xFF6B7280),
-        border: AppDesignTokens.borderCrisp,
+        bg: const Color(0xFF4B5563),
+        fg: Colors.white,
       );
     default:
       return (
         bg: AppDesignTokens.emptyBadgeBg,
         fg: AppDesignTokens.primaryText,
-        border: AppDesignTokens.borderCrisp,
       );
   }
 }
@@ -1364,6 +1359,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             _buildTrialDetailActionsBar(context, ref, currentTrial),
           ],
         ),
+        _PinnedTrialStatusBar(
+          trial: currentTrial,
+          onTransitionStatus: _transitionTrialStatus,
+        ),
         const SizedBox(height: AppDesignTokens.spacing8),
         SizedBox(
           height: 110,
@@ -1377,7 +1376,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             onUserScroll: _dismissHubHint,
           ),
         ),
-        const SizedBox(height: AppDesignTokens.spacing12),
+        const SizedBox(height: AppDesignTokens.spacing8),
         Expanded(
           child: IndexedStack(
             index: _selectedTabIndex == _sessionsIndex
@@ -1401,7 +1400,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               _OverviewTabBody(
                 trial: currentTrial,
                 onAttentionTap: _handleAttentionTap,
-                onTransitionTrialStatus: _transitionTrialStatus,
                 readinessDetailColumn: (ctx, r, report) =>
                     _readinessReportDetailColumn(ctx, r, currentTrial, report),
                 onOpenSessions: () => setState(() {
@@ -1730,8 +1728,9 @@ class _TrialSessionsBar extends ConsumerWidget {
   }
 }
 
-class _OverviewTrialStatusBar extends ConsumerWidget {
-  const _OverviewTrialStatusBar({
+/// Pinned under the trial actions bar on every tab (split chrome).
+class _PinnedTrialStatusBar extends ConsumerWidget {
+  const _PinnedTrialStatusBar({
     required this.trial,
     required this.onTransitionStatus,
   });
@@ -1766,32 +1765,25 @@ class _OverviewTrialStatusBar extends ConsumerWidget {
                     : nextStatus == kTrialStatusArchived
                         ? 'Archive'
                         : null;
-    final pill = _trialStatusPillStyle(statusForDisplay);
+    final pill = _trialStatusChromePillColors(statusForDisplay);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        color: AppDesignTokens.sectionHeaderBg,
-        border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        border: Border(
+          bottom: BorderSide(
+            color: AppDesignTokens.divider.withValues(alpha: 0.85),
+          ),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            'Trial status',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-              letterSpacing: 0.2,
-            ),
-          ),
-          const SizedBox(width: 10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: pill.bg,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: pill.border, width: 1),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               labelForTrialStatus(statusForDisplay),
@@ -1807,11 +1799,11 @@ class _OverviewTrialStatusBar extends ConsumerWidget {
             FilledButton(
               onPressed: () => onTransitionStatus(context, ref, nextStatus),
               style: FilledButton.styleFrom(
-                backgroundColor: AppDesignTokens.primary,
+                backgroundColor: AppDesignTokens.primaryGreen,
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                minimumSize: const Size(0, 36),
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1820,8 +1812,9 @@ class _OverviewTrialStatusBar extends ConsumerWidget {
               child: Text(
                 buttonLabel,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -2141,113 +2134,17 @@ class _OverviewPlotSummary extends ConsumerWidget {
   }
 }
 
-class _OverviewRecentFieldNotes extends ConsumerWidget {
-  const _OverviewRecentFieldNotes({required this.trial});
-
-  final Trial trial;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notesAsync = ref.watch(notesForTrialProvider(trial.id));
-    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
-
-    return notesAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (notes) {
-        if (notes.isEmpty) return const SizedBox.shrink();
-        final preview = notes.take(3).toList();
-        final plotIdByPk = {
-          for (final p in plotsAsync.valueOrNull ?? <Plot>[]) p.id: p.plotId,
-        };
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Recent field notes',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              for (final note in preview) ...[
-                Text(
-                  formatFieldNoteTimestampLine(note),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  note.content.trim(),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.25,
-                    color: AppDesignTokens.primaryText,
-                  ),
-                ),
-                if (note.plotPk != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    formatFieldNoteContextLine(
-                      note,
-                      plotIdByPk: plotIdByPk,
-                      includeSession: false,
-                    ),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppDesignTokens.secondaryText,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-              ],
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push<void>(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => FieldNotesListScreen(trial: trial),
-                      ),
-                    );
-                  },
-                  child: const Text('View all'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
 /// Overview stack slot ([_overviewTabIndex]): primary trial dashboard.
 class _OverviewTabBody extends ConsumerWidget {
   const _OverviewTabBody({
     required this.trial,
     required this.onAttentionTap,
-    required this.onTransitionTrialStatus,
     required this.readinessDetailColumn,
     required this.onOpenSessions,
   });
 
   final Trial trial;
   final void Function(AttentionItem item) onAttentionTap;
-  final Future<void> Function(
-          BuildContext context, WidgetRef ref, String newStatus)
-      onTransitionTrialStatus;
   final Widget Function(
     BuildContext context,
     WidgetRef ref,
@@ -2261,14 +2158,10 @@ class _OverviewTabBody extends ConsumerWidget {
 
     return SingleChildScrollView(
       key: ValueKey<String>('overview_tab_${trial.id}'),
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _OverviewTrialStatusBar(
-            trial: trial,
-            onTransitionStatus: onTransitionTrialStatus,
-          ),
           TrialCompletionSummaryCard(trialId: trial.id),
           _TrialWorkflowReadinessTwinStrip(
             trial: trial,
@@ -2285,7 +2178,6 @@ class _OverviewTabBody extends ConsumerWidget {
           ),
           const SizedBox(height: AppDesignTokens.spacing8),
           _OverviewPlotSummary(trial: trial),
-          _OverviewRecentFieldNotes(trial: trial),
         ],
       ),
     );

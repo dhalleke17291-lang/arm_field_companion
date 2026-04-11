@@ -23,6 +23,20 @@ Set<String> curatedLibraryIdsFromInstructionOverrides(
   return result;
 }
 
+/// Short unique stored `code` for definitions created from [AssessmentLibrary] entries.
+///
+/// Schema limits `code` to 50 characters; this format stays well under that (typically
+/// under 35) regardless of long curated [libraryEntryId] strings.
+String curatedLibraryAssessmentDefinitionCode({
+  required int trialId,
+  required String libraryEntryId,
+  required int disambiguator,
+}) {
+  final ts = DateTime.now().microsecondsSinceEpoch + disambiguator;
+  final h = Object.hash(libraryEntryId, trialId, ts) & 0x7FFFFFFF;
+  return 'LIB_${trialId}_$h';
+}
+
 class LibraryAssessment {
   const LibraryAssessment({
     required this.id,

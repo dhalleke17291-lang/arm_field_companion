@@ -96,6 +96,9 @@ class AppDesignTokens {
   /// Open session badge background.
   static const Color openSessionBg = Color(0xFF16A34A);
 
+  /// Strong green for active trial / positive CTAs (aligned with [openSessionBg]).
+  static const Color primaryGreen = Color(0xFF16A34A);
+
   /// Open session indicator background (light).
   static const Color openSessionBgLight = Color(0xFFDCFCE7);
 
