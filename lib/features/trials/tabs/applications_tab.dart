@@ -24,7 +24,6 @@ class ApplicationsTab extends ConsumerStatefulWidget {
 }
 
 class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
-
   static const List<String> _rateUnits = [
     'L/ha',
     'kg/ha',
@@ -64,16 +63,14 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
 
   /// Pending first, applied after (recent first).
   List<TrialApplicationEvent> _sorted(List<TrialApplicationEvent> list) {
-    final pending =
-        list.where((e) => e.status == 'pending').toList()
-          ..sort((a, b) => a.applicationDate.compareTo(b.applicationDate));
-    final applied =
-        list.where((e) => e.status == 'applied').toList()
-          ..sort((a, b) {
-            final aDate = a.appliedAt ?? a.applicationDate;
-            final bDate = b.appliedAt ?? b.applicationDate;
-            return bDate.compareTo(aDate);
-          });
+    final pending = list.where((e) => e.status == 'pending').toList()
+      ..sort((a, b) => a.applicationDate.compareTo(b.applicationDate));
+    final applied = list.where((e) => e.status == 'applied').toList()
+      ..sort((a, b) {
+        final aDate = a.appliedAt ?? a.applicationDate;
+        final bDate = b.appliedAt ?? b.applicationDate;
+        return bDate.compareTo(aDate);
+      });
     return [...pending, ...applied];
   }
 
@@ -137,128 +134,133 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     TrialApplicationEvent e,
     int index,
   ) {
-    final isPending = e.status == 'pending';
-    final displayNumber = index + 1;
-    final plannedDateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
-    final productsAsync =
-        ref.watch(trialApplicationProductsForEventProvider(e.id));
-    final prods = productsAsync.valueOrNull;
-    final String primaryLine;
-    final String? rateLine;
-    if (prods == null || prods.isEmpty) {
-      primaryLine = e.productName?.trim().isNotEmpty == true
-          ? e.productName!.trim()
-          : 'No product specified';
-      rateLine = (e.rate != null && e.rateUnit != null)
-          ? '${e.rate} ${e.rateUnit}'
-          : null;
-    } else if (prods.length == 1) {
-      final p = prods.first;
-      primaryLine = p.productName;
-      rateLine = (p.rate != null && p.rateUnit != null)
-          ? '${p.rate} ${p.rateUnit}'
-          : (p.rate != null ? '${p.rate}' : null);
-    } else {
-      primaryLine =
-          '${prods.first.productName} + ${prods.length - 1} more';
-      rateLine = '${prods.length} products';
-    }
-    final appliedAtStr = e.appliedAt != null
-        ? DateFormat('MMM d, yyyy HH:mm').format(e.appliedAt!)
-        : null;
+    return Consumer(
+      builder: (context, cRef, _) {
+        final isPending = e.status == 'pending';
+        final displayNumber = index + 1;
+        final plannedDateStr =
+            DateFormat('MMM d, yyyy').format(e.applicationDate);
+        final productsAsync =
+            cRef.watch(trialApplicationProductsForEventProvider(e.id));
+        final prods = productsAsync.valueOrNull;
+        final String primaryLine;
+        final String? rateLine;
+        if (prods == null || prods.isEmpty) {
+          primaryLine = e.productName?.trim().isNotEmpty == true
+              ? e.productName!.trim()
+              : 'No product specified';
+          rateLine = (e.rate != null && e.rateUnit != null)
+              ? '${e.rate} ${e.rateUnit}'
+              : null;
+        } else if (prods.length == 1) {
+          final p = prods.first;
+          primaryLine = p.productName;
+          rateLine = (p.rate != null && p.rateUnit != null)
+              ? '${p.rate} ${p.rateUnit}'
+              : (p.rate != null ? '${p.rate}' : null);
+        } else {
+          primaryLine = '${prods.first.productName} + ${prods.length - 1} more';
+          rateLine = '${prods.length} products';
+        }
+        final appliedAtStr = e.appliedAt != null
+            ? DateFormat('MMM d, yyyy HH:mm').format(e.appliedAt!)
+            : null;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: InkWell(
-        onTap: () => _showApplicationSheet(context, ref, e),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TrialItemNumberBadge(number: displayNumber),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: InkWell(
+            onTap: () => _showApplicationSheet(context, cRef, e),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TrialItemNumberBadge(number: displayNumber),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            primaryLine,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: AppDesignTokens.primaryText,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                primaryLine,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: AppDesignTokens.primaryText,
+                                ),
+                              ),
                             ),
+                            _StatusChip(isPending: isPending),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          plannedDateStr,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppDesignTokens.secondaryText,
                           ),
                         ),
-                        _StatusChip(isPending: isPending),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      plannedDateStr,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppDesignTokens.secondaryText,
-                      ),
-                    ),
-                    if (rateLine != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        rateLine,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppDesignTokens.secondaryText,
-                        ),
-                      ),
-                    ],
-                    if (e.lastEditedAt != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        _lastUpdatedLine(ref, e),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppDesignTokens.secondaryText,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (isPending)
-                          FilledButton.tonal(
-                            onPressed: () => _showApplySheet(context, ref, e),
-                            child: const Text('Apply Now'),
-                          )
-                        else
+                        if (rateLine != null) ...[
+                          const SizedBox(height: 2),
                           Text(
-                            appliedAtStr != null
-                                ? 'Applied on $appliedAtStr'
-                                : 'Applied',
+                            rateLine,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppDesignTokens.secondaryText,
+                            ),
+                          ),
+                        ],
+                        if (e.lastEditedAt != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            _lastUpdatedLine(cRef, e),
                             style: const TextStyle(
                               fontSize: 13,
-                              color: AppDesignTokens.successFg,
+                              color: AppDesignTokens.secondaryText,
                             ),
                           ),
-                        TextButton(
-                          onPressed: () =>
-                              _showApplicationSheet(context, ref, e),
-                          child: const Text('Edit'),
+                        ],
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (isPending)
+                              FilledButton.tonal(
+                                onPressed: () =>
+                                    _showApplySheet(context, cRef, e),
+                                child: const Text('Apply Now'),
+                              )
+                            else
+                              Text(
+                                appliedAtStr != null
+                                    ? 'Applied on $appliedAtStr'
+                                    : 'Applied',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppDesignTokens.successFg,
+                                ),
+                              ),
+                            TextButton(
+                              onPressed: () =>
+                                  _showApplicationSheet(context, cRef, e),
+                              child: const Text('Edit'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -300,74 +302,74 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                      Text(
-                        'Mark as applied',
-                        style: Theme.of(ctx).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: FormStyles.formSheetFieldSpacing),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                final d = await showDatePicker(
-                                  context: ctx,
-                                  initialDate: selectedDate,
-                                  firstDate: DateTime(2020),
-                                  lastDate: DateTime.now().add(
-                                    const Duration(days: 365),
-                                  ),
-                                );
-                                if (d != null) {
-                                  setSheetState(() => selectedDate = d);
-                                }
-                              },
-                              icon: const Icon(Icons.calendar_today, size: 18),
-                              label: Text(dateStr),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                final t = await showTimePicker(
-                                  context: ctx,
-                                  initialTime: selectedTime,
-                                );
-                                if (t != null) {
-                                  setSheetState(() => selectedTime = t);
-                                }
-                              },
-                              icon: const Icon(Icons.access_time, size: 18),
-                              label: Text(timeStr),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: FormStyles.formSheetSectionSpacing),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel'),
-                          ),
-                          const SizedBox(width: 8),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size(0, FormStyles.buttonHeight),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  FormStyles.buttonRadius,
+                    Text(
+                      'Mark as applied',
+                      style: Theme.of(ctx).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: FormStyles.formSheetFieldSpacing),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final d = await showDatePicker(
+                                context: ctx,
+                                initialDate: selectedDate,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime.now().add(
+                                  const Duration(days: 365),
                                 ),
+                              );
+                              if (d != null) {
+                                setSheetState(() => selectedDate = d);
+                              }
+                            },
+                            icon: const Icon(Icons.calendar_today, size: 18),
+                            label: Text(dateStr),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final t = await showTimePicker(
+                                context: ctx,
+                                initialTime: selectedTime,
+                              );
+                              if (t != null) {
+                                setSheetState(() => selectedTime = t);
+                              }
+                            },
+                            icon: const Icon(Icons.access_time, size: 18),
+                            label: Text(timeStr),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: FormStyles.formSheetSectionSpacing),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, FormStyles.buttonHeight),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                FormStyles.buttonRadius,
                               ),
                             ),
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Save'),
                           ),
-                        ],
-                      ),
-                    ],
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Save'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             );
@@ -438,8 +440,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                     child: const Text('Cancel'),
                   ),
                   FilledButton(
-                    style:
-                        FilledButton.styleFrom(backgroundColor: Colors.red),
+                    style: FilledButton.styleFrom(backgroundColor: Colors.red),
                     onPressed: () => Navigator.pop(ctx, true),
                     child: const Text('Delete'),
                   ),

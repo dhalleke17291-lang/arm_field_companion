@@ -109,6 +109,7 @@ class _PlotRatingHistoryList extends ConsumerWidget {
   final List<RatingRecord> ratings;
   final List<Session> sessions;
   final List<Assessment> assessments;
+
   /// [TrialAssessment] keyed by [TrialAssessment.legacyAssessmentId].
   final Map<int, TrialAssessment> taByLegacyAssessmentId;
   final Trial trial;
@@ -136,119 +137,125 @@ class _PlotRatingHistoryList extends ConsumerWidget {
             final historyTitle = ta != null
                 ? AssessmentDisplayHelper.minimalName(ta)
                 : (assessment?.name ?? 'Assessment');
-            final correctionAsync =
-                ref.watch(latestCorrectionForRatingProvider(rating.id));
-            final hasCorrection = correctionAsync.maybeWhen(
-              data: (c) => c != null,
-              orElse: () => false,
-            );
-            final showEditedChip =
-                rating.previousId != null || hasCorrection;
-            return Card(
-              child: ListTile(
-                leading: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: rating.resultStatus == 'RECORDED'
-                          ? Colors.green.shade100
-                          : Colors.orange.shade100,
-                      child: Icon(
-                        rating.resultStatus == 'RECORDED'
-                            ? Icons.check
-                            : Icons.info_outline,
-                        color: rating.resultStatus == 'RECORDED'
-                            ? Colors.green
-                            : Colors.orange,
-                        size: 20,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.history,
-                        size: AppDesignTokens.spacing20,
-                        color: AppDesignTokens.primary,
-                      ),
-                      tooltip: 'History',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: AppDesignTokens.spacing32,
-                        minHeight: AppDesignTokens.spacing32,
-                      ),
-                      onPressed: () => onHistoryTap(rating, assessment),
-                    ),
-                  ],
-                ),
-                title: Text(
-                  historyTitle,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(session?.name ?? 'Unknown session'),
-                    if (showEditedChip) ...[
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: () => onHistoryTap(rating, assessment),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.orange.shade700),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Edited',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.orange,
-                            ),
+            return Consumer(
+              builder: (context, cRef, _) {
+                final correctionAsync =
+                    cRef.watch(latestCorrectionForRatingProvider(rating.id));
+                final hasCorrection = correctionAsync.maybeWhen(
+                  data: (c) => c != null,
+                  orElse: () => false,
+                );
+                final showEditedChip =
+                    rating.previousId != null || hasCorrection;
+                return Card(
+                  child: ListTile(
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: rating.resultStatus == 'RECORDED'
+                              ? Colors.green.shade100
+                              : Colors.orange.shade100,
+                          child: Icon(
+                            rating.resultStatus == 'RECORDED'
+                                ? Icons.check
+                                : Icons.info_outline,
+                            color: rating.resultStatus == 'RECORDED'
+                                ? Colors.green
+                                : Colors.orange,
+                            size: 20,
                           ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      rating.resultStatus == 'RECORDED'
-                          ? '${rating.numericValue ?? rating.textValue ?? "-"} ${assessment?.unit ?? ""}'
-                          : rating.resultStatus,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: rating.resultStatus == 'RECORDED'
-                            ? Colors.green
-                            : Colors.orange,
-                      ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.history,
+                            size: AppDesignTokens.spacing20,
+                            color: AppDesignTokens.primary,
+                          ),
+                          tooltip: 'History',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: AppDesignTokens.spacing32,
+                            minHeight: AppDesignTokens.spacing32,
+                          ),
+                          onPressed: () => onHistoryTap(rating, assessment),
+                        ),
+                      ],
                     ),
-                    Text(
-                      _plotDetailFormatDate(rating.createdAt),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    title: Text(
+                      historyTitle,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: () => onEditRatingTap(rating, assessment),
-                      child: const Text(
-                        'Edit rating',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(session?.name ?? 'Unknown session'),
+                        if (showEditedChip) ...[
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () => onHistoryTap(rating, assessment),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                border:
+                                    Border.all(color: Colors.orange.shade700),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Edited',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          rating.resultStatus == 'RECORDED'
+                              ? '${rating.numericValue ?? rating.textValue ?? "-"} ${assessment?.unit ?? ""}'
+                              : rating.resultStatus,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: rating.resultStatus == 'RECORDED'
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                        ),
+                        Text(
+                          _plotDetailFormatDate(rating.createdAt),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => onEditRatingTap(rating, assessment),
+                          child: const Text(
+                            'Edit rating',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             );
           },
           childCount: ratings.length,
@@ -267,8 +274,7 @@ const _plotDamageTypeLabels = <String, String>{
   'other': 'Other',
 };
 
-void _invalidatePlotAnalysisProviders(
-    WidgetRef ref, int trialId, int plotPk) {
+void _invalidatePlotAnalysisProviders(WidgetRef ref, int trialId, int plotPk) {
   ref.invalidate(plotsForTrialProvider(trialId));
   ref.invalidate(trialAssessmentCompletionProvider(trialId));
   ref.invalidate(ratedPlotsCountForTrialProvider(trialId));
@@ -793,9 +799,10 @@ class PlotDetailScreen extends ConsumerWidget {
                             label: 'Plot Notes', value: 'No plot notes'),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.edit_note, size: 18),
-                        label: Text(plotToShow.plotNotes?.trim().isNotEmpty == true
-                            ? 'Edit Plot Notes'
-                            : 'Add Plot Notes'),
+                        label: Text(
+                            plotToShow.plotNotes?.trim().isNotEmpty == true
+                                ? 'Edit Plot Notes'
+                                : 'Add Plot Notes'),
                         onPressed: () => showPlotNotesDialog(
                             context, ref, plotToShow, trial,
                             sameTrialPlots: plots),
@@ -836,9 +843,8 @@ class PlotDetailScreen extends ConsumerWidget {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                                 const SizedBox(height: 6),

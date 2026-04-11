@@ -120,9 +120,7 @@ Future<void> _runGenerateRepGuardPlots(
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
-        added == 1
-            ? 'Added 1 guard plot.'
-            : 'Added $added guard plots.',
+        added == 1 ? 'Added 1 guard plot.' : 'Added $added guard plots.',
       ),
     ),
   );
@@ -279,7 +277,8 @@ String _ratingCellLabel(RatingRecord? rating) {
   }
 }
 
-Widget _ratingOverlayLegendChip(BuildContext context, Color color, String label) {
+Widget _ratingOverlayLegendChip(
+    BuildContext context, Color color, String label) {
   final scheme = Theme.of(context).colorScheme;
   final borderColor = color == Colors.white
       ? scheme.outlineVariant.withValues(alpha: 0.45)
@@ -516,8 +515,7 @@ Widget _buildRatingsOverlay({
                             ),
                             ...repPlots.map((plot) {
                               final rating = ratingByPlot[plot.id];
-                              final count =
-                                  assessmentCountByPlot[plot.id] ?? 0;
+                              final count = assessmentCountByPlot[plot.id] ?? 0;
                               final cellColor =
                                   _ratingCellColor(rating?.resultStatus);
                               final textColor =
@@ -906,8 +904,7 @@ Widget? _standalonePlotsEmptyExtra(
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: FilledButton(
-          onPressed: () =>
-              showAddTreatmentSheet(context, ref, trial: trial),
+          onPressed: () => showAddTreatmentSheet(context, ref, trial: trial),
           child: const Text('Add Treatment'),
         ),
       ),
@@ -967,7 +964,8 @@ class PlotDetailsBar extends StatelessWidget {
 }
 
 class PlotsTab extends ConsumerStatefulWidget {
-  const PlotsTab({super.key, required this.trial, this.embeddedInScroll = false});
+  const PlotsTab(
+      {super.key, required this.trial, this.embeddedInScroll = false});
 
   final Trial trial;
   final bool embeddedInScroll;
@@ -988,9 +986,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     final applicationsList =
         ref.watch(trialApplicationsForTrialProvider(trial.id)).value ?? [];
     final applicationCount = applicationsList.length;
-    final lastApplication = applicationsList.isEmpty
-        ? null
-        : applicationsList.last;
+    final lastApplication =
+        applicationsList.isEmpty ? null : applicationsList.last;
     final treatmentComponentCount = ref
             .watch(treatmentComponentsCountForTrialProvider(trial.id))
             .valueOrNull ??
@@ -1139,7 +1136,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
           children: [
             _buildViewPlotLayoutButton(context),
             Expanded(
-              child:               _buildPlotsSummaryWithBar(
+              child: _buildPlotsSummaryWithBar(
                 context,
                 ref,
                 trial,
@@ -1236,8 +1233,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                   children: [
                     Text(
                       'Rated plots',
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade500),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade500),
                     ),
                     Text(
                       ratedLine,
@@ -1257,8 +1254,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                         ? 0.0
                         : ratedPlotsCount / analyzablePlotCount,
                     backgroundColor: const Color(0xFFE8E5E0),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF2D5A40)),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Color(0xFF2D5A40)),
                     minHeight: 6,
                   ),
                 ),
@@ -1267,8 +1264,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                   totalPlots == dataPlotCount
                       ? '$totalPlots plots · ${treatments.length} treatments · $replicateCount reps'
                       : '$totalPlots layout plot rows · $dataPlotCount data plots · ${treatments.length} treatments · $replicateCount reps',
-                  style: TextStyle(
-                      fontSize: 11, color: Colors.grey.shade400),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
                 ),
               ],
             ),
@@ -1279,8 +1275,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   const spacing = 8.0;
-                  final cardWidth =
-                      (constraints.maxWidth - spacing) / 2;
+                  final cardWidth = (constraints.maxWidth - spacing) / 2;
                   return Wrap(
                     spacing: spacing,
                     runSpacing: spacing,
@@ -1344,7 +1339,8 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -1404,8 +1400,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         const spacing = 8.0;
-                        final cardWidth =
-                            (constraints.maxWidth - spacing) / 2;
+                        final cardWidth = (constraints.maxWidth - spacing) / 2;
                         return Wrap(
                           spacing: spacing,
                           runSpacing: spacing,
@@ -1658,6 +1653,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
 /// Plot Details sub-screen: List/Layout toggle, layer switcher, and full plot list or grid.
 class _PlotDetailsScreen extends ConsumerStatefulWidget {
   final Trial trial;
+
   /// When true, open with Layout (grid) tab selected instead of List.
   final bool initialShowLayoutView;
 
@@ -1682,13 +1678,15 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   }
 
   bool? _plotLayoutHintDismissed;
-  static const String _kPlotLayoutHintDismissedKey = 'plot_layout_hint_dismissed';
+  static const String _kPlotLayoutHintDismissedKey =
+      'plot_layout_hint_dismissed';
 
   Future<void> _loadPlotLayoutHintDismissed() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _plotLayoutHintDismissed = prefs.getBool(_kPlotLayoutHintDismissedKey) ?? false;
+      _plotLayoutHintDismissed =
+          prefs.getBool(_kPlotLayoutHintDismissedKey) ?? false;
     });
   }
 
@@ -1720,6 +1718,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   final GlobalKey _plotViewportKey = GlobalKey();
   final GlobalKey _gridContentKey = GlobalKey();
   bool _gridCenterScheduled = false;
+
   /// Display-only: when false, guard plots are hidden from list and layout in this screen.
   bool _showGuardPlots = true;
 
@@ -1773,8 +1772,10 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
       });
     }
     // Start at left when grid overflows; center when grid fits.
-    final dx = gridWidth > viewportWidth ? 0.0 : (viewportWidth - gridWidth) / 2;
-    final dy = gridHeight > viewportHeight ? 0.0 : (viewportHeight - gridHeight) / 2;
+    final dx =
+        gridWidth > viewportWidth ? 0.0 : (viewportWidth - gridWidth) / 2;
+    final dy =
+        gridHeight > viewportHeight ? 0.0 : (viewportHeight - gridHeight) / 2;
     _gridTransformController.value = Matrix4.identity()
       ..translateByDouble(dx, dy, 0.0, 1.0);
   }
@@ -1801,6 +1802,13 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   Widget build(BuildContext context) {
     final trial = widget.trial;
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
+    final hasSessionDataAsync =
+        ref.watch(trialHasSessionDataProvider(trial.id));
+    final assignmentsAsync = ref.watch(assignmentsForTrialProvider(trial.id));
+    final trialApplicationsAsync =
+        ref.watch(trialApplicationsForTrialProvider(trial.id));
     return Scaffold(
       appBar: AppBar(
         title: const Text('Plot Details'),
@@ -1818,21 +1826,31 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         ),
         data: (plots) => plots.isEmpty
             ? _PlotDetailsEmptyContent(trial: trial)
-            : _buildPlotDetailsContent(context, ref, plots),
+            : _buildPlotDetailsContent(
+                context,
+                ref,
+                plots,
+                treatments: treatmentsAsync.value ?? [],
+                sessions: sessionsAsync.value ?? [],
+                hasSessionData: hasSessionDataAsync.valueOrNull ?? false,
+                assignmentsList: assignmentsAsync.value ?? [],
+                applicationsList: trialApplicationsAsync.value ?? [],
+              ),
       ),
     );
   }
 
   Widget _buildPlotDetailsContent(
-      BuildContext context, WidgetRef ref, List<Plot> plots) {
+    BuildContext context,
+    WidgetRef ref,
+    List<Plot> plots, {
+    required List<Treatment> treatments,
+    required List<Session> sessions,
+    required bool hasSessionData,
+    required List<Assignment> assignmentsList,
+    required List<TrialApplicationEvent> applicationsList,
+  }) {
     final displayPlots = _plotsVisibleInPlotsTab(plots);
-    final treatments =
-        ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final sessions =
-        ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
-    final hasSessionData =
-        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
-            false;
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
     const double maxTopSectionHeight = 380;
@@ -1885,7 +1903,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                 ),
                 const SizedBox(height: 8),
                 _buildLayerSwitcherForDetails(context),
-                if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
+                if (_plotLayoutHintDismissed == false)
+                  _buildPanZoomHint(context),
                 if (_layoutLayer == _LayoutLayer.applications)
                   _buildAppEventSelectorForDetails(context, ref),
               ],
@@ -1959,19 +1978,9 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                           totalGridWidth > viewportWidth
                               ? totalGridWidth
                               : viewportWidth;
-                      final assignmentsList = ref
-                              .watch(
-                                  assignmentsForTrialProvider(widget.trial.id))
-                              .value ??
-                          [];
                       final plotIdToTreatmentIdMap = {
                         for (var a in assignmentsList) a.plotId: a.treatmentId
                       };
-                      final applicationsList = ref
-                              .watch(trialApplicationsForTrialProvider(
-                                  widget.trial.id))
-                              .value ??
-                          [];
                       final treatmentIdsWithApp = applicationsList
                           .map((e) => e.treatmentId)
                           .whereType<int>()
@@ -1989,10 +1998,10 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                       final gridH = _layoutGridHeight ?? (viewportHeight * 0.5);
                       final vw = _layoutViewportWidth ?? viewportWidth;
                       final vh = _layoutViewportHeight ?? viewportHeight;
-                      final showRightFade = gridW * _scale > vw &&
-                          _panDx > vw - gridW * _scale;
-                      final showBottomFade = gridH * _scale > vh &&
-                          _panDy > vh - gridH * _scale;
+                      final showRightFade =
+                          gridW * _scale > vw && _panDx > vw - gridW * _scale;
+                      final showBottomFade =
+                          gridH * _scale > vh && _panDy > vh - gridH * _scale;
                       return ClipRect(
                         child: Stack(
                           children: [
@@ -2335,8 +2344,11 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
-  Widget _buildPlotsHeaderForDetails(BuildContext context, WidgetRef ref,
-      List<Plot> allTrialPlots, List<Plot> plotsForBulkAssign,
+  Widget _buildPlotsHeaderForDetails(
+      BuildContext context,
+      WidgetRef ref,
+      List<Plot> allTrialPlots,
+      List<Plot> plotsForBulkAssign,
       bool hasSessionData) {
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
@@ -2501,9 +2513,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
               child: FilledButton.tonalIcon(
                 onPressed: plotAssignmentsLocked
                     ? null
-                    : () =>
-                        _showBulkAssignSheet(
-                            context, ref, widget.trial, plotsForBulkAssign),
+                    : () => _showBulkAssignSheet(
+                        context, ref, widget.trial, plotsForBulkAssign),
                 icon: Icon(
                   Icons.grid_view_rounded,
                   size: 18,
@@ -2516,8 +2527,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
                   foregroundColor: plotAssignmentsLocked
                       ? AppDesignTokens.secondaryText
                       : AppDesignTokens.primary,
-                  backgroundColor: cs.surfaceContainerHighest.withValues(
-                      alpha: plotAssignmentsLocked ? 0.55 : 0.88),
+                  backgroundColor: cs.surfaceContainerHighest
+                      .withValues(alpha: plotAssignmentsLocked ? 0.55 : 0.88),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   minimumSize: const Size.fromHeight(44),
@@ -2554,12 +2565,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
     );
   }
 
-  Widget _buildPlotsListBodyForDetails(
-      BuildContext context,
-      WidgetRef ref,
-      List<Plot> visiblePlots,
-      List<Plot> allPlots,
-      bool hasSessionData) {
+  Widget _buildPlotsListBodyForDetails(BuildContext context, WidgetRef ref,
+      List<Plot> visiblePlots, List<Plot> allPlots, bool hasSessionData) {
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
     final longPressBlockMessage = !canEditProtocol(widget.trial)
@@ -2590,9 +2597,8 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
         final leadingBg = isGuardUnused
             ? Theme.of(context).colorScheme.surfaceContainerHighest
             : AppDesignTokens.primary;
-        final leadingFg = isGuardUnused
-            ? AppDesignTokens.secondaryText
-            : Colors.white;
+        final leadingFg =
+            isGuardUnused ? AppDesignTokens.secondaryText : Colors.white;
         return Container(
           margin: const EdgeInsets.only(
             left: AppDesignTokens.spacing16,
@@ -3084,8 +3090,7 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
     final anyHasExistingAssignment = _selectedPlotIds.any((id) {
       final assignment = assignmentByPlotId[id];
       final plot = plotById[id];
-      final effectiveTreatmentId =
-          assignment?.treatmentId ?? plot?.treatmentId;
+      final effectiveTreatmentId = assignment?.treatmentId ?? plot?.treatmentId;
       return effectiveTreatmentId != null;
     });
     if (anyHasExistingAssignment) {
@@ -3189,6 +3194,7 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
 /// Order is always by rep and plot position; never by treatment.
 class _PlotLayoutGrid extends StatelessWidget {
   final List<Plot> plots;
+
   /// Full trial plot list for stable display labels when [plots] is a filtered subset.
   final List<Plot>? plotLabelContextPlots;
   final List<Treatment> treatments;
@@ -3370,8 +3376,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                               entry.key %
                                   AppDesignTokens.treatmentPalette.length];
                           return ConstrainedBox(
-                            constraints:
-                                const BoxConstraints(maxWidth: 200),
+                            constraints: const BoxConstraints(maxWidth: 200),
                             child: _compactTreatmentLegendLine(
                               context,
                               color,
@@ -3448,8 +3453,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                       ),
                     ]
                   : <Widget>[];
-              final repRows =
-                  block.repRows.reversed.map((repRow) {
+              final repRows = block.repRows.reversed.map((repRow) {
                 const cellSize = _minCellSize;
                 const rowHeight = _minCellSize + 2;
                 return Padding(
@@ -3477,11 +3481,8 @@ class _PlotLayoutGrid extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            for (var i = 0;
-                                i < repRow.plots.length;
-                                i++) ...[
-                              if (i > 0)
-                                const SizedBox(width: _tileSpacing),
+                            for (var i = 0; i < repRow.plots.length; i++) ...[
+                              if (i > 0) const SizedBox(width: _tileSpacing),
                               SizedBox(
                                 width: cellSize,
                                 height: cellSize,
@@ -3492,15 +3493,13 @@ class _PlotLayoutGrid extends StatelessWidget {
                                   trial: trial,
                                   tileColor:
                                       _tileColorFor(context, repRow.plots[i]),
-                                  treatmentIdOverride:
-                                      plotIdToTreatmentId?[
-                                              repRow.plots[i].id] ??
-                                          repRow.plots[i].treatmentId,
+                                  treatmentIdOverride: plotIdToTreatmentId?[
+                                          repRow.plots[i].id] ??
+                                      repRow.plots[i].treatmentId,
                                   displayLabel: getDisplayPlotLabel(
                                       repRow.plots[i], labelPlots),
                                   onLongPress: onLongPressPlot != null
-                                      ? () => onLongPressPlot!(
-                                          repRow.plots[i])
+                                      ? () => onLongPressPlot!(repRow.plots[i])
                                       : null,
                                 ),
                               ),
@@ -3566,12 +3565,12 @@ class _PlotGridTileState extends State<_PlotGridTile> {
   Widget build(BuildContext context) {
     final plot = widget.plot;
     final effectiveTid = widget.treatmentIdOverride ?? plot.treatmentId;
-    final treatment = effectiveTid != null ? widget.treatmentMap[effectiveTid] : null;
+    final treatment =
+        effectiveTid != null ? widget.treatmentMap[effectiveTid] : null;
     final label = widget.displayLabel ?? plot.plotId;
     final isGuardUnused = plot.isGuardRow && effectiveTid == null;
-    final labelColor = isGuardUnused
-        ? AppDesignTokens.secondaryText
-        : Colors.white;
+    final labelColor =
+        isGuardUnused ? AppDesignTokens.secondaryText : Colors.white;
     final subColor = isGuardUnused
         ? AppDesignTokens.secondaryText.withValues(alpha: 0.8)
         : Colors.white.withValues(alpha: 0.85);
@@ -3765,7 +3764,15 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
 
   @override
   Widget build(BuildContext context) {
-    final plotsAsync = ref.watch(plotsForTrialProvider(widget.trial.id));
+    final trial = widget.trial;
+    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final hasSessionDataAsync =
+        ref.watch(trialHasSessionDataProvider(trial.id));
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
+    final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
+    final assignmentsAsync = ref.watch(assignmentsForTrialProvider(trial.id));
+    final trialApplicationsAsync =
+        ref.watch(trialApplicationsForTrialProvider(trial.id));
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isLayoutView ? 'Plots — Layout' : 'Plots — List'),
@@ -3781,14 +3788,10 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           if (plots.isEmpty) {
             return _PlotDetailsEmptyContent(trial: widget.trial);
           }
-          final hasSessionData =
-              ref.watch(trialHasSessionDataProvider(widget.trial.id))
-                      .valueOrNull ??
-                  false;
+          final hasSessionData = hasSessionDataAsync.valueOrNull ?? false;
           final plotAssignmentsLocked =
               plotAssignmentsEditLocked(widget.trial, hasSessionData);
-          final sessions =
-              ref.watch(sessionsForTrialProvider(widget.trial.id)).value ?? [];
+          final sessions = sessionsAsync.value ?? [];
           final displayPlots = _plotsVisibleInPlotsTab(plots);
           if (!widget.isLayoutView) {
             final scheme = Theme.of(context).colorScheme;
@@ -3820,17 +3823,20 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                 _buildAddRepGuardsRow(context, ref, widget.trial),
                 Expanded(
                   child: _buildListBody(
-                      context, ref, displayPlots, plots, hasSessionData),
+                    context,
+                    ref,
+                    displayPlots,
+                    plots,
+                    hasSessionData,
+                    treatments: treatmentsAsync.value ?? [],
+                    assignmentsList: assignmentsAsync.value ?? [],
+                  ),
                 ),
               ],
             );
           }
-          final treatments =
-              ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ??
-                  [];
-          final assignments =
-              ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ??
-                  [];
+          final treatments = treatmentsAsync.value ?? [];
+          final assignments = assignmentsAsync.value ?? [];
           final Map<int, int?> plotIdToTreatmentId = {
             for (final a in assignments) a.plotId: a.treatmentId
           };
@@ -3965,11 +3971,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                               totalGridWidth > viewportWidth
                                   ? totalGridWidth
                                   : viewportWidth;
-                          final applicationsList = ref
-                                  .watch(trialApplicationsForTrialProvider(
-                                      widget.trial.id))
-                                  .value ??
-                              [];
+                          final applicationsList =
+                              trialApplicationsAsync.value ?? [];
                           final treatmentIdsWithApp = applicationsList
                               .map((e) => e.treatmentId)
                               .whereType<int>()
@@ -4118,21 +4121,20 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   }
 
   Widget _buildListBody(
-      BuildContext context,
-      WidgetRef ref,
-      List<Plot> visiblePlots,
-      List<Plot> allPlots,
-      bool hasSessionData) {
+    BuildContext context,
+    WidgetRef ref,
+    List<Plot> visiblePlots,
+    List<Plot> allPlots,
+    bool hasSessionData, {
+    required List<Treatment> treatments,
+    required List<Assignment> assignmentsList,
+  }) {
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
     final longPressBlockMessage = !canEditProtocol(widget.trial)
         ? protocolEditBlockedMessage(widget.trial)
         : getAssignmentsLockMessage(widget.trial.status, hasSessionData);
-    final treatments =
-        ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentMap = {for (final t in treatments) t.id: t};
-    final assignmentsList =
-        ref.watch(assignmentsForTrialProvider(widget.trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -4154,9 +4156,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         final leadingBg = isGuardUnused
             ? Theme.of(context).colorScheme.surfaceContainerHighest
             : Theme.of(context).colorScheme.primary;
-        final leadingFg = isGuardUnused
-            ? AppDesignTokens.secondaryText
-            : Colors.white;
+        final leadingFg =
+            isGuardUnused ? AppDesignTokens.secondaryText : Colors.white;
         return AppCard(
           margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
           child: ListTile(
@@ -4187,9 +4188,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                     : 'Plot $displayLabel',
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: isGuardUnused
-                        ? AppDesignTokens.secondaryText
-                        : null)),
+                    color:
+                        isGuardUnused ? AppDesignTokens.secondaryText : null)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -4210,8 +4210,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                         ),
                       ),
                     ),
-                    if (sourceLabel != 'Unknown' &&
-                        sourceLabel != 'Unassigned')
+                    if (sourceLabel != 'Unknown' && sourceLabel != 'Unassigned')
                       Text(sourceLabel,
                           style: const TextStyle(
                               fontSize: 10,

@@ -202,7 +202,9 @@ class RecoveryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = trialId;
     final scoped = t != null;
-    final trialsAsync = scoped ? null : ref.watch(deletedTrialsProvider);
+    // Always watch trials list so autoDispose does not drop to zero when
+    // switching scoped vs global (conditional watch caused dispose races).
+    final trialsAsync = ref.watch(deletedTrialsProvider);
     final sessionsAsync = t == null
         ? ref.watch(deletedSessionsProvider)
         : ref.watch(deletedSessionsForTrialRecoveryProvider(t));
@@ -214,9 +216,7 @@ class RecoveryScreen extends ConsumerWidget {
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: GradientScreenHeader(
         title: 'Recovery',
-        subtitle: scoped
-            ? 'Deleted items in this trial'
-            : 'All deleted items',
+        subtitle: scoped ? 'Deleted items in this trial' : 'All deleted items',
       ),
       body: SafeArea(
         child: ListView(
@@ -225,7 +225,7 @@ class RecoveryScreen extends ConsumerWidget {
             vertical: AppDesignTokens.spacing24,
           ),
           children: [
-            if (!scoped && trialsAsync != null) ...[
+            if (!scoped) ...[
               _DeletedTrialsSection(async: trialsAsync),
               const SizedBox(height: AppDesignTokens.spacing16),
             ],
@@ -484,92 +484,91 @@ Future<void> _runDeletedSessionRecoveryExport(
     );
 
     final user = await ref.read(currentUserProvider.future);
-    final result = await ref
-      .read(exportDeletedSessionRecoveryZipUsecaseProvider)
-      .execute(
-        sessionId: session.id,
-        exportedByDisplayName: user?.displayName,
+    final result =
+        await ref.read(exportDeletedSessionRecoveryZipUsecaseProvider).execute(
+              sessionId: session.id,
+              exportedByDisplayName: user?.displayName,
+            );
+
+    if (!context.mounted) return;
+    messenger.clearSnackBars();
+
+    if (!result.success ||
+        result.filePath == null ||
+        result.filePath!.isEmpty) {
+      ref.read(diagnosticsStoreProvider).recordError(
+            result.errorMessage ?? 'Recovery export failed',
+            code: 'recovery_export_failed',
+          );
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Export Failed'),
+          content: SelectableText(
+            result.errorMessage ?? 'Recovery export failed.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
+      return;
+    }
 
-  if (!context.mounted) return;
-  messenger.clearSnackBars();
-
-  if (!result.success ||
-      result.filePath == null ||
-      result.filePath!.isEmpty) {
-    ref.read(diagnosticsStoreProvider).recordError(
-          result.errorMessage ?? 'Recovery export failed',
-          code: 'recovery_export_failed',
-        );
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Export Failed'),
-        content: SelectableText(
-          result.errorMessage ?? 'Recovery export failed.',
+        title: const Text('Recovery Export Ready'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Deleted-session Recovery ZIP is ready for analysis or review. '
+              'This file is not for standard operational re-import.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Saved to:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            SelectableText(
+              result.filePath!,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
         actions: [
-          FilledButton(
+          TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+            child: const Text('Close'),
+          ),
+          FilledButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final box = context.findRenderObject() as RenderBox?;
+              await Share.shareXFiles(
+                [XFile(result.filePath!)],
+                subject: 'Recovery export — ${session.name}',
+                sharePositionOrigin: box == null
+                    ? const Rect.fromLTWH(0, 0, 100, 100)
+                    : box.localToGlobal(Offset.zero) & box.size,
+              );
+            },
+            icon: const Icon(Icons.share),
+            label: const Text('Share'),
           ),
         ],
       ),
     );
-    return;
-  }
-
-  showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Recovery Export Ready'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Deleted-session Recovery ZIP is ready for analysis or review. '
-            'This file is not for standard operational re-import.',
-            style: TextStyle(fontSize: 14),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Saved to:',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          SelectableText(
-            result.filePath!,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Close'),
-        ),
-        FilledButton.icon(
-          onPressed: () async {
-            Navigator.pop(ctx);
-            final box = context.findRenderObject() as RenderBox?;
-            await Share.shareXFiles(
-              [XFile(result.filePath!)],
-              subject: 'Recovery export — ${session.name}',
-              sharePositionOrigin: box == null
-                  ? const Rect.fromLTWH(0, 0, 100, 100)
-                  : box.localToGlobal(Offset.zero) & box.size,
-            );
-          },
-          icon: const Icon(Icons.share),
-          label: const Text('Share'),
-        ),
-      ],
-    ),
-  );
   });
   if (!ran && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -592,92 +591,91 @@ Future<void> _runDeletedTrialRecoveryExport(
     );
 
     final user = await ref.read(currentUserProvider.future);
-    final result = await ref
-      .read(exportDeletedTrialRecoveryZipUsecaseProvider)
-      .execute(
-        trialId: trial.id,
-        exportedByDisplayName: user?.displayName,
+    final result =
+        await ref.read(exportDeletedTrialRecoveryZipUsecaseProvider).execute(
+              trialId: trial.id,
+              exportedByDisplayName: user?.displayName,
+            );
+
+    if (!context.mounted) return;
+    messenger.clearSnackBars();
+
+    if (!result.success ||
+        result.filePath == null ||
+        result.filePath!.isEmpty) {
+      ref.read(diagnosticsStoreProvider).recordError(
+            result.errorMessage ?? 'Recovery export failed',
+            code: 'recovery_trial_export_failed',
+          );
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Export Failed'),
+          content: SelectableText(
+            result.errorMessage ?? 'Recovery export failed.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
+      return;
+    }
 
-  if (!context.mounted) return;
-  messenger.clearSnackBars();
-
-  if (!result.success ||
-      result.filePath == null ||
-      result.filePath!.isEmpty) {
-    ref.read(diagnosticsStoreProvider).recordError(
-          result.errorMessage ?? 'Recovery export failed',
-          code: 'recovery_trial_export_failed',
-        );
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Export Failed'),
-        content: SelectableText(
-          result.errorMessage ?? 'Recovery export failed.',
+        title: const Text('Recovery Export Ready'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Deleted-trial Recovery ZIP is ready for analysis or review. '
+              'This file is not for standard operational re-import.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Saved to:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            SelectableText(
+              result.filePath!,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
         actions: [
-          FilledButton(
+          TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+            child: const Text('Close'),
+          ),
+          FilledButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final box = context.findRenderObject() as RenderBox?;
+              await Share.shareXFiles(
+                [XFile(result.filePath!)],
+                subject: 'Recovery export — ${trial.name}',
+                sharePositionOrigin: box == null
+                    ? const Rect.fromLTWH(0, 0, 100, 100)
+                    : box.localToGlobal(Offset.zero) & box.size,
+              );
+            },
+            icon: const Icon(Icons.share),
+            label: const Text('Share'),
           ),
         ],
       ),
     );
-    return;
-  }
-
-  showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Recovery Export Ready'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Deleted-trial Recovery ZIP is ready for analysis or review. '
-            'This file is not for standard operational re-import.',
-            style: TextStyle(fontSize: 14),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Saved to:',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          SelectableText(
-            result.filePath!,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Close'),
-        ),
-        FilledButton.icon(
-          onPressed: () async {
-            Navigator.pop(ctx);
-            final box = context.findRenderObject() as RenderBox?;
-            await Share.shareXFiles(
-              [XFile(result.filePath!)],
-              subject: 'Recovery export — ${trial.name}',
-              sharePositionOrigin: box == null
-                  ? const Rect.fromLTWH(0, 0, 100, 100)
-                  : box.localToGlobal(Offset.zero) & box.size,
-            );
-          },
-          icon: const Icon(Icons.share),
-          label: const Text('Share'),
-        ),
-      ],
-    ),
-  );
   });
   if (!ran && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -695,7 +693,8 @@ class _SessionRecoveryRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final trialLabelAsync =
         ref.watch(recoveryTrialDisplayNameProvider(session.trialId));
-    final trialLabel = trialLabelAsync.valueOrNull ?? 'Trial #${session.trialId}';
+    final trialLabel =
+        trialLabelAsync.valueOrNull ?? 'Trial #${session.trialId}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -740,8 +739,7 @@ class _SessionRecoveryRow extends ConsumerWidget {
                 Tooltip(
                   message: 'Restores this deleted session and its rating data',
                   child: TextButton.icon(
-                    onPressed: () =>
-                        _runSessionRestore(context, ref, session),
+                    onPressed: () => _runSessionRestore(context, ref, session),
                     icon: const Icon(
                       Icons.restore_outlined,
                       size: 18,
