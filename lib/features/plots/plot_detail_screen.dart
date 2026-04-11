@@ -17,6 +17,7 @@ import 'plot_detail_form_controller.dart';
 import 'plot_notes_dialog.dart';
 import '../notes/field_note_editor_sheet.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/ui/field_note_timestamp_format.dart';
 import '../../core/widgets/app_standard_widgets.dart';
 import '../../domain/models/plot_context.dart';
 
@@ -678,14 +679,16 @@ class PlotDetailScreen extends ConsumerWidget {
         titleFontSize: 17,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_note),
+            iconSize: 24,
+            icon: const Icon(Icons.edit_note, color: AppDesignTokens.onPrimary),
             tooltip: 'Notes',
             onPressed: () => showPlotNotesDialog(
                 context, ref, plotToShow, trial,
                 sameTrialPlots: plots),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert, color: AppDesignTokens.onPrimary),
+            iconSize: 24,
             tooltip: 'More',
             onSelected: (value) {
               if (value == 'delete_plot') {
@@ -858,6 +861,38 @@ class PlotDetailScreen extends ConsumerWidget {
                                       maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 13),
+                                    ),
+                                    subtitle: Builder(
+                                      builder: (_) {
+                                        const subStyle = TextStyle(
+                                          fontSize: 11,
+                                          color: AppDesignTokens.secondaryText,
+                                        );
+                                        final meta =
+                                            formatFieldNoteContextLineWithPlots(
+                                          n,
+                                          plots,
+                                          includeSession: true,
+                                        );
+                                        if (meta.isEmpty) {
+                                          return Text(
+                                            formatFieldNoteTimestampLine(n),
+                                            style: subStyle,
+                                          );
+                                        }
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              formatFieldNoteTimestampLine(n),
+                                              style: subStyle,
+                                            ),
+                                            Text(meta, style: subStyle),
+                                          ],
+                                        );
+                                      },
                                     ),
                                     onTap: () => showFieldNoteEditorSheet(
                                       context,

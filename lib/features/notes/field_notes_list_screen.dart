@@ -1,9 +1,12 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
+import '../../core/ui/field_note_timestamp_format.dart';
 import 'field_note_editor_sheet.dart';
 
 /// Full list of field notes for a trial.
@@ -14,16 +17,35 @@ class FieldNotesListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(notesForTrialProvider(trial.id));
+    final notesAsync = ref.watch(notesForTrialProvider(trial.id));
+    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: AppBar(
-        title: const Text('Field Notes'),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: AppDesignTokens.primary,
         foregroundColor: AppDesignTokens.onPrimary,
+        iconTheme: const IconThemeData(
+          color: AppDesignTokens.onPrimary,
+          size: 24,
+        ),
+        actionsIconTheme: const IconThemeData(
+          color: AppDesignTokens.onPrimary,
+          size: 24,
+        ),
+        title: Text(
+          'Field Notes',
+          style: AppDesignTokens.headerTitleStyle(
+            fontSize: 18,
+            color: AppDesignTokens.onPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
       ),
-      body: async.when(
+      body: notesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(
           child: Padding(
@@ -35,6 +57,10 @@ class FieldNotesListScreen extends ConsumerWidget {
           ),
         ),
         data: (notes) {
+          final plotIdByPk = {
+            for (final p in plotsAsync.valueOrNull ?? <Plot>[])
+              p.id: p.plotId,
+          };
           if (notes.isEmpty) {
             return const Center(
               child: Text(
@@ -50,65 +76,67 @@ class FieldNotesListScreen extends ConsumerWidget {
                 const Divider(height: 1, color: AppDesignTokens.borderCrisp),
             itemBuilder: (ctx, i) {
               final n = notes[i];
-              return ListTile(
-                title: Text(
-                  n.content,
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  _subtitle(n),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
+              return Dismissible(
+                key: ValueKey<int>(n.id),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: AppDesignTokens.spacing16),
+                  color: Theme.of(ctx).colorScheme.errorContainer,
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: Theme.of(ctx).colorScheme.onErrorContainer,
                   ),
                 ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (v) async {
-                    if (v == 'edit') {
-                      await showFieldNoteEditorSheet(
-                        context,
-                        ref,
-                        trial: trial,
-                        existing: n,
-                      );
-                    } else if (v == 'delete') {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (dCtx) => AlertDialog(
-                          title: const Text('Delete note'),
-                          content: const Text(
-                            'This note will be removed from export and the timeline.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(dCtx, false),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(dCtx, true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
+                confirmDismiss: (_) async =>
+                    await _showDeleteNoteDialog(ctx) ?? false,
+                onDismissed: (_) {
+                  unawaited(() async {
+                    final byline = await _currentByline(ref);
+                    if (!ctx.mounted) return;
+                    await _deleteNoteAndShowUndo(ctx, ref, n, byline);
+                  }());
+                },
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppDesignTokens.spacing8,
+                    vertical: 4,
+                  ),
+                  title: Text(
+                    n.content,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: _noteListSubtitle(n, plotIdByPk),
+                  onTap: () => showFieldNoteEditorSheet(
+                    ctx,
+                    ref,
+                    trial: trial,
+                    existing: n,
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Edit',
+                        color: AppDesignTokens.primary,
+                        onPressed: () => showFieldNoteEditorSheet(
+                          ctx,
+                          ref,
+                          trial: trial,
+                          existing: n,
                         ),
-                      );
-                      if (ok == true && context.mounted) {
-                        final user =
-                            await ref.read(currentUserProvider.future);
-                        final byline = user?.displayName ?? 'Unknown';
-                        await ref
-                            .read(notesRepositoryProvider)
-                            .deleteNote(n.id, byline);
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ref.invalidate(notesForTrialProvider(trial.id));
-                        });
-                      }
-                    }
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Delete',
+                        color: AppDesignTokens.secondaryText,
+                        onPressed: () =>
+                            _deleteNoteAfterConfirm(ctx, ref, n),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -116,24 +144,95 @@ class FieldNotesListScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await showFieldNoteEditorSheet(context, ref, trial: trial);
-        },
-        icon: const Icon(Icons.note_add_outlined),
-        label: const Text('Add Note'),
+        onPressed: () => showFieldNoteEditorSheet(context, ref, trial: trial),
+        icon: const Icon(Icons.add),
+        label: const Text('Add'),
         backgroundColor: AppDesignTokens.primary,
         foregroundColor: AppDesignTokens.onPrimary,
       ),
     );
   }
 
-  static String _subtitle(Note n) {
-    final parts = <String>[n.createdAt.toLocal().toString().split('.').first];
-    if (n.plotPk != null) parts.add('Plot #${n.plotPk}');
-    if (n.sessionId != null) parts.add('Session #${n.sessionId}');
-    if (n.raterName != null && n.raterName!.trim().isNotEmpty) {
-      parts.add(n.raterName!.trim());
+  static Widget _noteListSubtitle(Note n, Map<int, String> plotIdByPk) {
+    const style = TextStyle(
+      fontSize: 12,
+      color: AppDesignTokens.secondaryText,
+    );
+    final meta = formatFieldNoteContextLine(
+      n,
+      plotIdByPk: plotIdByPk,
+      includeSession: true,
+    );
+    if (meta.isEmpty) {
+      return Text(formatFieldNoteTimestampLine(n), style: style);
     }
-    return parts.join(' · ');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(formatFieldNoteTimestampLine(n), style: style),
+        Text(meta, style: style),
+      ],
+    );
   }
+}
+
+Future<void> _deleteNoteAfterConfirm(
+  BuildContext context,
+  WidgetRef ref,
+  Note note,
+) async {
+  final ok = await _showDeleteNoteDialog(context);
+  if (ok != true || !context.mounted) return;
+  final byline = await _currentByline(ref);
+  if (!context.mounted) return;
+  await _deleteNoteAndShowUndo(context, ref, note, byline);
+}
+
+Future<bool?> _showDeleteNoteDialog(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    builder: (dCtx) => AlertDialog(
+      title: const Text('Delete note'),
+      content: const Text(
+        'This note will be removed from export and the timeline.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dCtx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dCtx, true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<String> _currentByline(WidgetRef ref) async {
+  final user = await ref.read(currentUserProvider.future);
+  return user?.displayName ?? 'Unknown';
+}
+
+Future<void> _deleteNoteAndShowUndo(
+  BuildContext context,
+  WidgetRef ref,
+  Note note,
+  String byline,
+) async {
+  await ref.read(notesRepositoryProvider).deleteNote(note.id, byline);
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: const Text('Note deleted'),
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () {
+          ref.read(notesRepositoryProvider).restoreNote(note.id, byline);
+        },
+      ),
+    ),
+  );
 }

@@ -146,7 +146,8 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
               'Work Log',
               style: AppDesignTokens.headerTitleStyle(
                 fontSize: 20,
-                color: Colors.white,
+                color: AppDesignTokens.onPrimary,
+                letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 2),
@@ -154,14 +155,21 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.85),
+                color: AppDesignTokens.onPrimary.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
         backgroundColor: AppDesignTokens.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppDesignTokens.onPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(
+          color: AppDesignTokens.onPrimary,
+          size: 24,
+        ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

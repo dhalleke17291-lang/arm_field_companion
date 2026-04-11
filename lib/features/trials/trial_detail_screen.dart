@@ -49,7 +49,7 @@ import '../derived/derived_snapshot_provider.dart'
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
 import '../import/ui/import_trial_sheet.dart';
-import '../notes/field_notes_trial_section.dart';
+import '../notes/field_notes_list_screen.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -1168,9 +1168,53 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
+  /// Opens [FieldNotesListScreen]; badge when the trial has at least one note.
+  Widget _buildTrialNotesHeaderButton(BuildContext context, Trial trial) {
+    final notesAsync = ref.watch(notesForTrialProvider(trial.id));
+    final hasNotes = notesAsync.maybeWhen(
+      data: (list) => list.isNotEmpty,
+      orElse: () => false,
+    );
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        IconButton(
+          tooltip: 'Field notes',
+          iconSize: 24,
+          padding: const EdgeInsets.all(8),
+          style: IconButton.styleFrom(foregroundColor: Colors.white),
+          icon: const Icon(Icons.sticky_note_2_outlined),
+          onPressed: () {
+            Navigator.push<void>(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => FieldNotesListScreen(trial: trial),
+              ),
+            );
+          },
+        ),
+        if (hasNotes)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildTrialOverflowMenu(BuildContext context, Trial trial) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, color: Colors.white),
+      iconSize: 24,
       tooltip: 'More',
       padding: const EdgeInsets.all(8),
       onSelected: (value) {
@@ -1407,8 +1451,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         IconButton(
-                          icon:
-                              const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          iconSize: 24,
+                          padding: const EdgeInsets.all(8),
+                          style: IconButton.styleFrom(
+                            foregroundColor: Colors.white,
+                          ),
                           onPressed: () => Navigator.of(context).maybePop(),
                           tooltip: 'Back',
                         ),
@@ -1421,8 +1469,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                               Text(
                                 currentTrial.name,
                                 style: AppDesignTokens.headerTitleStyle(
-                                  fontSize: 18,
+                                  fontSize: 20,
                                   color: Colors.white,
+                                  letterSpacing: -0.3,
                                 ),
                                 softWrap: true,
                                 maxLines: 4,
@@ -1462,11 +1511,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: _buildTrialOverflowMenu(context, currentTrial),
-                        ),
+                        const SizedBox(width: AppDesignTokens.spacing8),
+                        _buildTrialNotesHeaderButton(context, currentTrial),
+                        _buildTrialOverflowMenu(context, currentTrial),
                       ],
                     ),
                   ),
@@ -1505,7 +1552,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
           TrialCompletionSummaryCard(trialId: currentTrial.id),
           _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
-          FieldNotesTrialSection(trial: currentTrial),
           const SizedBox(height: AppDesignTokens.spacing12),
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
@@ -1581,6 +1627,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                               IconButton(
                                 icon: const Icon(Icons.arrow_back,
                                     color: Colors.white),
+                                iconSize: 24,
+                                padding: const EdgeInsets.all(8),
+                                style: IconButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                ),
                                 onPressed: () =>
                                     Navigator.of(context).maybePop(),
                                 tooltip: 'Back',
@@ -1594,8 +1645,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                     Text(
                                       currentTrial.name,
                                       style: AppDesignTokens.headerTitleStyle(
-                                        fontSize: 18,
+                                        fontSize: 20,
                                         color: Colors.white,
+                                        letterSpacing: -0.3,
                                       ),
                                       softWrap: true,
                                       maxLines: 4,
@@ -1636,12 +1688,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 4),
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: _buildTrialOverflowMenu(
-                                    context, currentTrial),
-                              ),
+                              const SizedBox(width: AppDesignTokens.spacing8),
+                              _buildTrialNotesHeaderButton(
+                                  context, currentTrial),
+                              _buildTrialOverflowMenu(
+                                  context, currentTrial),
                             ],
                           ),
                         ),
@@ -1673,7 +1724,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ),
         TrialCompletionSummaryCard(trialId: currentTrial.id),
         _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
-        FieldNotesTrialSection(trial: currentTrial),
         const SizedBox(height: AppDesignTokens.spacing12),
         if (_selectedTabIndex != _sessionsIndex) ...[
           Padding(

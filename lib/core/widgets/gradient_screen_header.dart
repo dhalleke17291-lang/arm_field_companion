@@ -49,10 +49,14 @@ class GradientScreenHeader extends StatelessWidget
           child: Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 8, 16),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 leading ??
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      iconSize: 24,
+                      padding: const EdgeInsets.all(8),
+                      style: IconButton.styleFrom(foregroundColor: Colors.white),
                       onPressed: () => Navigator.of(context).maybePop(),
                       tooltip: 'Back',
                     ),

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/design/app_design_tokens.dart';
 
 /// Full-screen single photo viewer with filename bar and long-press delete.
 class PhotoViewScreen extends StatelessWidget {
@@ -30,13 +31,26 @@ class PhotoViewScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: theme.colorScheme.onSurface,
+          size: 24,
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          iconSize: 24,
           onPressed: () => Navigator.pop(context),
+          tooltip: 'Back',
         ),
         title: Text(
           fileName,
-          style: theme.textTheme.titleMedium,
+          style: AppDesignTokens.headerTitleStyle(
+            fontSize: 17,
+            color: theme.colorScheme.onSurface,
+            letterSpacing: -0.3,
+          ),
           overflow: TextOverflow.ellipsis,
         ),
       ),

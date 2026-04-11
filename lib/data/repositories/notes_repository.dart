@@ -152,4 +152,32 @@ class NotesRepository {
           );
     });
   }
+
+  /// Clears soft-delete so the note appears again in trial/plot/session lists and export.
+  Future<void> restoreNote(int id, String restoredBy) async {
+    final existing = await (_db.select(_db.notes)..where((n) => n.id.equals(id)))
+        .getSingleOrNull();
+    if (existing == null || !existing.isDeleted) return;
+
+    await _db.transaction(() async {
+      await (_db.update(_db.notes)..where((n) => n.id.equals(id))).write(
+        const NotesCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+          deletedBy: Value(null),
+        ),
+      );
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(existing.trialId),
+              sessionId: Value(existing.sessionId),
+              plotPk: Value(existing.plotPk),
+              eventType: 'NOTE_RESTORED',
+              description: 'Note $id restored',
+              performedBy: Value(restoredBy),
+              metadata: Value(jsonEncode({'note_id': id})),
+            ),
+          );
+    });
+  }
 }

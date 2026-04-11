@@ -88,4 +88,27 @@ void main() {
     expect(raw.deletedBy, 'B');
     expect(raw.deletedAt, isNotNull);
   });
+
+  test('restoreNote clears soft delete and NOTE_RESTORED audit', () async {
+    final id = await repo.createNote(
+      trialId: trialId,
+      content: 'Restorable',
+      createdBy: 'A',
+    );
+    await repo.deleteNote(id, 'B');
+    await repo.restoreNote(id, 'C');
+    final rows = await repo.getNotesForTrial(trialId);
+    expect(rows, hasLength(1));
+    expect(rows.single.content, 'Restorable');
+    expect(rows.single.isDeleted, isFalse);
+
+    final audits = await (db.select(db.auditEvents)
+          ..where((e) => e.eventType.equals('NOTE_RESTORED'))
+          ..orderBy([(e) => OrderingTerm.desc(e.id)]))
+        .get();
+    expect(audits, isNotEmpty);
+    final meta =
+        jsonDecode(audits.first.metadata!) as Map<String, dynamic>;
+    expect(meta['note_id'], id);
+  });
 }

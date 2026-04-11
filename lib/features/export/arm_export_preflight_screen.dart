@@ -207,11 +207,19 @@ class _ArmExportPreflightScreenState
       appBar: AppBar(
         backgroundColor: AppDesignTokens.primary,
         foregroundColor: AppDesignTokens.onPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(
+          color: AppDesignTokens.onPrimary,
+          size: 24,
+        ),
         title: Text(
           'Export Rating Sheet',
           style: AppDesignTokens.headerTitleStyle(
             fontSize: 18,
             color: AppDesignTokens.onPrimary,
+            letterSpacing: -0.3,
           ),
         ),
       ),

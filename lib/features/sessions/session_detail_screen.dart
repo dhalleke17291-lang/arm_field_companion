@@ -28,6 +28,7 @@ import 'session_completeness_screen.dart';
 import 'session_summary_screen.dart';
 import 'session_export_trust_dialog.dart';
 import 'session_export_trust_messaging.dart';
+import '../../core/ui/field_note_timestamp_format.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import 'session_timing_helper.dart';
 import '../notes/field_note_editor_sheet.dart';
@@ -233,6 +234,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         titleFontSize: 17,
         actions: [
           IconButton(
+            iconSize: 24,
             icon: Icon(
               session.cropStageBbch != null ? Icons.eco : Icons.eco_outlined,
               color: AppDesignTokens.onPrimary,
@@ -241,6 +243,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             onPressed: () => _showCropStageBbchEditor(context, ref, session),
           ),
           IconButton(
+            iconSize: 24,
             icon: Icon(
               weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
               color: AppDesignTokens.onPrimary,
@@ -262,7 +265,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.insights_outlined, color: Colors.white),
+            iconSize: 24,
+            icon: const Icon(Icons.insights_outlined,
+                color: AppDesignTokens.onPrimary),
             tooltip: 'Session Checklist',
             onPressed: () {
               Navigator.push(
@@ -277,7 +282,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.fact_check_outlined, color: Colors.white),
+            iconSize: 24,
+            icon: const Icon(Icons.fact_check_outlined,
+                color: AppDesignTokens.onPrimary),
             tooltip: 'Session completeness',
             onPressed: () {
               Navigator.push(
@@ -292,7 +299,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             },
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.download, color: Colors.white),
+            icon: const Icon(Icons.download, color: AppDesignTokens.onPrimary),
+            iconSize: 24,
             tooltip: 'Export session',
             onSelected: (value) async {
               final ok = await confirmSessionExportTrust(
@@ -317,7 +325,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ],
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
+            icon: const Icon(Icons.more_vert, color: AppDesignTokens.onPrimary),
+            iconSize: 24,
             tooltip: 'More',
             onSelected: (value) {
               if (value == 'delete_session') {
@@ -434,6 +443,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   trial: trial,
                   session: session,
                   notesAsync: notesAsync,
+                  plots: plots,
                 ),
                 Expanded(
                   child: IndexedStack(
@@ -471,6 +481,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     required Trial trial,
     required Session session,
     required AsyncValue<List<Note>> notesAsync,
+    required List<Plot> plots,
   }) {
     return notesAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -529,6 +540,37 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                           n.content,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Builder(
+                          builder: (_) {
+                            const subStyle = TextStyle(
+                              fontSize: 11,
+                              color: AppDesignTokens.secondaryText,
+                            );
+                            final meta =
+                                formatFieldNoteContextLineWithPlots(
+                              n,
+                              plots,
+                              includeSession: false,
+                            );
+                            if (meta.isEmpty) {
+                              return Text(
+                                formatFieldNoteTimestampLine(n),
+                                style: subStyle,
+                              );
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  formatFieldNoteTimestampLine(n),
+                                  style: subStyle,
+                                ),
+                                Text(meta, style: subStyle),
+                              ],
+                            );
+                          },
                         ),
                         onTap: () => showFieldNoteEditorSheet(
                           context,

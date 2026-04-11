@@ -99,12 +99,23 @@ class _AssessmentLibraryPickerState extends State<AssessmentLibraryPicker> {
         backgroundColor: AppDesignTokens.cardSurface,
         foregroundColor: AppDesignTokens.primaryText,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(
+          color: AppDesignTokens.primaryText,
+          size: 24,
+        ),
         title: Text(
           'Assessment Library',
-          style: AppDesignTokens.headerTitleStyle(fontSize: 18),
+          style: AppDesignTokens.headerTitleStyle(
+            fontSize: 18,
+            color: AppDesignTokens.primaryText,
+            letterSpacing: -0.3,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.close),
+          iconSize: 24,
           onPressed: () => Navigator.of(context).pop(null),
           tooltip: 'Close',
         ),

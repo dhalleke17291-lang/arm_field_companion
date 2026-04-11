@@ -58,24 +58,37 @@ class AssessmentResultsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppDesignTokens.primary,
-        iconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: AppDesignTokens.onPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(
+          color: AppDesignTokens.onPrimary,
+          size: 24,
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               p.assessmentName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              style: AppDesignTokens.headerTitleStyle(
+                fontSize: 17,
+                color: AppDesignTokens.onPrimary,
+                letterSpacing: -0.3,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
               trialName,
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: AppDesignTokens.onPrimary.withValues(alpha: 0.78),
                 fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
