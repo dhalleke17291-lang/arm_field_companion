@@ -970,6 +970,19 @@ class PlotsTab extends ConsumerStatefulWidget {
   final Trial trial;
   final bool embeddedInScroll;
 
+  /// Same navigation as "View plot layout" (layout grid first).
+  static void openPlotLayoutView(BuildContext context, Trial trial) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => _PlotDetailsScreen(
+          trial: trial,
+          initialShowLayoutView: true,
+        ),
+      ),
+    );
+  }
+
   @override
   ConsumerState<PlotsTab> createState() => _PlotsTabState();
 }
@@ -1169,17 +1182,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: OutlinedButton.icon(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => _PlotDetailsScreen(
-                trial: widget.trial,
-                initialShowLayoutView: true,
-              ),
-            ),
-          );
-        },
+        onPressed: () => PlotsTab.openPlotLayoutView(context, widget.trial),
         icon: const Icon(Icons.grid_view, size: 20),
         label: const Text('View plot layout'),
       ),
