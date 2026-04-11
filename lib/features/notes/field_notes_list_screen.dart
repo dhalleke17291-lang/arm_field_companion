@@ -99,7 +99,9 @@ class FieldNotesListScreen extends ConsumerWidget {
                         await ref
                             .read(notesRepositoryProvider)
                             .deleteNote(n.id, byline);
-                        ref.invalidate(notesForTrialProvider(trial.id));
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          ref.invalidate(notesForTrialProvider(trial.id));
+                        });
                       }
                     }
                   },

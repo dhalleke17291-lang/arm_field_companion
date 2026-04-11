@@ -159,6 +159,10 @@ Future<void> showFieldNoteEditorSheet(
 
   contentController.dispose();
   if (saved == true) {
-    ref.invalidate(notesForTrialProvider(trial.id));
+    // Defer until after the modal route finishes tearing down so we do not
+    // invalidate while dependents are still deactivating (debug assert).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(notesForTrialProvider(trial.id));
+    });
   }
 }

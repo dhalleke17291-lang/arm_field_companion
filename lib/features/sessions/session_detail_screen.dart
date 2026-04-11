@@ -208,6 +208,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
+    // Must watch at top level: nested watch inside .when(data:) caused the notes
+    // StreamProvider.autoDispose to drop to zero listeners when plots/ratings/
+    // assessments briefly went loading, triggering debug InheritedElement asserts.
+    final notesAsync = ref.watch(notesForTrialProvider(trial.id));
     final treatments =
         ref.watch(treatmentsForTrialProvider(trial.id)).value ?? [];
     final assignments =
@@ -424,90 +428,13 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     ],
                   ),
                 ),
-                ref.watch(notesForTrialProvider(trial.id)).when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                      data: (trialNotes) {
-                        final sessionNotes = trialNotes
-                            .where((n) => n.sessionId == session.id)
-                            .toList();
-                        return Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                          child: Card(
-                            elevation: 0,
-                            color: AppDesignTokens.sectionHeaderBg,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              side: const BorderSide(
-                                  color: AppDesignTokens.borderCrisp),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Linked Field Notes',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                      ),
-                                      const Spacer(),
-                                      TextButton.icon(
-                                        onPressed: () =>
-                                            showFieldNoteEditorSheet(
-                                          context,
-                                          ref,
-                                          trial: trial,
-                                          initialSessionId: session.id,
-                                        ),
-                                        icon: const Icon(Icons.add, size: 18),
-                                        label: const Text('Add'),
-                                      ),
-                                    ],
-                                  ),
-                                  if (sessionNotes.isEmpty)
-                                    Text(
-                                      'No field notes linked to this session.',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: AppDesignTokens
-                                                .secondaryText,
-                                          ),
-                                    )
-                                  else
-                                    for (final n in sessionNotes)
-                                      ListTile(
-                                        dense: true,
-                                        contentPadding: EdgeInsets.zero,
-                                        title: Text(
-                                          n.content,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        onTap: () => showFieldNoteEditorSheet(
-                                          context,
-                                          ref,
-                                          trial: trial,
-                                          existing: n,
-                                        ),
-                                      ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                _sessionLinkedFieldNotesSection(
+                  context,
+                  ref,
+                  trial: trial,
+                  session: session,
+                  notesAsync: notesAsync,
+                ),
                 Expanded(
                   child: IndexedStack(
                     index: _selectedTabIndex,
@@ -532,6 +459,90 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Uses [notesAsync] from [build] so [notesForTrialProvider] stays subscribed
+  /// for the whole screen — avoids autoDispose dropping to zero listeners when
+  /// nested plots/ratings/assessments `.when` branches swap.
+  Widget _sessionLinkedFieldNotesSection(
+    BuildContext context,
+    WidgetRef ref, {
+    required Trial trial,
+    required Session session,
+    required AsyncValue<List<Note>> notesAsync,
+  }) {
+    return notesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (trialNotes) {
+        final sessionNotes =
+            trialNotes.where((n) => n.sessionId == session.id).toList();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Card(
+            elevation: 0,
+            color: AppDesignTokens.sectionHeaderBg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(color: AppDesignTokens.borderCrisp),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Linked Field Notes',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () => showFieldNoteEditorSheet(
+                          context,
+                          ref,
+                          trial: trial,
+                          initialSessionId: session.id,
+                        ),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Add'),
+                      ),
+                    ],
+                  ),
+                  if (sessionNotes.isEmpty)
+                    Text(
+                      'No field notes linked to this session.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                    )
+                  else
+                    for (final n in sessionNotes)
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          n.content,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => showFieldNoteEditorSheet(
+                          context,
+                          ref,
+                          trial: trial,
+                          existing: n,
+                        ),
+                      ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
