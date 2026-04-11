@@ -21,6 +21,7 @@ class _TrialTimelineEvent {
     this.beforeFirstApplication = false,
     this.ratingSessionId,
     this.noteTimestampCaption,
+    this.noteMetaCaption,
   });
 
   final DateTime date;
@@ -33,6 +34,8 @@ class _TrialTimelineEvent {
   final int? ratingSessionId;
   /// Field note: full date · time line (matches list/detail surfaces).
   final String? noteTimestampCaption;
+  /// Field note: plot / session name / author (matches list/detail surfaces).
+  final String? noteMetaCaption;
 }
 
 /// Date group: header + events on a continuous vertical rail.
@@ -57,6 +60,7 @@ class TimelineTab extends ConsumerWidget {
         ref.watch(trialApplicationsForTrialProvider(trial.id));
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
     final notesAsync = ref.watch(notesForTrialProvider(trial.id));
+    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
 
     return seedingAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -73,6 +77,9 @@ class TimelineTab extends ConsumerWidget {
         final applications = applicationsAsync.valueOrNull ?? [];
         final sessions = sessionsAsync.valueOrNull ?? [];
         final fieldNotes = notesAsync.valueOrNull ?? [];
+        final plots = plotsAsync.valueOrNull ?? [];
+        final plotIdByPk = {for (final p in plots) p.id: p.plotId};
+        final sessionIdToName = {for (final s in sessions) s.id: s.name};
         final seedingDate = seedingEvent?.seedingDate;
 
         // "Before first application" warning uses first APPLIED date only.
@@ -157,6 +164,12 @@ class TimelineTab extends ConsumerWidget {
               : null;
           final timingText = days != null ? '$days days after seeding' : null;
           final preview = note.content.trim();
+          final noteMeta = formatFieldNoteContextLine(
+            note,
+            plotIdByPk: plotIdByPk,
+            sessionIdToName: sessionIdToName,
+            includeSession: true,
+          );
           events.add(_TrialTimelineEvent(
             date: note.createdAt,
             type: _TimelineEventType.note,
@@ -166,6 +179,8 @@ class TimelineTab extends ConsumerWidget {
                 : preview,
             timingText: timingText,
             noteTimestampCaption: formatFieldNoteTimestampLine(note),
+            noteMetaCaption:
+                noteMeta.trim().isEmpty ? null : noteMeta.trim(),
           ));
         }
 
@@ -399,6 +414,18 @@ class _TimelineEventRow extends ConsumerWidget {
                             const SizedBox(height: 2),
                             Text(
                               event.noteTimestampCaption!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                          if (event.noteMetaCaption != null &&
+                              event.noteMetaCaption!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              event.noteMetaCaption!,
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,

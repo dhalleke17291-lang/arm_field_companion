@@ -872,6 +872,7 @@ class PlotDetailScreen extends ConsumerWidget {
                                             formatFieldNoteContextLineWithPlots(
                                           n,
                                           plots,
+                                          sessions: sessions,
                                           includeSession: true,
                                         );
                                         if (meta.isEmpty) {

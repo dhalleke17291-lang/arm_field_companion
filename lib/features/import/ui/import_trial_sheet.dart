@@ -96,7 +96,7 @@ class ImportTrialSheet extends StatelessWidget {
             _ImportOptionTile(
               icon: Icons.file_download_outlined,
               title: 'Import Protocol (CSV)',
-              subtitle: 'Use the AgQuest protocol CSV format',
+              subtitle: 'Use the trial protocol CSV format (ARM-compatible)',
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push<void>(

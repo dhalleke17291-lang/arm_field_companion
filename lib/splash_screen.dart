@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'core/config/app_info.dart';
 import 'core/current_user.dart';
 import 'features/shell/main_shell_screen.dart';
 import 'features/users/user_selection_screen.dart';
@@ -141,46 +142,14 @@ class _SplashScreenState extends State<SplashScreen>
                       builder: (_, __) => Opacity(
                         opacity: _titleOpacity.value,
                         child: Text(
-                          'GDM Solutions',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 13,
-                            letterSpacing: 2.5,
-                            fontWeight: FontWeight.w500,
+                          AppInfo.appName,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.15,
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    AnimatedBuilder(
-                      animation: _controller,
-                      builder: (_, __) => Opacity(
-                        opacity: _titleOpacity.value,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Ag-Quest',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 34,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                height: 1.15,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Field Companion',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: 0.92),
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ),
@@ -190,7 +159,7 @@ class _SplashScreenState extends State<SplashScreen>
                       builder: (_, __) => Opacity(
                         opacity: _subtitleOpacity.value,
                         child: Text(
-                          'Professional field trial data collection for structured import workflows',
+                          'Professional field trial data collection and execution platform',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.55),

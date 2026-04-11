@@ -36,7 +36,15 @@ class AboutScreen extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              Text(
+                'Professional field trial data collection and execution platform',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.78),
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 16),
               Text(
                 'Version $kAppVersion',
                 style: theme.textTheme.bodyMedium?.copyWith(

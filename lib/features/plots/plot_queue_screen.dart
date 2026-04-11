@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../core/config/app_info.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -802,7 +803,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                                 await Share.shareXFiles(
                                   [XFile(result.filePath!)],
                                   text:
-                                      'Ag-Quest Field Companion export: ${widget.trial.name} / ${widget.session.name}',
+                                      '${AppInfo.appName} export: ${widget.trial.name} / ${widget.session.name}',
                                 );
                               } catch (e) {
                                 if (!mounted || !context.mounted) return;

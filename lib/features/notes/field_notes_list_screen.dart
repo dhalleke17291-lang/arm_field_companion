@@ -19,6 +19,7 @@ class FieldNotesListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notesAsync = ref.watch(notesForTrialProvider(trial.id));
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
@@ -60,6 +61,10 @@ class FieldNotesListScreen extends ConsumerWidget {
           final plotIdByPk = {
             for (final p in plotsAsync.valueOrNull ?? <Plot>[])
               p.id: p.plotId,
+          };
+          final sessionIdToName = {
+            for (final s in sessionsAsync.valueOrNull ?? <Session>[])
+              s.id: s.name,
           };
           if (notes.isEmpty) {
             return const Center(
@@ -107,7 +112,7 @@ class FieldNotesListScreen extends ConsumerWidget {
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: _noteListSubtitle(n, plotIdByPk),
+                  subtitle: _noteListSubtitle(n, plotIdByPk, sessionIdToName),
                   onTap: () => showFieldNoteEditorSheet(
                     ctx,
                     ref,
@@ -153,7 +158,11 @@ class FieldNotesListScreen extends ConsumerWidget {
     );
   }
 
-  static Widget _noteListSubtitle(Note n, Map<int, String> plotIdByPk) {
+  static Widget _noteListSubtitle(
+    Note n,
+    Map<int, String> plotIdByPk,
+    Map<int, String> sessionIdToName,
+  ) {
     const style = TextStyle(
       fontSize: 12,
       color: AppDesignTokens.secondaryText,
@@ -161,6 +170,7 @@ class FieldNotesListScreen extends ConsumerWidget {
     final meta = formatFieldNoteContextLine(
       n,
       plotIdByPk: plotIdByPk,
+      sessionIdToName: sessionIdToName,
       includeSession: true,
     );
     if (meta.isEmpty) {

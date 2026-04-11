@@ -65,7 +65,7 @@ class ExportSessionArmXmlUsecase {
       builder.processing('xml', 'version="1.0" encoding="UTF-8"');
       builder.element('arm_export', nest: () {
         builder.attribute('version', '1.0');
-        builder.attribute('source', 'ARM Field Companion');
+        builder.attribute('source', 'Agnexis');
         builder.attribute('app_version', kAppVersion);
         builder.attribute('export_timestamp_utc', exportTimestampUtc);
         if (exportedByDisplayName != null) {
