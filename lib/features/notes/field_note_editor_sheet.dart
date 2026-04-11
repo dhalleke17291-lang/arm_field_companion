@@ -73,7 +73,7 @@ Future<void> showFieldNoteEditorSheet(
                       items: [
                         const DropdownMenuItem<int?>(
                           value: null,
-                          child: Text('All trial (no plot)'),
+                          child: Text('Entire trial'),
                         ),
                         ...plots.map(
                           (p) => DropdownMenuItem<int?>(
