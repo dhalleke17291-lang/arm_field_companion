@@ -58,6 +58,7 @@ class ArmFieldMapping {
     'humidity_pct': 'HUMIDITY',
     'notes': 'NOTES',
     'days_after_seeding': 'DAYS_AFTER_SEEDING',
+    'application_method': 'APPMETHOD',
     'export_timestamp': 'EXPORT_TIMESTAMP',
   };
 
@@ -72,6 +73,7 @@ class ArmFieldMapping {
     'row_spacing_cm': 'ROWSPACING',
     'equipment_used': 'EQUIPMENT',
     'notes': 'NOTES',
+    'planting_method': 'PLANTMETHOD',
     'export_timestamp': 'EXPORT_TIMESTAMP',
   };
 

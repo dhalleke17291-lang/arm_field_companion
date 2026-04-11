@@ -217,6 +217,7 @@ class ExportTrialUseCase {
     'days_after_seeding',
     'application_status',
     'applied_at',
+    'application_method',
     'export_timestamp',
   ];
 
@@ -232,6 +233,7 @@ class ExportTrialUseCase {
     'notes',
     'seeding_status',
     'completed_at',
+    'planting_method',
     'export_timestamp',
   ];
 
@@ -887,6 +889,12 @@ class ExportTrialUseCase {
         'Days elapsed since seeding',
         'days'
       ],
+      [
+        'applications.csv',
+        'application_method',
+        'Application method e.g. ground sprayer',
+        ''
+      ],
       ['applications.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
       // seeding.csv
       [
@@ -903,6 +911,12 @@ class ExportTrialUseCase {
       ['seeding.csv', 'row_spacing_cm', 'Row spacing used', 'cm'],
       ['seeding.csv', 'equipment_used', 'Equipment used for seeding', ''],
       ['seeding.csv', 'notes', 'Operator notes', ''],
+      [
+        'seeding.csv',
+        'planting_method',
+        'Planting method used for seeding',
+        ''
+      ],
       ['seeding.csv', 'export_timestamp', 'UTC timestamp', 'ISO 8601'],
       // sessions.csv
       ['sessions.csv', 'session_name', 'Name or label of rating session', ''],
@@ -1258,6 +1272,7 @@ class ExportTrialUseCase {
         daysAfterSeeding != null ? _cell(daysAfterSeeding) : '',
         a.status,
         a.appliedAt != null ? _date(a.appliedAt!) : '',
+        _cell(a.applicationMethod),
         exportTimestamp,
       ];
       final prods = productsByEventId[a.id] ?? [];
@@ -1311,6 +1326,7 @@ class ExportTrialUseCase {
       _cell(seeding.notes),
       seeding.status,
       seeding.completedAt != null ? _date(seeding.completedAt!) : '',
+      _cell(seeding.plantingMethod),
       exportTimestamp,
     ];
     return CsvExportService.buildCsv(

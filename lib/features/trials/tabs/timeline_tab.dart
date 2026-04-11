@@ -95,13 +95,20 @@ class TimelineTab extends ConsumerWidget {
         final events = <_TrialTimelineEvent>[];
 
         if (seedingEvent != null) {
+          final statusLabel =
+              seedingEvent.status == 'completed' ? 'Completed' : 'Pending';
+          final op = seedingEvent.operatorName?.trim();
+          final String? seedingSubtitle;
+          if (op != null && op.isNotEmpty) {
+            seedingSubtitle = '$op · $statusLabel';
+          } else {
+            seedingSubtitle = statusLabel;
+          }
           events.add(_TrialTimelineEvent(
             date: seedingEvent.seedingDate,
             type: _TimelineEventType.seeding,
             title: 'Seeding',
-            subtitle: seedingEvent.operatorName?.trim().isNotEmpty == true
-                ? seedingEvent.operatorName
-                : null,
+            subtitle: seedingSubtitle,
             timingText: 'Day 0',
           ));
         }
@@ -117,11 +124,17 @@ class TimelineTab extends ConsumerWidget {
           final ratePart = (app.rate != null && app.rateUnit != null)
               ? '${app.rate} ${app.rateUnit}'
               : null;
+          final statusLabel = app.status == 'applied' ? 'Applied' : 'Pending';
+          final appSubtitleParts = <String>[];
+          if (ratePart != null && ratePart.isNotEmpty) {
+            appSubtitleParts.add(ratePart);
+          }
+          appSubtitleParts.add(statusLabel);
           events.add(_TrialTimelineEvent(
             date: app.applicationDate,
             type: _TimelineEventType.application,
             title: productLabel,
-            subtitle: ratePart,
+            subtitle: appSubtitleParts.join(' · '),
             timingText: timingText,
           ));
         }

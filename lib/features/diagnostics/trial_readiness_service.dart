@@ -180,6 +180,13 @@ class TrialReadinessService {
         label: 'Seeding event recorded',
         severity: TrialCheckSeverity.pass,
       ));
+      if (seeding.status != 'completed') {
+        checks.add(const TrialReadinessCheck(
+          code: 'seeding_pending',
+          label: 'Seeding recorded but not marked complete.',
+          severity: TrialCheckSeverity.info,
+        ));
+      }
     }
 
     final applications = await applicationRepo.getApplicationsForTrial(trialPk);

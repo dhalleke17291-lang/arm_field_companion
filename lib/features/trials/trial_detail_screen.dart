@@ -101,10 +101,21 @@ class TrialDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<TrialDetailScreen> createState() => _TrialDetailScreenState();
 }
 
-class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
+class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedTabIndex = 0;
   int _previousTabIndex = 0;
   static const int _sessionsIndex = 7;
+
+  late final AnimationController _splitHeaderCollapseController;
+  late final Animation<double> _splitHeaderExpandFactor;
+  bool? _lastSplitContentFocused;
+
+  /// Seeding, Applications, Assessments, Treatments (split layout only).
+  bool get _isContentFocusedTab {
+    final i = _selectedTabIndex;
+    return i >= 1 && i <= 4;
+  }
 
   static const Duration _hubHintDelay = Duration(milliseconds: 600);
   static const Duration _hubHintScrollDuration = Duration(milliseconds: 450);
@@ -126,6 +137,19 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         widget.trial,
       );
     }
+    _splitHeaderCollapseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+      value: _isContentFocusedTab ? 1.0 : 0.0,
+    );
+    _splitHeaderExpandFactor = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _splitHeaderCollapseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _lastSplitContentFocused = _isContentFocusedTab;
+
     _hubScrollController = ScrollController();
     _hubScrollController.addListener(_onHubScroll);
     _scheduleHubHintOnce();
@@ -196,6 +220,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     _hintSchedule?.cancel();
     _hubScrollController.removeListener(_onHubScroll);
     _hubScrollController.dispose();
+    _splitHeaderCollapseController.dispose();
     super.dispose();
   }
 
@@ -1573,12 +1598,70 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
+  void _syncSplitHeaderCollapseIfNeeded() {
+    final focused = _isContentFocusedTab;
+    if (_lastSplitContentFocused == focused) return;
+    _lastSplitContentFocused = focused;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (focused) {
+        _splitHeaderCollapseController.forward();
+      } else {
+        _splitHeaderCollapseController.reverse();
+      }
+    });
+  }
+
+  Widget _buildCompactContentFocusHeader(
+    BuildContext context,
+    Trial trial,
+    String displayStatus,
+  ) {
+    final pill = _trialStatusPillStyle(displayStatus);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppDesignTokens.backgroundSurface,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              trial.name,
+              style: Theme.of(context).textTheme.titleMedium,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: pill.bg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: pill.border, width: 1),
+            ),
+            child: Text(
+              labelForTrialStatus(displayStatus),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: pill.fg,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _TrialDetailCompletionCompactPercent(trialId: trial.id),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSplitBody(
     BuildContext context,
     WidgetRef ref,
     Trial currentTrial,
     double maxHeaderHeight,
   ) {
+    _syncSplitHeaderCollapseIfNeeded();
     final effectiveStatus =
         _effectiveTrialStatus(ref, currentTrial) ?? currentTrial.status;
     final workspaceConfig = safeConfigFromString(currentTrial.workspaceType);
@@ -1591,127 +1674,139 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
     return Column(
       children: [
-        ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeaderHeight),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppDesignTokens.primary,
-                            AppDesignTokens.primaryLight,
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppDesignTokens.primary,
+                    AppDesignTokens.primaryLight,
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDesignTokens.spacing16,
+                    AppDesignTokens.spacing12,
+                    AppDesignTokens.spacing16,
+                    AppDesignTokens.spacing12,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IconButton(
+                        icon:
+                            const Icon(Icons.arrow_back, color: Colors.white),
+                        iconSize: 24,
+                        padding: const EdgeInsets.all(8),
+                        style: IconButton.styleFrom(
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        tooltip: 'Back',
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              currentTrial.name,
+                              style: AppDesignTokens.headerTitleStyle(
+                                fontSize: 20,
+                                color: Colors.white,
+                                letterSpacing: -0.3,
+                              ),
+                              softWrap: true,
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (currentTrial.protocolNumber != null &&
+                                currentTrial.protocolNumber!.trim().isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Protocol: ${currentTrial.protocolNumber!.trim()}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white.withValues(alpha: 0.78),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            if (_trialSubtitleLine(currentTrial).isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _trialSubtitleLine(currentTrial),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white.withValues(alpha: 0.92),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                      child: SafeArea(
-                        bottom: false,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppDesignTokens.spacing16,
-                            AppDesignTokens.spacing12,
-                            AppDesignTokens.spacing16,
-                            AppDesignTokens.spacing12,
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back,
-                                    color: Colors.white),
-                                iconSize: 24,
-                                padding: const EdgeInsets.all(8),
-                                style: IconButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                ),
-                                onPressed: () =>
-                                    Navigator.of(context).maybePop(),
-                                tooltip: 'Back',
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      currentTrial.name,
-                                      style: AppDesignTokens.headerTitleStyle(
-                                        fontSize: 20,
-                                        color: Colors.white,
-                                        letterSpacing: -0.3,
-                                      ),
-                                      softWrap: true,
-                                      maxLines: 4,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (currentTrial.protocolNumber != null &&
-                                        currentTrial.protocolNumber!
-                                            .trim()
-                                            .isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Protocol: ${currentTrial.protocolNumber!.trim()}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w400,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.78),
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                    if (_trialSubtitleLine(currentTrial)
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _trialSubtitleLine(currentTrial),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.92),
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: AppDesignTokens.spacing8),
-                              _buildTrialNotesHeaderButton(
-                                  context, currentTrial),
-                              _buildTrialOverflowMenu(
-                                  context, currentTrial),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    _buildTrialDetailActionsBar(context, ref, currentTrial),
-                  ],
+                      const SizedBox(width: AppDesignTokens.spacing8),
+                      _buildTrialNotesHeaderButton(context, currentTrial),
+                      _buildTrialOverflowMenu(context, currentTrial),
+                    ],
+                  ),
                 ),
-                _buildTrialStatusBar(context, ref, currentTrial,
-                    displayStatus: effectiveStatus),
-                TrialCompletionSummaryCard(trialId: currentTrial.id),
-                _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
-                const SizedBox(height: AppDesignTokens.spacing12),
-              ],
+              ),
+            ),
+            _buildTrialDetailActionsBar(context, ref, currentTrial),
+          ],
+        ),
+        SizeTransition(
+          sizeFactor: _splitHeaderExpandFactor,
+          axis: Axis.vertical,
+          axisAlignment: -1,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeaderHeight),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTrialStatusBar(context, ref, currentTrial,
+                      displayStatus: effectiveStatus),
+                  TrialCompletionSummaryCard(trialId: currentTrial.id),
+                  _buildWorkflowReadinessTwinStrip(context, ref, currentTrial),
+                  const SizedBox(height: AppDesignTokens.spacing12),
+                ],
+              ),
             ),
           ),
         ),
-        // Pinned: module hub (tab navigation). Completion + readiness scroll
-        // inside [maxHeaderHeight] above to free vertical space for tab body.
+        SizeTransition(
+          sizeFactor: _splitHeaderCollapseController,
+          axis: Axis.vertical,
+          axisAlignment: -1,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildCompactContentFocusHeader(
+                context,
+                currentTrial,
+                effectiveStatus,
+              ),
+              const Divider(height: 1),
+            ],
+          ),
+        ),
+        // Pinned: module hub (tab navigation).
         const SizedBox(height: AppDesignTokens.spacing8),
         SizedBox(
           height: 110,
@@ -2218,6 +2313,43 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Plot-assessment coverage % for the split-mode compact header.
+/// Display must stay aligned with [TrialCompletionSummaryCard] (same inputs).
+class _TrialDetailCompletionCompactPercent extends ConsumerWidget {
+  const _TrialDetailCompletionCompactPercent({required this.trialId});
+
+  final int trialId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final completionAsync =
+        ref.watch(trialAssessmentCompletionProvider(trialId));
+    return completionAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (map) {
+        if (map.isEmpty) return const SizedBox.shrink();
+        final nAssess = map.length;
+        final analyzablePlotCount = map.values.first.analyzablePlotCount;
+        final sumPairs =
+            map.values.fold<int>(0, (s, c) => s + c.ratedPlotCount);
+        final denomPairs = nAssess * analyzablePlotCount;
+        final overall = denomPairs <= 0
+            ? 0.0
+            : (sumPairs / denomPairs).clamp(0.0, 1.0);
+        final pct = (overall * 100).round();
+        return Text(
+          '$pct%',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppDesignTokens.primaryText,
+              ),
+        );
+      },
     );
   }
 }
