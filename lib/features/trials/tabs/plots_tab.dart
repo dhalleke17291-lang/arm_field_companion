@@ -1881,8 +1881,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildPlotsHeaderForDetails(
-                  context, ref, plots, displayPlots, hasSessionData),
+              _buildPlotsHeaderForDetails(context, ref, plots, hasSessionData),
               const SizedBox(height: 12),
               Divider(
                 height: 1,
@@ -1893,7 +1892,6 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
               _buildListLayoutToggleForDetails(
                 context,
                 ref,
-                plots,
                 displayPlots,
                 hasSessionData,
               ),
@@ -2266,21 +2264,12 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   Widget _buildListLayoutToggleForDetails(
     BuildContext context,
     WidgetRef ref,
-    List<Plot> allPlots,
     List<Plot> plotsForBulkAssign,
     bool hasSessionData,
   ) {
     final cs = Theme.of(context).colorScheme;
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
-    final structureLocked = !canEditProtocol(widget.trial);
-    final assignmentMessage =
-        getAssignmentsLockMessage(widget.trial.status, hasSessionData);
-    final bulkTooltip = plotAssignmentsLocked
-        ? (structureLocked
-            ? protocolEditBlockedMessage(widget.trial)
-            : assignmentMessage)
-        : 'Assign treatments to multiple plots';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -2360,7 +2349,7 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
               );
             },
           ),
-        PopupMenuButton<void>(
+        PopupMenuButton<String>(
           tooltip: 'Tools',
           icon: const Icon(Icons.more_vert_rounded, size: 22),
           style: IconButton.styleFrom(
@@ -2368,45 +2357,45 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
           ),
+          onSelected: (value) {
+            if (value == 'bulk') {
+              _showBulkAssignSheet(
+                context,
+                ref,
+                widget.trial,
+                plotsForBulkAssign,
+              );
+            } else if (value == 'repGuards') {
+              _runGenerateRepGuardPlots(context, ref, widget.trial.id);
+            }
+          },
           itemBuilder: (ctx) => [
-            PopupMenuItem<void>(
+            PopupMenuItem<String>(
+              value: 'bulk',
               enabled: !plotAssignmentsLocked,
-              onTap: plotAssignmentsLocked
-                  ? null
-                  : () {
-                      _showBulkAssignSheet(
-                        context,
-                        ref,
-                        widget.trial,
-                        plotsForBulkAssign,
-                      );
-                    },
-              child: Tooltip(
-                message: bulkTooltip,
-                child: ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
+              child: Row(
+                children: [
+                  Icon(
                     Icons.grid_view_rounded,
                     size: 20,
                     color: plotAssignmentsLocked
                         ? AppDesignTokens.iconSubtle
                         : AppDesignTokens.primary,
                   ),
-                  title: const Text('Bulk Assign'),
-                ),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Bulk Assign')),
+                ],
               ),
             ),
-            PopupMenuItem<void>(
+            PopupMenuItem<String>(
+              value: 'repGuards',
               enabled: canEditProtocol(widget.trial),
-              onTap: canEditProtocol(widget.trial)
-                  ? () => _runGenerateRepGuardPlots(context, ref, widget.trial.id)
-                  : null,
-              child: ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.add_moderator_outlined, size: 20),
-                title: const Text('Add Rep Guards'),
+              child: const Row(
+                children: [
+                  Icon(Icons.add_moderator_outlined, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('Add Rep Guards')),
+                ],
               ),
             ),
           ],
@@ -2416,13 +2405,11 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
   }
 
   Widget _buildPlotsHeaderForDetails(
-      BuildContext context,
-      WidgetRef ref,
-      List<Plot> allTrialPlots,
-      List<Plot> plotsForBulkAssign,
-      bool hasSessionData) {
-    final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+    BuildContext context,
+    WidgetRef ref,
+    List<Plot> allTrialPlots,
+    bool hasSessionData,
+  ) {
     final structureLocked = !canEditProtocol(widget.trial);
     final assignmentMessage =
         getAssignmentsLockMessage(widget.trial.status, hasSessionData);
@@ -2450,186 +2437,100 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
             ? assignmentMessage
             : summaryLine);
 
-    final bulkTooltip = plotAssignmentsLocked
-        ? (structureLocked
-            ? protocolEditBlockedMessage(widget.trial)
-            : assignmentMessage)
-        : 'Assign treatments to multiple plots';
-
-    final chipLabel =
-        plotAssignmentsLockChipLabel(widget.trial, hasSessionData);
-
     final cs = Theme.of(context).colorScheme;
-    final lockChip = Material(
-      color: plotAssignmentsLocked
-          ? cs.surfaceContainerHighest
-          : cs.primaryContainer.withValues(alpha: 0.42),
-      borderRadius: BorderRadius.circular(999),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              plotAssignmentsLocked
-                  ? Icons.lock_outlined
-                  : Icons.lock_open_outlined,
-              size: 15,
-              color: plotAssignmentsLocked
-                  ? AppDesignTokens.secondaryText
-                  : AppDesignTokens.primary,
-            ),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                chipLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.1,
-                  color: plotAssignmentsLocked
-                      ? AppDesignTokens.secondaryText
-                      : AppDesignTokens.primary,
-                ),
-                maxLines: 2,
-                softWrap: true,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    final countTitle = allTrialPlots.isEmpty
+        ? 'No plots'
+        : guardCount > 0
+            ? '${dataPlots.length} data plots · $guardCount guards'
+            : '${allTrialPlots.length} plots';
 
-    final guardsControl = Material(
-      color: cs.surfaceContainerLow.withValues(alpha: 0.75),
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.only(left: 8, right: 4, top: 4, bottom: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.shield_outlined,
-              size: 18,
-              color: cs.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                'Show guards',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: cs.onSurface,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    final guardsControl = guardCount > 0
+        ? Material(
+            color: cs.surfaceContainerLow.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding:
+                  const EdgeInsets.only(left: 8, right: 4, top: 4, bottom: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 18,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Show guards',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: cs.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 0.9,
+                    alignment: Alignment.centerRight,
+                    child: Switch.adaptive(
+                      value: _showGuardPlots,
+                      onChanged: (v) {
+                        setState(() {
+                          _showGuardPlots = v;
+                          _gridCenterScheduled = false;
+                        });
+                      },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Transform.scale(
-              scale: 0.9,
-              alignment: Alignment.centerRight,
-              child: Switch.adaptive(
-                value: _showGuardPlots,
-                onChanged: (v) {
-                  setState(() {
-                    _showGuardPlots = v;
-                    _gridCenterScheduled = false;
-                  });
-                },
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+          )
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          allTrialPlots.isEmpty
-              ? 'No plots'
-              : guardCount > 0
-                  ? '${dataPlots.length} data plots · $guardCount guards'
-                  : '${allTrialPlots.length} plots',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppDesignTokens.primaryText,
-            letterSpacing: -0.25,
-            height: 1.15,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          detailLine,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: AppDesignTokens.secondaryText,
-            height: 1.35,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Tooltip(
-          message: bulkTooltip,
-          child: Opacity(
-            opacity: plotAssignmentsLocked ? 0.55 : 1,
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonalIcon(
-                onPressed: plotAssignmentsLocked
-                    ? null
-                    : () => _showBulkAssignSheet(
-                        context, ref, widget.trial, plotsForBulkAssign),
-                icon: Icon(
-                  Icons.grid_view_rounded,
-                  size: 18,
-                  color: plotAssignmentsLocked
-                      ? AppDesignTokens.iconSubtle
-                      : AppDesignTokens.primary,
-                ),
-                label: const Text('Bulk Assign'),
-                style: FilledButton.styleFrom(
-                  foregroundColor: plotAssignmentsLocked
-                      ? AppDesignTokens.secondaryText
-                      : AppDesignTokens.primary,
-                  backgroundColor: cs.surfaceContainerHighest
-                      .withValues(alpha: plotAssignmentsLocked ? 0.55 : 0.88),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  minimumSize: const Size.fromHeight(44),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: plotAssignmentsLocked
-                          ? AppDesignTokens.borderCrisp
-                          : cs.outlineVariant.withValues(alpha: 0.45),
-                    ),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Flexible(
-              fit: FlexFit.loose,
-              child: lockChip,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    countTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppDesignTokens.primaryText,
+                      letterSpacing: -0.25,
+                      height: 1.15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    detailLine,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppDesignTokens.secondaryText,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 10),
-            Expanded(child: guardsControl),
+            if (guardsControl != null) ...[
+              const SizedBox(width: 10),
+              guardsControl,
+            ],
           ],
         ),
       ],
