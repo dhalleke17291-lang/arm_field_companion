@@ -11,6 +11,7 @@ import '../../../core/workspace/workspace_config.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import '../../derived/domain/anova.dart';
 import '../../derived/domain/trial_statistics.dart';
 import 'assessment_results_screen.dart';
 import 'add_assessment_sheet.dart';
@@ -819,6 +820,22 @@ class AssessmentsTab extends ConsumerWidget {
               ),
             ),
           ],
+          if (stat.anovaResult != null) ...[
+            const SizedBox(height: 10),
+            _buildAnovaSummary(stat.anovaResult!, stat.resultDirection),
+          ] else if (stat.hasAnyData &&
+              completeness == AssessmentCompleteness.inProgress &&
+              stat.treatmentMeans.length >= 2) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${p.totalPlots - p.ratedPlots} plot${p.totalPlots - p.ratedPlots == 1 ? '' : 's'} remaining before statistical analysis',
+              style: const TextStyle(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ],
           if (stat.hasAnyData) ...[
             SizedBox(height: displayMeans.isNotEmpty ? 4 : 8),
             Align(
@@ -855,6 +872,157 @@ class AssessmentsTab extends ConsumerWidget {
   Future<void> _showAddAssessmentDialog(
       BuildContext context, WidgetRef ref) async {
     await showAddCustomAssessmentSheet(context, ref, trial: trial);
+  }
+
+  /// Compact ANOVA summary: significance indicator + treatment means with
+  /// letters + plain-language interpretation.
+  Widget _buildAnovaSummary(
+      AnovaResult anova, ResultDirection direction) {
+    final sigColor = switch (anova.significance) {
+      SignificanceLevel.highlySignificant => AppDesignTokens.successFg,
+      SignificanceLevel.significant => AppDesignTokens.successFg,
+      SignificanceLevel.marginallysignificant => AppDesignTokens.flagColor,
+      SignificanceLevel.notSignificant => AppDesignTokens.secondaryText,
+    };
+
+    final interpretation = _anovaInterpretation(anova);
+
+    // Treatment means with significance letters (sorted descending).
+    final meansWithLetters = anova.treatmentMeansWithLetters;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: anova.isSignificant
+            ? AppDesignTokens.successBg
+            : AppDesignTokens.emptyBadgeBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: anova.isSignificant
+              ? AppDesignTokens.successFg.withValues(alpha: 0.3)
+              : AppDesignTokens.borderCrisp,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: significance level + F/p
+          Row(
+            children: [
+              Icon(
+                anova.isSignificant
+                    ? Icons.check_circle_outline
+                    : Icons.remove_circle_outline,
+                size: 14,
+                color: sigColor,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  significanceLevelLabel(anova.significance),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: sigColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'F = ${anova.treatmentF.toStringAsFixed(2)}, '
+            'p = ${_formatPValue(anova.treatmentPValue)} '
+            '(${anova.model})',
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          if (anova.lsd != null) ...[
+            Text(
+              'LSD₀.₀₅ = ${anova.lsd!.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ],
+          if (meansWithLetters.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...meansWithLetters.map((m) {
+              final isBest = meansWithLetters.first == m &&
+                  anova.isSignificant &&
+                  (direction == ResultDirection.higherIsBetter ||
+                      direction == ResultDirection.lowerIsBetter);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      child: Text(
+                        m.letter,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: isBest
+                              ? AppDesignTokens.successFg
+                              : AppDesignTokens.primaryText,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        '${m.treatmentCode}  ${m.mean.toStringAsFixed(1)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              isBest ? FontWeight.w600 : FontWeight.w400,
+                          color: isBest
+                              ? AppDesignTokens.successFg
+                              : AppDesignTokens.primaryText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+          if (interpretation.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              interpretation,
+              style: const TextStyle(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _formatPValue(double p) {
+    if (p < 0.001) return '< 0.001';
+    if (p < 0.01) return p.toStringAsFixed(3);
+    return p.toStringAsFixed(2);
+  }
+
+  static String _anovaInterpretation(AnovaResult anova) {
+    if (anova.treatmentMeansWithLetters.isEmpty) return '';
+    final groups =
+        anova.treatmentMeansWithLetters.map((m) => m.letter).toSet();
+    if (!anova.isSignificant) {
+      return 'No significant differences between treatments at the 5% level.';
+    }
+    if (groups.length == anova.treatmentMeansWithLetters.length) {
+      return 'All treatments are significantly different from each other.';
+    }
+    return 'Treatments sharing a letter are not significantly different.';
   }
 
   static Color _cvColor(CvInterpretation? cv) {

@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import '../../../core/assessment_result_direction.dart';
 import '../../export/standalone_report_data.dart';
+import 'anova.dart';
 
 enum AssessmentCompleteness {
   noData, // 0 plots have a valid numeric value
@@ -93,6 +94,7 @@ class AssessmentStatistics {
     this.cvInterpretation,
     this.outliers,
     this.repConsistencyIssues = const [],
+    this.anovaResult,
   });
 
   final AssessmentProgress progress;
@@ -104,6 +106,7 @@ class AssessmentStatistics {
   final CvInterpretation? cvInterpretation;
   final List<PlotOutlier>? outliers; // v2
   final List<RepConsistencyIssue> repConsistencyIssues;
+  final AnovaResult? anovaResult;
 
   bool get hasAnyData => progress.hasAnyData;
   bool get isPreliminary => progress.isPreliminary;
@@ -301,6 +304,14 @@ AssessmentStatistics computeAssessmentStatistics(
   final direction = ResultDirection.fromString(resultDirectionString);
   final cv = computeTrialCV(means);
   final repIssues = computeRepConsistency(rows, assessmentName);
+
+  // Compute ANOVA when data is complete (all plots rated).
+  AnovaResult? anova;
+  if (progress.completeness == AssessmentCompleteness.complete &&
+      means.length >= 2) {
+    anova = _computeAnovaForAssessment(rows, assessmentName, allReps);
+  }
+
   return AssessmentStatistics(
     progress: progress,
     unit: unit,
@@ -310,7 +321,58 @@ AssessmentStatistics computeAssessmentStatistics(
     cvInterpretation: cv != null ? interpretCV(cv) : null,
     outliers: null, // v2
     repConsistencyIssues: repIssues,
+    anovaResult: anova,
   );
+}
+
+/// Builds ANOVA input from raw rating rows. Attempts RCBD first (when reps
+/// exist and data is balanced), falls back to one-way CRD.
+AnovaResult? _computeAnovaForAssessment(
+  List<RatingResultRow> rows,
+  String assessmentName,
+  Set<int> allReps,
+) {
+  // Build treatmentCode → {rep → mean of values in that cell}.
+  // In a proper RCBD each cell has exactly one observation; if multiple
+  // plots share the same (treatment, rep), average them.
+  final byTrtRep = <String, Map<int, List<double>>>{};
+  for (final row in rows) {
+    if (row.assessmentName != assessmentName) continue;
+    if (row.resultStatus != 'RECORDED') continue;
+    final v = double.tryParse(row.value);
+    if (v == null) continue;
+    byTrtRep
+        .putIfAbsent(row.treatmentCode, () => {})
+        .putIfAbsent(row.rep, () => [])
+        .add(v);
+  }
+
+  if (byTrtRep.length < 2) return null;
+
+  // Try RCBD if reps are present and >= 2.
+  if (allReps.length >= 2) {
+    final rcbdInput = <String, Map<int, double>>{};
+    for (final entry in byTrtRep.entries) {
+      rcbdInput[entry.key] = {};
+      for (final repEntry in entry.value.entries) {
+        final vals = repEntry.value;
+        rcbdInput[entry.key]![repEntry.key] =
+            vals.reduce((a, b) => a + b) / vals.length;
+      }
+    }
+    final result = computeRcbdAnova(rcbdInput);
+    if (result != null) return result;
+  }
+
+  // Fallback: one-way CRD.
+  final crdInput = <String, List<double>>{};
+  for (final entry in byTrtRep.entries) {
+    crdInput[entry.key] = [];
+    for (final vals in entry.value.values) {
+      crdInput[entry.key]!.addAll(vals);
+    }
+  }
+  return computeOneWayAnova(crdInput);
 }
 
 /// Sorts [TreatmentMean] list by result direction for display.
