@@ -214,7 +214,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       parts.add('BBCH ${session.cropStageBbch}');
     }
     if (timing?.daysAfterFirstApp != null) {
-      parts.add('${timing!.daysAfterFirstApp} DAT');
+      parts.add(timing!.daysAfterFirstApp == 0
+          ? 'Application day'
+          : '${timing.daysAfterFirstApp} DAT');
     }
     final name = session.name.trim();
     if (name.isNotEmpty) {

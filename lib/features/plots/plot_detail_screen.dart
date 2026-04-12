@@ -20,6 +20,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/ui/field_note_timestamp_format.dart';
 import '../../core/widgets/app_standard_widgets.dart';
 import '../../domain/models/plot_context.dart';
+import '../../shared/widgets/app_empty_state.dart';
 
 String _plotDetailFormatDate(DateTime dt) {
   return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
@@ -781,7 +782,7 @@ class PlotDetailScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Plot Notes',
+                              Text('Plot Note',
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
@@ -800,13 +801,13 @@ class PlotDetailScreen extends ConsumerWidget {
                         )
                       else
                         const StandardDetailRow(
-                            label: 'Plot Notes', value: 'No plot notes'),
+                            label: 'Plot Note', value: 'No plot note'),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.edit_note, size: 18),
                         label: Text(
                             plotToShow.plotNotes?.trim().isNotEmpty == true
-                                ? 'Edit Plot Notes'
-                                : 'Add Plot Notes'),
+                                ? 'Edit Plot Note'
+                                : 'Add Plot Note'),
                         onPressed: () => showPlotNotesDialog(
                             context, ref, plotToShow, trial,
                             sameTrialPlots: plots),
@@ -821,9 +822,12 @@ class PlotDetailScreen extends ConsumerWidget {
                           if (linked.isEmpty) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: TextButton.icon(
+                              child: AppEmptyState(
+                                icon: Icons.sticky_note_2_outlined,
+                                title: 'No field notes yet',
+                                subtitle:
+                                    'Field notes you add for this plot will appear here.',
+                                action: TextButton.icon(
                                   onPressed: () => showFieldNoteEditorSheet(
                                     context,
                                     ref,
@@ -843,7 +847,7 @@ class PlotDetailScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Linked Field Notes',
+                                  'Field Notes',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
@@ -1761,7 +1765,7 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
               controller: _plotNotesController,
               maxLines: 3,
               decoration: const InputDecoration(
-                labelText: 'Plot notes',
+                labelText: 'Plot Note',
                 border: OutlineInputBorder(),
               ),
               onChanged: (_) => setState(() {}),

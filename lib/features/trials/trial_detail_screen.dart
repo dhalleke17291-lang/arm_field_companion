@@ -1983,7 +1983,13 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                     : nextStatus == kTrialStatusArchived
                         ? 'Archive'
                         : null;
-    final pill = _trialStatusChromePillColors(statusForDisplay);
+    final isDisplayActive = statusForDisplay == kTrialStatusActive;
+    final pill = isDisplayActive
+        ? (
+            bg: AppDesignTokens.openSessionBgLight,
+            fg: AppDesignTokens.primaryGreen,
+          )
+        : _trialStatusChromePillColors(statusForDisplay);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -2002,6 +2008,12 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
             decoration: BoxDecoration(
               color: pill.bg,
               borderRadius: BorderRadius.circular(12),
+              border: isDisplayActive
+                  ? Border.all(
+                      color: AppDesignTokens.primaryGreen
+                          .withValues(alpha: 0.45),
+                    )
+                  : null,
             ),
             child: Text(
               labelForTrialStatus(statusForDisplay),

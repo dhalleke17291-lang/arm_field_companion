@@ -37,12 +37,13 @@ class GradientScreenHeader extends StatelessWidget
       textBlock += 4 + 17;
     }
     if (subtitleLine2 != null && subtitleLine2!.trim().isNotEmpty) {
-      textBlock += 2 + 34;
+      // Two lines at 12px (tall descenders / dense BBCH · weather · timing) + gap.
+      textBlock += 2 + 44;
     }
     // Row cross-axis = max(leading/actions height, text column).
     const minCrossAxisForToolbar = 48.0;
     final body = textBlock > minCrossAxisForToolbar ? textBlock : minCrossAxisForToolbar;
-    return (verticalPadding + body).clamp(kToolbarHeight + 24, 140);
+    return (verticalPadding + body).clamp(kToolbarHeight + 24, 150);
   }
 
   @override

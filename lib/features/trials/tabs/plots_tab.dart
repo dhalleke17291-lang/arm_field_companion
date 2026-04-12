@@ -1355,7 +1355,8 @@ class _TrialPlotsWorkingSurfaceState
   bool _gridCenterScheduled = false;
 
   /// Display-only: when false, guard plots are hidden from list and layout in this screen.
-  bool _showGuardPlots = true;
+  bool _showGuardPlots = false;
+  bool _showGuardPlotsDefaultApplied = false;
 
   List<Plot> _plotsVisibleInPlotsTab(List<Plot> all) => _showGuardPlots
       ? List<Plot>.from(all)
@@ -1478,6 +1479,11 @@ class _TrialPlotsWorkingSurfaceState
     required List<Assignment> assignmentsList,
     required List<TrialApplicationEvent> applicationsList,
   }) {
+    final guardCount = plots.where((p) => p.isGuardRow).length;
+    if (!_showGuardPlotsDefaultApplied) {
+      _showGuardPlotsDefaultApplied = true;
+      _showGuardPlots = guardCount > 0;
+    }
     final displayPlots = _plotsVisibleInPlotsTab(plots);
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
@@ -1926,8 +1932,6 @@ class _TrialPlotsWorkingSurfaceState
     final trial = widget.trial;
     final structureLocked =
         !canEditTrialStructure(trial, hasSessionData: hasSessionData);
-    final assignmentMessage =
-        getAssignmentsLockMessage(trial.status, hasSessionData);
     final assignmentsList =
         ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
@@ -1951,9 +1955,11 @@ class _TrialPlotsWorkingSurfaceState
         hasSessionData: hasSessionData,
       );
     }
-    if (isAssignmentsLocked(trial.status, hasSessionData) &&
-        assignmentMessage.isNotEmpty) {
-      return assignmentMessage;
+    if (!canEditAssignmentsForTrial(trial, hasSessionData: hasSessionData)) {
+      return structureEditBlockedMessage(
+        trial,
+        hasSessionData: hasSessionData,
+      );
     }
     return summaryLine;
   }
@@ -2790,7 +2796,7 @@ class _BulkAssignSheetState extends ConsumerState<_BulkAssignSheet> {
         builder: (ctx) => AlertDialog(
           title: const Text('Overwrite assignments?'),
           content: const Text(
-            'This will overwrite all existing assignments. Continue?',
+            'One or more selected plots already have assignments. These will be overwritten. Continue?',
           ),
           actions: [
             TextButton(
@@ -3383,7 +3389,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   final GlobalKey _plotViewportKey = GlobalKey();
   final GlobalKey _gridContentKey = GlobalKey();
   bool _gridCenterScheduled = false;
-  bool _showGuardPlots = true;
+  bool _showGuardPlots = false;
+  bool _showGuardPlotsDefaultApplied = false;
 
   List<Plot> _plotsVisibleInPlotsTab(List<Plot> all) => _showGuardPlots
       ? List<Plot>.from(all)
@@ -3490,34 +3497,42 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           final plotAssignmentsLocked =
               plotAssignmentsEditLocked(widget.trial, hasSessionData);
           final sessions = sessionsAsync.value ?? [];
+          final guardCount = plots.where((p) => p.isGuardRow).length;
+          if (!_showGuardPlotsDefaultApplied) {
+            _showGuardPlotsDefaultApplied = true;
+            _showGuardPlots = guardCount > 0;
+          }
           final displayPlots = _plotsVisibleInPlotsTab(plots);
           if (!widget.isLayoutView) {
             final scheme = Theme.of(context).colorScheme;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Show guards',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: scheme.onSurface,
+                if (guardCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Show guards',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: scheme.onSurface,
+                            ),
                           ),
                         ),
-                      ),
-                      Switch.adaptive(
-                        value: _showGuardPlots,
-                        onChanged: (v) => setState(() => _showGuardPlots = v),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ],
+                        Switch.adaptive(
+                          value: _showGuardPlots,
+                          onChanged: (v) =>
+                              setState(() => _showGuardPlots = v),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 _buildAddRepGuardsRow(context, ref, widget.trial),
                 Expanded(
                   child: _buildListBody(
@@ -3543,33 +3558,34 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           final topSection = Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Show guards',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: scheme.onSurface,
+              if (guardCount > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Show guards',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: scheme.onSurface,
+                          ),
                         ),
                       ),
-                    ),
-                    Switch.adaptive(
-                      value: _showGuardPlots,
-                      onChanged: (v) {
-                        setState(() {
-                          _showGuardPlots = v;
-                          _gridCenterScheduled = false;
-                        });
-                      },
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ],
+                      Switch.adaptive(
+                        value: _showGuardPlots,
+                        onChanged: (v) {
+                          setState(() {
+                            _showGuardPlots = v;
+                            _gridCenterScheduled = false;
+                          });
+                        },
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               _buildAddRepGuardsRow(context, ref, widget.trial),
               Padding(
                 padding:

@@ -57,11 +57,23 @@ String _plotQueueHeaderContextLine2({
   final wx = _formatWeatherSnapshotBrief(weather);
   if (wx != null) parts.add(wx);
   if (timing != null) {
+    final bothZero = timing.daysAfterFirstApp != null &&
+        timing.daysAfterSeeding != null &&
+        timing.daysAfterFirstApp == 0 &&
+        timing.daysAfterSeeding == 0;
     if (timing.daysAfterFirstApp != null) {
-      parts.add('${timing.daysAfterFirstApp} DAT');
+      parts.add(timing.daysAfterFirstApp == 0
+          ? 'Application day'
+          : '${timing.daysAfterFirstApp} DAT');
     }
     if (timing.daysAfterSeeding != null) {
-      parts.add('Day ${timing.daysAfterSeeding} after seeding');
+      if (bothZero) {
+        // Application day already added; omit duplicate seeding label.
+      } else if (timing.daysAfterSeeding == 0) {
+        parts.add('Seeding day');
+      } else {
+        parts.add('Day ${timing.daysAfterSeeding} after seeding');
+      }
     }
   }
   parts.add('$ratedCount / $totalPlots rated');

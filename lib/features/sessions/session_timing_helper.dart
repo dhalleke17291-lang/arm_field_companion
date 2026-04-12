@@ -1,5 +1,31 @@
 import '../../core/database/app_database.dart';
 
+/// DAT / DAS fragments for session headers. When both counts are [0], only
+/// **Application day** is emitted (application precedence over seeding).
+List<String> timingDatDasDisplayParts({
+  int? daysAfterFirstApp,
+  int? daysAfterSeeding,
+}) {
+  final parts = <String>[];
+  final hasDat = daysAfterFirstApp != null;
+  final hasDas = daysAfterSeeding != null;
+  final bothZero = hasDat &&
+      hasDas &&
+      daysAfterFirstApp == 0 &&
+      daysAfterSeeding == 0;
+  if (hasDat) {
+    parts.add(daysAfterFirstApp == 0
+        ? 'Application day'
+        : '$daysAfterFirstApp DAT');
+  }
+  if (hasDas) {
+    if (bothZero) return parts;
+    parts.add(
+        daysAfterSeeding == 0 ? 'Seeding day' : '$daysAfterSeeding DAS');
+  }
+  return parts;
+}
+
 /// Relative timing and optional BBCH for a rating session (field display + export helpers).
 class SessionTimingContext {
   const SessionTimingContext({
@@ -18,17 +44,19 @@ class SessionTimingContext {
   String get displayLine {
     final parts = <String>[];
     if (cropStageBbch != null) parts.add('BBCH $cropStageBbch');
-    if (daysAfterFirstApp != null) parts.add('$daysAfterFirstApp DAT');
-    if (daysAfterSeeding != null) parts.add('$daysAfterSeeding DAS');
+    parts.addAll(timingDatDasDisplayParts(
+      daysAfterFirstApp: daysAfterFirstApp,
+      daysAfterSeeding: daysAfterSeeding,
+    ));
     return parts.join(' · ');
   }
 
   /// DAT · DAS only (e.g. header line when BBCH is shown as its own chip).
   String get displayLineDatDasOnly {
-    final parts = <String>[];
-    if (daysAfterFirstApp != null) parts.add('$daysAfterFirstApp DAT');
-    if (daysAfterSeeding != null) parts.add('$daysAfterSeeding DAS');
-    return parts.join(' · ');
+    return timingDatDasDisplayParts(
+      daysAfterFirstApp: daysAfterFirstApp,
+      daysAfterSeeding: daysAfterSeeding,
+    ).join(' · ');
   }
 
   bool get isEmpty =>
