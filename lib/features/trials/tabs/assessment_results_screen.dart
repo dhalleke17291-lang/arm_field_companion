@@ -5,6 +5,7 @@ import '../../../core/assessment_result_direction.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/workspace/workspace_config.dart';
+import '../../derived/domain/anova.dart';
 import '../../derived/domain/trial_statistics.dart';
 import '../../export/standalone_report_data.dart';
 
@@ -295,12 +296,30 @@ class _TreatmentResultsSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
+        if (stat.trialCV != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'CV ${stat.trialCV!.toStringAsFixed(1)}%',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ),
+        ],
         _TreatmentTable(
           sortedMeans: sortedMeans,
           stat: stat,
           showStar: showStar,
           showSdN: !isStandalone,
+          anova: stat.anovaResult,
         ),
+        if (stat.anovaResult != null) ...[
+          const SizedBox(height: 10),
+          _AnovaSummaryRow(anova: stat.anovaResult!),
+        ],
       ],
     );
   }
@@ -312,15 +331,27 @@ class _TreatmentTable extends StatelessWidget {
     required this.stat,
     required this.showStar,
     required this.showSdN,
+    this.anova,
   });
 
   final List<TreatmentMean> sortedMeans;
   final AssessmentStatistics stat;
   final bool showStar;
   final bool showSdN;
+  final AnovaResult? anova;
 
   @override
   Widget build(BuildContext context) {
+    // Build letter lookup from ANOVA results.
+    final letterMap = <String, String>{};
+    final hasLetters = anova != null &&
+        anova!.treatmentMeansWithLetters.isNotEmpty;
+    if (hasLetters) {
+      for (final m in anova!.treatmentMeansWithLetters) {
+        letterMap[m.treatmentCode] = m.letter;
+      }
+    }
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppDesignTokens.borderCrisp, width: 0.5),
@@ -337,6 +368,18 @@ class _TreatmentTable extends StatelessWidget {
             ),
             child: Row(
               children: [
+                if (hasLetters)
+                  const SizedBox(
+                    width: 28,
+                    child: Text(
+                      'Grp',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ),
                 const Expanded(
                   flex: 25,
                   child: Text(
@@ -395,6 +438,7 @@ class _TreatmentTable extends StatelessWidget {
               alternate: i.isOdd,
               isLast: i == sortedMeans.length - 1,
               showSdN: showSdN,
+              letter: letterMap[sortedMeans[i].treatmentCode],
             ),
         ],
       ),
@@ -410,6 +454,7 @@ class _TreatmentDataRow extends StatelessWidget {
     required this.alternate,
     required this.isLast,
     required this.showSdN,
+    this.letter,
   });
 
   final TreatmentMean mean;
@@ -418,6 +463,7 @@ class _TreatmentDataRow extends StatelessWidget {
   final bool alternate;
   final bool isLast;
   final bool showSdN;
+  final String? letter;
 
   @override
   Widget build(BuildContext context) {
@@ -442,6 +488,20 @@ class _TreatmentDataRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          if (letter != null)
+            SizedBox(
+              width: 28,
+              child: Text(
+                letter!,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isWinner
+                      ? AppDesignTokens.successFg
+                      : AppDesignTokens.primaryText,
+                ),
+              ),
+            ),
           Expanded(
             flex: 25,
             child: Text(
@@ -728,6 +788,100 @@ class _PerPlotDataRow extends StatelessWidget {
                 fontSize: 12,
                 color: AppDesignTokens.primaryText,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact ANOVA summary for the assessment detail screen.
+class _AnovaSummaryRow extends StatelessWidget {
+  const _AnovaSummaryRow({required this.anova});
+
+  final AnovaResult anova;
+
+  @override
+  Widget build(BuildContext context) {
+    final sigColor = anova.isSignificant
+        ? AppDesignTokens.successFg
+        : AppDesignTokens.secondaryText;
+
+    String pStr;
+    if (anova.treatmentPValue < 0.001) {
+      pStr = '< 0.001';
+    } else if (anova.treatmentPValue < 0.01) {
+      pStr = anova.treatmentPValue.toStringAsFixed(3);
+    } else {
+      pStr = anova.treatmentPValue.toStringAsFixed(2);
+    }
+
+    final interpretation = !anova.isSignificant
+        ? 'No significant differences between treatments at the 5% level.'
+        : 'Treatments sharing a letter are not significantly different.';
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: anova.isSignificant
+            ? AppDesignTokens.successBg
+            : AppDesignTokens.emptyBadgeBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: anova.isSignificant
+              ? AppDesignTokens.successFg.withValues(alpha: 0.3)
+              : AppDesignTokens.borderCrisp,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                anova.isSignificant
+                    ? Icons.check_circle_outline
+                    : Icons.remove_circle_outline,
+                size: 14,
+                color: sigColor,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  significanceLevelLabel(anova.significance),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: sigColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'F = ${anova.treatmentF.toStringAsFixed(2)}, p = $pStr (${anova.model})',
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          if (anova.lsd != null)
+            Text(
+              'LSD₀.₀₅ = ${anova.lsd!.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          const SizedBox(height: 4),
+          Text(
+            interpretation,
+            style: const TextStyle(
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+              color: AppDesignTokens.secondaryText,
             ),
           ),
         ],
