@@ -27,14 +27,17 @@ class UpdatePlotAssignmentUseCase {
     required int plotPk,
     required int? treatmentId,
   }) async {
-    if (!canEditProtocol(trial)) {
-      return UpdateAssignmentResult.failure(protocolEditBlockedMessage(trial));
-    }
     final hasSessionData =
         await _sessionRepository.watchTrialHasSessionData(trial.id).first;
-    if (isAssignmentsLocked(trial.status, hasSessionData)) {
+    if (!canEditTrialStructure(trial, hasSessionData: hasSessionData)) {
       return UpdateAssignmentResult.failure(
-          getAssignmentsLockMessage(trial.status, hasSessionData));
+        structureEditBlockedMessage(trial, hasSessionData: hasSessionData),
+      );
+    }
+    if (!canEditAssignmentsForTrial(trial, hasSessionData: hasSessionData)) {
+      return UpdateAssignmentResult.failure(
+        getAssignmentsLockMessage(trial.status, hasSessionData),
+      );
     }
     try {
       await _assignmentIntegrity.assertPlotBelongsToTrial(
@@ -70,14 +73,17 @@ class UpdatePlotAssignmentUseCase {
     required Trial trial,
     required Map<int, int?> plotPkToTreatmentId,
   }) async {
-    if (!canEditProtocol(trial)) {
-      return UpdateAssignmentResult.failure(protocolEditBlockedMessage(trial));
-    }
     final hasSessionData =
         await _sessionRepository.watchTrialHasSessionData(trial.id).first;
-    if (isAssignmentsLocked(trial.status, hasSessionData)) {
+    if (!canEditTrialStructure(trial, hasSessionData: hasSessionData)) {
       return UpdateAssignmentResult.failure(
-          getAssignmentsLockMessage(trial.status, hasSessionData));
+        structureEditBlockedMessage(trial, hasSessionData: hasSessionData),
+      );
+    }
+    if (!canEditAssignmentsForTrial(trial, hasSessionData: hasSessionData)) {
+      return UpdateAssignmentResult.failure(
+        getAssignmentsLockMessage(trial.status, hasSessionData),
+      );
     }
     if (plotPkToTreatmentId.isEmpty) {
       return UpdateAssignmentResult.success();

@@ -424,25 +424,36 @@ class OperationalSourceBadge extends StatelessWidget {
 
 /// Compact chip: trial type and structure state ([trialTypeAndStructureCompactLine]),
 /// e.g. "ARM-linked trial • Structure locked" / "Custom trial • Structure editable".
-/// [trial] enables tooltip with [protocolEditBlockedMessage] when [isLocked].
+/// [trial] enables tooltip when [isLocked]; uses [structureEditBlockedMessage] when
+/// [hasSessionData] is set, else [protocolEditBlockedMessage].
 class ProtocolLockChip extends StatelessWidget {
   final bool isLocked;
   final Trial? trial;
+  final bool? hasSessionData;
 
   const ProtocolLockChip({
     super.key,
     required this.isLocked,
     this.trial,
+    this.hasSessionData,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final label = trial != null
-        ? trialTypeAndStructureCompactLine(trial!)
+        ? trialTypeAndStructureCompactLine(
+            trial!,
+            hasSessionData: hasSessionData,
+          )
         : 'Custom trial • Structure editable';
     final tooltip = isLocked && trial != null
-        ? protocolEditBlockedMessage(trial!)
+        ? (hasSessionData != null
+            ? structureEditBlockedMessage(
+                trial!,
+                hasSessionData: hasSessionData!,
+              )
+            : protocolEditBlockedMessage(trial!))
         : null;
     final tooltipOrNull =
         tooltip != null && tooltip.isNotEmpty ? tooltip : null;

@@ -173,11 +173,12 @@ class MockAssignmentIntegrity implements AssignmentIntegrityChecks {
   }) async {}
 }
 
-Trial _trial({String status = 'ACTIVE'}) => Trial(
+Trial _trial({String status = kTrialStatusDraft, String? workspaceType}) =>
+    Trial(
       id: 1,
       name: 'Test Trial',
       status: status,
-      workspaceType: 'efficacy',
+      workspaceType: workspaceType ?? 'efficacy',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       crop: null,
@@ -217,9 +218,14 @@ void main() {
   });
 
   group('UpdatePlotAssignmentUseCase — updateOne', () {
-    test('SUCCESS: assigns treatment to plot on active trial', () async {
+    test('SUCCESS: assigns treatment on standalone active trial without session data',
+        () async {
+      mockSessionRepo.trialHasSessionData = false;
       final result = await useCase.updateOne(
-        trial: _trial(status: 'ACTIVE'),
+        trial: _trial(
+          status: kTrialStatusActive,
+          workspaceType: 'standalone',
+        ),
         plotPk: 10,
         treatmentId: 5,
       );
@@ -231,7 +237,7 @@ void main() {
 
     test('SUCCESS: unassigns treatment (null treatmentId)', () async {
       final result = await useCase.updateOne(
-        trial: _trial(status: 'ACTIVE'),
+        trial: _trial(),
         plotPk: 10,
         treatmentId: null,
       );
@@ -250,13 +256,34 @@ void main() {
       expect(mockRepo.upserted, isEmpty);
     });
 
-    test('LOCK: rejects assignment when trial is LOCKED', () async {
+    test('LOCK: rejects assignment when efficacy trial is active', () async {
+      mockSessionRepo.trialHasSessionData = false;
       final result = await useCase.updateOne(
-        trial: _trial(status: 'active'),
+        trial: _trial(status: kTrialStatusActive),
         plotPk: 10,
         treatmentId: 5,
       );
       expect(result.success, false);
+      expect(mockRepo.upserted, isEmpty);
+    });
+
+    test(
+        'LOCK: rejects assignment when standalone active trial has session data',
+        () async {
+      mockSessionRepo.trialHasSessionData = true;
+      final result = await useCase.updateOne(
+        trial: _trial(
+          status: kTrialStatusActive,
+          workspaceType: 'standalone',
+        ),
+        plotPk: 10,
+        treatmentId: 5,
+      );
+      expect(result.success, false);
+      expect(
+        result.errorMessage,
+        kStructureLockedDataCollectionStartedUserMessage,
+      );
       expect(mockRepo.upserted, isEmpty);
     });
 
@@ -356,9 +383,10 @@ void main() {
       expect(mockRepo.upserted, isEmpty);
     });
 
-    test('LOCK: rejects bulk assignment on locked trial', () async {
+    test('LOCK: rejects bulk assignment on efficacy active trial', () async {
+      mockSessionRepo.trialHasSessionData = false;
       final result = await useCase.updateBulk(
-        trial: _trial(status: 'active'),
+        trial: _trial(status: kTrialStatusActive),
         plotPkToTreatmentId: {1: 10, 2: 20},
       );
       expect(result.success, false);

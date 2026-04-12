@@ -287,9 +287,11 @@ class ProtocolImportUseCase {
       if (trial == null) {
         return ProtocolImportExecuteResult.failure('Trial not found.');
       }
-      if (!canEditProtocol(trial)) {
+      final hasData = await trialHasAnySessionData(_db, existingTrialId);
+      if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
         return ProtocolImportExecuteResult.failure(
-            protocolEditBlockedMessage(trial));
+          structureEditBlockedMessage(trial, hasSessionData: hasData),
+        );
       }
     } else if (isProtocolLocked) {
       return ProtocolImportExecuteResult.failure(protocolLockMessage ??

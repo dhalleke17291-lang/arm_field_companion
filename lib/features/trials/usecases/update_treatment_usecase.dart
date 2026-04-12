@@ -5,9 +5,10 @@ import '../../../data/repositories/treatment_repository.dart';
 
 /// Updates treatment code/name/description. Respects protocol lock.
 class UpdateTreatmentUseCase {
-  final TreatmentRepository _repository;
+  UpdateTreatmentUseCase(this._db, this._repository);
 
-  UpdateTreatmentUseCase(this._repository);
+  final AppDatabase _db;
+  final TreatmentRepository _repository;
 
   Future<UpdateTreatmentResult> execute({
     required Trial trial,
@@ -20,8 +21,11 @@ class UpdateTreatmentUseCase {
     String? eppoCode,
     int? performedByUserId,
   }) async {
-    if (!canEditProtocol(trial)) {
-      return UpdateTreatmentResult.failure(protocolEditBlockedMessage(trial));
+    final hasData = await trialHasAnySessionData(_db, trial.id);
+    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+      return UpdateTreatmentResult.failure(
+        structureEditBlockedMessage(trial, hasSessionData: hasData),
+      );
     }
     final trimmedCode = code.trim();
     final trimmedName = name.trim();

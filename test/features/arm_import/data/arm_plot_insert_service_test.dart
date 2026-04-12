@@ -35,7 +35,28 @@ void main() {
     final trialId =
         await trialRepo.createTrial(name: 'Draft', workspaceType: 'efficacy');
     final spy = _SpyPlotRepository(db);
-    final service = ArmPlotInsertService(spy, trialRepo);
+    final service = ArmPlotInsertService(db, spy, trialRepo);
+
+    await service.insertPlotsForArmImport(
+      trialId: trialId,
+      plots: [
+        PlotsCompanion.insert(trialId: trialId, plotId: '101'),
+      ],
+    );
+
+    expect(spy.insertBulkCalls, 1);
+  });
+
+  test('standalone active trial without session data passes through', () async {
+    final trialRepo = TrialRepository(db);
+    final trialId = await trialRepo.createTrial(
+      name: 'Standalone',
+      workspaceType: 'standalone',
+    );
+    await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+
+    final spy = _SpyPlotRepository(db);
+    final service = ArmPlotInsertService(db, spy, trialRepo);
 
     await service.insertPlotsForArmImport(
       trialId: trialId,
@@ -54,7 +75,7 @@ void main() {
     await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
 
     final spy = _SpyPlotRepository(db);
-    final service = ArmPlotInsertService(spy, trialRepo);
+    final service = ArmPlotInsertService(db, spy, trialRepo);
 
     expect(
       () => service.insertPlotsForArmImport(
@@ -77,7 +98,7 @@ void main() {
     );
 
     final spy = _SpyPlotRepository(db);
-    final service = ArmPlotInsertService(spy, trialRepo);
+    final service = ArmPlotInsertService(db, spy, trialRepo);
 
     expect(
       () => service.insertPlotsForArmImport(

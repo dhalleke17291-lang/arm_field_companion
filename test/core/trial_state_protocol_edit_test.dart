@@ -55,6 +55,80 @@ void main() {
     });
   });
 
+  group('canEditTrialStructure', () {
+    test('standalone Active without session data is editable', () {
+      final t = _trial(
+        id: 1,
+        status: kTrialStatusActive,
+        workspaceType: 'standalone',
+      );
+      expect(canEditTrialStructure(t, hasSessionData: false), true);
+    });
+
+    test('standalone Active with session data is not editable', () {
+      final t = _trial(
+        id: 1,
+        status: kTrialStatusActive,
+        workspaceType: 'standalone',
+      );
+      expect(canEditTrialStructure(t, hasSessionData: true), false);
+    });
+
+    test('standalone Closed is not editable', () {
+      final t = _trial(
+        id: 1,
+        status: kTrialStatusClosed,
+        workspaceType: 'standalone',
+      );
+      expect(canEditTrialStructure(t, hasSessionData: false), false);
+    });
+
+    test('non-standalone Active is not editable', () {
+      final t = _trial(id: 1, status: kTrialStatusActive);
+      expect(canEditTrialStructure(t, hasSessionData: false), false);
+    });
+
+    test('ARM Active is not editable', () {
+      final t = _trial(
+        id: 1,
+        status: kTrialStatusActive,
+        workspaceType: 'standalone',
+        isArmLinked: true,
+      );
+      expect(canEditTrialStructure(t, hasSessionData: false), false);
+    });
+  });
+
+  group('canEditAssignmentsForTrial', () {
+    test('standalone Active without session data allows assignments', () {
+      final t = _trial(
+        id: 1,
+        status: kTrialStatusActive,
+        workspaceType: 'standalone',
+      );
+      expect(canEditAssignmentsForTrial(t, hasSessionData: false), true);
+    });
+
+    test('efficacy draft with session data blocks assignments', () {
+      final t = _trial(id: 1, status: kTrialStatusDraft);
+      expect(canEditAssignmentsForTrial(t, hasSessionData: true), false);
+    });
+  });
+
+  group('structureEditBlockedMessage', () {
+    test('standalone Active with session data uses data-collection message', () {
+      final t = _trial(
+        id: 1,
+        status: kTrialStatusActive,
+        workspaceType: 'standalone',
+      );
+      expect(
+        structureEditBlockedMessage(t, hasSessionData: true),
+        kStructureLockedDataCollectionStartedUserMessage,
+      );
+    });
+  });
+
   group('allowedNextTrialStatusesForTrial', () {
     test('standalone draft skips Ready', () {
       final t = _trial(id: 1, status: kTrialStatusDraft, workspaceType: 'standalone');

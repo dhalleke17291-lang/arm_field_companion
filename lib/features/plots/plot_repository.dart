@@ -396,8 +396,11 @@ class PlotRepository {
           'Restore the trial from Recovery before restoring this plot.',
         );
       }
-      if (!canEditProtocol(trial)) {
-        return PlotRestoreResult.failure(protocolEditBlockedMessage(trial));
+      final hasData = await trialHasAnySessionData(_db, plot.trialId);
+      if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+        return PlotRestoreResult.failure(
+          structureEditBlockedMessage(trial, hasSessionData: hasData),
+        );
       }
 
       final conflictingActive = await (_db.select(_db.plots)

@@ -36,10 +36,15 @@ class ImportReviewResult {
 }
 
 class ImportPlotsUseCase {
+  ImportPlotsUseCase(
+    this._db,
+    this._plotRepository,
+    this._trialRepository,
+  );
+
+  final AppDatabase _db;
   final PlotRepository _plotRepository;
   final TrialRepository _trialRepository;
-
-  ImportPlotsUseCase(this._plotRepository, this._trialRepository);
 
   /// Optional column aliases for plot_id (Charter: auto-handled mapping).
   static const Map<String, String> _plotIdAliases = {
@@ -146,8 +151,11 @@ class ImportPlotsUseCase {
     if (trial == null) {
       return ImportPlotsResult.failure('Trial not found.');
     }
-    if (!canEditProtocol(trial)) {
-      return ImportPlotsResult.failure(protocolEditBlockedMessage(trial));
+    final hasData = await trialHasAnySessionData(_db, input.trialId);
+    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+      return ImportPlotsResult.failure(
+        structureEditBlockedMessage(trial, hasSessionData: hasData),
+      );
     }
 
     final warnings = <String>[];

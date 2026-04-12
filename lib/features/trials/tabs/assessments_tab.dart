@@ -66,10 +66,12 @@ class AssessmentsTab extends ConsumerWidget {
 
     final statsAsync = ref.watch(trialAssessmentStatisticsProvider(trial.id));
     final stats = statsAsync.valueOrNull ?? {};
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
     final config = safeConfigFromString(trial.workspaceType);
     final isStandalone = config.isStandalone;
     final isGlp = config.studyType == StudyType.glp;
-    final locked = !canEditProtocol(trial);
+    final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
     final total = libraryList.length + customLegacyList.length;
     if (total == 0) {
       return Column(
@@ -79,8 +81,11 @@ class AssessmentsTab extends ConsumerWidget {
               icon: Icons.assessment,
               title: 'No Assessments Yet',
               subtitle: locked
-                  ? protocolEditBlockedMessage(trial)
-                  : '${trialTypeAndStructureCompactLine(trial)}. Add from library or create a custom assessment.',
+                  ? structureEditBlockedMessage(
+                      trial,
+                      hasSessionData: hasSessionData,
+                    )
+                  : '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData)}. Add from library or create a custom assessment.',
               action: null,
             ),
           ),
@@ -89,8 +94,12 @@ class AssessmentsTab extends ConsumerWidget {
             onPressed: locked
                 ? null
                 : () => _showAddAssessmentOptions(context, ref),
-            disabledTooltip:
-                locked ? protocolEditBlockedMessage(trial) : null,
+            disabledTooltip: locked
+                ? structureEditBlockedMessage(
+                    trial,
+                    hasSessionData: hasSessionData,
+                  )
+                : null,
           ),
         ],
       );
@@ -146,7 +155,12 @@ class AssessmentsTab extends ConsumerWidget {
           ),
         ),
         if (locked)
-          ProtocolLockNotice(message: protocolEditBlockedMessage(trial)),
+          ProtocolLockNotice(
+            message: structureEditBlockedMessage(
+              trial,
+              hasSessionData: hasSessionData,
+            ),
+          ),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
@@ -415,8 +429,12 @@ class AssessmentsTab extends ConsumerWidget {
           onPressed: locked
               ? null
               : () => _showAddAssessmentOptions(context, ref),
-          disabledTooltip:
-              locked ? protocolEditBlockedMessage(trial) : null,
+          disabledTooltip: locked
+              ? structureEditBlockedMessage(
+                  trial,
+                  hasSessionData: hasSessionData,
+                )
+              : null,
         ),
       ],
     );

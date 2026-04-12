@@ -6,9 +6,10 @@ import '../../../data/repositories/treatment_repository.dart';
 /// Soft-deletes a treatment and its components (Recovery).
 /// Respects protocol lock.
 class DeleteTreatmentUseCase {
-  final TreatmentRepository _repository;
+  DeleteTreatmentUseCase(this._db, this._repository);
 
-  DeleteTreatmentUseCase(this._repository);
+  final AppDatabase _db;
+  final TreatmentRepository _repository;
 
   Future<DeleteTreatmentResult> execute({
     required Trial trial,
@@ -16,8 +17,11 @@ class DeleteTreatmentUseCase {
     String? deletedBy,
     int? deletedByUserId,
   }) async {
-    if (!canEditProtocol(trial)) {
-      return DeleteTreatmentResult.failure(protocolEditBlockedMessage(trial));
+    final hasData = await trialHasAnySessionData(_db, trial.id);
+    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+      return DeleteTreatmentResult.failure(
+        structureEditBlockedMessage(trial, hasSessionData: hasData),
+      );
     }
     try {
       await _repository.softDeleteTreatment(

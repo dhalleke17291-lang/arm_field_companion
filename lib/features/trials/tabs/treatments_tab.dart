@@ -170,6 +170,8 @@ class TreatmentsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -184,7 +186,7 @@ class TreatmentsTab extends ConsumerWidget {
                     ref.invalidate(treatmentsForTrialProvider(trial.id))),
             data: (treatments) {
               if (treatments.isEmpty) {
-                return _buildEmpty(context, ref);
+                return _buildEmpty(context, ref, hasSessionData);
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -194,7 +196,9 @@ class TreatmentsTab extends ConsumerWidget {
                     trial,
                     count: treatments.length,
                   ),
-                  Expanded(child: _buildList(context, ref, treatments)),
+                  Expanded(
+                    child: _buildList(context, ref, treatments, hasSessionData),
+                  ),
                 ],
               );
             },
@@ -204,8 +208,12 @@ class TreatmentsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    final locked = !canEditProtocol(trial);
+  Widget _buildEmpty(
+    BuildContext context,
+    WidgetRef ref,
+    bool hasSessionData,
+  ) {
+    final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
     return Column(
       children: [
         Expanded(
@@ -213,7 +221,10 @@ class TreatmentsTab extends ConsumerWidget {
             icon: Icons.science_outlined,
             title: 'No Treatments Yet',
             subtitle: locked
-                ? protocolEditBlockedMessage(trial)
+                ? structureEditBlockedMessage(
+                    trial,
+                    hasSessionData: hasSessionData,
+                  )
                 : 'Add the treatment groups for this trial.',
             action: null,
           ),
@@ -222,16 +233,24 @@ class TreatmentsTab extends ConsumerWidget {
           label: 'Add Treatment',
           onPressed:
               locked ? null : () => _showAddTreatmentDialog(context, ref),
-          disabledTooltip:
-              locked ? protocolEditBlockedMessage(trial) : null,
+          disabledTooltip: locked
+              ? structureEditBlockedMessage(
+                  trial,
+                  hasSessionData: hasSessionData,
+                )
+              : null,
         ),
       ],
     );
   }
 
   Widget _buildList(
-      BuildContext context, WidgetRef ref, List<Treatment> treatments) {
-    final locked = !canEditProtocol(trial);
+    BuildContext context,
+    WidgetRef ref,
+    List<Treatment> treatments,
+    bool hasSessionData,
+  ) {
+    final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -248,10 +267,17 @@ class TreatmentsTab extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ProtocolLockChip(isLocked: true, trial: trial),
+                      ProtocolLockChip(
+                        isLocked: true,
+                        trial: trial,
+                        hasSessionData: hasSessionData,
+                      ),
                       const SizedBox(height: 4),
                       Text(
-                        protocolEditBlockedMessage(trial),
+                        structureEditBlockedMessage(
+                          trial,
+                          hasSessionData: hasSessionData,
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -282,8 +308,12 @@ class TreatmentsTab extends ConsumerWidget {
           label: 'Add Treatment',
           onPressed:
               locked ? null : () => _showAddTreatmentDialog(context, ref),
-          disabledTooltip:
-              locked ? protocolEditBlockedMessage(trial) : null,
+          disabledTooltip: locked
+              ? structureEditBlockedMessage(
+                  trial,
+                  hasSessionData: hasSessionData,
+                )
+              : null,
         ),
       ],
     );
@@ -1360,7 +1390,12 @@ class _TreatmentComponentsSheetState
 
   @override
   Widget build(BuildContext context) {
-    final locked = !canEditProtocol(widget.trial);
+    final hasSessionData = ref
+            .watch(trialHasSessionDataProvider(widget.trial.id))
+            .valueOrNull ??
+        false;
+    final locked =
+        !canEditTrialStructure(widget.trial, hasSessionData: hasSessionData);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -1514,7 +1549,14 @@ class _TreatmentComponentsSheetState
 
   Widget _buildComponentTile(BuildContext context, int i) {
     final c = _components[i];
-    final locked = !canEditProtocol(widget.trial);
+    final hasSessionData = ref
+            .watch(trialHasSessionDataProvider(widget.trial.id))
+            .valueOrNull ??
+        false;
+    final locked = !canEditTrialStructure(
+      widget.trial,
+      hasSessionData: hasSessionData,
+    );
     final ratePart = (c.rate != null && c.rateUnit != null)
         ? '${c.rate} ${c.rateUnit}'
         : null;

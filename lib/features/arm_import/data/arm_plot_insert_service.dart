@@ -6,8 +6,9 @@ import '../../trials/trial_repository.dart';
 
 /// Wraps [PlotRepository.insertPlotsBulk] with the same protocol guard as single-plot inserts.
 class ArmPlotInsertService {
-  ArmPlotInsertService(this._plotRepository, this._trialRepository);
+  ArmPlotInsertService(this._db, this._plotRepository, this._trialRepository);
 
+  final AppDatabase _db;
   final PlotRepository _plotRepository;
   final TrialRepository _trialRepository;
 
@@ -19,8 +20,11 @@ class ArmPlotInsertService {
     if (trial == null) {
       throw StateError('Trial not found');
     }
-    if (!canEditProtocol(trial)) {
-      throw ProtocolEditBlockedException(protocolEditBlockedMessage(trial));
+    final hasData = await trialHasAnySessionData(_db, trialId);
+    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+      throw ProtocolEditBlockedException(
+        structureEditBlockedMessage(trial, hasSessionData: hasData),
+      );
     }
     await _plotRepository.insertPlotsBulk(plots);
   }

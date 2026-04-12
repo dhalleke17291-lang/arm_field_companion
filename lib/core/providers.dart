@@ -149,6 +149,7 @@ final updatePlotGuardRowUseCaseProvider =
 final generateRepGuardPlotsUseCaseProvider =
     Provider<GenerateRepGuardPlotsUseCase>((ref) {
   return GenerateRepGuardPlotsUseCase(
+    ref.watch(databaseProvider),
     ref.watch(plotRepositoryProvider),
     ref.watch(trialRepositoryProvider),
   );
@@ -212,6 +213,7 @@ final armAssessmentDefinitionResolverProvider =
 
 final armPlotInsertServiceProvider = Provider<ArmPlotInsertService>((ref) {
   return ArmPlotInsertService(
+    ref.watch(databaseProvider),
     ref.watch(plotRepositoryProvider),
     ref.watch(trialRepositoryProvider),
   );
@@ -628,11 +630,17 @@ final generateStandalonePlotLayoutUseCaseProvider =
 });
 
 final updateTreatmentUseCaseProvider = Provider<UpdateTreatmentUseCase>((ref) {
-  return UpdateTreatmentUseCase(ref.watch(treatmentRepositoryProvider));
+  return UpdateTreatmentUseCase(
+    ref.watch(databaseProvider),
+    ref.watch(treatmentRepositoryProvider),
+  );
 });
 
 final deleteTreatmentUseCaseProvider = Provider<DeleteTreatmentUseCase>((ref) {
-  return DeleteTreatmentUseCase(ref.watch(treatmentRepositoryProvider));
+  return DeleteTreatmentUseCase(
+    ref.watch(databaseProvider),
+    ref.watch(treatmentRepositoryProvider),
+  );
 });
 
 final ratingIntegrityGuardProvider = Provider<RatingIntegrityGuard>((ref) {

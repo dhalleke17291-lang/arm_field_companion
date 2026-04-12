@@ -214,7 +214,7 @@ void main() {
           await trialRepo.createTrial(name: 'Ts', workspaceType: 'efficacy');
       await _markArmLinked(db, trialId);
 
-      final service = ArmPlotInsertService(plotRepo, trialRepo);
+      final service = ArmPlotInsertService(db, plotRepo, trialRepo);
       expect(
         () => service.insertPlotsForArmImport(
           trialId: trialId,

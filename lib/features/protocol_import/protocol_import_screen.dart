@@ -396,16 +396,24 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
   Future<void> _runImport() async {
     if (_review == null || !_review!.canProceed) return;
     final useCase = ref.read(protocolImportUseCaseProvider);
-    final locked =
-        widget.trial != null && !canEditProtocol(widget.trial!);
+    final trial = widget.trial;
+    final hasSessionData = trial != null
+        ? (ref.read(trialHasSessionDataProvider(trial.id)).valueOrNull ??
+            false)
+        : false;
+    final locked = trial != null &&
+        !canEditTrialStructure(trial, hasSessionData: hasSessionData);
 
     setState(() => _isLoading = true);
     final result = await useCase.execute(
       review: _review!,
       existingTrialId: widget.trial?.id,
       isProtocolLocked: locked,
-      protocolLockMessage: locked && widget.trial != null
-          ? protocolEditBlockedMessage(widget.trial!)
+      protocolLockMessage: locked
+          ? structureEditBlockedMessage(
+              trial,
+              hasSessionData: hasSessionData,
+            )
           : null,
     );
     if (!mounted) return;

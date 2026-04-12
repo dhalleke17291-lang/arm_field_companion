@@ -375,6 +375,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
       }).toList();
 
       final useCase = ImportPlotsUseCase(
+        ref.read(databaseProvider),
         ref.read(plotRepositoryProvider),
         ref.read(trialRepositoryProvider),
       );
@@ -402,9 +403,18 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
   Future<void> _importPlots() async {
     if (_reviewResult == null || !_reviewResult!.canProceed) return;
     final normalizedRows = _reviewResult!.normalizedRows!;
-    if (!canEditProtocol(widget.trial)) {
+    final hasSessionData =
+        ref.read(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
+            false;
+    if (!canEditTrialStructure(widget.trial,
+        hasSessionData: hasSessionData)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(protocolEditBlockedMessage(widget.trial))),
+        SnackBar(
+          content: Text(structureEditBlockedMessage(
+            widget.trial,
+            hasSessionData: hasSessionData,
+          )),
+        ),
       );
       return;
     }
@@ -413,7 +423,11 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
 
     final plotRepo = ref.read(plotRepositoryProvider);
     final trialRepo = ref.read(trialRepositoryProvider);
-    final useCase = ImportPlotsUseCase(plotRepo, trialRepo);
+    final useCase = ImportPlotsUseCase(
+      ref.read(databaseProvider),
+      plotRepo,
+      trialRepo,
+    );
 
     final result = await useCase.execute(ImportPlotsInput(
       trialId: widget.trial.id,

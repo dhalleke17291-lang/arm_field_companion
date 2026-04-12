@@ -52,7 +52,7 @@ void main() {
 
   test('ARM-linked trial blocks treatment update before repository', () async {
     final repo = _NoopTreatmentRepository(db);
-    final uc = UpdateTreatmentUseCase(repo);
+    final uc = UpdateTreatmentUseCase(db, repo);
     final r = await uc.execute(
       trial: _armDraft(),
       treatmentId: 99,

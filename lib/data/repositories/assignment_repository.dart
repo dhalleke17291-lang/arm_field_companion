@@ -43,6 +43,11 @@ class AssignmentRepository {
     if (trial == null) {
       throw StateError('Trial not found');
     }
+    // Standalone Active: [assertCanEditProtocolForTrialId] already enforced !sessionData.
+    if (trialWorkspaceIsStandalone(trial.workspaceType) &&
+        trial.status == kTrialStatusActive) {
+      return;
+    }
     final hasData = await trialHasAnySessionData(_db, trialId);
     if (isAssignmentsLocked(trial.status, hasData)) {
       throw ProtocolEditBlockedException(

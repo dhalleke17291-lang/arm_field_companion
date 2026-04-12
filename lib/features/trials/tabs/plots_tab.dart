@@ -137,7 +137,9 @@ Widget _buildAddRepGuardsRow(
     4,
   ),
 }) {
-  final enabled = canEditProtocol(trial);
+  final hasData =
+      ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
+  final enabled = canEditTrialStructure(trial, hasSessionData: hasData);
   return Padding(
     padding: padding,
     child: Align(
@@ -780,7 +782,9 @@ Widget? _standalonePlotsEmptyExtra(
   Trial trial,
   int treatmentCount,
 ) {
-  if (!canEditProtocol(trial)) return null;
+  final hasData =
+      ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
+  if (!canEditTrialStructure(trial, hasSessionData: hasData)) return null;
   if (!isStandalone(trial.workspaceType)) return null;
   if (treatmentCount >= 2) {
     return Column(
@@ -1912,7 +1916,8 @@ class _TrialPlotsWorkingSurfaceState
     bool hasSessionData,
   ) {
     final trial = widget.trial;
-    final structureLocked = !canEditProtocol(trial);
+    final structureLocked =
+        !canEditTrialStructure(trial, hasSessionData: hasSessionData);
     final assignmentMessage =
         getAssignmentsLockMessage(trial.status, hasSessionData);
     final assignmentsList =
@@ -1931,7 +1936,12 @@ class _TrialPlotsWorkingSurfaceState
             ? 'All $assignedCount assigned'
             : '$assignedCount assigned · $unassignedCount unassigned';
 
-    if (structureLocked) return protocolEditBlockedMessage(trial);
+    if (structureLocked) {
+      return structureEditBlockedMessage(
+        trial,
+        hasSessionData: hasSessionData,
+      );
+    }
     if (isAssignmentsLocked(trial.status, hasSessionData) &&
         assignmentMessage.isNotEmpty) {
       return assignmentMessage;
@@ -2138,7 +2148,10 @@ class _TrialPlotsWorkingSurfaceState
             ),
             PopupMenuItem<String>(
               value: 'repGuards',
-              enabled: canEditProtocol(widget.trial),
+              enabled: canEditTrialStructure(
+                widget.trial,
+                hasSessionData: hasSessionData,
+              ),
               child: const Row(
                 children: [
                   Icon(Icons.add_moderator_outlined, size: 20),
@@ -2223,8 +2236,14 @@ class _TrialPlotsWorkingSurfaceState
       List<Plot> visiblePlots, List<Plot> allPlots, bool hasSessionData) {
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
-    final longPressBlockMessage = !canEditProtocol(widget.trial)
-        ? protocolEditBlockedMessage(widget.trial)
+    final longPressBlockMessage = !canEditTrialStructure(
+      widget.trial,
+      hasSessionData: hasSessionData,
+    )
+        ? structureEditBlockedMessage(
+            widget.trial,
+            hasSessionData: hasSessionData,
+          )
         : getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
@@ -2373,7 +2392,10 @@ class _TrialPlotsWorkingSurfaceState
                     content: Text(
                       longPressBlockMessage.isNotEmpty
                           ? longPressBlockMessage
-                          : protocolEditBlockedMessage(widget.trial),
+                          : structureEditBlockedMessage(
+                              widget.trial,
+                              hasSessionData: hasSessionData,
+                            ),
                     ),
                   ),
                 );
@@ -2806,18 +2828,24 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final canEditStructure = canEditProtocol(trial);
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
+    final canEditStructure =
+        canEditTrialStructure(trial, hasSessionData: hasSessionData);
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
     final treatmentCount = treatmentsAsync.value?.length ?? 0;
     final String subtitle;
     if (!canEditStructure) {
-      subtitle = protocolEditBlockedMessage(trial);
+      subtitle = structureEditBlockedMessage(
+        trial,
+        hasSessionData: hasSessionData,
+      );
     } else if (isStandalone(trial.workspaceType)) {
       subtitle =
-          '${trialTypeAndStructureCompactLine(trial)}. Open Trial Setup to configure site details, or use the actions below to build your plot layout.';
+          '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData)}. Open Trial Setup to configure site details, or use the actions below to build your plot layout.';
     } else {
       subtitle =
-          '${trialTypeAndStructureCompactLine(trial)}. Import plots via CSV.';
+          '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData)}. Import plots via CSV.';
     }
     final extra = canEditStructure
         ? _standalonePlotsEmptyExtra(
@@ -3785,8 +3813,14 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   }) {
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
-    final longPressBlockMessage = !canEditProtocol(widget.trial)
-        ? protocolEditBlockedMessage(widget.trial)
+    final longPressBlockMessage = !canEditTrialStructure(
+      widget.trial,
+      hasSessionData: hasSessionData,
+    )
+        ? structureEditBlockedMessage(
+            widget.trial,
+            hasSessionData: hasSessionData,
+          )
         : getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final treatmentMap = {for (final t in treatments) t.id: t};
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
@@ -3900,7 +3934,10 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                     content: Text(
                       longPressBlockMessage.isNotEmpty
                           ? longPressBlockMessage
-                          : protocolEditBlockedMessage(widget.trial),
+                          : structureEditBlockedMessage(
+                              widget.trial,
+                              hasSessionData: hasSessionData,
+                            ),
                     ),
                   ),
                 );
