@@ -316,6 +316,7 @@ class ExportTrialUseCase {
     final exportTimestamp = DateTime.now().toUtc().toIso8601String();
     final armAligned =
         format == ExportFormat.armHandoff || format == ExportFormat.zipBundle;
+    final utf8BomForExcel = format == ExportFormat.flatCsv;
 
     final plots = await _plotRepository.getPlotsForTrial(trialPk);
     final plotMap = {for (final p in plots) p.id: p};
@@ -399,6 +400,7 @@ class ExportTrialUseCase {
       firstAppDate: firstAppDate,
       exportTimestamp: exportTimestamp,
       armAligned: armAligned,
+      utf8BomForExcel: utf8BomForExcel,
     );
 
     final observationsArmTransferCsv = await _buildObservationsArmTransferCsv(
@@ -407,12 +409,14 @@ class ExportTrialUseCase {
       plotMap: plotMap,
       treatmentMap: treatmentMap,
       assignmentByPlot: assignmentByPlot,
+      utf8BomForExcel: utf8BomForExcel,
     );
 
     final treatmentsCsv = await _buildTreatmentsCsv(
       treatments,
       exportTimestamp,
       armAligned: armAligned,
+      utf8BomForExcel: utf8BomForExcel,
     );
 
     final plotAssignmentsCsv = _buildPlotAssignmentsCsv(
@@ -422,6 +426,7 @@ class ExportTrialUseCase {
       trialPk: trialPk,
       exportTimestamp: exportTimestamp,
       armAligned: armAligned,
+      utf8BomForExcel: utf8BomForExcel,
     );
 
     final productsByEventId = <String, List<TrialApplicationProduct>>{};
@@ -435,10 +440,15 @@ class ExportTrialUseCase {
       seedingDate: seedingDate,
       exportTimestamp: exportTimestamp,
       armAligned: armAligned,
+      utf8BomForExcel: utf8BomForExcel,
     );
 
-    final seedingCsv =
-        _buildSeedingCsv(seeding, exportTimestamp, armAligned: armAligned);
+    final seedingCsv = _buildSeedingCsv(
+      seeding,
+      exportTimestamp,
+      armAligned: armAligned,
+      utf8BomForExcel: utf8BomForExcel,
+    );
 
     final sessionsCsv = await _buildSessionsCsv(
       sessions,
@@ -446,6 +456,7 @@ class ExportTrialUseCase {
       seedingDate: seedingDate,
       firstAppDate: firstAppDate,
       armAligned: armAligned,
+      utf8BomForExcel: utf8BomForExcel,
     );
 
     final fieldNotes = await _notesRepository.getNotesForTrial(trialPk);
@@ -455,10 +466,15 @@ class ExportTrialUseCase {
       plots: plots,
       sessions: sessions,
       exportTimestamp: exportTimestamp,
+      utf8BomForExcel: utf8BomForExcel,
     );
 
     const appVersion = '1.0.0';
-    final dataDictionaryCsv = _buildDataDictionary(exportTimestamp, appVersion);
+    final dataDictionaryCsv = _buildDataDictionary(
+      exportTimestamp,
+      appVersion,
+      utf8BomForExcel: utf8BomForExcel,
+    );
 
     final bundle = TrialExportBundle(
       observationsCsv: observationsCsv,
@@ -504,7 +520,11 @@ class ExportTrialUseCase {
   }
 
   /// Returns a static CSV documenting all exported columns. No queries.
-  String _buildDataDictionary(String exportTimestamp, String appVersion) {
+  String _buildDataDictionary(
+    String exportTimestamp,
+    String appVersion, {
+    bool utf8BomForExcel = false,
+  }) {
     const headers = ['file', 'column', 'description', 'unit'];
     final rows = <List<String>>[
       // observations.csv
@@ -980,7 +1000,11 @@ class ExportTrialUseCase {
       ['metadata', 'export_timestamp', exportTimestamp, 'ISO 8601'],
       ['metadata', 'app_version', appVersion, ''],
     ];
-    return CsvExportService.buildCsv(headers, rows);
+    return CsvExportService.buildCsv(
+      headers,
+      rows,
+      utf8BomForExcel: utf8BomForExcel,
+    );
   }
 
   /// Exports as empty string for null, empty, or placeholder literals; otherwise string value.
@@ -1008,6 +1032,7 @@ class ExportTrialUseCase {
     required DateTime? firstAppDate,
     required String exportTimestamp,
     bool armAligned = false,
+    bool utf8BomForExcel = false,
   }) async {
     final trialPk = trial.id;
     final rows = <List<String>>[];
@@ -1097,6 +1122,7 @@ class ExportTrialUseCase {
       rows,
       armAligned: armAligned,
       headerMapping: armAligned ? ArmFieldMapping.observationHeaders : null,
+      utf8BomForExcel: utf8BomForExcel,
     );
   }
 
@@ -1107,6 +1133,7 @@ class ExportTrialUseCase {
     required Map<int, Plot> plotMap,
     required Map<int, Treatment> treatmentMap,
     required Map<int, Assignment> assignmentByPlot,
+    bool utf8BomForExcel = false,
   }) async {
     final trialPk = trial.id;
     final rows = <List<String>>[];
@@ -1155,13 +1182,18 @@ class ExportTrialUseCase {
         ]);
       }
     }
-    return CsvExportService.buildCsv(_observationsArmTransferHeaders, rows);
+    return CsvExportService.buildCsv(
+      _observationsArmTransferHeaders,
+      rows,
+      utf8BomForExcel: utf8BomForExcel,
+    );
   }
 
   Future<String> _buildTreatmentsCsv(
     List<Treatment> treatments,
     String exportTimestamp, {
     bool armAligned = false,
+    bool utf8BomForExcel = false,
   }) async {
     final rows = <List<String>>[];
     for (final t in treatments) {
@@ -1198,6 +1230,7 @@ class ExportTrialUseCase {
       rows,
       armAligned: armAligned,
       headerMapping: armAligned ? ArmFieldMapping.treatmentHeaders : null,
+      utf8BomForExcel: utf8BomForExcel,
     );
   }
 
@@ -1208,6 +1241,7 @@ class ExportTrialUseCase {
     required int trialPk,
     required String exportTimestamp,
     bool armAligned = false,
+    bool utf8BomForExcel = false,
   }) {
     final rows = <List<String>>[];
     for (final plot in plots) {
@@ -1243,6 +1277,7 @@ class ExportTrialUseCase {
       rows,
       armAligned: armAligned,
       headerMapping: armAligned ? ArmFieldMapping.plotHeaders : null,
+      utf8BomForExcel: utf8BomForExcel,
     );
   }
 
@@ -1252,6 +1287,7 @@ class ExportTrialUseCase {
     DateTime? seedingDate,
     required String exportTimestamp,
     bool armAligned = false,
+    bool utf8BomForExcel = false,
   }) async {
     final rows = <List<String>>[];
     for (final a in applications) {
@@ -1301,17 +1337,23 @@ class ExportTrialUseCase {
       rows,
       armAligned: armAligned,
       headerMapping: armAligned ? ArmFieldMapping.applicationHeaders : null,
+      utf8BomForExcel: utf8BomForExcel,
     );
   }
 
-  String _buildSeedingCsv(SeedingEvent? seeding, String exportTimestamp,
-      {bool armAligned = false}) {
+  String _buildSeedingCsv(
+    SeedingEvent? seeding,
+    String exportTimestamp, {
+    bool armAligned = false,
+    bool utf8BomForExcel = false,
+  }) {
     if (seeding == null) {
       return CsvExportService.buildCsv(
         _seedingHeaders,
         [],
         armAligned: armAligned,
         headerMapping: armAligned ? ArmFieldMapping.seedingHeaders : null,
+        utf8BomForExcel: utf8BomForExcel,
       );
     }
     final row = [
@@ -1334,6 +1376,7 @@ class ExportTrialUseCase {
       [row],
       armAligned: armAligned,
       headerMapping: armAligned ? ArmFieldMapping.seedingHeaders : null,
+      utf8BomForExcel: utf8BomForExcel,
     );
   }
 
@@ -1343,6 +1386,7 @@ class ExportTrialUseCase {
     required DateTime? seedingDate,
     required DateTime? firstAppDate,
     bool armAligned = false,
+    bool utf8BomForExcel = false,
   }) async {
     final rows = <List<String>>[];
     for (final s in sessions) {
@@ -1372,6 +1416,7 @@ class ExportTrialUseCase {
       rows,
       armAligned: armAligned,
       headerMapping: armAligned ? ArmFieldMapping.sessionHeaders : null,
+      utf8BomForExcel: utf8BomForExcel,
     );
   }
 
@@ -1381,6 +1426,7 @@ class ExportTrialUseCase {
     required List<Plot> plots,
     required List<Session> sessions,
     required String exportTimestamp,
+    bool utf8BomForExcel = false,
   }) {
     final plotByPk = {for (final p in plots) p.id: p};
     final sessionById = {for (final s in sessions) s.id: s};
@@ -1406,7 +1452,11 @@ class ExportTrialUseCase {
         exportTimestamp,
       ]);
     }
-    return CsvExportService.buildCsv(_fieldNotesHeaders, rows);
+    return CsvExportService.buildCsv(
+      _fieldNotesHeaders,
+      rows,
+      utf8BomForExcel: utf8BomForExcel,
+    );
   }
 
   /// Assigns standard export basenames; sequence suffixes resolve stem collisions.

@@ -10,11 +10,16 @@ class CsvExportService {
   /// names via [ArmFieldMapping.map]; unmapped headers pass through unchanged.
   /// Joins with commas, wraps values containing any of `,`, `"`, or `\n` in
   /// double quotes, escapes internal double quotes by doubling, terminates lines with \n.
+  ///
+  /// When [utf8BomForExcel] is true, prepends a UTF-8 BOM so Excel recognizes
+  /// UTF-8. Use only for flat CSV share paths — not for ZIP/handoff packages,
+  /// weather.csv, or other programmatic consumers.
   static String buildCsv(
     List<String> headers,
     List<List<String>> rows, {
     bool armAligned = false,
     Map<String, String>? headerMapping,
+    bool utf8BomForExcel = false,
   }) {
     final buffer = StringBuffer();
     final effectiveHeaders = (armAligned && headerMapping != null)
@@ -24,7 +29,8 @@ class CsvExportService {
     for (final row in rows) {
       buffer.writeln(_rowToCsv(row));
     }
-    return buffer.toString();
+    final body = buffer.toString();
+    return utf8BomForExcel ? '\uFEFF$body' : body;
   }
 
   static String _rowToCsv(List<String> values) {

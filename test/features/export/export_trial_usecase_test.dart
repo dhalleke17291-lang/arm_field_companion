@@ -243,5 +243,39 @@ void main() {
       expect(bundle.notesCsv, contains('202'));
       expect(bundle.dataDictionaryCsv, contains('notes.csv'));
     });
+
+    test('flat CSV bundle prepends UTF-8 BOM on each table for Excel', () async {
+      final trialRepo = TrialRepository(db);
+      final trialId =
+          await trialRepo.createTrial(name: 'BomCsv', workspaceType: 'efficacy');
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+      );
+      await _seedPlotForExportTrial(db, trialId);
+      final uc = _makeUseCase(db);
+      final trial = _trialFromId(trialId);
+
+      final bundle =
+          await uc.execute(trial: trial, format: ExportFormat.flatCsv);
+      for (final csv in [
+        bundle.observationsCsv,
+        bundle.observationsArmTransferCsv,
+        bundle.treatmentsCsv,
+        bundle.plotAssignmentsCsv,
+        bundle.applicationsCsv,
+        bundle.seedingCsv,
+        bundle.sessionsCsv,
+        bundle.notesCsv,
+        bundle.dataDictionaryCsv,
+      ]) {
+        expect(
+          csv.startsWith('\uFEFF'),
+          isTrue,
+          reason: 'each flat CSV should start with UTF-8 BOM',
+        );
+      }
+    });
   });
 }
