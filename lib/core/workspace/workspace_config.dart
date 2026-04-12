@@ -255,6 +255,7 @@ class WorkspaceConfig {
     availableExports: [
       ExportFormat.pdfReport,
       ExportFormat.flatCsv,
+      ExportFormat.zipBundle,
     ],
     primaryExport: ExportFormat.pdfReport,
     lockPolicy: ProtocolLockPolicy.soft,

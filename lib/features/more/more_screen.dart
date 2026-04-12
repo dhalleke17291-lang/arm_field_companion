@@ -96,7 +96,7 @@ class MoreScreen extends ConsumerWidget {
               context,
               icon: Icons.backup_outlined,
               title: 'Backup',
-              subtitle: 'Export encrypted backup of all trial data',
+              subtitle: 'Create an encrypted backup file to save or share',
               onTap: () => runBackupFlow(context, ref),
             ),
             const SizedBox(height: AppDesignTokens.spacing12),
