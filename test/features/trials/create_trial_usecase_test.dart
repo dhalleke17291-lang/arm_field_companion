@@ -12,11 +12,18 @@ class MockTrialRepository implements TrialRepository {
   }
 
   @override
+  Future<bool> trialNameExists(String name) async {
+    return _trials.any((t) => t.name == name);
+  }
+
+  @override
   Future<int> createTrial({
     required String name,
     String? crop,
     String? location,
     String? season,
+    String workspaceType = 'efficacy',
+    String? experimentalDesign,
   }) async {
     final existing = _trials.where((t) => t.name == name).firstOrNull;
     if (existing != null) throw DuplicateTrialException(name);
@@ -28,8 +35,11 @@ class MockTrialRepository implements TrialRepository {
       location: location,
       season: season,
       status: 'active',
+      workspaceType: workspaceType,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      isDeleted: false,
+      isArmLinked: false,
     );
     _trials.add(trial);
     return trial.id;
@@ -37,6 +47,13 @@ class MockTrialRepository implements TrialRepository {
 
   @override
   Future<bool> updateTrial(Trial trial) async => true;
+
+  @override
+  Future<int> updateTrialSetup(int trialId, TrialsCompanion companion) async =>
+      0;
+
+  @override
+  Future<bool> updateTrialStatus(int trialId, String status) async => true;
 
   @override
   Future<TrialSummary> getTrialSummary(int trialId) async {
@@ -49,6 +66,21 @@ class MockTrialRepository implements TrialRepository {
       assessmentCount: 0,
     );
   }
+
+  @override
+  Future<void> softDeleteTrial(int trialId,
+      {String? deletedBy, int? deletedByUserId}) async {}
+
+  @override
+  Future<List<Trial>> getDeletedTrials() async => [];
+
+  @override
+  Future<Trial?> getDeletedTrialById(int id) async => null;
+
+  @override
+  Future<TrialRestoreResult> restoreTrial(int trialId,
+          {String? restoredBy, int? restoredByUserId}) async =>
+      TrialRestoreResult.ok();
 
   @override
   Stream<List<Trial>> watchAllTrials() => Stream.value(_trials);
@@ -65,7 +97,7 @@ void main() {
 
   group('CreateTrialUseCase — Invariants', () {
     test('SUCCESS: creates trial with valid name', () async {
-      final result = await useCase.execute(CreateTrialInput(
+      final result = await useCase.execute(const CreateTrialInput(
         name: 'Wheat Trial 2026',
         crop: 'Wheat',
         location: 'Field A',
@@ -77,9 +109,9 @@ void main() {
     });
 
     test('INVARIANT: duplicate trial name rejected', () async {
-      await useCase.execute(CreateTrialInput(name: 'Wheat Trial 2026'));
+      await useCase.execute(const CreateTrialInput(name: 'Wheat Trial 2026'));
 
-      final result = await useCase.execute(CreateTrialInput(
+      final result = await useCase.execute(const CreateTrialInput(
         name: 'Wheat Trial 2026',
       ));
 
@@ -88,21 +120,21 @@ void main() {
     });
 
     test('INVARIANT: empty trial name rejected', () async {
-      final result = await useCase.execute(CreateTrialInput(name: ''));
+      final result = await useCase.execute(const CreateTrialInput(name: ''));
 
       expect(result.success, false);
       expect(result.errorMessage, contains('must not be empty'));
     });
 
     test('INVARIANT: whitespace-only name rejected', () async {
-      final result = await useCase.execute(CreateTrialInput(name: '   '));
+      final result = await useCase.execute(const CreateTrialInput(name: '   '));
 
       expect(result.success, false);
       expect(result.errorMessage, contains('must not be empty'));
     });
 
     test('SUCCESS: name is trimmed before saving', () async {
-      final result = await useCase.execute(CreateTrialInput(
+      final result = await useCase.execute(const CreateTrialInput(
         name: '  Canola Trial  ',
       ));
 

@@ -5,9 +5,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Force single version of androidx.activity to fix duplicate R class (DEX merge).
+configurations.all {
+    resolutionStrategy {
+        force("androidx.activity:activity-ktx:1.9.2")
+        force("androidx.activity:activity:1.9.2")
+    }
+}
+
 android {
     namespace = "com.gdmsolutions.arm_field_companion"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = maxOf(flutter.compileSdkVersion, 34)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -24,7 +32,7 @@ android {
         applicationId = "com.gdmsolutions.arm_field_companion"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = maxOf(flutter.minSdkVersion, 21)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

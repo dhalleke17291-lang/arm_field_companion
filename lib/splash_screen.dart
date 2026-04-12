@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
-import 'features/trials/trial_list_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'core/config/app_info.dart';
+import 'core/current_user.dart';
+import 'features/shell/main_shell_screen.dart';
+import 'features/users/user_selection_screen.dart';
+
+const String kSplashLogoAsset = 'assets/Branding/splash_logo.png';
+
+const Color _splashG900 = Color(0xFF1A2E20);
+const Color _splashG800 = Color(0xFF2D5A40);
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -10,31 +20,54 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
+  static const Duration _displayDuration = Duration(milliseconds: 2200);
+
   late AnimationController _controller;
-  late Animation<double> _fadeIn;
+  late Animation<double> _titleOpacity;
+  late Animation<double> _subtitleOpacity;
 
   @override
   void initState() {
     super.initState();
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ));
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 800),
     );
-    _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _titleOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.75, curve: Curves.easeOut),
+      ),
+    );
+    _subtitleOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.25, 1.0, curve: Curves.easeOut),
+      ),
+    );
     _controller.forward();
 
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const TrialListScreen(),
-            transitionsBuilder: (_, animation, __, child) =>
-                FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
-      }
+    Future.delayed(_displayDuration, () async {
+      if (!mounted) return;
+      final userId = await getCurrentUserId();
+      if (!mounted) return;
+      final next = userId == null
+          ? const UserSelectionScreen()
+          : const MainShellScreen();
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => next,
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
     });
   }
 
@@ -47,68 +80,101 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1B5E20),
-      body: FadeTransition(
-        opacity: _fadeIn,
-        child: Stack(
-          children: [
-            // Center content
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Icon(
-                      Icons.energy_savings_leaf,
-                      size: 64,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  const Text(
-                    'ARM Field Companion',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'by GDM Solutions',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.65),
-                      fontSize: 20,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
+      body: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [_splashG800, _splashG900],
               ),
             ),
-            // Name pinned to bottom
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: Text(
-                'Developed by Parminder Singh',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 13,
-                  letterSpacing: 0.5,
+          ),
+          Positioned.fill(
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedBuilder(
+                      animation: _controller,
+                      builder: (_, __) => Opacity(
+                        opacity: _titleOpacity.value,
+                        child: Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.97),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 32,
+                                offset: const Offset(0, 8),
+                              ),
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                blurRadius: 0,
+                                spreadRadius: 12,
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              kSplashLogoAsset,
+                              width: 96,
+                              height: 96,
+                              fit: BoxFit.cover,
+                              filterQuality: FilterQuality.medium,
+                              semanticLabel: 'App logo',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    AnimatedBuilder(
+                      animation: _controller,
+                      builder: (_, __) => Opacity(
+                        opacity: _titleOpacity.value,
+                        child: Text(
+                          AppInfo.appName,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.15,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    AnimatedBuilder(
+                      animation: _controller,
+                      builder: (_, __) => Opacity(
+                        opacity: _subtitleOpacity.value,
+                        child: Text(
+                          'Professional field trial data collection and execution platform',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.55),
+                            fontSize: 14,
+                            height: 1.6,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

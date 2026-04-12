@@ -1,0 +1,79 @@
+---
+description: Never auto-commit; run analyzer, show diff, show status, ask for confirmation before commit; do not push unless asked
+alwaysApply: true
+---
+
+# Development Workflow — Do Not Auto-Commit
+
+Cursor must **NEVER** automatically commit code changes.
+
+After completing any code edits, follow this exact workflow:
+
+## Step 1 — Run analyzer
+
+Run:
+
+```bash
+flutter analyze
+```
+
+If the analyzer reports errors:
+
+- Fix the errors.
+- Re-run `flutter analyze`.
+- Do **not** proceed until the analyzer is clean.
+
+## Step 2 — Show the code changes
+
+Run:
+
+```bash
+git diff
+```
+
+Display the full diff so the user can review what changed.
+
+## Step 3 — Show repository state
+
+Run:
+
+```bash
+git status
+```
+
+This confirms which files were modified.
+
+## Step 4 — Ask for confirmation
+
+Ask the user:
+
+**"Changes are complete and analyzer is clean. Do you want to commit these changes?"**
+
+Do **NOT** commit unless the user explicitly confirms.
+
+## Step 5 — Commit only after approval
+
+If the user approves, run:
+
+```bash
+git add .
+git commit -m "<clear descriptive commit message>"
+```
+
+Use a concise, professional message that describes the change.
+
+Example: `Improve Sessions card UI and standardize capitalization`
+
+## Step 6 — Do not push automatically
+
+Do **not** run `git push` unless the user explicitly asks.
+
+---
+
+## Important rules
+
+- **Never** auto-commit.
+- **Never** auto-push.
+- **Always** show the diff before committing.
+- **Always** wait for user confirmation.
+- Keep commit messages clear and professional.

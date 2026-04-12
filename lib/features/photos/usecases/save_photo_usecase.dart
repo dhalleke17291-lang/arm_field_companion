@@ -1,29 +1,32 @@
 import 'dart:io';
 import '../photo_repository.dart';
 import '../../../core/database/app_database.dart';
+import '../../../domain/ratings/rating_integrity_exception.dart';
+import '../../../domain/ratings/rating_integrity_guard.dart';
 
 class SavePhotoUseCase {
   final PhotoRepository _photoRepository;
+  final RatingReferentialIntegrity _referentialIntegrity;
 
-  // Storage threshold — block photo capture below 200MB per spec
-  static const int minStorageBytesForPhoto = 200 * 1024 * 1024;
-
-  SavePhotoUseCase(this._photoRepository);
+  SavePhotoUseCase(this._photoRepository, this._referentialIntegrity);
 
   Future<SavePhotoResult> execute(SavePhotoInput input) async {
     try {
-      // Check available storage per spec section 19
-      final available = await _getAvailableStorage();
-      if (available != null && available < minStorageBytesForPhoto) {
-        return SavePhotoResult.failure(
-            'Insufficient storage. Need at least 200MB free to capture photos.');
-      }
-
-      // Verify temp file exists
+      // Verify temp file exists before attempting pipeline
       final tempFile = File(input.tempPath);
       if (!await tempFile.exists()) {
-        return SavePhotoResult.failure('Temp file not found: ${input.tempPath}');
+        return SavePhotoResult.failure(
+            'Temp file not found: ${input.tempPath}');
       }
+
+      await _referentialIntegrity.assertPlotBelongsToTrial(
+        plotPk: input.plotPk,
+        trialId: input.trialId,
+      );
+      await _referentialIntegrity.assertSessionBelongsToTrial(
+        sessionId: input.sessionId,
+        trialId: input.trialId,
+      );
 
       final photo = await _photoRepository.savePhoto(
         trialId: input.trialId,
@@ -33,20 +36,14 @@ class SavePhotoUseCase {
         finalPath: input.finalPath,
         caption: input.caption,
         raterName: input.raterName,
+        performedByUserId: input.performedByUserId,
       );
 
       return SavePhotoResult.success(photo);
+    } on RatingIntegrityException catch (e) {
+      return SavePhotoResult.failure(e.message);
     } catch (e) {
       return SavePhotoResult.failure('Failed to save photo: $e');
-    }
-  }
-
-  Future<int?> _getAvailableStorage() async {
-    try {
-      await FileStat.stat('/');
-      return null; // Platform-specific implementation needed
-    } catch (_) {
-      return null;
     }
   }
 }
@@ -59,6 +56,7 @@ class SavePhotoInput {
   final String finalPath;
   final String? caption;
   final String? raterName;
+  final int? performedByUserId;
 
   const SavePhotoInput({
     required this.trialId,
@@ -68,6 +66,7 @@ class SavePhotoInput {
     required this.finalPath,
     this.caption,
     this.raterName,
+    this.performedByUserId,
   });
 }
 

@@ -1,0 +1,1775 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/widgets/gradient_screen_header.dart';
+import '../../core/widgets/loading_error_widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/database/app_database.dart';
+import '../../core/plot_analysis_eligibility.dart';
+import '../../core/plot_display.dart';
+import '../../core/ui/assessment_display_helper.dart';
+import '../../core/providers.dart';
+import '../../domain/ratings/assessment_scale_resolver.dart';
+import '../../domain/ratings/save_rating_input.dart';
+import '../ratings/rating_lineage_sheet.dart';
+import '../ratings/rating_scale_map.dart';
+import '../ratings/usecases/amend_plot_rating_usecase.dart';
+import 'plot_detail_form_controller.dart';
+import 'plot_notes_dialog.dart';
+import '../notes/field_note_editor_sheet.dart';
+import '../../core/design/app_design_tokens.dart';
+import '../../core/ui/field_note_timestamp_format.dart';
+import '../../core/widgets/app_standard_widgets.dart';
+import '../../domain/models/plot_context.dart';
+
+String _plotDetailFormatDate(DateTime dt) {
+  return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+}
+
+/// Treatment row + components from resolved [PlotContext].
+///
+/// [assignmentSourceLabel] is included so the subtree rebuilds when assignment
+/// metadata changes (label is already shown earlier in the plot details card).
+class _PlotContextCard extends StatelessWidget {
+  const _PlotContextCard({
+    required this.plotContext,
+    required this.assignmentSourceLabel,
+  });
+
+  final PlotContext plotContext;
+  final String assignmentSourceLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: ValueKey<String>(assignmentSourceLabel),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        StandardDetailRow(
+          label: 'Treatment',
+          value: plotContext.hasTreatment
+              ? '${plotContext.treatmentCode}  —  ${plotContext.treatmentName}'
+              : (plotContext.hasRemovedTreatment ? '(removed)' : 'Unassigned'),
+        ),
+        if (plotContext.hasComponents) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Components',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...plotContext.components.map(
+            (c) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.circle,
+                    size: 6,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      [
+                        c.productName,
+                        if (c.rate != null && c.rateUnit != null)
+                          '${c.rate} ${c.rateUnit}',
+                        if (c.applicationTiming != null) c.applicationTiming!,
+                      ].join('  ·  '),
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Sliver list of rating history tiles ([latestCorrectionForRatingProvider]).
+class _PlotRatingHistoryList extends ConsumerWidget {
+  const _PlotRatingHistoryList({
+    required this.ratings,
+    required this.sessions,
+    required this.assessments,
+    required this.taByLegacyAssessmentId,
+    required this.trial,
+    required this.plot,
+    required this.onEditRatingTap,
+    required this.onHistoryTap,
+  });
+
+  final List<RatingRecord> ratings;
+  final List<Session> sessions;
+  final List<Assessment> assessments;
+
+  /// [TrialAssessment] keyed by [TrialAssessment.legacyAssessmentId].
+  final Map<int, TrialAssessment> taByLegacyAssessmentId;
+  final Trial trial;
+  final Plot plot;
+  final void Function(RatingRecord rating, Assessment? assessment)
+      onEditRatingTap;
+  final void Function(RatingRecord rating, Assessment? assessment) onHistoryTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final rating = ratings[index];
+            final session =
+                sessions.where((s) => s.id == rating.sessionId).firstOrNull;
+            final assessment = assessments
+                .where((a) => a.id == rating.assessmentId)
+                .firstOrNull;
+            final ta = assessment != null
+                ? taByLegacyAssessmentId[assessment.id]
+                : null;
+            final historyTitle = ta != null
+                ? AssessmentDisplayHelper.minimalName(ta)
+                : (assessment?.name ?? 'Assessment');
+            return Consumer(
+              builder: (context, cRef, _) {
+                final correctionAsync =
+                    cRef.watch(latestCorrectionForRatingProvider(rating.id));
+                final hasCorrection = correctionAsync.maybeWhen(
+                  data: (c) => c != null,
+                  orElse: () => false,
+                );
+                final showEditedChip =
+                    rating.previousId != null || hasCorrection;
+                return Card(
+                  child: ListTile(
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: rating.resultStatus == 'RECORDED'
+                              ? Colors.green.shade100
+                              : Colors.orange.shade100,
+                          child: Icon(
+                            rating.resultStatus == 'RECORDED'
+                                ? Icons.check
+                                : Icons.info_outline,
+                            color: rating.resultStatus == 'RECORDED'
+                                ? Colors.green
+                                : Colors.orange,
+                            size: 20,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.history,
+                            size: AppDesignTokens.spacing20,
+                            color: AppDesignTokens.primary,
+                          ),
+                          tooltip: 'History',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: AppDesignTokens.spacing32,
+                            minHeight: AppDesignTokens.spacing32,
+                          ),
+                          onPressed: () => onHistoryTap(rating, assessment),
+                        ),
+                      ],
+                    ),
+                    title: Text(
+                      historyTitle,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(session?.name ?? 'Unknown session'),
+                        if (showEditedChip) ...[
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () => onHistoryTap(rating, assessment),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                border:
+                                    Border.all(color: Colors.orange.shade700),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Edited',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          rating.resultStatus == 'RECORDED'
+                              ? '${rating.numericValue ?? rating.textValue ?? "-"} ${assessment?.unit ?? ""}'
+                              : rating.resultStatus,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: rating.resultStatus == 'RECORDED'
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                        ),
+                        Text(
+                          _plotDetailFormatDate(rating.createdAt),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => onEditRatingTap(rating, assessment),
+                          child: const Text(
+                            'Edit rating',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+          childCount: ratings.length,
+        ),
+      ),
+    );
+  }
+}
+
+const _plotDamageTypeLabels = <String, String>{
+  'mechanical': 'Mechanical',
+  'weather': 'Weather',
+  'animal': 'Animal',
+  'disease': 'Disease',
+  'contamination': 'Contamination',
+  'other': 'Other',
+};
+
+void _invalidatePlotAnalysisProviders(WidgetRef ref, int trialId, int plotPk) {
+  ref.invalidate(plotsForTrialProvider(trialId));
+  ref.invalidate(trialAssessmentCompletionProvider(trialId));
+  ref.invalidate(ratedPlotsCountForTrialProvider(trialId));
+  ref.invalidate(trialReadinessProvider(trialId));
+  ref.invalidate(plotRatingHistoryProvider(
+      PlotRatingParams(trialId: trialId, plotPk: plotPk)));
+  ref.invalidate(plotContextProvider(plotPk));
+}
+
+Widget _plotAnalysisSection(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Plot plot,
+) {
+  final primaryStyle = TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 13,
+    color: Theme.of(context).colorScheme.primary,
+  );
+  if (plot.isGuardRow) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Analysis', style: primaryStyle),
+        const SizedBox(height: 6),
+        Text(
+          'Guard rows are excluded from analysis and completion totals by definition.',
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  final excluded = !isAnalyzablePlot(plot);
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text('Analysis', style: primaryStyle),
+      const SizedBox(height: 8),
+      if (excluded) ...[
+        const Text(
+          'Excluded from analysis',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: AppDesignTokens.warningFg,
+          ),
+        ),
+        if (plot.exclusionReason != null &&
+            plot.exclusionReason!.trim().isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            plot.exclusionReason!.trim(),
+            style: const TextStyle(fontSize: 13),
+          ),
+        ],
+        if (plot.damageType != null && plot.damageType!.trim().isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Damage type: ${_plotDamageTypeLabels[plot.damageType!.trim()] ?? plot.damageType}',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.restart_alt, size: 18),
+          label: const Text('Include in Analysis Again'),
+          onPressed: () =>
+              _confirmIncludePlotInAnalysis(context, ref, trial, plot),
+        ),
+      ] else ...[
+        Text(
+          'This plot counts toward trial completion and export statistics.',
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.report_off_outlined, size: 18),
+          label: const Text('Exclude from Analysis'),
+          onPressed: () => _showExcludePlotFromAnalysisDialog(
+            context,
+            ref,
+            trial,
+            plot,
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+Future<void> _showExcludePlotFromAnalysisDialog(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Plot plot,
+) async {
+  final reasonController = TextEditingController();
+  String? selectedDamage;
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Exclude from Analysis'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'This plot will stay in the rating workflow but will not '
+                    'count toward completion, readiness, or export statistics.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Reason (required)',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Damage type',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _plotDamageTypeLabels.entries.map((e) {
+                      final selected = selectedDamage == e.key;
+                      return ChoiceChip(
+                        label: Text(e.value),
+                        selected: selected,
+                        onSelected: (_) =>
+                            setState(() => selectedDamage = e.key),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (reasonController.text.trim().isEmpty ||
+                      selectedDamage == null) {
+                    return;
+                  }
+                  Navigator.pop(ctx, true);
+                },
+                child: const Text('Exclude Plot'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+
+  if (confirmed != true) {
+    reasonController.dispose();
+    return;
+  }
+  if (reasonController.text.trim().isEmpty || selectedDamage == null) {
+    reasonController.dispose();
+    return;
+  }
+  final damageType = selectedDamage!;
+
+  try {
+    final user = await ref.read(currentUserProvider.future);
+    final userId = await ref.read(currentUserIdProvider.future);
+    await ref.read(plotRepositoryProvider).setPlotExcludedFromAnalysis(
+          plot.id,
+          exclusionReason: reasonController.text,
+          damageType: damageType,
+          performedBy: user?.displayName,
+          performedByUserId: userId,
+        );
+    if (!context.mounted) return;
+    _invalidatePlotAnalysisProviders(ref, trial.id, plot.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Plot excluded from analysis')),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Could not update plot'),
+        content: SelectableText('$e'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  } finally {
+    reasonController.dispose();
+  }
+}
+
+Future<void> _confirmIncludePlotInAnalysis(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Plot plot,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Include in Analysis'),
+      content: const Text(
+        'This plot will count toward completion, readiness, and export statistics again.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Include Plot'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  try {
+    final user = await ref.read(currentUserProvider.future);
+    final userId = await ref.read(currentUserIdProvider.future);
+    await ref.read(plotRepositoryProvider).clearPlotExcludedFromAnalysis(
+          plot.id,
+          performedBy: user?.displayName,
+          performedByUserId: userId,
+        );
+    if (!context.mounted) return;
+    _invalidatePlotAnalysisProviders(ref, trial.id, plot.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Plot included in analysis')),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Could not update plot'),
+        content: SelectableText('$e'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _confirmAndSoftDeletePlot(
+  BuildContext context,
+  WidgetRef ref,
+  Trial trial,
+  Plot plot,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete plot'),
+      content: const Text(
+        'This plot will be moved to Recovery.\n\n'
+        'Existing ratings for this plot are not deleted.\n\n'
+        'The trial and sessions are unchanged.\n\n'
+        'You can restore this plot later from Recovery.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete plot'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  try {
+    final user = await ref.read(currentUserProvider.future);
+    final userId = await ref.read(currentUserIdProvider.future);
+    await ref.read(plotRepositoryProvider).softDeletePlot(
+          plot.id,
+          deletedBy: user?.displayName,
+          deletedByUserId: userId,
+        );
+    if (!context.mounted) return;
+    final trialId = trial.id;
+    final plotPk = plot.id;
+    ref.invalidate(plotsForTrialProvider(trialId));
+    ref.invalidate(deletedPlotsProvider);
+    ref.invalidate(plotRatingHistoryProvider(
+        PlotRatingParams(trialId: trialId, plotPk: plotPk)));
+    ref.invalidate(plotContextProvider(plotPk));
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Plot moved to Recovery')),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Could not delete plot'),
+        content: SelectableText('$e'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PlotDetailScreen extends ConsumerWidget {
+  final Trial trial;
+  final Plot plot;
+
+  const PlotDetailScreen({
+    super.key,
+    required this.trial,
+    required this.plot,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ratingsAsync = ref.watch(plotRatingHistoryProvider(
+      PlotRatingParams(trialId: trial.id, plotPk: plot.id),
+    ));
+    final sessions = ref.watch(sessionsForTrialProvider(trial.id)).value ?? [];
+    final assessments =
+        ref.watch(assessmentsForTrialProvider(trial.id)).value ?? [];
+    final trialAssessments =
+        ref.watch(trialAssessmentsForTrialProvider(trial.id)).value ?? [];
+    final taByLegacy = <int, TrialAssessment>{};
+    for (final ta in trialAssessments) {
+      final lid = ta.legacyAssessmentId;
+      if (lid != null) taByLegacy[lid] = ta;
+    }
+    final plotContextAsync = ref.watch(plotContextProvider(plot.id));
+    final notesAsync = ref.watch(notesForTrialProvider(trial.id));
+    final plots = ref.watch(plotsForTrialProvider(trial.id)).value ?? [];
+    final assignments =
+        ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
+    final assignmentForPlot =
+        assignments.where((a) => a.plotId == plot.id).firstOrNull;
+    final plotToShow = plots.where((p) => p.id == plot.id).firstOrNull ?? plot;
+    final displayNum = getDisplayPlotLabel(plotToShow, plots);
+    final assignmentSourceLabel = getAssignmentSourceLabel(
+        treatmentId: assignmentForPlot?.treatmentId ?? plotToShow.treatmentId,
+        assignmentSource:
+            assignmentForPlot?.assignmentSource ?? plotToShow.assignmentSource);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: GradientScreenHeader(
+        title: plotToShow.isGuardRow
+            ? getGuardRowListTitle(plotToShow)
+            : 'Plot $displayNum',
+        subtitle: plotToShow.rep != null ? 'Rep ${plotToShow.rep}' : null,
+        titleFontSize: 17,
+        actions: [
+          IconButton(
+            iconSize: 24,
+            icon: const Icon(Icons.edit_note, color: AppDesignTokens.onPrimary),
+            tooltip: 'Notes',
+            onPressed: () => showPlotNotesDialog(
+                context, ref, plotToShow, trial,
+                sameTrialPlots: plots),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppDesignTokens.onPrimary),
+            iconSize: 24,
+            tooltip: 'More',
+            onSelected: (value) {
+              if (value == 'delete_plot') {
+                _confirmAndSoftDeletePlot(context, ref, trial, plot);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'delete_plot',
+                child: Text('Delete plot'),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Card(
+                margin: const EdgeInsets.all(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Plot Details',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Theme.of(context).colorScheme.primary)),
+                      const Divider(),
+                      StandardDetailRow(
+                          label: 'Plot (display)', value: displayNum),
+                      if (plotToShow.rep != null)
+                        StandardDetailRow(
+                            label: 'Rep / Block',
+                            value: plotToShow.rep.toString()),
+                      if (assignmentSourceLabel != 'Unknown' &&
+                          assignmentSourceLabel != 'Unassigned')
+                        StandardDetailRow(
+                            label: 'Assignment source',
+                            value: assignmentSourceLabel),
+                      if (plotToShow.row != null)
+                        StandardDetailRow(
+                            label: 'Range', value: plotToShow.row.toString()),
+                      if (plotToShow.column != null)
+                        StandardDetailRow(
+                            label: 'Column',
+                            value: plotToShow.column.toString()),
+                      if (plotToShow.plotSortIndex != null)
+                        StandardDetailRow(
+                            label: 'Sort Index',
+                            value: plotToShow.plotSortIndex.toString()),
+                      if (plotToShow.isGuardRow)
+                        const StandardDetailRow(
+                            label: 'Plot type', value: 'Guard row'),
+                      StandardDetailRow(label: 'Trial', value: trial.name),
+                      if (trial.plotDimensions != null ||
+                          trial.plotRows != null ||
+                          trial.plotSpacing != null) ...[
+                        const Divider(),
+                        if (trial.plotDimensions != null)
+                          StandardDetailRow(
+                              label: 'Plot dimensions',
+                              value: trial.plotDimensions!),
+                        if (trial.plotRows != null)
+                          StandardDetailRow(
+                              label: 'Number of ranges',
+                              value: trial.plotRows.toString()),
+                        if (trial.plotSpacing != null)
+                          StandardDetailRow(
+                              label: 'Plot spacing', value: trial.plotSpacing!),
+                      ],
+                      if (_hasPlotDimensionSummary(plotToShow)) ...[
+                        const Divider(),
+                        _PlotDimensionSummary(plot: plotToShow),
+                      ],
+                      _PlotDetailsForm(
+                        key: ValueKey('plot_details_${plotToShow.id}'),
+                        plot: plotToShow,
+                        trial: trial,
+                      ),
+                      const Divider(),
+                      if (plotToShow.plotNotes != null &&
+                          plotToShow.plotNotes!.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Plot Notes',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary)),
+                              const SizedBox(height: 4),
+                              Text(
+                                plotToShow.plotNotes!.trim(),
+                                style: const TextStyle(fontSize: 13),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        const StandardDetailRow(
+                            label: 'Plot Notes', value: 'No plot notes'),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.edit_note, size: 18),
+                        label: Text(
+                            plotToShow.plotNotes?.trim().isNotEmpty == true
+                                ? 'Edit Plot Notes'
+                                : 'Add Plot Notes'),
+                        onPressed: () => showPlotNotesDialog(
+                            context, ref, plotToShow, trial,
+                            sameTrialPlots: plots),
+                      ),
+                      notesAsync.when(
+                        loading: () => const SizedBox.shrink(),
+                        error: (e, __) => AppErrorHint(error: e),
+                        data: (allNotes) {
+                          final linked = allNotes
+                              .where((n) => n.plotPk == plotToShow.id)
+                              .toList();
+                          if (linked.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  onPressed: () => showFieldNoteEditorSheet(
+                                    context,
+                                    ref,
+                                    trial: trial,
+                                    initialPlotPk: plotToShow.id,
+                                  ),
+                                  icon: const Icon(Icons.sticky_note_2_outlined,
+                                      size: 18),
+                                  label: const Text('Add Field Note'),
+                                ),
+                              ),
+                            );
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Linked Field Notes',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                for (final n in linked)
+                                  ListTile(
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text(
+                                      n.content,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                    subtitle: Builder(
+                                      builder: (_) {
+                                        const subStyle = TextStyle(
+                                          fontSize: 11,
+                                          color: AppDesignTokens.secondaryText,
+                                        );
+                                        final meta =
+                                            formatFieldNoteContextLineWithPlots(
+                                          n,
+                                          plots,
+                                          sessions: sessions,
+                                          includeSession: true,
+                                        );
+                                        if (meta.isEmpty) {
+                                          return Text(
+                                            formatFieldNoteTimestampLine(n),
+                                            style: subStyle,
+                                          );
+                                        }
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              formatFieldNoteTimestampLine(n),
+                                              style: subStyle,
+                                            ),
+                                            Text(meta, style: subStyle),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                    onTap: () => showFieldNoteEditorSheet(
+                                      context,
+                                      ref,
+                                      trial: trial,
+                                      existing: n,
+                                    ),
+                                  ),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: TextButton.icon(
+                                    onPressed: () => showFieldNoteEditorSheet(
+                                      context,
+                                      ref,
+                                      trial: trial,
+                                      initialPlotPk: plotToShow.id,
+                                    ),
+                                    icon: const Icon(Icons.add, size: 18),
+                                    label: const Text('Add Field Note'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(),
+                      plotContextAsync.when(
+                        loading: () => const SizedBox(
+                          height: 20,
+                          child: Center(
+                              child: LinearProgressIndicator(minHeight: 2)),
+                        ),
+                        error: (e, st) => StandardDetailRow(
+                            label: 'Treatment', value: e.toString()),
+                        data: (ctx) => _PlotContextCard(
+                          plotContext: ctx,
+                          assignmentSourceLabel: assignmentSourceLabel,
+                        ),
+                      ),
+                      const Divider(),
+                      _plotAnalysisSection(
+                        context,
+                        ref,
+                        trial,
+                        plotToShow,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.history,
+                        color: Theme.of(context).colorScheme.primary, size: 18),
+                    const SizedBox(width: 6),
+                    Text('Rating History',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Theme.of(context).colorScheme.primary)),
+                  ],
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            ...ratingsAsync.when(
+              loading: () => [
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
+              error: (e, st) => [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('Error: $e')),
+                ),
+              ],
+              data: (ratings) => ratings.isEmpty
+                  ? [
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.history,
+                                  size: 48,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant),
+                              const SizedBox(height: 12),
+                              Text('No Ratings Yet',
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ]
+                  : [
+                      _PlotRatingHistoryList(
+                        ratings: ratings,
+                        sessions: sessions,
+                        assessments: assessments,
+                        taByLegacyAssessmentId: taByLegacy,
+                        trial: trial,
+                        plot: plot,
+                        onEditRatingTap: (rating, assessment) =>
+                            _showEditRatingSheet(
+                                context, ref, rating, assessment, trial, plot),
+                        onHistoryTap: (rating, assessment) {
+                          final ta = assessment != null
+                              ? taByLegacy[assessment.id]
+                              : null;
+                          final lineageName = ta != null
+                              ? AssessmentDisplayHelper.minimalName(ta)
+                              : (assessment?.name ?? 'Assessment');
+                          showRatingLineageBottomSheet(
+                            context: context,
+                            ref: ref,
+                            trialId: trial.id,
+                            plotPk: plot.id,
+                            assessmentId: rating.assessmentId,
+                            sessionId: rating.sessionId,
+                            assessmentName: lineageName,
+                            plotLabel: getDisplayPlotLabel(plotToShow, plots),
+                          );
+                        },
+                      ),
+                    ],
+            ),
+            SliverToBoxAdapter(
+              child:
+                  SizedBox(height: MediaQuery.paddingOf(context).bottom + 24),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+({double min, double max}) _editRatingNumericBounds(
+  Assessment? assessment, {
+  AssessmentDefinitionScale? definitionScale,
+}) {
+  if (assessment == null) {
+    return (min: 0.0, max: 999.0);
+  }
+  return resolvedNumericBoundsForAssessment(assessment, definitionScale);
+}
+
+Future<void> _showEditRatingSheet(
+  BuildContext context,
+  WidgetRef ref,
+  RatingRecord rating,
+  Assessment? assessment,
+  Trial trial,
+  Plot plot,
+) async {
+  String? lastRater = '';
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    lastRater = prefs.getString('last_rater_name');
+  } catch (_) {}
+
+  if (!context.mounted) return;
+  final trialAssessments =
+      ref.read(trialAssessmentsForTrialProvider(trial.id)).valueOrNull ??
+          <TrialAssessment>[];
+  final definitions = ref.read(assessmentDefinitionsProvider).valueOrNull ??
+      <AssessmentDefinition>[];
+  final ratingScaleMap = buildRatingScaleMap(
+    trialAssessments: trialAssessments,
+    definitions: definitions,
+    trialIdForLog: trial.id,
+  );
+  final definitionScale =
+      assessment != null ? ratingScaleMap[assessment.id] : null;
+
+  final valueController = TextEditingController(
+      text: rating.numericValue?.toString() ?? rating.textValue ?? '');
+  final reasonController = TextEditingController();
+  final amendedByController = TextEditingController(text: lastRater ?? '');
+
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Edit rating',
+                style: Theme.of(ctx)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: valueController,
+              decoration: InputDecoration(
+                labelText: 'New value',
+                hintText: assessment?.unit != null
+                    ? 'e.g. ${assessment?.unit}'
+                    : null,
+                border: const OutlineInputBorder(),
+              ),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Amendment reason (required)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: amendedByController,
+              decoration: const InputDecoration(
+                labelText: 'Amended by',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () async {
+                final newValStr = valueController.text.trim();
+                final reason = reasonController.text.trim();
+                if (reason.isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                      content: Text('Amendment reason is required')));
+                  return;
+                }
+
+                final bounds = _editRatingNumericBounds(assessment,
+                    definitionScale: definitionScale);
+                final assessmentConstraints = assessment != null
+                    ? RatingAssessmentConstraints(
+                        dataType: assessment.dataType,
+                        minValue: bounds.min,
+                        maxValue: bounds.max,
+                        unit: assessment.unit,
+                      )
+                    : null;
+
+                try {
+                  final userId = await ref.read(currentUserIdProvider.future);
+                  final amendUseCase = ref.read(amendPlotRatingUseCaseProvider);
+                  final amendedByTrim = amendedByController.text.trim();
+                  final result =
+                      await amendUseCase.execute(AmendPlotRatingInput(
+                    trialId: rating.trialId,
+                    plotPk: rating.plotPk,
+                    assessmentId: rating.assessmentId,
+                    sessionId: rating.sessionId,
+                    rawValue: newValStr,
+                    dataType: assessment?.dataType,
+                    resultStatus: rating.resultStatus,
+                    minValue: bounds.min,
+                    maxValue: bounds.max,
+                    assessmentConstraints: assessmentConstraints,
+                    amendmentReason: reason,
+                    amendedBy: amendedByTrim,
+                    performedByUserId: userId,
+                    subUnitId: rating.subUnitId,
+                    existingNumericValue: rating.numericValue,
+                    existingTextValue: rating.textValue,
+                  ));
+
+                  if (!result.isSuccess) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            result.errorMessage ?? 'Could not save rating',
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  if (ctx.mounted) {
+                    ref.invalidate(plotRatingHistoryProvider(
+                        PlotRatingParams(trialId: trial.id, plotPk: plot.id)));
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(content: Text('Rating updated')));
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx)
+                        .showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+bool _hasPlotDimensionSummary(Plot plot) {
+  return (plot.plotLengthM != null && plot.plotWidthM != null) ||
+      (plot.harvestLengthM != null && plot.harvestWidthM != null);
+}
+
+class _PlotDimensionSummary extends StatelessWidget {
+  const _PlotDimensionSummary({required this.plot});
+
+  final Plot plot;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <Widget>[];
+    if (plot.plotLengthM != null &&
+        plot.plotWidthM != null &&
+        plot.plotAreaM2 != null) {
+      parts.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            'Plot: ${plot.plotLengthM} m × ${plot.plotWidthM} m = ${plot.plotAreaM2} m²',
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+      );
+    }
+    if (plot.harvestLengthM != null &&
+        plot.harvestWidthM != null &&
+        plot.harvestAreaM2 != null) {
+      parts.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            'Harvest: ${plot.harvestLengthM} m × ${plot.harvestWidthM} m = ${plot.harvestAreaM2} m²',
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+      );
+    }
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: parts,
+    );
+  }
+}
+
+class _PlotDetailsForm extends ConsumerStatefulWidget {
+  const _PlotDetailsForm({
+    super.key,
+    required this.plot,
+    required this.trial,
+  });
+
+  final Plot plot;
+  final Trial trial;
+
+  @override
+  ConsumerState<_PlotDetailsForm> createState() => _PlotDetailsFormState();
+}
+
+class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
+  final PlotDetailFormController _formController = PlotDetailFormController();
+
+  late TextEditingController _plotLengthController;
+  late TextEditingController _plotWidthController;
+  late TextEditingController _plotAreaController;
+  late TextEditingController _harvestLengthController;
+  late TextEditingController _harvestWidthController;
+  late TextEditingController _harvestAreaController;
+  late TextEditingController _directionOtherController;
+  late TextEditingController _soilSeriesController;
+  late TextEditingController _plotNotesController;
+  String? _directionDropdown;
+  bool _plotAreaOverride = false;
+  bool _harvestAreaOverride = false;
+  bool _saving = false;
+  bool _isGuardRow = false;
+  bool _guardToggleBusy = false;
+  bool _controllersReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncFromPlot(widget.plot);
+  }
+
+  @override
+  void didUpdateWidget(covariant _PlotDetailsForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.plot.id == widget.plot.id &&
+        (oldWidget.plot.plotLengthM != widget.plot.plotLengthM ||
+            oldWidget.plot.plotNotes != widget.plot.plotNotes ||
+            oldWidget.plot.isGuardRow != widget.plot.isGuardRow)) {
+      _syncFromPlot(widget.plot);
+    }
+  }
+
+  void _syncFromPlot(Plot plot) {
+    final draft = _formController.fromPlot(plot);
+    if (_controllersReady) {
+      _plotLengthController.dispose();
+      _plotWidthController.dispose();
+      _plotAreaController.dispose();
+      _harvestLengthController.dispose();
+      _harvestWidthController.dispose();
+      _harvestAreaController.dispose();
+      _directionOtherController.dispose();
+      _soilSeriesController.dispose();
+      _plotNotesController.dispose();
+    }
+    _plotLengthController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.plotLength));
+    _plotWidthController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.plotWidth));
+    _plotAreaController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.plotArea));
+    _harvestLengthController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.harvestLength));
+    _harvestWidthController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.harvestWidth));
+    _harvestAreaController = TextEditingController(
+        text: PlotDetailFormController.doubleToFieldText(draft.harvestArea));
+    _directionOtherController =
+        TextEditingController(text: draft.directionOtherText);
+    _soilSeriesController = TextEditingController(text: draft.soilSeries);
+    _plotNotesController = TextEditingController(text: draft.plotNotes);
+    _directionDropdown = draft.direction;
+    _plotAreaOverride = draft.plotAreaOverride;
+    _harvestAreaOverride = draft.harvestAreaOverride;
+    _isGuardRow = draft.isGuardRow;
+    _controllersReady = true;
+  }
+
+  @override
+  void dispose() {
+    if (_controllersReady) {
+      _plotLengthController.dispose();
+      _plotWidthController.dispose();
+      _plotAreaController.dispose();
+      _harvestLengthController.dispose();
+      _harvestWidthController.dispose();
+      _harvestAreaController.dispose();
+      _directionOtherController.dispose();
+      _soilSeriesController.dispose();
+      _plotNotesController.dispose();
+    }
+    super.dispose();
+  }
+
+  int _dimensionsFilledCount() {
+    int n = 0;
+    if (PlotDetailFormController.parseDouble(_plotLengthController.text) !=
+        null) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_plotWidthController.text) !=
+        null) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_plotAreaController.text) !=
+            null ||
+        _plotAreaOverride) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_harvestLengthController.text) !=
+        null) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_harvestWidthController.text) !=
+        null) {
+      n++;
+    }
+    if (PlotDetailFormController.parseDouble(_harvestAreaController.text) !=
+            null ||
+        _harvestAreaOverride) {
+      n++;
+    }
+    if (_directionDropdown != null && _directionDropdown!.isNotEmpty) n++;
+    return n;
+  }
+
+  int _fieldConditionsFilledCount() {
+    int n = 0;
+    if (_soilSeriesController.text.trim().isNotEmpty) n++;
+    if (_plotNotesController.text.trim().isNotEmpty) n++;
+    return n;
+  }
+
+  bool get _dimensionsHasData => _dimensionsFilledCount() > 0;
+  bool get _fieldConditionsHasData => _fieldConditionsFilledCount() > 0;
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final draft = PlotFormDraft(
+        plotLength:
+            PlotDetailFormController.parseDouble(_plotLengthController.text),
+        plotWidth:
+            PlotDetailFormController.parseDouble(_plotWidthController.text),
+        plotArea:
+            PlotDetailFormController.parseDouble(_plotAreaController.text),
+        harvestLength:
+            PlotDetailFormController.parseDouble(_harvestLengthController.text),
+        harvestWidth:
+            PlotDetailFormController.parseDouble(_harvestWidthController.text),
+        harvestArea:
+            PlotDetailFormController.parseDouble(_harvestAreaController.text),
+        plotAreaOverride: _plotAreaOverride,
+        harvestAreaOverride: _harvestAreaOverride,
+        direction: _directionDropdown,
+        isDirectionOther: _directionDropdown == 'Other',
+        directionOtherText: _directionOtherController.text,
+        soilSeries: _soilSeriesController.text,
+        plotNotes: _plotNotesController.text,
+        isGuardRow: _isGuardRow,
+      );
+      final payload = _formController.buildUpdatePayload(draft);
+      final result = await ref
+          .read(updatePlotDetailsUseCaseProvider)
+          .execute(widget.plot.id, payload);
+      if (!result.isSuccess) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.errorMessage ?? 'Save failed'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        return;
+      }
+      ref.invalidate(plotsForTrialProvider(widget.trial.id));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Plot details saved')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Save failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plotLen =
+        PlotDetailFormController.parseDouble(_plotLengthController.text);
+    final plotWid =
+        PlotDetailFormController.parseDouble(_plotWidthController.text);
+    final harvestLen =
+        PlotDetailFormController.parseDouble(_harvestLengthController.text);
+    final harvestWid =
+        PlotDetailFormController.parseDouble(_harvestWidthController.text);
+    final calculatedPlotArea =
+        (plotLen != null && plotWid != null) ? plotLen * plotWid : null;
+    final calculatedHarvestArea = (harvestLen != null && harvestWid != null)
+        ? harvestLen * harvestWid
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+          dense: true,
+          title: const Text(
+            'Guard row',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            'Border or buffer plot (label only)',
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.2,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          value: _isGuardRow,
+          onChanged: _saving || _guardToggleBusy
+              ? null
+              : (v) async {
+                  setState(() {
+                    _isGuardRow = v;
+                    _guardToggleBusy = true;
+                  });
+                  try {
+                    final result = await ref
+                        .read(updatePlotGuardRowUseCaseProvider)
+                        .execute(widget.plot.id, v);
+                    if (!result.isSuccess) {
+                      if (!context.mounted) return;
+                      setState(() => _isGuardRow = !v);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            result.errorMessage ?? 'Update failed',
+                          ),
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      );
+                      return;
+                    }
+                    ref.invalidate(plotsForTrialProvider(widget.trial.id));
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          v ? 'Marked as guard row' : 'Guard row cleared',
+                        ),
+                      ),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    setState(() => _isGuardRow = !v);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Update failed: $e'),
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    );
+                  } finally {
+                    if (context.mounted) {
+                      setState(() => _guardToggleBusy = false);
+                    }
+                  }
+                },
+        ),
+        const Divider(height: 1),
+        ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          title: Text(
+            'Plot dimensions (${_dimensionsFilledCount()} filled)',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          initiallyExpanded: _dimensionsHasData,
+          children: [
+            TextField(
+              controller: _plotLengthController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Plot length (m)',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _plotWidthController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Plot width (m)',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            if (calculatedPlotArea != null && !_plotAreaOverride)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'Plot area: $calculatedPlotArea m²',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'calculated',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SwitchListTile(
+              title: const Text('Use custom plot area'),
+              value: _plotAreaOverride,
+              onChanged: (v) => setState(() => _plotAreaOverride = v),
+            ),
+            if (_plotAreaOverride) ...[
+              const SizedBox(height: 4),
+              TextField(
+                controller: _plotAreaController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Plot area (m²)',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: _harvestLengthController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Harvest length (m)',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _harvestWidthController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Harvest width (m)',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            if (calculatedHarvestArea != null && !_harvestAreaOverride)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'Harvest area: $calculatedHarvestArea m²',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'calculated',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SwitchListTile(
+              title: const Text('Use custom harvest area'),
+              value: _harvestAreaOverride,
+              onChanged: (v) => setState(() => _harvestAreaOverride = v),
+            ),
+            if (_harvestAreaOverride) ...[
+              const SizedBox(height: 4),
+              TextField(
+                controller: _harvestAreaController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Harvest area (m²)',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              key: ValueKey('dir_$_directionDropdown'),
+              initialValue: _directionDropdown,
+              decoration: const InputDecoration(
+                labelText: 'Plot direction / orientation',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String?>(value: null, child: Text('—')),
+                ...kPlotDirectionOptions.map(
+                    (s) => DropdownMenuItem<String?>(value: s, child: Text(s))),
+              ],
+              onChanged: (v) => setState(() => _directionDropdown = v),
+            ),
+            if (_directionDropdown == 'Other') ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _directionOtherController,
+                decoration: const InputDecoration(
+                  labelText: 'Custom direction',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+          ],
+        ),
+        ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          title: Text(
+            'Field conditions (${_fieldConditionsFilledCount()} filled)',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          initiallyExpanded: _fieldConditionsHasData,
+          children: [
+            TextField(
+              controller: _soilSeriesController,
+              decoration: const InputDecoration(
+                labelText: 'Soil series',
+                hintText: 'e.g. Weyburn loam',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _plotNotesController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Plot notes',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Saving…' : 'Save plot details'),
+        ),
+      ],
+    );
+  }
+}

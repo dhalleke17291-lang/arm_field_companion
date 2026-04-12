@@ -1,7 +1,10 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_exception.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
-import 'package:arm_field_companion/core/database/app_database.dart';
 
 class MockRatingRepository implements RatingRepository {
   final List<RatingRecord> _records = [];
@@ -16,12 +19,18 @@ class MockRatingRepository implements RatingRepository {
     required int sessionId,
     int? subUnitId,
   }) async {
-    return _records.where((r) =>
-        r.trialId == trialId &&
-        r.plotPk == plotPk &&
-        r.assessmentId == assessmentId &&
-        r.sessionId == sessionId &&
-        r.isCurrent).firstOrNull;
+    return _records.where((r) {
+      final subOk = subUnitId == null
+          ? r.subUnitId == null
+          : r.subUnitId == subUnitId;
+      return r.trialId == trialId &&
+          r.plotPk == plotPk &&
+          r.assessmentId == assessmentId &&
+          r.sessionId == sessionId &&
+          r.isCurrent &&
+          !r.isDeleted &&
+          subOk;
+    }).firstOrNull;
   }
 
   @override
@@ -30,6 +39,7 @@ class MockRatingRepository implements RatingRepository {
     required int plotPk,
     required int assessmentId,
     required int sessionId,
+    int? subUnitId,
   }) => Stream.value(null);
 
   @override
@@ -39,21 +49,34 @@ class MockRatingRepository implements RatingRepository {
     required int assessmentId,
     required int sessionId,
     required String resultStatus,
+    required bool isSessionClosed,
     double? numericValue,
     String? textValue,
     int? subUnitId,
     String? raterName,
+    int? performedByUserId,
+    String? createdAppVersion,
+    String? createdDeviceInfo,
+    double? capturedLatitude,
+    double? capturedLongitude,
+    String? ratingTime,
+    String? ratingMethod,
+    String? confidence,
   }) async {
     if (shouldThrow) {
       throw RatingIntegrityException(throwMessage ?? 'Mock error');
     }
 
     for (int i = 0; i < _records.length; i++) {
-      if (_records[i].trialId == trialId &&
-          _records[i].plotPk == plotPk &&
-          _records[i].assessmentId == assessmentId &&
-          _records[i].sessionId == sessionId) {
-        _records[i] = _records[i].copyWith(isCurrent: false);
+      final r = _records[i];
+      final subOk =
+          subUnitId == null ? r.subUnitId == null : r.subUnitId == subUnitId;
+      if (r.trialId == trialId &&
+          r.plotPk == plotPk &&
+          r.assessmentId == assessmentId &&
+          r.sessionId == sessionId &&
+          subOk) {
+        _records[i] = r.copyWith(isCurrent: false);
       }
     }
 
@@ -71,6 +94,8 @@ class MockRatingRepository implements RatingRepository {
       previousId: null,
       createdAt: DateTime.now(),
       raterName: raterName,
+      amended: false,
+      isDeleted: false,
     );
 
     _records.add(record);
@@ -78,9 +103,53 @@ class MockRatingRepository implements RatingRepository {
   }
 
   @override
+  Future<RatingRecord?> getRatingById(int id) async {
+    return _records.where((r) => r.id == id).firstOrNull;
+  }
+
+  @override
+  Future<RatingRecord> updateRating({
+    required int ratingId,
+    String? amendmentReason,
+    String? amendedBy,
+    String? confidence,
+    int? lastEditedByUserId,
+  }) async {
+    final idx = _records.indexWhere((r) => r.id == ratingId);
+    if (idx == -1) {
+      throw RatingIntegrityException('Rating not found: $ratingId');
+    }
+    final hasAmendmentReason = amendmentReason != null;
+    final hasAmendedBy = amendedBy != null;
+    final hasConfidence = confidence != null;
+    final hasEditor = lastEditedByUserId != null;
+    if (!hasAmendmentReason &&
+        !hasAmendedBy &&
+        !hasConfidence &&
+        !hasEditor) {
+      throw RatingIntegrityException(
+        'No metadata fields to update. Rating value/status changes must use saveRating.',
+      );
+    }
+    final r = _records[idx];
+    _records[idx] = r.copyWith(
+      amendmentReason:
+          hasAmendmentReason ? Value(amendmentReason) : const Value.absent(),
+      amendedBy: hasAmendedBy ? Value(amendedBy) : const Value.absent(),
+      confidence: hasConfidence ? Value(confidence) : const Value.absent(),
+      lastEditedByUserId:
+          hasEditor ? Value(lastEditedByUserId) : const Value.absent(),
+      lastEditedAt: Value(DateTime.now().toUtc()),
+    );
+    return _records[idx];
+  }
+
+  @override
   Future<void> undoRating({
     required int currentRatingId,
+    required int sessionId,
     String? raterName,
+    int? performedByUserId,
   }) async {}
 
   @override
@@ -90,12 +159,22 @@ class MockRatingRepository implements RatingRepository {
     required int assessmentId,
     required int sessionId,
     required String reason,
+    required bool isSessionClosed,
     String? raterName,
+    int? performedByUserId,
   }) async {}
 
   @override
   Future<List<RatingRecord>> getCurrentRatingsForSession(int sessionId) async {
     return _records.where((r) => r.sessionId == sessionId && r.isCurrent).toList();
+  }
+
+  @override
+  Future<Set<int>> getRatedPlotPksForSession(int sessionId) async {
+    return _records
+        .where((r) => r.sessionId == sessionId && r.isCurrent)
+        .map((r) => r.plotPk)
+        .toSet();
   }
 
   @override
@@ -110,6 +189,115 @@ class MockRatingRepository implements RatingRepository {
         .map((r) => r.plotPk)
         .toSet();
   }
+
+  @override
+  Future<int> getRatedPlotCountForTrial(int trialId) async {
+    return _records.where((r) => r.trialId == trialId && r.isCurrent).map((r) => r.plotPk).toSet().length;
+  }
+
+  @override
+  Future<Map<int, int>> getRatedDataPlotCountsPerLegacyAssessment(
+          int trialId) async =>
+      {};
+
+  @override
+  Future<RatingCorrection?> getLatestCorrectionForRating(int ratingId) async => null;
+
+  @override
+  Future<List<RatingCorrection>> getCorrectionsForRating(int ratingId) async => [];
+
+  @override
+  Future<Set<int>> getSessionIdsWithCorrections(Iterable<int> sessionIds) async =>
+      {};
+
+  @override
+  Future<Set<int>> getPlotPksWithCorrectionsForSession(int sessionId) async => {};
+
+  @override
+  Future<RatingCorrection> applyCorrection({
+    required int ratingId,
+    required String oldResultStatus,
+    required String newResultStatus,
+    double? oldNumericValue,
+    double? newNumericValue,
+    String? oldTextValue,
+    String? newTextValue,
+    required String reason,
+    int? correctedByUserId,
+    int? sessionId,
+    int? plotPk,
+  }) async {
+    throw UnimplementedError('applyCorrection not used in save_rating_usecase_test');
+  }
+
+  @override
+  Future<List<RatingRecord>> getRatingRecordsForSessionRecoveryExport(
+      int sessionId) async {
+    final list =
+        _records.where((r) => r.sessionId == sessionId).toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
+
+  @override
+  Future<List<RatingRecord>> getRatingRecordsForTrialRecoveryExport(
+      int trialId) async {
+    final list = _records.where((r) => r.trialId == trialId).toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
+
+  @override
+  Future<List<RatingRecord>> getRatingChainForPlotAssessmentSession({
+    required int trialId,
+    required int plotPk,
+    required int assessmentId,
+    required int sessionId,
+  }) async {
+    final list = _records
+        .where((r) =>
+            r.trialId == trialId &&
+            r.plotPk == plotPk &&
+            r.assessmentId == assessmentId &&
+            r.sessionId == sessionId &&
+            !r.isDeleted)
+        .toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
+
+  @override
+  Future<List<RatingCorrection>> getCorrectionsForRatingIds(
+          List<int> ratingIds) async =>
+      [];
+
+  @override
+  Future<List<DeviationFlag>> getVoidDeviationFlags({
+    required int trialId,
+    required int sessionId,
+    required int plotPk,
+  }) async =>
+      [];
+}
+
+class _NoOpRatingReferentialIntegrity implements RatingReferentialIntegrity {
+  @override
+  Future<void> assertPlotBelongsToTrial({
+    required int plotPk,
+    required int trialId,
+  }) async {}
+
+  @override
+  Future<void> assertSessionBelongsToTrial({
+    required int sessionId,
+    required int trialId,
+  }) async {}
+
+  @override
+  Future<void> assertAssessmentInSession({
+    required int assessmentId,
+    required int sessionId,
+  }) async {}
 }
 
 void main() {
@@ -118,12 +306,15 @@ void main() {
 
   setUp(() {
     mockRepo = MockRatingRepository();
-    useCase = SaveRatingUseCase(mockRepo);
+    useCase = SaveRatingUseCase(
+      mockRepo,
+      _NoOpRatingReferentialIntegrity(),
+    );
   });
 
   group('SaveRatingUseCase — Core Invariants', () {
     test('INVARIANT: numericValue must be null when status is NOT_OBSERVED', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -137,7 +328,7 @@ void main() {
     });
 
     test('INVARIANT: numericValue must be null when status is NOT_APPLICABLE', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -151,7 +342,7 @@ void main() {
     });
 
     test('INVARIANT: numericValue must be null when status is MISSING_CONDITION', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -164,7 +355,7 @@ void main() {
     });
 
     test('SUCCESS: RECORDED status with numeric value succeeds', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -179,7 +370,7 @@ void main() {
     });
 
     test('SUCCESS: NOT_OBSERVED with null numeric value succeeds', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -193,7 +384,7 @@ void main() {
     });
 
     test('INVARIANT: range check rejects value below minimum', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -209,7 +400,7 @@ void main() {
     });
 
     test('INVARIANT: range check rejects value above maximum', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -225,7 +416,7 @@ void main() {
     });
 
     test('INVARIANT: invalid session ID rejected', () async {
-      final result = await useCase.execute(SaveRatingInput(
+      final result = await useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -239,7 +430,7 @@ void main() {
     });
 
     test('DEBOUNCE: second call while processing returns debounced', () async {
-      final future1 = useCase.execute(SaveRatingInput(
+      final future1 = useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -248,7 +439,7 @@ void main() {
         numericValue: 5.0,
       ));
 
-      final future2 = useCase.execute(SaveRatingInput(
+      final future2 = useCase.execute(const SaveRatingInput(
         trialId: 1,
         plotPk: 1,
         assessmentId: 1,
@@ -262,6 +453,65 @@ void main() {
 
       expect(statuses.contains(SaveRatingStatus.success), true);
       expect(statuses.contains(SaveRatingStatus.debounced), true);
+    });
+  });
+
+  group('updateRating — metadata only (mock parity with RatingRepository)', () {
+    test('throws when no metadata fields are provided', () async {
+      final row = await mockRepo.saveRating(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 3.0,
+        isSessionClosed: false,
+      );
+      expect(
+        () => mockRepo.updateRating(ratingId: row.id),
+        throwsA(isA<RatingIntegrityException>().having(
+          (e) => e.toString(),
+          'message',
+          contains('saveRating'),
+        )),
+      );
+    });
+
+    test('plot-detail style: save new value then metadata update keeps new value',
+        () async {
+      final first = await mockRepo.saveRating(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 2.0,
+        isSessionClosed: false,
+      );
+      final firstId = first.id;
+
+      final saveResult = await useCase.execute(const SaveRatingInput(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 9.0,
+      ));
+      expect(saveResult.isSuccess, true);
+      final newId = saveResult.rating!.id;
+
+      await mockRepo.updateRating(
+        ratingId: newId,
+        amendmentReason: 'Corrected entry',
+        lastEditedByUserId: 42,
+      );
+
+      final updated = await mockRepo.getRatingById(newId);
+      expect(updated!.numericValue, 9.0);
+      expect(updated.amendmentReason, 'Corrected entry');
+      expect(updated.lastEditedByUserId, 42);
+      expect(firstId, isNot(newId));
     });
   });
 }

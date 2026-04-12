@@ -1,5 +1,5 @@
 name: arm_field_companion
-description: ARM Field Companion - Offline field data capture for agricultural research trials.
+description: Agnexis — professional field trial data collection and execution platform.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -18,21 +18,57 @@ dependencies:
   riverpod_annotation: ^2.3.5
   go_router: ^14.0.0
   csv: ^6.0.0
+  excel: ^4.0.6
+  xml: ^6.5.0
   archive: ^3.4.10
+  pdf: ^3.11.0
   share_plus: ^9.0.0
   file_picker: ^8.0.0
-  image_picker: ^1.1.0
+  image_picker: ^1.2.1
   uuid: ^4.4.0
   intl: ^0.19.0
   collection: ^1.18.0
+  crypto: ^3.0.7
+  google_fonts: ^8.0.2
+  flutter_native_splash: ^2.4.4
+  flutter_launcher_icons: ^0.14.4
+  shared_preferences: ^2.2.2
+  wakelock_plus: ^1.2.8
+  geolocator: ^12.0.0
+  pointycastle: ^3.7.3
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   drift_dev: ^2.18.0
   build_runner: ^2.4.0
   riverpod_generator: ^2.4.0
   flutter_lints: ^4.0.0
 
+  path_provider_platform_interface: any
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/
+    - assets/Branding/
+    - assets/images/trials/
+
+# Native splash: single screen, refined deep green, centered logo (no text).
+flutter_native_splash:
+  color: "#0E3D2F"
+  image: assets/Branding/splash_logo.png
+  android: true
+  ios: true
+
+# Launcher icon: assets/Branding/app_icon.png (1024×1024).
+# Inset 3 for strong fill in circle; premium balance and optical centering.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/Branding/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#0E3D2F"
+  adaptive_icon_foreground: "assets/Branding/app_icon.png"
+  adaptive_icon_foreground_inset: 3

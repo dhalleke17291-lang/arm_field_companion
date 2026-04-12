@@ -2,9 +2,22 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 import 'dart:io';
 
 part 'app_database.g.dart';
+
+/// Local user identity (identity only; authorization layered later).
+/// role_key: stable code (technician, researcher, manager, admin).
+class Users extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get displayName => text().withLength(min: 1, max: 255)();
+  TextColumn get initials => text().nullable()();
+  TextColumn get roleKey => text().withDefault(const Constant('technician'))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
 
 class Trials extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -13,8 +26,68 @@ class Trials extends Table {
   TextColumn get location => text().nullable()();
   TextColumn get season => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('active'))();
+
+  /// Plot dimensions (e.g. "10 m × 2 m"). Trial-level default.
+  TextColumn get plotDimensions => text().nullable()();
+
+  /// Number of rows per plot. Trial-level default.
+  IntColumn get plotRows => integer().nullable()();
+
+  /// Spacing between plots (e.g. "0.5 m"). Trial-level default.
+  TextColumn get plotSpacing => text().nullable()();
+
+  // --- Trial setup (ARM protocol / site) ---
+  TextColumn get sponsor => text().nullable()();
+  TextColumn get protocolNumber => text().nullable()();
+  TextColumn get investigatorName => text().nullable()();
+  TextColumn get cooperatorName => text().nullable()();
+  TextColumn get siteId => text().nullable()();
+  TextColumn get fieldName => text().nullable()();
+  TextColumn get county => text().nullable()();
+  TextColumn get stateProvince => text().nullable()();
+  TextColumn get country => text().nullable()();
+  RealColumn get latitude => real().nullable()();
+  RealColumn get longitude => real().nullable()();
+  RealColumn get elevationM => real().nullable()();
+  TextColumn get experimentalDesign => text().nullable()();
+  RealColumn get plotLengthM => real().nullable()();
+  RealColumn get plotWidthM => real().nullable()();
+  RealColumn get alleyLengthM => real().nullable()();
+  TextColumn get previousCrop => text().nullable()();
+  TextColumn get tillage => text().nullable()();
+  BoolColumn get irrigated => boolean().nullable()();
+  TextColumn get soilSeries => text().nullable()();
+  TextColumn get soilTexture => text().nullable()();
+  RealColumn get organicMatterPct => real().nullable()();
+  RealColumn get soilPh => real().nullable()();
+  DateTimeColumn get harvestDate => dateTime().nullable()();
+  TextColumn get studyType => text().nullable()();
+
+  /// Workspace type: variety | efficacy | glp | standalone
+  TextColumn get workspaceType =>
+      text().withDefault(const Constant('efficacy'))();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+
+  BoolColumn get isArmLinked => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get armImportedAt => dateTime().nullable()();
+  TextColumn get armSourceFile => text().nullable()();
+  TextColumn get armVersion => text().nullable()();
+
+  /// Session used for ARM import ratings; preferred for Rating Shell export.
+  /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
+  IntColumn get armImportSessionId => integer().nullable()();
+
+  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
+  TextColumn get armLinkedShellPath => text().nullable()();
+
+  /// When [armLinkedShellPath] was last applied.
+  DateTimeColumn get armLinkedShellAt => dateTime().nullable()();
 }
 
 class Treatments extends Table {
@@ -23,6 +96,40 @@ class Treatments extends Table {
   TextColumn get code => text().withLength(min: 1, max: 50)();
   TextColumn get name => text().withLength(min: 1, max: 255)();
   TextColumn get description => text().nullable()();
+  TextColumn get treatmentType => text().nullable()();
+  TextColumn get timingCode => text().nullable()();
+  TextColumn get eppoCode => text().nullable()();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
+}
+
+class TreatmentComponents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get treatmentId => integer().references(Treatments, #id)();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  TextColumn get productName => text().withLength(min: 1, max: 255)();
+  TextColumn get rate => text().nullable()();
+  TextColumn get rateUnit => text().nullable()();
+  TextColumn get applicationTiming => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  RealColumn get activeIngredientPct => real().nullable()();
+  TextColumn get formulationType => text().nullable()();
+  TextColumn get manufacturer => text().nullable()();
+  TextColumn get registrationNumber => text().nullable()();
+  TextColumn get eppoCode => text().nullable()();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
 }
 
 class Assessments extends Table {
@@ -36,16 +143,157 @@ class Assessments extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 }
 
+/// Hidden master library of assessment templates (ARM/GDM-style). Not shown in session UI until selected for a trial.
+class AssessmentDefinitions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get code => text().withLength(min: 1, max: 50)();
+  TextColumn get name => text().withLength(min: 1, max: 255)();
+  TextColumn get category => text().withLength(min: 1, max: 50)();
+  TextColumn get dataType => text().withDefault(const Constant('numeric'))();
+  TextColumn get unit => text().nullable()();
+  RealColumn get scaleMin => real().nullable()();
+  RealColumn get scaleMax => real().nullable()();
+  TextColumn get target => text().nullable()();
+  TextColumn get method => text().nullable()();
+  TextColumn get defaultInstructions => text().nullable()();
+  TextColumn get timingType => text().nullable()();
+  BoolColumn get isSystem => boolean().withDefault(const Constant(true))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  TextColumn get timingCode => text().nullable()();
+  IntColumn get daysAfterTreatment => integer().nullable()();
+  TextColumn get assessmentMethod => text().nullable()();
+  RealColumn get validMin => real().nullable()();
+  RealColumn get validMax => real().nullable()();
+  TextColumn get eppoCode => text().nullable()();
+  TextColumn get cropPart => text().nullable()();
+  TextColumn get timingDescription => text().nullable()();
+  TextColumn get resultDirection =>
+      text().withDefault(const Constant('neutral'))();
+}
+
+/// Trial-specific selection from library. Sessions only show assessments enabled here (or legacy Assessments).
+class TrialAssessments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get assessmentDefinitionId =>
+      integer().references(AssessmentDefinitions, #id)();
+  TextColumn get displayNameOverride => text().nullable()();
+  BoolColumn get required => boolean().withDefault(const Constant(false))();
+  BoolColumn get selectedFromProtocol =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get selectedManually =>
+      boolean().withDefault(const Constant(true))();
+  BoolColumn get defaultInSessions =>
+      boolean().withDefault(const Constant(true))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  TextColumn get timingMode => text().nullable()();
+  IntColumn get daysAfterPlanting => integer().nullable()();
+  IntColumn get daysAfterTreatment => integer().nullable()();
+  TextColumn get growthStage => text().nullable()();
+  TextColumn get methodOverride => text().nullable()();
+  TextColumn get instructionOverride => text().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  IntColumn get legacyAssessmentId =>
+      integer().references(Assessments, #id).nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  TextColumn get pestCode => text().nullable()();
+  TextColumn get pestName => text().nullable()();
+  TextColumn get eppoCodeLocal => text().nullable()();
+  TextColumn get bbchScale => text().nullable()();
+  TextColumn get cropStageAtAssessment => text().nullable()();
+
+  /// Original CSV column index for this assessment (ARM import); guides export ordering.
+  IntColumn get armImportColumnIndex => integer().nullable()();
+
+  /// ARM shell column ID (row 7) for this trial assessment when linked from a Rating Shell.
+  TextColumn get armShellColumnId => text().nullable()();
+
+  /// ARM shell rating date cell (row 15), display string as in shell.
+  TextColumn get armShellRatingDate => text().nullable()();
+
+  /// SE Name from shell (row 17), display-oriented; may differ in casing from [pestCode].
+  TextColumn get seName => text().nullable()();
+
+  /// SE Description from shell (row 14).
+  TextColumn get seDescription => text().nullable()();
+
+  /// Rating type from shell (row 20).
+  TextColumn get armRatingType => text().nullable()();
+}
+
 class Plots extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
   TextColumn get plotId => text().withLength(min: 1, max: 50)();
   IntColumn get plotSortIndex => integer().nullable()();
   IntColumn get rep => integer().nullable()();
-  IntColumn get treatmentId => integer().references(Treatments, #id).nullable()();
+  IntColumn get treatmentId =>
+      integer().references(Treatments, #id).nullable()();
   TextColumn get row => text().nullable()();
   TextColumn get column => text().nullable()();
+  IntColumn get fieldRow => integer().nullable()();
+  IntColumn get fieldColumn => integer().nullable()();
+
+  /// Assignment provenance: 'imported' | 'manual' | null (unknown).
+  TextColumn get assignmentSource => text().nullable()();
+  DateTimeColumn get assignmentUpdatedAt => dateTime().nullable()();
+
+  RealColumn get plotLengthM => real().nullable()();
+  RealColumn get plotWidthM => real().nullable()();
+  RealColumn get plotAreaM2 => real().nullable()();
+  RealColumn get harvestLengthM => real().nullable()();
+  RealColumn get harvestWidthM => real().nullable()();
+  RealColumn get harvestAreaM2 => real().nullable()();
+  TextColumn get plotDirection => text().nullable()();
+  TextColumn get soilSeries => text().nullable()();
+  TextColumn get plotNotes => text().nullable()();
+
+  /// Field layout: non-data / border plot.
+  /// v2: excluded from rating queue by default; display + editing unchanged in Plots tab.
+  BoolColumn get isGuardRow => boolean().withDefault(const Constant(false))();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+
+  BoolColumn get excludeFromAnalysis =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get exclusionReason => text().nullable()();
+  TextColumn get damageType => text().nullable()();
+
+  /// Canonical ARM plot number (matches Rating Shell plot column); nullable for non-ARM plots.
+  IntColumn get armPlotNumber => integer().nullable()();
+
+  /// Index into source ARM CSV data rows for this plot row (import alignment).
+  IntColumn get armImportDataRowIndex => integer().nullable()();
+}
+
+/// Protocol-to-field mapping: which treatment is assigned to which plot (ARM first-class entity).
+/// One row per plot per trial. Resolution: Plot → Assignment → Treatment.
+class Assignments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get plotId => integer().references(Plots, #id)();
+  IntColumn get treatmentId =>
+      integer().references(Treatments, #id).nullable()();
+  IntColumn get replication => integer().nullable()();
+  IntColumn get block => integer().nullable()();
+  IntColumn get range => integer().nullable()();
+  IntColumn get column => integer().nullable()();
+  IntColumn get position => integer().nullable()();
+  BoolColumn get isCheck => boolean().nullable()();
+  BoolColumn get isControl => boolean().nullable()();
+  TextColumn get assignmentSource => text().nullable()();
+  DateTimeColumn get assignedAt => dateTime().nullable()();
+  IntColumn get assignedBy => integer().references(Users, #id).nullable()();
   TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 class Sessions extends Table {
@@ -56,13 +304,27 @@ class Sessions extends Table {
   DateTimeColumn get endedAt => dateTime().nullable()();
   TextColumn get sessionDateLocal => text()();
   TextColumn get raterName => text().nullable()();
+  IntColumn get createdByUserId =>
+      integer().references(Users, #id).nullable()();
   TextColumn get status => text().withDefault(const Constant('open'))();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+
+  /// Optional BBCH growth stage (0–99) at rating session; null if not recorded.
+  IntColumn get cropStageBbch => integer().nullable()();
 }
 
 class SessionAssessments extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get sessionId => integer().references(Sessions, #id)();
   IntColumn get assessmentId => integer().references(Assessments, #id)();
+  IntColumn get trialAssessmentId =>
+      integer().references(TrialAssessments, #id).nullable()();
+
+  /// User-defined order for rating flow (0, 1, 2, …). Same sequence applies to every plot.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
 
 class RatingRecords extends Table {
@@ -70,25 +332,75 @@ class RatingRecords extends Table {
   IntColumn get trialId => integer().references(Trials, #id)();
   IntColumn get plotPk => integer().references(Plots, #id)();
   IntColumn get assessmentId => integer().references(Assessments, #id)();
+  IntColumn get trialAssessmentId =>
+      integer().references(TrialAssessments, #id).nullable()();
   IntColumn get sessionId => integer().references(Sessions, #id)();
   IntColumn get subUnitId => integer().nullable()();
-  TextColumn get resultStatus => text().withDefault(const Constant('RECORDED'))();
+  TextColumn get resultStatus =>
+      text().withDefault(const Constant('RECORDED'))();
   RealColumn get numericValue => real().nullable()();
   TextColumn get textValue => text().nullable()();
   BoolColumn get isCurrent => boolean().withDefault(const Constant(true))();
   IntColumn get previousId => integer().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get raterName => text().nullable()();
+  // Provenance (nullable for legacy rows)
+  TextColumn get createdAppVersion => text().nullable()();
+  TextColumn get createdDeviceInfo => text().nullable()();
+  RealColumn get capturedLatitude => real().nullable()();
+  RealColumn get capturedLongitude => real().nullable()();
+
+  /// Local time of rating as HH:mm.
+  TextColumn get ratingTime => text().nullable()();
+  TextColumn get ratingMethod => text().nullable()();
+  /// certain | uncertain | estimated
+  TextColumn get confidence => text().nullable()();
+  BoolColumn get amended => boolean().withDefault(const Constant(false))();
+  TextColumn get originalValue => text().nullable()();
+  TextColumn get amendmentReason => text().nullable()();
+  TextColumn get amendedBy => text().nullable()();
+  DateTimeColumn get amendedAt => dateTime().nullable()();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+}
+
+/// Immutable correction records; original rating record is never overwritten.
+class RatingCorrections extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ratingId => integer().references(RatingRecords, #id)();
+  RealColumn get oldNumericValue => real().nullable()();
+  RealColumn get newNumericValue => real().nullable()();
+  TextColumn get oldTextValue => text().nullable()();
+  TextColumn get newTextValue => text().nullable()();
+  TextColumn get oldResultStatus => text()();
+  TextColumn get newResultStatus => text()();
+  TextColumn get reason => text()();
+  IntColumn get correctedByUserId =>
+      integer().references(Users, #id).nullable()();
+  DateTimeColumn get correctedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+  IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
+  IntColumn get plotPk => integer().references(Plots, #id).nullable()();
 }
 
 class Notes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
-  IntColumn get plotPk => integer().references(Plots, #id)();
-  IntColumn get sessionId => integer().references(Sessions, #id)();
+  IntColumn get plotPk => integer().nullable().references(Plots, #id)();
+  IntColumn get sessionId => integer().nullable().references(Sessions, #id)();
   TextColumn get content => text()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get raterName => text().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  TextColumn get updatedBy => text().nullable()();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 class Photos extends Table {
@@ -101,6 +413,10 @@ class Photos extends Table {
   TextColumn get status => text().withDefault(const Constant('final'))();
   TextColumn get caption => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
 }
 
 class PlotFlags extends Table {
@@ -119,11 +435,100 @@ class DeviationFlags extends Table {
   IntColumn get trialId => integer().references(Trials, #id)();
   IntColumn get plotPk => integer().references(Plots, #id).nullable()();
   IntColumn get sessionId => integer().references(Sessions, #id)();
-  IntColumn get ratingRecordId => integer().references(RatingRecords, #id).nullable()();
+  IntColumn get ratingRecordId =>
+      integer().references(RatingRecords, #id).nullable()();
   TextColumn get deviationType => text()();
   TextColumn get description => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get raterName => text().nullable()();
+}
+
+class SeedingRecords extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get plotPk => integer().references(Plots, #id).nullable()();
+  IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
+  DateTimeColumn get seedingDate => dateTime()();
+  TextColumn get operatorName => text().nullable()();
+  TextColumn get comments => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+class ProtocolSeedingFields extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  TextColumn get fieldKey => text()();
+  TextColumn get fieldLabel => text()();
+  TextColumn get fieldType => text()();
+  TextColumn get unit => text().nullable()();
+  BoolColumn get isRequired => boolean().withDefault(const Constant(false))();
+  BoolColumn get isVisible => boolean().withDefault(const Constant(true))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  TextColumn get source => text().withDefault(const Constant('manual'))();
+}
+
+class SeedingFieldValues extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get seedingRecordId => integer().references(SeedingRecords, #id)();
+  TextColumn get fieldKey => text()();
+  TextColumn get fieldLabel => text()();
+  TextColumn get valueText => text().nullable()();
+  RealColumn get valueNumber => real().nullable()();
+  TextColumn get valueDate => text().nullable()();
+  BoolColumn get valueBool => boolean().nullable()();
+  TextColumn get unit => text().nullable()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+}
+
+/// Planned application slots (protocol). No Dart repository writes this table today;
+/// [ApplicationEvents.applicationSlotId] is optional. New installs create the table via `createAll` in `onCreate`.
+class ApplicationSlots extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  TextColumn get slotCode => text().withLength(min: 1, max: 20)();
+  TextColumn get timingLabel => text().nullable()();
+  TextColumn get methodDefault => text().withDefault(const Constant('spray'))();
+  TextColumn get plannedGrowthStage => text().nullable()();
+  TextColumn get protocolNotes => text().nullable()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Legacy int-key application events. UI-reachable via [applicationsForTrialProvider]
+/// → Plots tab (`plots_tab.dart` application selector / overlays). Canonical path:
+/// [TrialApplicationEvents] + [trialApplicationsForTrialProvider].
+class ApplicationEvents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
+  IntColumn get applicationSlotId =>
+      integer().references(ApplicationSlots, #id).nullable()();
+  IntColumn get applicationNumber => integer().withDefault(const Constant(1))();
+  TextColumn get timingLabel => text().nullable()();
+  TextColumn get method => text().withDefault(const Constant('spray'))();
+  TextColumn get status => text().withDefault(const Constant('planned'))();
+  DateTimeColumn get applicationDate => dateTime()();
+  TextColumn get growthStage => text().nullable()();
+  TextColumn get operatorName => text().nullable()();
+  TextColumn get equipment => text().nullable()();
+  TextColumn get weather => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  BoolColumn get partialFlag => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  TextColumn get completedBy => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Per-plot application coverage for a legacy [ApplicationEvents] row. Used from
+/// [ApplicationRepository] when Plots tab loads plot records for a selected event.
+class ApplicationPlotRecords extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get eventId => integer().references(ApplicationEvents, #id)();
+  IntColumn get plotPk => integer().references(Plots, #id)();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  TextColumn get status => text().withDefault(const Constant('applied'))();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 class AuditEvents extends Table {
@@ -134,6 +539,8 @@ class AuditEvents extends Table {
   TextColumn get eventType => text()();
   TextColumn get description => text()();
   TextColumn get performedBy => text().nullable()();
+  IntColumn get performedByUserId =>
+      integer().references(Users, #id).nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get metadata => text().nullable()();
 }
@@ -142,6 +549,7 @@ class ImportEvents extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
   TextColumn get fileName => text()();
+  TextColumn get savedFilePath => text().nullable()();
   TextColumn get status => text()();
   IntColumn get rowsImported => integer().withDefault(const Constant(0))();
   IntColumn get rowsSkipped => integer().withDefault(const Constant(0))();
@@ -149,34 +557,787 @@ class ImportEvents extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// One seeding event per trial (enforced by unique trial_id). Upsert via insertOnConflictUpdate.
+class SeedingEvents extends Table {
+  TextColumn get id => text().clientDefault(() => const Uuid().v4())();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  DateTimeColumn get seedingDate => dateTime()();
+  TextColumn get operatorName => text().nullable()();
+  TextColumn get seedLotNumber => text().nullable()();
+  RealColumn get seedingRate => real().nullable()();
+  TextColumn get seedingRateUnit => text().nullable()();
+  RealColumn get seedingDepth => real().nullable()();
+  RealColumn get rowSpacing => real().nullable()();
+  TextColumn get equipmentUsed => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get variety => text().nullable()();
+  TextColumn get seedTreatment => text().nullable()();
+  RealColumn get germinationPct => real().nullable()();
+  DateTimeColumn get emergenceDate => dateTime().nullable()();
+  RealColumn get emergencePct => real().nullable()();
+  TextColumn get plantingMethod => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Application events per trial (multiple per trial). FK types match Trials.id and Treatments.id (IntColumn).
+/// days_after_seeding is never stored — derived at read time from application_date minus seeding date.
+class TrialApplicationEvents extends Table {
+  TextColumn get id => text().clientDefault(() => const Uuid().v4())();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get treatmentId =>
+      integer().references(Treatments, #id).nullable()();
+  DateTimeColumn get applicationDate => dateTime()();
+  TextColumn get growthStageCode => text().nullable()();
+  TextColumn get operatorName => text().nullable()();
+  TextColumn get equipmentUsed => text().nullable()();
+  TextColumn get productName => text().nullable()();
+  RealColumn get rate => real().nullable()();
+  TextColumn get rateUnit => text().nullable()();
+  RealColumn get waterVolume => real().nullable()();
+  RealColumn get windSpeed => real().nullable()();
+  TextColumn get windDirection => text().nullable()();
+  RealColumn get temperature => real().nullable()();
+  RealColumn get humidity => real().nullable()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get applicationTime => text().nullable()();
+  TextColumn get applicationMethod => text().nullable()();
+  TextColumn get nozzleType => text().nullable()();
+  RealColumn get nozzleSpacingCm => real().nullable()();
+  RealColumn get operatingPressure => real().nullable()();
+  TextColumn get pressureUnit => text().nullable()();
+  RealColumn get groundSpeed => real().nullable()();
+  TextColumn get speedUnit => text().nullable()();
+  TextColumn get adjuvantName => text().nullable()();
+  RealColumn get adjuvantRate => real().nullable()();
+  TextColumn get adjuvantRateUnit => text().nullable()();
+  RealColumn get spraySolutionPh => real().nullable()();
+  TextColumn get waterVolumeUnit => text().nullable()();
+  RealColumn get cloudCoverPct => real().nullable()();
+  TextColumn get soilMoisture => text().nullable()();
+  RealColumn get soilTemperature => real().nullable()();
+  TextColumn get soilTempUnit => text().nullable()();
+  RealColumn get soilDepth => real().nullable()();
+  TextColumn get soilDepthUnit => text().nullable()();
+  RealColumn get treatedArea => real().nullable()();
+  TextColumn get treatedAreaUnit => text().nullable()();
+  TextColumn get plotsTreated => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  DateTimeColumn get appliedAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get lastEditedByUserId =>
+      integer().nullable().references(Users, #id)();
+  DateTimeColumn get lastEditedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Tank-mix products per trial application event (trial_application_events.id is TEXT).
+class TrialApplicationProducts extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get trialApplicationEventId =>
+      text().references(TrialApplicationEvents, #id,
+          onDelete: KeyAction.cascade)();
+  TextColumn get productName => text()();
+  RealColumn get rate => real().nullable()();
+  TextColumn get rateUnit => text().nullable()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+}
+
+class ImportSnapshots extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  TextColumn get sourceFile => text()();
+  TextColumn get sourceRoute => text()();
+  TextColumn get armVersion => text().nullable()();
+  TextColumn get rawHeaders => text()();
+  TextColumn get columnOrder => text()();
+  TextColumn get rowTypePatterns => text()();
+  IntColumn get plotCount => integer()();
+  IntColumn get treatmentCount => integer()();
+  IntColumn get assessmentCount => integer()();
+  TextColumn get identityColumns => text()();
+  TextColumn get assessmentTokens => text()();
+  TextColumn get treatmentTokens => text()();
+  TextColumn get plotTokens => text()();
+  TextColumn get unknownPatterns => text()();
+  BoolColumn get hasSubsamples => boolean().withDefault(const Constant(false))();
+  BoolColumn get hasMultiApplication =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get hasSparseData => boolean().withDefault(const Constant(false))();
+  BoolColumn get hasRepeatedCodes =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get rawFileChecksum => text()();
+  DateTimeColumn get capturedAt => dateTime()();
+}
+
+class CompatibilityProfiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get snapshotId => integer().references(ImportSnapshots, #id)();
+  TextColumn get exportRoute => text()();
+  TextColumn get columnMap => text()();
+  TextColumn get plotMap => text()();
+  TextColumn get treatmentMap => text()();
+  IntColumn get dataStartRow => integer()();
+  IntColumn get headerEndRow => integer()();
+  TextColumn get identityRowMarkers => text()();
+  TextColumn get columnOrderOnExport => text()();
+  TextColumn get identityFieldOrder => text()();
+  TextColumn get knownUnsupported => text()();
+  TextColumn get exportConfidence => text()();
+  TextColumn get exportBlockReason => text().nullable()();
+  BoolColumn get roundTripValidated =>
+      boolean().withDefault(const Constant(false))();
+  DateTimeColumn get roundTripValidatedAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get lastValidatedAt => dateTime().nullable()();
+}
+
+class CropDescriptions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id).unique()();
+
+  DateTimeColumn get plantingDate => dateTime().nullable()();
+  DateTimeColumn get transplantingDate => dateTime().nullable()();
+  DateTimeColumn get emergenceDate => dateTime().nullable()();
+  DateTimeColumn get harvestDate => dateTime().nullable()();
+
+  TextColumn get varietyOrHybrid => text().nullable()();
+  TextColumn get seedLot => text().nullable()();
+
+  TextColumn get seedbedPreparation => text().nullable()();
+  TextColumn get tillageType => text().nullable()();
+
+  RealColumn get standardMoisture => real().nullable()();
+  RealColumn get moistureAtHarvest => real().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get createdBy => text().nullable()();
+}
+
+class TrialContacts extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id).unique()();
+
+  TextColumn get trialDirector => text().nullable()();
+  TextColumn get cooperator => text().nullable()();
+  TextColumn get sponsor => text().nullable()();
+  TextColumn get applicator => text().nullable()();
+  TextColumn get assessor => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get createdBy => text().nullable()();
+}
+
+class YieldDetails extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get trialId => integer().references(Trials, #id)();
+
+  IntColumn get plotId => integer().references(Plots, #id).nullable()();
+  IntColumn get trialAssessmentId =>
+      integer().references(TrialAssessments, #id).nullable()();
+
+  RealColumn get harvestWeight => real().nullable()();
+  RealColumn get harvestMoisture => real().nullable()();
+  RealColumn get harvestedArea => real().nullable()();
+  RealColumn get convertedYield => real().nullable()();
+  RealColumn get standardMoistureUsed => real().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get createdBy => text().nullable()();
+}
+
+/// Manual field weather snapshot; one row per parent (e.g. rating session).
+class WeatherSnapshots extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get uuid => text().unique()();
+  IntColumn get trialId => integer().references(Trials, #id,
+      onDelete: KeyAction.cascade)();
+  TextColumn get parentType =>
+      text().withDefault(const Constant('rating_session'))();
+  IntColumn get parentId => integer().references(Sessions, #id,
+      onDelete: KeyAction.cascade)();
+  TextColumn get source => text().withDefault(const Constant('manual'))();
+  RealColumn get temperature => real().nullable()();
+  TextColumn get temperatureUnit =>
+      text().withDefault(const Constant('C'))();
+  RealColumn get humidity => real().nullable()();
+  RealColumn get windSpeed => real().nullable()();
+  TextColumn get windSpeedUnit =>
+      text().withDefault(const Constant('km/h'))();
+  TextColumn get windDirection => text().nullable()();
+  TextColumn get cloudCover => text().nullable()();
+  TextColumn get precipitation => text().nullable()();
+  TextColumn get soilCondition => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  /// UTC epoch milliseconds when conditions were observed.
+  IntColumn get recordedAt => integer()();
+  IntColumn get createdAt => integer()();
+  IntColumn get modifiedAt => integer()();
+  TextColumn get createdBy => text()();
+}
+
+/// Latest export-time diagnostics snapshot per trial (replaced on each publish).
+class TrialExportDiagnostics extends Table {
+  IntColumn get trialId => integer().references(Trials, #id)();
+  DateTimeColumn get publishedAt => dateTime()();
+  TextColumn get attemptLabel => text()();
+  TextColumn get findingsJson => text()();
+  IntColumn get payloadVersion => integer().withDefault(const Constant(1))();
+
+  @override
+  Set<Column> get primaryKey => {trialId};
+}
+
 @DriftDatabase(tables: [
+  Users,
   Trials,
   Treatments,
+  TreatmentComponents,
   Assessments,
+  AssessmentDefinitions,
+  TrialAssessments,
   Plots,
+  Assignments,
   Sessions,
   SessionAssessments,
   RatingRecords,
+  RatingCorrections,
   Notes,
   Photos,
   PlotFlags,
   DeviationFlags,
+  SeedingRecords,
+  ProtocolSeedingFields,
+  SeedingFieldValues,
+  ApplicationSlots,
+  ApplicationEvents,
+  ApplicationPlotRecords,
   AuditEvents,
   ImportEvents,
+  SeedingEvents,
+  TrialApplicationEvents,
+  TrialApplicationProducts,
+  ImportSnapshots,
+  CompatibilityProfiles,
+  CropDescriptions,
+  TrialContacts,
+  YieldDetails,
+  TrialExportDiagnostics,
+  WeatherSnapshots,
 ])
 class AppDatabase extends _$AppDatabase {
+  /// In-memory database for testing only.
+  AppDatabase.forTesting(super.e);
+
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 48;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (Migrator m) async {
-      await m.createAll();
-      await _createIndexes();
-    },
-  );
+        onCreate: (Migrator m) async {
+          await m.createAll();
+          await _createIndexes();
+          await _seedAssessmentDefinitions();
+        },
+        onUpgrade: (Migrator m, int from, int to) async {
+          if (from < 2) {
+            await m.createTable(seedingRecords);
+            await m.createTable(protocolSeedingFields);
+            await m.createTable(seedingFieldValues);
+          }
+          if (from < 6) {
+            await m.addColumn(plots, plots.fieldRow);
+            await m.addColumn(plots, plots.fieldColumn);
+          }
+          if (from < 7) {
+            await m.createTable(users);
+            await m.addColumn(sessions, sessions.createdByUserId);
+            await m.addColumn(auditEvents, auditEvents.performedByUserId);
+          }
+          if (from < 8) {
+            await m.createTable(ratingCorrections);
+            await m.addColumn(ratingRecords, ratingRecords.createdAppVersion);
+            await m.addColumn(ratingRecords, ratingRecords.createdDeviceInfo);
+            await m.addColumn(ratingRecords, ratingRecords.capturedLatitude);
+            await m.addColumn(ratingRecords, ratingRecords.capturedLongitude);
+          }
+          if (from < 9) {
+            await m.addColumn(plots, plots.assignmentSource);
+            await m.addColumn(plots, plots.assignmentUpdatedAt);
+          }
+          if (from < 10) {
+            await m.createTable(assignments);
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_assignments_trial_plot ON assignments(trial_id, plot_id)',
+            );
+            // Drift DateTimeColumn expects INTEGER (unix seconds), not text from datetime('now').
+            await customStatement('''
+              INSERT INTO assignments (trial_id, plot_id, treatment_id, replication, range, "column", assignment_source, assigned_at, created_at, updated_at)
+              SELECT trial_id, id, treatment_id, rep, field_row, field_column, assignment_source,
+                CASE WHEN assignment_updated_at IS NULL THEN NULL
+                     WHEN typeof(assignment_updated_at) = 'text' THEN strftime('%s', assignment_updated_at)
+                     ELSE assignment_updated_at END,
+                strftime('%s', 'now'),
+                strftime('%s', 'now')
+              FROM plots
+            ''');
+          }
+          if (from < 11) {
+            await m.createTable(assessmentDefinitions);
+            await m.createTable(trialAssessments);
+            await m.addColumn(
+                sessionAssessments, sessionAssessments.trialAssessmentId);
+            await m.addColumn(ratingRecords, ratingRecords.trialAssessmentId);
+            await _seedAssessmentDefinitions();
+          }
+          // Repair assignments + assessment_definitions: v10/v11 wrote datetime('now') (text); Drift expects INTEGER unix seconds.
+          if (from < 12) {
+            await customStatement(
+              "UPDATE assignments SET created_at = strftime('%s', created_at) WHERE typeof(created_at) = 'text'",
+            );
+            await customStatement(
+              "UPDATE assignments SET updated_at = strftime('%s', updated_at) WHERE typeof(updated_at) = 'text'",
+            );
+            await customStatement(
+              "UPDATE assignments SET assigned_at = strftime('%s', assigned_at) WHERE assigned_at IS NOT NULL AND typeof(assigned_at) = 'text'",
+            );
+            await customStatement(
+              "UPDATE assessment_definitions SET created_at = strftime('%s', created_at) WHERE typeof(created_at) = 'text'",
+            );
+            await customStatement(
+              "UPDATE assessment_definitions SET updated_at = strftime('%s', updated_at) WHERE typeof(updated_at) = 'text'",
+            );
+          }
+          if (from < 13) {
+            await m.addColumn(importEvents, importEvents.savedFilePath);
+          }
+          if (from < 14) {
+            await m.addColumn(sessionAssessments, sessionAssessments.sortOrder);
+          }
+          if (from < 15) {
+            await m.addColumn(trials, trials.plotDimensions);
+            await m.addColumn(trials, trials.plotRows);
+            await m.addColumn(trials, trials.plotSpacing);
+          }
+          if (from < 16) {
+            await m.createTable(seedingEvents);
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_seeding_events_trial ON seeding_events(trial_id)',
+            );
+          }
+          if (from < 17) {
+            await m.createTable(trialApplicationEvents);
+          }
+          if (from < 18) {
+            await m.addColumn(trials, trials.sponsor);
+            await m.addColumn(trials, trials.protocolNumber);
+            await m.addColumn(trials, trials.investigatorName);
+            await m.addColumn(trials, trials.cooperatorName);
+            await m.addColumn(trials, trials.siteId);
+            await m.addColumn(trials, trials.fieldName);
+            await m.addColumn(trials, trials.county);
+            await m.addColumn(trials, trials.stateProvince);
+            await m.addColumn(trials, trials.country);
+            await m.addColumn(trials, trials.latitude);
+            await m.addColumn(trials, trials.longitude);
+            await m.addColumn(trials, trials.elevationM);
+            await m.addColumn(trials, trials.experimentalDesign);
+            await m.addColumn(trials, trials.plotLengthM);
+            await m.addColumn(trials, trials.plotWidthM);
+            await m.addColumn(trials, trials.alleyLengthM);
+            await m.addColumn(trials, trials.previousCrop);
+            await m.addColumn(trials, trials.tillage);
+            await m.addColumn(trials, trials.irrigated);
+            await m.addColumn(trials, trials.soilSeries);
+            await m.addColumn(trials, trials.soilTexture);
+            await m.addColumn(trials, trials.organicMatterPct);
+            await m.addColumn(trials, trials.soilPh);
+            await m.addColumn(trials, trials.harvestDate);
+            await m.addColumn(trials, trials.studyType);
+          }
+          if (from < 19) {
+            await m.addColumn(seedingEvents, seedingEvents.variety);
+            await m.addColumn(seedingEvents, seedingEvents.seedTreatment);
+            await m.addColumn(seedingEvents, seedingEvents.germinationPct);
+            await m.addColumn(seedingEvents, seedingEvents.emergenceDate);
+            await m.addColumn(seedingEvents, seedingEvents.emergencePct);
+            await m.addColumn(seedingEvents, seedingEvents.plantingMethod);
+          }
+          if (from < 20) {
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.applicationTime);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.applicationMethod);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.nozzleType);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.nozzleSpacingCm);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.operatingPressure);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.pressureUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.groundSpeed);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.speedUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.adjuvantName);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.adjuvantRate);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.adjuvantRateUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.spraySolutionPh);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.waterVolumeUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.cloudCoverPct);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.soilMoisture);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.treatedArea);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.treatedAreaUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.plotsTreated);
+          }
+          if (from < 21) {
+            await m.addColumn(treatments, treatments.treatmentType);
+            await m.addColumn(treatments, treatments.timingCode);
+            await m.addColumn(treatments, treatments.eppoCode);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.activeIngredientPct);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.formulationType);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.manufacturer);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.registrationNumber);
+            await m.addColumn(treatmentComponents,
+                treatmentComponents.eppoCode);
+          }
+          if (from < 22) {
+            await m.addColumn(plots, plots.plotLengthM);
+            await m.addColumn(plots, plots.plotWidthM);
+            await m.addColumn(plots, plots.plotAreaM2);
+            await m.addColumn(plots, plots.harvestLengthM);
+            await m.addColumn(plots, plots.harvestWidthM);
+            await m.addColumn(plots, plots.harvestAreaM2);
+            await m.addColumn(plots, plots.plotDirection);
+            await m.addColumn(plots, plots.soilSeries);
+            await m.addColumn(plots, plots.plotNotes);
+          }
+          if (from < 23) {
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.timingCode);
+            await m.addColumn(assessmentDefinitions,
+                assessmentDefinitions.daysAfterTreatment);
+            await m.addColumn(assessmentDefinitions,
+                assessmentDefinitions.assessmentMethod);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.validMin);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.validMax);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.eppoCode);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.cropPart);
+            await m.addColumn(assessmentDefinitions,
+                assessmentDefinitions.timingDescription);
+          }
+          if (from < 24) {
+            await m.addColumn(ratingRecords, ratingRecords.ratingTime);
+            await m.addColumn(ratingRecords, ratingRecords.ratingMethod);
+            await m.addColumn(ratingRecords, ratingRecords.confidence);
+            await m.addColumn(ratingRecords, ratingRecords.amended);
+            await m.addColumn(ratingRecords, ratingRecords.originalValue);
+            await m.addColumn(ratingRecords, ratingRecords.amendmentReason);
+            await m.addColumn(ratingRecords, ratingRecords.amendedBy);
+            await m.addColumn(ratingRecords, ratingRecords.amendedAt);
+          }
+          if (from < 25) {
+            await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.soilTemperature);
+            await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.soilTempUnit);
+            await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.soilDepth);
+            await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.soilDepthUnit);
+          }
+          if (from < 26) {
+            await m.addColumn(trials, trials.isDeleted);
+            await m.addColumn(trials, trials.deletedAt);
+            await m.addColumn(trials, trials.deletedBy);
+            await m.addColumn(sessions, sessions.isDeleted);
+            await m.addColumn(sessions, sessions.deletedAt);
+            await m.addColumn(sessions, sessions.deletedBy);
+            await m.addColumn(plots, plots.isDeleted);
+            await m.addColumn(plots, plots.deletedAt);
+            await m.addColumn(plots, plots.deletedBy);
+            await m.addColumn(ratingRecords, ratingRecords.isDeleted);
+            await m.addColumn(ratingRecords, ratingRecords.deletedAt);
+            await m.addColumn(ratingRecords, ratingRecords.deletedBy);
+          }
+          if (from < 27) {
+            await m.addColumn(
+                ratingRecords, ratingRecords.lastEditedByUserId);
+            await m.addColumn(ratingRecords, ratingRecords.lastEditedAt);
+          }
+          if (from < 28) {
+            await m.addColumn(plots, plots.isGuardRow);
+          }
+          if (from < 29) {
+            await m.createTable(trialApplicationProducts);
+            await customStatement('''
+INSERT INTO trial_application_products (
+  trial_application_event_id, product_name, rate, rate_unit, sort_order)
+SELECT id, product_name, rate, rate_unit, 0
+FROM trial_application_events
+WHERE product_name IS NOT NULL AND LENGTH(TRIM(product_name)) > 0
+''');
+          }
+          if (from < 30) {
+            await m.addColumn(trials, trials.workspaceType);
+          }
+          if (from < 31) {
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.resultDirection);
+          }
+          if (from < 32) {
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.appliedAt);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.status);
+            await customStatement('''
+UPDATE trial_application_events
+SET status = 'applied',
+    applied_at = COALESCE(application_date, created_at)
+''');
+          }
+          if (from < 33) {
+            await m.addColumn(seedingEvents, seedingEvents.completedAt);
+            await m.addColumn(seedingEvents, seedingEvents.status);
+            await customStatement('''
+UPDATE seeding_events
+SET status = 'completed',
+    completed_at = COALESCE(seeding_date, created_at)
+''');
+          }
+          if (from < 35) {
+            await m.createTable(importSnapshots);
+            await m.createTable(compatibilityProfiles);
+            await m.addColumn(trials, trials.isArmLinked);
+            await m.addColumn(trials, trials.armImportedAt);
+            await m.addColumn(trials, trials.armSourceFile);
+            await m.addColumn(trials, trials.armVersion);
+          }
+          if (from < 36) {
+            await m.addColumn(plots, plots.excludeFromAnalysis);
+            await m.addColumn(plots, plots.exclusionReason);
+            await m.addColumn(plots, plots.damageType);
+
+            await m.addColumn(trialAssessments, trialAssessments.pestCode);
+            await m.addColumn(trialAssessments, trialAssessments.pestName);
+            await m.addColumn(trialAssessments, trialAssessments.eppoCodeLocal);
+            await m.addColumn(trialAssessments, trialAssessments.bbchScale);
+            await m.addColumn(
+                trialAssessments, trialAssessments.cropStageAtAssessment);
+
+            await m.createTable(cropDescriptions);
+            await m.createTable(trialContacts);
+            await m.createTable(yieldDetails);
+          }
+          if (from < 37) {
+            await m.addColumn(treatments, treatments.isDeleted);
+            await m.addColumn(treatments, treatments.deletedAt);
+            await m.addColumn(treatments, treatments.deletedBy);
+            await m.addColumn(treatmentComponents, treatmentComponents.isDeleted);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.deletedAt);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.deletedBy);
+            await m.addColumn(photos, photos.isDeleted);
+            await m.addColumn(photos, photos.deletedAt);
+            await m.addColumn(photos, photos.deletedBy);
+          }
+          if (from < 38) {
+            await m.addColumn(seedingEvents, seedingEvents.lastEditedByUserId);
+            await m.addColumn(seedingEvents, seedingEvents.lastEditedAt);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.lastEditedByUserId);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.lastEditedAt);
+          }
+          if (from < 39) {
+            await m.addColumn(treatments, treatments.lastEditedByUserId);
+            await m.addColumn(treatments, treatments.lastEditedAt);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.lastEditedByUserId);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.lastEditedAt);
+          }
+          if (from < 40) {
+            await m.createTable(trialExportDiagnostics);
+          }
+          if (from < 41) {
+            await m.addColumn(plots, plots.armPlotNumber);
+            await m.addColumn(plots, plots.armImportDataRowIndex);
+            await m.addColumn(
+                trialAssessments, trialAssessments.armImportColumnIndex);
+            await m.addColumn(trials, trials.armImportSessionId);
+          }
+          if (from < 42) {
+            await m.addColumn(trials, trials.armLinkedShellPath);
+            await m.addColumn(trials, trials.armLinkedShellAt);
+          }
+          if (from < 43) {
+            await m.addColumn(
+                trialAssessments, trialAssessments.armShellColumnId);
+            await m.addColumn(
+                trialAssessments, trialAssessments.armShellRatingDate);
+            await m.addColumn(trialAssessments, trialAssessments.seName);
+            await m.addColumn(trialAssessments, trialAssessments.seDescription);
+            await m.addColumn(trialAssessments, trialAssessments.armRatingType);
+          }
+          if (from < 44) {
+            await m.createTable(weatherSnapshots);
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_snapshots_parent ON weather_snapshots(parent_type, parent_id)',
+            );
+          }
+          // v44 tables lacked ON DELETE CASCADE on trial/session FKs; recreate so
+          // deleting a trial or session removes dependent weather rows.
+          if (from < 45) {
+            await customStatement(
+              'ALTER TABLE weather_snapshots RENAME TO weather_snapshots_old',
+            );
+            await m.createTable(weatherSnapshots);
+            await customStatement(
+              'INSERT INTO weather_snapshots SELECT * FROM weather_snapshots_old',
+            );
+            await customStatement('DROP TABLE weather_snapshots_old');
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_snapshots_parent ON weather_snapshots(parent_type, parent_id)',
+            );
+          }
+          if (from < 46) {
+            await m.addColumn(sessions, sessions.cropStageBbch);
+          }
+          if (from < 47) {
+            await customStatement('''
+UPDATE plots SET plot_notes = CASE
+  WHEN notes IS NOT NULL AND TRIM(notes) != '' AND plot_notes IS NOT NULL AND TRIM(plot_notes) != ''
+    THEN notes || char(10) || '---' || char(10) || plot_notes
+  WHEN notes IS NOT NULL AND TRIM(notes) != ''
+    THEN notes
+  ELSE plot_notes
+END
+WHERE notes IS NOT NULL AND TRIM(notes) != ''
+   OR plot_notes IS NOT NULL
+''');
+            await customStatement('ALTER TABLE plots DROP COLUMN notes');
+            await customStatement('ALTER TABLE notes RENAME TO notes_old');
+            await m.createTable(notes);
+            await customStatement('''
+INSERT INTO notes (
+  id, trial_id, plot_pk, session_id, content, created_at, rater_name,
+  updated_at, updated_by, is_deleted, deleted_at, deleted_by
+)
+SELECT
+  id,
+  trial_id,
+  plot_pk,
+  session_id,
+  content,
+  CASE WHEN typeof(created_at) = 'text' THEN strftime('%s', created_at) ELSE created_at END,
+  rater_name,
+  NULL,
+  NULL,
+  0,
+  NULL,
+  NULL
+FROM notes_old
+''');
+            await customStatement('DROP TABLE notes_old');
+            await customStatement('''
+INSERT OR REPLACE INTO sqlite_sequence (name, seq)
+SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
+''');
+          }
+          await _createIndexes();
+        },
+      );
+
+  /// Call after reset or when definitions table is empty. Idempotent: only inserts if table is empty.
+  Future<void> ensureAssessmentDefinitionsSeeded() async {
+    final existing = await select(assessmentDefinitions).get();
+    if (existing.isEmpty) {
+      await _seedAssessmentDefinitions();
+    }
+  }
+
+  Future<void> _seedAssessmentDefinitions() async {
+    const rows = [
+      ['CROP_INJURY', 'Crop injury', 'crop_injury', 'numeric', '%', 0.0, 100.0],
+      [
+        'DISEASE_SEV',
+        'Disease severity',
+        'disease',
+        'numeric',
+        '%',
+        0.0,
+        100.0
+      ],
+      ['WEED_COVER', 'Weed cover', 'weed', 'numeric', '%', 0.0, 100.0],
+      ['PLANT_HEIGHT', 'Plant height', 'growth', 'numeric', 'cm', 0.0, 9999.0],
+      [
+        'STAND_COUNT',
+        'Stand count',
+        'growth',
+        'numeric',
+        'plants/plot',
+        0.0,
+        99999.0
+      ],
+      ['YIELD', 'Yield', 'yield', 'numeric', 'kg/ha', 0.0, 99999.0],
+      [
+        'PHENOLOGY_BBCH',
+        'Growth stage (BBCH)',
+        'phenology',
+        'numeric',
+        null,
+        0.0,
+        99.0
+      ],
+      ['QUALITY_GRADE', 'Quality grade', 'quality', 'numeric', null, 1.0, 9.0],
+      ['NOTES', 'Notes / observation', 'custom', 'text', null, null, null],
+    ];
+    for (final r in rows) {
+      await customStatement(
+        'INSERT INTO assessment_definitions (code, name, category, data_type, unit, scale_min, scale_max, result_direction, is_system, is_active, created_at, updated_at) '
+        "VALUES (?, ?, ?, ?, ?, ?, ?, 'neutral', 1, 1, strftime('%s','now'), strftime('%s','now'))",
+        [r[0], r[1], r[2], r[3], r[4], r[5], r[6]],
+      );
+    }
+  }
 
   Future<void> _createIndexes() async {
     await customStatement('''
@@ -203,6 +1364,36 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_audit_events
       ON audit_events(trial_id, created_at)
+    ''');
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_seeding_events_trial ON seeding_events(trial_id)',
+    );
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_snapshots_parent ON weather_snapshots(parent_type, parent_id)',
+    );
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_treatments_trial
+      ON treatments(trial_id, is_deleted)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_trial_assessments_trial
+      ON trial_assessments(trial_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_assignments_plot
+      ON assignments(plot_id, trial_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_assessments_trial
+      ON assessments(trial_id, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_trials_workspace
+      ON trials(workspace_type, is_deleted)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_sessions_trial
+      ON sessions(trial_id)
     ''');
   }
 }

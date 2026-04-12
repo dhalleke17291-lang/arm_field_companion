@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
 import 'dart:io';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import '../../core/trial_state.dart';
 import 'usecases/import_plots_usecase.dart';
 
 class ImportPlotsScreen extends ConsumerStatefulWidget {
@@ -21,15 +23,13 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
   ImportPlotsResult? _lastResult;
   String? _fileName;
   List<Map<String, dynamic>>? _previewRows;
+  ImportReviewResult? _reviewResult;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Import Plots'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: const Color(0xFFF4F1EB),
+      appBar: const GradientScreenHeader(title: 'Import Plots'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -108,36 +108,44 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
               ),
             ),
 
-            // Preview
+            // Preview + Import Review (Charter PART 16)
             if (_previewRows != null) ...[
               const SizedBox(height: 20),
               Text(
                 'Preview — first 5 rows of ${_previewRows!.length} total',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 14),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 8),
               _buildPreviewTable(),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _isLoading ? null : _importPlots,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.download_done),
-                  label: Text(_isLoading
-                      ? 'Importing...'
-                      : 'Import ${_previewRows!.length} Plots'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52),
+              if (_reviewResult != null) ...[
+                const SizedBox(height: 20),
+                _buildImportReviewCard(),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _isLoading || !(_reviewResult!.canProceed)
+                        ? null
+                        : _importPlots,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.download_done),
+                    label: Text(_isLoading
+                        ? 'Importing...'
+                        : _reviewResult!.canProceed
+                            ? 'Approve and Import ${_reviewResult!.matchedSuccessfullyCount} Plots'
+                            : 'Fix errors to enable import'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 52),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
 
             // Result
@@ -166,18 +174,108 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
         columns: columns
             .map((col) => DataColumn(
                   label: Text(col,
-                      style:
-                          const TextStyle(fontWeight: FontWeight.bold)),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ))
             .toList(),
         rows: preview
             .map((row) => DataRow(
                   cells: columns
-                      .map((col) =>
-                          DataCell(Text(row[col]?.toString() ?? '')))
+                      .map((col) => DataCell(Text(row[col]?.toString() ?? '')))
                       .toList(),
                 ))
             .toList(),
+      ),
+    );
+  }
+
+  Widget _buildImportReviewCard() {
+    final r = _reviewResult!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.fact_check_outlined,
+                  color: Colors.blue.shade700, size: 20),
+              const SizedBox(width: 8),
+              Text('Import Review',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.blue.shade700)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _reviewChip(
+              'Matched successfully', r.matchedSuccessfullyCount, Colors.green),
+          if (r.autoHandledMessages.isNotEmpty)
+            _reviewChip(
+                'Auto-handled', r.autoHandledMessages.length, Colors.orange),
+          if (r.needsUserReviewItems.isNotEmpty)
+            _reviewChip('Needs user review', r.needsUserReviewItems.length,
+                Colors.amber),
+          if (r.mustFixErrors.isNotEmpty)
+            _reviewChip(
+                'Must fix before import', r.mustFixErrors.length, Colors.red),
+          if (r.mustFixErrors.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...r.mustFixErrors.map((e) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 2),
+                  child: Text('• $e',
+                      style: const TextStyle(fontSize: 12, color: Colors.red)),
+                )),
+          ],
+          if (r.autoHandledMessages.isNotEmpty && r.mustFixErrors.isEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Auto-handled:',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange.shade800)),
+            ...r.autoHandledMessages.take(5).map((e) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 1),
+                  child: Text('• $e', style: const TextStyle(fontSize: 11)),
+                )),
+          ],
+          if (r.needsUserReviewItems.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            ...r.needsUserReviewItems.map((e) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 1),
+                  child: Text('• $e',
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.amber.shade900)),
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _reviewChip(String label, int count, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('$label: $count',
+              style:
+                  TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ],
       ),
     );
   }
@@ -192,9 +290,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
         color: isSuccess ? Colors.green.shade50 : Colors.red.shade50,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-            color: isSuccess
-                ? Colors.green.shade300
-                : Colors.red.shade300),
+            color: isSuccess ? Colors.green.shade300 : Colors.red.shade300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,9 +303,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                isSuccess
-                    ? 'Import Successful'
-                    : 'Import Failed',
+                isSuccess ? 'Import Successful' : 'Import Failed',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: isSuccess ? Colors.green : Colors.red,
@@ -255,6 +349,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
     setState(() {
       _fileName = file.name;
       _lastResult = null;
+      _reviewResult = null;
     });
 
     try {
@@ -262,7 +357,10 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
       final rows = const CsvToListConverter(eol: '\n').convert(content);
 
       if (rows.isEmpty) {
-        setState(() => _previewRows = []);
+        setState(() {
+          _previewRows = [];
+          _reviewResult = null;
+        });
         return;
       }
 
@@ -276,7 +374,20 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
         return map;
       }).toList();
 
-      setState(() => _previewRows = dataRows);
+      final useCase = ImportPlotsUseCase(
+        ref.read(plotRepositoryProvider),
+        ref.read(trialRepositoryProvider),
+      );
+      final reviewResult = useCase.analyzeForImport(ImportPlotsInput(
+        trialId: widget.trial.id,
+        rows: dataRows,
+        fileName: file.name,
+      ));
+
+      setState(() {
+        _previewRows = dataRows;
+        _reviewResult = reviewResult;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -289,7 +400,14 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
   }
 
   Future<void> _importPlots() async {
-    if (_previewRows == null || _previewRows!.isEmpty) return;
+    if (_reviewResult == null || !_reviewResult!.canProceed) return;
+    final normalizedRows = _reviewResult!.normalizedRows!;
+    if (!canEditProtocol(widget.trial)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(protocolEditBlockedMessage(widget.trial))),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -299,7 +417,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
 
     final result = await useCase.execute(ImportPlotsInput(
       trialId: widget.trial.id,
-      rows: _previewRows!,
+      rows: normalizedRows,
       fileName: _fileName ?? 'unknown.csv',
     ));
 
@@ -310,6 +428,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
       if (result.success) {
         _previewRows = null;
         _fileName = null;
+        _reviewResult = null;
       }
     });
   }

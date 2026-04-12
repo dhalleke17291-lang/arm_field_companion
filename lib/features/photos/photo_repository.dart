@@ -1,5 +1,7 @@
-import 'package:drift/drift.dart';
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 
 class PhotoRepository {
@@ -7,7 +9,6 @@ class PhotoRepository {
 
   PhotoRepository(this._db);
 
-  // Safe photo insert — DB record first, then file rename
   Future<Photo> savePhoto({
     required int trialId,
     required int plotPk,
@@ -16,9 +17,9 @@ class PhotoRepository {
     required String finalPath,
     String? caption,
     String? raterName,
+    int? performedByUserId,
   }) async {
     return _db.transaction(() async {
-      // Step 1 — insert DB record with temp path
       final photoId = await _db.into(_db.photos).insert(
             PhotosCompanion.insert(
               trialId: trialId,
@@ -31,13 +32,11 @@ class PhotoRepository {
             ),
           );
 
-      // Step 2 — rename temp file to final path
       final tempFile = File(tempPath);
       if (await tempFile.exists()) {
         await tempFile.rename(finalPath);
       }
 
-      // Step 3 — mark as final
       await (_db.update(_db.photos)..where((p) => p.id.equals(photoId)))
           .write(const PhotosCompanion(
         status: Value('final'),
@@ -52,16 +51,23 @@ class PhotoRepository {
               eventType: 'PHOTO_CAPTURED',
               description: 'Photo saved for plot $plotPk',
               performedBy: Value(raterName),
+              performedByUserId: Value(performedByUserId),
             ),
           );
 
-      return await (_db.select(_db.photos)
-            ..where((p) => p.id.equals(photoId)))
+      return await (_db.select(_db.photos)..where((p) => p.id.equals(photoId)))
           .getSingle();
     });
   }
 
-  // Get photos for a plot
+  Future<int> getPhotoCountForSession(int sessionId) async {
+    final list = await (_db.select(_db.photos)
+          ..where((p) =>
+              p.sessionId.equals(sessionId) & p.isDeleted.equals(false)))
+        .get();
+    return list.length;
+  }
+
   Future<List<Photo>> getPhotosForPlot({
     required int trialId,
     required int plotPk,
@@ -71,11 +77,70 @@ class PhotoRepository {
           ..where((p) =>
               p.trialId.equals(trialId) &
               p.plotPk.equals(plotPk) &
-              p.sessionId.equals(sessionId)))
+              p.sessionId.equals(sessionId) &
+              p.isDeleted.equals(false))
+          ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
         .get();
   }
 
-  // Startup cleanup — remove orphan temp files
+  Future<List<Photo>> getPhotosForPlotInSession({
+    required int trialId,
+    required int plotPk,
+    required int sessionId,
+  }) {
+    return getPhotosForPlot(
+      trialId: trialId,
+      plotPk: plotPk,
+      sessionId: sessionId,
+    );
+  }
+
+  /// Soft-deletes a photo row. Does not delete the file on disk.
+  Future<void> softDeletePhoto(int id,
+      {String? deletedBy, int? deletedByUserId}) async {
+    final photo = await (_db.select(_db.photos)
+          ..where((p) => p.id.equals(id) & p.isDeleted.equals(false)))
+        .getSingleOrNull();
+    if (photo == null) return;
+
+    final now = DateTime.now().toUtc();
+    await _db.transaction(() async {
+      await (_db.update(_db.photos)..where((p) => p.id.equals(id))).write(
+        PhotosCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(now),
+          deletedBy: Value(deletedBy),
+        ),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(photo.trialId),
+              sessionId: Value(photo.sessionId),
+              plotPk: Value(photo.plotPk),
+              eventType: 'PHOTO_DELETED',
+              description: 'Photo soft-deleted',
+              performedBy: Value(deletedBy),
+              performedByUserId: Value(deletedByUserId),
+              metadata: Value(jsonEncode({
+                'file_path': photo.filePath,
+              })),
+            ),
+          );
+    });
+  }
+
+  /// Soft-deleted photos for a session (Recovery), newest first.
+  Future<List<Photo>> getDeletedPhotosForSession(int sessionId) {
+    return (_db.select(_db.photos)
+          ..where((p) =>
+              p.sessionId.equals(sessionId) & p.isDeleted.equals(true))
+          ..orderBy([(p) => OrderingTerm.desc(p.deletedAt)]))
+        .get();
+  }
+
+  /// Hard delete intentional — temp/pending rows were never finalized and have
+  /// no audit value.
   Future<void> cleanupOrphanTempFiles() async {
     final pendingPhotos = await (_db.select(_db.photos)
           ..where((p) => p.status.equals('pending')))
@@ -88,12 +153,10 @@ class PhotoRepository {
           await tempFile.delete();
         }
       }
-      await (_db.delete(_db.photos)..where((p) => p.id.equals(photo.id)))
-          .go();
+      await (_db.delete(_db.photos)..where((p) => p.id.equals(photo.id))).go();
     }
   }
 
-  // Watch photos for a plot reactively
   Stream<List<Photo>> watchPhotosForPlot({
     required int trialId,
     required int plotPk,
@@ -103,7 +166,31 @@ class PhotoRepository {
           ..where((p) =>
               p.trialId.equals(trialId) &
               p.plotPk.equals(plotPk) &
-              p.sessionId.equals(sessionId)))
+              p.sessionId.equals(sessionId) &
+              p.isDeleted.equals(false))
+          ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
         .watch();
+  }
+
+  Stream<List<Photo>> watchPhotosForTrial(int trialId) {
+    return (_db.select(_db.photos)
+          ..where((p) =>
+              p.trialId.equals(trialId) & p.isDeleted.equals(false))
+          ..orderBy([
+            (p) => OrderingTerm.asc(p.sessionId),
+            (p) => OrderingTerm.asc(p.createdAt),
+          ]))
+        .watch();
+  }
+
+  Future<List<Photo>> getPhotosForTrial(int trialId) {
+    return (_db.select(_db.photos)
+          ..where((p) =>
+              p.trialId.equals(trialId) & p.isDeleted.equals(false))
+          ..orderBy([
+            (p) => OrderingTerm.asc(p.sessionId),
+            (p) => OrderingTerm.asc(p.createdAt),
+          ]))
+        .get();
   }
 }
