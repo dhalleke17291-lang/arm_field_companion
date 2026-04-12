@@ -131,9 +131,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     }
   }
 
-  /// Session tools (BBCH, weather, checklist, completeness) below the gradient
-  /// header so they stay visible without horizontal scrolling in the app bar.
-  Widget _buildSessionToolsStrip(
+  /// Compact BBCH, weather, checklist, and completeness row (below Plots/Rate dock).
+  Widget _buildSessionToolsRow(
     BuildContext context,
     Trial trial,
     Session session,
@@ -159,24 +158,22 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       );
     }
 
-    Widget toolCell({
+    Widget toolSlot({
       required String tooltip,
       required Widget icon,
       required String label,
       required VoidCallback onTap,
     }) {
-      return Tooltip(
-        message: tooltip,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(10),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 52),
+      return Expanded(
+        child: Tooltip(
+          message: tooltip,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(10),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
@@ -204,150 +201,82 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       );
     }
 
+    final bbchIcon = Icon(
+      live.cropStageBbch != null ? Icons.eco : Icons.eco_outlined,
+      size: 22,
+      color: AppDesignTokens.primary,
+    );
+    final weatherIcon = Icon(
+      weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
+      size: 22,
+      color: AppDesignTokens.primary,
+    );
+    const checklistIcon = Icon(
+      Icons.insights_outlined,
+      size: 22,
+      color: AppDesignTokens.primary,
+    );
+    const completenessIcon = Icon(
+      Icons.fact_check_outlined,
+      size: 22,
+      color: AppDesignTokens.primary,
+    );
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppDesignTokens.spacing16,
-        AppDesignTokens.spacing8,
-        AppDesignTokens.spacing16,
-        AppDesignTokens.spacing4,
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-          border: Border.all(color: AppDesignTokens.borderCrisp),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Session Tools',
-                style: AppDesignTokens.headingStyle(
-                  fontSize: 12,
-                  color: AppDesignTokens.secondaryText,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          toolSlot(
+            tooltip: 'Crop Growth Stage (BBCH)',
+            icon: bbchIcon,
+            label: 'BBCH',
+            onTap: () => showCropStageBbchEditorDialog(
+                  context: context,
+                  ref: ref,
+                  session: live,
+                  trialId: widget.trial.id,
                 ),
-              ),
-              const SizedBox(height: 8),
-              LayoutBuilder(
-                builder: (context, c) {
-                  final narrow = c.maxWidth < 360;
-                  final bbchIcon = Icon(
-                    live.cropStageBbch != null
-                        ? Icons.eco
-                        : Icons.eco_outlined,
-                    size: 22,
-                    color: AppDesignTokens.primary,
-                  );
-                  final weatherIcon = Icon(
-                    weatherRecorded
-                        ? Icons.wb_cloudy
-                        : Icons.wb_cloudy_outlined,
-                    size: 22,
-                    color: AppDesignTokens.primary,
-                  );
-                  const checklistIcon = Icon(
-                    Icons.insights_outlined,
-                    size: 22,
-                    color: AppDesignTokens.primary,
-                  );
-                  const completenessIcon = Icon(
-                    Icons.fact_check_outlined,
-                    size: 22,
-                    color: AppDesignTokens.primary,
-                  );
-
-                  final bbch = Expanded(
-                    child: toolCell(
-                      tooltip: 'Crop Growth Stage (BBCH)',
-                      icon: bbchIcon,
-                      label: 'BBCH',
-                      onTap: () => showCropStageBbchEditorDialog(
-                            context: context,
-                            ref: ref,
-                            session: live,
-                            trialId: widget.trial.id,
-                          ),
-                    ),
-                  );
-                  final weather = Expanded(
-                    child: toolCell(
-                      tooltip: 'Weather',
-                      icon: weatherIcon,
-                      label: 'Weather',
-                      onTap: openWeather,
-                    ),
-                  );
-                  final checklist = Expanded(
-                    child: toolCell(
-                      tooltip: 'Session Checklist',
-                      icon: checklistIcon,
-                      label: 'Checklist',
-                      onTap: () {
-                        Navigator.push<void>(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => SessionSummaryScreen(
-                              trial: trial,
-                              session: session,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                  final completeness = Expanded(
-                    child: toolCell(
-                      tooltip: 'Session completeness',
-                      icon: completenessIcon,
-                      label: 'Completeness',
-                      onTap: () {
-                        Navigator.push<void>(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => SessionCompletenessScreen(
-                              trial: trial,
-                              session: session,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-
-                  if (narrow) {
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [bbch, weather],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [checklist, completeness],
-                        ),
-                      ],
-                    );
-                  }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [bbch, weather, checklist, completeness],
-                  );
-                },
-              ),
-            ],
           ),
-        ),
+          toolSlot(
+            tooltip: 'Weather',
+            icon: weatherIcon,
+            label: 'Weather',
+            onTap: openWeather,
+          ),
+          toolSlot(
+            tooltip: 'Session Checklist',
+            icon: checklistIcon,
+            label: 'Checklist',
+            onTap: () {
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => SessionSummaryScreen(
+                    trial: trial,
+                    session: session,
+                  ),
+                ),
+              );
+            },
+          ),
+          toolSlot(
+            tooltip: 'Session completeness',
+            icon: completenessIcon,
+            label: 'Completeness',
+            onTap: () {
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => SessionCompletenessScreen(
+                    trial: trial,
+                    session: session,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -462,7 +391,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 }),
             data: (assessments) => Column(
               children: [
-                _buildSessionToolsStrip(context, trial, session),
                 _SessionDockBar(
                   selectedIndex: _selectedTabIndex,
                   onSelected: (index) =>
@@ -470,6 +398,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   ratedCount: ratings.map((r) => r.plotPk).toSet().length,
                   plotCount: plots.length,
                 ),
+                _buildSessionToolsRow(context, trial, session),
                 _SessionWalkOrderBar(
                   sessionId: session.id,
                   mode: _walkOrderMode,
