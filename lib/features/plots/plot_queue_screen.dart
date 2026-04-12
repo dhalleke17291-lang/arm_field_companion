@@ -1053,8 +1053,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                               } catch (e) {
                                 if (!mounted || !context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Export failed: $e'),
+                                  const SnackBar(
+                                    content: Text(
+                                      'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
+                                    ),
                                     backgroundColor: Colors.red,
                                   ),
                                 );

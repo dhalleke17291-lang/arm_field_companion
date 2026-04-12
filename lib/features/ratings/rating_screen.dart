@@ -1719,6 +1719,33 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
   }
 
+  /// Shows the delta from the previous plot's value when carry-forward is active.
+  Widget _buildCarryForwardDiff() {
+    final baseline = _carryForwardBaselineNumeric;
+    if (baseline == null || _isTextAssessment) return const SizedBox.shrink();
+    final current = double.tryParse(_valueController.text.trim());
+    if (current == null) return const SizedBox.shrink();
+    final diff = current - baseline;
+    if (diff.abs() < 1e-9) return const SizedBox.shrink();
+    final sign = diff > 0 ? '+' : '';
+    final diffStr = '$sign${diff.toStringAsFixed(1)}';
+    final color = diff > 0
+        ? AppDesignTokens.successFg
+        : AppDesignTokens.missedColor;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        '$diffStr from previous plot',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
   void _markNumericValueUserEdited() {
     if (!_numericValueUserEditedThisVisit) {
       setState(() {
@@ -2325,6 +2352,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         ],
                       ),
                     ),
+                    _buildCarryForwardDiff(),
                     const SizedBox(height: 6),
                     _buildQuickButtons(),
                     if (_clampAdjustMessage != null)

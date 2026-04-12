@@ -85,7 +85,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'This trial is closed. No new sessions can be started.',
+                'This trial is closed — no new sessions can be started. Reopen the trial if further data collection is needed.',
               ),
             ),
           );
@@ -503,7 +503,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(result.errorMessage ?? 'Failed to start session'),
+            content: Text(result.errorMessage ??
+                'Failed to start session — please try again.'),
             backgroundColor: Colors.red),
       );
     }

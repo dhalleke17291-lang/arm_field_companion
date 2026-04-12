@@ -590,6 +590,29 @@ class AssessmentsTab extends ConsumerWidget {
               ),
             ],
           ),
+          if (stat.trialCV != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Text(
+                  'CV ${stat.trialCV!.toStringAsFixed(1)}%',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _cvColor(stat.cvInterpretation),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _cvLabel(stat.cvInterpretation),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _cvColor(stat.cvInterpretation),
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (completeness == AssessmentCompleteness.noData ||
               !stat.hasAnyData) ...[
             const SizedBox(height: 6),
@@ -781,5 +804,35 @@ class AssessmentsTab extends ConsumerWidget {
   Future<void> _showAddAssessmentDialog(
       BuildContext context, WidgetRef ref) async {
     await showAddCustomAssessmentSheet(context, ref, trial: trial);
+  }
+
+  static Color _cvColor(CvInterpretation? cv) {
+    switch (cv) {
+      case CvInterpretation.excellent:
+        return AppDesignTokens.successFg;
+      case CvInterpretation.acceptable:
+        return AppDesignTokens.primary;
+      case CvInterpretation.questionable:
+        return AppDesignTokens.warningFg;
+      case CvInterpretation.poor:
+        return AppDesignTokens.missedColor;
+      case null:
+        return AppDesignTokens.secondaryText;
+    }
+  }
+
+  static String _cvLabel(CvInterpretation? cv) {
+    switch (cv) {
+      case CvInterpretation.excellent:
+        return 'Excellent';
+      case CvInterpretation.acceptable:
+        return 'Acceptable';
+      case CvInterpretation.questionable:
+        return 'Questionable';
+      case CvInterpretation.poor:
+        return 'Poor';
+      case null:
+        return '';
+    }
   }
 }

@@ -295,7 +295,7 @@ class ProtocolImportUseCase {
       }
     } else if (isProtocolLocked) {
       return ProtocolImportExecuteResult.failure(protocolLockMessage ??
-          'Protocol is locked. Change trial status to import.');
+          'Protocol cannot be imported — trial structure is locked. Set the trial to Draft or Ready status before importing.');
     }
 
     if (existingTrialId == null && review.normalizedTrial == null) {

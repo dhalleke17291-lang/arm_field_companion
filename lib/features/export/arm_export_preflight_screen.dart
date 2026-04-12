@@ -191,7 +191,8 @@ class _ArmExportPreflightScreenState
       if (mounted) {
         setState(() {
           _exportBusy = false;
-          _exportError = 'Export failed: $e';
+          _exportError =
+            'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.';
         });
       }
     }

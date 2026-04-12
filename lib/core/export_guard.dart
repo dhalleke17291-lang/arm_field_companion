@@ -2,7 +2,8 @@
 /// Boolean busy state only; no queue, no background worker, no heavy locking.
 class ExportGuard {
   /// Message shown when a second export is attempted while one is active.
-  static const String busyMessage = 'Another export is already in progress.';
+  static const String busyMessage =
+      'Another export is already in progress — wait for it to finish before starting a new one.';
   ExportGuard();
 
   bool _busy = false;

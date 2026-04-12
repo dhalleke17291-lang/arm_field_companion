@@ -115,7 +115,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Export failed: $e',
+                'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
                 style: TextStyle(color: scheme.onError),
               ),
               backgroundColor: scheme.error,

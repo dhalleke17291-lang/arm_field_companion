@@ -170,9 +170,9 @@ class ExportSessionCsvUsecase {
         warningMessage: warning,
         auditFilePath: auditPath,
       );
-    } catch (e, st) {
+    } catch (_) {
       return ExportResult.failure(
-        'Export failed: ${e.toString()}\n${st.toString().split('\n').take(3).join('\n')}',
+        'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
       );
     }
   }

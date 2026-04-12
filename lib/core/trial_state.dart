@@ -140,12 +140,7 @@ String getProtocolLockLabel(String? status) {
 String getProtocolLockMessage(String? status) {
   if (status == null || !isProtocolLocked(status)) return '';
   final label = labelForTrialStatus(status);
-  return 'This custom trial is currently locked because the trial is $label. Structure cannot be changed.';
-}
-
-/// Legacy API: [workspaceType] is ignored; use [getProtocolLockMessage] only.
-String getModeLockMessage(String? status, String? workspaceType) {
-  return getProtocolLockMessage(status);
+  return 'This trial is $label — structure cannot be changed. Close the trial to archive it, or contact your administrator if changes are required.';
 }
 
 /// True when plot assignments must not be edited (protocol lock or trial has session data).
@@ -174,7 +169,7 @@ String getAssignmentsLockLabel(String? status, bool hasSessionData) {
 String getAssignmentsLockMessage(String? status, bool hasSessionData) {
   if (isProtocolLocked(status)) return getProtocolLockMessage(status);
   if (hasSessionData) {
-    return 'This custom trial has session data. Assignments cannot be changed.';
+    return 'Plot assignments cannot be changed after data collection begins. Assignments are locked to protect existing ratings.';
   }
   return '';
 }
@@ -197,11 +192,11 @@ bool canEditProtocol(Trial trial) {
 
 /// User-facing message when standalone Active is locked because ratings/photos/flags exist.
 const String kStructureLockedDataCollectionStartedUserMessage =
-    'Structure locked — data collection has started';
+    'Trial structure cannot be changed after data collection begins. Close or delete your session data to make structural changes.';
 
 /// Repository / assert message when structure is locked after session data exists.
 const String kTrialStructureLockedBecauseDataCollectionStarted =
-    'Trial structure is locked because data collection has started.';
+    'Trial structure cannot be changed once ratings, photos, or plot flags have been recorded.';
 
 /// Whether trial structure (treatments, plots, assessments) can be edited.
 /// Prefer over [canEditProtocol] when [hasSessionData] is known (UI, use cases with DB).

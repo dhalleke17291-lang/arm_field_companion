@@ -150,7 +150,7 @@ String _readinessCollapsedSummary(TrialReadinessReport report) {
     case TrialReadinessStatus.ready:
       return 'Ready';
     case TrialReadinessStatus.notReady:
-      return 'Blocked';
+      return 'Action blocked';
     case TrialReadinessStatus.readyWithWarnings:
       final warnings = report.checks
           .where((c) => c.severity == TrialCheckSeverity.warning)
@@ -497,7 +497,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Blocked — data issues:\n${e.message}',
+                'Export blocked — resolve these issues first:\n${e.message}',
                 style: TextStyle(color: scheme.onError),
               ),
               backgroundColor: scheme.error,
@@ -527,9 +527,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Export failed: $e',
-              style: TextStyle(color: scheme.onError),
-            ),
+                'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
+                style: TextStyle(color: scheme.onError),
+              ),
             backgroundColor: scheme.error,
           ),
         );
@@ -2110,7 +2110,7 @@ class _TrialWorkflowReadinessStack extends ConsumerWidget {
               error: (_, __) => const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 child: Text(
-                  'Workflow unavailable.',
+                  'Workflow unavailable — trial data could not be loaded. Try closing and reopening the trial.',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppDesignTokens.secondaryText,
@@ -2185,7 +2185,7 @@ class _TrialWorkflowReadinessStack extends ConsumerWidget {
               error: (_, __) => const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 child: Text(
-                  'Trial readiness unavailable.',
+                  'Readiness check unavailable — try again or restart the app.',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppDesignTokens.secondaryText,
@@ -2715,7 +2715,7 @@ void tryOpenCreateSessionScreen({
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'This trial is closed. No new sessions can be started.',
+          'This trial is closed — no new sessions can be started. Reopen the trial if further data collection is needed.',
         ),
       ),
     );

@@ -993,15 +993,32 @@ void main() {
   });
 
   group('computeAssessmentStatistics', () {
-    test('v1 leaves trialCV, cvInterpretation, and outliers null', () {
+    test('computes trialCV and cvInterpretation from treatment means', () {
+      // Two treatments, 2 plots each, enough data for pooled CV.
       final rows = [
-        _row(
-          plotId: '1',
-          rep: 1,
-          treatmentCode: 'T',
-          assessmentName: _kAssessment,
-          value: '10',
-        ),
+        _row(plotId: '1', rep: 1, treatmentCode: 'A', assessmentName: _kAssessment, value: '10'),
+        _row(plotId: '2', rep: 2, treatmentCode: 'A', assessmentName: _kAssessment, value: '12'),
+        _row(plotId: '3', rep: 1, treatmentCode: 'B', assessmentName: _kAssessment, value: '20'),
+        _row(plotId: '4', rep: 2, treatmentCode: 'B', assessmentName: _kAssessment, value: '22'),
+      ];
+      final result = computeAssessmentStatistics(
+        rows,
+        _kAssessment,
+        1,
+        '%',
+        'neutral',
+        4,
+        {1, 2},
+      );
+      expect(result.trialCV, isNotNull);
+      expect(result.trialCV, greaterThan(0));
+      expect(result.cvInterpretation, isNotNull);
+      expect(result.outliers, isNull);
+    });
+
+    test('trialCV is null when only one observation', () {
+      final rows = [
+        _row(plotId: '1', rep: 1, treatmentCode: 'T', assessmentName: _kAssessment, value: '10'),
       ];
       final result = computeAssessmentStatistics(
         rows,

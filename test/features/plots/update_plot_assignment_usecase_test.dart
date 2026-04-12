@@ -359,7 +359,7 @@ void main() {
         treatmentId: 5,
       );
       expect(result.success, false);
-      expect(result.errorMessage, contains('session data'));
+      expect(result.errorMessage, contains('cannot be changed'));
       expect(mockRepo.upserted, isEmpty);
     });
   });

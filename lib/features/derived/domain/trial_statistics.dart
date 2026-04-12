@@ -245,7 +245,37 @@ CvInterpretation interpretCV(double cv) {
 }
 
 /// Assembles complete [AssessmentStatistics] for [assessmentName].
-/// [trialCV] and [outliers] are always null in v1 — deferred to v2.
+/// Computes the pooled (error) CV% across treatments.
+///
+/// Uses pooled within-treatment variance and the grand mean:
+///   pooledVar = Σ((nᵢ−1)·SDᵢ²) / Σ(nᵢ−1)
+///   grandMean = Σ(nᵢ·meanᵢ) / Σ(nᵢ)
+///   CV% = √pooledVar / grandMean × 100
+///
+/// Returns null when fewer than 2 total observations or grand mean is zero.
+double? computeTrialCV(List<TreatmentMean> means) {
+  if (means.isEmpty) return null;
+  var totalN = 0;
+  var sumWeightedMean = 0.0;
+  var sumWeightedVar = 0.0;
+  var totalDf = 0;
+  for (final m in means) {
+    totalN += m.n;
+    sumWeightedMean += m.n * m.mean;
+    final df = m.n - 1;
+    if (df > 0) {
+      sumWeightedVar += df * m.standardDeviation * m.standardDeviation;
+      totalDf += df;
+    }
+  }
+  if (totalN < 2 || totalDf == 0) return null;
+  final grandMean = sumWeightedMean / totalN;
+  if (grandMean == 0) return null;
+  final pooledSd = math.sqrt(sumWeightedVar / totalDf);
+  return (pooledSd / grandMean.abs()) * 100;
+}
+
+/// Assembles complete [AssessmentStatistics] for [assessmentName].
 AssessmentStatistics computeAssessmentStatistics(
   List<RatingResultRow> rows,
   String assessmentName,
@@ -268,13 +298,14 @@ AssessmentStatistics computeAssessmentStatistics(
     progress.isPreliminary,
   );
   final direction = ResultDirection.fromString(resultDirectionString);
+  final cv = computeTrialCV(means);
   return AssessmentStatistics(
     progress: progress,
     unit: unit,
     resultDirection: direction,
     treatmentMeans: means,
-    trialCV: null, // v2
-    cvInterpretation: null, // v2
+    trialCV: cv,
+    cvInterpretation: cv != null ? interpretCV(cv) : null,
     outliers: null, // v2
   );
 }

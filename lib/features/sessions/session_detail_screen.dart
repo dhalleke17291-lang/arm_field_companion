@@ -786,7 +786,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Export failed: $e',
+                'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
                 style: TextStyle(color: scheme.onError),
               ),
               backgroundColor: scheme.error,
@@ -893,7 +893,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'XML export failed: $e',
+                'XML export failed — please try again. If the problem persists, check session data for missing or incomplete records.',
                 style: TextStyle(color: scheme.onError),
               ),
               backgroundColor: scheme.error,

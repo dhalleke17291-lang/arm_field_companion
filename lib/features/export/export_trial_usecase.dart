@@ -310,7 +310,7 @@ class ExportTrialUseCase {
         !trialReadinessPrecheck.canExport) {
       publishExportDiagnostics();
       throw const ExportBlockedByReadinessException(
-          'Export blocked by trial readiness.');
+          'Export is blocked — resolve the issues shown in the readiness panel before exporting.');
     }
 
     final exportTimestamp = DateTime.now().toUtc().toIso8601String();

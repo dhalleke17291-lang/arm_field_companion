@@ -145,8 +145,12 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Export failed: $e'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text(
+                'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
+              ),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
