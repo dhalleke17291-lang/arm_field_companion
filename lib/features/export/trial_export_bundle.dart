@@ -10,6 +10,7 @@ class TrialExportBundle {
     required this.sessionsCsv,
     required this.notesCsv,
     required this.dataDictionaryCsv,
+    this.statisticsCsv,
     this.warningMessage,
     this.preflightNotes,
   });
@@ -30,4 +31,7 @@ class TrialExportBundle {
   final String sessionsCsv;
   final String notesCsv;
   final String dataDictionaryCsv;
+
+  /// Statistical analysis CSV (ANOVA, means with letters). Standalone trials only.
+  final String? statisticsCsv;
 }
