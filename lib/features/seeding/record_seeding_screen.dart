@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../core/database/app_database.dart';
+import '../../core/field_operation_date_rules.dart';
 import '../../core/providers.dart';
 
 class RecordSeedingScreen extends ConsumerStatefulWidget {
@@ -39,6 +40,17 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    final minD = dateOnlyLocal(widget.trial.createdAt);
+    final maxD = dateOnlyLocal(DateTime.now());
+    var d = dateOnlyLocal(_seedingDate.value);
+    if (d.isBefore(minD)) d = minD;
+    if (d.isAfter(maxD)) d = maxD;
+    _seedingDate.value = d;
+  }
+
+  @override
   void dispose() {
     _operatorController.dispose();
     _equipmentController.dispose();
@@ -61,207 +73,243 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
   }
 
   Future<void> _pickDate() async {
+    final minD = dateOnlyLocal(widget.trial.createdAt);
+    final maxD = dateOnlyLocal(DateTime.now());
+    var initial = dateOnlyLocal(_seedingDate.value);
+    if (initial.isBefore(minD)) initial = minD;
+    if (initial.isAfter(maxD)) initial = maxD;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _seedingDate.value,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: initial,
+      firstDate: minD,
+      lastDate: maxD,
     );
     if (picked != null) _seedingDate.value = picked;
   }
 
   Future<void> _onSave() async {
+    final seedingErr = validateSeedingDate(
+      seedingDate: _seedingDate.value,
+      trialCreatedAt: widget.trial.createdAt,
+    );
+    if (seedingErr != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(seedingErr),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
       final db = ref.read(databaseProvider);
-    final operatorName = _operatorController.text.trim();
-    final comments = _commentsController.text.trim();
+      final operatorName = _operatorController.text.trim();
+      final comments = _commentsController.text.trim();
 
-    final recordId = await db.into(db.seedingRecords).insert(
-          SeedingRecordsCompanion.insert(
-            trialId: widget.trial.id,
-            seedingDate: _seedingDate.value,
-            operatorName:
-                drift.Value(operatorName.isEmpty ? null : operatorName),
-            comments: drift.Value(comments.isEmpty ? null : comments),
-          ),
-        );
+      final recordId = await db.into(db.seedingRecords).insert(
+            SeedingRecordsCompanion.insert(
+              trialId: widget.trial.id,
+              seedingDate: _seedingDate.value,
+              operatorName:
+                  drift.Value(operatorName.isEmpty ? null : operatorName),
+              comments: drift.Value(comments.isEmpty ? null : comments),
+            ),
+          );
 
-    // Persist all form fields so they show in the seeding event detail
-    final extraFields = <Map<String, dynamic>>[
-      {
-        'key': 'equipment',
-        'label': 'Equipment / Planter',
-        'type': 'text',
-        'text': _equipmentController.text.trim()
-      },
-      {
-        'key': 'variety',
-        'label': 'Variety / Hybrid',
-        'type': 'text',
-        'text': _varietyController.text.trim()
-      },
-      {
-        'key': 'seed_lot',
-        'label': 'Seed Lot',
-        'type': 'text',
-        'text': _seedLotController.text.trim()
-      },
-      {
-        'key': 'seeding_rate',
-        'label': 'Seeding Rate',
-        'type': 'number',
-        'text': _seedingRateController.text.trim()
-      },
-      {
-        'key': 'rate_unit',
-        'label': 'Rate Unit',
-        'type': 'text',
-        'text': _rateUnitController.text.trim()
-      },
-      {
-        'key': 'seeding_depth',
-        'label': 'Seeding Depth',
-        'type': 'number',
-        'text': _seedingDepthController.text.trim()
-      },
-      {
-        'key': 'depth_unit',
-        'label': 'Depth Unit',
-        'type': 'text',
-        'text': _depthUnitController.text.trim()
-      },
-      {
-        'key': 'row_spacing',
-        'label': 'Row Spacing',
-        'type': 'number',
-        'text': _rowSpacingController.text.trim()
-      },
-      {
-        'key': 'spacing_unit',
-        'label': 'Spacing Unit',
-        'type': 'text',
-        'text': _spacingUnitController.text.trim()
-      },
-      {
-        'key': 'rows_per_plot',
-        'label': 'Rows Per Plot',
-        'type': 'number',
-        'text': _rowsPerPlotController.text.trim()
-      },
-      {
-        'key': 'row_length',
-        'label': 'Row Length',
-        'type': 'number',
-        'text': _rowLengthController.text.trim()
-      },
-      {
-        'key': 'row_length_unit',
-        'label': 'Row Length Unit',
-        'type': 'text',
-        'text': _rowLengthUnitController.text.trim()
-      },
-      {
-        'key': 'soil_temp',
-        'label': 'Soil Temperature',
-        'type': 'text',
-        'text': _soilTempController.text.trim()
-      },
-      {
-        'key': 'soil_moisture',
-        'label': 'Soil Moisture',
-        'type': 'text',
-        'text': _soilMoistureController.text.trim()
-      },
-      {
-        'key': 'conditions_notes',
-        'label': 'Conditions / Notes',
-        'type': 'text',
-        'text': _conditionsNotesController.text.trim()
-      },
-    ];
+      // Persist all form fields so they show in the seeding event detail
+      final extraFields = <Map<String, dynamic>>[
+        {
+          'key': 'equipment',
+          'label': 'Equipment / Planter',
+          'type': 'text',
+          'text': _equipmentController.text.trim()
+        },
+        {
+          'key': 'variety',
+          'label': 'Variety / Hybrid',
+          'type': 'text',
+          'text': _varietyController.text.trim()
+        },
+        {
+          'key': 'seed_lot',
+          'label': 'Seed Lot',
+          'type': 'text',
+          'text': _seedLotController.text.trim()
+        },
+        {
+          'key': 'seeding_rate',
+          'label': 'Seeding Rate',
+          'type': 'number',
+          'text': _seedingRateController.text.trim()
+        },
+        {
+          'key': 'rate_unit',
+          'label': 'Rate Unit',
+          'type': 'text',
+          'text': _rateUnitController.text.trim()
+        },
+        {
+          'key': 'seeding_depth',
+          'label': 'Seeding Depth',
+          'type': 'number',
+          'text': _seedingDepthController.text.trim()
+        },
+        {
+          'key': 'depth_unit',
+          'label': 'Depth Unit',
+          'type': 'text',
+          'text': _depthUnitController.text.trim()
+        },
+        {
+          'key': 'row_spacing',
+          'label': 'Row Spacing',
+          'type': 'number',
+          'text': _rowSpacingController.text.trim()
+        },
+        {
+          'key': 'spacing_unit',
+          'label': 'Spacing Unit',
+          'type': 'text',
+          'text': _spacingUnitController.text.trim()
+        },
+        {
+          'key': 'rows_per_plot',
+          'label': 'Rows Per Plot',
+          'type': 'number',
+          'text': _rowsPerPlotController.text.trim()
+        },
+        {
+          'key': 'row_length',
+          'label': 'Row Length',
+          'type': 'number',
+          'text': _rowLengthController.text.trim()
+        },
+        {
+          'key': 'row_length_unit',
+          'label': 'Row Length Unit',
+          'type': 'text',
+          'text': _rowLengthUnitController.text.trim()
+        },
+        {
+          'key': 'soil_temp',
+          'label': 'Soil Temperature',
+          'type': 'text',
+          'text': _soilTempController.text.trim()
+        },
+        {
+          'key': 'soil_moisture',
+          'label': 'Soil Moisture',
+          'type': 'text',
+          'text': _soilMoistureController.text.trim()
+        },
+        {
+          'key': 'conditions_notes',
+          'label': 'Conditions / Notes',
+          'type': 'text',
+          'text': _conditionsNotesController.text.trim()
+        },
+      ];
 
-    int sortOrder = 0;
-    for (final f in extraFields) {
-      final key = f['key'] as String;
-      final label = f['label'] as String;
-      final type = f['type'] as String;
-      final text = f['text'] as String?;
-      if (text == null || text.isEmpty) continue;
+      int sortOrder = 0;
+      for (final f in extraFields) {
+        final key = f['key'] as String;
+        final label = f['label'] as String;
+        final type = f['type'] as String;
+        final text = f['text'] as String?;
+        if (text == null || text.isEmpty) continue;
 
-      final existing = await (db.select(db.protocolSeedingFields)
-            ..where((p) =>
-                p.trialId.equals(widget.trial.id) & p.fieldKey.equals(key)))
-          .getSingleOrNull();
-      if (existing == null) {
-        await db.into(db.protocolSeedingFields).insert(
-              ProtocolSeedingFieldsCompanion.insert(
-                trialId: widget.trial.id,
+        final existing = await (db.select(db.protocolSeedingFields)
+              ..where((p) =>
+                  p.trialId.equals(widget.trial.id) & p.fieldKey.equals(key)))
+            .getSingleOrNull();
+        if (existing == null) {
+          await db.into(db.protocolSeedingFields).insert(
+                ProtocolSeedingFieldsCompanion.insert(
+                  trialId: widget.trial.id,
+                  fieldKey: key,
+                  fieldLabel: label,
+                  fieldType: type,
+                ),
+              );
+        }
+
+        final isNum = type == 'number' || type == 'numeric';
+        final numVal = isNum ? double.tryParse(text) : null;
+        await db.into(db.seedingFieldValues).insert(
+              SeedingFieldValuesCompanion.insert(
+                seedingRecordId: recordId,
                 fieldKey: key,
                 fieldLabel: label,
-                fieldType: type,
+                valueText: isNum && numVal != null
+                    ? const drift.Value.absent()
+                    : drift.Value(text),
+                valueNumber: isNum && numVal != null
+                    ? drift.Value(numVal)
+                    : const drift.Value.absent(),
+                unit: const drift.Value.absent(),
+                sortOrder: drift.Value(sortOrder++),
               ),
             );
       }
 
-      final isNum = type == 'number' || type == 'numeric';
-      final numVal = isNum ? double.tryParse(text) : null;
-      await db.into(db.seedingFieldValues).insert(
-            SeedingFieldValuesCompanion.insert(
-              seedingRecordId: recordId,
-              fieldKey: key,
-              fieldLabel: label,
-              valueText: isNum && numVal != null
-                  ? const drift.Value.absent()
-                  : drift.Value(text),
-              valueNumber: isNum && numVal != null
-                  ? drift.Value(numVal)
-                  : const drift.Value.absent(),
-              unit: const drift.Value.absent(),
-              sortOrder: drift.Value(sortOrder++),
-            ),
+      // Bridge: upsert authoritative seeding_events so attention, timeline, DAS, export reflect completion
+      final op = _operatorController.text.trim();
+      final equipment = _equipmentController.text.trim();
+      final variety = _varietyController.text.trim();
+      final seedLot = _seedLotController.text.trim();
+      final rateUnit = _rateUnitController.text.trim();
+      final companion = SeedingEventsCompanion.insert(
+        trialId: widget.trial.id,
+        seedingDate: _seedingDate.value,
+        operatorName: drift.Value(op.isEmpty ? null : op),
+        seedLotNumber: drift.Value(seedLot.isEmpty ? null : seedLot),
+        seedingRate:
+            drift.Value(double.tryParse(_seedingRateController.text.trim())),
+        seedingRateUnit: drift.Value(rateUnit.isEmpty ? null : rateUnit),
+        seedingDepth:
+            drift.Value(double.tryParse(_seedingDepthController.text.trim())),
+        rowSpacing:
+            drift.Value(double.tryParse(_rowSpacingController.text.trim())),
+        equipmentUsed: drift.Value(equipment.isEmpty ? null : equipment),
+        notes: drift.Value(comments.isEmpty ? null : comments),
+        variety: drift.Value(variety.isEmpty ? null : variety),
+        status: const drift.Value('completed'),
+        completedAt: drift.Value(_seedingDate.value),
+      );
+      final userId = await ref.read(currentUserIdProvider.future);
+      final user = await ref.read(currentUserProvider.future);
+      await ref.read(seedingRepositoryProvider).upsertSeedingEvent(
+            companion,
+            performedBy: user?.displayName,
+            performedByUserId: userId,
           );
-    }
-
-    // Bridge: upsert authoritative seeding_events so attention, timeline, DAS, export reflect completion
-    final op = _operatorController.text.trim();
-    final equipment = _equipmentController.text.trim();
-    final variety = _varietyController.text.trim();
-    final seedLot = _seedLotController.text.trim();
-    final rateUnit = _rateUnitController.text.trim();
-    final companion = SeedingEventsCompanion.insert(
-      trialId: widget.trial.id,
-      seedingDate: _seedingDate.value,
-      operatorName: drift.Value(op.isEmpty ? null : op),
-      seedLotNumber: drift.Value(seedLot.isEmpty ? null : seedLot),
-      seedingRate: drift.Value(double.tryParse(_seedingRateController.text.trim())),
-      seedingRateUnit: drift.Value(rateUnit.isEmpty ? null : rateUnit),
-      seedingDepth: drift.Value(double.tryParse(_seedingDepthController.text.trim())),
-      rowSpacing: drift.Value(double.tryParse(_rowSpacingController.text.trim())),
-      equipmentUsed: drift.Value(equipment.isEmpty ? null : equipment),
-      notes: drift.Value(comments.isEmpty ? null : comments),
-      variety: drift.Value(variety.isEmpty ? null : variety),
-      status: const drift.Value('completed'),
-      completedAt: drift.Value(_seedingDate.value),
-    );
-    final userId = await ref.read(currentUserIdProvider.future);
-    final user = await ref.read(currentUserProvider.future);
-    await ref.read(seedingRepositoryProvider).upsertSeedingEvent(
-          companion,
-          performedBy: user?.displayName,
-          performedByUserId: userId,
-        );
-    ref.invalidate(seedingEventForTrialProvider(widget.trial.id));
-    ref.invalidate(todayActivityProvider);
-    ref.invalidate(workLogDatesProvider);
+      ref.invalidate(seedingEventForTrialProvider(widget.trial.id));
+      ref.invalidate(todayActivityProvider);
+      ref.invalidate(workLogDatesProvider);
 
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Seeding record added'), backgroundColor: Colors.green),
+            content: Text('Seeding record added'),
+            backgroundColor: Colors.green),
       );
       Navigator.pop(context);
+    } on OperationalDateRuleException catch (e, st) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red,
+        ),
+      );
+      debugPrint('RecordSeedingScreen save error: $e');
+      debugPrintStack(stackTrace: st);
     } catch (e, st) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -297,7 +345,9 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
             validator: isNumeric
                 ? (v) {
                     if (v == null || v.trim().isEmpty) return null;
-                    if (double.tryParse(v.trim()) == null) return 'Invalid number';
+                    if (double.tryParse(v.trim()) == null) {
+                      return 'Invalid number';
+                    }
                     return null;
                   }
                 : null,

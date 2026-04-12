@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' show log;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -38,8 +39,8 @@ class RestoreService {
     }
 
     final rootTemp = await getTemporaryDirectory();
-    final extractDir =
-        Directory(p.join(rootTemp.path, 'agnexis_validate_${DateTime.now().millisecondsSinceEpoch}'));
+    final extractDir = Directory(p.join(rootTemp.path,
+        'agnexis_validate_${DateTime.now().millisecondsSinceEpoch}'));
     try {
       await extractDir.create(recursive: true);
       final archive = ZipDecoder().decodeBytes(zipBytes);
@@ -82,8 +83,7 @@ class RestoreService {
     }
 
     final docsDir = await getApplicationDocumentsDirectory();
-    final timestamp =
-        DateFormatBackup.format(DateTime.now());
+    final timestamp = DateFormatBackup.format(DateTime.now());
     final suffix = timestamp;
 
     final dbPath = p.join(docsDir.path, 'arm_field_companion.db');
@@ -112,8 +112,8 @@ class RestoreService {
     await _db.close();
 
     final rootTemp = await getTemporaryDirectory();
-    final extractDir = Directory(
-        p.join(rootTemp.path, 'agnexis_restore_${DateTime.now().millisecondsSinceEpoch}'));
+    final extractDir = Directory(p.join(rootTemp.path,
+        'agnexis_restore_${DateTime.now().millisecondsSinceEpoch}'));
     try {
       await extractDir.create(recursive: true);
       final archive = ZipDecoder().decodeBytes(zipBytes);
@@ -130,7 +130,13 @@ class RestoreService {
       ]) {
         try {
           if (await extra.exists()) await extra.delete();
-        } catch (_) {}
+        } catch (e, st) {
+          log(
+            'Restore: optional WAL/SHM delete skipped',
+            error: e,
+            stackTrace: st,
+          );
+        }
       }
       final dbDest = File(dbPath);
       if (await dbDest.exists()) {

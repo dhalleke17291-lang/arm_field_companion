@@ -31,7 +31,7 @@ String? validateSeedingDate({
   return null;
 }
 
-/// Emergence must be strictly after seeding day, not in the future.
+/// Emergence calendar day must be on or after seeding day; not in the future.
 String? validateEmergenceDate({
   required DateTime seedingDate,
   required DateTime emergenceDate,
@@ -41,8 +41,8 @@ String? validateEmergenceDate({
   if (ed.isAfter(_todayDateOnlyLocal())) {
     return 'Emergence date cannot be in the future';
   }
-  if (!ed.isAfter(seed)) {
-    return 'Emergence date must be after seeding date';
+  if (ed.isBefore(seed)) {
+    return 'Emergence date cannot be before seeding date';
   }
   return null;
 }
@@ -56,7 +56,7 @@ String? validateEmergencePercent(double? emergencePct) {
   return null;
 }
 
-/// Application (planned) date: not future; not before trial; after seeding day if seeding exists.
+/// Application (planned) date: not future; not before trial; on or after seeding day if seeding exists.
 String? validateApplicationEventDate({
   required DateTime applicationDate,
   required DateTime trialCreatedAt,
@@ -72,14 +72,14 @@ String? validateApplicationEventDate({
   }
   if (seedingDate != null) {
     final sd = dateOnlyLocal(seedingDate);
-    if (!ad.isAfter(sd)) {
-      return 'Application date must be after seeding date';
+    if (ad.isBefore(sd)) {
+      return 'Application date cannot be before seeding date';
     }
   }
   return null;
 }
 
-/// Applied timestamp: date part not future; not on/before seeding day if seeding exists;
+/// Applied timestamp: date part not future; on or after seeding calendar day if seeding exists;
 /// not before trial creation date.
 String? validateAppliedDateTime({
   required DateTime appliedAt,
@@ -96,8 +96,8 @@ String? validateAppliedDateTime({
   }
   if (seedingDate != null) {
     final sd = dateOnlyLocal(seedingDate);
-    if (!ad.isAfter(sd)) {
-      return 'Applied date must be after seeding date';
+    if (ad.isBefore(sd)) {
+      return 'Applied date cannot be before seeding date';
     }
   }
   return null;
@@ -140,17 +140,17 @@ String? validateAppliedTimestampNotInFuture(DateTime appliedAt) {
   return null;
 }
 
-/// Earliest calendar day allowed for applications (and "applied on") after seeding exists.
+/// Earliest calendar day allowed for applications (and "applied on"):
+/// trial creation day, or seeding day if that is later.
 DateTime minimumApplicationOrAppliedDate({
   required DateTime trialCreatedAt,
   DateTime? seedingDate,
 }) {
   var min = dateOnlyLocal(trialCreatedAt);
   if (seedingDate != null) {
-    final afterSeed =
-        dateOnlyLocal(seedingDate).add(const Duration(days: 1));
-    if (afterSeed.isAfter(min)) {
-      min = afterSeed;
+    final seed = dateOnlyLocal(seedingDate);
+    if (seed.isAfter(min)) {
+      min = seed;
     }
   }
   return min;

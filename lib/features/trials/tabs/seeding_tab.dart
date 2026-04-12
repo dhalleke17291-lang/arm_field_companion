@@ -587,6 +587,8 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
   final TextEditingController _emergencePctController =
       TextEditingController();
   bool _saving = false;
+  String? _emergenceDateError;
+  String? _emergencePctError;
 
   @override
   void initState() {
@@ -605,7 +607,7 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
 
   Future<void> _pickDate() async {
     final seed = dateOnlyLocal(widget.existing.seedingDate);
-    final first = seed.add(const Duration(days: 1));
+    final first = seed;
     final last = dateOnlyLocal(DateTime.now());
     var initial = dateOnlyLocal(_emergenceDate ?? last);
     if (initial.isBefore(first)) initial = first;
@@ -617,12 +619,21 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
       lastDate: last,
     );
     if (picked != null && mounted) {
-      setState(() => _emergenceDate = picked);
+      setState(() {
+        _emergenceDate = picked;
+        _emergenceDateError = null;
+      });
     }
   }
 
   Future<void> _save() async {
     if (_saving) return;
+    if (mounted) {
+      setState(() {
+        _emergenceDateError = null;
+        _emergencePctError = null;
+      });
+    }
     final pctText = _emergencePctController.text.trim();
     final emergencePct = pctText.isEmpty
         ? null
@@ -635,6 +646,7 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
       );
       if (emErr != null) {
         if (mounted) {
+          setState(() => _emergenceDateError = emErr);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(emErr), backgroundColor: Colors.red),
           );
@@ -645,6 +657,7 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
     final pctErr = validateEmergencePercent(emergencePct);
     if (pctErr != null) {
       if (mounted) {
+        setState(() => _emergencePctError = pctErr);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(pctErr), backgroundColor: Colors.red),
         );
@@ -729,9 +742,35 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
             ),
             onTap: _pickDate,
           ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              'Earliest: ${DateFormat('MMM d, yyyy').format(dateOnlyLocal(widget.existing.seedingDate))} (seeding day)',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          if (_emergenceDateError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _emergenceDateError!,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
           const SizedBox(height: FormStyles.formSheetFieldSpacing),
           TextField(
             controller: _emergencePctController,
+            onChanged: (_) {
+              if (_emergencePctError != null) {
+                setState(() => _emergencePctError = null);
+              }
+            },
             decoration: FormStyles.inputDecoration(
               labelText: 'Emergence % (optional)',
               suffixText: '%',
@@ -739,6 +778,17 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
           ),
+          if (_emergencePctError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                _emergencePctError!,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -842,7 +892,7 @@ class _SeedingEventFormSheetState
 
   Future<void> _pickEmergenceDate() async {
     final seed = dateOnlyLocal(_seedingDate);
-    final first = seed.add(const Duration(days: 1));
+    final first = seed;
     final last = dateOnlyLocal(DateTime.now());
     var initial = dateOnlyLocal(_emergenceDate ?? last);
     if (initial.isBefore(first)) initial = first;
@@ -1188,6 +1238,18 @@ class _SeedingEventFormSheetState
                             trailing: const Icon(Icons.calendar_today_outlined,
                                 color: AppDesignTokens.primary, size: 20),
                             onTap: _pickEmergenceDate,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              'Earliest: ${DateFormat('MMM d, yyyy').format(dateOnlyLocal(_seedingDate))} (seeding day)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(

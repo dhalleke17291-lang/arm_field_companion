@@ -1,9 +1,12 @@
+import 'dart:developer' show log;
+
 import '../session_repository.dart';
 import '../../../core/database/app_database.dart';
 import '../session_timing_helper.dart';
 
 class CreateSessionUseCase {
   final SessionRepository _sessionRepository;
+
   /// When a new open session is created, promotes trial Ready → Active (lifecycle consistency).
   final Future<void> Function(int trialId) _promoteTrialToActiveIfReady;
 
@@ -51,8 +54,13 @@ class CreateSessionUseCase {
 
       try {
         await _promoteTrialToActiveIfReady(input.trialId);
-      } catch (_) {
-        // Session exists; status promotion is best-effort
+      } catch (e, st) {
+        // Session exists; status promotion is best-effort — log for diagnostics.
+        log(
+          'promoteTrialToActiveIfReady failed after session create',
+          error: e,
+          stackTrace: st,
+        );
       }
 
       return CreateSessionResult.success(session);
@@ -71,6 +79,7 @@ class CreateSessionInput {
   final List<int> assessmentIds;
   final String? raterName;
   final int? createdByUserId;
+
   /// Raw text from optional BBCH field; empty means omit.
   final String? cropStageBbchRaw;
 

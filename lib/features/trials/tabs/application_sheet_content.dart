@@ -10,6 +10,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../../core/plot_display.dart';
+import '../../../core/application_event_numeric_rules.dart';
 import '../../../core/field_operation_date_rules.dart';
 import '../../../core/providers.dart';
 
@@ -53,7 +54,8 @@ class ApplicationSheetContent extends ConsumerStatefulWidget {
       _ApplicationSheetContentState();
 }
 
-class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetContent> {
+class _ApplicationSheetContentState
+    extends ConsumerState<ApplicationSheetContent> {
   late DateTime _date;
   late String? _timeStr;
   late int? _treatmentId;
@@ -121,8 +123,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       TextEditingController(text: e?.productName ?? ''),
     ];
     _rateControllers = [
-      TextEditingController(
-          text: e?.rate != null ? e!.rate.toString() : ''),
+      TextEditingController(text: e?.rate != null ? e!.rate.toString() : ''),
     ];
     _rateUnits = [e?.rateUnit ?? widget.rateUnits.first];
     _applicationMethod = e?.applicationMethod;
@@ -131,7 +132,9 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
     _nozzleSpacingController = TextEditingController(
         text: e?.nozzleSpacingCm != null ? e!.nozzleSpacingCm.toString() : '');
     _operatingPressureController = TextEditingController(
-        text: e?.operatingPressure != null ? e!.operatingPressure.toString() : '');
+        text: e?.operatingPressure != null
+            ? e!.operatingPressure.toString()
+            : '');
     _pressureUnit = e?.pressureUnit;
     _groundSpeedController = TextEditingController(
         text: e?.groundSpeed != null ? e!.groundSpeed.toString() : '');
@@ -148,7 +151,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
     _waterVolumeController = TextEditingController(
         text: e?.waterVolume != null ? e!.waterVolume.toString() : '');
     _waterVolumeUnit = e?.waterVolumeUnit;
-    _adjuvantNameController = TextEditingController(text: e?.adjuvantName ?? '');
+    _adjuvantNameController =
+        TextEditingController(text: e?.adjuvantName ?? '');
     _adjuvantRateController = TextEditingController(
         text: e?.adjuvantRate != null ? e!.adjuvantRate.toString() : '');
     _adjuvantRateUnit = e?.adjuvantRateUnit;
@@ -194,9 +198,14 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
     _growthStageController =
         TextEditingController(text: e?.growthStageCode ?? '');
     _notesController = TextEditingController(text: e?.notes ?? '');
-    _selectedPlotLabels = e?.plotsTreated != null && e!.plotsTreated!.trim().isNotEmpty
-        ? e.plotsTreated!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toSet()
-        : {};
+    _selectedPlotLabels =
+        e?.plotsTreated != null && e!.plotsTreated!.trim().isNotEmpty
+            ? e.plotsTreated!
+                .split(',')
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toSet()
+            : {};
     _initialExpandedCoverage = _trim(e?.growthStageCode) != null ||
         _selectedPlotLabels.isNotEmpty ||
         _trim(e?.notes) != null;
@@ -223,9 +232,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
     if (!mounted || list.isEmpty) return;
     setState(() {
       _disposeProductRows();
-      _productControllers = list
-          .map((p) => TextEditingController(text: p.productName))
-          .toList();
+      _productControllers =
+          list.map((p) => TextEditingController(text: p.productName)).toList();
       _rateControllers = list
           .map((p) => TextEditingController(
               text: p.rate != null ? p.rate.toString() : ''))
@@ -362,9 +370,71 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       ? _parseDouble(_rateControllers.first.text)
       : null;
 
-  String? _firstRateUnit() => _rateUnits.isNotEmpty
-      ? _rateUnits.first
-      : widget.rateUnits.first;
+  String? _firstRateUnit() =>
+      _rateUnits.isNotEmpty ? _rateUnits.first : widget.rateUnits.first;
+
+  /// Validates optional numeric application fields before save.
+  String? _applicationNumericValidationError() {
+    String? checkRaw(String label, TextEditingController ctrl) =>
+        validateRawDoubleField(label, ctrl.text);
+
+    for (var i = 0; i < _rateControllers.length; i++) {
+      final label = i < _productControllers.length &&
+              _productControllers[i].text.trim().isNotEmpty
+          ? 'Rate (${_productControllers[i].text.trim()})'
+          : 'Application rate';
+      final r = checkRaw(label, _rateControllers[i]);
+      if (r != null) return r;
+      final v = _parseDouble(_rateControllers[i].text);
+      final nn = validateOptionalNonNegative(label, v);
+      if (nn != null) return nn;
+    }
+
+    final pairs = <(String, TextEditingController)>[
+      ('Nozzle spacing', _nozzleSpacingController),
+      ('Operating pressure', _operatingPressureController),
+      ('Ground speed', _groundSpeedController),
+      ('Water volume', _waterVolumeController),
+      ('Adjuvant rate', _adjuvantRateController),
+      ('Treated area', _treatedAreaController),
+      ('Wind speed', _windSpeedController),
+      ('Soil depth', _soilDepthController),
+    ];
+    for (final p in pairs) {
+      final r = checkRaw(p.$1, p.$2);
+      if (r != null) return r;
+      final nn = validateOptionalNonNegative(p.$1, _parseDouble(p.$2.text));
+      if (nn != null) return nn;
+    }
+
+    for (final p in [
+      ('Air temperature', _temperatureController),
+      ('Soil temperature', _soilTempController),
+    ]) {
+      final r = checkRaw(p.$1, p.$2);
+      if (r != null) return r;
+      final fin = validateOptionalFiniteNumber(p.$1, _parseDouble(p.$2.text));
+      if (fin != null) return fin;
+    }
+
+    for (final p in [
+      ('Humidity', _humidityController),
+      ('Cloud cover', _cloudCoverController),
+    ]) {
+      final r = checkRaw(p.$1, p.$2);
+      if (r != null) return r;
+      final h = validateOptionalHumidityPercent(p.$1, _parseDouble(p.$2.text));
+      if (h != null) return h;
+    }
+
+    final phR = checkRaw('Spray solution pH', _spraySolutionPhController);
+    if (phR != null) return phR;
+    final phV = validateOptionalPh(
+        'Spray solution pH', _parseDouble(_spraySolutionPhController.text));
+    if (phV != null) return phV;
+
+    return null;
+  }
 
   Future<void> _save() async {
     if (_saving) return;
@@ -382,6 +452,16 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(appErr), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    final numErr = _applicationNumericValidationError();
+    if (numErr != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(numErr), backgroundColor: Colors.red),
         );
       }
       return;
@@ -426,7 +506,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       if (mounted) {
         final msg = e is OperationalDateRuleException ? e.message : '$e';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Save failed: $msg'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Save failed: $msg'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -435,9 +516,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
   }
 
   TrialApplicationEventsCompanion _buildCompanion() {
-    final plotsTreatedStr = _selectedPlotLabels.isEmpty
-        ? null
-        : _selectedPlotLabels.join(', ');
+    final plotsTreatedStr =
+        _selectedPlotLabels.isEmpty ? null : _selectedPlotLabels.join(', ');
     if (widget.existing == null) {
       return TrialApplicationEventsCompanion.insert(
         trialId: widget.trial.id,
@@ -449,8 +529,10 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
         rateUnit: drift.Value(_firstRateUnit()),
         applicationMethod: drift.Value(_applicationMethod),
         nozzleType: drift.Value(_nozzleType),
-        nozzleSpacingCm: drift.Value(_parseDouble(_nozzleSpacingController.text)),
-        operatingPressure: drift.Value(_parseDouble(_operatingPressureController.text)),
+        nozzleSpacingCm:
+            drift.Value(_parseDouble(_nozzleSpacingController.text)),
+        operatingPressure:
+            drift.Value(_parseDouble(_operatingPressureController.text)),
         pressureUnit: drift.Value(_pressureUnit),
         groundSpeed: drift.Value(_parseDouble(_groundSpeedController.text)),
         speedUnit: drift.Value(_speedUnit),
@@ -461,7 +543,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
         adjuvantName: drift.Value(_trim(_adjuvantNameController.text)),
         adjuvantRate: drift.Value(_parseDouble(_adjuvantRateController.text)),
         adjuvantRateUnit: drift.Value(_adjuvantRateUnit),
-        spraySolutionPh: drift.Value(_parseDouble(_spraySolutionPhController.text)),
+        spraySolutionPh:
+            drift.Value(_parseDouble(_spraySolutionPhController.text)),
         treatedArea: drift.Value(_parseDouble(_treatedAreaController.text)),
         treatedAreaUnit: drift.Value(_treatedAreaUnit),
         windSpeed: drift.Value(_parseDouble(_windSpeedController.text)),
@@ -491,7 +574,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       applicationMethod: drift.Value(_applicationMethod),
       nozzleType: drift.Value(_nozzleType),
       nozzleSpacingCm: drift.Value(_parseDouble(_nozzleSpacingController.text)),
-      operatingPressure: drift.Value(_parseDouble(_operatingPressureController.text)),
+      operatingPressure:
+          drift.Value(_parseDouble(_operatingPressureController.text)),
       pressureUnit: drift.Value(_pressureUnit),
       groundSpeed: drift.Value(_parseDouble(_groundSpeedController.text)),
       speedUnit: drift.Value(_speedUnit),
@@ -502,7 +586,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       adjuvantName: drift.Value(_trim(_adjuvantNameController.text)),
       adjuvantRate: drift.Value(_parseDouble(_adjuvantRateController.text)),
       adjuvantRateUnit: drift.Value(_adjuvantRateUnit),
-      spraySolutionPh: drift.Value(_parseDouble(_spraySolutionPhController.text)),
+      spraySolutionPh:
+          drift.Value(_parseDouble(_spraySolutionPhController.text)),
       treatedArea: drift.Value(_parseDouble(_treatedAreaController.text)),
       treatedAreaUnit: drift.Value(_treatedAreaUnit),
       windSpeed: drift.Value(_parseDouble(_windSpeedController.text)),
@@ -525,8 +610,10 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
   Widget build(BuildContext context) {
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
-    final plots =
-        ref.watch(plotsForTrialProvider(widget.trial.id)).value ?? [];
+    final plots = ref.watch(plotsForTrialProvider(widget.trial.id)).value ?? [];
+    final seedingEvent =
+        ref.watch(seedingEventForTrialProvider(widget.trial.id)).valueOrNull;
+    final seedingDay = seedingEvent?.seedingDate;
     final dateLabel = DateFormat('MMM d, yyyy').format(_date);
 
     return StandardFormBottomSheetLayout(
@@ -551,6 +638,16 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
             icon: const Icon(Icons.calendar_today, size: 18),
             label: Text('Date: $dateLabel'),
           ),
+          if (seedingDay != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Earliest: ${DateFormat('MMM d, yyyy').format(dateOnlyLocal(seedingDay))} (seeding day)',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: FormStyles.formSheetFieldSpacing),
           OutlinedButton.icon(
             onPressed: _pickTime,
@@ -596,8 +693,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 if (i > 0) ...[
                   Row(
                     children: [
-                      Expanded(
-                          child: Divider(color: Colors.grey.shade200)),
+                      Expanded(child: Divider(color: Colors.grey.shade200)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
@@ -608,8 +704,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                           ),
                         ),
                       ),
-                      Expanded(
-                          child: Divider(color: Colors.grey.shade200)),
+                      Expanded(child: Divider(color: Colors.grey.shade200)),
                       IconButton(
                         tooltip: 'Remove product',
                         icon: Icon(Icons.remove_circle_outline,
@@ -625,8 +720,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                           });
                         },
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                            minWidth: 32, minHeight: 32),
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ],
                   ),
@@ -642,8 +737,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 TextField(
                   controller: _rateControllers[i],
-                  keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   decoration: FormStyles.inputDecoration(
                     hintText: 'Rate',
                     suffixIcon: DropdownButtonHideUnderline(
@@ -683,12 +778,12 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           DropdownButtonFormField<String?>(
             key: ValueKey<String?>(_applicationMethod),
             initialValue: _applicationMethod,
-            decoration: FormStyles.inputDecoration(
-                labelText: 'Application method'),
+            decoration:
+                FormStyles.inputDecoration(labelText: 'Application method'),
             items: [
               const DropdownMenuItem<String?>(value: null, child: Text('—')),
-              ...widget.applicationMethods.map((s) =>
-                  DropdownMenuItem<String?>(value: s, child: Text(s))),
+              ...widget.applicationMethods.map(
+                  (s) => DropdownMenuItem<String?>(value: s, child: Text(s))),
             ],
             onChanged: (v) => setState(() => _applicationMethod = v),
           ),
@@ -717,10 +812,11 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
               DropdownButtonFormField<String?>(
                 key: ValueKey<String?>(_nozzleType),
                 initialValue: _nozzleType,
-                decoration: FormStyles.inputDecoration(
-                    labelText: 'Nozzle type'),
+                decoration:
+                    FormStyles.inputDecoration(labelText: 'Nozzle type'),
                 items: [
-                  const DropdownMenuItem<String?>(value: null, child: Text('—')),
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('—')),
                   ...widget.nozzleTypes.map((s) =>
                       DropdownMenuItem<String?>(value: s, child: Text(s))),
                 ],
@@ -752,8 +848,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     ),
                   ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
@@ -780,22 +876,22 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     ),
                   ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _equipmentController,
-                decoration: FormStyles.inputDecoration(
-                    labelText: 'Equipment used'),
+                decoration:
+                    FormStyles.inputDecoration(labelText: 'Equipment used'),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _operatorController,
-                decoration: FormStyles.inputDecoration(
-                    labelText: 'Operator name'),
+                decoration:
+                    FormStyles.inputDecoration(labelText: 'Operator name'),
                 onChanged: (_) => setState(() {}),
               ),
             ],
@@ -843,8 +939,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     ),
                   ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
@@ -880,8 +976,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     ),
                   ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
@@ -919,8 +1015,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     ),
                   ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
             ],
@@ -948,8 +1044,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
             children: [
               TextField(
                 controller: _windSpeedController,
-                decoration: FormStyles.inputDecoration(
-                    labelText: 'Wind speed'),
+                decoration: FormStyles.inputDecoration(labelText: 'Wind speed'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
@@ -957,8 +1052,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
               const SizedBox(height: 12),
               TextField(
                 controller: _windDirectionController,
-                decoration: FormStyles.inputDecoration(
-                    labelText: 'Wind direction'),
+                decoration:
+                    FormStyles.inputDecoration(labelText: 'Wind direction'),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
@@ -973,11 +1068,9 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                             .map((u) => DropdownMenuItem<String>(
                                 value: u,
                                 child: Text(u,
-                                    style:
-                                        const TextStyle(fontSize: 13))))
+                                    style: const TextStyle(fontSize: 13))))
                             .toList(),
-                        onChanged: (v) =>
-                            setState(() => _temperatureUnit = v!),
+                        onChanged: (v) => setState(() => _temperatureUnit = v!),
                         icon: const Icon(Icons.arrow_drop_down, size: 18),
                         padding: const EdgeInsets.only(right: 8),
                       ),
@@ -1070,8 +1163,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     flex: 3,
                     child: TextFormField(
                       controller: _soilTempController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         hintText: 'Soil temp.',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -1101,8 +1194,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                                 .map((u) => DropdownMenuItem<String>(
                                     value: u,
                                     child: Text(u,
-                                        style:
-                                            const TextStyle(fontSize: 13))))
+                                        style: const TextStyle(fontSize: 13))))
                                 .toList(),
                             onChanged: (v) =>
                                 setState(() => _soilTempUnit = v!),
@@ -1115,8 +1207,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                     child: Text(
                       'at',
                       style: TextStyle(
@@ -1130,8 +1222,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     flex: 3,
                     child: TextFormField(
                       controller: _soilDepthController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         hintText: 'Depth',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -1161,8 +1253,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                                 .map((u) => DropdownMenuItem<String>(
                                     value: u,
                                     child: Text(u,
-                                        style:
-                                            const TextStyle(fontSize: 13))))
+                                        style: const TextStyle(fontSize: 13))))
                                 .toList(),
                             onChanged: (v) =>
                                 setState(() => _soilDepthUnit = v!),
@@ -1201,8 +1292,8 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
             children: [
               TextFormField(
                 controller: _growthStageController,
-                decoration: FormStyles.inputDecoration(
-                    hintText: 'Growth stage / BBCH'),
+                decoration:
+                    FormStyles.inputDecoration(hintText: 'Growth stage / BBCH'),
                 keyboardType: TextInputType.text,
                 onChanged: (_) => setState(() {}),
               ),
@@ -1288,14 +1379,15 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                               children: repPlots.map((plot) {
                                 final displayLabel =
                                     getDisplayPlotLabel(plot, plots);
-                                final isSelected =
-                                    _selectedPlotLabels.contains(displayLabel) ||
-                                        _selectedPlotLabels.contains(plot.plotId);
+                                final isSelected = _selectedPlotLabels
+                                        .contains(displayLabel) ||
+                                    _selectedPlotLabels.contains(plot.plotId);
                                 return IntrinsicWidth(
                                   child: GestureDetector(
                                     onTap: () => setState(() {
                                       if (isSelected) {
-                                        _selectedPlotLabels.remove(displayLabel);
+                                        _selectedPlotLabels
+                                            .remove(displayLabel);
                                         _selectedPlotLabels.remove(plot.plotId);
                                       } else {
                                         _selectedPlotLabels.remove(plot.plotId);
@@ -1416,8 +1508,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, FormStyles.buttonHeight),
               shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(FormStyles.buttonRadius),
+                borderRadius: BorderRadius.circular(FormStyles.buttonRadius),
               ),
             ),
             onPressed: _saving ? null : _save,
@@ -1432,8 +1523,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
     return TextField(
       controller: controller,
       decoration: FormStyles.inputDecoration(labelText: label),
-      keyboardType:
-          const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: (_) => setState(() {}),
     );
   }

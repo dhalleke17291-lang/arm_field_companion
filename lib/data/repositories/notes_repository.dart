@@ -10,6 +10,9 @@ class NotesRepository {
 
   final AppDatabase _db;
 
+  /// Maximum stored note length (characters after trim).
+  static const int maxNoteContentLength = 20000;
+
   String _auditDescription(String content, {int maxLen = 120}) {
     final t = content.trim();
     if (t.length <= maxLen) return t;
@@ -26,6 +29,11 @@ class NotesRepository {
     final trimmed = content.trim();
     if (trimmed.isEmpty) {
       throw ArgumentError('content must not be empty');
+    }
+    if (trimmed.length > maxNoteContentLength) {
+      throw ArgumentError(
+        'Note cannot exceed $maxNoteContentLength characters',
+      );
     }
     return _db.transaction(() async {
       final id = await _db.into(_db.notes).insert(
@@ -54,16 +62,14 @@ class NotesRepository {
 
   Future<List<Note>> getNotesForTrial(int trialId) {
     return (_db.select(_db.notes)
-          ..where((n) =>
-              n.trialId.equals(trialId) & n.isDeleted.equals(false))
+          ..where((n) => n.trialId.equals(trialId) & n.isDeleted.equals(false))
           ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
         .get();
   }
 
   Stream<List<Note>> watchNotesForTrial(int trialId) {
     return (_db.select(_db.notes)
-          ..where((n) =>
-              n.trialId.equals(trialId) & n.isDeleted.equals(false))
+          ..where((n) => n.trialId.equals(trialId) & n.isDeleted.equals(false))
           ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
         .watch();
   }
@@ -93,7 +99,13 @@ class NotesRepository {
     if (trimmed.isEmpty) {
       throw ArgumentError('content must not be empty');
     }
-    final existing = await (_db.select(_db.notes)..where((n) => n.id.equals(id)))
+    if (trimmed.length > maxNoteContentLength) {
+      throw ArgumentError(
+        'Note cannot exceed $maxNoteContentLength characters',
+      );
+    }
+    final existing = await (_db.select(_db.notes)
+          ..where((n) => n.id.equals(id)))
         .getSingleOrNull();
     if (existing == null || existing.isDeleted) return;
 
@@ -123,7 +135,8 @@ class NotesRepository {
   }
 
   Future<void> deleteNote(int id, String deletedBy) async {
-    final existing = await (_db.select(_db.notes)..where((n) => n.id.equals(id)))
+    final existing = await (_db.select(_db.notes)
+          ..where((n) => n.id.equals(id)))
         .getSingleOrNull();
     if (existing == null || existing.isDeleted) return;
     final now = DateTime.now().toUtc();
@@ -146,7 +159,8 @@ class NotesRepository {
               performedBy: Value(deletedBy),
               metadata: Value(jsonEncode({
                 'note_id': id,
-                'content_preview': _auditDescription(existing.content, maxLen: 200),
+                'content_preview':
+                    _auditDescription(existing.content, maxLen: 200),
               })),
             ),
           );
@@ -155,7 +169,8 @@ class NotesRepository {
 
   /// Clears soft-delete so the note appears again in trial/plot/session lists and export.
   Future<void> restoreNote(int id, String restoredBy) async {
-    final existing = await (_db.select(_db.notes)..where((n) => n.id.equals(id)))
+    final existing = await (_db.select(_db.notes)
+          ..where((n) => n.id.equals(id)))
         .getSingleOrNull();
     if (existing == null || !existing.isDeleted) return;
 

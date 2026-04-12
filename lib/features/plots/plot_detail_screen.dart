@@ -1067,7 +1067,11 @@ Future<void> _showEditRatingSheet(
   try {
     final prefs = await SharedPreferences.getInstance();
     lastRater = prefs.getString('last_rater_name');
-  } catch (_) {}
+  } catch (e, st) {
+    debugPrint(
+        'plot_detail: last_rater_name SharedPreferences read failed: $e');
+    debugPrintStack(stackTrace: st);
+  }
 
   if (!context.mounted) return;
   final trialAssessments =

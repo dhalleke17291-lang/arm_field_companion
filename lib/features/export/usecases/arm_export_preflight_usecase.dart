@@ -1,3 +1,5 @@
+import 'dart:developer' show log;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -78,7 +80,8 @@ class ArmExportPreflightUseCase {
     required PhotoRepository photoRepository,
     required ArmImportPersistenceRepository armImportPersistence,
     required ExportRepository exportRepository,
-    required ComputeArmRoundTripDiagnosticsUseCase computeArmRoundTripDiagnostics,
+    required ComputeArmRoundTripDiagnosticsUseCase
+        computeArmRoundTripDiagnostics,
   })  : _trialRepository = trialRepository,
         _plotRepository = plotRepository,
         _sessionRepository = sessionRepository,
@@ -248,8 +251,7 @@ class ArmExportPreflightUseCase {
       if (ids.isNotEmpty) {
         final corrRows =
             await _ratingRepository.getCorrectionsForRatingIds(ids);
-        correctedRatings =
-            corrRows.map((c) => c.ratingId).toSet().length;
+        correctedRatings = corrRows.map((c) => c.ratingId).toSet().length;
       }
       final dataPlotIds = analyzablePlots.map((p) => p.id).toSet();
       final recordedPks = sessionRatings
@@ -269,7 +271,13 @@ class ArmExportPreflightUseCase {
         if (rows.length != totalRatings) {
           totalRatings = rows.length;
         }
-      } catch (_) {}
+      } catch (e, st) {
+        log(
+          'ArmExportPreflight: session export row count alignment skipped',
+          error: e,
+          stackTrace: st,
+        );
+      }
     }
 
     final canExport = blockers.isEmpty;
