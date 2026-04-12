@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/trial_state.dart';
 import '../../../data/repositories/assessment_definition_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../plots/plot_repository.dart';
@@ -305,6 +306,9 @@ class CreateStandaloneTrialWizardUseCase {
                 : null,
           );
         }
+
+        // Standalone: wizard completes protocol setup — go straight to Active (skip Draft/Ready).
+        await _trialRepository.updateTrialStatus(trialId, kTrialStatusActive);
       });
 
       return CreateStandaloneTrialWizardResult.ok(trialId);

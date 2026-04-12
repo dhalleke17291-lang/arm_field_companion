@@ -114,8 +114,13 @@ void _pushTreatmentsFullScreen(BuildContext context, Trial trial) {
   );
 }
 
-/// Workspace header: title + fullscreen (matches Assessments tab pattern).
-Widget _treatmentsWorkspaceToolbar(BuildContext context, Trial trial) {
+/// Local section header: count + label + fullscreen (matches Assessments tab).
+Widget _treatmentsSectionHeader(
+  BuildContext context,
+  Trial trial, {
+  required int count,
+}) {
+  final title = count == 1 ? '1 treatment' : '$count treatments';
   return Container(
     padding: const EdgeInsets.symmetric(
       horizontal: AppDesignTokens.spacing16,
@@ -133,12 +138,13 @@ Widget _treatmentsWorkspaceToolbar(BuildContext context, Trial trial) {
           color: AppDesignTokens.primary,
         ),
         const SizedBox(width: AppDesignTokens.spacing8),
-        const Expanded(
+        Expanded(
           child: Text(
-            'Treatments',
-            style: TextStyle(
+            title,
+            style: const TextStyle(
               fontWeight: FontWeight.w600,
-              fontSize: 12,
+              fontSize: 14,
+              height: 1.2,
               color: AppDesignTokens.primary,
             ),
             maxLines: 1,
@@ -168,7 +174,6 @@ class TreatmentsTab extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _treatmentsWorkspaceToolbar(context, trial),
         Expanded(
           child: treatmentsAsync.when(
             loading: () => const AppLoadingView(),
@@ -177,9 +182,22 @@ class TreatmentsTab extends ConsumerWidget {
                 stackTrace: st,
                 onRetry: () =>
                     ref.invalidate(treatmentsForTrialProvider(trial.id))),
-            data: (treatments) => treatments.isEmpty
-                ? _buildEmpty(context, ref)
-                : _buildList(context, ref, treatments),
+            data: (treatments) {
+              if (treatments.isEmpty) {
+                return _buildEmpty(context, ref);
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _treatmentsSectionHeader(
+                    context,
+                    trial,
+                    count: treatments.length,
+                  ),
+                  Expanded(child: _buildList(context, ref, treatments)),
+                ],
+              );
+            },
           ),
         ),
       ],

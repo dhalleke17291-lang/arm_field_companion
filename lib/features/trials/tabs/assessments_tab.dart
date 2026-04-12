@@ -116,10 +116,11 @@ class AssessmentsTab extends ConsumerWidget {
               const SizedBox(width: AppDesignTokens.spacing8),
               Expanded(
                 child: Text(
-                  total == 1 ? '1 assessment' : '$total assessments',
+                  total == 1 ? '1 Assessment' : '$total Assessments',
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                    fontSize: 14,
+                    height: 1.2,
                     color: AppDesignTokens.primary,
                   ),
                   overflow: TextOverflow.ellipsis,

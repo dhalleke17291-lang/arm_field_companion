@@ -9,6 +9,7 @@ import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/assessments/assessment_library.dart';
 import 'package:arm_field_companion/features/trials/standalone/create_standalone_trial_wizard_usecase.dart';
 import 'package:arm_field_companion/features/trials/standalone/plot_generation_engine.dart';
+import 'package:arm_field_companion/core/trial_state.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
@@ -74,7 +75,7 @@ void main() {
     final trial = await TrialRepository(db).getTrialById(trialId);
     expect(trial, isNotNull);
     expect(trial!.workspaceType, 'standalone');
-    expect(trial.status, 'draft');
+    expect(trial.status, kTrialStatusActive);
     expect(trial.experimentalDesign, PlotGenerationEngine.designRcbd);
 
     final treatments =

@@ -1464,6 +1464,35 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         }
         return;
       }
+      if (!context.mounted) return;
+      final latestForClose =
+          ref.read(trialProvider(widget.trial.id)).valueOrNull ?? widget.trial;
+      if (trialWorkspaceIsStandalone(latestForClose.workspaceType)) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Close this trial?'),
+            content: const Text(
+              'After closing:\n'
+              '• No new rating sessions can be started\n'
+              '• Existing corrections with reason still allowed\n'
+              '• Export remains available\n'
+              '• Structure remains locked',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Close Trial'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !context.mounted) return;
+      }
     }
     final repo = ref.read(trialRepositoryProvider);
     final ok = await repo.updateTrialStatus(widget.trial.id, newStatus);
@@ -1738,7 +1767,7 @@ class _TrialSessionsBar extends ConsumerWidget {
 }
 
 /// Pinned under the trial actions bar on every tab (split chrome).
-class _PinnedTrialStatusBar extends ConsumerWidget {
+class _PinnedTrialStatusBar extends ConsumerStatefulWidget {
   const _PinnedTrialStatusBar({
     required this.trial,
     required this.onTransitionStatus,
@@ -1750,16 +1779,72 @@ class _PinnedTrialStatusBar extends ConsumerWidget {
       onTransitionStatus;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PinnedTrialStatusBar> createState() =>
+      _PinnedTrialStatusBarState();
+}
+
+class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
+  bool _standaloneOpenSessionPromoteInFlight = false;
+
+  @override
+  void didUpdateWidget(covariant _PinnedTrialStatusBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.trial.id != widget.trial.id) {
+      _standaloneOpenSessionPromoteInFlight = false;
+    }
+  }
+
+  /// Legacy standalone Draft/Ready + open session: persist Active so the pill matches DB.
+  void _maybePersistActiveWhenStandaloneOpenSession(
+    Trial trial,
+    bool hasOpenSession,
+  ) {
+    if (!hasOpenSession) {
+      _standaloneOpenSessionPromoteInFlight = false;
+      return;
+    }
+    if (!trialWorkspaceIsStandalone(trial.workspaceType)) return;
+    if (trial.status != kTrialStatusDraft && trial.status != kTrialStatusReady) {
+      return;
+    }
+    if (_standaloneOpenSessionPromoteInFlight) return;
+    _standaloneOpenSessionPromoteInFlight = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (!mounted) return;
+        final latest = ref.read(trialProvider(trial.id)).valueOrNull ?? trial;
+        if (!trialWorkspaceIsStandalone(latest.workspaceType)) return;
+        if (latest.status != kTrialStatusDraft &&
+            latest.status != kTrialStatusReady) {
+          return;
+        }
+        await ref.read(trialRepositoryProvider).updateTrialStatus(
+              trial.id,
+              kTrialStatusActive,
+            );
+        if (mounted) ref.invalidate(trialProvider(trial.id));
+      } finally {
+        if (mounted) _standaloneOpenSessionPromoteInFlight = false;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final trial = widget.trial;
     final sessions =
         ref.watch(sessionsForTrialProvider(trial.id)).valueOrNull ?? [];
     final hasOpenSession = sessions.any(isSessionOpenForFieldWork);
+    _maybePersistActiveWhenStandaloneOpenSession(trial, hasOpenSession);
+
     final statusForDisplay = (hasOpenSession &&
             trial.status != kTrialStatusClosed &&
             trial.status != kTrialStatusArchived)
         ? kTrialStatusActive
         : trial.status;
-    final nextStatuses = allowedNextTrialStatuses(statusForDisplay);
+    final nextStatuses = trialWorkspaceIsStandalone(trial.workspaceType)
+        ? allowedNextTrialStatusesForTrial(trial.status, trial)
+        : allowedNextTrialStatuses(statusForDisplay);
     final nextStatus = nextStatuses.isNotEmpty ? nextStatuses.first : null;
     final bool hideLifecycleCta = statusForDisplay == kTrialStatusClosed ||
         statusForDisplay == kTrialStatusArchived;
@@ -1806,7 +1891,8 @@ class _PinnedTrialStatusBar extends ConsumerWidget {
           const Spacer(),
           if (buttonLabel != null && nextStatus != null)
             FilledButton(
-              onPressed: () => onTransitionStatus(context, ref, nextStatus),
+              onPressed: () =>
+                  widget.onTransitionStatus(context, ref, nextStatus),
               style: FilledButton.styleFrom(
                 backgroundColor: AppDesignTokens.primaryGreen,
                 foregroundColor: Colors.white,
@@ -2172,6 +2258,28 @@ class _OverviewTabBody extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TrialCompletionSummaryCard(trialId: trial.id),
+          if (trialWorkspaceIsStandalone(trial.workspaceType)) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppDesignTokens.spacing16,
+                0,
+                AppDesignTokens.spacing16,
+                AppDesignTokens.spacing8,
+              ),
+              child: Text(
+                statusDescriptionForTrialDisplay(
+                  trial.status,
+                  workspaceType: trial.workspaceType,
+                ),
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  fontWeight: FontWeight.w500,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ),
+          ],
           _TrialWorkflowReadinessTwinStrip(
             trial: trial,
             onAttentionTap: onAttentionTap,

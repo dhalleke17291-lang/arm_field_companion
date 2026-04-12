@@ -25,8 +25,28 @@ class GradientScreenHeader extends StatelessWidget
   static const Color g800 = Color(0xFF2D5A40);
   static const Color g700 = Color(0xFF3D7A57);
 
+  /// Tall enough for title + optional subtitle + optional second line (up to 2 lines),
+  /// plus [Padding] (8+16) — must leave cross-axis room for the leading [IconButton] (~48).
+  double get _preferredHeight {
+    const topPad = 8.0;
+    const bottomPad = 16.0;
+    const verticalPadding = topPad + bottomPad;
+    // Text stack height (title + optional lines).
+    var textBlock = titleFontSize * 1.35;
+    if (subtitle != null && subtitle!.trim().isNotEmpty) {
+      textBlock += 4 + 17;
+    }
+    if (subtitleLine2 != null && subtitleLine2!.trim().isNotEmpty) {
+      textBlock += 2 + 34;
+    }
+    // Row cross-axis = max(leading/actions height, text column).
+    const minCrossAxisForToolbar = 48.0;
+    final body = textBlock > minCrossAxisForToolbar ? textBlock : minCrossAxisForToolbar;
+    return (verticalPadding + body).clamp(kToolbarHeight + 24, 140);
+  }
+
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 24);
+  Size get preferredSize => Size.fromHeight(_preferredHeight);
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +125,21 @@ class GradientScreenHeader extends StatelessWidget
                     ],
                   ),
                 ),
-                if (actions != null) ...actions!,
+                if (actions != null && actions!.isNotEmpty)
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: actions!,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

@@ -71,7 +71,10 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     );
   }
 
-  Widget _applicationsWorkspaceToolbar(BuildContext context) {
+  /// Local section header: count + label + fullscreen (matches Assessments tab).
+  Widget _applicationsSectionHeader(BuildContext context, {required int count}) {
+    final title =
+        count == 1 ? '1 application' : '$count applications';
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDesignTokens.spacing16,
@@ -90,12 +93,13 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
             color: AppDesignTokens.primary,
           ),
           const SizedBox(width: AppDesignTokens.spacing8),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Applications',
-              style: TextStyle(
+              title,
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 12,
+                fontSize: 14,
+                height: 1.2,
                 color: AppDesignTokens.primary,
               ),
               maxLines: 1,
@@ -132,7 +136,6 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _applicationsWorkspaceToolbar(context),
         Expanded(
           child: applicationsAsync.when(
             loading: () => const AppLoadingView(),
@@ -144,9 +147,16 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
             ),
             data: (list) {
               final sorted = _sorted(list);
-              return sorted.isEmpty
-                  ? _buildEmpty(context, ref)
-                  : _buildList(context, ref, sorted);
+              if (sorted.isEmpty) {
+                return _buildEmpty(context, ref);
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _applicationsSectionHeader(context, count: sorted.length),
+                  Expanded(child: _buildList(context, ref, sorted)),
+                ],
+              );
             },
           ),
         ),

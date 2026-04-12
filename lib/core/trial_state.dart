@@ -102,6 +102,35 @@ String statusDescriptionForTrialStatus(String? status) {
   }
 }
 
+/// True when [Trials.workspaceType] is standalone (custom trial, wizard or manual).
+bool trialWorkspaceIsStandalone(String? workspaceType) =>
+    workspaceType != null && workspaceType.trim().toLowerCase() == 'standalone';
+
+/// Short lifecycle hints for standalone trials (no Draft/Ready workflow).
+String statusDescriptionForStandalone(String? status) {
+  switch (status) {
+    case kTrialStatusActive:
+      return 'Trial is active. Rate plots, capture data, add notes.';
+    case kTrialStatusClosed:
+      return 'Data collection complete. Corrections with reason allowed.';
+    case kTrialStatusArchived:
+      return 'Trial archived. Read-only.';
+    default:
+      return 'Trial is active.';
+  }
+}
+
+/// Lifecycle description for UI: standalone uses [statusDescriptionForStandalone].
+String statusDescriptionForTrialDisplay(
+  String? status, {
+  required String? workspaceType,
+}) {
+  if (trialWorkspaceIsStandalone(workspaceType)) {
+    return statusDescriptionForStandalone(status);
+  }
+  return statusDescriptionForTrialStatus(status);
+}
+
 /// Label for lifecycle lock state: "Editable" or "Locked" (structure layer).
 String getProtocolLockLabel(String? status) {
   return isProtocolLocked(status) ? 'Locked' : 'Editable';
@@ -277,4 +306,24 @@ List<String> allowedNextTrialStatuses(String? status) {
     default:
       return [kTrialStatusDraft, kTrialStatusReady, kTrialStatusActive];
   }
+}
+
+/// Next lifecycle step for [trial]: standalone skips Ready (Draft/Ready → Active only).
+List<String> allowedNextTrialStatusesForTrial(String? status, Trial trial) {
+  if (trialWorkspaceIsStandalone(trial.workspaceType)) {
+    switch (status) {
+      case kTrialStatusDraft:
+      case kTrialStatusReady:
+        return [kTrialStatusActive];
+      case kTrialStatusActive:
+        return [kTrialStatusClosed];
+      case kTrialStatusClosed:
+        return [kTrialStatusArchived];
+      case kTrialStatusArchived:
+        return [];
+      default:
+        return [kTrialStatusActive];
+    }
+  }
+  return allowedNextTrialStatuses(status);
 }
