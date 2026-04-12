@@ -273,10 +273,13 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
   }
 
   Future<void> _pickDate() async {
+    final trial =
+        ref.read(trialProvider(widget.trial.id)).valueOrNull ?? widget.trial;
     final seedingEvent =
-        ref.read(seedingEventForTrialProvider(widget.trial.id)).valueOrNull;
+        await ref.read(seedingEventForTrialProvider(trial.id).future);
+    if (!mounted) return;
     final minD = minimumApplicationOrAppliedDate(
-      trialCreatedAt: widget.trial.createdAt,
+      trialCreatedAt: trial.createdAt,
       seedingDate: seedingEvent?.seedingDate,
     );
     final maxD = dateOnlyLocal(DateTime.now());
@@ -365,11 +368,14 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
 
   Future<void> _save() async {
     if (_saving) return;
+    final trial =
+        ref.read(trialProvider(widget.trial.id)).valueOrNull ?? widget.trial;
     final seedingEvent =
-        ref.read(seedingEventForTrialProvider(widget.trial.id)).valueOrNull;
+        await ref.read(seedingEventForTrialProvider(trial.id).future);
+    if (!mounted) return;
     final appErr = validateApplicationEventDate(
       applicationDate: _date,
-      trialCreatedAt: widget.trial.createdAt,
+      trialCreatedAt: trial.createdAt,
       seedingDate: seedingEvent?.seedingDate,
     );
     if (appErr != null) {

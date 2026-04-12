@@ -4,6 +4,8 @@ import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/session_date_test_utils.dart';
+
 void main() {
   late AppDatabase db;
 
@@ -28,7 +30,7 @@ void main() {
     final session = await repo.createSession(
       trialId: trialId,
       name: 'S1',
-      sessionDateLocal: '2026-04-01',
+      sessionDateLocal: await sessionDateLocalValidForTrial(db, trialId),
       assessmentIds: [assessmentId],
       cropStageBbch: 32,
     );
@@ -50,7 +52,7 @@ void main() {
     final session = await repo.createSession(
       trialId: trialId,
       name: 'S1',
-      sessionDateLocal: '2026-04-01',
+      sessionDateLocal: await sessionDateLocalValidForTrial(db, trialId),
       assessmentIds: [assessmentId],
     );
     expect(session.cropStageBbch, isNull);
@@ -69,7 +71,7 @@ void main() {
     final session = await repo.createSession(
       trialId: trialId,
       name: 'S1',
-      sessionDateLocal: '2026-04-01',
+      sessionDateLocal: await sessionDateLocalValidForTrial(db, trialId),
       assessmentIds: [assessmentId],
       cropStageBbch: 10,
     );

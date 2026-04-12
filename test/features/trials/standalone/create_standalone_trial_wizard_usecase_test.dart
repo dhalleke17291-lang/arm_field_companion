@@ -16,6 +16,8 @@ import 'package:arm_field_companion/features/sessions/usecases/create_session_us
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../support/session_date_test_utils.dart';
+
 void main() {
   late AppDatabase db;
 
@@ -234,7 +236,7 @@ void main() {
       CreateSessionInput(
         trialId: trialId,
         name: 'Field session 1',
-        sessionDateLocal: '2026-04-05',
+        sessionDateLocal: await sessionDateLocalValidForTrial(db, trialId),
         assessmentIds: legacyIds,
       ),
     );

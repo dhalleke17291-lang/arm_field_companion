@@ -11,6 +11,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/session_date_test_utils.dart';
+
 final _readinessFamily =
     FutureProvider.family<TrialReadinessReport, int>((ref, trialId) {
   return TrialReadinessService().runChecks('$trialId', ref);
@@ -80,7 +82,7 @@ Future<void> _seedRatedTrial(AppDatabase db, int trialId) async {
   final session = await SessionRepository(db).createSession(
     trialId: trialId,
     name: 'S1',
-    sessionDateLocal: '2026-04-01',
+    sessionDateLocal: await sessionDateLocalValidForTrial(db, trialId),
     assessmentIds: legacyIds,
   );
   await db.into(db.ratingRecords).insert(
@@ -241,7 +243,7 @@ void main() {
     final session = await SessionRepository(db).createSession(
       trialId: trialId,
       name: 'S',
-      sessionDateLocal: '2026-04-01',
+      sessionDateLocal: await sessionDateLocalValidForTrial(db, trialId),
       assessmentIds: legs,
     );
     for (final aid in legs) {

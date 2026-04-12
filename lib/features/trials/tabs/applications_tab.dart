@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/field_operation_date_rules.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
@@ -359,7 +360,19 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     WidgetRef ref,
     TrialApplicationEvent e,
   ) async {
-    var selectedDate = DateTime.now();
+    final trial =
+        ref.read(trialProvider(widget.trial.id)).valueOrNull ?? widget.trial;
+    final seedingEvent =
+        await ref.read(seedingEventForTrialProvider(trial.id).future);
+    if (!context.mounted) return;
+    final minD = minimumApplicationOrAppliedDate(
+      trialCreatedAt: trial.createdAt,
+      seedingDate: seedingEvent?.seedingDate,
+    );
+    final maxD = dateOnlyLocal(DateTime.now());
+    var selectedDate = dateOnlyLocal(DateTime.now());
+    if (selectedDate.isBefore(minD)) selectedDate = minD;
+    if (selectedDate.isAfter(maxD)) selectedDate = maxD;
     var selectedTime = TimeOfDay.now();
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
@@ -394,10 +407,8 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                                 final d = await showDatePicker(
                                   context: ctx,
                                   initialDate: selectedDate,
-                                  firstDate: DateTime(2020),
-                                  lastDate: DateTime.now().add(
-                                    const Duration(days: 365),
-                                  ),
+                                  firstDate: minD,
+                                  lastDate: maxD,
                                 );
                                 if (d != null) {
                                   setSheetState(() => selectedDate = d);
@@ -457,14 +468,43 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
         selectedTime.hour,
         selectedTime.minute,
       );
+      final appliedErr = validateAppliedDateTime(
+        appliedAt: appliedAt,
+        trialCreatedAt: trial.createdAt,
+        seedingDate: seedingEvent?.seedingDate,
+      );
+      final clockErr = validateAppliedTimestampNotInFuture(appliedAt);
+      if (appliedErr != null || clockErr != null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(appliedErr ?? clockErr!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
       final userId = await ref.read(currentUserIdProvider.future);
       final user = await ref.read(currentUserProvider.future);
-      await ref.read(applicationRepositoryProvider).markApplicationApplied(
-            id: e.id,
-            appliedAt: appliedAt,
-            performedBy: user?.displayName,
-            performedByUserId: userId,
+      try {
+        await ref.read(applicationRepositoryProvider).markApplicationApplied(
+              id: e.id,
+              appliedAt: appliedAt,
+              performedBy: user?.displayName,
+              performedByUserId: userId,
+            );
+      } on OperationalDateRuleException catch (ex) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ex.message),
+              backgroundColor: Colors.red,
+            ),
           );
+        }
+        return;
+      }
       ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
       await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
       if (context.mounted) {

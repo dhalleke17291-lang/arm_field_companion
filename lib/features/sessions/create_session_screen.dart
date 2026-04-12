@@ -5,6 +5,7 @@ import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/field_operation_date_rules.dart';
 import '../../core/providers.dart';
 import '../../core/trial_state.dart';
 import '../../core/widgets/loading_error_widgets.dart';
@@ -33,6 +34,12 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   @override
   void initState() {
     super.initState();
+    final minD = dateOnlyLocal(widget.trial.createdAt);
+    final maxD = dateOnlyLocal(DateTime.now());
+    var sd = dateOnlyLocal(_sessionDate);
+    if (sd.isBefore(minD)) sd = minD;
+    if (sd.isAfter(maxD)) sd = maxD;
+    _sessionDate = sd;
     if (widget.trial.status != kTrialStatusClosed &&
         widget.trial.status != kTrialStatusArchived) {
       _setDefaultSessionName();
@@ -166,11 +173,19 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
               icon: const Icon(Icons.calendar_today, size: 18),
               label: Text(DateFormat('yyyy-MM-dd').format(_sessionDate)),
               onPressed: () async {
+                final latest =
+                    ref.read(trialProvider(widget.trial.id)).valueOrNull ??
+                        widget.trial;
+                final minD = dateOnlyLocal(latest.createdAt);
+                final maxD = dateOnlyLocal(DateTime.now());
+                var initial = dateOnlyLocal(_sessionDate);
+                if (initial.isBefore(minD)) initial = minD;
+                if (initial.isAfter(maxD)) initial = maxD;
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: _sessionDate,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
+                  initialDate: initial,
+                  firstDate: minD,
+                  lastDate: maxD,
                 );
                 if (picked != null) {
                   setState(() => _sessionDate = picked);
@@ -428,10 +443,27 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       return;
     }
 
-    setState(() => _isCreating = true);
-
+    final latestTrialForDate =
+        ref.read(trialProvider(widget.trial.id)).valueOrNull ?? widget.trial;
     final sessionDateLocal =
         '${_sessionDate.year}-${_sessionDate.month.toString().padLeft(2, '0')}-${_sessionDate.day.toString().padLeft(2, '0')}';
+    final sessionDateErr = validateSessionDateLocal(
+      sessionDateLocal: sessionDateLocal,
+      trialCreatedAt: latestTrialForDate.createdAt,
+    );
+    if (sessionDateErr != null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(sessionDateErr),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isCreating = true);
 
     final userId = await ref.read(currentUserIdProvider.future);
     final currentUser = await ref.read(currentUserProvider.future);

@@ -132,6 +132,14 @@ String? validateNotFutureUtc(DateTime at) {
   return null;
 }
 
+/// Full [appliedAt] instant must not be after wall-clock now (field recording).
+String? validateAppliedTimestampNotInFuture(DateTime appliedAt) {
+  if (appliedAt.isAfter(DateTime.now())) {
+    return 'Applied time cannot be in the future';
+  }
+  return null;
+}
+
 /// Earliest calendar day allowed for applications (and "applied on") after seeding exists.
 DateTime minimumApplicationOrAppliedDate({
   required DateTime trialCreatedAt,

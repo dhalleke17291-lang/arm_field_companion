@@ -192,28 +192,28 @@ const ListTileThemeData _overviewExpanderTileTheme = ListTileThemeData(
   contentPadding: EdgeInsets.zero,
 );
 
-/// Section label for Overview vertical blocks (matches Trial Completion caption).
+/// Section title for Overview vertical blocks (stronger than body/helper copy).
 class _OverviewSectionHeader extends StatelessWidget {
   const _OverviewSectionHeader(this.title);
 
   final String title;
+
+  /// Matches in-card section titles (e.g. Plots summary card).
+  static TextStyle titleTextStyle() => AppDesignTokens.headingStyle(
+        fontSize: 15,
+        color: AppDesignTokens.primaryText,
+      );
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDesignTokens.spacing16,
-        AppDesignTokens.spacing8,
+        AppDesignTokens.spacing16,
         AppDesignTokens.spacing16,
         AppDesignTokens.spacing4,
       ),
-      child: Text(
-        title,
-        style: AppDesignTokens.headingStyle(
-          fontSize: 12,
-          color: AppDesignTokens.secondaryText,
-        ),
-      ),
+      child: Text(title, style: titleTextStyle()),
     );
   }
 }
@@ -2329,17 +2329,14 @@ class _OverviewPlotSummary extends ConsumerWidget {
               children: [
                 Text(
                   'Plots',
-                  style: AppDesignTokens.headingStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
-                  ),
+                  style: _OverviewSectionHeader.titleTextStyle(),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   summaryLine,
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     color: AppDesignTokens.primaryText,
                   ),
                 ),
@@ -2347,8 +2344,9 @@ class _OverviewPlotSummary extends ConsumerWidget {
                 Text(
                   ratedLine,
                   style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.35,
                     color: AppDesignTokens.secondaryText,
                   ),
                 ),
@@ -2357,8 +2355,9 @@ class _OverviewPlotSummary extends ConsumerWidget {
                   Text(
                     '$excludedFromData data plot${excludedFromData == 1 ? '' : 's'} excluded from analysis (not counted in progress).',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       height: 1.35,
+                      fontWeight: FontWeight.w400,
                       color: AppDesignTokens.secondaryText
                           .withValues(alpha: 0.9),
                     ),
@@ -2436,7 +2435,7 @@ class _OverviewTabBody extends ConsumerWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   height: 1.35,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                   color: AppDesignTokens.secondaryText,
                 ),
               ),

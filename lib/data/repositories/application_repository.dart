@@ -167,6 +167,10 @@ class ApplicationRepository {
     if (appliedErr != null) {
       throw OperationalDateRuleException(appliedErr);
     }
+    final clockErr = validateAppliedTimestampNotInFuture(appliedAt);
+    if (clockErr != null) {
+      throw OperationalDateRuleException(clockErr);
+    }
 
     await _db.transaction(() async {
 

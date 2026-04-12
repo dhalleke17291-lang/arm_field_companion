@@ -10,6 +10,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/session_date_test_utils.dart';
+
 Future<Map<int, AssessmentCompletion>> _completionMap(
     AppDatabase db, int trialId) async {
   final container = ProviderContainer(
@@ -179,7 +181,7 @@ void main() {
     final session = await SessionRepository(db).createSession(
       trialId: trialId,
       name: 'S',
-      sessionDateLocal: '2026-04-01',
+      sessionDateLocal: await sessionDateLocalValidForTrial(db, trialId),
       assessmentIds: leg,
     );
     for (final p in plots) {

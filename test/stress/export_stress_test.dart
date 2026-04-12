@@ -15,6 +15,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uuid/uuid.dart';
 
+import '../support/session_date_test_utils.dart';
 import 'stress_import_helpers.dart';
 
 String _stressCsv(String trailingHeaderCols, List<String> dataRows) {
@@ -127,7 +128,7 @@ void main() {
       final s2 = await SessionRepository(db).createSession(
         trialId: tid,
         name: 'Field A',
-        sessionDateLocal: '2026-06-20',
+        sessionDateLocal: await sessionDateLocalValidForTrial(db, tid),
         assessmentIds: assessmentIds,
       );
 
