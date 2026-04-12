@@ -180,6 +180,8 @@ class TrialCard extends ConsumerWidget {
                       ),
                     ),
                     const Spacer(),
+                    _ReadinessDot(readinessAsync: readinessAsync),
+                    const SizedBox(width: 6),
                     if (_trialStatusDisplay(statusLower).isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -378,6 +380,47 @@ class _TrialQuickActions extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Small colored dot indicating export readiness at a glance.
+/// Green = ready, amber = warnings, red = blockers, hidden while loading.
+class _ReadinessDot extends StatelessWidget {
+  const _ReadinessDot({required this.readinessAsync});
+
+  final AsyncValue<TrialReadinessReport> readinessAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return readinessAsync.maybeWhen(
+      data: (report) {
+        final Color color;
+        final String tooltip;
+        switch (report.status) {
+          case TrialReadinessStatus.notReady:
+            color = AppDesignTokens.missedColor;
+            tooltip = '${report.blockerCount} blocker${report.blockerCount == 1 ? '' : 's'}';
+          case TrialReadinessStatus.readyWithWarnings:
+            color = AppDesignTokens.flagColor;
+            tooltip = '${report.warningCount} warning${report.warningCount == 1 ? '' : 's'}';
+          case TrialReadinessStatus.ready:
+            color = AppDesignTokens.successFg;
+            tooltip = 'Export ready';
+        }
+        return Tooltip(
+          message: tooltip,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 }
