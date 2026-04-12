@@ -4,6 +4,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/assessment_result_direction.dart';
+import '../../core/trial_state.dart';
+import '../derived/domain/anova.dart';
 import 'standalone_report_data.dart';
 
 String _cell(String? value) {
@@ -1132,7 +1134,10 @@ class ReportPdfBuilderService {
     if (data.ratings.isEmpty) {
       w.add(_italicNote('No assessment results recorded'));
     } else {
-      w.add(_buildResultsTable(data.ratings));
+      w.add(_buildResultsTable(
+        data.ratings,
+        isStandalone: trialWorkspaceIsStandalone(data.trial.workspaceType),
+      ));
     }
     return w;
   }
@@ -1302,7 +1307,10 @@ class ReportPdfBuilderService {
     return _kvRow(label, value);
   }
 
-  pw.Widget _buildResultsTable(List<RatingResultRow> ratings) {
+  pw.Widget _buildResultsTable(
+    List<RatingResultRow> ratings, {
+    bool isStandalone = false,
+  }) {
     // Group by assessment name for readability
     final byAssessment = <String, List<RatingResultRow>>{};
     for (final r in ratings) {
@@ -1408,6 +1416,16 @@ class ReportPdfBuilderService {
             ],
           ),
         ));
+
+        // ANOVA section (standalone trials only, 2+ treatments, numeric data).
+        if (isStandalone && byTreatment.length >= 2) {
+          final anovaResult = _computePdfAnova(rows);
+          if (anovaResult != null) {
+            widgets.add(pw.SizedBox(height: 4));
+            widgets.add(_buildPdfAnovaSection(anovaResult));
+            widgets.add(pw.SizedBox(height: 6));
+          }
+        }
       }
 
       widgets.add(pw.Table(
@@ -1444,6 +1462,131 @@ class ReportPdfBuilderService {
       widgets.add(pw.SizedBox(height: 12));
     }
     return pw.Column(children: widgets);
+  }
+
+  /// Computes ANOVA from raw rating rows for PDF output.
+  AnovaResult? _computePdfAnova(List<RatingResultRow> rows) {
+    final byTrtRep = <String, Map<int, List<double>>>{};
+    for (final row in rows) {
+      if (row.resultStatus != 'RECORDED') continue;
+      final v = double.tryParse(row.value);
+      if (v == null) continue;
+      byTrtRep
+          .putIfAbsent(row.treatmentCode, () => {})
+          .putIfAbsent(row.rep, () => [])
+          .add(v);
+    }
+    if (byTrtRep.length < 2) return null;
+
+    final allReps = <int>{};
+    for (final trt in byTrtRep.values) {
+      allReps.addAll(trt.keys);
+    }
+
+    if (allReps.length >= 2) {
+      final rcbdInput = <String, Map<int, double>>{};
+      for (final entry in byTrtRep.entries) {
+        rcbdInput[entry.key] = {};
+        for (final repEntry in entry.value.entries) {
+          final vals = repEntry.value;
+          rcbdInput[entry.key]![repEntry.key] =
+              vals.reduce((a, b) => a + b) / vals.length;
+        }
+      }
+      final result = computeRcbdAnova(rcbdInput);
+      if (result != null) return result;
+    }
+
+    final crdInput = <String, List<double>>{};
+    for (final entry in byTrtRep.entries) {
+      crdInput[entry.key] = [];
+      for (final vals in entry.value.values) {
+        crdInput[entry.key]!.addAll(vals);
+      }
+    }
+    return computeOneWayAnova(crdInput);
+  }
+
+  /// Builds the PDF ANOVA section: significance, F/p, LSD, means with letters.
+  pw.Widget _buildPdfAnovaSection(AnovaResult anova) {
+    final sigLabel = significanceLevelLabel(anova.significance);
+    String pStr;
+    if (anova.treatmentPValue < 0.001) {
+      pStr = '< 0.001';
+    } else if (anova.treatmentPValue < 0.01) {
+      pStr = anova.treatmentPValue.toStringAsFixed(3);
+    } else {
+      pStr = anova.treatmentPValue.toStringAsFixed(2);
+    }
+
+    final children = <pw.Widget>[
+      pw.Text(
+        '$sigLabel — F = ${anova.treatmentF.toStringAsFixed(2)}, '
+        'p = $pStr (${anova.model})',
+        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+      ),
+    ];
+
+    if (anova.lsd != null) {
+      children.add(pw.Text(
+        'LSD (α=0.05) = ${anova.lsd!.toStringAsFixed(2)}',
+        style: const pw.TextStyle(fontSize: 9),
+      ));
+    }
+
+    if (anova.treatmentMeansWithLetters.isNotEmpty) {
+      children.add(pw.SizedBox(height: 4));
+      children.add(pw.Table(
+        border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+        columnWidths: const {
+          0: pw.FixedColumnWidth(28),
+          1: pw.FlexColumnWidth(2),
+          2: pw.FixedColumnWidth(48),
+          3: pw.FixedColumnWidth(24),
+        },
+        children: [
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            children: [
+              _tableHeaderCell('Grp'),
+              _tableHeaderCell('Treatment'),
+              _tableHeaderCell('Mean', rightAlign: true),
+              _tableHeaderCell('n', rightAlign: true),
+            ],
+          ),
+          ...anova.treatmentMeansWithLetters.map((m) => pw.TableRow(
+                children: [
+                  _tableCell(m.letter),
+                  _tableCell(m.treatmentCode),
+                  _tableCell(_formatMean(m.mean), rightAlign: true),
+                  _tableCell('${m.n}', rightAlign: true),
+                ],
+              )),
+        ],
+      ));
+      children.add(pw.SizedBox(height: 2));
+      children.add(pw.Text(
+        anova.isSignificant
+            ? 'Treatments sharing a letter are not significantly different.'
+            : 'No significant differences between treatments at the 5% level.',
+        style: const pw.TextStyle(fontSize: 9),
+      ));
+    }
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey400, width: 0.5),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+        color: anova.isSignificant
+            ? const PdfColor.fromInt(0xFFF0FDF4)
+            : const PdfColor.fromInt(0xFFF5F5F5),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
   }
 }
 

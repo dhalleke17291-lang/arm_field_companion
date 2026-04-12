@@ -33,6 +33,7 @@ import '../photos/photo_export_name_builder.dart';
 import '../photos/photo_repository.dart';
 import '../weather/weather_export_builder.dart';
 import '../../data/repositories/weather_snapshot_repository.dart';
+import '../derived/domain/anova.dart';
 import 'csv_export_service.dart';
 import 'trial_export_bundle.dart';
 
@@ -476,6 +477,15 @@ class ExportTrialUseCase {
       utf8BomForExcel: utf8BomForExcel,
     );
 
+    final statisticsCsv = await _buildStatisticsCsv(
+      trial: trial,
+      plots: plots,
+      treatmentMap: treatmentMap,
+      assignmentByPlot: assignmentByPlot,
+      sessions: sessions,
+      utf8BomForExcel: utf8BomForExcel,
+    );
+
     final bundle = TrialExportBundle(
       observationsCsv: observationsCsv,
       observationsArmTransferCsv: observationsArmTransferCsv,
@@ -486,6 +496,7 @@ class ExportTrialUseCase {
       sessionsCsv: sessionsCsv,
       notesCsv: notesCsv,
       dataDictionaryCsv: dataDictionaryCsv,
+      statisticsCsv: statisticsCsv,
       warningMessage: confidenceWarningMessage,
       preflightNotes: preflightNotes.isEmpty ? null : preflightNotes,
     );
@@ -520,6 +531,138 @@ class ExportTrialUseCase {
   }
 
   /// Returns a static CSV documenting all exported columns. No queries.
+  /// Builds statistics.csv: ANOVA summary + means with significance letters
+  /// per assessment. Standalone trials only.
+  Future<String?> _buildStatisticsCsv({
+    required Trial trial,
+    required List<Plot> plots,
+    required Map<int, Treatment> treatmentMap,
+    required Map<int, Assignment> assignmentByPlot,
+    required List<Session> sessions,
+    bool utf8BomForExcel = false,
+  }) async {
+    if (trial.isArmLinked) return null;
+    final analyzable = plots.where(isAnalyzablePlot).toList();
+    if (analyzable.length < 2) return null;
+
+    // Build per-assessment rating data grouped by (treatment, rep).
+    final byAssessment = <String, Map<String, Map<int, List<double>>>>{};
+    for (final session in sessions) {
+      final sessionAssessments =
+          await _sessionRepository.getSessionAssessments(session.id);
+      final assessmentMap = {for (final a in sessionAssessments) a.id: a};
+      final ratings =
+          await _ratingRepository.getCurrentRatingsForSession(session.id);
+      for (final r in ratings) {
+        if (r.resultStatus != 'RECORDED') continue;
+        final v = r.numericValue;
+        if (v == null) continue;
+        final plot = plots.firstWhere((p) => p.id == r.plotPk,
+            orElse: () => plots.first);
+        if (!isAnalyzablePlot(plot)) continue;
+        final assignment = assignmentByPlot[plot.id];
+        final treatmentId = assignment?.treatmentId ?? plot.treatmentId;
+        final treatment =
+            treatmentId != null ? treatmentMap[treatmentId] : null;
+        if (treatment == null) continue;
+        final assessment = assessmentMap[r.assessmentId];
+        if (assessment == null) continue;
+        final rep = assignment?.replication ?? plot.rep ?? 1;
+        byAssessment
+            .putIfAbsent(assessment.name, () => {})
+            .putIfAbsent(treatment.code, () => {})
+            .putIfAbsent(rep, () => [])
+            .add(v);
+      }
+    }
+
+    if (byAssessment.isEmpty) return null;
+
+    const headers = [
+      'assessment',
+      'model',
+      'f_statistic',
+      'p_value',
+      'significance',
+      'lsd_005',
+      'error_ms',
+      'error_df',
+      'treatment_code',
+      'mean',
+      'n',
+      'significance_group',
+    ];
+    final rows = <List<String>>[];
+
+    for (final entry in byAssessment.entries) {
+      final assessmentName = entry.key;
+      final trtData = entry.value;
+      if (trtData.length < 2) continue;
+
+      // Try RCBD first.
+      final allReps = <int>{};
+      for (final repMap in trtData.values) {
+        allReps.addAll(repMap.keys);
+      }
+
+      AnovaResult? anova;
+      if (allReps.length >= 2) {
+        final rcbdInput = <String, Map<int, double>>{};
+        for (final tEntry in trtData.entries) {
+          rcbdInput[tEntry.key] = {};
+          for (final rEntry in tEntry.value.entries) {
+            final vals = rEntry.value;
+            rcbdInput[tEntry.key]![rEntry.key] =
+                vals.reduce((a, b) => a + b) / vals.length;
+          }
+        }
+        anova = computeRcbdAnova(rcbdInput);
+      }
+      if (anova == null) {
+        final crdInput = <String, List<double>>{};
+        for (final tEntry in trtData.entries) {
+          crdInput[tEntry.key] = [];
+          for (final vals in tEntry.value.values) {
+            crdInput[tEntry.key]!.addAll(vals);
+          }
+        }
+        anova = computeOneWayAnova(crdInput);
+      }
+      if (anova == null) continue;
+
+      String pStr;
+      if (anova.treatmentPValue < 0.001) {
+        pStr = '< 0.001';
+      } else {
+        pStr = anova.treatmentPValue.toStringAsFixed(4);
+      }
+
+      for (final m in anova.treatmentMeansWithLetters) {
+        rows.add([
+          assessmentName,
+          anova.model,
+          anova.treatmentF.toStringAsFixed(4),
+          pStr,
+          significanceLevelLabel(anova.significance),
+          anova.lsd?.toStringAsFixed(4) ?? '',
+          anova.errorMeanSquare.toStringAsFixed(4),
+          '${anova.errorDf}',
+          m.treatmentCode,
+          m.mean.toStringAsFixed(4),
+          '${m.n}',
+          m.letter,
+        ]);
+      }
+    }
+
+    if (rows.isEmpty) return null;
+    return CsvExportService.buildCsv(
+      headers,
+      rows,
+      utf8BomForExcel: utf8BomForExcel,
+    );
+  }
+
   String _buildDataDictionary(
     String exportTimestamp,
     String appVersion, {
@@ -996,6 +1139,19 @@ class ExportTrialUseCase {
         'BBCH from the parent rating session',
         '0–99'
       ],
+      // statistics.csv (standalone trials only)
+      ['statistics.csv', 'assessment', 'Assessment name', ''],
+      ['statistics.csv', 'model', 'ANOVA model used (CRD or RCBD)', ''],
+      ['statistics.csv', 'f_statistic', 'F-statistic from ANOVA', ''],
+      ['statistics.csv', 'p_value', 'p-value for treatment effect', ''],
+      ['statistics.csv', 'significance', 'Significance level classification', ''],
+      ['statistics.csv', 'lsd_005', 'LSD at alpha=0.05', ''],
+      ['statistics.csv', 'error_ms', 'Error mean square from ANOVA', ''],
+      ['statistics.csv', 'error_df', 'Error degrees of freedom', ''],
+      ['statistics.csv', 'treatment_code', 'Treatment code', ''],
+      ['statistics.csv', 'mean', 'Treatment mean', ''],
+      ['statistics.csv', 'n', 'Number of observations', ''],
+      ['statistics.csv', 'significance_group', 'LSD significance group letter(s)', ''],
       // metadata
       ['metadata', 'export_timestamp', exportTimestamp, 'ISO 8601'],
       ['metadata', 'app_version', appVersion, ''],
@@ -1558,6 +1714,11 @@ class ExportTrialUseCase {
       'notes.csv': bundle.notesCsv,
       'data_dictionary.csv': bundle.dataDictionaryCsv,
     };
+    // statistics.csv: standalone trials only (not ARM handoff).
+    if (bundle.statisticsCsv != null &&
+        !trial.isArmLinked) {
+      csvFiles['statistics.csv'] = bundle.statisticsCsv!;
+    }
     for (final entry in csvFiles.entries) {
       final bytes = utf8.encode(entry.value);
       archive.addFile(ArchiveFile(entry.key, bytes.length, bytes));

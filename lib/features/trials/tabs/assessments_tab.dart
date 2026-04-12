@@ -628,6 +628,18 @@ class AssessmentsTab extends ConsumerWidget {
                 ),
               ],
             ),
+            if (_cvGuidance(stat.cvInterpretation) != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  _cvGuidance(stat.cvInterpretation)!,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ),
           ],
           if (stat.repConsistencyIssues.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -1052,6 +1064,19 @@ class AssessmentsTab extends ConsumerWidget {
         return 'Poor';
       case null:
         return '';
+    }
+  }
+
+  static String? _cvGuidance(CvInterpretation? cv) {
+    switch (cv) {
+      case CvInterpretation.poor:
+        return 'High variability — consider data transformation or investigate field uniformity';
+      case CvInterpretation.questionable:
+        return 'Elevated variability — interpret differences with caution';
+      case CvInterpretation.excellent:
+      case CvInterpretation.acceptable:
+      case null:
+        return null;
     }
   }
 
