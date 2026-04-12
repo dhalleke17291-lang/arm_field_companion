@@ -870,7 +870,11 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              _SessionProgressFromDerived(sessionId: session.id),
+              _SessionProgressFromDerived(
+                sessionId: session.id,
+                sessionStartedAt: session.startedAt,
+                isOpen: session.endedAt == null,
+              ),
               const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: () =>
@@ -1671,9 +1675,15 @@ class _SessionExportTrustCaption extends ConsumerWidget {
 
 /// Isolate ref.watch(derivedSnapshotForSessionProvider) so it disposes cleanly (avoids _dependents.isEmpty).
 class _SessionProgressFromDerived extends ConsumerWidget {
-  const _SessionProgressFromDerived({required this.sessionId});
+  const _SessionProgressFromDerived({
+    required this.sessionId,
+    this.sessionStartedAt,
+    this.isOpen = false,
+  });
 
   final int sessionId;
+  final DateTime? sessionStartedAt;
+  final bool isOpen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1684,19 +1694,62 @@ class _SessionProgressFromDerived extends ConsumerWidget {
       error: (e, __) => AppErrorHint(error: e),
       data: (snapshot) {
         if (snapshot == null) return const SizedBox.shrink();
+        final paceText = _estimatePace(
+          ratedCount: snapshot.ratedPlotCount,
+          totalCount: snapshot.totalPlotCount,
+          startedAt: sessionStartedAt,
+          isOpen: isOpen,
+        );
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            '${snapshot.ratedPlotCount} / ${snapshot.totalPlotCount} plots with a rating (${snapshot.progressPct.toStringAsFixed(0)}%) — navigation',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.primary,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${snapshot.ratedPlotCount} / ${snapshot.totalPlotCount} plots with a rating (${snapshot.progressPct.toStringAsFixed(0)}%) — navigation',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              if (paceText != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  paceText,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                  textAlign: TextAlign.center,
                 ),
-            textAlign: TextAlign.center,
+              ],
+            ],
           ),
         );
       },
     );
+  }
+
+  /// Pace estimate for open sessions with at least 2 rated plots.
+  /// Returns null when not enough data or session is closed.
+  static String? _estimatePace({
+    required int ratedCount,
+    required int totalCount,
+    required DateTime? startedAt,
+    required bool isOpen,
+  }) {
+    if (!isOpen || startedAt == null || ratedCount < 2) return null;
+    final remaining = totalCount - ratedCount;
+    if (remaining <= 0) return null;
+    final elapsed = DateTime.now().difference(startedAt);
+    if (elapsed.inSeconds < 10) return null;
+    final secsPerPlot = elapsed.inSeconds / ratedCount;
+    final remainingSecs = (secsPerPlot * remaining).round();
+    if (remainingSecs < 60) {
+      return '~$remainingSecs sec remaining at current pace';
+    }
+    final mins = (remainingSecs / 60).round();
+    return '~$mins min remaining at current pace';
   }
 }
 

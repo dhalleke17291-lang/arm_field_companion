@@ -1179,4 +1179,62 @@ void main() {
       expect(computeCheckComparison([], 'UTC'), isEmpty);
     });
   });
+
+  group('computeRepConsistency', () {
+    test('flags rep with inverted treatment ranking', () {
+      // Consensus: T1 > T2 (T1 has higher values in reps 1 and 2).
+      // Rep 3: T2 > T1 (inverted).
+      final rows = [
+        _row(plotId: '1', rep: 1, treatmentCode: 'T1', assessmentName: _kAssessment, value: '80'),
+        _row(plotId: '2', rep: 1, treatmentCode: 'T2', assessmentName: _kAssessment, value: '40'),
+        _row(plotId: '3', rep: 2, treatmentCode: 'T1', assessmentName: _kAssessment, value: '85'),
+        _row(plotId: '4', rep: 2, treatmentCode: 'T2', assessmentName: _kAssessment, value: '35'),
+        _row(plotId: '5', rep: 3, treatmentCode: 'T1', assessmentName: _kAssessment, value: '30'),
+        _row(plotId: '6', rep: 3, treatmentCode: 'T2', assessmentName: _kAssessment, value: '90'),
+      ];
+      final issues = computeRepConsistency(rows, _kAssessment);
+      expect(issues.length, 1);
+      expect(issues[0].rep, 3);
+      expect(issues[0].repRanking.first, 'T2');
+      expect(issues[0].consensusRanking.first, 'T1');
+    });
+
+    test('returns empty when all reps agree', () {
+      final rows = [
+        _row(plotId: '1', rep: 1, treatmentCode: 'T1', assessmentName: _kAssessment, value: '80'),
+        _row(plotId: '2', rep: 1, treatmentCode: 'T2', assessmentName: _kAssessment, value: '40'),
+        _row(plotId: '3', rep: 2, treatmentCode: 'T1', assessmentName: _kAssessment, value: '75'),
+        _row(plotId: '4', rep: 2, treatmentCode: 'T2', assessmentName: _kAssessment, value: '35'),
+      ];
+      expect(computeRepConsistency(rows, _kAssessment), isEmpty);
+    });
+
+    test('returns empty with fewer than 2 reps', () {
+      final rows = [
+        _row(plotId: '1', rep: 1, treatmentCode: 'T1', assessmentName: _kAssessment, value: '80'),
+        _row(plotId: '2', rep: 1, treatmentCode: 'T2', assessmentName: _kAssessment, value: '40'),
+      ];
+      expect(computeRepConsistency(rows, _kAssessment), isEmpty);
+    });
+
+    test('returns empty with fewer than 2 treatments', () {
+      final rows = [
+        _row(plotId: '1', rep: 1, treatmentCode: 'T1', assessmentName: _kAssessment, value: '80'),
+        _row(plotId: '2', rep: 2, treatmentCode: 'T1', assessmentName: _kAssessment, value: '75'),
+      ];
+      expect(computeRepConsistency(rows, _kAssessment), isEmpty);
+    });
+
+    test('ignores non-RECORDED rows', () {
+      final rows = [
+        _row(plotId: '1', rep: 1, treatmentCode: 'T1', assessmentName: _kAssessment, value: '80'),
+        _row(plotId: '2', rep: 1, treatmentCode: 'T2', assessmentName: _kAssessment, value: '40'),
+        _row(plotId: '3', rep: 2, treatmentCode: 'T1', assessmentName: _kAssessment, value: '75'),
+        _row(plotId: '4', rep: 2, treatmentCode: 'T2', assessmentName: _kAssessment, value: '35'),
+        // VOID row in rep 3 should not create a rep entry.
+        const RatingResultRow(plotId: '5', rep: 3, treatmentCode: 'T2', assessmentName: _kAssessment, value: '99', resultStatus: 'VOID', unit: '%'),
+      ];
+      expect(computeRepConsistency(rows, _kAssessment), isEmpty);
+    });
+  });
 }

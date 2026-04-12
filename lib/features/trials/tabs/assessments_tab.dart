@@ -628,6 +628,27 @@ class AssessmentsTab extends ConsumerWidget {
               ],
             ),
           ],
+          if (stat.repConsistencyIssues.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    size: 13, color: AppDesignTokens.warningFg),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    stat.repConsistencyIssues.length == 1
+                        ? 'Rep ${stat.repConsistencyIssues.first.rep} ranking differs from consensus'
+                        : 'Reps ${stat.repConsistencyIssues.map((i) => i.rep).join(', ')} rankings differ from consensus',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppDesignTokens.warningFg,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (completeness == AssessmentCompleteness.noData ||
               !stat.hasAnyData) ...[
             const SizedBox(height: 6),

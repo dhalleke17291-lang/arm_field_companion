@@ -92,6 +92,7 @@ class AssessmentStatistics {
     this.trialCV,
     this.cvInterpretation,
     this.outliers,
+    this.repConsistencyIssues = const [],
   });
 
   final AssessmentProgress progress;
@@ -99,10 +100,10 @@ class AssessmentStatistics {
   final ResultDirection resultDirection;
   final List<TreatmentMean> treatmentMeans;
 
-  // v1: always null — deferred to v2
   final double? trialCV;
   final CvInterpretation? cvInterpretation;
-  final List<PlotOutlier>? outliers;
+  final List<PlotOutlier>? outliers; // v2
+  final List<RepConsistencyIssue> repConsistencyIssues;
 
   bool get hasAnyData => progress.hasAnyData;
   bool get isPreliminary => progress.isPreliminary;
@@ -299,6 +300,7 @@ AssessmentStatistics computeAssessmentStatistics(
   );
   final direction = ResultDirection.fromString(resultDirectionString);
   final cv = computeTrialCV(means);
+  final repIssues = computeRepConsistency(rows, assessmentName);
   return AssessmentStatistics(
     progress: progress,
     unit: unit,
@@ -307,6 +309,7 @@ AssessmentStatistics computeAssessmentStatistics(
     trialCV: cv,
     cvInterpretation: cv != null ? interpretCV(cv) : null,
     outliers: null, // v2
+    repConsistencyIssues: repIssues,
   );
 }
 
@@ -353,4 +356,97 @@ Map<String, double> computeCheckComparison(
     result[m.treatmentCode] = ((m.mean - checkMean) / checkMean) * 100;
   }
   return result;
+}
+
+/// Rep where the treatment ranking differs from the consensus (majority) ranking.
+class RepConsistencyIssue {
+  const RepConsistencyIssue({
+    required this.rep,
+    required this.repRanking,
+    required this.consensusRanking,
+  });
+
+  final int rep;
+
+  /// Treatment codes in order of mean value (descending) for this rep.
+  final List<String> repRanking;
+
+  /// Treatment codes in order of mean value (descending) across all reps combined.
+  final List<String> consensusRanking;
+}
+
+/// Checks whether treatment rankings are consistent across reps.
+///
+/// Computes treatment mean within each rep, ranks them (descending by mean),
+/// then compares each rep's ranking to the consensus (overall treatment means).
+/// Returns a list of reps whose ranking differs from the consensus.
+///
+/// Returns empty list when fewer than 2 reps or fewer than 2 treatments.
+List<RepConsistencyIssue> computeRepConsistency(
+  List<RatingResultRow> rows,
+  String assessmentName,
+) {
+  // Group values by (rep, treatmentCode).
+  final byRepTreatment = <int, Map<String, List<double>>>{};
+  for (final row in rows) {
+    if (row.assessmentName != assessmentName) continue;
+    if (row.resultStatus != 'RECORDED') continue;
+    final v = double.tryParse(row.value);
+    if (v == null) continue;
+    byRepTreatment
+        .putIfAbsent(row.rep, () => {})
+        .putIfAbsent(row.treatmentCode, () => [])
+        .add(v);
+  }
+
+  if (byRepTreatment.length < 2) return [];
+
+  // Compute per-rep treatment means and rank (descending).
+  List<String> rankTreatments(Map<String, List<double>> treatmentValues) {
+    final means = <String, double>{};
+    for (final entry in treatmentValues.entries) {
+      final vals = entry.value;
+      if (vals.isEmpty) continue;
+      means[entry.key] = vals.reduce((a, b) => a + b) / vals.length;
+    }
+    final sorted = means.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.map((e) => e.key).toList();
+  }
+
+  // Consensus: pool all reps.
+  final pooled = <String, List<double>>{};
+  for (final repMap in byRepTreatment.values) {
+    for (final entry in repMap.entries) {
+      pooled.putIfAbsent(entry.key, () => []).addAll(entry.value);
+    }
+  }
+  final consensusRanking = rankTreatments(pooled);
+  if (consensusRanking.length < 2) return [];
+
+  final issues = <RepConsistencyIssue>[];
+  for (final entry in byRepTreatment.entries) {
+    final repRanking = rankTreatments(entry.value);
+    if (repRanking.length < 2) continue;
+    // Compare only treatments present in both rankings.
+    final common = consensusRanking.where(repRanking.contains).toList();
+    final repFiltered = repRanking.where(common.contains).toList();
+    if (common.length < 2) continue;
+    if (!_rankingsMatch(common, repFiltered)) {
+      issues.add(RepConsistencyIssue(
+        rep: entry.key,
+        repRanking: repRanking,
+        consensusRanking: consensusRanking,
+      ));
+    }
+  }
+  return issues;
+}
+
+bool _rankingsMatch(List<String> a, List<String> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
