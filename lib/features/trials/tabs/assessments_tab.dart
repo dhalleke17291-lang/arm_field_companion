@@ -735,9 +735,10 @@ class AssessmentsTab extends ConsumerWidget {
                                     checkComparison[m.treatmentCode]!),
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: checkComparison[m.treatmentCode]! < 0
-                                      ? AppDesignTokens.missedColor
-                                      : AppDesignTokens.successFg,
+                                  color: _checkPctColor(
+                                    checkComparison[m.treatmentCode]!,
+                                    stat.resultDirection,
+                                  ),
                                 ),
                               ),
                             ),
@@ -868,5 +869,24 @@ class AssessmentsTab extends ConsumerWidget {
   static String _formatCheckPct(double pct) {
     final sign = pct >= 0 ? '+' : '';
     return '$sign${pct.toStringAsFixed(0)}% vs check';
+  }
+
+  /// Color for check comparison: respects result direction.
+  /// higherIsBetter: positive = good (green), negative = bad (red).
+  /// lowerIsBetter: negative = good (green), positive = bad (red).
+  /// neutral: no value judgment (secondary text).
+  static Color _checkPctColor(double pct, ResultDirection direction) {
+    switch (direction) {
+      case ResultDirection.higherIsBetter:
+        return pct >= 0
+            ? AppDesignTokens.successFg
+            : AppDesignTokens.missedColor;
+      case ResultDirection.lowerIsBetter:
+        return pct <= 0
+            ? AppDesignTokens.successFg
+            : AppDesignTokens.missedColor;
+      case ResultDirection.neutral:
+        return AppDesignTokens.secondaryText;
+    }
   }
 }
