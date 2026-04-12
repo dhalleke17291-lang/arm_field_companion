@@ -423,6 +423,7 @@ final updatePlotAssignmentUseCaseProvider =
 
 final protocolImportUseCaseProvider = Provider<ProtocolImportUseCase>((ref) {
   return ProtocolImportUseCase(
+    ref.watch(databaseProvider),
     ref.watch(trialRepositoryProvider),
     ref.watch(treatmentRepositoryProvider),
     ref.watch(plotRepositoryProvider),

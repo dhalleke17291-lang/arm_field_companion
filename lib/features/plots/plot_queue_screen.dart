@@ -178,6 +178,26 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     if (pos != null && pos.isForPlot(plot.id, currentPlotIndex)) {
       initialAssessmentIndex = pos.clampedAssessmentIndex(assessments.length);
     }
+    // When there is no resume for this plot, open on the first session assessment
+    // that has a non-RECORDED current rating so the rating screen matches the
+    // queue "Issues" expectation (resume still wins when set above).
+    if (initialAssessmentIndex == null && assessments.isNotEmpty) {
+      final ratings =
+          ref.read(sessionRatingsProvider(widget.session.id)).valueOrNull ?? [];
+      final plotRatings = ratings.where((r) => r.plotPk == plot.id).toList();
+      final hasIssues =
+          plotRatings.any((r) => r.resultStatus != 'RECORDED');
+      if (hasIssues) {
+        for (final r in plotRatings) {
+          if (r.resultStatus == 'RECORDED') continue;
+          final idx = assessments.indexWhere((a) => a.id == r.assessmentId);
+          if (idx >= 0) {
+            initialAssessmentIndex = idx;
+            break;
+          }
+        }
+      }
+    }
     if (!context.mounted) return;
     await Navigator.push<void>(
       context,
@@ -943,6 +963,11 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           trial: widget.trial,
           session: widget.session,
           isFlagged: flaggedIds.contains(plot.id),
+          // "Issues" = any current session rating for this plot is not RECORDED.
+          // Ratings include all session rows; chips only cover session assessments.
+          // If a non-RECORDED row exists only for an assessmentId not in this
+          // session's list, the badge can still show while no chip highlights it;
+          // badge filtering was deferred until orphan cases are verified in product data.
           hasIssues: plotRatings.any((r) => r.resultStatus != 'RECORDED'),
           hasEdited: hasEdited,
           editRecencyLine: editRecencyLine,

@@ -480,6 +480,8 @@ class SeedingFieldValues extends Table {
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
 
+/// Planned application slots (protocol). No Dart repository writes this table today;
+/// [ApplicationEvents.applicationSlotId] is optional. New installs create the table via `createAll` in `onCreate`.
 class ApplicationSlots extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
@@ -492,6 +494,9 @@ class ApplicationSlots extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Legacy int-key application events. UI-reachable via [applicationsForTrialProvider]
+/// → Plots tab (`plots_tab.dart` application selector / overlays). Canonical path:
+/// [TrialApplicationEvents] + [trialApplicationsForTrialProvider].
 class ApplicationEvents extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
@@ -514,6 +519,8 @@ class ApplicationEvents extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Per-plot application coverage for a legacy [ApplicationEvents] row. Used from
+/// [ApplicationRepository] when Plots tab loads plot records for a selected event.
 class ApplicationPlotRecords extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get eventId => integer().references(ApplicationEvents, #id)();

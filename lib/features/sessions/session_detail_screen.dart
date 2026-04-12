@@ -196,6 +196,222 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     }
   }
 
+  /// Session tools (BBCH, weather, checklist, completeness) below the gradient
+  /// header so they stay visible without horizontal scrolling in the app bar.
+  Widget _buildSessionToolsStrip(
+    BuildContext context,
+    Trial trial,
+    Session session,
+  ) {
+    final live =
+        ref.watch(sessionByIdProvider(session.id)).valueOrNull ?? session;
+    final weatherRecorded =
+        ref.watch(weatherSnapshotForSessionProvider(session.id)).valueOrNull !=
+            null;
+
+    Future<void> openWeather() async {
+      final repo = ref.read(weatherSnapshotRepositoryProvider);
+      final snap = await repo.getWeatherSnapshotForParent(
+        kWeatherParentTypeRatingSession,
+        session.id,
+      );
+      if (!context.mounted) return;
+      await showWeatherCaptureBottomSheet(
+        context,
+        trial: trial,
+        session: session,
+        initialSnapshot: snap,
+      );
+    }
+
+    Widget toolCell({
+      required String tooltip,
+      required Widget icon,
+      required String label,
+      required VoidCallback onTap,
+    }) {
+      return Tooltip(
+        message: tooltip,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    icon,
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        height: 1.15,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing8,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing4,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          border: Border.all(color: AppDesignTokens.borderCrisp),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Session Tools',
+                style: AppDesignTokens.headingStyle(
+                  fontSize: 12,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              LayoutBuilder(
+                builder: (context, c) {
+                  final narrow = c.maxWidth < 360;
+                  final bbchIcon = Icon(
+                    live.cropStageBbch != null
+                        ? Icons.eco
+                        : Icons.eco_outlined,
+                    size: 22,
+                    color: AppDesignTokens.primary,
+                  );
+                  final weatherIcon = Icon(
+                    weatherRecorded
+                        ? Icons.wb_cloudy
+                        : Icons.wb_cloudy_outlined,
+                    size: 22,
+                    color: AppDesignTokens.primary,
+                  );
+                  const checklistIcon = Icon(
+                    Icons.insights_outlined,
+                    size: 22,
+                    color: AppDesignTokens.primary,
+                  );
+                  const completenessIcon = Icon(
+                    Icons.fact_check_outlined,
+                    size: 22,
+                    color: AppDesignTokens.primary,
+                  );
+
+                  final bbch = Expanded(
+                    child: toolCell(
+                      tooltip: 'Crop Growth Stage (BBCH)',
+                      icon: bbchIcon,
+                      label: 'BBCH',
+                      onTap: () => _showCropStageBbchEditor(context, ref, live),
+                    ),
+                  );
+                  final weather = Expanded(
+                    child: toolCell(
+                      tooltip: 'Weather',
+                      icon: weatherIcon,
+                      label: 'Weather',
+                      onTap: openWeather,
+                    ),
+                  );
+                  final checklist = Expanded(
+                    child: toolCell(
+                      tooltip: 'Session Checklist',
+                      icon: checklistIcon,
+                      label: 'Checklist',
+                      onTap: () {
+                        Navigator.push<void>(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => SessionSummaryScreen(
+                              trial: trial,
+                              session: session,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                  final completeness = Expanded(
+                    child: toolCell(
+                      tooltip: 'Session completeness',
+                      icon: completenessIcon,
+                      label: 'Completeness',
+                      onTap: () {
+                        Navigator.push<void>(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => SessionCompletenessScreen(
+                              trial: trial,
+                              session: session,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+
+                  if (narrow) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [bbch, weather],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [checklist, completeness],
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [bbch, weather, checklist, completeness],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final trial = widget.trial;
@@ -220,9 +436,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final plotIdToTreatmentId = {
       for (var a in assignments) a.plotId: a.treatmentId
     };
-    final weatherRecorded =
-        ref.watch(weatherSnapshotForSessionProvider(session.id)).valueOrNull !=
-            null;
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
@@ -233,71 +446,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             timingForHeader.isEmpty ? null : timingForHeader,
         titleFontSize: 17,
         actions: [
-          IconButton(
-            iconSize: 24,
-            icon: Icon(
-              session.cropStageBbch != null ? Icons.eco : Icons.eco_outlined,
-              color: AppDesignTokens.onPrimary,
-            ),
-            tooltip: 'Crop Growth Stage (BBCH)',
-            onPressed: () => _showCropStageBbchEditor(context, ref, session),
-          ),
-          IconButton(
-            iconSize: 24,
-            icon: Icon(
-              weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
-              color: AppDesignTokens.onPrimary,
-            ),
-            tooltip: 'Weather',
-            onPressed: () async {
-              final repo = ref.read(weatherSnapshotRepositoryProvider);
-              final snap = await repo.getWeatherSnapshotForParent(
-                kWeatherParentTypeRatingSession,
-                session.id,
-              );
-              if (!context.mounted) return;
-              await showWeatherCaptureBottomSheet(
-                context,
-                trial: trial,
-                session: session,
-                initialSnapshot: snap,
-              );
-            },
-          ),
-          IconButton(
-            iconSize: 24,
-            icon: const Icon(Icons.insights_outlined,
-                color: AppDesignTokens.onPrimary),
-            tooltip: 'Session Checklist',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => SessionSummaryScreen(
-                    trial: trial,
-                    session: session,
-                  ),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            iconSize: 24,
-            icon: const Icon(Icons.fact_check_outlined,
-                color: AppDesignTokens.onPrimary),
-            tooltip: 'Session completeness',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => SessionCompletenessScreen(
-                    trial: trial,
-                    session: session,
-                  ),
-                ),
-              );
-            },
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.download, color: AppDesignTokens.onPrimary),
             iconSize: 24,
@@ -374,18 +522,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 }),
             data: (assessments) => Column(
               children: [
-                if (session.cropStageBbch != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: ActionChip(
-                        label: Text('BBCH ${session.cropStageBbch}'),
-                        onPressed: () =>
-                            _showCropStageBbchEditor(context, ref, session),
-                      ),
-                    ),
-                  ),
+                _buildSessionToolsStrip(context, trial, session),
                 _SessionDockBar(
                   selectedIndex: _selectedTabIndex,
                   onSelected: (index) =>

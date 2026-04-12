@@ -12,12 +12,14 @@ import 'protocol_import_models.dart';
 
 /// Full protocol import: Source Detection → Structural Scan → Mapping → Validation → Review → User Approval → Integration (Charter PART 16).
 class ProtocolImportUseCase {
+  final AppDatabase _db;
   final TrialRepository _trialRepository;
   final TreatmentRepository _treatmentRepository;
   final PlotRepository _plotRepository;
   final AssignmentRepository _assignmentRepository;
 
   ProtocolImportUseCase(
+    this._db,
     this._trialRepository,
     this._treatmentRepository,
     this._plotRepository,
@@ -294,88 +296,95 @@ class ProtocolImportUseCase {
           'Protocol is locked. Change trial status to import.');
     }
 
+    if (existingTrialId == null && review.normalizedTrial == null) {
+      return ProtocolImportExecuteResult.failure(
+          'No trial to create and no existing trial selected.');
+    }
+
     try {
-      int trialId = existingTrialId ?? -1;
+      final result = await _db.transaction(() async {
+        int trialId = existingTrialId ?? -1;
 
-      if (existingTrialId == null && review.normalizedTrial != null) {
-        final t = review.normalizedTrial!;
-        trialId = await _trialRepository.createTrial(
-          name: t['trial_name'] as String,
-          crop: t['crop'] as String?,
-          location: t['location'] as String?,
-          season: t['season'] as String?,
-          // Protocol import always creates an efficacy/protocol trial.
-          // workspaceType is required for correct hub classification.
-          workspaceType: WorkspaceType.efficacy.name,
-        );
-      } else if (existingTrialId == null) {
-        return ProtocolImportExecuteResult.failure(
-            'No trial to create and no existing trial selected.');
-      }
+        if (existingTrialId == null && review.normalizedTrial != null) {
+          final t = review.normalizedTrial!;
+          trialId = await _trialRepository.createTrial(
+            name: t['trial_name'] as String,
+            crop: t['crop'] as String?,
+            location: t['location'] as String?,
+            season: t['season'] as String?,
+            // Protocol import always creates an efficacy/protocol trial.
+            // workspaceType is required for correct hub classification.
+            workspaceType: WorkspaceType.efficacy.name,
+          );
+        }
 
-      final codeToId = <String, int>{};
-      for (final tr in review.normalizedTreatments) {
-        final id = await _treatmentRepository.insertTreatment(
-          trialId: trialId,
-          code: tr['code'] as String,
-          name: tr['name'] as String,
-          description: tr['description'] as String?,
-        );
-        codeToId[tr['code'] as String] = id;
-      }
+        final codeToId = <String, int>{};
+        for (final tr in review.normalizedTreatments) {
+          final id = await _treatmentRepository.insertTreatment(
+            trialId: trialId,
+            code: tr['code'] as String,
+            name: tr['name'] as String,
+            description: tr['description'] as String?,
+          );
+          codeToId[tr['code'] as String] = id;
+        }
 
-      if (review.normalizedPlots.isEmpty) {
+        if (review.normalizedPlots.isEmpty) {
+          return ProtocolImportExecuteResult.ok(
+            trialId: trialId,
+            treatmentsImported: review.normalizedTreatments.length,
+            plotsImported: 0,
+          );
+        }
+
+        // Insert plots in CSV order; layout position is preserved (no sort by treatment).
+        final companions = <PlotsCompanion>[];
+        for (var i = 0; i < review.normalizedPlots.length; i++) {
+          final p = review.normalizedPlots[i];
+          companions.add(PlotsCompanion.insert(
+            trialId: trialId,
+            plotId: p['plot_id'] as String,
+            plotSortIndex: Value(p['plot_sort_index'] as int? ?? (i + 1)),
+            rep: Value(p['rep'] as int?),
+            row: Value(p['row'] as String?),
+            column: Value(p['column'] as String?),
+          ));
+        }
+        await _plotRepository.insertPlotsBulk(companions);
+
+        // Apply treatment assignment via Assignments table (randomization preserved).
+        for (final p in review.normalizedPlots) {
+          final treatmentCode = p['treatment_code'] as String?;
+          if (treatmentCode == null) continue;
+          final tid = codeToId[treatmentCode];
+          if (tid == null) continue;
+          final plot = await _plotRepository.getPlotByPlotId(
+              trialId, p['plot_id'] as String);
+          if (plot != null) {
+            await _assignmentRepository.upsert(
+              trialId: trialId,
+              plotId: plot.id,
+              treatmentId: tid,
+              replication: plot.rep,
+              range: plot.fieldRow,
+              column: plot.fieldColumn,
+              assignmentSource: 'imported',
+              assignedAt: DateTime.now().toUtc(),
+            );
+          }
+        }
+
         return ProtocolImportExecuteResult.ok(
           trialId: trialId,
           treatmentsImported: review.normalizedTreatments.length,
-          plotsImported: 0,
+          plotsImported: review.normalizedPlots.length,
         );
-      }
-
-      // Insert plots in CSV order; layout position is preserved (no sort by treatment).
-      final companions = <PlotsCompanion>[];
-      for (var i = 0; i < review.normalizedPlots.length; i++) {
-        final p = review.normalizedPlots[i];
-        companions.add(PlotsCompanion.insert(
-          trialId: trialId,
-          plotId: p['plot_id'] as String,
-          plotSortIndex: Value(p['plot_sort_index'] as int? ?? (i + 1)),
-          rep: Value(p['rep'] as int?),
-          row: Value(p['row'] as String?),
-          column: Value(p['column'] as String?),
-        ));
-      }
-      await _plotRepository.insertPlotsBulk(companions);
-
-      // Apply treatment assignment via Assignments table (randomization preserved).
-      for (final p in review.normalizedPlots) {
-        final treatmentCode = p['treatment_code'] as String?;
-        if (treatmentCode == null) continue;
-        final tid = codeToId[treatmentCode];
-        if (tid == null) continue;
-        final plot = await _plotRepository.getPlotByPlotId(
-            trialId, p['plot_id'] as String);
-        if (plot != null) {
-          await _assignmentRepository.upsert(
-            trialId: trialId,
-            plotId: plot.id,
-            treatmentId: tid,
-            replication: plot.rep,
-            range: plot.fieldRow,
-            column: plot.fieldColumn,
-            assignmentSource: 'imported',
-            assignedAt: DateTime.now().toUtc(),
-          );
-        }
-      }
-
-      return ProtocolImportExecuteResult.ok(
-        trialId: trialId,
-        treatmentsImported: review.normalizedTreatments.length,
-        plotsImported: review.normalizedPlots.length,
-      );
+      });
+      return result;
     } on ProtocolEditBlockedException catch (e) {
       return ProtocolImportExecuteResult.failure(e.message);
+    } on DuplicateTrialException catch (e) {
+      return ProtocolImportExecuteResult.failure(e.toString());
     } catch (e) {
       return ProtocolImportExecuteResult.failure('Import failed: $e');
     }

@@ -336,6 +336,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           plotPk: widget.plot.id,
           assessmentId: _currentAssessment.id,
           sessionId: widget.session.id,
+          // TODO: subUnitId is not passed here. When sub-sampling (numSubsamples > 1)
+          // is implemented, pass the active subUnitId into CurrentRatingParams.
         ),
       ),
     );
@@ -380,6 +382,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       final lid = ta.legacyAssessmentId;
       if (lid != null) taByLegacy[lid] = ta;
     }
+
+    final sessionRatingsList =
+        ref.watch(sessionRatingsProvider(widget.session.id)).valueOrNull ?? [];
+    final nonRecordedAssessmentIds = <int>{
+      for (final r in sessionRatingsList)
+        if (r.plotPk == widget.plot.id && r.resultStatus != 'RECORDED')
+          r.assessmentId,
+    };
 
     return PopScope(
       canPop: false,
@@ -559,7 +569,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         _buildContextCard(context),
                         if (!isSessionEditable(widget.session))
                           _buildClosedSessionBanner(context),
-                        _buildAssessmentSelectorPanel(context, taByLegacy),
+                        _buildAssessmentSelectorPanel(
+                          context,
+                          taByLegacy,
+                          nonRecordedAssessmentIds,
+                        ),
                         existingRatingAsync.when(
                           loading: () => const Padding(
                             padding: EdgeInsets.all(48),
@@ -1285,12 +1299,19 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   Widget _buildAssessmentSelectorPanel(
-      BuildContext context, Map<int, TrialAssessment> taByLegacy) {
+    BuildContext context,
+    Map<int, TrialAssessment> taByLegacy,
+    Set<int> nonRecordedAssessmentIds,
+  ) {
     final desc = _shellDescriptionForCurrentAssessment(taByLegacy);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildAssessmentSelector(context, taByLegacy),
+        _buildAssessmentSelector(
+          context,
+          taByLegacy,
+          nonRecordedAssessmentIds,
+        ),
         if (desc != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -1334,8 +1355,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   Widget _buildAssessmentSelector(
-      BuildContext context, Map<int, TrialAssessment> taByLegacy) {
+    BuildContext context,
+    Map<int, TrialAssessment> taByLegacy,
+    Set<int> nonRecordedAssessmentIds,
+  ) {
     if (widget.assessments.length == 1) {
+      final showIssue =
+          nonRecordedAssessmentIds.contains(_currentAssessment.id);
       return Padding(
         padding: const EdgeInsets.fromLTRB(
             AppDesignTokens.spacing16, 10, AppDesignTokens.spacing16, 6),
@@ -1366,6 +1392,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     fontSize: 13, color: AppDesignTokens.secondaryText),
               ),
             ],
+            if (showIssue) ...[
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.warning_amber_rounded,
+                size: 20,
+                color: AppDesignTokens.warningFg,
+              ),
+            ],
           ],
         ),
       );
@@ -1385,7 +1419,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   index < widget.assessments.length;
                   index++) ...[
                 if (index > 0) const SizedBox(width: 6),
-                _buildAssessmentChip(context, index, taByLegacy),
+                _buildAssessmentChip(
+                  context,
+                  index,
+                  taByLegacy,
+                  nonRecordedAssessmentIds,
+                ),
               ],
             ],
           ),
@@ -1408,10 +1447,16 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   Widget _buildAssessmentChip(
-      BuildContext context, int index, Map<int, TrialAssessment> taByLegacy) {
+    BuildContext context,
+    int index,
+    Map<int, TrialAssessment> taByLegacy,
+    Set<int> nonRecordedAssessmentIds,
+  ) {
     final assessment = widget.assessments[index];
     final isSelected = assessment.id == _currentAssessment.id;
     final label = _ratingAssessmentChipLabel(assessment, taByLegacy);
+    final showIssueIndicator =
+        nonRecordedAssessmentIds.contains(assessment.id);
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -1435,10 +1480,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       child: Container(
         height: isSelected ? 32 : 28,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 12 : 10,
+          horizontal: isSelected ? 10 : 8,
           vertical: 0,
         ),
-        constraints: const BoxConstraints(maxWidth: 160),
+        constraints: const BoxConstraints(maxWidth: 168),
         decoration: BoxDecoration(
           color: isSelected
               ? AppDesignTokens.primary
@@ -1447,15 +1492,31 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           border: Border.all(color: AppDesignTokens.borderCrisp),
         ),
         alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: isSelected ? 13 : 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : AppDesignTokens.secondaryText,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: isSelected ? 13 : 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color:
+                      isSelected ? Colors.white : AppDesignTokens.secondaryText,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (showIssueIndicator) ...[
+              const SizedBox(width: 4),
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 14,
+                color: isSelected ? Colors.white : AppDesignTokens.warningFg,
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -1729,6 +1790,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           plotPk: widget.plot.id,
           assessmentId: _currentAssessment.id,
           sessionId: widget.session.id,
+          // TODO: subUnitId is not passed here. When sub-sampling (numSubsamples > 1)
+          // is implemented, pass the active subUnitId into CurrentRatingParams.
         ),
       ),
     );

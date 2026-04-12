@@ -65,12 +65,21 @@ class ApplyCorrectionUseCase {
     if (newResultStatus == 'RECORDED' &&
         assessmentForScale != null &&
         assessmentForScale.dataType == 'numeric') {
-      if (effectiveNumeric == null) {
+      if (newNumericValue == null) {
         return ApplyCorrectionResult.failure(
             'A numeric value is required for RECORDED.');
       }
       final b = numericBounds!;
-      effectiveNumeric = effectiveNumeric.clamp(b.min, b.max);
+      final v = newNumericValue;
+      if (v < b.min || v > b.max) {
+        final u = assessmentForScale.unit?.trim();
+        final unitSuffix =
+            u != null && u.isNotEmpty ? ' $u' : '';
+        return ApplyCorrectionResult.failure(
+          'Value must be between ${b.min} and ${b.max}$unitSuffix.',
+        );
+      }
+      effectiveNumeric = v;
     }
 
     final resolvedText = _resolveObservationTextForCorrection(
