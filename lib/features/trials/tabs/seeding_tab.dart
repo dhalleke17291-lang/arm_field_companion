@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/field_operation_date_rules.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
@@ -603,11 +604,17 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
   }
 
   Future<void> _pickDate() async {
+    final seed = dateOnlyLocal(widget.existing.seedingDate);
+    final first = seed.add(const Duration(days: 1));
+    final last = dateOnlyLocal(DateTime.now());
+    var initial = dateOnlyLocal(_emergenceDate ?? last);
+    if (initial.isBefore(first)) initial = first;
+    if (initial.isAfter(last)) initial = last;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _emergenceDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
     );
     if (picked != null && mounted) {
       setState(() => _emergenceDate = picked);
@@ -620,6 +627,30 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
     final emergencePct = pctText.isEmpty
         ? null
         : double.tryParse(pctText);
+
+    if (_emergenceDate != null) {
+      final emErr = validateEmergenceDate(
+        seedingDate: widget.existing.seedingDate,
+        emergenceDate: _emergenceDate!,
+      );
+      if (emErr != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(emErr), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
+    }
+    final pctErr = validateEmergencePercent(emergencePct);
+    if (pctErr != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(pctErr), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
 
     setState(() => _saving = true);
     try {
@@ -646,10 +677,9 @@ class _EmergenceOnlySheetState extends ConsumerState<_EmergenceOnlySheet> {
       }
     } catch (e) {
       if (mounted) {
+        final msg = e is OperationalDateRuleException ? e.message : '$e';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Failed to save: $e'),
-              backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed to save: $msg'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -796,21 +826,32 @@ class _SeedingEventFormSheetState
   }
 
   Future<void> _pickDate() async {
+    final first = dateOnlyLocal(widget.trial.createdAt);
+    final last = dateOnlyLocal(DateTime.now());
+    var initial = dateOnlyLocal(_seedingDate);
+    if (initial.isBefore(first)) initial = first;
+    if (initial.isAfter(last)) initial = last;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _seedingDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
     );
     if (picked != null && mounted) setState(() => _seedingDate = picked);
   }
 
   Future<void> _pickEmergenceDate() async {
+    final seed = dateOnlyLocal(_seedingDate);
+    final first = seed.add(const Duration(days: 1));
+    final last = dateOnlyLocal(DateTime.now());
+    var initial = dateOnlyLocal(_emergenceDate ?? last);
+    if (initial.isBefore(first)) initial = first;
+    if (initial.isAfter(last)) initial = last;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _emergenceDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
     );
     if (picked != null && mounted) setState(() => _emergenceDate = picked);
   }
@@ -832,6 +873,42 @@ class _SeedingEventFormSheetState
     final rowSpacing = _parseDouble(_rowSpacingController);
     final germinationPct = _parseDouble(_germinationPctController);
     final emergencePct = _parseDouble(_emergencePctController);
+
+    final seedingErr = validateSeedingDate(
+      seedingDate: _seedingDate,
+      trialCreatedAt: widget.trial.createdAt,
+    );
+    if (seedingErr != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(seedingErr), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+    if (_emergenceDate != null) {
+      final emErr = validateEmergenceDate(
+        seedingDate: _seedingDate,
+        emergenceDate: _emergenceDate!,
+      );
+      if (emErr != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(emErr), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
+    }
+    final pctErr = validateEmergencePercent(emergencePct);
+    if (pctErr != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(pctErr), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
 
     final baseCompanion = widget.existing == null
         ? SeedingEventsCompanion.insert(
@@ -884,9 +961,10 @@ class _SeedingEventFormSheetState
       if (mounted) widget.onSaved();
     } catch (e) {
       if (mounted) {
+        final msg = e is OperationalDateRuleException ? e.message : '$e';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save seeding: $e'),
+            content: Text('Failed to save seeding: $msg'),
             backgroundColor: Colors.red,
           ),
         );

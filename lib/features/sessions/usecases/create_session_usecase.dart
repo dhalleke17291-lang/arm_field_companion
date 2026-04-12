@@ -1,6 +1,7 @@
 import '../session_repository.dart';
 import '../../../core/database/app_database.dart';
 import '../session_timing_helper.dart';
+
 class CreateSessionUseCase {
   final SessionRepository _sessionRepository;
   /// When a new open session is created, promotes trial Ready → Active (lifecycle consistency).

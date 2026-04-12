@@ -2,11 +2,40 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
+import '../../core/field_operation_date_rules.dart';
 
 class ApplicationRepository {
   final AppDatabase _db;
 
   ApplicationRepository(this._db);
+
+  Future<DateTime?> _seedingDateForTrial(int trialId) async {
+    final row = await (_db.select(_db.seedingEvents)
+          ..where((s) => s.trialId.equals(trialId)))
+        .getSingleOrNull();
+    return row?.seedingDate;
+  }
+
+  Future<void> _assertApplicationEventDate({
+    required int trialId,
+    required DateTime applicationDate,
+  }) async {
+    final trial = await (_db.select(_db.trials)
+          ..where((t) => t.id.equals(trialId)))
+        .getSingleOrNull();
+    if (trial == null) {
+      throw OperationalDateRuleException('Trial not found');
+    }
+    final seedingDate = await _seedingDateForTrial(trialId);
+    final err = validateApplicationEventDate(
+      applicationDate: applicationDate,
+      trialCreatedAt: trial.createdAt,
+      seedingDate: seedingDate,
+    );
+    if (err != null) {
+      throw OperationalDateRuleException(err);
+    }
+  }
 
   // ── Trial application events (trial_application_events table) ────────────
   // days_after_seeding is never stored; derived at read time from application_date minus seeding date.
@@ -30,6 +59,14 @@ class ApplicationRepository {
     String? performedBy,
     int? performedByUserId,
   }) async {
+    if (!companion.trialId.present || !companion.applicationDate.present) {
+      throw OperationalDateRuleException(
+          'Trial id and application date are required');
+    }
+    await _assertApplicationEventDate(
+      trialId: companion.trialId.value,
+      applicationDate: companion.applicationDate.value,
+    );
     final full = _withLastEditIfUser(
       _withNewFields(companion),
       performedByUserId,
@@ -62,6 +99,17 @@ class ApplicationRepository {
     String? performedBy,
     int? performedByUserId,
   }) async {
+    final prior = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .getSingleOrNull();
+    if (prior == null) return;
+    final effectiveDate = companion.applicationDate.present
+        ? companion.applicationDate.value
+        : prior.applicationDate;
+    await _assertApplicationEventDate(
+      trialId: prior.trialId,
+      applicationDate: effectiveDate,
+    );
     final full = _withLastEditIfUser(
       _withNewFields(companion),
       performedByUserId,
@@ -100,10 +148,27 @@ class ApplicationRepository {
     String? performedBy,
     int? performedByUserId,
   }) async {
+    final existing = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .getSingleOrNull();
+    if (existing == null) return;
+    final trial = await (_db.select(_db.trials)
+          ..where((t) => t.id.equals(existing.trialId)))
+        .getSingleOrNull();
+    if (trial == null) {
+      throw OperationalDateRuleException('Trial not found');
+    }
+    final seedingDate = await _seedingDateForTrial(existing.trialId);
+    final appliedErr = validateAppliedDateTime(
+      appliedAt: appliedAt,
+      trialCreatedAt: trial.createdAt,
+      seedingDate: seedingDate,
+    );
+    if (appliedErr != null) {
+      throw OperationalDateRuleException(appliedErr);
+    }
+
     await _db.transaction(() async {
-      final existing = await (_db.select(_db.trialApplicationEvents)
-            ..where((e) => e.id.equals(id)))
-          .getSingleOrNull();
 
       final appliedCompanion = _withLastEditIfUser(
         TrialApplicationEventsCompanion(
@@ -115,8 +180,6 @@ class ApplicationRepository {
       await (_db.update(_db.trialApplicationEvents)
             ..where((e) => e.id.equals(id)))
           .write(appliedCompanion);
-
-      if (existing == null) return;
 
       await _db.into(_db.auditEvents).insert(
             AuditEventsCompanion.insert(

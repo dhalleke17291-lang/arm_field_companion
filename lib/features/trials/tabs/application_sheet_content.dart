@@ -10,6 +10,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../../core/plot_display.dart';
+import '../../../core/field_operation_date_rules.dart';
 import '../../../core/providers.dart';
 
 /// Five-section add/edit application bottom sheet content.
@@ -272,11 +273,21 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
   }
 
   Future<void> _pickDate() async {
+    final seedingEvent =
+        ref.read(seedingEventForTrialProvider(widget.trial.id)).valueOrNull;
+    final minD = minimumApplicationOrAppliedDate(
+      trialCreatedAt: widget.trial.createdAt,
+      seedingDate: seedingEvent?.seedingDate,
+    );
+    final maxD = dateOnlyLocal(DateTime.now());
+    var initial = dateOnlyLocal(_date);
+    if (initial.isBefore(minD)) initial = minD;
+    if (initial.isAfter(maxD)) initial = maxD;
     final p = await showDatePicker(
       context: context,
-      initialDate: _date,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: initial,
+      firstDate: minD,
+      lastDate: maxD,
     );
     if (p != null && mounted) setState(() => _date = p);
   }
@@ -354,6 +365,22 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
 
   Future<void> _save() async {
     if (_saving) return;
+    final seedingEvent =
+        ref.read(seedingEventForTrialProvider(widget.trial.id)).valueOrNull;
+    final appErr = validateApplicationEventDate(
+      applicationDate: _date,
+      trialCreatedAt: widget.trial.createdAt,
+      seedingDate: seedingEvent?.seedingDate,
+    );
+    if (appErr != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appErr), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
     setState(() => _saving = true);
     try {
       final repo = ref.read(applicationRepositoryProvider);
@@ -391,8 +418,9 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
       if (mounted) widget.onSaved();
     } catch (e) {
       if (mounted) {
+        final msg = e is OperationalDateRuleException ? e.message : '$e';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Save failed: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Save failed: $msg'), backgroundColor: Colors.red),
         );
       }
     } finally {

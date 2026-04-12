@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/field_operation_date_rules.dart';
 
 class SessionRepository {
   final AppDatabase _db;
@@ -71,6 +72,20 @@ class SessionRepository {
     final existing = await getOpenSession(trialId);
     if (existing != null) {
       throw OpenSessionExistsException(trialId);
+    }
+
+    final trial = await (_db.select(_db.trials)
+          ..where((t) => t.id.equals(trialId)))
+        .getSingleOrNull();
+    if (trial == null) {
+      throw StateError('Trial $trialId not found');
+    }
+    final sessionDateErr = validateSessionDateLocal(
+      sessionDateLocal: sessionDateLocal,
+      trialCreatedAt: trial.createdAt,
+    );
+    if (sessionDateErr != null) {
+      throw OperationalDateRuleException(sessionDateErr);
     }
 
     return _db.transaction(() async {
