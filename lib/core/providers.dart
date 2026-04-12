@@ -18,6 +18,7 @@ import 'database/app_database.dart';
 import '../features/backup/backup_service.dart';
 import '../features/backup/restore_service.dart';
 import 'trial_operational_watch_merge.dart';
+import 'ui/trial_application_product_summary.dart';
 import 'session_state.dart';
 import 'trial_state.dart';
 import '../features/trials/trial_repository.dart';
@@ -1465,6 +1466,40 @@ final trialApplicationsForTrialProvider = StreamProvider.autoDispose
   return ref
       .watch(applicationRepositoryProvider)
       .watchApplicationsForTrial(trialId);
+});
+
+/// Distinct product summary lines from trial applications linked to a treatment
+/// (`trial_application_events.treatment_id`), for Treatments tab when protocol
+/// components are empty. Recomputes when application events or tank-mix products
+/// change anywhere (products table is not in [mergeTrialOperationalTableWatches]).
+final applicationProductSummariesForTreatmentProvider =
+    StreamProvider.autoDispose.family<List<String>, (int, int)>((ref, key) {
+  final trialId = key.$1;
+  final treatmentId = key.$2;
+  final db = ref.watch(databaseProvider);
+  final productRepo = ref.watch(applicationProductRepositoryProvider);
+
+  return mergeTableWatchStreams([
+    (db.select(db.trialApplicationEvents)
+          ..where((e) => e.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.trialApplicationProducts)).watch(),
+  ]).asyncMap((_) async {
+    final events = await (db.select(db.trialApplicationEvents)
+          ..where((e) =>
+              e.trialId.equals(trialId) & e.treatmentId.equals(treatmentId)))
+        .get();
+    final lines = <String>[];
+    final seen = <String>{};
+    for (final e in events) {
+      final prods = await productRepo.getProductsForEvent(e.id);
+      final line = trialApplicationProductSummaryLine(e, prods);
+      if (line.isNotEmpty && seen.add(line)) {
+        lines.add(line);
+      }
+    }
+    return lines;
+  });
 });
 
 /// LEGACY: application_events + application_plot_records table stack.

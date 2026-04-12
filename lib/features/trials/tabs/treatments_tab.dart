@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
@@ -16,7 +15,7 @@ import 'add_treatment_sheet.dart';
 /// Builds a single-line formula string for a treatment from its components (paper-protocol style).
 /// Includes formulation type when present (e.g. "Headline SC 1.0 L/ha").
 String buildTreatmentFormula(List<TreatmentComponent> components) {
-  if (components.isEmpty) return 'No components defined';
+  if (components.isEmpty) return 'No products added yet';
   String one(TreatmentComponent c) {
     final parts = <String>[
       c.productName.trim(),
@@ -51,33 +50,21 @@ Future<void> _softDeleteTreatmentComponentWithAudit(
       );
 }
 
-String _treatmentLastUpdatedLine(WidgetRef ref, Treatment treatment) {
-  final at = treatment.lastEditedAt!;
-  final timeStr = DateFormat('MMM d, yyyy HH:mm').format(at.toLocal());
-  var bySuffix = '';
-  if (treatment.lastEditedByUserId != null) {
-    final u = ref.watch(userByIdProvider(treatment.lastEditedByUserId!));
-    bySuffix = u.maybeWhen(
-      data: (user) => user != null ? ' by ${user.displayName}' : '',
-      orElse: () => '',
-    );
+/// One line per component for the compact treatments list.
+String _componentOneLine(TreatmentComponent c) {
+  final parts = <String>[];
+  final pn = c.productName.trim();
+  if (pn.isNotEmpty) parts.add(pn);
+  final rate = c.rate?.trim();
+  final unit = c.rateUnit?.trim();
+  if (rate != null && rate.isNotEmpty) {
+    parts.add(unit != null && unit.isNotEmpty ? '$rate $unit' : rate);
+  } else if (unit != null && unit.isNotEmpty) {
+    parts.add(unit);
   }
-  return 'Last updated $timeStr$bySuffix';
-}
-
-String _inlineRateUnit(TreatmentComponent c) {
-  final r = c.rate?.trim();
-  final u = c.rateUnit?.trim();
-  if (r != null && r.isNotEmpty) {
-    if (u != null && u.isNotEmpty) {
-      return '  $r $u';
-    }
-    return '  $r';
-  }
-  if (u != null && u.isNotEmpty) {
-    return '  $u';
-  }
-  return '';
+  final ft = c.formulationType?.trim();
+  if (ft != null && ft.isNotEmpty) parts.add(ft);
+  return parts.isEmpty ? '—' : parts.join(' · ');
 }
 
 const List<String> _treatmentTypes = [
@@ -115,6 +102,59 @@ const List<String> _formulationTypes = [
   'Other',
 ];
 
+void _pushTreatmentsFullScreen(BuildContext context, Trial trial) {
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('Treatments')),
+        body: TreatmentsTab(trial: trial),
+      ),
+    ),
+  );
+}
+
+/// Workspace header: title + fullscreen (matches Assessments tab pattern).
+Widget _treatmentsWorkspaceToolbar(BuildContext context, Trial trial) {
+  return Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppDesignTokens.spacing16,
+      vertical: 10,
+    ),
+    decoration: const BoxDecoration(
+      color: AppDesignTokens.sectionHeaderBg,
+      border: Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+    ),
+    child: Row(
+      children: [
+        const Icon(
+          Icons.science_outlined,
+          size: 16,
+          color: AppDesignTokens.primary,
+        ),
+        const SizedBox(width: AppDesignTokens.spacing8),
+        const Expanded(
+          child: Text(
+            'Treatments',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: AppDesignTokens.primary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Full screen',
+          icon: const Icon(Icons.fullscreen),
+          onPressed: () => _pushTreatmentsFullScreen(context, trial),
+        ),
+      ],
+    ),
+  );
+}
+
 /// Treatments tab for trial detail: list treatments, components, add/edit/delete.
 class TreatmentsTab extends ConsumerWidget {
   const TreatmentsTab({super.key, required this.trial});
@@ -126,36 +166,9 @@ class TreatmentsTab extends ConsumerWidget {
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Treatments',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Open in full screen',
-                icon: const Icon(Icons.fullscreen),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => Scaffold(
-                        appBar: AppBar(title: const Text('Treatments')),
-                        body: TreatmentsTab(trial: trial),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
+        _treatmentsWorkspaceToolbar(context, trial),
         Expanded(
           child: treatmentsAsync.when(
             loading: () => const AppLoadingView(),
@@ -183,7 +196,7 @@ class TreatmentsTab extends ConsumerWidget {
             title: 'No Treatments Yet',
             subtitle: locked
                 ? protocolEditBlockedMessage(trial)
-                : '${trialTypeAndStructureCompactLine(trial)}. Add the treatment groups for this trial.',
+                : 'Add the treatment groups for this trial.',
             action: null,
           ),
         ),
@@ -204,29 +217,9 @@ class TreatmentsTab extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!locked) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
-            child: Text(
-              trialTypeLabel(trial),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text(
-              trialStructureStateLabel(trial),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ),
-        ],
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
             itemCount: treatments.length + (locked ? 1 : 0),
             itemBuilder: (context, index) {
               if (locked && index == 0) {
@@ -253,7 +246,7 @@ class TreatmentsTab extends ConsumerWidget {
               }
               final i = locked ? index - 1 : index;
               final t = treatments[i];
-              return _TreatmentExpansionTile(
+              return _TreatmentCompactCard(
                 trial: trial,
                 treatment: t,
                 locked: locked,
@@ -514,7 +507,7 @@ class TreatmentsTab extends ConsumerWidget {
   }
 }
 
-class _TreatmentExpansionTile extends ConsumerStatefulWidget {
+class _TreatmentCompactCard extends ConsumerStatefulWidget {
   final Trial trial;
   final Treatment treatment;
   final bool locked;
@@ -523,7 +516,7 @@ class _TreatmentExpansionTile extends ConsumerStatefulWidget {
   final Future<void> Function(TreatmentComponent? existing) onOpenComponentSheet;
   final VoidCallback onOpenSheet;
 
-  const _TreatmentExpansionTile({
+  const _TreatmentCompactCard({
     required this.trial,
     required this.treatment,
     required this.locked,
@@ -534,19 +527,66 @@ class _TreatmentExpansionTile extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_TreatmentExpansionTile> createState() =>
-      _TreatmentExpansionTileState();
+  ConsumerState<_TreatmentCompactCard> createState() =>
+      _TreatmentCompactCardState();
 }
 
-class _TreatmentExpansionTileState
-    extends ConsumerState<_TreatmentExpansionTile> {
+class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
+  Widget _treatmentOverflowMenu(BuildContext context) {
+    if (!widget.locked) {
+      return PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert,
+            size: 20, color: AppDesignTokens.iconSubtle),
+        tooltip: 'Edit, view components, or delete treatment',
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        onSelected: (value) {
+          if (value == 'edit') widget.onEdit();
+          if (value == 'delete') widget.onDelete();
+          if (value == 'sheet') widget.onOpenSheet();
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(value: 'edit', child: Text('Edit')),
+          const PopupMenuItem(
+              value: 'sheet', child: Text('View Components')),
+          const PopupMenuItem(value: 'delete', child: Text('Delete')),
+        ],
+      );
+    }
+    if (widget.trial.isArmLinked) {
+      return PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert,
+            size: 20, color: AppDesignTokens.iconSubtle),
+        tooltip: 'View components',
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        onSelected: (value) {
+          if (value == 'sheet') widget.onOpenSheet();
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(
+            value: 'sheet',
+            child: Text('View Components'),
+          ),
+        ],
+      );
+    }
+    return const SizedBox(width: 40, height: 40);
+  }
+
   @override
   Widget build(BuildContext context) {
     final treatment = widget.treatment;
+    final trialId = widget.trial.id;
     final componentsAsync =
         ref.watch(treatmentComponentsForTreatmentProvider(treatment.id));
+    final applicationSummaries = ref
+            .watch(applicationProductSummariesForTreatmentProvider(
+                (trialId, treatment.id)))
+            .valueOrNull ??
+        const <String>[];
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: AppDesignTokens.cardSurface,
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
@@ -554,266 +594,205 @@ class _TreatmentExpansionTileState
         boxShadow: AppDesignTokens.cardShadow,
       ),
       child: componentsAsync.when(
-        loading: () =>
-            _buildTile(context, ref, componentCount: 0, components: null),
-        error: (_, __) =>
-            _buildTile(context, ref, componentCount: 0, components: null),
-        data: (components) => _buildTile(context, ref,
-            componentCount: components.length, components: components),
+        loading: () => _buildBody(
+          context,
+          ref,
+          components: null,
+          applicationSummaries: applicationSummaries,
+        ),
+        error: (_, __) => _buildBody(
+          context,
+          ref,
+          components: null,
+          applicationSummaries: applicationSummaries,
+        ),
+        data: (components) => _buildBody(
+          context,
+          ref,
+          components: components,
+          applicationSummaries: applicationSummaries,
+        ),
       ),
     );
   }
 
-  Widget _buildTile(
+  Widget _buildBody(
     BuildContext context,
     WidgetRef ref, {
-    required int componentCount,
-    List<TreatmentComponent>? components,
+    required List<TreatmentComponent>? components,
+    required List<String> applicationSummaries,
   }) {
     final theme = Theme.of(context);
-    return ExpansionTile(
-      initiallyExpanded: false,
-      tilePadding: const EdgeInsets.symmetric(
-          horizontal: AppDesignTokens.spacing16, vertical: 8),
-      childrenPadding: const EdgeInsets.fromLTRB(32, 0, 16, 8),
-      leading: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppDesignTokens.spacing8,
-            vertical: AppDesignTokens.spacing4),
-        decoration: BoxDecoration(
-          color: AppDesignTokens.primary,
-          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+    final scheme = theme.colorScheme;
+    final codeChip = Container(
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.primary,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        widget.treatment.code,
+        style: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+          color: Colors.white,
+          letterSpacing: 0.2,
         ),
-        child: Text(widget.treatment.code,
-            style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-                color: Colors.white,
-                letterSpacing: 0.2)),
       ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            widget.treatment.name,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: AppDesignTokens.primaryText,
+    );
+
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+          color: scheme.onSurfaceVariant,
+          fontSize: 12,
+          height: 1.25,
+        ) ??
+        TextStyle(fontSize: 12, color: scheme.onSurfaceVariant, height: 1.25);
+
+    final List<Widget> subtitleRows;
+    if (components == null) {
+      subtitleRows = [];
+    } else if (components.isEmpty) {
+      if (applicationSummaries.isNotEmpty) {
+        subtitleRows = [
+          for (final line in applicationSummaries)
+            Padding(
+              padding: const EdgeInsets.only(left: 46, top: 2),
+              child: Text(line, style: subtitleStyle),
             ),
-          ),
-          if ((widget.treatment.treatmentType != null &&
-                  widget.treatment.treatmentType!.isNotEmpty) ||
-              (widget.treatment.timingCode != null &&
-                  widget.treatment.timingCode!.isNotEmpty)) ...[
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                if (widget.treatment.treatmentType != null &&
-                    widget.treatment.treatmentType!.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                          color: theme.colorScheme.outline.withValues(alpha: 0.6)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      widget.treatment.treatmentType!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                if (widget.treatment.timingCode != null &&
-                    widget.treatment.timingCode!.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                          color: theme.colorScheme.outline.withValues(alpha: 0.6)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      widget.treatment.timingCode!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-          if (widget.treatment.lastEditedAt != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              _treatmentLastUpdatedLine(ref, widget.treatment),
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-          ],
-          const SizedBox(height: 2),
-          if (components == null)
-            const SizedBox.shrink()
-          else if (components.isEmpty)
-            Text(
-              'No components defined',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          else
-            ...components.map(
-              (c) => Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '· ${c.productName}${_inlineRateUnit(c)}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    if (!widget.locked)
-                      PopupMenuButton<String>(
-                        icon: const Icon(
-                          Icons.more_vert,
-                          size: 18,
-                          color: AppDesignTokens.iconSubtle,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 36,
-                          minHeight: 32,
-                        ),
-                        onSelected: (value) async {
-                          if (value == 'edit') {
-                            await widget.onOpenComponentSheet(c);
-                          } else if (value == 'delete') {
-                            final ok = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Delete this component?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (ok == true && context.mounted) {
-                              await _softDeleteTreatmentComponentWithAudit(
-                                  ref, c.id);
-                              ref.invalidate(
-                                treatmentComponentsForTreatmentProvider(
-                                    widget.treatment.id),
-                              );
-                              ref.invalidate(
-                                treatmentComponentsCountForTrialProvider(
-                                    widget.trial.id),
-                              );
-                            }
-                          }
-                        },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Edit'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Delete'),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!widget.locked) ...[
-            IconButton(
-              icon: const Icon(Icons.add, size: 20),
-              tooltip: 'Add Component',
-              onPressed: () => widget.onOpenComponentSheet(null),
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert,
-                  size: 20, color: AppDesignTokens.iconSubtle),
-              tooltip: 'Edit, view components, or delete treatment',
-              onSelected: (value) {
-                if (value == 'edit') widget.onEdit();
-                if (value == 'delete') widget.onDelete();
-                if (value == 'sheet') widget.onOpenSheet();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                const PopupMenuItem(
-                    value: 'sheet', child: Text('View Components')),
-                const PopupMenuItem(value: 'delete', child: Text('Delete')),
-              ],
-            ),
-          ] else if (widget.trial.isArmLinked) ...[
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert,
-                  size: 20, color: AppDesignTokens.iconSubtle),
-              tooltip: 'View components',
-              onSelected: (value) {
-                if (value == 'sheet') widget.onOpenSheet();
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'sheet',
-                  child: Text('View Components'),
-                ),
-              ],
-            ),
-            const Icon(Icons.expand_more,
-                size: 20, color: AppDesignTokens.iconSubtle),
-          ] else
-            const Icon(Icons.expand_more,
-                size: 20, color: AppDesignTokens.iconSubtle),
-        ],
-      ),
-      children: [
-        if (!widget.locked)
+        ];
+      } else {
+        subtitleRows = [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => widget.onOpenComponentSheet(null),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Component'),
-              ),
+            padding: const EdgeInsets.only(left: 46, top: 2),
+            child: Text('No products added yet', style: subtitleStyle),
+          ),
+        ];
+      }
+    } else {
+      subtitleRows = [
+        for (final c in components)
+          Padding(
+            padding: const EdgeInsets.only(left: 46, top: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    _componentOneLine(c),
+                    style: subtitleStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (!widget.locked)
+                  PopupMenuButton<String>(
+                    icon: const Icon(
+                      Icons.more_vert,
+                      size: 18,
+                      color: AppDesignTokens.iconSubtle,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await widget.onOpenComponentSheet(c);
+                      } else if (value == 'delete') {
+                        final ok = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete this component?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok == true && context.mounted) {
+                          await _softDeleteTreatmentComponentWithAudit(
+                              ref, c.id);
+                          ref.invalidate(
+                            treatmentComponentsForTreatmentProvider(
+                                widget.treatment.id),
+                          );
+                          ref.invalidate(
+                            treatmentComponentsCountForTrialProvider(
+                                widget.trial.id),
+                          );
+                        }
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
+              ],
             ),
           ),
-      ],
+      ];
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              codeChip,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: widget.onOpenSheet,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        widget.treatment.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (!widget.locked)
+                IconButton(
+                  icon: const Icon(Icons.add, size: 20),
+                  tooltip: 'Add Component',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  onPressed: () => widget.onOpenComponentSheet(null),
+                ),
+              _treatmentOverflowMenu(context),
+            ],
+          ),
+          ...subtitleRows,
+        ],
+      ),
     );
   }
 }

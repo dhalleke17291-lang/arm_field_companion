@@ -663,7 +663,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           ExpansionTile(
             initiallyExpanded: _initialExpandedEquip,
             tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(bottom: 8),
+            childrenPadding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
             trailing: const Icon(Icons.keyboard_arrow_down_rounded),
             title: Row(
               children: [
@@ -692,7 +692,9 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 ],
                 onChanged: (v) => setState(() => _nozzleType = v),
               ),
+              const SizedBox(height: 12),
               _field('Nozzle spacing cm', _nozzleSpacingController),
+              const SizedBox(height: 12),
               TextField(
                 controller: _operatingPressureController,
                 decoration: FormStyles.inputDecoration(
@@ -720,6 +722,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _groundSpeedController,
                 decoration: FormStyles.inputDecoration(
@@ -747,12 +750,14 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _equipmentController,
                 decoration: FormStyles.inputDecoration(
                     labelText: 'Equipment used'),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _operatorController,
                 decoration: FormStyles.inputDecoration(
@@ -765,7 +770,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           ExpansionTile(
             initiallyExpanded: _initialExpandedTank,
             tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(bottom: 8),
+            childrenPadding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
             trailing: const Icon(Icons.keyboard_arrow_down_rounded),
             title: Row(
               children: [
@@ -808,6 +813,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _adjuvantNameController,
                 decoration: FormStyles.inputDecoration(
@@ -816,6 +822,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 ),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _adjuvantRateController,
                 decoration: FormStyles.inputDecoration(
@@ -843,6 +850,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _spraySolutionPhController,
                 decoration: FormStyles.inputDecoration(
@@ -853,6 +861,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _treatedAreaController,
                 decoration: FormStyles.inputDecoration(
@@ -886,7 +895,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           ExpansionTile(
             initiallyExpanded: _initialExpandedWeather,
             tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(bottom: 8),
+            childrenPadding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
             trailing: const Icon(Icons.keyboard_arrow_down_rounded),
             title: Row(
               children: [
@@ -911,16 +920,18 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _windDirectionController,
                 decoration: FormStyles.inputDecoration(
                     labelText: 'Wind direction'),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _temperatureController,
                 decoration: FormStyles.inputDecoration(
-                    hintText: 'Temperature',
+                    labelText: 'Temperature',
                     suffixIcon: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _temperatureUnit,
@@ -941,11 +952,12 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _humidityController,
                 style: const TextStyle(color: Color(0xFF1A1A1A)),
                 decoration: FormStyles.inputDecoration(
-                  hintText: 'Humidity',
+                  labelText: 'Humidity',
                 ).copyWith(
                   hintStyle: TextStyle(color: Colors.grey.shade500),
                   suffixIcon: Padding(
@@ -968,11 +980,12 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _cloudCoverController,
                 style: const TextStyle(color: Color(0xFF1A1A1A)),
                 decoration: FormStyles.inputDecoration(
-                  hintText: 'Cloud cover',
+                  labelText: 'Cloud cover',
                 ).copyWith(
                   hintStyle: TextStyle(color: Colors.grey.shade500),
                   suffixIcon: Padding(
@@ -995,6 +1008,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                     const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<String?>(
                 key: ValueKey<String?>(_soilMoisture),
                 initialValue: _soilMoisture,
@@ -1004,7 +1018,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                   color: Color(0xFF1A1A1A),
                 ),
                 decoration: FormStyles.inputDecoration(
-                  hintText: 'Soil moisture',
+                  labelText: 'Soil moisture',
                 ),
                 items: [
                   const DropdownMenuItem<String?>(
@@ -1014,7 +1028,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 ],
                 onChanged: (v) => setState(() => _soilMoisture = v),
               ),
-              const SizedBox(height: FormStyles.formSheetFieldSpacing),
+              const SizedBox(height: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1134,7 +1148,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
           ExpansionTile(
             initiallyExpanded: _initialExpandedCoverage,
             tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(bottom: 8),
+            childrenPadding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
             trailing: const Icon(Icons.keyboard_arrow_down_rounded),
             title: Row(
               children: [
@@ -1158,7 +1172,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                 keyboardType: TextInputType.text,
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: FormStyles.formSheetFieldSpacing),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1194,6 +1208,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
               Builder(
                 builder: (context) {
                   final byRep = <int?, List<Plot>>{};
@@ -1293,7 +1308,7 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
                   );
                 },
               ),
-              const SizedBox(height: FormStyles.formSheetFieldSpacing),
+              const SizedBox(height: 12),
               TextField(
                 controller: _notesController,
                 maxLines: 3,
@@ -1380,17 +1395,12 @@ class _ApplicationSheetContentState extends ConsumerState<ApplicationSheetConten
   }
 
   Widget _field(String label, TextEditingController controller) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        bottom: FormStyles.formSheetFieldSpacing,
-      ),
-      child: TextField(
-        controller: controller,
-        decoration: FormStyles.inputDecoration(labelText: label),
-        keyboardType:
-            const TextInputType.numberWithOptions(decimal: true),
-        onChanged: (_) => setState(() {}),
-      ),
+    return TextField(
+      controller: controller,
+      decoration: FormStyles.inputDecoration(labelText: label),
+      keyboardType:
+          const TextInputType.numberWithOptions(decimal: true),
+      onChanged: (_) => setState(() {}),
     );
   }
 }

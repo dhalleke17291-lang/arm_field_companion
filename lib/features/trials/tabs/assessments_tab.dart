@@ -115,23 +115,32 @@ class AssessmentsTab extends ConsumerWidget {
                   size: 16, color: AppDesignTokens.primary),
               const SizedBox(width: AppDesignTokens.spacing8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      total == 1 ? '1 assessment' : '$total assessments',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: AppDesignTokens.primary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                child: Text(
+                  total == 1 ? '1 assessment' : '$total assessments',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: AppDesignTokens.primary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-              ProtocolLockChip(isLocked: locked, trial: trial),
+              IconButton(
+                tooltip: 'Full screen',
+                icon: const Icon(Icons.fullscreen),
+                onPressed: () {
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(title: const Text('Assessments')),
+                        body: AssessmentsTab(trial: trial),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),

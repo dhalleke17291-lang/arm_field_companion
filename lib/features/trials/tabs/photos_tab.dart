@@ -9,6 +9,18 @@ import '../../../core/providers.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../photos/photo_viewer_screen.dart';
 
+void _pushPhotosFullScreen(BuildContext context, Trial trial) {
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('Photos')),
+        body: PhotosTab(trial: trial),
+      ),
+    ),
+  );
+}
+
 /// Photos tab for trial detail: photos grouped by session.
 class PhotosTab extends ConsumerWidget {
   const PhotosTab({super.key, required this.trial});
@@ -22,35 +34,6 @@ class PhotosTab extends ConsumerWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Photos',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Open in full screen',
-                icon: const Icon(Icons.fullscreen),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => Scaffold(
-                        appBar: AppBar(title: const Text('Photos')),
-                        body: PhotosTab(trial: trial),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
         Expanded(
           child: photosAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -63,11 +46,52 @@ class PhotosTab extends ConsumerWidget {
             ),
             data: (photos) {
               if (photos.isEmpty) {
-                return const AppEmptyState(
-                  icon: Icons.photo_library_outlined,
-                  title: 'No photos yet',
-                  subtitle:
-                      'Photos taken during sessions will appear here, grouped by session.',
+                final titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    );
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.photo_library_outlined,
+                            size: 18,
+                            color: AppDesignTokens.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Photos by session',
+                              style: titleStyle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Full screen',
+                            icon: const Icon(Icons.fullscreen),
+                            onPressed: () =>
+                                _pushPhotosFullScreen(context, trial),
+                            style: IconButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Expanded(
+                      child: AppEmptyState(
+                        icon: Icons.photo_library_outlined,
+                        title: 'No photos yet',
+                        subtitle:
+                            'Photos taken during sessions will appear here, grouped by session.',
+                      ),
+                    ),
+                  ],
                 );
               }
               final sessions = sessionsAsync.valueOrNull ?? <Session>[];
@@ -78,8 +102,7 @@ class PhotosTab extends ConsumerWidget {
               }
               final sessionIds = bySession.keys.toList()..sort();
               return ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 itemCount: sessionIds.length,
                 itemBuilder: (context, i) {
                   final sessionId = sessionIds[i];
@@ -92,30 +115,53 @@ class PhotosTab extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              bottom: AppDesignTokens.spacing8),
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppDesignTokens.primaryText,
-                            ),
-                          ),
-                        ),
-                        if (subtitle.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                bottom: AppDesignTokens.spacing8),
-                            child: Text(
-                              subtitle,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppDesignTokens.secondaryText,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: AppDesignTokens.spacing8),
+                                    child: Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppDesignTokens.primaryText,
+                                      ),
+                                    ),
+                                  ),
+                                  if (subtitle.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          bottom: AppDesignTokens.spacing8),
+                                      child: Text(
+                                        subtitle,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppDesignTokens.secondaryText,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
-                          ),
+                            if (i == 0)
+                              IconButton(
+                                tooltip: 'Full screen',
+                                icon: const Icon(Icons.fullscreen),
+                                onPressed: () =>
+                                    _pushPhotosFullScreen(context, trial),
+                                style: IconButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ),
+                          ],
+                        ),
                         SizedBox(
                           height: 100,
                           child: ListView.separated(

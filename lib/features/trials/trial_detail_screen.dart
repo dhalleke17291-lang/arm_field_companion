@@ -1383,7 +1383,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ? _sessionsIndex
                 : effectiveSelectedIndex,
             children: [
-              PlotsTab(trial: currentTrial, embeddedInScroll: false),
+              PlotsTab(
+                trial: currentTrial,
+                embeddedInScroll: false,
+                onSelectStackIndex: (index) {
+                  setState(() {
+                    _selectedTabIndex =
+                        _sanitizeTabIndexForTrial(index, currentTrial);
+                  });
+                },
+              ),
               SeedingTab(trial: currentTrial),
               ApplicationsTab(trial: currentTrial),
               AssessmentsTab(trial: currentTrial),

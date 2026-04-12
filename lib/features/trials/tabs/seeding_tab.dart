@@ -70,9 +70,33 @@ class SeedingTab extends ConsumerWidget {
         ),
       ),
       data: (event) {
+        void openSeedingFullScreen() {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => Scaffold(
+                appBar: AppBar(title: const Text('Seeding')),
+                body: SeedingTab(trial: trial),
+              ),
+            ),
+          );
+        }
         if (event == null) {
           return Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: 'Full screen',
+                      icon: const Icon(Icons.fullscreen),
+                      onPressed: openSeedingFullScreen,
+                    ),
+                  ],
+                ),
+              ),
               const Expanded(
                 child: AppEmptyState(
                   icon: Icons.agriculture,
@@ -88,29 +112,43 @@ class SeedingTab extends ConsumerWidget {
             ],
           );
         }
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-          child: _SeedingEventSummaryCard(
-            event: event,
-            onEdit: () => _openSeedingEventSheet(context, ref, event),
-            onRecordEmergence: () =>
-                _openEmergenceSheet(context, ref, event),
-            onMarkComplete: event.status == 'pending'
-                ? () async {
-                    final userId = await ref.read(currentUserIdProvider.future);
-                    final user = await ref.read(currentUserProvider.future);
-                    await ref
-                        .read(seedingRepositoryProvider)
-                        .markSeedingCompleted(
-                          id: event.id,
-                          completedAt: DateTime.now(),
-                          performedBy: user?.displayName,
-                          performedByUserId: userId,
-                        );
-                    ref.invalidate(seedingEventForTrialProvider(trial.id));
-                  }
-                : null,
-          ),
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppDesignTokens.spacing16,
+                  8,
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing16,
+                ),
+                child: _SeedingEventSummaryCard(
+                  event: event,
+                  onOpenFullScreen: openSeedingFullScreen,
+                  onEdit: () => _openSeedingEventSheet(context, ref, event),
+                  onRecordEmergence: () =>
+                      _openEmergenceSheet(context, ref, event),
+                  onMarkComplete: event.status == 'pending'
+                      ? () async {
+                          final userId =
+                              await ref.read(currentUserIdProvider.future);
+                          final user =
+                              await ref.read(currentUserProvider.future);
+                          await ref
+                              .read(seedingRepositoryProvider)
+                              .markSeedingCompleted(
+                                id: event.id,
+                                completedAt: DateTime.now(),
+                                performedBy: user?.displayName,
+                                performedByUserId: userId,
+                              );
+                          ref.invalidate(seedingEventForTrialProvider(trial.id));
+                        }
+                      : null,
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -151,12 +189,14 @@ class SeedingTab extends ConsumerWidget {
 
 class _SeedingEventSummaryCard extends ConsumerWidget {
   final SeedingEvent event;
+  final VoidCallback onOpenFullScreen;
   final VoidCallback onEdit;
   final VoidCallback? onRecordEmergence;
   final Future<void> Function()? onMarkComplete;
 
   const _SeedingEventSummaryCard({
     required this.event,
+    required this.onOpenFullScreen,
     required this.onEdit,
     this.onRecordEmergence,
     this.onMarkComplete,
@@ -190,8 +230,8 @@ class _SeedingEventSummaryCard extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (event.status == 'completed')
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
                     AppDesignTokens.spacing16,
                     AppDesignTokens.spacing12,
                     AppDesignTokens.spacing16,
@@ -199,17 +239,26 @@ class _SeedingEventSummaryCard extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.check_circle_outline,
                         size: 14,
                         color: AppDesignTokens.successFg,
                       ),
-                      SizedBox(width: AppDesignTokens.spacing8),
-                      Text(
+                      const SizedBox(width: AppDesignTokens.spacing8),
+                      const Text(
                         'Completed',
                         style: TextStyle(
                           fontSize: 11,
                           color: AppDesignTokens.successFg,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        tooltip: 'Full screen',
+                        icon: const Icon(Icons.fullscreen),
+                        onPressed: onOpenFullScreen,
+                        style: IconButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
                         ),
                       ),
                     ],
@@ -239,6 +288,15 @@ class _SeedingEventSummaryCard extends ConsumerWidget {
                             color: AppDesignTokens.primaryText),
                       ),
                     ),
+                    if (event.status != 'completed')
+                      IconButton(
+                        tooltip: 'Full screen',
+                        icon: const Icon(Icons.fullscreen),
+                        onPressed: onOpenFullScreen,
+                        style: IconButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined),
                       onPressed: onEdit,

@@ -7,6 +7,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
+import '../../../shared/widgets/app_empty_state.dart';
 import 'application_sheet_content.dart';
 
 /// Applications tab for trial detail: list and add/edit application events.
@@ -58,6 +59,59 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     'Waterlogged',
   ];
 
+  void _openApplicationsFullScreen() {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Applications')),
+          body: ApplicationsTab(trial: widget.trial),
+        ),
+      ),
+    );
+  }
+
+  Widget _applicationsWorkspaceToolbar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing16,
+        vertical: 10,
+      ),
+      decoration: const BoxDecoration(
+        color: AppDesignTokens.sectionHeaderBg,
+        border:
+            Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.science_outlined,
+            size: 16,
+            color: AppDesignTokens.primary,
+          ),
+          const SizedBox(width: AppDesignTokens.spacing8),
+          const Expanded(
+            child: Text(
+              'Applications',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: AppDesignTokens.primary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Full screen',
+            icon: const Icon(Icons.fullscreen),
+            onPressed: _openApplicationsFullScreen,
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Pending first, applied after (recent first).
   List<TrialApplicationEvent> _sorted(List<TrialApplicationEvent> list) {
     final pending = list.where((e) => e.status == 'pending').toList()
@@ -75,20 +129,28 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   Widget build(BuildContext context) {
     final applicationsAsync =
         ref.watch(trialApplicationsForTrialProvider(widget.trial.id));
-    return applicationsAsync.when(
-      loading: () => const AppLoadingView(),
-      error: (e, st) => AppErrorView(
-        error: e,
-        stackTrace: st,
-        onRetry: () =>
-            ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id)),
-      ),
-      data: (list) {
-        final sorted = _sorted(list);
-        return list.isEmpty
-            ? _buildEmpty(context, ref)
-            : _buildList(context, ref, sorted);
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _applicationsWorkspaceToolbar(context),
+        Expanded(
+          child: applicationsAsync.when(
+            loading: () => const AppLoadingView(),
+            error: (e, st) => AppErrorView(
+              error: e,
+              stackTrace: st,
+              onRetry: () => ref.invalidate(
+                  trialApplicationsForTrialProvider(widget.trial.id)),
+            ),
+            data: (list) {
+              final sorted = _sorted(list);
+              return sorted.isEmpty
+                  ? _buildEmpty(context, ref)
+                  : _buildList(context, ref, sorted);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -96,18 +158,11 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     return Column(
       children: [
         const Expanded(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Text(
-                'No applications yet',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
-            ),
+          child: AppEmptyState(
+            icon: Icons.science,
+            title: 'No Applications Yet',
+            subtitle: 'Record an application for this trial',
+            action: null,
           ),
         ),
         TabListBottomAddButton(
@@ -161,16 +216,17 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
         : null;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: EdgeInsets.fromLTRB(16, index == 0 ? 6 : 4, 16, 4),
       child: InkWell(
         onTap: () => _showApplicationSheet(context, ref, e),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Text(
@@ -180,49 +236,73 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                         fontSize: 15,
                         color: AppDesignTokens.primaryText,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 6),
                   _StatusChip(isPending: isPending),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 '$label · $plannedDateStr',
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
+                  height: 1.2,
                   color: AppDesignTokens.secondaryText,
                 ),
               ),
               if (rateLine != null) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   rateLine,
                   style: const TextStyle(
                     fontSize: 12,
+                    height: 1.2,
                     color: AppDesignTokens.secondaryText,
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (isPending)
                     FilledButton.tonal(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => _showApplySheet(context, ref, e),
                       child: const Text('Apply Now'),
                     )
                   else
-                    Text(
-                      appliedAtStr != null
-                          ? 'Applied on $appliedAtStr'
-                          : 'Applied',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppDesignTokens.successFg,
+                    Expanded(
+                      child: Text(
+                        appliedAtStr != null
+                            ? 'Applied on $appliedAtStr'
+                            : 'Applied',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.25,
+                          color: AppDesignTokens.successFg,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   TextButton(
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     onPressed: () => _showApplicationSheet(context, ref, e),
                     child: const Text('Edit'),
                   ),
@@ -360,67 +440,76 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
 
   Widget _buildList(
       BuildContext context, WidgetRef ref, List<TrialApplicationEvent> list) {
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ListView.builder(
-          padding: const EdgeInsets.fromLTRB(
-            0,
-            AppDesignTokens.spacing12,
-            0,
-            80,
-          ),
-          itemCount: list.length,
-          itemBuilder: (context, index) {
-            final e = list[index];
-            return Dismissible(
-              key: Key(e.id),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 16),
-                color: Colors.red,
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-              confirmDismiss: (direction) async {
-                return await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Delete Application?'),
-                    content: const Text(
-                      'This application will be permanently deleted.',
+        Expanded(
+          child: Stack(
+            children: [
+              ListView.builder(
+                padding: const EdgeInsets.fromLTRB(
+                  0,
+                  0,
+                  0,
+                  80,
+                ),
+                itemCount: list.length,
+                itemBuilder: (context, index) {
+                  final e = list[index];
+                  return Dismissible(
+                    key: Key(e.id),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 16),
+                      color: Colors.red,
+                      child: const Icon(Icons.delete, color: Colors.white),
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancel'),
-                      ),
-                      FilledButton(
-                        style:
-                            FilledButton.styleFrom(backgroundColor: Colors.red),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              onDismissed: (_) {
-                ref.read(applicationRepositoryProvider).deleteApplication(e.id);
-                ref.invalidate(
-                    trialApplicationsForTrialProvider(widget.trial.id));
-              },
-              child: _buildApplicationTile(context, ref, e, index),
-            );
-          },
-        ),
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'add_application',
-            onPressed: () => _showApplicationSheet(context, ref, null),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Application'),
+                    confirmDismiss: (direction) async {
+                      return await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete Application?'),
+                          content: const Text(
+                            'This application will be permanently deleted.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.red),
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    onDismissed: (_) {
+                      ref
+                          .read(applicationRepositoryProvider)
+                          .deleteApplication(e.id);
+                      ref.invalidate(
+                          trialApplicationsForTrialProvider(widget.trial.id));
+                    },
+                    child: _buildApplicationTile(context, ref, e, index),
+                  );
+                },
+              ),
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: FloatingActionButton.extended(
+                  heroTag: 'add_application',
+                  onPressed: () => _showApplicationSheet(context, ref, null),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Application'),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -489,7 +578,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: isPending
             ? AppDesignTokens.emptyBadgeBg
@@ -500,6 +589,7 @@ class _StatusChip extends StatelessWidget {
         isPending ? 'Pending' : 'Applied',
         style: TextStyle(
           fontSize: 11,
+          height: 1.1,
           fontWeight: FontWeight.w600,
           color: isPending
               ? AppDesignTokens.secondaryText
