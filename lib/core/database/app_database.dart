@@ -843,7 +843,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 48;
+  int get schemaVersion => 49;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1281,6 +1281,24 @@ FROM notes_old
 INSERT OR REPLACE INTO sqlite_sequence (name, seq)
 SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
 ''');
+          }
+          if (from < 49) {
+            // Defensive creation of application tables missing from onUpgrade.
+            // Must be created in dependency order:
+            // application_slots → application_events → application_plot_records.
+            final existingTables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+            if (!existingTables.contains('application_slots')) {
+              await m.createTable(applicationSlots);
+            }
+            if (!existingTables.contains('application_events')) {
+              await m.createTable(applicationEvents);
+            }
+            if (!existingTables.contains('application_plot_records')) {
+              await m.createTable(applicationPlotRecords);
+            }
           }
           await _createIndexes();
         },
