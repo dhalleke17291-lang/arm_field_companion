@@ -27,7 +27,8 @@ class TrialAssessmentCompletionCard extends ConsumerWidget {
         if (map.isEmpty) return const SizedBox.shrink();
         final entries = map.entries.toList()
           ..sort((a, b) => a.key.compareTo(b.key));
-        final pad = dense ? AppDesignTokens.spacing8 : AppDesignTokens.spacing12;
+        final pad =
+            dense ? AppDesignTokens.spacing8 : AppDesignTokens.spacing12;
         return Card(
           margin: EdgeInsets.zero,
           elevation: 0,
@@ -120,7 +121,8 @@ class _AssessmentCompletionRow extends StatelessWidget {
                 ? 0
                 : completion.progressFraction,
             minHeight: 6,
-            backgroundColor: AppDesignTokens.borderCrisp.withValues(alpha: 0.35),
+            backgroundColor:
+                AppDesignTokens.borderCrisp.withValues(alpha: 0.35),
             valueColor: AlwaysStoppedAnimation<Color>(barColor),
           ),
         ),
@@ -150,15 +152,14 @@ class TrialCompletionSummaryCard extends ConsumerWidget {
         final totalDataPlots = first.totalDataPlots;
         final excludedFromAnalysisCount = first.excludedFromAnalysisCount;
         final nAssess = map.length;
-        final completeAssess =
-            map.values.where((c) => c.isComplete).length;
+        final completeAssess = map.values.where((c) => c.isComplete).length;
         final sumPairs =
             map.values.fold<int>(0, (s, c) => s + c.ratedPlotCount);
         final denomPairs = nAssess * analyzablePlotCount;
-        final overall = denomPairs <= 0
-            ? 0.0
-            : (sumPairs / denomPairs).clamp(0.0, 1.0);
+        final overall =
+            denomPairs <= 0 ? 0.0 : (sumPairs / denomPairs).clamp(0.0, 1.0);
         final ratedAny = ratedAsync.valueOrNull;
+        // Keep margin/title in sync with Overview dashboard cards in trial_detail_screen.
         return Card(
           margin: const EdgeInsets.fromLTRB(
             AppDesignTokens.spacing16,
@@ -183,8 +184,8 @@ class TrialCompletionSummaryCard extends ConsumerWidget {
                 Text(
                   'Trial Completion',
                   style: AppDesignTokens.headingStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
+                    fontSize: 15,
+                    color: AppDesignTokens.primaryText,
                   ),
                 ),
                 const SizedBox(height: 6),
