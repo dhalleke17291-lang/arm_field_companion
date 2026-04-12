@@ -12,12 +12,61 @@ import '../../core/plot_display.dart';
 import '../../core/export_guard.dart';
 import '../../core/providers.dart';
 import '../../core/session_resume_store.dart';
+import '../../data/repositories/weather_snapshot_repository.dart';
 import '../ratings/rating_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
 import '../sessions/arrange_plots_screen.dart';
+import '../sessions/crop_stage_bbch_editor_dialog.dart';
 import '../sessions/session_export_trust_dialog.dart';
+import '../sessions/session_timing_helper.dart';
+import '../weather/weather_capture_form.dart';
+
+String? _formatWeatherSnapshotBrief(WeatherSnapshot? w) {
+  if (w == null) return null;
+  final parts = <String>[];
+  final t = w.temperature;
+  if (t != null) {
+    final u = w.temperatureUnit.toUpperCase() == 'F' ? '°F' : '°C';
+    final s = t == t.roundToDouble() ? t.round().toString() : t.toStringAsFixed(1);
+    parts.add('$s$u');
+  }
+  final cc = w.cloudCover?.trim();
+  if (cc != null && cc.isNotEmpty) {
+    parts.add(cc);
+  } else {
+    final p = w.precipitation?.trim();
+    if (p != null && p.isNotEmpty) parts.add(p);
+  }
+  if (parts.isEmpty) return null;
+  return parts.join(' ');
+}
+
+String _plotQueueHeaderContextLine2({
+  required Session session,
+  SessionTimingContext? timing,
+  required WeatherSnapshot? weather,
+  required int ratedCount,
+  required int totalPlots,
+}) {
+  final parts = <String>[];
+  if (session.cropStageBbch != null) {
+    parts.add('BBCH ${session.cropStageBbch}');
+  }
+  final wx = _formatWeatherSnapshotBrief(weather);
+  if (wx != null) parts.add(wx);
+  if (timing != null) {
+    if (timing.daysAfterFirstApp != null) {
+      parts.add('${timing.daysAfterFirstApp} DAT');
+    }
+    if (timing.daysAfterSeeding != null) {
+      parts.add('Day ${timing.daysAfterSeeding} after seeding');
+    }
+  }
+  parts.add('$ratedCount / $totalPlots rated');
+  return parts.join(' · ');
+}
 
 typedef _PlotQueueOpenRating = Future<void> Function(
   Plot plot,
@@ -78,6 +127,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   int? _highlightPlotPk;
   bool _consumedScrollToPlotOnOpen = false;
 
+  /// In-memory only for this visit; banner rows return on next queue open.
+  bool _skipBbchReadinessRow = false;
+  bool _skipWeatherReadinessRow = false;
+
   GlobalKey _keyForPlotRow(int plotPk) =>
       _plotRowKeys.putIfAbsent(plotPk, GlobalKey.new);
 
@@ -115,7 +168,20 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     return filtered;
   }
 
-  void _scheduleScrollToPlotPkOnOpen(List<Plot> filteredPlots) {
+  /// Approximate vertical extent of the readiness banner as the first ListView item.
+  double _readinessBannerScrollExtent(bool showBbch, bool showWeather) {
+    if (!showBbch && !showWeather) return 0;
+    var h = 8.0 + 8.0 + 8.0 + 8.0; // outer + material vertical padding
+    if (showBbch) h += 48;
+    if (showBbch && showWeather) h += 16;
+    if (showWeather) h += 48;
+    return h;
+  }
+
+  void _scheduleScrollToPlotPkOnOpen(
+    List<Plot> filteredPlots, {
+    double listReadinessLeadExtent = 0,
+  }) {
     final pk = widget.scrollToPlotPkOnOpen;
     if (pk == null || _consumedScrollToPlotOnOpen) return;
     if (!filteredPlots.any((p) => p.id == pk)) {
@@ -126,7 +192,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final entries = _flattenGroupedQueueItems(filteredPlots);
     const double headerH = 40;
     const double rowH = 88;
-    double y = 0;
+    double y = listReadinessLeadExtent;
     var found = false;
     for (final item in entries) {
       if (item.isHeader) {
@@ -383,6 +449,133 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     super.dispose();
   }
 
+  Future<void> _openWeatherCapture(BuildContext context) async {
+    final repo = ref.read(weatherSnapshotRepositoryProvider);
+    final snap = await repo.getWeatherSnapshotForParent(
+      kWeatherParentTypeRatingSession,
+      widget.session.id,
+    );
+    if (!context.mounted) return;
+    await showWeatherCaptureBottomSheet(
+      context,
+      trial: widget.trial,
+      session: widget.session,
+      initialSnapshot: snap,
+    );
+  }
+
+  /// First item inside the plot [ListView] so it scrolls with rows (not pinned).
+  Widget _buildReadinessListBanner(
+    BuildContext context,
+    ColorScheme scheme,
+    Session liveSession,
+    bool showBbchRow,
+    bool showWeatherRow,
+  ) {
+    return Padding(
+      key: const ValueKey<String>('plot_queue_readiness_banner'),
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing8,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing4,
+      ),
+      child: Material(
+        color: AppDesignTokens.cardSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          side: const BorderSide(color: AppDesignTokens.borderCrisp),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showBbchRow)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.eco_outlined, size: 18, color: scheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Growth stage not set',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        final ok = await showCropStageBbchEditorDialog(
+                          context: context,
+                          ref: ref,
+                          session: liveSession,
+                          trialId: widget.trial.id,
+                        );
+                        if (ok && mounted) setState(() {});
+                      },
+                      child: const Text('Set BBCH'),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          setState(() => _skipBbchReadinessRow = true),
+                      child: const Text('Skip'),
+                    ),
+                  ],
+                ),
+              if (showBbchRow && showWeatherRow) const Divider(height: 16),
+              if (showWeatherRow)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.wb_cloudy_outlined,
+                        size: 18, color: scheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Weather not recorded',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        await _openWeatherCapture(context);
+                        if (mounted) setState(() {});
+                      },
+                      child: const Text('Record'),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          setState(() => _skipWeatherReadinessRow = true),
+                      child: const Text('Skip'),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _plotQueueSubtitleLine1(Session liveSession) {
+    final walk =
+        '${liveSession.name} · Walk order: ${SessionWalkOrderStore.labelForMode(_walkOrderMode)}';
+    final r = liveSession.raterName?.trim();
+    if (r != null && r.isNotEmpty) {
+      return '$walk · Rating as: $r';
+    }
+    return walk;
+  }
+
   @override
   Widget build(BuildContext context) {
     final plotsAsync = ref.watch(plotsForTrialProvider(widget.trial.id));
@@ -390,6 +583,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         ref.watch(sessionAssessmentsProvider(widget.session.id));
     final ratedPlotsAsync = ref.watch(ratedPlotPksProvider(widget.session.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(widget.session.id));
+    final liveSession = ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull ??
+        widget.session;
+    final timingCtx =
+        ref.watch(sessionTimingContextProvider(widget.session.id)).valueOrNull;
+    final weatherSnap =
+        ref.watch(weatherSnapshotForSessionProvider(widget.session.id)).valueOrNull;
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
     final treatmentById = {for (final t in treatments) t.id: t};
@@ -402,19 +601,43 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             .watch(plotPksWithCorrectionsForSessionProvider(widget.session.id))
             .valueOrNull ??
         <int>{};
+    final flaggedPlotIds = ref
+            .watch(flaggedPlotIdsForSessionProvider(widget.session.id))
+            .valueOrNull ??
+        <int>{};
+
+    final ratedForHeader =
+        ratedPlotsAsync.valueOrNull ?? <int>{};
+    final plotsCountForHeader = plotsAsync.valueOrNull?.length ?? 0;
+    final weatherRecorded = weatherSnap != null;
+    final headerLine2 = _plotQueueHeaderContextLine2(
+      session: liveSession,
+      timing: timingCtx,
+      weather: weatherSnap,
+      ratedCount: ratedForHeader.length,
+      totalPlots: plotsCountForHeader,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: GradientScreenHeader(
         title: widget.trial.name,
-        subtitle:
-            '${widget.session.name} · Walk order: ${SessionWalkOrderStore.labelForMode(_walkOrderMode)}',
+        subtitle: _plotQueueSubtitleLine1(liveSession),
+        subtitleLine2: headerLine2,
         titleFontSize: 17,
         actions: [
           IconButton(
             icon: const Icon(Icons.directions_walk),
             tooltip: 'Change walk order',
             onPressed: () => _showWalkOrderSheet(context),
+          ),
+          IconButton(
+            icon: Icon(
+              weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
+              color: Colors.white,
+            ),
+            tooltip: 'Weather',
+            onPressed: () => _openWeatherCapture(context),
           ),
           IconButton(
             icon: const Icon(Icons.search),
@@ -440,20 +663,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (ratings) {
-                final flaggedIds = ref
-                        .watch(
-                            flaggedPlotIdsForSessionProvider(widget.session.id))
-                        .valueOrNull ??
-                    <int>{};
-                final seedingEvent = ref
-                    .watch(seedingEventForTrialProvider(widget.trial.id))
-                    .valueOrNull;
-                final int? dasDays =
-                    (seedingEvent != null && seedingEvent.status == 'completed')
-                        ? widget.session.startedAt
-                            .difference(seedingEvent.seedingDate)
-                            .inDays
-                        : null;
                 return _buildQueue(
                     context,
                     plots,
@@ -462,9 +671,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                     ratings,
                     treatmentById,
                     plotIdToTreatmentId,
-                    flaggedIds,
+                    flaggedPlotIds,
                     plotPksWithCorrections,
-                    dasDays: dasDays);
+                    liveSession: liveSession,
+                    weatherSnap: weatherSnap);
               },
             ),
           ),
@@ -483,7 +693,8 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Map<int, int?> plotIdToTreatmentId,
     Set<int> flaggedIds,
     Set<int> plotPksWithCorrections, {
-    int? dasDays,
+    required Session liveSession,
+    required WeatherSnapshot? weatherSnap,
   }) {
     final ratingsByPlot = <int, List<RatingRecord>>{};
     for (final r in ratings) {
@@ -503,7 +714,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       flaggedIds,
       plotPksWithCorrections,
     );
-    _scheduleScrollToPlotPkOnOpen(filtered);
     final filterNavActive = _anyPlotFiltersActive() && filtered.isNotEmpty;
     final filteredPlotIdsForRating =
         filterNavActive ? filtered.map((p) => p.id).toList() : null;
@@ -515,30 +725,31 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final scheme = Theme.of(context).colorScheme;
     final hasFieldRow = plots.any((p) => p.fieldRow != null);
     const serpentineGreen = Color(0xFF2D5A40);
-    final contextLine = dasDays != null
-        ? 'Day $dasDays after seeding · $ratedCount / $totalPlots plots rated'
-        : '$ratedCount / $totalPlots plots rated';
+
+    final showBbchRow =
+        liveSession.cropStageBbch == null && !_skipBbchReadinessRow;
+    final showWeatherRow = weatherSnap == null && !_skipWeatherReadinessRow;
+
+    final readinessListHeader = (showBbchRow || showWeatherRow)
+        ? _buildReadinessListBanner(
+            context,
+            scheme,
+            liveSession,
+            showBbchRow,
+            showWeatherRow,
+          )
+        : null;
+    final readinessLeadExtent =
+        _readinessBannerScrollExtent(showBbchRow, showWeatherRow);
+    _scheduleScrollToPlotPkOnOpen(
+      filtered,
+      listReadinessLeadExtent: readinessLeadExtent,
+    );
 
     return Column(
       children: [
         const _PlotQueueDockBar(),
         const SizedBox(height: 4),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppDesignTokens.spacing16,
-            0,
-            AppDesignTokens.spacing16,
-            AppDesignTokens.spacing4,
-          ),
-          child: Text(
-            contextLine,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface.withValues(alpha: 0.75),
-            ),
-          ),
-        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppDesignTokens.spacing16,
@@ -717,10 +928,12 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         // Plot list grouped by rep
         Expanded(
           child: filtered.isEmpty
-              ? Center(
+              ? SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      if (readinessListHeader != null) readinessListHeader,
                       Icon(
                         plots.isEmpty ? Icons.grid_off : Icons.check_circle,
                         size: 64,
@@ -879,6 +1092,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                               fIds, fMode, navLabel),
                   highlightPlotPk: _highlightPlotPk,
                   rowKeyForPlot: _keyForPlotRow,
+                  listReadinessHeader: readinessListHeader,
                 ),
         ),
       ],
@@ -919,14 +1133,19 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     required _PlotQueueOpenRating onOpenRating,
     required int? highlightPlotPk,
     required GlobalKey Function(int plotPk) rowKeyForPlot,
+    Widget? listReadinessHeader,
   }) {
     final entries = _flattenGroupedQueueItems(filteredPlots);
+    final lead = listReadinessHeader != null ? 1 : 0;
     return ListView.builder(
       controller: _plotQueueScrollController,
       padding: EdgeInsets.zero,
-      itemCount: entries.length,
+      itemCount: entries.length + lead,
       itemBuilder: (context, index) {
-        final item = entries[index];
+        if (listReadinessHeader != null && index == 0) {
+          return listReadinessHeader;
+        }
+        final item = entries[index - lead];
         if (item.isHeader) {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

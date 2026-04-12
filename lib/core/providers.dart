@@ -734,6 +734,8 @@ final evaluateSessionClosePolicyUseCaseProvider =
     ref.watch(computeSessionCompletenessUseCaseProvider),
     ref.watch(plotRepositoryProvider),
     ref.watch(ratingRepositoryProvider),
+    ref.watch(sessionRepositoryProvider),
+    ref.watch(weatherSnapshotRepositoryProvider),
   );
 });
 

@@ -1,10 +1,13 @@
 import '../../../core/database/app_database.dart';
+import '../../../core/diagnostics/diagnostic_finding.dart';
 import '../../../core/plot_analysis_eligibility.dart';
+import '../../../data/repositories/weather_snapshot_repository.dart';
 import '../../plots/plot_repository.dart';
 import '../../ratings/rating_repository.dart';
 import '../domain/session_close_attention_summary.dart';
 import '../domain/session_close_policy_result.dart';
 import '../domain/session_completeness_report.dart';
+import '../session_repository.dart';
 import 'compute_session_completeness_usecase.dart';
 
 /// Orchestrates completeness + legacy attention signals for session close (UI-free).
@@ -13,11 +16,15 @@ class EvaluateSessionClosePolicyUseCase {
     this._computeSessionCompleteness,
     this._plotRepository,
     this._ratingRepository,
+    this._sessionRepository,
+    this._weatherSnapshotRepository,
   );
 
   final ComputeSessionCompletenessUseCase _computeSessionCompleteness;
   final PlotRepository _plotRepository;
   final RatingRepository _ratingRepository;
+  final SessionRepository _sessionRepository;
+  final WeatherSnapshotRepository _weatherSnapshotRepository;
 
   Future<SessionClosePolicyResult> execute({
     required int sessionId,
@@ -43,6 +50,41 @@ class EvaluateSessionClosePolicyUseCase {
       corrections: corrections,
     );
 
+    final contextInfoFindings = <DiagnosticFinding>[];
+    final sessionRow = await _sessionRepository.getSessionById(sessionId);
+    if (sessionRow != null) {
+      if (sessionRow.cropStageBbch == null) {
+        contextInfoFindings.add(
+          DiagnosticFinding(
+            code: 'session_bbch_not_recorded',
+            severity: DiagnosticSeverity.info,
+            message: 'Growth stage (BBCH) not recorded for this session.',
+            trialId: trialId,
+            sessionId: sessionId,
+            source: DiagnosticSource.sessionCompleteness,
+            blocksExport: false,
+          ),
+        );
+      }
+      final weather = await _weatherSnapshotRepository.getWeatherSnapshotForParent(
+        kWeatherParentTypeRatingSession,
+        sessionId,
+      );
+      if (weather == null) {
+        contextInfoFindings.add(
+          DiagnosticFinding(
+            code: 'session_weather_not_recorded',
+            severity: DiagnosticSeverity.info,
+            message: 'Weather conditions not recorded for this session.',
+            trialId: trialId,
+            sessionId: sessionId,
+            source: DiagnosticSource.sessionCompleteness,
+            blocksExport: false,
+          ),
+        );
+      }
+    }
+
     final hasCompletenessWarnings = completenessReport.issues.any(
       (i) => i.severity == SessionCompletenessIssueSeverity.warning,
     );
@@ -60,6 +102,7 @@ class EvaluateSessionClosePolicyUseCase {
       decision: decision,
       completenessReport: completenessReport,
       attentionSummary: attentionSummary,
+      contextInfoFindings: contextInfoFindings,
     );
   }
 }

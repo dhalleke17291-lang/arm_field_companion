@@ -30,7 +30,7 @@ import 'session_export_trust_dialog.dart';
 import 'session_export_trust_messaging.dart';
 import '../../core/ui/field_note_timestamp_format.dart';
 import '../../core/widgets/loading_error_widgets.dart';
-import 'session_timing_helper.dart';
+import 'crop_stage_bbch_editor_dialog.dart';
 import '../notes/field_note_editor_sheet.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -128,71 +128,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ],
         ),
       );
-    }
-  }
-
-  Future<void> _showCropStageBbchEditor(
-      BuildContext context, WidgetRef ref, Session session) async {
-    final controller =
-        TextEditingController(text: session.cropStageBbch?.toString() ?? '');
-    final formKey = GlobalKey<FormState>();
-    bool? saved;
-    try {
-      saved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Crop Growth Stage (BBCH)'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'BBCH (0–99)',
-              hintText: 'e.g. 32',
-              border: OutlineInputBorder(),
-            ),
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return null;
-              return validateCropStageBbchInput(v);
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final v = controller.text.trim();
-              if (v.isEmpty) {
-                await ref
-                    .read(sessionRepositoryProvider)
-                    .updateSessionCropStageBbch(session.id, null);
-                if (ctx.mounted) Navigator.pop(ctx, true);
-                return;
-              }
-              if (formKey.currentState?.validate() != true) return;
-              final parsed = parseCropStageBbchOrNull(v);
-              await ref.read(sessionRepositoryProvider).updateSessionCropStageBbch(
-                    session.id,
-                    parsed,
-                  );
-              if (ctx.mounted) Navigator.pop(ctx, true);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    } finally {
-      controller.dispose();
-    }
-    if (saved == true && context.mounted) {
-      ref.invalidate(sessionByIdProvider(session.id));
-      ref.invalidate(sessionTimingContextProvider(session.id));
-      ref.invalidate(sessionsForTrialProvider(widget.trial.id));
     }
   }
 
@@ -335,7 +270,12 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       tooltip: 'Crop Growth Stage (BBCH)',
                       icon: bbchIcon,
                       label: 'BBCH',
-                      onTap: () => _showCropStageBbchEditor(context, ref, live),
+                      onTap: () => showCropStageBbchEditorDialog(
+                            context: context,
+                            ref: ref,
+                            session: live,
+                            trialId: widget.trial.id,
+                          ),
                     ),
                   );
                   final weather = Expanded(

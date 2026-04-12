@@ -3397,6 +3397,7 @@ class SessionsView extends ConsumerWidget {
     SessionCloseAttentionSummary summary, {
     required bool hasCompletenessWarnings,
     required bool legacyNeedsAttention,
+    required List<DiagnosticFinding> contextInfoFindings,
   }) {
     final completenessLines = report.issues
         .where(
@@ -3462,6 +3463,30 @@ class SessionsView extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              if (contextInfoFindings.isNotEmpty) ...[
+                if (hasCompletenessWarnings || legacyNeedsAttention)
+                  const SizedBox(height: 12),
+                const Text(
+                  'For your records',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...contextInfoFindings.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      f.message,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -3624,6 +3649,7 @@ class SessionsView extends ConsumerWidget {
         summary,
         hasCompletenessWarnings: hasCompletenessWarnings,
         legacyNeedsAttention: legacyNeedsAttention,
+        contextInfoFindings: policy.contextInfoFindings,
       );
       if (!context.mounted) return;
       switch (action) {
@@ -3659,6 +3685,46 @@ class SessionsView extends ConsumerWidget {
     }
 
     if (!context.mounted) return;
+
+    if (policy.decision == SessionClosePolicyDecision.proceedToClose &&
+        policy.contextInfoFindings.isNotEmpty) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Session record'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'For your records:',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                ...policy.contextInfoFindings.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      f.message,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+      if (!context.mounted) return;
+    }
+
     await _runCloseSessionUseCase(
       context,
       ref,

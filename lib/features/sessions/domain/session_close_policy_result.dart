@@ -1,3 +1,4 @@
+import '../../../core/diagnostics/diagnostic_finding.dart';
 import 'session_close_attention_summary.dart';
 import 'session_completeness_report.dart';
 
@@ -19,9 +20,13 @@ class SessionClosePolicyResult {
     required this.decision,
     required this.completenessReport,
     required this.attentionSummary,
+    this.contextInfoFindings = const [],
   });
 
   final SessionClosePolicyDecision decision;
   final SessionCompletenessReport completenessReport;
   final SessionCloseAttentionSummary attentionSummary;
+
+  /// Non-blocking session-level reminders (BBCH, weather, etc.).
+  final List<DiagnosticFinding> contextInfoFindings;
 }

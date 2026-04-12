@@ -31,6 +31,7 @@ import 'usecases/save_rating_usecase.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/rating_order_sheet.dart';
 import '../sessions/session_detail_screen.dart';
+import '../sessions/session_timing_helper.dart';
 
 /// Status options for the rating result; maps to persisted resultStatus values.
 enum RatingStatus {
@@ -114,6 +115,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   String _selectedStatus = 'RECORDED';
   bool _userHasInteracted = false;
   bool _isSaving = false;
+
+  Timer? _clampBorderTimer;
+  Timer? _clampMessageTimer;
+  bool _clampBorderHighlight = false;
+  String? _clampAdjustMessage;
 
   /// Set when [_prefillFromLastValue] fills the field from last-plot memory (this visit only).
   double? _carryForwardBaselineNumeric;
@@ -199,6 +205,25 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     return DateFormat('MMM d, yyyy').format(dt);
   }
 
+  String? _ratingSessionContextStrip(
+    Session session,
+    SessionTimingContext? timing,
+  ) {
+    final parts = <String>[];
+    if (session.cropStageBbch != null) {
+      parts.add('BBCH ${session.cropStageBbch}');
+    }
+    if (timing?.daysAfterFirstApp != null) {
+      parts.add('${timing!.daysAfterFirstApp} DAT');
+    }
+    final name = session.name.trim();
+    if (name.isNotEmpty) {
+      parts.add(name);
+    }
+    if (parts.isEmpty) return null;
+    return parts.join(' · ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -222,6 +247,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   @override
   void dispose() {
+    _clampBorderTimer?.cancel();
+    _clampMessageTimer?.cancel();
     _assessmentScrollController.dispose();
     WakelockPlus.disable();
     _saveResumePosition();
@@ -383,6 +410,20 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       if (lid != null) taByLegacy[lid] = ta;
     }
 
+    final definitions =
+        ref.watch(assessmentDefinitionsProvider).valueOrNull ??
+            <AssessmentDefinition>[];
+    final liveSession =
+        ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull ??
+            widget.session;
+    final sessionTiming = ref
+        .watch(sessionTimingContextProvider(widget.session.id))
+        .valueOrNull;
+    final sessionContextStrip = _ratingSessionContextStrip(
+      liveSession,
+      sessionTiming,
+    );
+
     final sessionRatingsList =
         ref.watch(sessionRatingsProvider(widget.session.id)).valueOrNull ?? [];
     final nonRecordedAssessmentIds = <int>{
@@ -538,6 +579,23 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             child: Column(
               children: [
                 _buildWalkOrderBar(context),
+                if (sessionContextStrip != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDesignTokens.spacing16,
+                      6,
+                      AppDesignTokens.spacing16,
+                      0,
+                    ),
+                    child: Text(
+                      sessionContextStrip,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppDesignTokens.spacing16,
@@ -573,6 +631,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                           context,
                           taByLegacy,
                           nonRecordedAssessmentIds,
+                          definitions,
                         ),
                         existingRatingAsync.when(
                           loading: () => const Padding(
@@ -1302,8 +1361,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     BuildContext context,
     Map<int, TrialAssessment> taByLegacy,
     Set<int> nonRecordedAssessmentIds,
+    List<AssessmentDefinition> definitions,
   ) {
     final desc = _shellDescriptionForCurrentAssessment(taByLegacy);
+    final methodHints =
+        _buildAssessmentMethodInstructions(context, taByLegacy, definitions);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1330,7 +1392,119 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
             ),
           ),
+        if (methodHints != null) methodHints,
       ],
+    );
+  }
+
+  AssessmentDefinition? _definitionForTrialAssessment(
+    TrialAssessment ta,
+    List<AssessmentDefinition> definitions,
+  ) {
+    for (final d in definitions) {
+      if (d.id == ta.assessmentDefinitionId) return d;
+    }
+    return null;
+  }
+
+  Widget? _buildAssessmentMethodInstructions(
+    BuildContext context,
+    Map<int, TrialAssessment> taByLegacy,
+    List<AssessmentDefinition> definitions,
+  ) {
+    final ta = taByLegacy[_currentAssessment.id];
+    if (ta == null) return null;
+    final def = _definitionForTrialAssessment(ta, definitions);
+    final methodOverride = ta.methodOverride?.trim();
+    final methodFromDef = def?.method?.trim();
+    final methodLine = (methodOverride != null && methodOverride.isNotEmpty)
+        ? methodOverride
+        : (methodFromDef != null && methodFromDef.isNotEmpty
+            ? methodFromDef
+            : null);
+
+    final instrOverride = ta.instructionOverride?.trim();
+    final instrDef = def?.defaultInstructions?.trim();
+    final instrLine = (instrOverride != null && instrOverride.isNotEmpty)
+        ? instrOverride
+        : (instrDef != null && instrDef.isNotEmpty ? instrDef : null);
+
+    if (methodLine == null && instrLine == null) return null;
+
+    void showFull(String title, String body) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(child: SelectableText(body)),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget lineBlock(String label, String text) {
+      final overflow = text.length > 120 || text.split('\n').length > 2;
+      final preview =
+          overflow && text.length > 120 ? '${text.substring(0, 120)}…' : text;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$label: $preview',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.35,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            if (overflow)
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => showFull(label, text),
+                child: const Text('More'),
+              ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        0,
+        AppDesignTokens.spacing16,
+        8,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppDesignTokens.cardSurface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppDesignTokens.borderCrisp),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (methodLine != null) lineBlock('Method', methodLine),
+              if (instrLine != null) lineBlock('Instructions', instrLine),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1992,7 +2166,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Previous Value • ${_formatDatePrev(_priorRating!.createdAt)}',
+                              'Previous Value${_priorSessionName != null && _priorSessionName!.trim().isNotEmpty ? ' · ${_priorSessionName!.trim()}' : ''} · ${_formatDatePrev(_priorRating!.createdAt)}',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -2112,8 +2286,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         color: AppDesignTokens.primary.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color:
-                              AppDesignTokens.primary.withValues(alpha: 0.35),
+                          color: _numericEntryBorderColor(),
                           width: 1,
                         ),
                       ),
@@ -2152,6 +2325,19 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     ),
                     const SizedBox(height: 6),
                     _buildQuickButtons(),
+                    if (_clampAdjustMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          _clampAdjustMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppDesignTokens.warningFg,
+                          ),
+                        ),
+                      ),
                   ] else ...[
                     if (_currentAssessment.minValue != null ||
                         _currentAssessment.maxValue != null ||
@@ -2168,48 +2354,66 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       ),
                     ],
                     const SizedBox(height: 6),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppDesignTokens.primary.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color:
-                              AppDesignTokens.primary.withValues(alpha: 0.35),
-                          width: 1,
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _valueController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          color: AppDesignTokens.primaryText,
-                        ),
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          hintText: '0',
-                          suffixText: _currentAssessment.unit,
-                          filled: false,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 16,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color:
+                                AppDesignTokens.primary.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: _numericEntryBorderColor(),
+                              width: 1,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _valueController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w800,
+                              color: AppDesignTokens.primaryText,
+                            ),
+                            textAlign: TextAlign.center,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              hintText: '0',
+                              suffixText: _currentAssessment.unit,
+                              filled: false,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 16,
+                              ),
+                            ),
+                            autofocus: true,
+                            onChanged: (_) {
+                              _markNumericValueUserEdited();
+                              setState(() {});
+                              _clampValueToEffectiveRange();
+                            },
                           ),
                         ),
-                        autofocus: true,
-                        onChanged: (_) {
-                          _markNumericValueUserEdited();
-                          setState(() {});
-                          _clampValueToEffectiveRange();
-                        },
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     _buildQuickButtons(),
+                    if (_clampAdjustMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          _clampAdjustMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppDesignTokens.warningFg,
+                          ),
+                        ),
+                      ),
                   ],
                 ] else ...[
                   const SizedBox(height: 4),
@@ -2558,7 +2762,33 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       final text =
           step < 1 ? clamped.toStringAsFixed(1) : clamped.round().toString();
       _valueController.text = text;
+      _showClampAdjustedFeedback(clamped == _effectiveMax);
     }
+  }
+
+  void _showClampAdjustedFeedback(bool adjustedToMax) {
+    _clampBorderTimer?.cancel();
+    _clampMessageTimer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _clampBorderHighlight = true;
+      _clampAdjustMessage = adjustedToMax
+          ? 'Adjusted to $_effectiveMax (maximum)'
+          : 'Adjusted to $_effectiveMin (minimum)';
+    });
+    _clampBorderTimer = Timer(const Duration(seconds: 1), () {
+      if (mounted) setState(() => _clampBorderHighlight = false);
+    });
+    _clampMessageTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _clampAdjustMessage = null);
+    });
+  }
+
+  Color _numericEntryBorderColor() {
+    if (_clampBorderHighlight) {
+      return AppDesignTokens.warningFg;
+    }
+    return AppDesignTokens.primary.withValues(alpha: 0.35);
   }
 
   /// Step size for display/validation by unit.
@@ -2707,8 +2937,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                               AppDesignTokens.primary.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color:
-                                AppDesignTokens.primary.withValues(alpha: 0.35),
+                            color: _numericEntryBorderColor(),
                             width: 1,
                           ),
                         ),

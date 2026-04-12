@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
@@ -25,6 +26,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   final Set<int> _selectedLegacyAssessmentIds = {};
   final Set<int> _selectedTrialAssessmentIds = {};
   bool _isCreating = false;
+  DateTime _sessionDate = DateTime.now();
 
   @override
   void initState() {
@@ -121,6 +123,29 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               hintText: 'e.g. Morning Rating 2026-03-04',
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          const Text('Session Date',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.calendar_today, size: 18),
+              label: Text(DateFormat('yyyy-MM-dd').format(_sessionDate)),
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _sessionDate,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
+                );
+                if (picked != null) {
+                  setState(() => _sessionDate = picked);
+                }
+              },
             ),
           ),
           const SizedBox(height: 20),
@@ -375,9 +400,8 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
 
     setState(() => _isCreating = true);
 
-    final now = DateTime.now();
     final sessionDateLocal =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        '${_sessionDate.year}-${_sessionDate.month.toString().padLeft(2, '0')}-${_sessionDate.day.toString().padLeft(2, '0')}';
 
     final userId = await ref.read(currentUserIdProvider.future);
     final currentUser = await ref.read(currentUserProvider.future);
