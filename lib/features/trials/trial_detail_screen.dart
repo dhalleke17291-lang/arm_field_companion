@@ -1333,11 +1333,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         });
         break;
       case AttentionType.noSessionsYet:
-        Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-            builder: (_) => CreateSessionScreen(trial: widget.trial),
-          ),
+        tryOpenCreateSessionScreen(
+          context: context,
+          ref: ref,
+          trial: widget.trial,
         );
         break;
       case AttentionType.seedingMissing:
@@ -2733,6 +2732,32 @@ class _SessionPill extends StatelessWidget {
   }
 }
 
+/// Opens [CreateSessionScreen] unless the trial is closed/archived.
+void tryOpenCreateSessionScreen({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Trial trial,
+}) {
+  final latest = ref.read(trialProvider(trial.id)).valueOrNull ?? trial;
+  if (latest.status == kTrialStatusClosed ||
+      latest.status == kTrialStatusArchived) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'This trial is closed. No new sessions can be started.',
+        ),
+      ),
+    );
+    return;
+  }
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => CreateSessionScreen(trial: latest),
+    ),
+  );
+}
+
 class SessionsView extends ConsumerWidget {
   final Trial trial;
   final VoidCallback? onBack;
@@ -2859,7 +2884,7 @@ class SessionsView extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: sessions.isEmpty
-                          ? _buildEmptySessions(context)
+                          ? _buildEmptySessions(context, ref)
                           : _buildSessionsList(context, ref, sessions),
                     ),
                   ],
@@ -2872,16 +2897,17 @@ class SessionsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptySessions(BuildContext context) {
+  Widget _buildEmptySessions(BuildContext context, WidgetRef ref) {
     return AppEmptyState(
       icon: Icons.folder_open,
       title: 'No Sessions Yet',
       subtitle: 'Start a session to begin collecting field data.',
       action: FilledButton.icon(
-        onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) => CreateSessionScreen(trial: trial))),
+        onPressed: () => tryOpenCreateSessionScreen(
+              context: context,
+              ref: ref,
+              trial: trial,
+            ),
         icon: const Icon(Icons.play_arrow),
         label: const Text('Start Session'),
       ),
@@ -2932,10 +2958,11 @@ class SessionsView extends ConsumerWidget {
           bottom: 16,
           right: 16,
           child: FloatingActionButton.extended(
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => CreateSessionScreen(trial: trial))),
+            onPressed: () => tryOpenCreateSessionScreen(
+                  context: context,
+                  ref: ref,
+                  trial: trial,
+                ),
             icon: const Icon(Icons.add),
             label: const Text('New Session'),
           ),

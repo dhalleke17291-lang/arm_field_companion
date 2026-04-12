@@ -233,19 +233,19 @@ class ArmImportUseCase {
             ),
           );
         }
-      });
 
-      if (importSessionId != null) {
-        await _importRatingsFromParsedCsv(
-          parsed: parsed,
-          trialId: trialId,
-          importSessionId: importSessionId!,
-          assessmentKeyToDefinitionId:
-              resolvedAssessments.assessmentKeyToDefinitionId,
-          firstAssessmentCsvColumnIndex:
-              _minAssessmentCsvColumnIndex(parsed.assessments) ?? 0,
-        );
-      }
+        if (importSessionId != null) {
+          await _importRatingsFromParsedCsv(
+            parsed: parsed,
+            trialId: trialId,
+            importSessionId: importSessionId!,
+            assessmentKeyToDefinitionId:
+                resolvedAssessments.assessmentKeyToDefinitionId,
+            firstAssessmentCsvColumnIndex:
+                _minAssessmentCsvColumnIndex(parsed.assessments) ?? 0,
+          );
+        }
+      });
 
       final mergedWarnings = [
         ..._mergeWarningsInOrder(

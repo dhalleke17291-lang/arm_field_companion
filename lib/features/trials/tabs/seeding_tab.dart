@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,16 @@ import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+
+Future<void> _invalidateSessionTimingForTrialSessions(
+  WidgetRef ref,
+  int trialId,
+) async {
+  final sessions = await ref.read(sessionsForTrialProvider(trialId).future);
+  for (final s in sessions) {
+    ref.invalidate(sessionTimingContextProvider(s.id));
+  }
+}
 
 const List<String> _kSeedingRateUnits = ['seeds/m²', 'kg/ha', 'lbs/ac'];
 
@@ -143,6 +155,8 @@ class SeedingTab extends ConsumerWidget {
                                 performedByUserId: userId,
                               );
                           ref.invalidate(seedingEventForTrialProvider(trial.id));
+                          await _invalidateSessionTimingForTrialSessions(
+                              ref, trial.id);
                         }
                       : null,
                 ),
@@ -164,6 +178,7 @@ class SeedingTab extends ConsumerWidget {
         scrollController: scrollController,
         onSaved: () {
           ref.invalidate(seedingEventForTrialProvider(trial.id));
+          unawaited(_invalidateSessionTimingForTrialSessions(ref, trial.id));
           if (context.mounted) Navigator.pop(sheetContext);
         },
       ),
@@ -180,6 +195,7 @@ class SeedingTab extends ConsumerWidget {
         scrollController: scrollController,
         onSaved: () {
           ref.invalidate(seedingEventForTrialProvider(trial.id));
+          unawaited(_invalidateSessionTimingForTrialSessions(ref, trial.id));
           if (context.mounted) Navigator.pop(sheetContext);
         },
       ),

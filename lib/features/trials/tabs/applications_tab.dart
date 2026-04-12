@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +24,33 @@ class ApplicationsTab extends ConsumerStatefulWidget {
 }
 
 class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
+  Future<void> _invalidateSessionTimingForTrialSessions(
+    WidgetRef ref,
+    int trialId,
+  ) async {
+    final sessions = await ref.read(sessionsForTrialProvider(trialId).future);
+    for (final s in sessions) {
+      ref.invalidate(sessionTimingContextProvider(s.id));
+    }
+  }
+
+  Future<void> _onApplicationDeleted(WidgetRef ref, String eventId) async {
+    await ref.read(applicationRepositoryProvider).deleteApplication(eventId);
+    ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
+    await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
+  }
+
+  Future<void> _deleteApplicationFromSheet({
+    required BuildContext sheetContext,
+    required WidgetRef ref,
+    required String eventId,
+  }) async {
+    await ref.read(applicationRepositoryProvider).deleteApplication(eventId);
+    ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
+    await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
+    if (sheetContext.mounted) Navigator.pop(sheetContext);
+  }
+
   static const List<String> _rateUnits = [
     'L/ha',
     'kg/ha',
@@ -437,6 +466,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
             performedByUserId: userId,
           );
       ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
+      await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -499,11 +529,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                       );
                     },
                     onDismissed: (_) {
-                      ref
-                          .read(applicationRepositoryProvider)
-                          .deleteApplication(e.id);
-                      ref.invalidate(
-                          trialApplicationsForTrialProvider(widget.trial.id));
+                      unawaited(_onApplicationDeleted(ref, e.id));
                     },
                     child: _buildApplicationTile(context, ref, e, index),
                   );
@@ -564,13 +590,17 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
             onSaved: () {
               ref.invalidate(
                   trialApplicationsForTrialProvider(widget.trial.id));
+              unawaited(
+                  _invalidateSessionTimingForTrialSessions(ref, widget.trial.id));
               if (context.mounted) Navigator.pop(ctx);
             },
             onDelete: existing != null
-                ? () async {
-                    final repo = ref.read(applicationRepositoryProvider);
-                    await repo.deleteApplication(existing.id);
-                    if (ctx.mounted) Navigator.pop(ctx);
+                ? () {
+                    unawaited(_deleteApplicationFromSheet(
+                      sheetContext: ctx,
+                      ref: ref,
+                      eventId: existing.id,
+                    ));
                   }
                 : null,
           ),

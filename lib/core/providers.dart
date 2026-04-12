@@ -824,7 +824,8 @@ final sessionsForTrialProvider =
       .watch();
 });
 
-/// True when any session for this trial has actual data (ratings, notes, photos, flags).
+/// True when this trial has any row in rating_records, photos, or plot_flags.
+/// Field notes are intentionally excluded and do not lock assignments.
 /// Used for assignment lock: empty sessions do NOT lock. Auto-updates when data changes.
 final trialHasSessionDataProvider =
     StreamProvider.autoDispose.family<bool, int>((ref, trialId) {

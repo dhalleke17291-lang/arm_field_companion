@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
+import '../../core/trial_state.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../sessions/usecases/create_session_usecase.dart';
 
@@ -27,11 +28,15 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   final Set<int> _selectedTrialAssessmentIds = {};
   bool _isCreating = false;
   DateTime _sessionDate = DateTime.now();
+  bool _scheduledClosedTrialPop = false;
 
   @override
   void initState() {
     super.initState();
-    _setDefaultSessionName();
+    if (widget.trial.status != kTrialStatusClosed &&
+        widget.trial.status != kTrialStatusArchived) {
+      _setDefaultSessionName();
+    }
   }
 
   Future<void> _setDefaultSessionName() async {
@@ -62,6 +67,31 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final latestTrial =
+        ref.watch(trialProvider(widget.trial.id)).valueOrNull ?? widget.trial;
+    if (latestTrial.status == kTrialStatusClosed ||
+        latestTrial.status == kTrialStatusArchived) {
+      if (!_scheduledClosedTrialPop) {
+        _scheduledClosedTrialPop = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'This trial is closed. No new sessions can be started.',
+              ),
+            ),
+          );
+          Navigator.of(context).pop();
+        });
+      }
+      return const Scaffold(
+        backgroundColor: Color(0xFFF4F1EB),
+        appBar: GradientScreenHeader(title: 'New Session'),
+        body: Center(child: SizedBox.shrink()),
+      );
+    }
+
     final legacyAsync = ref.watch(assessmentsForTrialProvider(widget.trial.id));
     final trialAsync = ref.watch(
         trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id));
