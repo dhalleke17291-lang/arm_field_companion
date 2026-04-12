@@ -332,3 +332,25 @@ List<TreatmentMean> sortTreatmentMeans(
   }
   return sorted;
 }
+
+/// Computes percent change of each treatment mean relative to the check treatment.
+/// Returns a map of treatmentCode → percent change (e.g. -42.0 means 42% lower than check).
+/// The check treatment itself is excluded from the result.
+/// Returns empty map when [checkTreatmentCode] is null, not found, or check mean is zero.
+Map<String, double> computeCheckComparison(
+  List<TreatmentMean> means,
+  String? checkTreatmentCode,
+) {
+  if (checkTreatmentCode == null || means.isEmpty) return {};
+  final checkMean = means
+      .where((m) => m.treatmentCode == checkTreatmentCode)
+      .map((m) => m.mean)
+      .firstOrNull;
+  if (checkMean == null || checkMean == 0) return {};
+  final result = <String, double>{};
+  for (final m in means) {
+    if (m.treatmentCode == checkTreatmentCode) continue;
+    result[m.treatmentCode] = ((m.mean - checkMean) / checkMean) * 100;
+  }
+  return result;
+}

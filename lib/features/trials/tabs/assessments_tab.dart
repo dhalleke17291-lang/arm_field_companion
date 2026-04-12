@@ -72,6 +72,14 @@ class AssessmentsTab extends ConsumerWidget {
     final isStandalone = config.isStandalone;
     final isGlp = config.studyType == StudyType.glp;
     final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(trial.id)).valueOrNull ?? [];
+    final checkCode = treatments
+        .where((t) =>
+            t.treatmentType?.toUpperCase() == 'CHK' ||
+            t.treatmentType?.toUpperCase() == 'UTC')
+        .map((t) => t.code)
+        .firstOrNull;
     final total = libraryList.length + customLegacyList.length;
     if (total == 0) {
       return Column(
@@ -314,6 +322,7 @@ class AssessmentsTab extends ConsumerWidget {
                                   null,
                                   isStandalone,
                                   isGlp,
+                                  checkCode,
                                 ),
                               ],
                             ),
@@ -411,6 +420,7 @@ class AssessmentsTab extends ConsumerWidget {
                                     assessment.name,
                                     isStandalone,
                                     isGlp,
+                                    checkCode,
                                   ),
                                 ],
                               ),
@@ -450,6 +460,7 @@ class AssessmentsTab extends ConsumerWidget {
     String? legacyAssessmentName,
     bool isStandalone,
     bool isGlp,
+    String? checkTreatmentCode,
   ) {
     if (statsAsync.isLoading) {
       return const Padding(
@@ -488,6 +499,7 @@ class AssessmentsTab extends ConsumerWidget {
       context,
       isStandalone,
       isGlp,
+      checkTreatmentCode,
     );
   }
 
@@ -515,8 +527,11 @@ class AssessmentsTab extends ConsumerWidget {
     BuildContext context,
     bool isStandalone,
     bool isGlp,
+    String? checkTreatmentCode,
   ) {
     final p = stat.progress;
+    final checkComparison =
+        computeCheckComparison(stat.treatmentMeans, checkTreatmentCode);
     final completeness = p.completeness;
     final pctComplete = p.totalPlots > 0
         ? (100 * p.ratedPlots / p.totalPlots).round()
@@ -712,6 +727,20 @@ class AssessmentsTab extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                          if (checkComparison.containsKey(m.treatmentCode))
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Text(
+                                _formatCheckPct(
+                                    checkComparison[m.treatmentCode]!),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: checkComparison[m.treatmentCode]! < 0
+                                      ? AppDesignTokens.missedColor
+                                      : AppDesignTokens.successFg,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -834,5 +863,10 @@ class AssessmentsTab extends ConsumerWidget {
       case null:
         return '';
     }
+  }
+
+  static String _formatCheckPct(double pct) {
+    final sign = pct >= 0 ? '+' : '';
+    return '$sign${pct.toStringAsFixed(0)}% vs check';
   }
 }

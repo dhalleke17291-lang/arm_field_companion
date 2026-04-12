@@ -1138,4 +1138,45 @@ void main() {
       expect(result.isPreliminary, isFalse);
     });
   });
+
+  group('computeCheckComparison', () {
+    TreatmentMean makeMean(String code, double mean) => TreatmentMean(
+          treatmentCode: code,
+          mean: mean,
+          standardDeviation: 1,
+          standardError: 0.5,
+          n: 4,
+          min: mean - 2,
+          max: mean + 2,
+          isPreliminary: false,
+        );
+
+    test('computes percent change relative to check', () {
+      final means = [makeMean('UTC', 50), makeMean('T1', 25), makeMean('T2', 75)];
+      final result = computeCheckComparison(means, 'UTC');
+      expect(result.length, 2);
+      expect(result['T1'], closeTo(-50.0, 0.01));
+      expect(result['T2'], closeTo(50.0, 0.01));
+      expect(result.containsKey('UTC'), false);
+    });
+
+    test('returns empty map when check code is null', () {
+      final means = [makeMean('T1', 10)];
+      expect(computeCheckComparison(means, null), isEmpty);
+    });
+
+    test('returns empty map when check code not found', () {
+      final means = [makeMean('T1', 10)];
+      expect(computeCheckComparison(means, 'MISSING'), isEmpty);
+    });
+
+    test('returns empty map when check mean is zero', () {
+      final means = [makeMean('UTC', 0), makeMean('T1', 10)];
+      expect(computeCheckComparison(means, 'UTC'), isEmpty);
+    });
+
+    test('returns empty map when means list is empty', () {
+      expect(computeCheckComparison([], 'UTC'), isEmpty);
+    });
+  });
 }
