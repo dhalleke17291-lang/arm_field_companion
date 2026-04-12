@@ -875,6 +875,7 @@ class _AddComponentBottomSheet extends StatefulWidget {
 }
 
 class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
+  bool _isSaving = false;
   final _productController = TextEditingController();
   final _rateController = TextEditingController();
   final _formulationController = TextEditingController();
@@ -1067,52 +1068,67 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: () async {
-                      final name = _productController.text.trim();
-                      if (name.isEmpty) return;
-                      final userId =
-                          await widget.ref.read(currentUserIdProvider.future);
-                      final repo = widget.ref.read(treatmentRepositoryProvider);
-                      final existing = widget.existingComponent;
-                      if (existing != null) {
-                        await _softDeleteTreatmentComponentWithAudit(
-                            widget.ref, existing.id);
-                      }
-                      await repo.insertComponent(
-                        treatmentId: widget.treatment.id,
-                        trialId: widget.trial.id,
-                        productName: name,
-                        rate: _rateController.text.trim().isEmpty
-                            ? null
-                            : _rateController.text.trim(),
-                        rateUnit: _rateUnit,
-                        applicationTiming:
-                            _formulationController.text.trim().isEmpty
-                                ? null
-                                : _formulationController.text.trim(),
-                        notes: _notesController.text.trim().isEmpty
-                            ? null
-                            : _notesController.text.trim(),
-                        sortOrder: existing?.sortOrder ?? 0,
-                        activeIngredientPct: _parseActiveIngredientPct(),
-                        formulationType: _formulationType,
-                        manufacturer: _manufacturerController.text.trim().isEmpty
-                            ? null
-                            : _manufacturerController.text.trim(),
-                        registrationNumber:
-                            _registrationNumberController.text.trim().isEmpty
-                                ? null
-                                : _registrationNumberController.text.trim(),
-                        eppoCode: _eppoController.text.trim().isEmpty
-                            ? null
-                            : _eppoController.text.trim(),
-                        performedByUserId: userId,
-                      );
-                      if (!context.mounted) return;
-                      widget.onSaved();
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Save'),
+                    onPressed: _isSaving
+                        ? null
+                        : () async {
+                            final name = _productController.text.trim();
+                            if (name.isEmpty) return;
+                            setState(() => _isSaving = true);
+                            try {
+                              final userId = await widget.ref
+                                  .read(currentUserIdProvider.future);
+                              final repo = widget.ref
+                                  .read(treatmentRepositoryProvider);
+                              final existing = widget.existingComponent;
+                              if (existing != null) {
+                                await _softDeleteTreatmentComponentWithAudit(
+                                    widget.ref, existing.id);
+                              }
+                              await repo.insertComponent(
+                                treatmentId: widget.treatment.id,
+                                trialId: widget.trial.id,
+                                productName: name,
+                                rate: _rateController.text.trim().isEmpty
+                                    ? null
+                                    : _rateController.text.trim(),
+                                rateUnit: _rateUnit,
+                                applicationTiming:
+                                    _formulationController.text.trim().isEmpty
+                                        ? null
+                                        : _formulationController.text.trim(),
+                                notes: _notesController.text.trim().isEmpty
+                                    ? null
+                                    : _notesController.text.trim(),
+                                sortOrder: existing?.sortOrder ?? 0,
+                                activeIngredientPct: _parseActiveIngredientPct(),
+                                formulationType: _formulationType,
+                                manufacturer: _manufacturerController.text
+                                        .trim()
+                                        .isEmpty
+                                    ? null
+                                    : _manufacturerController.text.trim(),
+                                registrationNumber:
+                                    _registrationNumberController.text
+                                            .trim()
+                                            .isEmpty
+                                        ? null
+                                        : _registrationNumberController.text
+                                            .trim(),
+                                eppoCode: _eppoController.text.trim().isEmpty
+                                    ? null
+                                    : _eppoController.text.trim(),
+                                performedByUserId: userId,
+                              );
+                              if (!context.mounted) return;
+                              widget.onSaved();
+                              Navigator.pop(context);
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isSaving = false);
+                              }
+                            }
+                          },
+                    child: Text(_isSaving ? 'Saving…' : 'Save'),
                   ),
                 ],
               ),
@@ -1142,6 +1158,7 @@ class _AddComponentDialog extends StatefulWidget {
 }
 
 class _AddComponentDialogState extends State<_AddComponentDialog> {
+  bool _isSaving = false;
   late final TextEditingController productController;
   late final TextEditingController rateController;
   late final TextEditingController rateUnitController;
@@ -1305,46 +1322,55 @@ decoration: FormStyles.inputDecoration(
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: () async {
-            if (productController.text.trim().isEmpty) return;
-            final userId =
-                await widget.ref.read(currentUserIdProvider.future);
-            final repo = widget.ref.read(treatmentRepositoryProvider);
-            await repo.insertComponent(
-              treatmentId: widget.treatment.id,
-              trialId: widget.trial.id,
-              productName: productController.text.trim(),
-              rate: rateController.text.trim().isEmpty
-                  ? null
-                  : rateController.text.trim(),
-              rateUnit: rateUnitController.text.trim().isEmpty
-                  ? null
-                  : rateUnitController.text.trim(),
-              applicationTiming: timingController.text.trim().isEmpty
-                  ? null
-                  : timingController.text.trim(),
-              notes: notesController.text.trim().isEmpty
-                  ? null
-                  : notesController.text.trim(),
-              activeIngredientPct: _parseActiveIngredientPct(),
-              formulationType: formulationType,
-              manufacturer: manufacturerController.text.trim().isEmpty
-                  ? null
-                  : manufacturerController.text.trim(),
-              registrationNumber:
-                  registrationNumberController.text.trim().isEmpty
-                      ? null
-                      : registrationNumberController.text.trim(),
-              eppoCode: eppoController.text.trim().isEmpty
-                  ? null
-                  : eppoController.text.trim(),
-              performedByUserId: userId,
-            );
-            if (!context.mounted) return;
-            Navigator.pop(context);
-            await widget.onSaved();
-          },
-          child: const Text('Add Product'),
+          onPressed: _isSaving
+              ? null
+              : () async {
+                  if (productController.text.trim().isEmpty) return;
+                  setState(() => _isSaving = true);
+                  try {
+                    final userId =
+                        await widget.ref.read(currentUserIdProvider.future);
+                    final repo = widget.ref.read(treatmentRepositoryProvider);
+                    await repo.insertComponent(
+                      treatmentId: widget.treatment.id,
+                      trialId: widget.trial.id,
+                      productName: productController.text.trim(),
+                      rate: rateController.text.trim().isEmpty
+                          ? null
+                          : rateController.text.trim(),
+                      rateUnit: rateUnitController.text.trim().isEmpty
+                          ? null
+                          : rateUnitController.text.trim(),
+                      applicationTiming: timingController.text.trim().isEmpty
+                          ? null
+                          : timingController.text.trim(),
+                      notes: notesController.text.trim().isEmpty
+                          ? null
+                          : notesController.text.trim(),
+                      activeIngredientPct: _parseActiveIngredientPct(),
+                      formulationType: formulationType,
+                      manufacturer: manufacturerController.text.trim().isEmpty
+                          ? null
+                          : manufacturerController.text.trim(),
+                      registrationNumber:
+                          registrationNumberController.text.trim().isEmpty
+                              ? null
+                              : registrationNumberController.text.trim(),
+                      eppoCode: eppoController.text.trim().isEmpty
+                          ? null
+                          : eppoController.text.trim(),
+                      performedByUserId: userId,
+                    );
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                    await widget.onSaved();
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isSaving = false);
+                    }
+                  }
+                },
+          child: Text(_isSaving ? 'Adding…' : 'Add Product'),
         ),
       ],
     );
@@ -1700,6 +1726,12 @@ class _TreatmentComponentsSheetState
     );
     if (confirm != true) return;
     await _softDeleteTreatmentComponentWithAudit(ref, component.id);
+    ref.invalidate(
+      treatmentComponentsForTreatmentProvider(widget.treatment.id),
+    );
+    ref.invalidate(
+      treatmentComponentsCountForTrialProvider(widget.trial.id),
+    );
     await _loadComponents();
   }
 

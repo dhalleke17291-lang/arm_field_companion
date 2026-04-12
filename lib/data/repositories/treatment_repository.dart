@@ -26,7 +26,7 @@ class TreatmentRepository {
   }
 
   Future<Treatment?> getTreatmentById(int id) {
-    return (_db.select(_db.treatments)..where((t) => t.id.equals(id)))
+    return (_db.select(_db.treatments)..where((t) => t.id.equals(id) & t.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 

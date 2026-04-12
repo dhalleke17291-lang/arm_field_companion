@@ -294,6 +294,37 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
     });
   }
 
+  bool _assessmentNameExistsCaseInsensitive(String name) {
+    final n = name.trim().toLowerCase();
+    if (n.isEmpty) return false;
+    return _assessments.any((a) => a.name.trim().toLowerCase() == n);
+  }
+
+  Future<bool> _confirmAddAssessmentDespiteDuplicateName(String name) async {
+    if (!_assessmentNameExistsCaseInsensitive(name)) return true;
+    if (!mounted) return false;
+    final add = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Assessment name'),
+        content: Text(
+          'An assessment named "$name" is already in your list. Add anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Add anyway'),
+          ),
+        ],
+      ),
+    );
+    return add == true;
+  }
+
   Future<void> _openAssessmentLibrary() async {
     final skip = _assessments
         .map((a) => a.librarySourceId)
@@ -304,9 +335,14 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
       libraryEntryIdsAlreadyChosen: skip,
     );
     if (picks == null || picks.isEmpty) return;
-    if (!mounted) return;
-    setState(() {
-      for (final e in picks) {
+    for (final e in picks) {
+      if (!mounted) return;
+      if (_assessmentNameExistsCaseInsensitive(e.name)) {
+        final ok = await _confirmAddAssessmentDespiteDuplicateName(e.name);
+        if (!ok) continue;
+      }
+      if (!mounted) return;
+      setState(() {
         _assessments.add(
           _AssessmentDraft(
             name: e.name,
@@ -318,13 +354,15 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
             definitionCategory: e.category,
           ),
         );
-      }
-    });
+      });
+    }
   }
 
-  void _addCustomAssessment() {
+  Future<void> _addCustomAssessment() async {
     final name = _customNameController.text.trim();
     if (name.isEmpty) return;
+    if (!await _confirmAddAssessmentDespiteDuplicateName(name)) return;
+    if (!mounted) return;
     final min = double.tryParse(_customMinController.text.trim()) ?? 0;
     final max = double.tryParse(_customMaxController.text.trim()) ?? 100;
     setState(() {
@@ -949,6 +987,46 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
             ],
           ),
         ),
+        if (_design == PlotGenerationEngine.designRcbd &&
+            _plotsPerRep != _treatmentRows.length)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'RCBD typically uses one plot per treatment per rep '
+                        '(${_treatmentRows.length} plots).\n'
+                        'Extra plots will receive repeated treatment assignments.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
           child: SwitchListTile(
@@ -1267,7 +1345,9 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton(
-                  onPressed: _addCustomAssessment,
+                  onPressed: () async {
+                    await _addCustomAssessment();
+                  },
                   child: const Text('Add'),
                 ),
               ],

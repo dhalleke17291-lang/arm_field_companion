@@ -21,6 +21,14 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../plot_layout_model.dart';
 import '../../plots/plot_detail_screen.dart';
 
+void _plotsTabLockDebugPrint(Trial trial, bool hasSessionData) {
+  debugPrint(
+    'PLOTS_LOCK_DEBUG: canEdit=${canEditTrialStructure(trial, hasSessionData: hasSessionData)}, '
+    'hasSessionData=$hasSessionData, status=${trial.status}, workspace=${trial.workspaceType}, '
+    'isArmLinked=${trial.isArmLinked}',
+  );
+}
+
 enum _LayoutLayer { treatments, applications, ratings }
 
 const double _kGridMinScale = 0.3;
@@ -1937,6 +1945,7 @@ class _TrialPlotsWorkingSurfaceState
             : '$assignedCount assigned · $unassignedCount unassigned';
 
     if (structureLocked) {
+      _plotsTabLockDebugPrint(trial, hasSessionData);
       return structureEditBlockedMessage(
         trial,
         hasSessionData: hasSessionData,
@@ -2234,6 +2243,12 @@ class _TrialPlotsWorkingSurfaceState
 
   Widget _buildPlotsListBodyForDetails(BuildContext context, WidgetRef ref,
       List<Plot> visiblePlots, List<Plot> allPlots, bool hasSessionData) {
+    if (!canEditTrialStructure(
+      widget.trial,
+      hasSessionData: hasSessionData,
+    )) {
+      _plotsTabLockDebugPrint(widget.trial, hasSessionData);
+    }
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
     final longPressBlockMessage = !canEditTrialStructure(
@@ -2836,6 +2851,7 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
     final treatmentCount = treatmentsAsync.value?.length ?? 0;
     final String subtitle;
     if (!canEditStructure) {
+      _plotsTabLockDebugPrint(trial, hasSessionData);
       subtitle = structureEditBlockedMessage(
         trial,
         hasSessionData: hasSessionData,
@@ -3811,6 +3827,12 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     required List<Treatment> treatments,
     required List<Assignment> assignmentsList,
   }) {
+    if (!canEditTrialStructure(
+      widget.trial,
+      hasSessionData: hasSessionData,
+    )) {
+      _plotsTabLockDebugPrint(widget.trial, hasSessionData);
+    }
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
     final longPressBlockMessage = !canEditTrialStructure(
