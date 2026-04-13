@@ -8,8 +8,16 @@ import 'features/users/user_selection_screen.dart';
 
 const String kSplashLogoAsset = 'assets/Branding/splash_logo.png';
 
-const Color _splashG900 = Color(0xFF1A2E20);
-const Color _splashG800 = Color(0xFF2D5A40);
+// Must match android colors.xml splash_background for seamless handoff.
+const Color _nativeSplashColor = Color(0xFF163B28);
+
+// Gradient destination colors.
+const Color _splashDark = Color(0xFF0F2A1C);
+const Color _splashMid = Color(0xFF163B28);
+const Color _splashAccent = Color(0xFF1E4D34);
+
+// Subtle gold accent for the divider.
+const Color _accentGold = Color(0x66C8A951);
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,10 +28,14 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  static const Duration _displayDuration = Duration(milliseconds: 2200);
+  static const Duration _displayDuration = Duration(milliseconds: 3400);
 
   late AnimationController _controller;
+  late Animation<double> _bgFade;
+  late Animation<double> _logoScale;
+  late Animation<double> _logoOpacity;
   late Animation<double> _titleOpacity;
+  late Animation<double> _dividerWidth;
   late Animation<double> _subtitleOpacity;
 
   @override
@@ -36,20 +48,55 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 900),
     );
+
+    // Background gradient fades in immediately (0–25%).
+    _bgFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.25, curve: Curves.easeOut),
+      ),
+    );
+
+    // Logo: scale from 0.9→1.0 + fade in (0–35%).
+    _logoScale = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.35, curve: Curves.easeOutCubic),
+      ),
+    );
+    _logoOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
+      ),
+    );
+
+    // Title: fade in (15–45%).
     _titleOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.75, curve: Curves.easeOut),
+        curve: const Interval(0.15, 0.45, curve: Curves.easeOut),
       ),
     );
+
+    // Divider: expand width (30–55%).
+    _dividerWidth = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.3, 0.55, curve: Curves.easeOut),
+      ),
+    );
+
+    // Subtitle: fade in (40–70%).
     _subtitleOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.25, 1.0, curve: Curves.easeOut),
+        curve: const Interval(0.4, 0.7, curve: Curves.easeOut),
       ),
     );
+
     _controller.forward();
 
     Future.delayed(_displayDuration, () async {
@@ -80,101 +127,130 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [_splashG800, _splashG900],
-              ),
+      body: AnimatedBuilder(
+        animation: _controller,
+        builder: (_, __) => Stack(
+          children: [
+            // Base: solid color matching the native splash exactly.
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: _nativeSplashColor,
             ),
-          ),
-          Positioned.fill(
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AnimatedBuilder(
-                      animation: _controller,
-                      builder: (_, __) => Opacity(
-                        opacity: _titleOpacity.value,
-                        child: Container(
-                          width: 96,
-                          height: 96,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.97),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 32,
-                                offset: const Offset(0, 8),
-                              ),
-                              BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.1),
-                                blurRadius: 0,
-                                spreadRadius: 12,
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              kSplashLogoAsset,
-                              width: 96,
-                              height: 96,
-                              fit: BoxFit.cover,
-                              filterQuality: FilterQuality.medium,
-                              semanticLabel: 'App logo',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    AnimatedBuilder(
-                      animation: _controller,
-                      builder: (_, __) => Opacity(
-                        opacity: _titleOpacity.value,
-                        child: Text(
-                          AppInfo.appName,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            height: 1.15,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    AnimatedBuilder(
-                      animation: _controller,
-                      builder: (_, __) => Opacity(
-                        opacity: _subtitleOpacity.value,
-                        child: Text(
-                          'Professional field trial data collection and execution platform',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 14,
-                            height: 1.6,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+
+            // Gradient fades in on top for a seamless transition.
+            Opacity(
+              opacity: _bgFade.value,
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(0, -0.3),
+                    radius: 1.2,
+                    colors: [_splashAccent, _splashMid, _splashDark],
+                    stops: [0.0, 0.5, 1.0],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+
+            // Content.
+            Positioned.fill(
+              child: SafeArea(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // --- Logo ---
+                        Transform.scale(
+                          scale: _logoScale.value,
+                          child: Opacity(
+                            opacity: _logoOpacity.value,
+                            child: Container(
+                              width: 110,
+                              height: 110,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF2D7A4A)
+                                        .withValues(alpha: 0.35),
+                                    blurRadius: 48,
+                                    spreadRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  kSplashLogoAsset,
+                                  width: 110,
+                                  height: 110,
+                                  fit: BoxFit.cover,
+                                  filterQuality: FilterQuality.medium,
+                                  semanticLabel: 'App logo',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // --- Title ---
+                        Opacity(
+                          opacity: _titleOpacity.value,
+                          child: Text(
+                            AppInfo.appName.toUpperCase(),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.white,
+                              letterSpacing: 10,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // --- Gold divider ---
+                        SizedBox(
+                          height: 1,
+                          child: FractionallySizedBox(
+                            widthFactor: _dividerWidth.value * 0.35,
+                            child: Container(color: _accentGold),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // --- Subtitle ---
+                        Opacity(
+                          opacity: _subtitleOpacity.value,
+                          child: Text(
+                            'Professional field trial data collection\nand execution platform',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.white.withValues(alpha: 0.5),
+                              letterSpacing: 0.8,
+                              height: 1.7,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

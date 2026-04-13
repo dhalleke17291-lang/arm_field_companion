@@ -56,10 +56,9 @@ flutter:
     - assets/Branding/
     - assets/images/trials/
 
-# Native splash: single screen, refined deep green, centered logo (no text).
+# Native splash: solid green, no image — seamless transition into Dart splash.
 flutter_native_splash:
-  color: "#0E3D2F"
-  image: assets/Branding/splash_logo.png
+  color: "#163B28"
   android: true
   ios: true
 
