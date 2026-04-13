@@ -686,7 +686,13 @@ class AssessmentsTab extends ConsumerWidget {
               ),
             ),
           ],
-          if (stat.hasAnyData && displayMeans.isNotEmpty) ...[
+          // When ANOVA is available: show integrated compact display (no redundant means list).
+          // When preliminary: show plain means list.
+          if (stat.anovaResult != null) ...[
+            const SizedBox(height: 8),
+            _buildAnovaSummary(stat.anovaResult!, stat.resultDirection,
+                checkComparison, unitSuffix),
+          ] else if (stat.hasAnyData && displayMeans.isNotEmpty) ...[
             const SizedBox(height: 8),
             if (stat.isPreliminary) ...[
               Container(
@@ -716,10 +722,8 @@ class AssessmentsTab extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      flex: 25,
                       child: Text(
                         m.treatmentCode,
                         style: const TextStyle(
@@ -728,80 +732,35 @@ class AssessmentsTab extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Expanded(
-                      flex: 10,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              meanStr,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: showBest && i == 0
-                                    ? FontWeight.w700
-                                    : FontWeight.w400,
-                                color: stat.isPreliminary
-                                    ? AppDesignTokens.secondaryText
-                                    : (showBest && i == 0
-                                        ? AppDesignTokens.successFg
-                                        : AppDesignTokens.primaryText),
-                              ),
-                            ),
-                          ),
-                          if (showBest && i == 0)
-                            const Padding(
-                              padding: EdgeInsets.only(left: 4),
-                              child: Text(
-                                'Best',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppDesignTokens.successFg,
-                                ),
-                              ),
-                            ),
-                          if (checkComparison.containsKey(m.treatmentCode))
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: Text(
-                                _formatCheckPct(
-                                    checkComparison[m.treatmentCode]!),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: _checkPctColor(
-                                    checkComparison[m.treatmentCode]!,
-                                    stat.resultDirection,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                    Text(
+                      meanStr,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: showBest && i == 0
+                            ? FontWeight.w700
+                            : FontWeight.w400,
+                        color: stat.isPreliminary
+                            ? AppDesignTokens.secondaryText
+                            : (showBest && i == 0
+                                ? AppDesignTokens.successFg
+                                : AppDesignTokens.primaryText),
                       ),
                     ),
-                    if (!isStandalone) ...[
-                      Expanded(
-                        flex: 10,
+                    if (checkComparison.containsKey(m.treatmentCode))
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
                         child: Text(
-                          m.standardDeviation.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppDesignTokens.secondaryText,
+                          _formatCheckPct(
+                              checkComparison[m.treatmentCode]!),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: _checkPctColor(
+                              checkComparison[m.treatmentCode]!,
+                              stat.resultDirection,
+                            ),
                           ),
                         ),
                       ),
-                      Expanded(
-                        flex: 6,
-                        child: Text(
-                          '${m.n}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               );
@@ -817,25 +776,23 @@ class AssessmentsTab extends ConsumerWidget {
                   ),
                 ),
               ),
-          ],
-          if (showFooterNote && footerNote.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                footerNote,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic,
-                  color: AppDesignTokens.secondaryText,
+            if (showFooterNote && footerNote.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  footerNote,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: AppDesignTokens.secondaryText,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
-          if (stat.anovaResult != null) ...[
-            const SizedBox(height: 10),
-            _buildAnovaSummary(stat.anovaResult!, stat.resultDirection),
-          ] else if (stat.hasAnyData &&
+          if (stat.anovaResult == null &&
+              stat.hasAnyData &&
               completeness == AssessmentCompleteness.inProgress &&
               stat.treatmentMeans.length >= 2) ...[
             const SizedBox(height: 6),
@@ -889,7 +846,8 @@ class AssessmentsTab extends ConsumerWidget {
   /// Compact ANOVA summary: significance indicator + treatment means with
   /// letters + plain-language interpretation.
   Widget _buildAnovaSummary(
-      AnovaResult anova, ResultDirection direction) {
+      AnovaResult anova, ResultDirection direction,
+      Map<String, double> checkComparison, String unitSuffix) {
     final sigColor = switch (anova.significance) {
       SignificanceLevel.highlySignificant => AppDesignTokens.successFg,
       SignificanceLevel.significant => AppDesignTokens.successFg,
@@ -952,51 +910,83 @@ class AssessmentsTab extends ConsumerWidget {
             ),
           ),
           if (anova.lsd != null) ...[
-            Text(
-              'LSD₀.₀₅ = ${anova.lsd!.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppDesignTokens.secondaryText,
+            if (anova.isSignificant)
+              Text(
+                'LSD₀.₀₅ = ${anova.lsd!.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.secondaryText,
+                ),
               ),
-            ),
+            if (anova.grandMean != 0)
+              Text(
+                'Detectable difference: ~${(anova.lsd! / anova.grandMean.abs() * 100).round()}% of mean',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
           ],
           if (meansWithLetters.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             ...meansWithLetters.map((m) {
               final isBest = meansWithLetters.first == m &&
                   anova.isSignificant &&
                   (direction == ResultDirection.higherIsBetter ||
                       direction == ResultDirection.lowerIsBetter);
+              final meanColor = isBest
+                  ? AppDesignTokens.successFg
+                  : AppDesignTokens.primaryText;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Row(
                   children: [
                     SizedBox(
-                      width: 24,
+                      width: 22,
                       child: Text(
                         m.letter,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: isBest
-                              ? AppDesignTokens.successFg
-                              : AppDesignTokens.primaryText,
+                          color: meanColor,
                         ),
                       ),
                     ),
                     Expanded(
                       child: Text(
-                        '${m.treatmentCode}  ${m.mean.toStringAsFixed(1)}',
+                        m.treatmentCode,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight:
                               isBest ? FontWeight.w600 : FontWeight.w400,
-                          color: isBest
-                              ? AppDesignTokens.successFg
-                              : AppDesignTokens.primaryText,
+                          color: meanColor,
                         ),
                       ),
                     ),
+                    Text(
+                      '${m.mean.toStringAsFixed(1)}$unitSuffix',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isBest ? FontWeight.w600 : FontWeight.w400,
+                        color: meanColor,
+                      ),
+                    ),
+                    if (checkComparison.containsKey(m.treatmentCode))
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: Text(
+                          _formatCheckPct(
+                              checkComparison[m.treatmentCode]!),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: _checkPctColor(
+                              checkComparison[m.treatmentCode]!,
+                              direction,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               );
@@ -1029,12 +1019,12 @@ class AssessmentsTab extends ConsumerWidget {
     final groups =
         anova.treatmentMeansWithLetters.map((m) => m.letter).toSet();
     if (!anova.isSignificant) {
-      return 'No significant differences between treatments at the 5% level.';
+      return 'No significant differences detected (Fisher\'s protected LSD, α = 0.05).';
     }
     if (groups.length == anova.treatmentMeansWithLetters.length) {
-      return 'All treatments are significantly different from each other.';
+      return 'All treatments are significantly different (Fisher\'s protected LSD, α = 0.05).';
     }
-    return 'Treatments sharing a letter are not significantly different.';
+    return 'Treatments sharing a letter are not significantly different (Fisher\'s protected LSD, α = 0.05).';
   }
 
   static Color _cvColor(CvInterpretation? cv) {

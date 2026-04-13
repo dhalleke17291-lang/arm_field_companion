@@ -92,9 +92,20 @@ class AssessmentResultsScreen extends ConsumerWidget {
     final isStandalone = config.isStandalone;
     final isGlp = config.studyType == StudyType.glp;
 
-    final sortedTreatmentMeans = stat.isPreliminary
-        ? sortTreatmentMeans(stat.treatmentMeans, ResultDirection.neutral)
-        : sortTreatmentMeans(stat.treatmentMeans, stat.resultDirection);
+    // When ANOVA is available, sort by mean descending (standard presentation:
+    // letter groups read a, ab, b, c top-to-bottom). Otherwise sort by
+    // result direction or alphabetically when preliminary.
+    final List<TreatmentMean> sortedTreatmentMeans;
+    if (stat.anovaResult != null && !stat.isPreliminary) {
+      sortedTreatmentMeans = List<TreatmentMean>.from(stat.treatmentMeans)
+        ..sort((a, b) => b.mean.compareTo(a.mean));
+    } else if (stat.isPreliminary) {
+      sortedTreatmentMeans =
+          sortTreatmentMeans(stat.treatmentMeans, ResultDirection.neutral);
+    } else {
+      sortedTreatmentMeans =
+          sortTreatmentMeans(stat.treatmentMeans, stat.resultDirection);
+    }
 
     final showFooter = stat.isPreliminary ||
         completeness == AssessmentCompleteness.noData;
@@ -875,8 +886,8 @@ class _AnovaSummaryRow extends StatelessWidget {
     }
 
     final interpretation = !anova.isSignificant
-        ? 'No significant differences between treatments at the 5% level.'
-        : 'Treatments sharing a letter are not significantly different.';
+        ? 'No significant differences detected (Fisher\'s protected LSD, α = 0.05).'
+        : 'Treatments sharing a letter are not significantly different (Fisher\'s protected LSD, α = 0.05).';
 
     return Container(
       padding: const EdgeInsets.all(10),
@@ -924,14 +935,24 @@ class _AnovaSummaryRow extends StatelessWidget {
               color: AppDesignTokens.secondaryText,
             ),
           ),
-          if (anova.lsd != null)
-            Text(
-              'LSD₀.₀₅ = ${anova.lsd!.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppDesignTokens.secondaryText,
+          if (anova.lsd != null) ...[
+            if (anova.isSignificant)
+              Text(
+                'LSD₀.₀₅ = ${anova.lsd!.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.secondaryText,
+                ),
               ),
-            ),
+            if (anova.grandMean != 0)
+              Text(
+                'Detectable difference: ~${(anova.lsd! / anova.grandMean.abs() * 100).round()}% of mean',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+          ],
           const SizedBox(height: 4),
           Text(
             interpretation,

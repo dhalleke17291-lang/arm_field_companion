@@ -2,8 +2,17 @@ import 'dart:ui' show ColorFilter, ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/last_session_store.dart';
+import '../../core/plot_sort.dart';
+import '../../core/providers.dart';
+import '../../core/session_resume_store.dart';
+import '../../core/session_walk_order_store.dart';
+import '../ratings/rating_screen.dart';
+import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../shell/shell_providers.dart';
 import 'trial_list_screen.dart';
 import 'trials_hub_providers.dart';
@@ -106,6 +115,7 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                 ),
                 child: Column(
                   children: [
+                    _ContinueSessionCard(ref: ref),
                     _AgTrialCard(
                       title: 'Custom Trials',
                       subtitle: 'Design your own experiments',
@@ -581,6 +591,168 @@ class _FooterStat extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Shows a "Continue Session" card when an open session exists.
+/// Hidden when no open session. One tap resumes rating at saved position.
+class _ContinueSessionCard extends StatelessWidget {
+  const _ContinueSessionCard({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final lastCtx = ref.watch(lastSessionContextProvider).valueOrNull;
+    if (lastCtx == null) return const SizedBox.shrink();
+    final trial = lastCtx.trial;
+    final session = lastCtx.session;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppDesignTokens.openSessionBgLight,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppDesignTokens.openSessionBg.withValues(alpha: 0.4),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppDesignTokens.openSessionBg.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _navigateToRating(context, trial, session),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppDesignTokens.openSessionBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Continue Session',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppDesignTokens.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${session.name} · ${trial.name}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppDesignTokens.primaryText
+                                .withValues(alpha: 0.7),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: AppDesignTokens.openSessionBg,
+                    size: 22,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _navigateToRating(
+    BuildContext context,
+    Trial trial,
+    Session session,
+  ) async {
+    final useCase = ref.read(startOrContinueRatingUseCaseProvider);
+    final prefs = await SharedPreferences.getInstance();
+    final store = SessionWalkOrderStore(prefs);
+    final walkOrder = store.getMode(session.id);
+    final customIds = walkOrder == WalkOrderMode.custom
+        ? store.getCustomOrder(session.id)
+        : null;
+    final result = await useCase.execute(StartOrContinueRatingInput(
+      sessionId: session.id,
+      walkOrderMode: walkOrder,
+      customPlotIds: customIds,
+    ));
+    if (!context.mounted) return;
+    if (!result.success ||
+        result.trial == null ||
+        result.session == null ||
+        result.allPlotsSerpentine == null ||
+        result.assessments == null ||
+        result.startPlotIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Unable to resume session.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final resolvedTrial = result.trial!;
+    final resolvedSession = result.session!;
+    final plots = result.allPlotsSerpentine!;
+    final assessments = result.assessments!;
+    int startIndex = result.startPlotIndex!;
+    int? initialAssessmentIndex;
+    final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
+    if (pos != null) {
+      final resolved = pos.resolveResumeStart(
+        plots: plots,
+        fallbackStartIndex: startIndex,
+        assessmentCount: assessments.length,
+      );
+      startIndex = resolved.$1;
+      initialAssessmentIndex = resolved.$2;
+    }
+    LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
+    if (!context.mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RatingScreen(
+          trial: resolvedTrial,
+          session: resolvedSession,
+          plot: plots[startIndex],
+          assessments: assessments,
+          allPlots: plots,
+          currentPlotIndex: startIndex,
+          initialAssessmentIndex: initialAssessmentIndex,
+        ),
+      ),
     );
   }
 }

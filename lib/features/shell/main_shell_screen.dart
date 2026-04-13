@@ -18,6 +18,7 @@ class MainShellScreen extends ConsumerStatefulWidget {
 
 class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   int _currentIndex = 0;
+  bool _initialTabResolved = false;
 
   static const int _workLogTabIndex = 1;
 
@@ -34,6 +35,14 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // On first build, start on Work Log if any open session exists.
+    if (!_initialTabResolved) {
+      _initialTabResolved = true;
+      final openIds = ref.read(openTrialIdsForFieldWorkProvider).valueOrNull;
+      if (openIds != null && openIds.isNotEmpty) {
+        _currentIndex = _workLogTabIndex;
+      }
+    }
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,

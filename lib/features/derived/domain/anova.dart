@@ -181,13 +181,18 @@ AnovaResult? computeOneWayAnova(Map<String, List<double>> valuesByTreatment,
   final tCrit = tCriticalTwoTailed(alpha, dfError.toDouble());
   final lsd = tCrit * _sqrt(2 * msError / harmonicN);
 
-  // Means separation with letters.
+  // Protected LSD (Fisher's LSD): only perform pairwise comparisons
+  // when the overall F-test is significant. When F is non-significant,
+  // all treatments get the same letter 'a'. This matches ARM default behavior.
   final sortedMeans = treatmentMeans.entries.toList()
     ..sort((a, b) => b.value.mean.compareTo(a.value.mean));
-  final letters = _assignSignificanceLetters(
-    sortedMeans.map((e) => (code: e.key, mean: e.value.mean)).toList(),
-    lsd,
-  );
+  final isOverallSignificant = pValue < alpha;
+  final letters = isOverallSignificant
+      ? _assignSignificanceLetters(
+          sortedMeans.map((e) => (code: e.key, mean: e.value.mean)).toList(),
+          lsd,
+        )
+      : List.filled(sortedMeans.length, 'a');
 
   final meansWithLetters = <TreatmentMeanWithLetter>[];
   for (var i = 0; i < sortedMeans.length; i++) {
@@ -348,13 +353,16 @@ AnovaResult? computeRcbdAnova(
   final tCrit = tCriticalTwoTailed(alpha, dfError.toDouble());
   final lsd = tCrit * _sqrt(2 * msError / r);
 
-  // Means separation with letters (sorted descending by mean).
+  // Protected LSD: pairwise comparisons only when overall F significant.
   final sortedMeans = trtMeans.entries.toList()
     ..sort((a, b) => b.value.compareTo(a.value));
-  final letters = _assignSignificanceLetters(
-    sortedMeans.map((e) => (code: e.key, mean: e.value)).toList(),
-    lsd,
-  );
+  final isOverallSignificant = pTreatment < alpha;
+  final letters = isOverallSignificant
+      ? _assignSignificanceLetters(
+          sortedMeans.map((e) => (code: e.key, mean: e.value)).toList(),
+          lsd,
+        )
+      : List.filled(sortedMeans.length, 'a');
 
   final meansWithLetters = <TreatmentMeanWithLetter>[];
   for (var i = 0; i < sortedMeans.length; i++) {
@@ -444,38 +452,47 @@ List<String> _assignSignificanceLetters(
     }
   }
 
-  // Step 2: Sweep-based grouping. Start a new group from each treatment,
-  // extending downward while no pair within the group is significant.
-  // A group ends when the next treatment is significantly different from
-  // any treatment already in the group.
+  // Step 2: Create groups by sweeping from each treatment downward.
+  // For each treatment i, form the maximal group starting at i that
+  // contains only non-significant pairs. Each treatment can belong
+  // to multiple groups.
   final membership = List.generate(n, (_) => <int>{});
   var groupIdx = 0;
 
   for (var start = 0; start < n; start++) {
-    // Only start a new group if 'start' has an unsatisfied significant
-    // pair — i.e. there exists j where sig[start][j] is true but they
-    // currently share a group. Or if start has no groups yet.
-    final needsGroup = membership[start].isEmpty ||
-        _hasUncoveredSignificantPair(start, sig, membership, n);
-    if (!needsGroup) continue;
-
-    final group = <int>[start];
+    // Only start a new group from 'start' if it would contain at least
+    // one treatment not already sharing a group with 'start'.
+    final currentGroup = <int>[start];
     for (var j = start + 1; j < n; j++) {
-      // j can join this group only if it's not significantly different
-      // from ANY member already in the group.
       var canJoin = true;
-      for (final member in group) {
+      for (final member in currentGroup) {
         if (sig[member][j]) {
           canJoin = false;
           break;
         }
       }
-      if (canJoin) group.add(j);
+      if (canJoin) currentGroup.add(j);
     }
-    for (final idx in group) {
-      membership[idx].add(groupIdx);
+
+    // Check if this group adds new information (connects treatments
+    // that don't already share a group).
+    var addsNew = membership[start].isEmpty;
+    if (!addsNew) {
+      for (final j in currentGroup) {
+        if (j != start &&
+            membership[start].intersection(membership[j]).isEmpty) {
+          addsNew = true;
+          break;
+        }
+      }
     }
-    groupIdx++;
+
+    if (addsNew) {
+      for (final idx in currentGroup) {
+        membership[idx].add(groupIdx);
+      }
+      groupIdx++;
+    }
   }
 
   // Step 3: Convert to letters.
@@ -489,24 +506,6 @@ List<String> _assignSignificanceLetters(
     result.add(buf.isEmpty ? 'a' : buf.toString());
   }
   return result;
-}
-
-/// Returns true if treatment [i] has a significant pair [j] where they
-/// currently share NO group (meaning the grouping hasn't yet "absorbed"
-/// that separation).
-bool _hasUncoveredSignificantPair(
-  int i,
-  List<List<bool>> sig,
-  List<Set<int>> membership,
-  int n,
-) {
-  for (var j = 0; j < n; j++) {
-    if (j == i) continue;
-    if (sig[i][j] && membership[i].intersection(membership[j]).isEmpty) {
-      return true;
-    }
-  }
-  return false;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────

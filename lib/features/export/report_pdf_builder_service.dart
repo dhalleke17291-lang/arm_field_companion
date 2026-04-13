@@ -1528,10 +1528,20 @@ class ReportPdfBuilderService {
     ];
 
     if (anova.lsd != null) {
-      children.add(pw.Text(
-        'LSD (α=0.05) = ${anova.lsd!.toStringAsFixed(2)}',
-        style: const pw.TextStyle(fontSize: 9),
-      ));
+      if (anova.isSignificant) {
+        children.add(pw.Text(
+          'LSD (α=0.05) = ${anova.lsd!.toStringAsFixed(2)}',
+          style: const pw.TextStyle(fontSize: 9),
+        ));
+      }
+      if (anova.grandMean != 0) {
+        final detectPct =
+            (anova.lsd! / anova.grandMean.abs() * 100).round();
+        children.add(pw.Text(
+          'Detectable difference: ~$detectPct% of mean',
+          style: const pw.TextStyle(fontSize: 9),
+        ));
+      }
     }
 
     if (anova.treatmentMeansWithLetters.isNotEmpty) {
@@ -1567,8 +1577,8 @@ class ReportPdfBuilderService {
       children.add(pw.SizedBox(height: 2));
       children.add(pw.Text(
         anova.isSignificant
-            ? 'Treatments sharing a letter are not significantly different.'
-            : 'No significant differences between treatments at the 5% level.',
+            ? 'Treatments sharing a letter are not significantly different (Fisher\'s protected LSD, α = 0.05).'
+            : 'No significant differences detected (Fisher\'s protected LSD, α = 0.05).',
         style: const pw.TextStyle(fontSize: 9),
       ));
     }

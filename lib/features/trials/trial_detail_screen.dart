@@ -2024,7 +2024,23 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              statusDescriptionForTrialDisplay(
+                statusForDisplay,
+                workspaceType: trial.workspaceType,
+              ),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppDesignTokens.secondaryText.withValues(alpha: 0.8),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
           if (buttonLabel != null && nextStatus != null)
             FilledButton(
               onPressed: () =>
