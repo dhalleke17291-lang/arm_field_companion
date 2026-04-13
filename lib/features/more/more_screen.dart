@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
+import '../backup/backup_reminder_store.dart';
 import '../diagnostics/diagnostics_screen.dart';
 import '../recovery/recovery_screen.dart';
 import '../users/user_selection_screen.dart';
@@ -100,6 +102,8 @@ class MoreScreen extends ConsumerWidget {
               onTap: () => runBackupFlow(context, ref),
             ),
             const SizedBox(height: AppDesignTokens.spacing12),
+            _BackupReminderCard(),
+            const SizedBox(height: AppDesignTokens.spacing12),
             _buildActionCard(
               context,
               icon: Icons.restore_outlined,
@@ -113,7 +117,7 @@ class MoreScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionCard(
+  static Widget _buildActionCard(
     BuildContext context, {
     required IconData icon,
     required String title,
@@ -189,5 +193,148 @@ class MoreScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Backup reminder settings card — lets user choose when to be reminded.
+class _BackupReminderCard extends StatefulWidget {
+  @override
+  State<_BackupReminderCard> createState() => _BackupReminderCardState();
+}
+
+class _BackupReminderCardState extends State<_BackupReminderCard> {
+  BackupReminderStore? _store;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStore();
+  }
+
+  Future<void> _loadStore() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) setState(() => _store = BackupReminderStore(prefs));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = _store;
+    if (store == null) return const SizedBox.shrink();
+
+    final mode = store.mode;
+    final lastLabel = store.lastBackupLabel;
+
+    return Material(
+      color: AppDesignTokens.cardSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+      ),
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      child: InkWell(
+        onTap: _showModePicker,
+        child: Container(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+            boxShadow: const [
+              BoxShadow(
+                color: AppDesignTokens.shadowLight,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppDesignTokens.primaryTint,
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusSmall),
+                ),
+                child: const Icon(Icons.notifications_outlined,
+                    size: 24, color: AppDesignTokens.primary),
+              ),
+              const SizedBox(width: AppDesignTokens.spacing16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Backup Reminder',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${backupReminderModeLabel(mode)} · Last backup: $lastLabel',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 24,
+                color: AppDesignTokens.iconSubtle,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showModePicker() async {
+    final store = _store;
+    if (store == null) return;
+    final current = store.mode;
+    final selected = await showDialog<BackupReminderMode>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Backup Reminder'),
+        children: BackupReminderMode.values.map((mode) {
+          final isSelected = mode == current;
+          return SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, mode),
+            child: Row(
+              children: [
+                Icon(
+                  isSelected ? Icons.check_circle : Icons.circle_outlined,
+                  size: 20,
+                  color: isSelected
+                      ? AppDesignTokens.primary
+                      : AppDesignTokens.iconSubtle,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  backupReminderModeLabel(mode),
+                  style: TextStyle(
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+    if (selected != null && mounted) {
+      await store.setMode(selected);
+      setState(() {});
+    }
   }
 }

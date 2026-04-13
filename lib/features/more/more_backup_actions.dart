@@ -7,10 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../backup/backup_models.dart';
 import '../backup/backup_password_dialog.dart';
+import '../backup/backup_reminder_store.dart';
 
 Future<void> showBackupProgressDialog(
   BuildContext context,
@@ -83,6 +86,9 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
         [XFile(file.path, mimeType: 'application/octet-stream')],
         text: 'Agnexis encrypted backup',
       );
+      // Record backup timestamp for reminder system.
+      final prefs = await SharedPreferences.getInstance();
+      await BackupReminderStore(prefs).recordBackupCompleted();
     }
   } catch (e) {
     if (context.mounted) nav.pop();

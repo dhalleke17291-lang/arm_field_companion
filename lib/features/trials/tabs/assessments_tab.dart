@@ -178,7 +178,7 @@ class AssessmentsTab extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 4, top: 4, bottom: 6),
                   child: Text(
-                    'From library',
+                    'From protocol',
                     style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: scheme.onSurfaceVariant,
@@ -338,7 +338,7 @@ class AssessmentsTab extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 4, top: 16, bottom: 6),
                   child: Text(
-                    'Custom',
+                    'Custom assessments',
                     style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: scheme.onSurfaceVariant,
@@ -641,7 +641,13 @@ class AssessmentsTab extends ConsumerWidget {
                 ),
               ),
           ],
-          if (stat.repConsistencyIssues.isNotEmpty) ...[
+          // Show rep consistency warning only when it adds information:
+          // suppress when ANOVA is not significant (inconsistency already explained
+          // by lack of treatment effect) or when every single rep is flagged (noise).
+          if (stat.repConsistencyIssues.isNotEmpty &&
+              (stat.anovaResult == null || stat.anovaResult!.isSignificant) &&
+              !(stat.totalReps > 0 &&
+                  stat.repConsistencyIssues.length >= stat.totalReps)) ...[
             const SizedBox(height: 4),
             Row(
               children: [
@@ -972,7 +978,8 @@ class AssessmentsTab extends ConsumerWidget {
                         color: meanColor,
                       ),
                     ),
-                    if (checkComparison.containsKey(m.treatmentCode))
+                    if (anova.isSignificant &&
+                        checkComparison.containsKey(m.treatmentCode))
                       Padding(
                         padding: const EdgeInsets.only(left: 6),
                         child: Text(

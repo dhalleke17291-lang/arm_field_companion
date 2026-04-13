@@ -94,6 +94,7 @@ class AssessmentStatistics {
     this.cvInterpretation,
     this.outliers,
     this.repConsistencyIssues = const [],
+    this.totalReps = 0,
     this.anovaResult,
   });
 
@@ -106,6 +107,7 @@ class AssessmentStatistics {
   final CvInterpretation? cvInterpretation;
   final List<PlotOutlier>? outliers; // v2
   final List<RepConsistencyIssue> repConsistencyIssues;
+  final int totalReps;
   final AnovaResult? anovaResult;
 
   bool get hasAnyData => progress.hasAnyData;
@@ -321,6 +323,7 @@ AssessmentStatistics computeAssessmentStatistics(
     cvInterpretation: cv != null ? interpretCV(cv) : null,
     outliers: null, // v2
     repConsistencyIssues: repIssues,
+    totalReps: allReps.length,
     anovaResult: anova,
   );
 }

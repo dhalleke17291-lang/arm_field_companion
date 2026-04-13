@@ -50,6 +50,7 @@ import '../derived/derived_snapshot_provider.dart'
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
 import '../import/ui/import_trial_sheet.dart';
+import '../backup/backup_reminder_store.dart';
 import '../notes/field_notes_list_screen.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
@@ -1990,83 +1991,125 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
             fg: AppDesignTokens.primaryGreen,
           )
         : _trialStatusChromePillColors(statusForDisplay);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        border: Border(
-          bottom: BorderSide(
-            color: AppDesignTokens.divider.withValues(alpha: 0.85),
+    return Material(
+      color: AppDesignTokens.sectionHeaderBg,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          border: Border(
+            top: const BorderSide(color: AppDesignTokens.borderCrisp),
+            bottom: BorderSide(
+              color: AppDesignTokens.divider.withValues(alpha: 0.9),
+            ),
           ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: pill.bg,
-              borderRadius: BorderRadius.circular(12),
-              border: isDisplayActive
-                  ? Border.all(
-                      color: AppDesignTokens.primaryGreen
-                          .withValues(alpha: 0.45),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isDisplayActive ? 10 : 12,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: pill.bg,
+                borderRadius: BorderRadius.circular(999),
+                border: isDisplayActive
+                    ? Border.all(
+                        color: AppDesignTokens.primaryGreen
+                            .withValues(alpha: 0.35),
+                      )
+                    : (statusForDisplay == kTrialStatusDraft ||
+                            statusForDisplay == kTrialStatusReady)
+                        ? Border.all(
+                            color: AppDesignTokens.borderCrisp,
+                          )
+                        : null,
+              ),
+              child: isDisplayActive
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppDesignTokens.openSessionBg,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          labelForTrialStatus(statusForDisplay),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: pill.fg,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
                     )
-                  : null,
+                  : Text(
+                      labelForTrialStatus(statusForDisplay),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: pill.fg,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
             ),
-            child: Text(
-              labelForTrialStatus(statusForDisplay),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: pill.fg,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              statusDescriptionForTrialDisplay(
-                statusForDisplay,
-                workspaceType: trial.workspaceType,
-              ),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: AppDesignTokens.secondaryText.withValues(alpha: 0.8),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          if (buttonLabel != null && nextStatus != null)
-            FilledButton(
-              onPressed: () =>
-                  widget.onTransitionStatus(context, ref, nextStatus),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppDesignTokens.primaryGreen,
-                foregroundColor: Colors.white,
-                visualDensity: VisualDensity.compact,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+            const SizedBox(width: 14),
+            Expanded(
               child: Text(
-                buttonLabel,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                statusDescriptionForTrialDisplay(
+                  statusForDisplay,
+                  workspaceType: trial.workspaceType,
                 ),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w500,
+                  color: AppDesignTokens.primaryText,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-        ],
+            const SizedBox(width: 12),
+            if (buttonLabel != null && nextStatus != null)
+              FilledButton(
+                onPressed: () =>
+                    widget.onTransitionStatus(context, ref, nextStatus),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppDesignTokens.primaryGreen,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  minimumSize: const Size(0, 40),
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  buttonLabel,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.15,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -3565,7 +3608,49 @@ class SessionsView extends ConsumerWidget {
         backgroundColor:
             result.success ? AppDesignTokens.successBg : scheme.error,
       ));
+      if (result.success && context.mounted) {
+        _checkBackupReminder(context);
+      }
     }
+  }
+
+  Future<void> _checkBackupReminder(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final store = BackupReminderStore(prefs);
+    if (store.mode != BackupReminderMode.afterSessionClose) return;
+    if (!store.shouldRemind()) return;
+    await store.recordReminderShown();
+    if (!context.mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Back Up Your Data?'),
+        content: Text(
+          'Last backup: ${store.lastBackupLabel}\n\n'
+          'Back up now to keep your trial data safe.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Later'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              // Navigate to More tab which has the backup action.
+              // The user taps Backup from there.
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Go to More → Backup to save your data'),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            },
+            child: const Text('Back Up'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _confirmCloseSession(
