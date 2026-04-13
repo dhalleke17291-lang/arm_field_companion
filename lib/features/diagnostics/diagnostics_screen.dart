@@ -197,7 +197,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
           ],
         ],
       ),
-      body: ListView(
+      body: SafeArea(top: false, child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // System Status
@@ -584,7 +584,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 }

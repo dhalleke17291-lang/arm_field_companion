@@ -55,7 +55,7 @@ class _ImportedProtocolFileScreenState
         subtitle: 'Read-only',
         titleFontSize: 18,
       ),
-      body: _error != null
+      body: SafeArea(top: false, child: _error != null
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -85,7 +85,7 @@ class _ImportedProtocolFileScreenState
                       ),
                     ),
                   ),
-                ),
+                )),
     );
   }
 }

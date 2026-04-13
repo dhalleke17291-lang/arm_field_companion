@@ -57,7 +57,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(title: 'Photos'),
-      body: PageView.builder(
+      body: SafeArea(top: false, child: PageView.builder(
         controller: _controller,
         itemCount: photos.length,
         itemBuilder: (context, index) {
@@ -106,7 +106,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
             ],
           );
         },
-      ),
+      )),
     );
   }
 }

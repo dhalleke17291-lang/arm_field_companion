@@ -28,18 +28,14 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
   final Set<int> _selectedLegacyAssessmentIds = {};
   final Set<int> _selectedTrialAssessmentIds = {};
   bool _isCreating = false;
-  DateTime _sessionDate = DateTime.now();
   bool _scheduledClosedTrialPop = false;
+
+  /// Sessions are always created for today with the current timestamp.
+  DateTime get _sessionDate => dateOnlyLocal(DateTime.now());
 
   @override
   void initState() {
     super.initState();
-    final minD = dateOnlyLocal(widget.trial.createdAt);
-    final maxD = dateOnlyLocal(DateTime.now());
-    var sd = dateOnlyLocal(_sessionDate);
-    if (sd.isBefore(minD)) sd = minD;
-    if (sd.isAfter(maxD)) sd = maxD;
-    _sessionDate = sd;
     if (widget.trial.status != kTrialStatusClosed &&
         widget.trial.status != kTrialStatusArchived) {
       _setDefaultSessionName();
@@ -106,7 +102,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(title: 'New Session'),
-      body: legacyAsync.when(
+      body: SafeArea(top: false, child: legacyAsync.when(
         loading: () => const AppLoadingView(),
         error: (e, st) => Center(child: Text('Error: $e')),
         data: (legacy) => trialAsync.when(
@@ -114,7 +110,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
           error: (e, st) => _buildForm(context, legacy, []),
           data: (trialPairs) => _buildForm(context, legacy, trialPairs),
         ),
-      ),
+      )),
       bottomNavigationBar: _buildStartButton(context),
     );
   }
@@ -169,28 +165,9 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.calendar_today, size: 18),
-              label: Text(DateFormat('yyyy-MM-dd').format(_sessionDate)),
-              onPressed: () async {
-                final latest =
-                    ref.read(trialProvider(widget.trial.id)).valueOrNull ??
-                        widget.trial;
-                final minD = dateOnlyLocal(latest.createdAt);
-                final maxD = dateOnlyLocal(DateTime.now());
-                var initial = dateOnlyLocal(_sessionDate);
-                if (initial.isBefore(minD)) initial = minD;
-                if (initial.isAfter(maxD)) initial = maxD;
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: initial,
-                  firstDate: minD,
-                  lastDate: maxD,
-                );
-                if (picked != null) {
-                  setState(() => _sessionDate = picked);
-                }
-              },
+            child: Chip(
+              avatar: const Icon(Icons.calendar_today, size: 18),
+              label: Text('Today — ${DateFormat('yyyy-MM-dd').format(_sessionDate)}'),
             ),
           ),
           const SizedBox(height: 20),

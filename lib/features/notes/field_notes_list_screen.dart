@@ -46,7 +46,7 @@ class FieldNotesListScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: notesAsync.when(
+      body: SafeArea(top: false, child: notesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(
           child: Padding(
@@ -147,7 +147,7 @@ class FieldNotesListScreen extends ConsumerWidget {
             },
           );
         },
-      ),
+      )),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showFieldNoteEditorSheet(context, ref, trial: trial),
         icon: const Icon(Icons.add),

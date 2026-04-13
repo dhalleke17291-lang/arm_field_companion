@@ -359,7 +359,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ),
         ],
       ),
-      body: plotsAsync.when(
+      body: SafeArea(top: false, child: plotsAsync.when(
         loading: () => const AppLoadingView(),
         error: (e, st) => AppErrorView(
             error: e,
@@ -474,7 +474,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 

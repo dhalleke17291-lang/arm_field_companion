@@ -108,7 +108,7 @@ void _pushTreatmentsFullScreen(BuildContext context, Trial trial) {
     MaterialPageRoute<void>(
       builder: (_) => Scaffold(
         appBar: AppBar(title: const Text('Treatments')),
-        body: TreatmentsTab(trial: trial),
+        body: SafeArea(top: false, child: TreatmentsTab(trial: trial)),
       ),
     ),
   );

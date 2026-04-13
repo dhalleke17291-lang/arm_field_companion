@@ -611,78 +611,75 @@ class _ContinueSessionCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppDesignTokens.openSessionBgLight,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppDesignTokens.openSessionBg.withValues(alpha: 0.4),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppDesignTokens.openSessionBg.withValues(alpha: 0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: Material(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _navigateToRating(context, trial, session),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppDesignTokens.borderCrisp),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: AppDesignTokens.openSessionBg.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => _navigateToRating(context, trial, session),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppDesignTokens.openSessionBg,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.openSessionBgLight,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Continue Session',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppDesignTokens.primaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${session.name} · ${trial.name}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppDesignTokens.primaryText
-                                .withValues(alpha: 0.7),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
+                  child: const Icon(
+                    Icons.play_circle_filled,
                     color: AppDesignTokens.openSessionBg,
-                    size: 22,
+                    size: 24,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Continue Session',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.openSessionBg,
+                          letterSpacing: 0.35,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${session.name} · ${trial.name}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppDesignTokens.secondaryText.withValues(alpha: 0.75),
+                  size: 22,
+                ),
+              ],
             ),
           ),
         ),

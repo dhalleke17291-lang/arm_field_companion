@@ -154,7 +154,7 @@ class AssessmentsTab extends ConsumerWidget {
                     MaterialPageRoute<void>(
                       builder: (_) => Scaffold(
                         appBar: AppBar(title: const Text('Assessments')),
-                        body: AssessmentsTab(trial: trial),
+                        body: SafeArea(top: false, child: AssessmentsTab(trial: trial)),
                       ),
                     ),
                   );

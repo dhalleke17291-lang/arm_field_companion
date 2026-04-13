@@ -95,7 +95,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
           appBar: AppBar(title: const Text('Applications')),
-          body: ApplicationsTab(trial: widget.trial),
+          body: SafeArea(top: false, child: ApplicationsTab(trial: widget.trial)),
         ),
       ),
     );

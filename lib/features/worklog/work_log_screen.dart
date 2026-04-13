@@ -171,7 +171,9 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
           size: 24,
         ),
       ),
-      body: Column(
+      body: SafeArea(
+        top: false,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildDateChips(),
@@ -239,6 +241,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

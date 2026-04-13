@@ -18,12 +18,15 @@ class UserSelectionScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(title: 'Select User'),
-      body: usersAsync.when(
+      body: SafeArea(
+        top: false,
+        child: usersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (users) => users.isEmpty
             ? _buildEmpty(context, ref)
             : _buildList(context, ref, users),
+      ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddUser(context, ref),

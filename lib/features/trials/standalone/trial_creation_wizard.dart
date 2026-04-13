@@ -489,7 +489,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
             tooltip: 'Cancel',
           ),
         ),
-        body: Column(
+        body: SafeArea(top: false, child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -528,7 +528,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
               ),
             ),
           ],
-        ),
+        )),
       ),
     );
   }

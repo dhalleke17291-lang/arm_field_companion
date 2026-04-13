@@ -15,7 +15,7 @@ void _pushPhotosFullScreen(BuildContext context, Trial trial) {
     MaterialPageRoute<void>(
       builder: (_) => Scaffold(
         appBar: AppBar(title: const Text('Photos')),
-        body: PhotosTab(trial: trial),
+        body: SafeArea(top: false, child: PhotosTab(trial: trial)),
       ),
     ),
   );

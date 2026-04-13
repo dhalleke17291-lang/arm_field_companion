@@ -73,13 +73,13 @@ class _ArrangePlotsScreenState extends ConsumerState<ArrangePlotsScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Arrange plot order')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const SafeArea(top: false, child: Center(child: CircularProgressIndicator())),
       );
     }
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Arrange plot order')),
-        body: Center(child: Text(_error!)),
+        body: SafeArea(top: false, child: Center(child: Text(_error!))),
       );
     }
     return Scaffold(
@@ -92,7 +92,7 @@ class _ArrangePlotsScreenState extends ConsumerState<ArrangePlotsScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: SafeArea(top: false, child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
@@ -132,7 +132,7 @@ class _ArrangePlotsScreenState extends ConsumerState<ArrangePlotsScreen> {
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 }

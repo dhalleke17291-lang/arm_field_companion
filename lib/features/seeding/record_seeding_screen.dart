@@ -42,7 +42,7 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
   @override
   void initState() {
     super.initState();
-    final minD = dateOnlyLocal(widget.trial.createdAt);
+    final minD = earliestTrialOperationDate(widget.trial.createdAt);
     final maxD = dateOnlyLocal(DateTime.now());
     var d = dateOnlyLocal(_seedingDate.value);
     if (d.isBefore(minD)) d = minD;
@@ -73,7 +73,7 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
   }
 
   Future<void> _pickDate() async {
-    final minD = dateOnlyLocal(widget.trial.createdAt);
+    final minD = earliestTrialOperationDate(widget.trial.createdAt);
     final maxD = dateOnlyLocal(DateTime.now());
     var initial = dateOnlyLocal(_seedingDate.value);
     if (initial.isBefore(minD)) initial = minD;
@@ -372,7 +372,9 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(title: 'Record Seeding'),
-      body: _isSaving
+      body: SafeArea(
+        top: false,
+        child: _isSaving
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -575,6 +577,7 @@ class _RecordSeedingScreenState extends ConsumerState<RecordSeedingScreen> {
                 ],
               ),
             ),
+      ),
     );
   }
 }

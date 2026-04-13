@@ -15,18 +15,24 @@ DateTime dateOnlyLocal(DateTime d) {
 
 DateTime _todayDateOnlyLocal() => dateOnlyLocal(DateTime.now());
 
-/// Seeding date: not in the future; not before trial existed.
+/// Earliest allowed operation date: Jan 1 of the year the trial was created.
+/// Allows backdating field operations that happened before the trial was
+/// entered into the app.
+DateTime earliestTrialOperationDate(DateTime trialCreatedAt) =>
+    DateTime(trialCreatedAt.toLocal().year, 1, 1);
+
+/// Seeding date: not in the future; not before start of trial year.
 String? validateSeedingDate({
   required DateTime seedingDate,
   required DateTime trialCreatedAt,
 }) {
   final sd = dateOnlyLocal(seedingDate);
-  final tc = dateOnlyLocal(trialCreatedAt);
+  final floor = earliestTrialOperationDate(trialCreatedAt);
   if (sd.isAfter(_todayDateOnlyLocal())) {
     return 'Seeding date cannot be in the future';
   }
-  if (sd.isBefore(tc)) {
-    return 'Seeding date cannot be before the trial was created';
+  if (sd.isBefore(floor)) {
+    return 'Seeding date cannot be before ${floor.year}';
   }
   return null;
 }
@@ -56,7 +62,8 @@ String? validateEmergencePercent(double? emergencePct) {
   return null;
 }
 
-/// Application (planned) date: not future; not before trial; on or after seeding day if seeding exists.
+/// Application (planned) date: not future; not before start of trial year;
+/// on or after seeding day if seeding exists.
 String? validateApplicationEventDate({
   required DateTime applicationDate,
   required DateTime trialCreatedAt,
@@ -66,9 +73,9 @@ String? validateApplicationEventDate({
   if (ad.isAfter(_todayDateOnlyLocal())) {
     return 'Application date cannot be in the future';
   }
-  final tc = dateOnlyLocal(trialCreatedAt);
-  if (ad.isBefore(tc)) {
-    return 'Application date cannot be before the trial was created';
+  final floor = earliestTrialOperationDate(trialCreatedAt);
+  if (ad.isBefore(floor)) {
+    return 'Application date cannot be before ${floor.year}';
   }
   if (seedingDate != null) {
     final sd = dateOnlyLocal(seedingDate);
@@ -79,8 +86,8 @@ String? validateApplicationEventDate({
   return null;
 }
 
-/// Applied timestamp: date part not future; on or after seeding calendar day if seeding exists;
-/// not before trial creation date.
+/// Applied timestamp: date part not future; on or after seeding calendar day
+/// if seeding exists; not before start of trial year.
 String? validateAppliedDateTime({
   required DateTime appliedAt,
   required DateTime trialCreatedAt,
@@ -90,9 +97,9 @@ String? validateAppliedDateTime({
   if (ad.isAfter(_todayDateOnlyLocal())) {
     return 'Applied date cannot be in the future';
   }
-  final tc = dateOnlyLocal(trialCreatedAt);
-  if (ad.isBefore(tc)) {
-    return 'Applied date cannot be before the trial was created';
+  final floor = earliestTrialOperationDate(trialCreatedAt);
+  if (ad.isBefore(floor)) {
+    return 'Applied date cannot be before ${floor.year}';
   }
   if (seedingDate != null) {
     final sd = dateOnlyLocal(seedingDate);
@@ -103,7 +110,7 @@ String? validateAppliedDateTime({
   return null;
 }
 
-/// [sessionDateLocal] is `yyyy-MM-dd`.
+/// [sessionDateLocal] is `yyyy-MM-dd`. Sessions must always be today.
 String? validateSessionDateLocal({
   required String sessionDateLocal,
   required DateTime trialCreatedAt,
@@ -113,12 +120,9 @@ String? validateSessionDateLocal({
     return 'Invalid session date';
   }
   final sd = dateOnlyLocal(d);
-  if (sd.isAfter(_todayDateOnlyLocal())) {
-    return 'Session date cannot be in the future';
-  }
-  final tc = dateOnlyLocal(trialCreatedAt);
-  if (sd.isBefore(tc)) {
-    return 'Session date cannot be before the trial was created';
+  final today = _todayDateOnlyLocal();
+  if (sd.isBefore(today) || sd.isAfter(today)) {
+    return 'Sessions can only be created for today';
   }
   return null;
 }
@@ -141,12 +145,12 @@ String? validateAppliedTimestampNotInFuture(DateTime appliedAt) {
 }
 
 /// Earliest calendar day allowed for applications (and "applied on"):
-/// trial creation day, or seeding day if that is later.
+/// start of trial year, or seeding day if that is later.
 DateTime minimumApplicationOrAppliedDate({
   required DateTime trialCreatedAt,
   DateTime? seedingDate,
 }) {
-  var min = dateOnlyLocal(trialCreatedAt);
+  var min = earliestTrialOperationDate(trialCreatedAt);
   if (seedingDate != null) {
     final seed = dateOnlyLocal(seedingDate);
     if (seed.isAfter(min)) {

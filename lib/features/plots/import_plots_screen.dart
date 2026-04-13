@@ -30,7 +30,9 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(title: 'Import Plots'),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,6 +157,7 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

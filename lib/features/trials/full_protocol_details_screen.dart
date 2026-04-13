@@ -27,7 +27,9 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: const GradientScreenHeader(title: 'Full Protocol'),
-      body: ListView(
+      body: SafeArea(
+        top: false,
+        child: ListView(
         padding: const EdgeInsets.all(AppDesignTokens.spacing16),
         children: [
           _Section(
@@ -171,6 +173,7 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
             },
           ),
         ],
+      ),
       ),
     );
   }

@@ -160,7 +160,9 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
         title: 'Import Trial (CSV)',
         titleFontSize: 18,
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,6 +187,7 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

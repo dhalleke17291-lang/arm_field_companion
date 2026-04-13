@@ -66,6 +66,7 @@ List<int> _visibleFixedIndices(WorkspaceConfig config) {
     TrialTab.assessments: 3,
     TrialTab.treatments: 4,
     TrialTab.photos: 5,
+    TrialTab.timeline: 6,
   };
   return config.visibleTabs.map((t) => tabToIndex[t]).whereType<int>().toList();
 }
@@ -2517,8 +2518,6 @@ class _TrialModuleHub extends StatelessWidget {
   Widget build(BuildContext context) {
     // All possible hub items mapped to their fixed IndexedStack index.
     // Overview (8) is always shown; module tabs use TrialTab for visibility.
-    // Timeline (6) is intentionally excluded — it is not in any
-    // WorkspaceConfig.visibleTabs definition.
     const allItems = <(int, IconData, String, TrialTab?)>[
       (_overviewTabIndex, Icons.dashboard_outlined, 'Overview', null),
       (0, Icons.grid_on, 'Plots', TrialTab.plots),
@@ -2527,6 +2526,7 @@ class _TrialModuleHub extends StatelessWidget {
       (3, Icons.assessment, 'Assessments', TrialTab.assessments),
       (4, Icons.science_outlined, 'Treatments', TrialTab.treatments),
       (5, Icons.photo_library, 'Photos', TrialTab.photos),
+      (6, Icons.timeline, 'Timeline', TrialTab.timeline),
     ];
 
     final items = allItems

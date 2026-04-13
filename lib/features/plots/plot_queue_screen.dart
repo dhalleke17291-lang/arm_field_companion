@@ -662,32 +662,35 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           ),
         ],
       ),
-      body: plotsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Error: $e')),
-        data: (plots) => sessionAssessmentsAsync.when(
+      body: SafeArea(
+        top: false,
+        child: plotsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, st) => Center(child: Text('Error: $e')),
-          data: (assessments) => ratedPlotsAsync.when(
+          data: (plots) => sessionAssessmentsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, st) => Center(child: Text('Error: $e')),
-            data: (ratedPks) => ratingsAsync.when(
+            data: (assessments) => ratedPlotsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, st) => Center(child: Text('Error: $e')),
-              data: (ratings) {
-                return _buildQueue(
-                    context,
-                    plots,
-                    assessments,
-                    ratedPks,
-                    ratings,
-                    treatmentById,
-                    plotIdToTreatmentId,
-                    flaggedPlotIds,
-                    plotPksWithCorrections,
-                    liveSession: liveSession,
-                    weatherSnap: weatherSnap);
-              },
+              data: (ratedPks) => ratingsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, st) => Center(child: Text('Error: $e')),
+                data: (ratings) {
+                  return _buildQueue(
+                      context,
+                      plots,
+                      assessments,
+                      ratedPks,
+                      ratings,
+                      treatmentById,
+                      plotIdToTreatmentId,
+                      flaggedPlotIds,
+                      plotPksWithCorrections,
+                      liveSession: liveSession,
+                      weatherSnap: weatherSnap);
+                },
+              ),
             ),
           ),
         ),

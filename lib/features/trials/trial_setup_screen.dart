@@ -259,7 +259,9 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: const GradientScreenHeader(title: 'Trial Setup'),
-      body: Form(
+      body: SafeArea(
+        top: false,
+        child: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(AppDesignTokens.spacing16),
@@ -447,6 +449,7 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

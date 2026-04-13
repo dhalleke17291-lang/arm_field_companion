@@ -59,11 +59,13 @@ class _AddUserScreenState extends ConsumerState<AddUserScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(title: 'Add User'),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -96,6 +98,7 @@ class _AddUserScreenState extends ConsumerState<AddUserScreen> {
                   : const Text('Save and continue'),
             ),
           ],
+        ),
         ),
       ),
     );

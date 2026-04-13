@@ -243,7 +243,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
           return Scaffold(
             backgroundColor: AppDesignTokens.backgroundSurface,
             appBar: GradientScreenHeader(title: title),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const SafeArea(top: false, child: Center(child: CircularProgressIndicator())),
           );
         }
 
@@ -251,14 +251,14 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
           return Scaffold(
             backgroundColor: AppDesignTokens.backgroundSurface,
             appBar: GradientScreenHeader(title: title),
-            body: Center(
+            body: SafeArea(top: false, child: Center(
               child: Text(
                 scoped
                     ? 'No audit events recorded for this trial yet.'
                     : 'No audit events recorded yet.',
                 style: const TextStyle(color: AppDesignTokens.secondaryText),
               ),
-            ),
+            )),
           );
         }
 
@@ -288,7 +288,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
               ),
             ],
           ),
-          body: FutureBuilder<List<EnrichedAuditEvent>>(
+          body: SafeArea(top: false, child: FutureBuilder<List<EnrichedAuditEvent>>(
             future: enrichAuditEvents(
               events,
               trialRepo: trialRepo,
@@ -431,7 +431,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                 },
               );
             },
-          ),
+          )),
         );
       },
     );

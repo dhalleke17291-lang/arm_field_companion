@@ -224,7 +224,7 @@ class _ArmExportPreflightScreenState
           ),
         ),
       ),
-      body: Stack(
+      body: SafeArea(top: false, child: Stack(
         children: [
           asyncPreflight.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -254,7 +254,7 @@ class _ArmExportPreflightScreenState
               child: const Center(child: CircularProgressIndicator()),
             ),
         ],
-      ),
+      )),
     );
   }
 }

@@ -113,7 +113,7 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
             ? 'Includes all sessions in this trial'
             : 'App-wide · all trials and sessions',
       ),
-      body: FutureBuilder<List<_EditedItemWithDiff>>(
+      body: SafeArea(top: false, child: FutureBuilder<List<_EditedItemWithDiff>>(
         future: _ensureFuture(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -259,7 +259,7 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
             },
           );
         },
-      ),
+      )),
     );
   }
 }

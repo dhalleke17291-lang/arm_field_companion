@@ -1265,12 +1265,12 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _TrialPlotsWorkingSurface(
+      body: SafeArea(top: false, child: _TrialPlotsWorkingSurface(
         trial: widget.trial,
         initialShowLayoutView: widget.initialShowLayoutView,
         compactSurroundings: false,
         onTreatmentsShortcut: null,
-      ),
+      )),
     );
   }
 }
@@ -3486,7 +3486,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: plotsAsync.when(
+      body: SafeArea(top: false, child: plotsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(child: Text('Error: $e')),
         data: (plots) {
@@ -3772,7 +3772,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
             ],
           );
         },
-      ),
+      )),
     );
   }
 

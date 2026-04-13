@@ -68,6 +68,7 @@ enum TrialTab {
   assessments,
   treatments,
   photos,
+  timeline,
 }
 
 enum ProtocolLockPolicy {
@@ -130,6 +131,7 @@ class WorkspaceConfig {
       TrialTab.treatments,
       TrialTab.seeding,
       TrialTab.photos,
+      TrialTab.timeline,
     ],
     tabOrder: [
       TrialTab.plots,
@@ -137,6 +139,7 @@ class WorkspaceConfig {
       TrialTab.treatments,
       TrialTab.seeding,
       TrialTab.photos,
+      TrialTab.timeline,
     ],
     availableExports: [
       ExportFormat.flatCsv,
@@ -165,6 +168,7 @@ class WorkspaceConfig {
       TrialTab.treatments,
       TrialTab.seeding,
       TrialTab.photos,
+      TrialTab.timeline,
     ],
     tabOrder: [
       TrialTab.plots,
@@ -173,6 +177,7 @@ class WorkspaceConfig {
       TrialTab.treatments,
       TrialTab.seeding,
       TrialTab.photos,
+      TrialTab.timeline,
     ],
     availableExports: [
       ExportFormat.flatCsv,
@@ -203,6 +208,7 @@ class WorkspaceConfig {
       TrialTab.treatments,
       TrialTab.seeding,
       TrialTab.photos,
+      TrialTab.timeline,
     ],
     tabOrder: [
       TrialTab.plots,
@@ -211,6 +217,7 @@ class WorkspaceConfig {
       TrialTab.treatments,
       TrialTab.seeding,
       TrialTab.photos,
+      TrialTab.timeline,
     ],
     availableExports: [
       ExportFormat.flatCsv,
@@ -243,6 +250,7 @@ class WorkspaceConfig {
       TrialTab.applications,
       TrialTab.seeding,
       TrialTab.photos,
+      TrialTab.timeline,
     ],
     tabOrder: [
       TrialTab.plots,
@@ -251,6 +259,7 @@ class WorkspaceConfig {
       TrialTab.applications,
       TrialTab.seeding,
       TrialTab.photos,
+      TrialTab.timeline,
     ],
     availableExports: [
       ExportFormat.pdfReport,

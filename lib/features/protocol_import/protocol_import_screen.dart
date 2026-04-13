@@ -47,7 +47,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
             : 'Import Protocol (Add to Trial)',
         titleFontSize: 18,
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(top: false, child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +145,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
             if (_executeResult != null) _buildResultCard(),
           ],
         ),
-      ),
+      )),
     );
   }
 

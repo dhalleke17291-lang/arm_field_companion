@@ -89,7 +89,7 @@ class SeedingTab extends ConsumerWidget {
             MaterialPageRoute<void>(
               builder: (_) => Scaffold(
                 appBar: AppBar(title: const Text('Seeding')),
-                body: SeedingTab(trial: trial),
+                body: SafeArea(top: false, child: SeedingTab(trial: trial)),
               ),
             ),
           );
@@ -876,7 +876,7 @@ class _SeedingEventFormSheetState
   }
 
   Future<void> _pickDate() async {
-    final first = dateOnlyLocal(widget.trial.createdAt);
+    final first = earliestTrialOperationDate(widget.trial.createdAt);
     final last = dateOnlyLocal(DateTime.now());
     var initial = dateOnlyLocal(_seedingDate);
     if (initial.isBefore(first)) initial = first;
@@ -1396,7 +1396,7 @@ class _SeedingDetailScreenState extends ConsumerState<_SeedingDetailScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<List<dynamic>>(
+      body: SafeArea(top: false, child: FutureBuilder<List<dynamic>>(
         future: Future.wait([
           (db.select(db.protocolSeedingFields)
                 ..where((f) => f.trialId.equals(widget.record.trialId))
@@ -1622,7 +1622,7 @@ class _SeedingDetailScreenState extends ConsumerState<_SeedingDetailScreen> {
             ),
           );
         },
-      ),
+      )),
     );
   }
 
