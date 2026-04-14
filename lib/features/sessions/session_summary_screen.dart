@@ -17,6 +17,7 @@ import 'domain/session_completeness_report.dart';
 import 'session_completeness_screen.dart';
 import 'session_data_grid.dart';
 import 'session_summary_assessment_coverage.dart';
+import 'session_treatment_summary.dart';
 
 void _navigatePlotQueue(
   BuildContext context,
@@ -148,6 +149,8 @@ class SessionSummaryScreen extends ConsumerStatefulWidget {
 
 class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
   bool _isClosing = false;
+  /// false = plots grid (default), true = treatment summary
+  bool _showTreatments = false;
 
   void _invalidate() {
     ref.invalidate(plotsForTrialProvider(widget.trial.id));
@@ -493,26 +496,127 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                         ],
                       ),
                     ),
-                    // Full-screen grid
-                    Expanded(
-                      child: SessionDataGrid(
-                        plots: plots,
-                        assessments: assessments,
-                        ratings: ratings,
-                        trialId: widget.trial.id,
-                        sessionId: widget.session.id,
-                        onPlotTap: (plot) =>
-                            _openRatingForPlot(plot, plots, assessments),
-                        assessmentDisplayNames:
-                            assessmentDisplayNames.isNotEmpty
-                                ? assessmentDisplayNames
-                                : null,
+                    // View toggle
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                            bottom: BorderSide(
+                                color: AppDesignTokens.borderCrisp)),
                       ),
+                      child: Row(
+                        children: [
+                          _ViewToggleChip(
+                            label: 'Plots',
+                            selected: !_showTreatments,
+                            onTap: () =>
+                                setState(() => _showTreatments = false),
+                          ),
+                          const SizedBox(width: 8),
+                          _ViewToggleChip(
+                            label: 'Treatments',
+                            selected: _showTreatments,
+                            onTap: () =>
+                                setState(() => _showTreatments = true),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Content
+                    Expanded(
+                      child: _showTreatments
+                          ? _buildTreatmentView(plots, assessments,
+                              ratings, assessmentDisplayNames)
+                          : SessionDataGrid(
+                              plots: plots,
+                              assessments: assessments,
+                              ratings: ratings,
+                              trialId: widget.trial.id,
+                              sessionId: widget.session.id,
+                              onPlotTap: (plot) => _openRatingForPlot(
+                                  plot, plots, assessments),
+                              assessmentDisplayNames:
+                                  assessmentDisplayNames.isNotEmpty
+                                      ? assessmentDisplayNames
+                                      : null,
+                            ),
                     ),
                   ],
                 );
               },
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTreatmentView(
+    List<Plot> plots,
+    List<Assessment> assessments,
+    List<RatingRecord> ratings,
+    Map<int, String> displayNames,
+  ) {
+    final treatmentsAsync =
+        ref.watch(treatmentsForTrialProvider(widget.trial.id));
+    final assignmentsAsync =
+        ref.watch(assignmentsForTrialProvider(widget.trial.id));
+
+    return treatmentsAsync.when(
+      loading: () => const AppLoadingView(),
+      error: (e, st) =>
+          AppErrorView(error: e, stackTrace: st, onRetry: _invalidate),
+      data: (treatments) => assignmentsAsync.when(
+        loading: () => const AppLoadingView(),
+        error: (e, st) =>
+            AppErrorView(error: e, stackTrace: st, onRetry: _invalidate),
+        data: (assignments) => SessionTreatmentSummary(
+          plots: plots,
+          assessments: assessments,
+          ratings: ratings,
+          treatments: treatments,
+          assignments: assignments,
+          assessmentDisplayNames:
+              displayNames.isNotEmpty ? displayNames : null,
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewToggleChip extends StatelessWidget {
+  const _ViewToggleChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? AppDesignTokens.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? AppDesignTokens.primary
+                : AppDesignTokens.borderCrisp,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppDesignTokens.secondaryText,
           ),
         ),
       ),
