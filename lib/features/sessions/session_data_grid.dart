@@ -487,7 +487,7 @@ class _StatsCell extends StatelessWidget {
     }
     final s = stats!;
     final meanStr = _fmt(s.mean);
-    final rangeStr = '${_fmt(s.min)}–${_fmt(s.max)}';
+    final rangeStr = '${_fmt(s.min)}–${_fmt(s.max)} n=${s.n}';
 
     return Container(
       width: width,
