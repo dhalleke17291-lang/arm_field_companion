@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/ui/assessment_display_helper.dart';
 import '../../core/edit_recency_display.dart';
 import '../../core/plot_sort.dart';
 import '../../core/providers.dart';
@@ -253,6 +254,21 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull;
     final isOpen = liveSession?.endedAt == null;
 
+    // Build human-readable assessment names from TrialAssessment metadata
+    final trialAssessments = ref
+        .watch(trialAssessmentsForTrialProvider(widget.trial.id))
+        .valueOrNull;
+    final assessmentDisplayNames = <int, String>{};
+    if (trialAssessments != null) {
+      for (final ta in trialAssessments) {
+        final lid = ta.legacyAssessmentId;
+        if (lid != null) {
+          assessmentDisplayNames[lid] =
+              AssessmentDisplayHelper.compactName(ta);
+        }
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: GradientScreenHeader(
@@ -487,6 +503,10 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                         sessionId: widget.session.id,
                         onPlotTap: (plot) =>
                             _openRatingForPlot(plot, plots, assessments),
+                        assessmentDisplayNames:
+                            assessmentDisplayNames.isNotEmpty
+                                ? assessmentDisplayNames
+                                : null,
                       ),
                     ),
                   ],

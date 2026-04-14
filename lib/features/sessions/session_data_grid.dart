@@ -4,6 +4,7 @@ import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/plot_display.dart';
+import '../../core/ui/assessment_display_helper.dart';
 import '../ratings/rating_lineage_sheet.dart';
 
 /// Read-only data grid: plots × assessments with rating values.
@@ -18,6 +19,7 @@ class SessionDataGrid extends ConsumerStatefulWidget {
     required this.trialId,
     required this.sessionId,
     this.onPlotTap,
+    this.assessmentDisplayNames,
   });
 
   final List<Plot> plots;
@@ -28,6 +30,10 @@ class SessionDataGrid extends ConsumerStatefulWidget {
 
   /// Called when the plot label in the frozen column is tapped.
   final void Function(Plot plot)? onPlotTap;
+
+  /// Human-readable display names keyed by Assessment.id.
+  /// When provided, used instead of Assessment.name for column headers.
+  final Map<int, String>? assessmentDisplayNames;
 
   @override
   ConsumerState<SessionDataGrid> createState() => _SessionDataGridState();
@@ -134,6 +140,15 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
 
     final scheme = Theme.of(context).colorScheme;
 
+    // Resolve human-readable assessment name
+    String displayName(Assessment a) {
+      if (widget.assessmentDisplayNames != null &&
+          widget.assessmentDisplayNames!.containsKey(a.id)) {
+        return widget.assessmentDisplayNames![a.id]!;
+      }
+      return AssessmentDisplayHelper.legacyAssessmentDisplayName(a.name);
+    }
+
     // Build the scrollable data content (no frozen column/header)
     Widget buildDataContent() {
       return SizedBox(
@@ -159,7 +174,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                         ),
                       ),
                       child: Text(
-                        a.name,
+                        displayName(a),
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -189,7 +204,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                           plotPk: dataPlots[i].id,
                           assessmentId: a.id,
                           plotLabel: getDisplayPlotLabel(dataPlots[i], plots),
-                          assessmentName: a.name,
+                          assessmentName: displayName(a),
                         ),
                       ),
                   ],
