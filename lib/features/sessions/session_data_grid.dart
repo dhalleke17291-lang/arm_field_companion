@@ -348,7 +348,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                   right:
                       const BorderSide(color: AppDesignTokens.borderCrisp),
                   left: isHighlighted
-                      ? BorderSide(
+                      ? const BorderSide(
                           color: AppDesignTokens.primary, width: 3)
                       : BorderSide.none,
                 ),
