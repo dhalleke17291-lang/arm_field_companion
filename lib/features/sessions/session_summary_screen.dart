@@ -300,20 +300,45 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
             },
             itemBuilder: (_) => [
               const PopupMenuItem(
-                value: 'details',
-                child: Text('Session Details'),
+                value: 'plot_queue',
+                child: ListTile(
+                  leading: Icon(Icons.list_alt, size: 20),
+                  title: Text('Plot Queue', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
               const PopupMenuItem(
                 value: 'completeness',
-                child: Text('Session Completeness'),
+                child: ListTile(
+                  leading: Icon(Icons.fact_check_outlined, size: 20),
+                  title: Text('Completeness', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
               const PopupMenuItem(
-                value: 'plot_queue',
-                child: Text('Plot Queue'),
+                value: 'details',
+                child: ListTile(
+                  leading: Icon(Icons.analytics_outlined, size: 20),
+                  title: Text('Session Details', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'edited',
-                child: Text('Edited Items'),
+                child: ListTile(
+                  leading: Icon(Icons.edit_note, size: 20),
+                  title: Text('Edited Items', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
             ],
           ),

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"class SessionDetailScreen\\\\|class SessionSummaryScreen\\\\|class SessionCompletenessScreen\\\\|class PlotQueueScreen\" /Users/parminder/Desktop/arm_field_companion/lib/features/sessions/*.dart /Users/parminder/Desktop/arm_field_companion/lib/features/plots/*.dart)"
+    ]
+  }
+}

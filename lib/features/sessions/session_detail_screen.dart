@@ -24,7 +24,6 @@ import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
 import 'usecases/start_or_continue_rating_usecase.dart';
 import 'rating_order_sheet.dart';
-import 'session_completeness_screen.dart';
 import 'session_summary_screen.dart';
 import 'session_export_trust_dialog.dart';
 import 'session_export_trust_messaging.dart';
@@ -216,12 +215,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       size: 22,
       color: AppDesignTokens.primary,
     );
-    const completenessIcon = Icon(
-      Icons.fact_check_outlined,
-      size: 22,
-      color: AppDesignTokens.primary,
-    );
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
@@ -245,30 +238,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             onTap: openWeather,
           ),
           toolSlot(
-            tooltip: 'Session Summary',
+            tooltip: 'Session data grid',
             icon: checklistIcon,
-            label: 'Summary',
+            label: 'Data Grid',
             onTap: () {
               Navigator.push<void>(
                 context,
                 MaterialPageRoute<void>(
                   builder: (_) => SessionSummaryScreen(
-                    trial: trial,
-                    session: session,
-                  ),
-                ),
-              );
-            },
-          ),
-          toolSlot(
-            tooltip: 'Session completeness',
-            icon: completenessIcon,
-            label: 'Completeness',
-            onTap: () {
-              Navigator.push<void>(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => SessionCompletenessScreen(
                     trial: trial,
                     session: session,
                   ),

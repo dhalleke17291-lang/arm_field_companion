@@ -19,7 +19,6 @@ import '../sessions/create_session_screen.dart';
 import '../sessions/domain/session_close_attention_summary.dart';
 import '../sessions/domain/session_close_policy_result.dart';
 import '../sessions/domain/session_completeness_report.dart';
-import '../sessions/session_detail_screen.dart';
 import '../sessions/session_summary_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import 'full_protocol_details_screen.dart';
@@ -3081,7 +3080,7 @@ class SessionsView extends ConsumerWidget {
                   context,
                   MaterialPageRoute(
                       builder: (_) =>
-                          SessionDetailScreen(trial: trial, session: session)));
+                          SessionSummaryScreen(trial: trial, session: session)));
             }
           },
           onLongPress:

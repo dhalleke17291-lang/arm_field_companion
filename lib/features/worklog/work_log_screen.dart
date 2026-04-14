@@ -15,7 +15,7 @@ import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
-import '../sessions/session_detail_screen.dart';
+import '../sessions/session_summary_screen.dart';
 import '../trials/trial_detail_screen.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../ratings/rating_screen.dart';
@@ -397,7 +397,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => SessionDetailScreen(trial: trial, session: session),
+          builder: (_) => SessionSummaryScreen(trial: trial, session: session),
         ),
       );
     }
