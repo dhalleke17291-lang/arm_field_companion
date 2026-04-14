@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -n \"class SessionDetailScreen\\\\|class SessionSummaryScreen\\\\|class SessionCompletenessScreen\\\\|class PlotQueueScreen\" /Users/parminder/Desktop/arm_field_companion/lib/features/sessions/*.dart /Users/parminder/Desktop/arm_field_companion/lib/features/plots/*.dart)"
+      "Bash(grep -n \"class SessionDetailScreen\\\\|class SessionSummaryScreen\\\\|class SessionCompletenessScreen\\\\|class PlotQueueScreen\" /Users/parminder/Desktop/arm_field_companion/lib/features/sessions/*.dart /Users/parminder/Desktop/arm_field_companion/lib/features/plots/*.dart)",
+      "Bash(cp /Users/parminder/Desktop/arm_field_companion/build/app/outputs/flutter-apk/app-release.apk /Users/parminder/Desktop/agnexis-demo.apk)",
+      "Read(//Users/parminder/Desktop/**)",
+      "Bash(grep -l \"class.*PlotDetail\\\\|GridView\\\\|camera\\\\|CameraScreen\\\\|ImagePicker\" /Users/parminder/Desktop/arm_field_companion/lib/features/plots/*.dart /Users/parminder/Desktop/arm_field_companion/lib/features/ratings/*.dart /Users/parminder/Desktop/arm_field_companion/lib/features/sessions/*.dart)"
     ]
   }
 }

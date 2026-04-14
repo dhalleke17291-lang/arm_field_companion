@@ -27,7 +27,7 @@ class BackupReminderStore {
 
   BackupReminderMode get mode {
     final raw = _prefs.getString(_keyMode);
-    if (raw == null) return BackupReminderMode.off;
+    if (raw == null) return BackupReminderMode.afterSessionClose;
     return BackupReminderMode.values.firstWhere(
       (m) => m.name == raw,
       orElse: () => BackupReminderMode.off,

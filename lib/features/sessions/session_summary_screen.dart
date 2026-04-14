@@ -17,6 +17,8 @@ import '../plots/plot_queue_screen.dart';
 import '../ratings/rating_screen.dart';
 import 'domain/session_completeness_report.dart';
 import 'session_completeness_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../backup/backup_reminder_store.dart';
 import 'session_data_grid.dart';
 import 'session_summary_assessment_coverage.dart';
 import 'session_treatment_summary.dart';
@@ -164,6 +166,43 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     ref.invalidate(sessionAssessmentsProvider(widget.session.id));
   }
 
+  Future<void> _checkBackupReminder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final store = BackupReminderStore(prefs);
+    if (store.mode != BackupReminderMode.afterSessionClose) return;
+    if (!store.shouldRemind()) return;
+    await store.recordReminderShown();
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Back Up Your Data?'),
+        content: Text(
+          'Last backup: ${store.lastBackupLabel}\n\n'
+          'Back up now to keep your trial data safe.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Later'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Go to More → Backup to save your data'),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            },
+            child: const Text('Back Up'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _closeSession({bool force = false}) async {
     setState(() => _isClosing = true);
     try {
@@ -188,7 +227,10 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         backgroundColor:
             result.success ? AppDesignTokens.successBg : scheme.error,
       ));
-      if (result.success) _invalidate();
+      if (result.success) {
+        _invalidate();
+        _checkBackupReminder();
+      }
       // If warnings blocked the close, offer force close
       if (!result.success &&
           result.errorMessage != null &&

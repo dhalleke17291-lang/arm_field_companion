@@ -284,171 +284,183 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
       ),
     );
 
-    // Bottom-left: plot labels + stats label (scrolls vertically)
-    final totalRowCount = dataPlots.length + (hasStats ? 1 : 0);
-    final plotColumn = SizedBox(
-      width: plotColWidth,
-      child: ListView.builder(
-        controller: _vScrollPlots,
-        physics: const ClampingScrollPhysics(),
-        itemCount: totalRowCount,
-        itemExtent: totalRowCount > dataPlots.length &&
-                totalRowCount - 1 == dataPlots.length
-            ? null
-            : rowHeight,
-        itemBuilder: (_, i) {
-          // Stats row
-          if (i == dataPlots.length && hasStats) {
-            return Container(
-              width: plotColWidth,
-              height: statsRowHeight,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                border: const Border(
-                  top: BorderSide(color: AppDesignTokens.borderCrisp),
-                  right: BorderSide(color: AppDesignTokens.borderCrisp),
-                ),
-              ),
-              child: const Text(
-                'Stats',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-              ),
-            );
-          }
-          final plot = dataPlots[i];
-          final isHighlighted = highlightedPlotPks.contains(plot.id);
-          return GestureDetector(
-            onTap: widget.onPlotTap != null
-                ? () => widget.onPlotTap!(plot)
-                : null,
-            onLongPress: () {
-              final tid = plotTreatmentId[plot.id];
-              if (tid == null) return;
-              setState(() {
-                _highlightedTreatmentId =
-                    _highlightedTreatmentId == tid ? null : tid;
-              });
-            },
-            child: Container(
-              width: plotColWidth,
-              height: rowHeight,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isHighlighted
-                    ? AppDesignTokens.primary.withValues(alpha: 0.12)
-                    : (i.isEven
-                        ? scheme.surface
-                        : scheme.surfaceContainerHighest
-                            .withValues(alpha: 0.4)),
-                border: Border(
-                  bottom: BorderSide(
-                      color:
-                          AppDesignTokens.borderCrisp.withValues(alpha: 0.5)),
-                  right:
-                      const BorderSide(color: AppDesignTokens.borderCrisp),
-                  left: isHighlighted
-                      ? const BorderSide(
-                          color: AppDesignTokens.primary, width: 3)
-                      : BorderSide.none,
-                ),
-              ),
-              child: Text(
-                getDisplayPlotLabel(plot, plots),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: isHighlighted
-                      ? AppDesignTokens.primary
-                      : (widget.onPlotTap != null
-                          ? AppDesignTokens.primary
-                          : null),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-
-    // Bottom-right: data cells + stats footer (scrolls both ways)
-    // Use a horizontally scrolling ListView wrapping a vertically scrolling column
-    final dataArea = SingleChildScrollView(
-      controller: _hScrollData,
-      scrollDirection: Axis.horizontal,
-      physics: const ClampingScrollPhysics(),
-      child: SizedBox(
-        width: totalDataWidth,
-        child: ListView.builder(
-          controller: _vScrollData,
-          physics: const ClampingScrollPhysics(),
-          itemCount: totalRowCount,
-          itemBuilder: (_, rowIndex) {
-            // Stats footer row
-            if (rowIndex == dataPlots.length && hasStats) {
-              return SizedBox(
-                height: statsRowHeight,
-                child: Row(
-                  children: [
-                    for (final a in assessments)
-                      _StatsCell(
-                        width: cellWidth,
-                        height: statsRowHeight,
-                        stats: colStats[a.id],
-                      ),
-                  ],
-                ),
-              );
-            }
-            final plot = dataPlots[rowIndex];
-            final rowHighlighted = highlightedPlotPks.contains(plot.id);
-            return SizedBox(
-              height: rowHeight,
-              child: Row(
-                children: [
-                  for (final a in assessments)
-                    _DataCell(
-                      width: cellWidth,
-                      height: rowHeight,
-                      rating: ratingMap[(plot.id, a.id)],
-                      isEvenRow: rowIndex.isEven,
-                      isOutlier: widget.outlierKeys
-                              ?.contains((plot.id, a.id)) ??
-                          false,
-                      isHighlighted: rowHighlighted,
-                      onShowLineage: () => showLineage(
-                        plotPk: plot.id,
-                        assessmentId: a.id,
-                        plotLabel: getDisplayPlotLabel(plot, plots),
-                        assessmentName: displayName(a),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
+    // ---- BOTTOM HALF: plot labels (left) + data cells (right) ----
+    // Both scroll vertically in sync. Data also scrolls horizontally.
+    // Stats footer is pinned below the scrollable area.
 
     return Column(
       children: [
-        // Top row: corner + header
+        // TOP: corner + assessment headers
         Row(
           children: [
             corner,
             Expanded(child: headerRow),
           ],
         ),
-        // Bottom row: plot labels + data
+        // MIDDLE: scrollable plot labels + data cells
         Expanded(
           child: Row(
             children: [
-              plotColumn,
-              Expanded(child: dataArea),
+              // Frozen plot column
+              SizedBox(
+                width: plotColWidth,
+                child: ListView.builder(
+                  controller: _vScrollPlots,
+                  physics: const ClampingScrollPhysics(),
+                  itemCount: dataPlots.length,
+                  itemExtent: rowHeight,
+                  itemBuilder: (_, i) {
+                    final plot = dataPlots[i];
+                    final isHighlighted =
+                        highlightedPlotPks.contains(plot.id);
+                    return GestureDetector(
+                      onTap: widget.onPlotTap != null
+                          ? () => widget.onPlotTap!(plot)
+                          : null,
+                      onLongPress: () {
+                        final tid = plotTreatmentId[plot.id];
+                        if (tid == null) return;
+                        setState(() {
+                          _highlightedTreatmentId =
+                              _highlightedTreatmentId == tid ? null : tid;
+                        });
+                      },
+                      child: Container(
+                        width: plotColWidth,
+                        height: rowHeight,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isHighlighted
+                              ? AppDesignTokens.primary
+                                  .withValues(alpha: 0.12)
+                              : (i.isEven
+                                  ? scheme.surface
+                                  : scheme.surfaceContainerHighest
+                                      .withValues(alpha: 0.4)),
+                          border: Border(
+                            bottom: BorderSide(
+                                color: AppDesignTokens.borderCrisp
+                                    .withValues(alpha: 0.5)),
+                            right: const BorderSide(
+                                color: AppDesignTokens.borderCrisp),
+                            left: isHighlighted
+                                ? const BorderSide(
+                                    color: AppDesignTokens.primary,
+                                    width: 3)
+                                : BorderSide.none,
+                          ),
+                        ),
+                        child: Text(
+                          getDisplayPlotLabel(plot, plots),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isHighlighted
+                                ? AppDesignTokens.primary
+                                : (widget.onPlotTap != null
+                                    ? AppDesignTokens.primary
+                                    : null),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // Scrollable data area
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _hScrollData,
+                  scrollDirection: Axis.horizontal,
+                  physics: const ClampingScrollPhysics(),
+                  child: SizedBox(
+                    width: totalDataWidth,
+                    child: ListView.builder(
+                      controller: _vScrollData,
+                      physics: const ClampingScrollPhysics(),
+                      itemCount: dataPlots.length,
+                      itemExtent: rowHeight,
+                      itemBuilder: (_, rowIndex) {
+                        final plot = dataPlots[rowIndex];
+                        final rowHighlighted =
+                            highlightedPlotPks.contains(plot.id);
+                        return SizedBox(
+                          height: rowHeight,
+                          child: Row(
+                            children: [
+                              for (final a in assessments)
+                                _DataCell(
+                                  width: cellWidth,
+                                  height: rowHeight,
+                                  rating: ratingMap[(plot.id, a.id)],
+                                  isEvenRow: rowIndex.isEven,
+                                  isOutlier: widget.outlierKeys?.contains(
+                                          (plot.id, a.id)) ??
+                                      false,
+                                  isHighlighted: rowHighlighted,
+                                  onShowLineage: () => showLineage(
+                                    plotPk: plot.id,
+                                    assessmentId: a.id,
+                                    plotLabel: getDisplayPlotLabel(
+                                        plot, plots),
+                                    assessmentName: displayName(a),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+        // BOTTOM: stats footer (pinned, not scrollable vertically)
+        if (hasStats)
+          Row(
+            children: [
+              Container(
+                width: plotColWidth,
+                height: statsRowHeight,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest,
+                  border: const Border(
+                    top: BorderSide(color: AppDesignTokens.borderCrisp),
+                    right: BorderSide(color: AppDesignTokens.borderCrisp),
+                  ),
+                ),
+                child: const Text(
+                  'Stats',
+                  style:
+                      TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: totalDataWidth,
+                    child: SizedBox(
+                      height: statsRowHeight,
+                      child: Row(
+                        children: [
+                          for (final a in assessments)
+                            _StatsCell(
+                              width: cellWidth,
+                              height: statsRowHeight,
+                              stats: colStats[a.id],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }

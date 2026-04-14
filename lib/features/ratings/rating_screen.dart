@@ -3710,7 +3710,20 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           return false;
         }
         if (numericValue != null) {
+          final original = numericValue;
           numericValue = numericValue.clamp(_effectiveMin, _effectiveMax);
+          if (numericValue != original && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Value adjusted from $original to $numericValue '
+                  '(scale: $_effectiveMin–$_effectiveMax)',
+                ),
+                backgroundColor: AppDesignTokens.warningFg,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
         }
       }
     } else if (_selectedStatus == 'MISSING_CONDITION') {
