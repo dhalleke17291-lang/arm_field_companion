@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
+import '../../core/providers.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/plot_display.dart';
@@ -44,6 +45,9 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
 
   bool _syncingH = false;
   bool _syncingV = false;
+
+  /// Treatment ID currently highlighted; null = no highlight active.
+  int? _highlightedTreatmentId;
 
   @override
   void initState() {
@@ -134,6 +138,23 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
     for (final r in widget.ratings) {
       if (!r.isCurrent || r.isDeleted) continue;
       ratingMap[(r.plotPk, r.assessmentId)] = r;
+    }
+
+    // Plot → treatment map for highlighting
+    final plotTreatmentId = <int, int?>{};
+    for (final p in dataPlots) {
+      final pc = ref.watch(plotContextProvider(p.id)).valueOrNull;
+      plotTreatmentId[p.id] = pc?.treatment?.id;
+    }
+
+    // Set of plot PKs that match the highlighted treatment
+    final highlightedPlotPks = <int>{};
+    if (_highlightedTreatmentId != null) {
+      for (final e in plotTreatmentId.entries) {
+        if (e.value == _highlightedTreatmentId) {
+          highlightedPlotPks.add(e.key);
+        }
+      }
     }
 
     // Column stats
@@ -296,24 +317,40 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
             );
           }
           final plot = dataPlots[i];
+          final isHighlighted = highlightedPlotPks.contains(plot.id);
           return GestureDetector(
             onTap: widget.onPlotTap != null
                 ? () => widget.onPlotTap!(plot)
                 : null,
+            onLongPress: () {
+              final tid = plotTreatmentId[plot.id];
+              if (tid == null) return;
+              setState(() {
+                _highlightedTreatmentId =
+                    _highlightedTreatmentId == tid ? null : tid;
+              });
+            },
             child: Container(
               width: plotColWidth,
               height: rowHeight,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: i.isEven
-                    ? scheme.surface
-                    : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                color: isHighlighted
+                    ? AppDesignTokens.primary.withValues(alpha: 0.12)
+                    : (i.isEven
+                        ? scheme.surface
+                        : scheme.surfaceContainerHighest
+                            .withValues(alpha: 0.4)),
                 border: Border(
                   bottom: BorderSide(
                       color:
                           AppDesignTokens.borderCrisp.withValues(alpha: 0.5)),
                   right:
                       const BorderSide(color: AppDesignTokens.borderCrisp),
+                  left: isHighlighted
+                      ? BorderSide(
+                          color: AppDesignTokens.primary, width: 3)
+                      : BorderSide.none,
                 ),
               ),
               child: Text(
@@ -321,9 +358,11 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: widget.onPlotTap != null
+                  color: isHighlighted
                       ? AppDesignTokens.primary
-                      : null,
+                      : (widget.onPlotTap != null
+                          ? AppDesignTokens.primary
+                          : null),
                 ),
               ),
             ),
@@ -362,6 +401,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
               );
             }
             final plot = dataPlots[rowIndex];
+            final rowHighlighted = highlightedPlotPks.contains(plot.id);
             return SizedBox(
               height: rowHeight,
               child: Row(
@@ -375,6 +415,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                       isOutlier: widget.outlierKeys
                               ?.contains((plot.id, a.id)) ??
                           false,
+                      isHighlighted: rowHighlighted,
                       onShowLineage: () => showLineage(
                         plotPk: plot.id,
                         assessmentId: a.id,
@@ -425,6 +466,7 @@ class _DataCell extends StatelessWidget {
     required this.isEvenRow,
     required this.onShowLineage,
     this.isOutlier = false,
+    this.isHighlighted = false,
   });
 
   final double width;
@@ -433,6 +475,7 @@ class _DataCell extends StatelessWidget {
   final bool isEvenRow;
   final VoidCallback onShowLineage;
   final bool isOutlier;
+  final bool isHighlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -463,9 +506,11 @@ class _DataCell extends StatelessWidget {
 
     final isEdited = r != null && (r.amended || r.previousId != null);
 
-    final baseBg = isEvenRow
-        ? scheme.surface
-        : scheme.surfaceContainerHighest.withValues(alpha: 0.4);
+    final baseBg = isHighlighted
+        ? AppDesignTokens.primary.withValues(alpha: 0.08)
+        : (isEvenRow
+            ? scheme.surface
+            : scheme.surfaceContainerHighest.withValues(alpha: 0.4));
     final bg = isOutlier ? Colors.amber.shade50 : baseBg;
 
     final cell = Container(
