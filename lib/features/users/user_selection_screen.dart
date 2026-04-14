@@ -14,6 +14,11 @@ class UserSelectionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usersAsync = ref.watch(activeUsersProvider);
+    final addUserFab = FloatingActionButton.extended(
+      onPressed: () => _openAddUser(context, ref),
+      icon: const Icon(Icons.person_add),
+      label: const Text('Add User'),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
@@ -28,10 +33,9 @@ class UserSelectionScreen extends ConsumerWidget {
             : _buildList(context, ref, users),
       ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAddUser(context, ref),
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add User'),
+      floatingActionButton: usersAsync.maybeWhen(
+        data: (users) => users.isEmpty ? null : addUserFab,
+        orElse: () => addUserFab,
       ),
     );
   }

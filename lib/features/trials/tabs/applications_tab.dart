@@ -213,13 +213,6 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     );
   }
 
-  static String _applicationLabel(int index) {
-    if (index < 26) return String.fromCharCode(65 + index);
-    final q = index ~/ 26;
-    final r = index % 26;
-    return '${String.fromCharCode(64 + q)}${String.fromCharCode(65 + r)}';
-  }
-
   Widget _buildApplicationTile(
     BuildContext context,
     WidgetRef ref,
@@ -227,7 +220,9 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     int index,
   ) {
     final isPending = e.status == 'pending';
-    final label = _applicationLabel(index);
+    final label = e.growthStageCode?.trim().isNotEmpty == true
+        ? e.growthStageCode!.trim()
+        : 'Application ${index + 1}';
     final plannedDateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
     final productsAsync =
         ref.watch(trialApplicationProductsForEventProvider(e.id));

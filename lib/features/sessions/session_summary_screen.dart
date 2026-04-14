@@ -4,14 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/edit_recency_display.dart';
+import '../../core/plot_sort.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../shared/widgets/app_card.dart';
 import '../diagnostics/edited_items_screen.dart';
 import '../plots/plot_queue_screen.dart';
+import '../ratings/rating_screen.dart';
 import 'domain/session_completeness_report.dart';
 import 'session_completeness_screen.dart';
+import 'session_data_grid.dart';
 import 'session_summary_assessment_coverage.dart';
 
 void _navigatePlotQueue(
@@ -126,10 +129,355 @@ List<Widget> _completenessIssuePreviewRows({
   return out;
 }
 
-/// Read-only aggregate dashboard for one session (v1: metrics + navigation links).
-class SessionSummaryScreen extends ConsumerWidget {
+/// Session data view — toggles between full-screen data grid and detail cards.
+class SessionSummaryScreen extends ConsumerStatefulWidget {
   const SessionSummaryScreen({
     super.key,
+    required this.trial,
+    required this.session,
+  });
+
+  final Trial trial;
+  final Session session;
+
+  @override
+  ConsumerState<SessionSummaryScreen> createState() =>
+      _SessionSummaryScreenState();
+}
+
+class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
+  bool _isClosing = false;
+
+  void _invalidate() {
+    ref.invalidate(plotsForTrialProvider(widget.trial.id));
+    ref.invalidate(sessionRatingsProvider(widget.session.id));
+    ref.invalidate(ratedPlotPksProvider(widget.session.id));
+    ref.invalidate(sessionCompletenessReportProvider(widget.session.id));
+    ref.invalidate(flaggedPlotIdsForSessionProvider(widget.session.id));
+    ref.invalidate(plotPksWithCorrectionsForSessionProvider(widget.session.id));
+    ref.invalidate(sessionAssessmentsProvider(widget.session.id));
+  }
+
+  Future<void> _closeSession({bool force = false}) async {
+    setState(() => _isClosing = true);
+    try {
+      final userId = await ref.read(currentUserIdProvider.future);
+      final useCase = ref.read(closeSessionUseCaseProvider);
+      final result = await useCase.execute(
+        sessionId: widget.session.id,
+        trialId: widget.trial.id,
+        raterName: widget.session.raterName,
+        closedByUserId: userId,
+        forceClose: force,
+      );
+      if (!mounted) return;
+      final scheme = Theme.of(context).colorScheme;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          result.success ? 'Session closed' : result.errorMessage ?? 'Error',
+          style: TextStyle(
+            color: result.success ? AppDesignTokens.successFg : scheme.onError,
+          ),
+        ),
+        backgroundColor:
+            result.success ? AppDesignTokens.successBg : scheme.error,
+      ));
+      if (result.success) _invalidate();
+      // If warnings blocked the close, offer force close
+      if (!result.success &&
+          result.errorMessage != null &&
+          result.errorMessage!.contains('warnings')) {
+        _showForceCloseDialog();
+      }
+    } finally {
+      if (mounted) setState(() => _isClosing = false);
+    }
+  }
+
+  void _showForceCloseDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Close anyway?'),
+        content: const Text(
+          'There are warnings but no blockers. Close the session anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _closeSession(force: true);
+            },
+            child: const Text('Close Session'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openRatingForPlot(Plot plot, List<Plot> allPlots,
+      List<Assessment> assessments) {
+    // Sort plots in walk order for proper navigation inside rating screen
+    final walkPlots = sortPlotsByWalkOrder(allPlots, WalkOrderMode.serpentine);
+    final plotIndex = walkPlots.indexWhere((p) => p.id == plot.id);
+    if (plotIndex < 0) return;
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => RatingScreen(
+          trial: widget.trial,
+          session: widget.session,
+          plot: plot,
+          assessments: assessments,
+          allPlots: walkPlots,
+          currentPlotIndex: plotIndex,
+        ),
+      ),
+    ).then((_) => _invalidate());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plotsAsync = ref.watch(plotsForTrialProvider(widget.trial.id));
+    final assessmentsAsync =
+        ref.watch(sessionAssessmentsProvider(widget.session.id));
+    final ratingsAsync =
+        ref.watch(sessionRatingsProvider(widget.session.id));
+    final reportAsync =
+        ref.watch(sessionCompletenessReportProvider(widget.session.id));
+    final liveSession =
+        ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull;
+    final isOpen = liveSession?.endedAt == null;
+
+    return Scaffold(
+      backgroundColor: AppDesignTokens.backgroundSurface,
+      appBar: GradientScreenHeader(
+        title: widget.session.name,
+        subtitle: widget.session.sessionDateLocal,
+        titleFontSize: 17,
+        actions: [
+          // Tools menu — advanced screens
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            tooltip: 'Tools',
+            onSelected: (value) {
+              switch (value) {
+                case 'completeness':
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => SessionCompletenessScreen(
+                        trial: widget.trial,
+                        session: widget.session,
+                      ),
+                    ),
+                  );
+                case 'plot_queue':
+                  _navigatePlotQueue(
+                      context, widget.trial, widget.session);
+                case 'edited':
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const EditedItemsScreen(),
+                    ),
+                  );
+                case 'details':
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => _SessionDetailsFullScreen(
+                        trial: widget.trial,
+                        session: widget.session,
+                      ),
+                    ),
+                  );
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'details',
+                child: Text('Session Details'),
+              ),
+              const PopupMenuItem(
+                value: 'completeness',
+                child: Text('Session Completeness'),
+              ),
+              const PopupMenuItem(
+                value: 'plot_queue',
+                child: Text('Plot Queue'),
+              ),
+              const PopupMenuItem(
+                value: 'edited',
+                child: Text('Edited Items'),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            tooltip: 'Close',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: plotsAsync.when(
+          loading: () => const AppLoadingView(),
+          error: (e, st) =>
+              AppErrorView(error: e, stackTrace: st, onRetry: _invalidate),
+          data: (plots) => assessmentsAsync.when(
+            loading: () => const AppLoadingView(),
+            error: (e, st) =>
+                AppErrorView(error: e, stackTrace: st, onRetry: _invalidate),
+            data: (assessments) => ratingsAsync.when(
+              loading: () => const AppLoadingView(),
+              error: (e, st) =>
+                  AppErrorView(error: e, stackTrace: st, onRetry: _invalidate),
+              data: (ratings) {
+                final editedCount = ratings
+                    .where((r) => r.amended || r.previousId != null)
+                    .length;
+                final dataPlotCount = plots
+                    .where((p) =>
+                        !p.isGuardRow && p.excludeFromAnalysis != true)
+                    .length;
+                final report = reportAsync.valueOrNull;
+                final canClose = report?.canClose ?? false;
+                final blockerCount = report?.issues
+                        .where((i) =>
+                            i.severity ==
+                            SessionCompletenessIssueSeverity.blocker)
+                        .length ??
+                    0;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Status bar with close session
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: const BoxDecoration(
+                        color: AppDesignTokens.sectionHeaderBg,
+                        border: Border(
+                            bottom: BorderSide(
+                                color: AppDesignTokens.borderCrisp)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${assessments.length} assessment${assessments.length == 1 ? '' : 's'} · '
+                                  '$dataPlotCount plots',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    if (editedCount > 0) ...[
+                                      Text(
+                                        '▲ $editedCount edited',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color:
+                                                Colors.blueGrey.shade600),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    if (!isOpen)
+                                      Text(
+                                        'Session closed',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.green.shade700),
+                                      )
+                                    else if (blockerCount > 0)
+                                      Text(
+                                        '$blockerCount blocker${blockerCount == 1 ? '' : 's'}',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.red.shade700),
+                                      )
+                                    else if (canClose)
+                                      Text(
+                                        'Ready to close',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.green.shade700),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isOpen && canClose)
+                            SizedBox(
+                              height: 32,
+                              child: FilledButton.icon(
+                                onPressed:
+                                    _isClosing ? null : _closeSession,
+                                icon: _isClosing
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white),
+                                      )
+                                    : const Icon(Icons.lock_outline,
+                                        size: 16),
+                                label: const Text('Close Session',
+                                    style: TextStyle(fontSize: 12)),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  backgroundColor:
+                                      AppDesignTokens.primary,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Full-screen grid
+                    Expanded(
+                      child: SessionDataGrid(
+                        plots: plots,
+                        assessments: assessments,
+                        ratings: ratings,
+                        trialId: widget.trial.id,
+                        sessionId: widget.session.id,
+                        onPlotTap: (plot) =>
+                            _openRatingForPlot(plot, plots, assessments),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen wrapper for the old detail cards (accessible from tools menu).
+class _SessionDetailsFullScreen extends ConsumerWidget {
+  const _SessionDetailsFullScreen({
     required this.trial,
     required this.session,
   });
@@ -149,6 +497,40 @@ class SessionSummaryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      backgroundColor: AppDesignTokens.backgroundSurface,
+      appBar: GradientScreenHeader(
+        title: 'Session Details',
+        subtitle: '${session.name} · ${session.sessionDateLocal}',
+        titleFontSize: 17,
+      ),
+      body: SafeArea(
+        top: false,
+        child: _SessionDetailsBody(
+          trial: trial,
+          session: session,
+          onInvalidate: () => _invalidate(ref),
+        ),
+      ),
+    );
+  }
+}
+
+/// The old detailed session summary (Progress, Coverage, Completeness, Attention)
+/// accessible via the info icon.
+class _SessionDetailsBody extends ConsumerWidget {
+  const _SessionDetailsBody({
+    required this.trial,
+    required this.session,
+    required this.onInvalidate,
+  });
+
+  final Trial trial;
+  final Session session;
+  final VoidCallback onInvalidate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final reportAsync =
         ref.watch(sessionCompletenessReportProvider(session.id));
@@ -160,62 +542,54 @@ class SessionSummaryScreen extends ConsumerWidget {
         ref.watch(plotPksWithCorrectionsForSessionProvider(session.id));
     final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
 
-    return Scaffold(
-      backgroundColor: AppDesignTokens.backgroundSurface,
-      appBar: GradientScreenHeader(
-        title: 'Session Summary',
-        subtitle: '${session.name} · ${session.sessionDateLocal}',
-        titleFontSize: 17,
-      ),
-      body: SafeArea(
-        child: plotsAsync.when(
+    return plotsAsync.when(
           loading: () => const AppLoadingView(),
           error: (e, st) => AppErrorView(
             error: e,
             stackTrace: st,
-            onRetry: () => _invalidate(ref),
+            onRetry: onInvalidate,
           ),
           data: (rawPlots) => reportAsync.when(
             loading: () => const AppLoadingView(),
             error: (e, st) => AppErrorView(
               error: e,
               stackTrace: st,
-              onRetry: () => _invalidate(ref),
+              onRetry: onInvalidate,
             ),
             data: (report) => ratingsAsync.when(
               loading: () => const AppLoadingView(),
               error: (e, st) => AppErrorView(
                 error: e,
                 stackTrace: st,
-                onRetry: () => _invalidate(ref),
+                onRetry: onInvalidate,
               ),
               data: (ratings) => ratedPksAsync.when(
                 loading: () => const AppLoadingView(),
                 error: (e, st) => AppErrorView(
                   error: e,
                   stackTrace: st,
-                  onRetry: () => _invalidate(ref),
+                  onRetry: onInvalidate,
                 ),
                 data: (ratedPks) => flaggedAsync.when(
                   loading: () => const AppLoadingView(),
                   error: (e, st) => AppErrorView(
                     error: e,
                     stackTrace: st,
-                    onRetry: () => _invalidate(ref),
+                    onRetry: onInvalidate,
                   ),
                   data: (flaggedIds) => correctionsAsync.when(
                     loading: () => const AppLoadingView(),
                     error: (e, st) => AppErrorView(
                       error: e,
                       stackTrace: st,
-                      onRetry: () => _invalidate(ref),
+                      onRetry: onInvalidate,
                     ),
                     data: (correctionPlotPks) => assessmentsAsync.when(
                       loading: () => const AppLoadingView(),
                       error: (e, st) => AppErrorView(
                         error: e,
                         stackTrace: st,
-                        onRetry: () => _invalidate(ref),
+                        onRetry: onInvalidate,
                       ),
                       data: (assessments) {
                         final ratingsByPlot = <int, List<RatingRecord>>{};
@@ -794,11 +1168,13 @@ class SessionSummaryScreen extends ConsumerWidget {
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Below: helper widgets used by _SessionDetailsBody
+// ---------------------------------------------------------------------------
 
 class _CaptionHint extends StatelessWidget {
   const _CaptionHint(this.text);

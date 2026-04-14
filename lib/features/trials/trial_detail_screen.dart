@@ -3609,6 +3609,16 @@ class SessionsView extends ConsumerWidget {
             result.success ? AppDesignTokens.successBg : scheme.error,
       ));
       if (result.success && context.mounted) {
+        // Auto-open session summary (with data grid) so researcher sees their data.
+        Navigator.push<void>(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => SessionSummaryScreen(
+              trial: trial,
+              session: session,
+            ),
+          ),
+        );
         _checkBackupReminder(context);
       }
     }

@@ -230,7 +230,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           toolSlot(
             tooltip: 'Crop Growth Stage (BBCH)',
             icon: bbchIcon,
-            label: 'BBCH',
+            label: 'Growth Stage (BBCH)',
             onTap: () => showCropStageBbchEditorDialog(
                   context: context,
                   ref: ref,
@@ -245,9 +245,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             onTap: openWeather,
           ),
           toolSlot(
-            tooltip: 'Session Checklist',
+            tooltip: 'Session Summary',
             icon: checklistIcon,
-            label: 'Checklist',
+            label: 'Summary',
             onTap: () {
               Navigator.push<void>(
                 context,

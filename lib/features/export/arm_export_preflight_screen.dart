@@ -75,9 +75,9 @@ class _ArmExportPreflightScreenState
         final choice = await showDialog<_ShellEnrichExportChoice>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Shell Metadata'),
+            title: const Text('Rating Sheet Data'),
             content: const Text(
-              'Shell metadata available. Enrich trial before export?',
+              'Rating sheet data available. Enrich trial before export?',
             ),
             actions: [
               TextButton(

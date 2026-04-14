@@ -202,7 +202,7 @@ Future<void> _onLinkArmShellTap({
     await showDialog<void>(
       context: parentContext,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cannot Link Shell'),
+        title: const Text('Cannot Link Rating Sheet'),
         content: SingleChildScrollView(
           child: Text(
             preview.blockerSummary.isEmpty
@@ -412,11 +412,11 @@ String _trialChangeLine(ShellTrialFieldChange c) {
 String _assessmentChangeLine(ShellAssessmentFieldChange c) {
   final label = switch (c.fieldName) {
     'pestCode' => 'Pest code',
-    'arm_shell_column_id' => 'Column ID',
-    'arm_shell_rating_date' => 'Shell rating date',
-    'se_name' => 'SE name',
-    'se_description' => 'SE description',
-    'arm_rating_type' => 'Rating type',
+    'arm_shell_column_id' => 'Reference code',
+    'arm_shell_rating_date' => 'Rating date',
+    'se_name' => 'Assessment code',
+    'se_description' => 'Assessment description',
+    'arm_rating_type' => 'Scale type',
     _ => c.fieldName,
   };
   if (c.isFillEmpty) {

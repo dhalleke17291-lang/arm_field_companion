@@ -80,7 +80,7 @@ class ArmShellLinkUseCase {
     if (!preview.canApply) {
       return LinkShellResult.failure(
         preview.blockerSummary.isEmpty
-            ? 'Shell link blocked.'
+            ? 'Rating sheet link blocked.'
             : preview.blockerSummary,
       );
     }
@@ -248,7 +248,7 @@ class ArmShellLinkUseCase {
         const ShellLinkIssue(
           severity: ShellLinkIssueSeverity.block,
           code: 'no_assessment_columns',
-          message: 'Shell has no assessment columns (row 7 IDs empty).',
+          message: 'No assessments found on this rating sheet.',
         ),
       );
     }
@@ -264,7 +264,7 @@ class ArmShellLinkUseCase {
         const ShellLinkIssue(
           severity: ShellLinkIssueSeverity.block,
           code: 'no_matching_plots',
-          message: 'No plot numbers overlap between shell and trial.',
+          message: 'No plot numbers overlap between rating sheet and trial.',
         ),
       );
     }
@@ -275,7 +275,7 @@ class ArmShellLinkUseCase {
         const ShellLinkIssue(
           severity: ShellLinkIssueSeverity.warn,
           code: 'replace_linked_shell',
-          message: 'Trial already has a linked shell path; it will be replaced.',
+          message: 'A rating sheet is already linked to this trial; it will be replaced.',
         ),
       );
     }
@@ -286,7 +286,7 @@ class ArmShellLinkUseCase {
         const ShellLinkIssue(
           severity: ShellLinkIssueSeverity.warn,
           code: 'title_differs_from_trial_name',
-          message: 'Shell title differs from trial name.',
+          message: 'Rating sheet title differs from trial name.',
         ),
       );
     }
@@ -299,7 +299,7 @@ class ArmShellLinkUseCase {
         const ShellLinkIssue(
           severity: ShellLinkIssueSeverity.warn,
           code: 'partial_plot_overlap',
-          message: 'Some plot numbers exist only on the shell or only in the trial.',
+          message: 'Some plot numbers exist only on the rating sheet or only in the trial.',
         ),
       );
     }

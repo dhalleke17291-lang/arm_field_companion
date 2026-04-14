@@ -30,7 +30,7 @@ import 'rating_lineage_sheet.dart';
 import 'usecases/save_rating_usecase.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/rating_order_sheet.dart';
-import '../sessions/session_detail_screen.dart';
+import '../sessions/session_summary_screen.dart';
 import '../sessions/session_timing_helper.dart';
 
 /// Status options for the rating result; maps to persisted resultStatus values.
@@ -627,6 +627,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildContextCard(context),
+                        _buildNeighborAndTreatmentStrip(
+                          context,
+                          sessionRatingsList,
+                        ),
                         if (!isSessionEditable(widget.session))
                           _buildClosedSessionBanner(context),
                         _buildAssessmentSelectorPanel(
@@ -1359,6 +1363,149 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  /// Neighbor values in walk order + treatment running average for the current assessment.
+  Widget _buildNeighborAndTreatmentStrip(
+    BuildContext context,
+    List<RatingRecord> sessionRatings,
+  ) {
+    final assessmentId = _currentAssessment.id;
+    final allPlots = widget.allPlots;
+    final idx = widget.currentPlotIndex;
+
+    // --- Neighbor values (walk order) ---
+    String neighborLabel(int offset) {
+      final ni = idx + offset;
+      if (ni < 0 || ni >= allPlots.length) return '';
+      final p = allPlots[ni];
+      if (p.isGuardRow) return '';
+      final label = getDisplayPlotLabel(p, allPlots);
+      final rating = sessionRatings
+          .where((r) =>
+              r.plotPk == p.id &&
+              r.assessmentId == assessmentId &&
+              r.isCurrent &&
+              !r.isDeleted &&
+              r.resultStatus == 'RECORDED')
+          .toList();
+      final val = rating.isNotEmpty && rating.first.numericValue != null
+          ? _formatNeighborValue(rating.first.numericValue!)
+          : '—';
+      return '$label: $val';
+    }
+
+    final prev = neighborLabel(-1);
+    final next = neighborLabel(1);
+    final hasNeighbors = prev.isNotEmpty || next.isNotEmpty;
+
+    // --- Treatment running average (current session only) ---
+    final plotCtx = ref.watch(plotContextProvider(widget.plot.id));
+    final treatmentCode = plotCtx.valueOrNull?.treatmentCode;
+    final treatmentId = plotCtx.valueOrNull?.treatment?.id;
+
+    String? treatmentAvgText;
+    if (treatmentId != null) {
+      // Find all plots with same treatment from plot context cache
+      final allPlotContexts = <int, int?>{};
+      for (final p in allPlots) {
+        if (p.isGuardRow) continue;
+        final pc = ref.watch(plotContextProvider(p.id)).valueOrNull;
+        if (pc != null) allPlotContexts[p.id] = pc.treatment?.id;
+      }
+      final sameTreatmentPlotPks = allPlotContexts.entries
+          .where((e) => e.value == treatmentId)
+          .map((e) => e.key)
+          .toSet();
+
+      // Get recorded values for this assessment from same-treatment plots
+      final values = <double>[];
+      for (final r in sessionRatings) {
+        if (r.assessmentId == assessmentId &&
+            r.isCurrent &&
+            !r.isDeleted &&
+            r.resultStatus == 'RECORDED' &&
+            r.numericValue != null &&
+            sameTreatmentPlotPks.contains(r.plotPk) &&
+            r.plotPk != widget.plot.id) {
+          values.add(r.numericValue!);
+        }
+      }
+
+      if (values.isNotEmpty) {
+        final avg = values.reduce((a, b) => a + b) / values.length;
+        final code = treatmentCode ?? 'TRT';
+        treatmentAvgText =
+            '$code avg: ${_formatNeighborValue(avg)} (${values.length} rated)';
+      }
+    }
+
+    if (!hasNeighbors && treatmentAvgText == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        6,
+        AppDesignTokens.spacing16,
+        0,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0EDE8),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasNeighbors)
+            Row(
+              children: [
+                Icon(Icons.compare_arrows, size: 14,
+                    color: AppDesignTokens.secondaryText.withValues(alpha: 0.7)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    [prev, next].where((s) => s.isNotEmpty).join('  ·  '),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.secondaryText,
+                      letterSpacing: 0.2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          if (hasNeighbors && treatmentAvgText != null)
+            const SizedBox(height: 3),
+          if (treatmentAvgText != null)
+            Row(
+              children: [
+                Icon(Icons.analytics_outlined, size: 14,
+                    color: AppDesignTokens.primary.withValues(alpha: 0.7)),
+                const SizedBox(width: 6),
+                Text(
+                  treatmentAvgText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primary.withValues(alpha: 0.85),
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatNeighborValue(double v) {
+    if (v == v.roundToDouble()) return v.toInt().toString();
+    return v.toStringAsFixed(1);
+  }
+
   Widget _buildAssessmentSelectorPanel(
     BuildContext context,
     Map<int, TrialAssessment> taByLegacy,
@@ -1742,6 +1889,48 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           fontWeight: FontWeight.w600,
           color: color,
         ),
+      ),
+    );
+  }
+
+  /// "Same as last" shortcut — copies previous plot's value for the current assessment.
+  Widget _buildSameAsLastChip() {
+    if (_isTextAssessment) return const SizedBox.shrink();
+    // Don't show if carry-forward already filled the field
+    if (_carryForwardBaselineNumeric != null &&
+        !_numericValueUserEditedThisVisit) {
+      return const SizedBox.shrink();
+    }
+    final last = ref.read(lastValueMemoryProvider.notifier).get(
+          widget.session.id,
+          _currentAssessment.id,
+        );
+    if (last == null) return const SizedBox.shrink();
+    // Don't show if the field already has this value
+    final current = double.tryParse(_valueController.text.trim());
+    if (current != null && (current - last).abs() < 1e-9) {
+      return const SizedBox.shrink();
+    }
+    final lastStr = last == last.roundToDouble()
+        ? last.toInt().toString()
+        : last.toStringAsFixed(1);
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, top: 4),
+      child: ActionChip(
+        avatar: const Icon(Icons.content_copy, size: 14),
+        label: Text('= $lastStr', style: const TextStyle(fontSize: 12)),
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        labelPadding: const EdgeInsets.only(left: 2, right: 6),
+        onPressed: () {
+          setState(() {
+            _valueController.text = lastStr;
+            _selectedStatus = 'RECORDED';
+            _numericValueUserEditedThisVisit = true;
+            _carryForwardBaselineNumeric = last;
+            _userHasInteracted = true;
+          });
+        },
       ),
     );
   }
@@ -2352,7 +2541,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         ],
                       ),
                     ),
-                    _buildCarryForwardDiff(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(child: _buildCarryForwardDiff()),
+                        _buildSameAsLastChip(),
+                      ],
+                    ),
                     const SizedBox(height: 6),
                     _buildQuickButtons(),
                     if (_clampAdjustMessage != null)
@@ -3681,7 +3876,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
               const SizedBox(height: AppDesignTokens.spacing16),
               const Text(
-                'End of Plot List',
+                'All Plots Rated',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -3689,26 +3884,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 ),
               ),
               const SizedBox(height: AppDesignTokens.spacing8),
-              const Text(
-                'You have reached the end of the plot list for this session '
-                '(navigation). Use session completeness and the pre-close checklist '
-                'to confirm you are ready to close — that is separate from having '
-                'a rating on every plot.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppDesignTokens.secondaryText,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: AppDesignTokens.spacing8),
               Text(
                 summary,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   color: AppDesignTokens.secondaryText,
                   fontWeight: FontWeight.w600,
+                  height: 1.5,
                 ),
               ),
               const SizedBox(height: AppDesignTokens.spacing24),
@@ -3723,7 +3906,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     if (!context.mounted) return;
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => SessionDetailScreen(
+                        builder: (_) => SessionSummaryScreen(
                           trial: widget.trial,
                           session: widget.session,
                         ),
@@ -3738,7 +3921,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         borderRadius:
                             BorderRadius.circular(AppDesignTokens.radiusCard)),
                   ),
-                  child: const Text('Back to Session',
+                  child: const Text('Review Data',
                       style:
                           TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 ),

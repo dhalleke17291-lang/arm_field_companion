@@ -64,7 +64,7 @@ String _plotQueueHeaderContextLine2({
     if (timing.daysAfterFirstApp != null) {
       parts.add(timing.daysAfterFirstApp == 0
           ? 'Application day'
-          : '${timing.daysAfterFirstApp} DAT');
+          : '${timing.daysAfterFirstApp} days after application');
     }
     if (timing.daysAfterSeeding != null) {
       if (bothZero) {
@@ -530,7 +530,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                         );
                         if (ok && mounted) setState(() {});
                       },
-                      child: const Text('Set BBCH'),
+                      child: const Text('Set Growth Stage'),
                     ),
                     TextButton(
                       onPressed: () =>

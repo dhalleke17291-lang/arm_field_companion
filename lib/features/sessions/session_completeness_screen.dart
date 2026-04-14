@@ -370,11 +370,17 @@ class _SummaryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final guardsCount = totalPlots - report.expectedPlots;
+    final progressFraction = report.expectedPlots > 0
+        ? report.completedPlots / report.expectedPlots
+        : 0.0;
+    final progressPct = (progressFraction * 100).round();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
         horizontal: AppDesignTokens.spacing16,
-        vertical: AppDesignTokens.spacing8,
+        vertical: AppDesignTokens.spacing12,
       ),
       decoration: const BoxDecoration(
         color: AppDesignTokens.sectionHeaderBg,
@@ -385,42 +391,72 @@ class _SummaryStrip extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Session completeness (target plots, excludes guard rows): '
-            '${report.expectedPlots} expected · ${report.completedPlots} complete · '
-            '${report.incompletePlots} incomplete',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface,
-              height: 1.35,
-            ),
+          // Big progress line
+          Row(
+            children: [
+              Text(
+                '${report.completedPlots}/${report.expectedPlots}',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: report.canClose
+                      ? Colors.green.shade700
+                      : scheme.onSurface,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                report.canClose ? 'Complete — ready to close' : '$progressPct% complete',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: report.canClose
+                      ? Colors.green.shade700
+                      : scheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              // Info icon with help dialog
+              GestureDetector(
+                onTap: () => _showHelpDialog(context),
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  size: 20,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-          if (!report.canClose) ...[
-            const SizedBox(height: 4),
+          if (guardsCount > 0) ...[
+            const SizedBox(height: 2),
             Text(
-              'Not ready to close — resolve session completeness blockers.',
+              'Excludes $guardsCount guard plot${guardsCount == 1 ? '' : 's'}',
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: scheme.error,
-                height: 1.35,
+                color: scheme.onSurfaceVariant,
               ),
             ),
           ],
-          const SizedBox(height: 6),
-          Text(
-            'Navigation: $totalPlots trial plots (all rows) · $ratedCount with any rating · '
-            '$notRatedCount with none · $flaggedCount flagged · $issuesCount status issues · '
-            '$editedCount edited',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface,
-              height: 1.35,
-            ),
+          const SizedBox(height: 8),
+          // Compact chips row
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              if (flaggedCount > 0)
+                _SummaryChip(label: '$flaggedCount flagged', color: Colors.amber),
+              if (issuesCount > 0)
+                _SummaryChip(label: '$issuesCount issues', color: Colors.orange),
+              if (editedCount > 0)
+                _SummaryChip(label: '$editedCount edited', color: Colors.blueGrey),
+              if (notRatedCount > 0)
+                _SummaryChip(
+                  label: '$notRatedCount not rated',
+                  color: Colors.grey,
+                ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             'Walk order: $walkOrderLabel',
             style: TextStyle(
@@ -429,40 +465,31 @@ class _SummaryStrip extends StatelessWidget {
               color: scheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Row chips: Blocker / Warning = session completeness engine. '
-            'Partial / Not Started = assessment coverage (any current rating per assessment). '
-            'Rated = any current rating on the plot. Issues = non-recorded status.',
-            style: TextStyle(
-              fontSize: 10,
-              height: 1.3,
-              fontWeight: FontWeight.w500,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
-            ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Status Guide'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Blocker — must be resolved before session can close.\n\n'
+            'Warning — non-critical, review recommended.\n\n'
+            'Partial / Not Started — assessment coverage per plot.\n\n'
+            'Rated — plot has at least one current rating.\n\n'
+            'Flagged — plot was flagged during rating.\n\n'
+            'Issues — a rating has a non-recorded status.\n\n'
+            'Edited — value was amended, corrected, or re-saved.',
           ),
-          if (showCoverageRowFootnote) ...[
-            const SizedBox(height: 4),
-            Text(
-              'All assessments on a row means every session assessment has a current rating row — '
-              'not the same as session complete until blockers are clear.',
-              style: TextStyle(
-                fontSize: 10,
-                height: 1.3,
-                fontWeight: FontWeight.w500,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          const SizedBox(height: 4),
-          Text(
-            'Edited includes amended, corrected, and re-saved values',
-            style: TextStyle(
-              fontSize: 10,
-              height: 1.3,
-              fontWeight: FontWeight.w500,
-              color: scheme.onSurfaceVariant,
-            ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -713,6 +740,33 @@ class _StatusChip extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: fg,
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({required this.label, required this.color});
+
+  final String label;
+  final MaterialColor color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.shade50,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+        border: Border.all(color: color.shade300),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color.shade800,
         ),
       ),
     );

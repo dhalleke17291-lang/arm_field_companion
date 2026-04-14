@@ -126,6 +126,21 @@ class AssessmentDisplayHelper {
     return 'Assessment ${ta.id}';
   }
 
+  /// Translates ARM rating-type codes to user-friendly labels.
+  /// Returns null for unrecognised codes (suppresses them from display).
+  static String? _friendlyRatingType(String code) {
+    switch (code.toUpperCase()) {
+      case 'CONTRO':
+        return 'Continuous';
+      case 'DISC':
+        return 'Discrete';
+      case 'ORDINAL':
+        return 'Ordinal';
+      default:
+        return null;
+    }
+  }
+
   static String? _nonEmpty(String? s) {
     final t = s?.trim();
     if (t == null || t.isEmpty) {
