@@ -489,7 +489,7 @@ class ArmShellLinkUseCase {
         code: 'preview_counts',
         message: 'Planned updates: ${trialFieldChanges.length} trial field(s), '
             '${assessmentFieldChanges.length} assessment field change(s); '
-            '$matchedAssessmentColumnCount shell column(s) matched.',
+            '$matchedAssessmentColumnCount assessment(s) matched on the rating sheet.',
       ),
     );
 

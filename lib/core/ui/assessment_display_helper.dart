@@ -41,7 +41,7 @@ class AssessmentDisplayHelper {
 
   /// Protocol / detail line: SE code first, then description; [armRatingType] only as tertiary.
   ///
-  /// - `W003 — % weed control · CONTRO` when all three exist
+  /// - `W003 — % weed control · Continuous` when all three exist
   /// - `W003 — % weed control` when description + SE code
   /// - Simpler combinations use ` — ` or ` · ` without empty segments.
   static String fullName(TrialAssessment ta, {AssessmentDefinition? def}) {
@@ -108,7 +108,8 @@ class AssessmentDisplayHelper {
     if (sn != null) {
       return sn;
     }
-    final rt = _nonEmpty(ta.armRatingType);
+    final rtRaw = _nonEmpty(ta.armRatingType);
+    final rt = rtRaw != null ? _friendlyRatingType(rtRaw) : null;
     if (rt != null) {
       return rt;
     }
