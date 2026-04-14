@@ -47,7 +47,8 @@ class AssessmentDisplayHelper {
   static String fullName(TrialAssessment ta, {AssessmentDefinition? def}) {
     final d = _nonEmpty(ta.seDescription);
     final sn = _nonEmpty(ta.seName);
-    final rt = _nonEmpty(ta.armRatingType);
+    final rtRaw = _nonEmpty(ta.armRatingType);
+    final rt = rtRaw != null ? _friendlyRatingType(rtRaw) : null;
 
     if (d != null && sn != null && rt != null) {
       return '$sn — $d · $rt';

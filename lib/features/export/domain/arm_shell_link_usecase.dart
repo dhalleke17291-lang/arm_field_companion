@@ -466,7 +466,7 @@ class ArmShellLinkUseCase {
           severity: ShellLinkIssueSeverity.warn,
           code: 'unmatched_shell_columns',
           message:
-              '${unmatchedShellColumns.length} shell assessment column(s) have no matching trial assessment.',
+              '${unmatchedShellColumns.length} assessment(s) from the rating sheet have no match in your trial.',
         ),
       );
     }
@@ -476,7 +476,7 @@ class ArmShellLinkUseCase {
           severity: ShellLinkIssueSeverity.warn,
           code: 'unmatched_trial_assessments',
           message:
-              '${unmatchedTrialAssessments.length} trial assessment(s) have no matching shell column.',
+              '${unmatchedTrialAssessments.length} assessment(s) in your trial are not on the rating sheet.',
         ),
       );
     }
