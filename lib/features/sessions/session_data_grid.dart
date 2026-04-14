@@ -8,8 +8,8 @@ import '../../core/ui/assessment_display_helper.dart';
 import '../ratings/rating_lineage_sheet.dart';
 
 /// Read-only data grid: plots × assessments with rating values.
-/// Frozen first column (plot label) and frozen header row (assessment names).
-/// Synchronized horizontal + vertical scrolling.
+/// Frozen first column (plot labels) and frozen header row (assessment names).
+/// Synchronized scrolling: horizontal header ↔ data, vertical labels ↔ data.
 class SessionDataGrid extends ConsumerStatefulWidget {
   const SessionDataGrid({
     super.key,
@@ -20,6 +20,7 @@ class SessionDataGrid extends ConsumerStatefulWidget {
     required this.sessionId,
     this.onPlotTap,
     this.assessmentDisplayNames,
+    this.outlierKeys,
   });
 
   final List<Plot> plots;
@@ -27,26 +28,78 @@ class SessionDataGrid extends ConsumerStatefulWidget {
   final List<RatingRecord> ratings;
   final int trialId;
   final int sessionId;
-
-  /// Called when the plot label in the frozen column is tapped.
   final void Function(Plot plot)? onPlotTap;
-
-  /// Human-readable display names keyed by Assessment.id.
-  /// When provided, used instead of Assessment.name for column headers.
   final Map<int, String>? assessmentDisplayNames;
+  final Set<(int, int)>? outlierKeys;
 
   @override
   ConsumerState<SessionDataGrid> createState() => _SessionDataGridState();
 }
 
 class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
-  final _horizontalController = ScrollController();
-  final _verticalController = ScrollController();
+  final _hScrollData = ScrollController();
+  final _hScrollHeader = ScrollController();
+  final _vScrollData = ScrollController();
+  final _vScrollPlots = ScrollController();
+
+  bool _syncingH = false;
+  bool _syncingV = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hScrollData.addListener(_onHScrollData);
+    _hScrollHeader.addListener(_onHScrollHeader);
+    _vScrollData.addListener(_onVScrollData);
+    _vScrollPlots.addListener(_onVScrollPlots);
+  }
+
+  void _onHScrollData() {
+    if (_syncingH) return;
+    _syncingH = true;
+    if (_hScrollHeader.hasClients) {
+      _hScrollHeader.jumpTo(_hScrollData.offset);
+    }
+    _syncingH = false;
+  }
+
+  void _onHScrollHeader() {
+    if (_syncingH) return;
+    _syncingH = true;
+    if (_hScrollData.hasClients) {
+      _hScrollData.jumpTo(_hScrollHeader.offset);
+    }
+    _syncingH = false;
+  }
+
+  void _onVScrollData() {
+    if (_syncingV) return;
+    _syncingV = true;
+    if (_vScrollPlots.hasClients) {
+      _vScrollPlots.jumpTo(_vScrollData.offset);
+    }
+    _syncingV = false;
+  }
+
+  void _onVScrollPlots() {
+    if (_syncingV) return;
+    _syncingV = true;
+    if (_vScrollData.hasClients) {
+      _vScrollData.jumpTo(_vScrollPlots.offset);
+    }
+    _syncingV = false;
+  }
 
   @override
   void dispose() {
-    _horizontalController.dispose();
-    _verticalController.dispose();
+    _hScrollData.removeListener(_onHScrollData);
+    _hScrollHeader.removeListener(_onHScrollHeader);
+    _vScrollData.removeListener(_onVScrollData);
+    _vScrollPlots.removeListener(_onVScrollPlots);
+    _hScrollData.dispose();
+    _hScrollHeader.dispose();
+    _vScrollData.dispose();
+    _vScrollPlots.dispose();
     super.dispose();
   }
 
@@ -54,24 +107,6 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
   Widget build(BuildContext context) {
     final assessments = widget.assessments;
     final plots = widget.plots;
-
-    void showLineage({
-      required int plotPk,
-      required int assessmentId,
-      required String plotLabel,
-      required String assessmentName,
-    }) {
-      showRatingLineageBottomSheet(
-        context: context,
-        ref: ref,
-        trialId: widget.trialId,
-        plotPk: plotPk,
-        assessmentId: assessmentId,
-        sessionId: widget.sessionId,
-        assessmentName: assessmentName,
-        plotLabel: plotLabel,
-      );
-    }
 
     if (assessments.isEmpty || plots.isEmpty) {
       return Padding(
@@ -94,20 +129,22 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
       );
     }
 
-    // Build lookup: (plotPk, assessmentId) → RatingRecord
+    // Rating lookup
     final ratingMap = <(int, int), RatingRecord>{};
     for (final r in widget.ratings) {
       if (!r.isCurrent || r.isDeleted) continue;
       ratingMap[(r.plotPk, r.assessmentId)] = r;
     }
 
-    // Compute column stats (mean, min, max) per assessment
+    // Column stats
     final colStats = <int, ({double mean, double min, double max, int n})>{};
     for (final a in assessments) {
       final values = <double>[];
       for (final p in dataPlots) {
         final r = ratingMap[(p.id, a.id)];
-        if (r != null && r.resultStatus == 'RECORDED' && r.numericValue != null) {
+        if (r != null &&
+            r.resultStatus == 'RECORDED' &&
+            r.numericValue != null) {
           values.add(r.numericValue!);
         }
       }
@@ -121,6 +158,25 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
           n: values.length,
         );
       }
+    }
+
+    // Lineage callback
+    void showLineage({
+      required int plotPk,
+      required int assessmentId,
+      required String plotLabel,
+      required String assessmentName,
+    }) {
+      showRatingLineageBottomSheet(
+        context: context,
+        ref: ref,
+        trialId: widget.trialId,
+        plotPk: plotPk,
+        assessmentId: assessmentId,
+        sessionId: widget.sessionId,
+        assessmentName: assessmentName,
+        plotLabel: plotLabel,
+      );
     }
 
     // Sizing
@@ -137,10 +193,10 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
     var cellWidth = colCount > 0 ? availableWidth / colCount : maxCellWidth;
     cellWidth = cellWidth.clamp(minCellWidth, maxCellWidth);
     final totalDataWidth = cellWidth * colCount;
+    final hasStats = colStats.isNotEmpty;
 
     final scheme = Theme.of(context).colorScheme;
 
-    // Resolve human-readable assessment name
     String displayName(Assessment a) {
       if (widget.assessmentDisplayNames != null &&
           widget.assessmentDisplayNames!.containsKey(a.id)) {
@@ -149,70 +205,149 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
       return AssessmentDisplayHelper.legacyAssessmentDisplayName(a.name);
     }
 
-    // Build the scrollable data content (no frozen column/header)
-    Widget buildDataContent() {
-      return SizedBox(
-        width: totalDataWidth,
-        child: Column(
-          children: [
-            // Header row (assessment names)
-            SizedBox(
-              height: headerHeight,
-              child: Row(
-                children: [
-                  for (final a in assessments)
-                    Container(
-                      width: cellWidth,
-                      height: headerHeight,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        border: const Border(
-                          bottom: BorderSide(color: AppDesignTokens.borderCrisp),
-                          right: BorderSide(color: AppDesignTokens.borderCrisp),
-                        ),
-                      ),
-                      child: Text(
-                        displayName(a),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
-                ],
+    // ---- 4-quadrant layout ----
+    // Top-left: frozen corner
+    final corner = Container(
+      width: plotColWidth,
+      height: headerHeight,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        border: const Border(
+          bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+          right: BorderSide(color: AppDesignTokens.borderCrisp),
+        ),
+      ),
+      child: const Text(
+        'Plot',
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+      ),
+    );
+
+    // Top-right: assessment headers (scrolls horizontally)
+    final headerRow = SizedBox(
+      height: headerHeight,
+      child: ListView.builder(
+        controller: _hScrollHeader,
+        scrollDirection: Axis.horizontal,
+        physics: const ClampingScrollPhysics(),
+        itemCount: colCount,
+        itemExtent: cellWidth,
+        itemBuilder: (_, i) {
+          final a = assessments[i];
+          return Container(
+            width: cellWidth,
+            height: headerHeight,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              border: const Border(
+                bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+                right: BorderSide(color: AppDesignTokens.borderCrisp),
               ),
             ),
-            // Data rows
-            for (var i = 0; i < dataPlots.length; i++)
-              SizedBox(
-                height: rowHeight,
-                child: Row(
-                  children: [
-                    for (final a in assessments)
-                      _DataCell(
-                        width: cellWidth,
-                        height: rowHeight,
-                        rating: ratingMap[(dataPlots[i].id, a.id)],
-                        isEvenRow: i.isEven,
-                        onShowLineage: () => showLineage(
-                          plotPk: dataPlots[i].id,
-                          assessmentId: a.id,
-                          plotLabel: getDisplayPlotLabel(dataPlots[i], plots),
-                          assessmentName: displayName(a),
-                        ),
-                      ),
-                  ],
+            child: Text(
+              displayName(a),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    // Bottom-left: plot labels + stats label (scrolls vertically)
+    final totalRowCount = dataPlots.length + (hasStats ? 1 : 0);
+    final plotColumn = SizedBox(
+      width: plotColWidth,
+      child: ListView.builder(
+        controller: _vScrollPlots,
+        physics: const ClampingScrollPhysics(),
+        itemCount: totalRowCount,
+        itemExtent: totalRowCount > dataPlots.length &&
+                totalRowCount - 1 == dataPlots.length
+            ? null
+            : rowHeight,
+        itemBuilder: (_, i) {
+          // Stats row
+          if (i == dataPlots.length && hasStats) {
+            return Container(
+              width: plotColWidth,
+              height: statsRowHeight,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest,
+                border: const Border(
+                  top: BorderSide(color: AppDesignTokens.borderCrisp),
+                  right: BorderSide(color: AppDesignTokens.borderCrisp),
                 ),
               ),
+              child: const Text(
+                'Stats',
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+              ),
+            );
+          }
+          final plot = dataPlots[i];
+          return GestureDetector(
+            onTap: widget.onPlotTap != null
+                ? () => widget.onPlotTap!(plot)
+                : null,
+            child: Container(
+              width: plotColWidth,
+              height: rowHeight,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: i.isEven
+                    ? scheme.surface
+                    : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                border: Border(
+                  bottom: BorderSide(
+                      color:
+                          AppDesignTokens.borderCrisp.withValues(alpha: 0.5)),
+                  right:
+                      const BorderSide(color: AppDesignTokens.borderCrisp),
+                ),
+              ),
+              child: Text(
+                getDisplayPlotLabel(plot, plots),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: widget.onPlotTap != null
+                      ? AppDesignTokens.primary
+                      : null,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    // Bottom-right: data cells + stats footer (scrolls both ways)
+    // Use a horizontally scrolling ListView wrapping a vertically scrolling column
+    final dataArea = SingleChildScrollView(
+      controller: _hScrollData,
+      scrollDirection: Axis.horizontal,
+      physics: const ClampingScrollPhysics(),
+      child: SizedBox(
+        width: totalDataWidth,
+        child: ListView.builder(
+          controller: _vScrollData,
+          physics: const ClampingScrollPhysics(),
+          itemCount: totalRowCount,
+          itemBuilder: (_, rowIndex) {
             // Stats footer row
-            if (colStats.isNotEmpty)
-              SizedBox(
+            if (rowIndex == dataPlots.length && hasStats) {
+              return SizedBox(
                 height: statsRowHeight,
                 child: Row(
                   children: [
@@ -224,129 +359,63 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                       ),
                   ],
                 ),
-              ),
-          ],
-        ),
-      );
-    }
-
-    // Frozen plot column (header corner + plot labels)
-    Widget buildFrozenColumn() {
-      return SizedBox(
-        width: plotColWidth,
-        child: Column(
-          children: [
-            // Corner cell
-            Container(
-              width: plotColWidth,
-              height: headerHeight,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                border: const Border(
-                  bottom: BorderSide(color: AppDesignTokens.borderCrisp),
-                  right: BorderSide(color: AppDesignTokens.borderCrisp),
-                ),
-              ),
-              child: const Text(
-                'Plot',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-              ),
-            ),
-            // Plot label rows
-            for (var i = 0; i < dataPlots.length; i++)
-              GestureDetector(
-                onTap: widget.onPlotTap != null
-                    ? () => widget.onPlotTap!(dataPlots[i])
-                    : null,
-                child: Container(
-                  width: plotColWidth,
-                  height: rowHeight,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: i.isEven
-                        ? scheme.surface
-                        : scheme.surfaceContainerHighest
-                            .withValues(alpha: 0.4),
-                    border: Border(
-                      bottom: BorderSide(
-                          color: AppDesignTokens.borderCrisp
-                              .withValues(alpha: 0.5)),
-                      right: const BorderSide(
-                          color: AppDesignTokens.borderCrisp),
-                    ),
-                  ),
-                  child: Text(
-                    getDisplayPlotLabel(dataPlots[i], plots),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: widget.onPlotTap != null
-                          ? AppDesignTokens.primary
-                          : null,
-                    ),
-                  ),
-                ),
-              ),
-            // Stats label in frozen column
-            if (colStats.isNotEmpty)
-              Container(
-                width: plotColWidth,
-                height: statsRowHeight,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest,
-                  border: const Border(
-                    top: BorderSide(color: AppDesignTokens.borderCrisp),
-                    right: BorderSide(color: AppDesignTokens.borderCrisp),
-                  ),
-                ),
-                child: const Text(
-                  'Stats',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-
-    // The total content height for vertical scrolling
-    final statsExtra = colStats.isNotEmpty ? statsRowHeight : 0.0;
-    final totalHeight =
-        headerHeight + (dataPlots.length * rowHeight) + statsExtra;
-
-    return NotificationListener<ScrollNotification>(
-      onNotification: (_) => false,
-      child: SingleChildScrollView(
-        controller: _horizontalController,
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: plotColWidth + totalDataWidth,
-          child: SingleChildScrollView(
-            controller: _verticalController,
-            child: SizedBox(
-              height: totalHeight,
+              );
+            }
+            final plot = dataPlots[rowIndex];
+            return SizedBox(
+              height: rowHeight,
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  buildFrozenColumn(),
-                  SizedBox(
-                    width: totalDataWidth,
-                    child: buildDataContent(),
-                  ),
+                  for (final a in assessments)
+                    _DataCell(
+                      width: cellWidth,
+                      height: rowHeight,
+                      rating: ratingMap[(plot.id, a.id)],
+                      isEvenRow: rowIndex.isEven,
+                      isOutlier: widget.outlierKeys
+                              ?.contains((plot.id, a.id)) ??
+                          false,
+                      onShowLineage: () => showLineage(
+                        plotPk: plot.id,
+                        assessmentId: a.id,
+                        plotLabel: getDisplayPlotLabel(plot, plots),
+                        assessmentName: displayName(a),
+                      ),
+                    ),
                 ],
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
+
+    return Column(
+      children: [
+        // Top row: corner + header
+        Row(
+          children: [
+            corner,
+            Expanded(child: headerRow),
+          ],
+        ),
+        // Bottom row: plot labels + data
+        Expanded(
+          child: Row(
+            children: [
+              plotColumn,
+              Expanded(child: dataArea),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Cell widgets
+// ---------------------------------------------------------------------------
 
 class _DataCell extends StatelessWidget {
   const _DataCell({
@@ -355,6 +424,7 @@ class _DataCell extends StatelessWidget {
     required this.rating,
     required this.isEvenRow,
     required this.onShowLineage,
+    this.isOutlier = false,
   });
 
   final double width;
@@ -362,6 +432,7 @@ class _DataCell extends StatelessWidget {
   final RatingRecord? rating;
   final bool isEvenRow;
   final VoidCallback onShowLineage;
+  final bool isOutlier;
 
   @override
   Widget build(BuildContext context) {
@@ -392,9 +463,10 @@ class _DataCell extends StatelessWidget {
 
     final isEdited = r != null && (r.amended || r.previousId != null);
 
-    final bg = isEvenRow
+    final baseBg = isEvenRow
         ? scheme.surface
         : scheme.surfaceContainerHighest.withValues(alpha: 0.4);
+    final bg = isOutlier ? Colors.amber.shade50 : baseBg;
 
     final cell = Container(
       width: width,
@@ -532,8 +604,7 @@ class _StatsCell extends StatelessWidget {
   }
 }
 
-/// Paints a small filled triangle in the top-right corner of a cell,
-/// similar to Excel's comment indicator.
+/// Paints a small filled triangle in the top-right corner of a cell.
 class _CornerTrianglePainter extends CustomPainter {
   _CornerTrianglePainter(this.color);
   final Color color;

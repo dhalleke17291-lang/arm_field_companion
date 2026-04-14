@@ -1,3 +1,5 @@
+import 'dart:math' show sqrt;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -386,10 +388,11 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                 final editedCount = ratings
                     .where((r) => r.amended || r.previousId != null)
                     .length;
-                final dataPlotCount = plots
+                final dataPlots = plots
                     .where((p) =>
                         !p.isGuardRow && p.excludeFromAnalysis != true)
-                    .length;
+                    .toList();
+                final dataPlotCount = dataPlots.length;
                 final report = reportAsync.valueOrNull;
                 final canClose = report?.canClose ?? false;
                 final blockerCount = report?.issues
@@ -398,6 +401,14 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                             SessionCompletenessIssueSeverity.blocker)
                         .length ??
                     0;
+
+                // Outlier detection: >2 SD from treatment mean
+                final outlierKeys = _computeOutliers(
+                  dataPlots: dataPlots,
+                  assessments: assessments,
+                  ratings: ratings,
+                  ref: ref,
+                );
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,6 +446,17 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                                             fontSize: 11,
                                             color:
                                                 Colors.blueGrey.shade600),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    if (outlierKeys.isNotEmpty) ...[
+                                      Text(
+                                        '● ${outlierKeys.length} outlier${outlierKeys.length == 1 ? '' : 's'}',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color:
+                                                Colors.amber.shade800),
                                       ),
                                       const SizedBox(width: 8),
                                     ],
@@ -540,6 +562,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                                   assessmentDisplayNames.isNotEmpty
                                       ? assessmentDisplayNames
                                       : null,
+                              outlierKeys: outlierKeys,
                             ),
                     ),
                   ],
@@ -550,6 +573,65 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ),
       ),
     );
+  }
+
+  /// Returns set of (plotPk, assessmentId) keys where value is >2 SD from treatment mean.
+  static Set<(int, int)> _computeOutliers({
+    required List<Plot> dataPlots,
+    required List<Assessment> assessments,
+    required List<RatingRecord> ratings,
+    required WidgetRef ref,
+  }) {
+    // Build plot → treatmentId from plot context
+    final plotTreatment = <int, int?>{};
+    for (final p in dataPlots) {
+      final pc = ref.read(plotContextProvider(p.id)).valueOrNull;
+      plotTreatment[p.id] = pc?.treatment?.id;
+    }
+
+    // Build rating lookup
+    final ratingMap = <(int, int), double>{};
+    for (final r in ratings) {
+      if (!r.isCurrent || r.isDeleted) continue;
+      if (r.resultStatus == 'RECORDED' && r.numericValue != null) {
+        ratingMap[(r.plotPk, r.assessmentId)] = r.numericValue!;
+      }
+    }
+
+    final outliers = <(int, int)>{};
+
+    for (final a in assessments) {
+      // Group values by treatment
+      final byTreatment = <int, List<(int plotPk, double value)>>{};
+      for (final p in dataPlots) {
+        final tid = plotTreatment[p.id];
+        if (tid == null) continue;
+        final v = ratingMap[(p.id, a.id)];
+        if (v == null) continue;
+        byTreatment.putIfAbsent(tid, () => []).add((p.id, v));
+      }
+
+      // For each treatment, flag values >2 SD from mean
+      for (final entries in byTreatment.values) {
+        if (entries.length < 3) continue; // need at least 3 values for meaningful SD
+        final values = entries.map((e) => e.$2).toList();
+        final mean = values.reduce((a, b) => a + b) / values.length;
+        final variance = values
+                .map((v) => (v - mean) * (v - mean))
+                .reduce((a, b) => a + b) /
+            (values.length - 1);
+        final sd = variance > 0 ? sqrt(variance) : 0.0;
+        if (sd < 1e-9) continue; // all identical values
+
+        for (final entry in entries) {
+          if ((entry.$2 - mean).abs() > 2 * sd) {
+            outliers.add((entry.$1, a.id));
+          }
+        }
+      }
+    }
+
+    return outliers;
   }
 
   Widget _buildTreatmentView(
