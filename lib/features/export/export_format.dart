@@ -5,6 +5,9 @@ enum ExportFormat {
   armHandoff,
   zipBundle,
   pdfReport,
+  /// Field Evidence Report — provenance document with timestamps, amendments,
+  /// outliers, device/rater certification, and completeness scoring.
+  evidenceReport,
   /// Excel rating shell for imported protocol trials; handled by [ExportArmRatingShellUseCase].
   /// Listed on the trial export sheet only when the trial is ARM-linked.
   armRatingShell,
@@ -21,6 +24,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'Data + Photos (ZIP)';
       case ExportFormat.pdfReport:
         return 'Field Report (PDF)';
+      case ExportFormat.evidenceReport:
+        return 'Evidence Report (PDF)';
       case ExportFormat.armRatingShell:
         return 'Rating Sheet (Excel)';
     }
@@ -36,6 +41,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'All CSV files, photos, and statistical analysis packaged in one ZIP';
       case ExportFormat.pdfReport:
         return 'Formatted report with treatment results, significance analysis, and per-plot detail — share with sponsors or archive';
+      case ExportFormat.evidenceReport:
+        return 'Provenance document with timestamps, amendments, outliers, device/rater certification, and completeness scoring — GLP-ready evidence';
       case ExportFormat.armRatingShell:
         return 'Inject collected ratings back into the original protocol spreadsheet';
     }
@@ -51,6 +58,8 @@ extension ExportFormatDetails on ExportFormat {
         return Icons.folder_zip_outlined;
       case ExportFormat.pdfReport:
         return Icons.description_outlined;
+      case ExportFormat.evidenceReport:
+        return Icons.verified_outlined;
       case ExportFormat.armRatingShell:
         return Icons.table_view_outlined;
     }
@@ -60,6 +69,8 @@ extension ExportFormatDetails on ExportFormat {
     switch (this) {
       case ExportFormat.armHandoff:
         return 'Recommended';
+      case ExportFormat.evidenceReport:
+        return 'GLP';
       case ExportFormat.armRatingShell:
         return 'Protocol';
       default:

@@ -430,6 +430,16 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           );
           return;
         }
+        if (format == ExportFormat.evidenceReport) {
+          final useCase = ref.read(exportEvidenceReportUseCaseProvider);
+          await useCase.execute(trial: widget.trial);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Evidence report ready to share')),
+          );
+          return;
+        }
         final useCase = ref.read(exportTrialUseCaseProvider);
         final readinessReport =
             await ref.read(trialReadinessProvider(widget.trial.id).future);

@@ -57,6 +57,9 @@ import '../features/export/domain/export_trial_closed_sessions_arm_xml_usecase.d
 import '../features/export/domain/export_deleted_session_recovery_zip_usecase.dart';
 import '../features/export/domain/export_deleted_trial_recovery_zip_usecase.dart';
 import '../features/export/export_trial_usecase.dart';
+import '../features/export/evidence_report_assembly_service.dart';
+import '../features/export/evidence_report_pdf_builder.dart';
+import '../features/export/export_evidence_report_usecase.dart';
 import '../features/export/export_trial_pdf_report_usecase.dart';
 import '../features/export/domain/arm_shell_link_usecase.dart';
 import '../features/export/domain/export_arm_rating_shell_usecase.dart';
@@ -1114,6 +1117,24 @@ final exportTrialPdfReportUseCaseProvider =
     pdfBuilder: ref.watch(reportPdfBuilderServiceProvider),
     armImportPersistenceRepository:
         ref.watch(armImportPersistenceRepositoryProvider),
+  );
+});
+
+final exportEvidenceReportUseCaseProvider =
+    Provider<ExportEvidenceReportUseCase>((ref) {
+  return ExportEvidenceReportUseCase(
+    assemblyService: EvidenceReportAssemblyService(
+      plotRepository: ref.watch(plotRepositoryProvider),
+      treatmentRepository: ref.watch(treatmentRepositoryProvider),
+      applicationRepository: ref.watch(applicationRepositoryProvider),
+      sessionRepository: ref.watch(sessionRepositoryProvider),
+      assignmentRepository: ref.watch(assignmentRepositoryProvider),
+      ratingRepository: ref.watch(ratingRepositoryProvider),
+      weatherSnapshotRepository: ref.watch(weatherSnapshotRepositoryProvider),
+      seedingRepository: ref.watch(seedingRepositoryProvider),
+      db: ref.watch(databaseProvider),
+    ),
+    pdfBuilder: EvidenceReportPdfBuilder(),
   );
 });
 
