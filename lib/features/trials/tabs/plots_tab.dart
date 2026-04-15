@@ -39,7 +39,7 @@ const double _kGridZoomFactor = 1.25;
 const double _kRepLabelWidth = 52.0;
 
 /// Swatch size for plot layout legends (Treats / Apps / Ratings).
-const double _kPlotLayoutLegendSwatch = 16.0;
+const double _kPlotLayoutLegendSwatch = 12.0;
 
 TextStyle _plotDetailsRepLabelStyle(BuildContext context) {
   final scheme = Theme.of(context).colorScheme;
@@ -220,6 +220,7 @@ Widget _ratingOverlayLegendChip(
       ? scheme.outlineVariant.withValues(alpha: 0.45)
       : const Color(0xFFE0DDD6);
   return Row(
+    mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.center,
     children: [
       Container(
@@ -227,21 +228,19 @@ Widget _ratingOverlayLegendChip(
         height: _kPlotLayoutLegendSwatch,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(3),
           border: Border.all(color: borderColor),
         ),
       ),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppDesignTokens.primaryText,
-          ),
+      const SizedBox(width: 4),
+      Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: AppDesignTokens.primaryText,
         ),
       ),
     ],
@@ -258,6 +257,7 @@ Widget _compactTreatmentLegendLine(
 ]) {
   final line = '$code - $name';
   final row = Row(
+    mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.center,
     children: [
       Container(
@@ -265,17 +265,17 @@ Widget _compactTreatmentLegendLine(
         height: _kPlotLayoutLegendSwatch,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(3),
         ),
       ),
-      const SizedBox(width: 8),
-      Expanded(
+      const SizedBox(width: 4),
+      Flexible(
         child: Text(
           line,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
             color: AppDesignTokens.primaryText,
           ),
@@ -551,50 +551,35 @@ Widget _buildRatingsOverlay({
                           vertical: 10,
                         ),
                         child: Wrap(
-                          spacing: 10,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.start,
+                          spacing: 14,
+                          runSpacing: 4,
+                          alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              child: _ratingOverlayLegendChip(
-                                context,
-                                const Color(0xFF2D5A40),
-                                'Recorded',
-                              ),
+                            _ratingOverlayLegendChip(
+                              context,
+                              const Color(0xFF2D5A40),
+                              'Recorded',
                             ),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              child: _ratingOverlayLegendChip(
-                                context,
-                                Colors.grey.shade400,
-                                'Not observed',
-                              ),
+                            _ratingOverlayLegendChip(
+                              context,
+                              Colors.grey.shade400,
+                              'Not observed',
                             ),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              child: _ratingOverlayLegendChip(
-                                context,
-                                const Color(0xFFF59E0B),
-                                'Missing',
-                              ),
+                            _ratingOverlayLegendChip(
+                              context,
+                              const Color(0xFFF59E0B),
+                              'Missing',
                             ),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              child: _ratingOverlayLegendChip(
-                                context,
-                                const Color(0xFFEA580C),
-                                'Tech issue',
-                              ),
+                            _ratingOverlayLegendChip(
+                              context,
+                              const Color(0xFFEA580C),
+                              'Tech issue',
                             ),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              child: _ratingOverlayLegendChip(
-                                context,
-                                Colors.white,
-                                'No record',
-                              ),
+                            _ratingOverlayLegendChip(
+                              context,
+                              Colors.white,
+                              'No record',
                             ),
                           ],
                         ),
@@ -2925,6 +2910,7 @@ class _PlotLayoutGrid extends StatelessWidget {
 
   Widget _legendChip(BuildContext context, Color color, String label) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
@@ -2932,17 +2918,17 @@ class _PlotLayoutGrid extends StatelessWidget {
           height: _kPlotLayoutLegendSwatch,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
+        const SizedBox(width: 4),
+        Flexible(
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
               color: AppDesignTokens.primaryText,
             ),
@@ -3013,7 +2999,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                           ? [
                               ConstrainedBox(
                                 constraints:
-                                    const BoxConstraints(maxWidth: 200),
+                                    const BoxConstraints(maxWidth: 150),
                                 child: _legendChip(
                                   context,
                                   AppDesignTokens.appliedColor,
@@ -3022,7 +3008,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                               ),
                               ConstrainedBox(
                                 constraints:
-                                    const BoxConstraints(maxWidth: 200),
+                                    const BoxConstraints(maxWidth: 150),
                                 child: _legendChip(
                                   context,
                                   AppDesignTokens.unassignedColor,
@@ -3033,7 +3019,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                           : [
                               ConstrainedBox(
                                 constraints:
-                                    const BoxConstraints(maxWidth: 200),
+                                    const BoxConstraints(maxWidth: 150),
                                 child: _legendChip(
                                   context,
                                   AppDesignTokens.appliedColor,
@@ -3042,7 +3028,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                               ),
                               ConstrainedBox(
                                 constraints:
-                                    const BoxConstraints(maxWidth: 200),
+                                    const BoxConstraints(maxWidth: 150),
                                 child: _legendChip(
                                   context,
                                   AppDesignTokens.skippedColor,
@@ -3051,7 +3037,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                               ),
                               ConstrainedBox(
                                 constraints:
-                                    const BoxConstraints(maxWidth: 200),
+                                    const BoxConstraints(maxWidth: 150),
                                 child: _legendChip(
                                   context,
                                   AppDesignTokens.missedColor,
@@ -3060,7 +3046,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                               ),
                               ConstrainedBox(
                                 constraints:
-                                    const BoxConstraints(maxWidth: 200),
+                                    const BoxConstraints(maxWidth: 150),
                                 child: _legendChip(
                                   context,
                                   AppDesignTokens.noRecordColor,
@@ -3080,7 +3066,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                               entry.key %
                                   AppDesignTokens.treatmentPalette.length];
                           return ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 200),
+                            constraints: const BoxConstraints(maxWidth: 150),
                             child: _compactTreatmentLegendLine(
                               context,
                               color,
@@ -3091,7 +3077,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                           );
                         }),
                         ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 200),
+                          constraints: const BoxConstraints(maxWidth: 150),
                           child: _legendChip(
                             context,
                             AppDesignTokens.unassignedColor,
