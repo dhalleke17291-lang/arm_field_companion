@@ -297,9 +297,20 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ref.watch(sessionRatingsProvider(widget.session.id));
     final reportAsync =
         ref.watch(sessionCompletenessReportProvider(widget.session.id));
+    final assignmentsAsync =
+        ref.watch(assignmentsForTrialProvider(widget.trial.id));
     final liveSession =
         ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull;
     final isOpen = liveSession?.endedAt == null;
+
+    // Build plot → treatmentId map from assignments (reliable, not async per-plot)
+    final assignments = assignmentsAsync.valueOrNull ?? [];
+    final plotTreatmentMap = <int, int>{};
+    for (final a in assignments) {
+      if (a.treatmentId != null) {
+        plotTreatmentMap[a.plotId] = a.treatmentId!;
+      }
+    }
 
     // Build human-readable assessment names from TrialAssessment metadata
     final trialAssessments = ref
@@ -449,7 +460,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                   dataPlots: dataPlots,
                   assessments: assessments,
                   ratings: ratings,
-                  ref: ref,
+                  plotTreatmentMap: plotTreatmentMap,
                 );
 
                 return Column(
@@ -605,6 +616,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                                       ? assessmentDisplayNames
                                       : null,
                               outlierKeys: outlierKeys,
+                              plotTreatmentMap: plotTreatmentMap,
                             ),
                     ),
                   ],
@@ -622,14 +634,9 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     required List<Plot> dataPlots,
     required List<Assessment> assessments,
     required List<RatingRecord> ratings,
-    required WidgetRef ref,
+    required Map<int, int> plotTreatmentMap,
   }) {
-    // Build plot → treatmentId from plot context
-    final plotTreatment = <int, int?>{};
-    for (final p in dataPlots) {
-      final pc = ref.read(plotContextProvider(p.id)).valueOrNull;
-      plotTreatment[p.id] = pc?.treatment?.id;
-    }
+    if (plotTreatmentMap.isEmpty) return {};
 
     // Build rating lookup
     final ratingMap = <(int, int), double>{};
@@ -640,13 +647,20 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       }
     }
 
+    // Also check legacy plot.treatmentId as fallback
+    final effectiveTreatment = <int, int>{};
+    for (final p in dataPlots) {
+      final tid = plotTreatmentMap[p.id] ?? p.treatmentId;
+      if (tid != null) effectiveTreatment[p.id] = tid;
+    }
+
     final outliers = <(int, int)>{};
 
     for (final a in assessments) {
       // Group values by treatment
       final byTreatment = <int, List<(int plotPk, double value)>>{};
       for (final p in dataPlots) {
-        final tid = plotTreatment[p.id];
+        final tid = effectiveTreatment[p.id];
         if (tid == null) continue;
         final v = ratingMap[(p.id, a.id)];
         if (v == null) continue;
@@ -655,7 +669,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
 
       // For each treatment, flag values >2 SD from mean
       for (final entries in byTreatment.values) {
-        if (entries.length < 3) continue; // need at least 3 values for meaningful SD
+        if (entries.length < 3) continue;
         final values = entries.map((e) => e.$2).toList();
         final mean = values.reduce((a, b) => a + b) / values.length;
         final variance = values
@@ -663,7 +677,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                 .reduce((a, b) => a + b) /
             (values.length - 1);
         final sd = variance > 0 ? sqrt(variance) : 0.0;
-        if (sd < 1e-9) continue; // all identical values
+        if (sd < 1e-9) continue;
 
         for (final entry in entries) {
           if ((entry.$2 - mean).abs() > 2 * sd) {

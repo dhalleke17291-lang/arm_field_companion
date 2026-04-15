@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
-import '../../core/providers.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/plot_display.dart';
@@ -22,6 +21,7 @@ class SessionDataGrid extends ConsumerStatefulWidget {
     this.onPlotTap,
     this.assessmentDisplayNames,
     this.outlierKeys,
+    this.plotTreatmentMap,
   });
 
   final List<Plot> plots;
@@ -32,6 +32,9 @@ class SessionDataGrid extends ConsumerStatefulWidget {
   final void Function(Plot plot)? onPlotTap;
   final Map<int, String>? assessmentDisplayNames;
   final Set<(int, int)>? outlierKeys;
+
+  /// Pre-resolved plot → treatment ID map. Used for treatment highlighting.
+  final Map<int, int>? plotTreatmentMap;
 
   @override
   ConsumerState<SessionDataGrid> createState() => _SessionDataGridState();
@@ -140,11 +143,17 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
       ratingMap[(r.plotPk, r.assessmentId)] = r;
     }
 
-    // Plot → treatment map for highlighting
+    // Plot → treatment map for highlighting (from pre-resolved assignments)
     final plotTreatmentId = <int, int?>{};
-    for (final p in dataPlots) {
-      final pc = ref.watch(plotContextProvider(p.id)).valueOrNull;
-      plotTreatmentId[p.id] = pc?.treatment?.id;
+    if (widget.plotTreatmentMap != null) {
+      for (final p in dataPlots) {
+        plotTreatmentId[p.id] = widget.plotTreatmentMap![p.id] ?? p.treatmentId;
+      }
+    } else {
+      // Fallback to legacy plot.treatmentId
+      for (final p in dataPlots) {
+        plotTreatmentId[p.id] = p.treatmentId;
+      }
     }
 
     // Set of plot PKs that match the highlighted treatment

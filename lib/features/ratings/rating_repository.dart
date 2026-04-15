@@ -606,6 +606,7 @@ class RatingRepository {
       await (_db.update(_db.ratingRecords)..where((r) => r.id.equals(ratingId)))
           .write(
         RatingRecordsCompanion(
+          amended: const Value(true),
           lastEditedAt: Value(correction.correctedAt),
           lastEditedByUserId: correctedByUserId != null
               ? Value(correctedByUserId)
