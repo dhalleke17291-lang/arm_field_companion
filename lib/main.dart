@@ -8,6 +8,9 @@ import 'core/providers.dart';
 import 'splash_screen.dart';
 
 void main() {
+  // Offline-first: never fetch fonts from the network.
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   final diagnosticsStore = DiagnosticsStore(maxErrors: 50);
 
   FlutterError.onError = (FlutterErrorDetails details) {

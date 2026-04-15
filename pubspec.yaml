@@ -55,6 +55,7 @@ flutter:
     - assets/icon/
     - assets/Branding/
     - assets/images/trials/
+    - google_fonts/
 
 # Native splash: solid green, no image — seamless transition into Dart splash.
 flutter_native_splash:
