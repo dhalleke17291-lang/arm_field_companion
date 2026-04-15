@@ -8,10 +8,12 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/gradient_screen_header.dart';
+import '../../assessments/assessment_library.dart';
 import '../../assessments/assessment_library_picker.dart';
 import '../trial_detail_screen.dart';
 import 'create_standalone_trial_wizard_usecase.dart';
 import 'plot_generation_engine.dart';
+import 'trial_templates.dart';
 
 const _kTypeChips = ['CHK', 'HERB', 'FUNG', 'INSEC', 'PGR', 'OTHER'];
 
@@ -113,6 +115,77 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
       );
     }
     return list;
+  }
+
+  /// The template currently applied, or null if none / blank start.
+  TrialTemplate? _appliedTemplate;
+
+  void _applyTemplate(TrialTemplate t) {
+    setState(() {
+      _appliedTemplate = t;
+
+      // Treatments
+      for (final r in _treatmentRows) {
+        r.codeController.dispose();
+        r.nameController.dispose();
+      }
+      _treatmentCount = t.treatments.length;
+      _treatmentRows = [
+        for (final tr in t.treatments)
+          _TreatmentRowState(
+            codeController: TextEditingController(text: tr.code),
+            nameController: TextEditingController(text: tr.name),
+            type: tr.type,
+          ),
+      ];
+
+      // Design & plots
+      _design = t.design;
+      _repCount = t.reps;
+      _plotsPerRep = t.treatments.length;
+      _guardRowsEnabled = t.guardRowsPerEnd > 0;
+      _guardsPerRepEnd = t.guardRowsPerEnd;
+
+      // Assessments — resolve library IDs to drafts
+      _assessments.clear();
+      final libraryById = {
+        for (final e in AssessmentLibrary.entries) e.id: e,
+      };
+      for (final ta in t.assessments) {
+        final lib = libraryById[ta.libraryId];
+        if (lib == null) continue;
+        _assessments.add(
+          _AssessmentDraft(
+            name: lib.name,
+            unit: lib.unit,
+            scaleMin: lib.scaleMin,
+            scaleMax: lib.scaleMax,
+            dataType: lib.dataType,
+            librarySourceId: lib.id,
+            definitionCategory: lib.category,
+          ),
+        );
+      }
+    });
+  }
+
+  void _clearTemplate() {
+    setState(() {
+      _appliedTemplate = null;
+      // Reset to defaults
+      for (final r in _treatmentRows) {
+        r.codeController.dispose();
+        r.nameController.dispose();
+      }
+      _treatmentCount = 4;
+      _treatmentRows = _buildTreatmentRows(4);
+      _design = PlotGenerationEngine.designRcbd;
+      _repCount = 4;
+      _plotsPerRep = 4;
+      _guardRowsEnabled = false;
+      _guardsPerRepEnd = 1;
+      _assessments.clear();
+    });
   }
 
   @override
@@ -579,6 +652,80 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Template selector
+              Text(
+                'Start from template',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Pre-fills treatments, assessments, and design. '
+                'Everything stays editable.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  for (final t in trialTemplates)
+                    _TemplateChip(
+                      template: t,
+                      selected: _appliedTemplate?.id == t.id,
+                      onTap: () {
+                        if (_appliedTemplate?.id == t.id) {
+                          _clearTemplate();
+                        } else {
+                          _applyTemplate(t);
+                        }
+                      },
+                    ),
+                ],
+              ),
+              if (_appliedTemplate != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppDesignTokens.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _appliedTemplate!.icon,
+                        size: 18,
+                        color: AppDesignTokens.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${_appliedTemplate!.name} — '
+                          '${_appliedTemplate!.treatments.length} treatments, '
+                          '${_appliedTemplate!.assessments.length} assessments, '
+                          '${_appliedTemplate!.reps} reps ${_appliedTemplate!.design}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              // Trial identity fields
               TextField(
                 controller: _nameController,
                 decoration: FormStyles.inputDecoration(
@@ -1512,3 +1659,61 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
     );
   }
 }
+
+class _TemplateChip extends StatelessWidget {
+  const _TemplateChip({
+    required this.template,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TrialTemplate template;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppDesignTokens.primary.withValues(alpha: 0.12)
+              : AppDesignTokens.cardSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? AppDesignTokens.primary
+                : AppDesignTokens.borderCrisp,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              template.icon,
+              size: 16,
+              color: selected
+                  ? AppDesignTokens.primary
+                  : AppDesignTokens.secondaryText,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              template.name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected
+                    ? AppDesignTokens.primary
+                    : AppDesignTokens.primaryText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

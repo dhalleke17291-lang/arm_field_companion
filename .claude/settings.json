@@ -22,7 +22,8 @@
       "Bash(pip3 install:*)",
       "Bash(git commit -m ':*)",
       "Bash(find /Users/parminder/Desktop/arm_field_companion -name \"*.dart\" -type f -exec grep -l \"multi.*session\\\\|session.*picker\\\\|comparison.*view\\\\|delta.*view\" {} \\\\;)",
-      "Bash(find /Users/parminder/Desktop/arm_field_companion/lib -name \"*.dart\" -exec grep -l \"multi.*session\\\\|compare\\\\|side.*by.*side\\\\|session.*picker\" {} \\\\;)"
+      "Bash(find /Users/parminder/Desktop/arm_field_companion/lib -name \"*.dart\" -exec grep -l \"multi.*session\\\\|compare\\\\|side.*by.*side\\\\|session.*picker\" {} \\\\;)",
+      "Bash(grep -E \"\\\\.dart$\")"
     ]
   }
 }
