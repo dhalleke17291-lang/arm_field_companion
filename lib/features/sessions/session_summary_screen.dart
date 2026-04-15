@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'dart:math' show sqrt;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
@@ -22,6 +25,7 @@ import 'session_completeness_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../backup/backup_reminder_store.dart';
 import 'session_data_grid.dart';
+import 'session_grid_pdf_export.dart';
 import 'session_summary_assessment_coverage.dart';
 import 'session_treatment_summary.dart';
 
@@ -436,6 +440,56 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     );
   }
 
+  bool _isExporting = false;
+
+  Future<void> _exportGridPdf({
+    required List<Plot> plots,
+    required List<Assessment> assessments,
+    required List<RatingRecord> ratings,
+    required Map<int, String> assessmentDisplayNames,
+    required Map<int, int> plotTreatmentMap,
+    required Map<int, String> treatmentNames,
+    int? completedPlots,
+    int? expectedPlots,
+  }) async {
+    setState(() => _isExporting = true);
+    try {
+      final exporter = SessionGridPdfExport(
+        trial: widget.trial,
+        session: widget.session,
+        plots: plots,
+        assessments: assessments,
+        ratings: ratings,
+        assessmentDisplayNames:
+            assessmentDisplayNames.isNotEmpty ? assessmentDisplayNames : null,
+        plotTreatmentMap:
+            plotTreatmentMap.isNotEmpty ? plotTreatmentMap : null,
+        treatmentNames: treatmentNames.isNotEmpty ? treatmentNames : null,
+        completedPlots: completedPlots,
+        expectedPlots: expectedPlots,
+      );
+      final bytes = await exporter.build();
+      final dir = await getTemporaryDirectory();
+      final sanitizedName =
+          widget.session.name.replaceAll(RegExp(r'[^\w\-]'), '_');
+      final file = File('${dir.path}/grid_$sanitizedName.pdf');
+      await file.writeAsBytes(bytes);
+      if (!mounted) return;
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text:
+            '${widget.trial.name} — ${widget.session.name} grid export',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   void _openRatingForPlot(Plot plot, List<Plot> allPlots,
       List<Assessment> assessments) {
     _openRatingForPlotAtAssessment(plot, allPlots, assessments, null);
@@ -649,108 +703,156 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Status bar with close session
+                    // Status bar with inline chips + close session
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                          horizontal: 12, vertical: 6),
                       decoration: const BoxDecoration(
                         color: AppDesignTokens.sectionHeaderBg,
                         border: Border(
                             bottom: BorderSide(
                                 color: AppDesignTokens.borderCrisp)),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
+                          // Top line: counts + share + close button
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
                                   '${assessments.length} assessment${assessments.length == 1 ? '' : 's'} · '
                                   '$dataPlotCount plots',
                                   style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600),
                                 ),
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    if (editedCount > 0) ...[
-                                      Text(
-                                        '▲ $editedCount edited',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color:
-                                                Colors.blueGrey.shade600),
-                                      ),
-                                      const SizedBox(width: 8),
-                                    ],
-                                    if (outlierKeys.isNotEmpty) ...[
-                                      Text(
-                                        '● ${outlierKeys.length} outlier${outlierKeys.length == 1 ? '' : 's'}',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color:
-                                                Colors.amber.shade800),
-                                      ),
-                                      const SizedBox(width: 8),
-                                    ],
-                                    if (!isOpen)
-                                      Text(
-                                        'Session closed',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.green.shade700),
-                                      )
-                                    else if (blockerCount > 0)
-                                      Text(
-                                        '$blockerCount blocker${blockerCount == 1 ? '' : 's'}',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.red.shade700),
-                                      )
-                                    else if (canClose)
-                                      Text(
-                                        'Ready to close',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.green.shade700),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (isOpen && canClose)
-                            SizedBox(
-                              height: 32,
-                              child: FilledButton.icon(
-                                onPressed:
-                                    _isClosing ? null : _closeSession,
-                                icon: _isClosing
-                                    ? const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white),
-                                      )
-                                    : const Icon(Icons.lock_outline,
-                                        size: 16),
-                                label: const Text('Close Session',
-                                    style: TextStyle(fontSize: 12)),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  backgroundColor:
-                                      AppDesignTokens.primary,
+                              ),
+                              // Share PDF button
+                              SizedBox(
+                                width: 32,
+                                height: 28,
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  iconSize: 18,
+                                  icon: _isExporting
+                                      ? const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child:
+                                              CircularProgressIndicator(
+                                                  strokeWidth: 2),
+                                        )
+                                      : const Icon(Icons.share_outlined),
+                                  tooltip: 'Export grid as PDF',
+                                  onPressed: _isExporting
+                                      ? null
+                                      : () => _exportGridPdf(
+                                            plots: plots,
+                                            assessments: assessments,
+                                            ratings: ratings,
+                                            assessmentDisplayNames:
+                                                assessmentDisplayNames,
+                                            plotTreatmentMap:
+                                                plotTreatmentMap,
+                                            treatmentNames:
+                                                treatmentNames,
+                                            completedPlots:
+                                                report?.completedPlots,
+                                            expectedPlots:
+                                                report?.expectedPlots,
+                                          ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(width: 4),
+                              if (isOpen && canClose)
+                                SizedBox(
+                                  height: 28,
+                                  child: FilledButton.icon(
+                                    onPressed:
+                                        _isClosing ? null : _closeSession,
+                                    icon: _isClosing
+                                        ? const SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child:
+                                                CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.white),
+                                          )
+                                        : const Icon(Icons.lock_outline,
+                                            size: 14),
+                                    label: const Text('Close',
+                                        style: TextStyle(fontSize: 11)),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10),
+                                      backgroundColor:
+                                          AppDesignTokens.primary,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          // Inline chips row
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              // Completeness chip
+                              if (report != null &&
+                                  report.expectedPlots > 0)
+                                _StatusChip(
+                                  label:
+                                      '${report.completedPlots}/${report.expectedPlots} complete',
+                                  color: report.incompletePlots == 0
+                                      ? Colors.green
+                                      : Colors.orange,
+                                  onTap: () =>
+                                      _navigateSessionCompleteness(
+                                          context,
+                                          widget.trial,
+                                          widget.session),
+                                ),
+                              // Blockers
+                              if (blockerCount > 0)
+                                _StatusChip(
+                                  label:
+                                      '$blockerCount blocker${blockerCount == 1 ? '' : 's'}',
+                                  color: Colors.red,
+                                  onTap: () =>
+                                      _navigateSessionCompleteness(
+                                          context,
+                                          widget.trial,
+                                          widget.session),
+                                ),
+                              // Edited
+                              if (editedCount > 0)
+                                _StatusChip(
+                                  label: '$editedCount edited',
+                                  color: Colors.blueGrey,
+                                ),
+                              // Outliers
+                              if (outlierKeys.isNotEmpty)
+                                _StatusChip(
+                                  label:
+                                      '${outlierKeys.length} outlier${outlierKeys.length == 1 ? '' : 's'}',
+                                  color: Colors.amber.shade800,
+                                ),
+                              // Session state
+                              if (!isOpen)
+                                const _StatusChip(
+                                  label: 'Closed',
+                                  color: Colors.green,
+                                )
+                              else if (canClose)
+                                const _StatusChip(
+                                  label: 'Ready to close',
+                                  color: Colors.green,
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -973,6 +1075,39 @@ class _ViewToggleChip extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.label,
+    required this.color,
+    this.onTap,
+  });
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+    if (onTap == null) return chip;
+    return GestureDetector(onTap: onTap, child: chip);
   }
 }
 
