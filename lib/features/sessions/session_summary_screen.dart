@@ -2,9 +2,11 @@ import 'dart:math' show sqrt;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/plot_display.dart';
 import '../../core/ui/assessment_display_helper.dart';
 import '../../core/edit_recency_display.dart';
 import '../../core/plot_sort.dart';
@@ -22,6 +24,173 @@ import '../backup/backup_reminder_store.dart';
 import 'session_data_grid.dart';
 import 'session_summary_assessment_coverage.dart';
 import 'session_treatment_summary.dart';
+
+/// Bottom sheet showing full rating context for a tapped grid cell.
+void _showCellDetailSheet({
+  required BuildContext context,
+  required Plot plot,
+  required Assessment assessment,
+  required RatingRecord? rating,
+  required List<Plot> allPlots,
+  required List<Assessment> assessments,
+  required String assessmentDisplayName,
+  String? treatmentLabel,
+  VoidCallback? onGoToRating,
+}) {
+  final scheme = Theme.of(context).colorScheme;
+  final plotLabel = getDisplayPlotLabel(plot, allPlots);
+  final hasRating = rating != null && rating.resultStatus == 'RECORDED';
+
+  String valueText;
+  if (rating == null) {
+    valueText = 'Not rated';
+  } else if (rating.resultStatus == 'VOID') {
+    valueText = 'VOID';
+  } else if (rating.resultStatus != 'RECORDED') {
+    valueText = _statusLabel(rating.resultStatus);
+  } else {
+    valueText = rating.numericValue != null
+        ? _formatRatingValue(rating.numericValue!)
+        : (rating.textValue ?? '—');
+  }
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            // Title: Plot × Assessment
+            Text(
+              'Plot $plotLabel  ·  $assessmentDisplayName',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Value
+            _DetailRow(label: 'Value', value: valueText),
+            if (hasRating && rating.confidence != null)
+              _DetailRow(label: 'Confidence', value: rating.confidence!),
+            if (hasRating && rating.ratingMethod != null)
+              _DetailRow(label: 'Method', value: rating.ratingMethod!),
+            if (plot.rep != null)
+              _DetailRow(label: 'Rep', value: plot.rep.toString()),
+            if (treatmentLabel != null)
+              _DetailRow(label: 'Treatment', value: treatmentLabel),
+            if (hasRating && rating.raterName != null)
+              _DetailRow(label: 'Rater', value: rating.raterName!),
+            if (hasRating)
+              _DetailRow(
+                label: 'Time',
+                value: rating.ratingTime ??
+                    DateFormat.yMd().add_Hm().format(rating.createdAt),
+              ),
+            if (rating != null && (rating.amended || rating.previousId != null))
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note,
+                        size: 16, color: Colors.blueGrey.shade500),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Edited — long-press cell for history',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blueGrey.shade500,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
+            // Go to Rating button
+            if (onGoToRating != null)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    onGoToRating();
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('Go to Rating'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+String _statusLabel(String status) => switch (status) {
+      'NOT_OBSERVED' => 'Not observed',
+      'NOT_APPLICABLE' => 'Not applicable',
+      'MISSING_CONDITION' => 'Missing condition',
+      'TECHNICAL_ISSUE' => 'Technical issue',
+      _ => status.replaceAll('_', ' ').toLowerCase(),
+    };
+
+String _formatRatingValue(double v) {
+  if (v == v.roundToDouble()) return v.toInt().toString();
+  return v.toStringAsFixed(1);
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 void _navigatePlotQueue(
   BuildContext context,
@@ -269,6 +438,11 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
 
   void _openRatingForPlot(Plot plot, List<Plot> allPlots,
       List<Assessment> assessments) {
+    _openRatingForPlotAtAssessment(plot, allPlots, assessments, null);
+  }
+
+  void _openRatingForPlotAtAssessment(Plot plot, List<Plot> allPlots,
+      List<Assessment> assessments, int? assessmentIndex) {
     // Sort plots in walk order for proper navigation inside rating screen
     final walkPlots = sortPlotsByWalkOrder(allPlots, WalkOrderMode.serpentine);
     final plotIndex = walkPlots.indexWhere((p) => p.id == plot.id);
@@ -283,6 +457,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
           assessments: assessments,
           allPlots: walkPlots,
           currentPlotIndex: plotIndex,
+          initialAssessmentIndex: assessmentIndex,
         ),
       ),
     ).then((_) => _invalidate());
@@ -311,6 +486,14 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         plotTreatmentMap[a.plotId] = a.treatmentId!;
       }
     }
+
+    // Treatment name lookup for cell detail sheet
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            [];
+    final treatmentNames = <int, String>{
+      for (final t in treatments) t.id: '${t.code} — ${t.name}',
+    };
 
     // Build human-readable assessment names from TrialAssessment metadata
     final trialAssessments = ref
@@ -611,6 +794,37 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                               sessionId: widget.session.id,
                               onPlotTap: (plot) => _openRatingForPlot(
                                   plot, plots, assessments),
+                              onCellTap: (plot, assessment, rating) {
+                                final tid =
+                                    plotTreatmentMap[plot.id] ??
+                                        plot.treatmentId;
+                                final assessIdx = assessments
+                                    .indexWhere((a) => a.id == assessment.id);
+                                _showCellDetailSheet(
+                                  context: context,
+                                  plot: plot,
+                                  assessment: assessment,
+                                  rating: rating,
+                                  allPlots: plots,
+                                  assessments: assessments,
+                                  assessmentDisplayName:
+                                      assessmentDisplayNames[assessment.id] ??
+                                          AssessmentDisplayHelper
+                                              .legacyAssessmentDisplayName(
+                                                  assessment.name),
+                                  treatmentLabel: tid != null
+                                      ? treatmentNames[tid]
+                                      : null,
+                                  onGoToRating: () {
+                                    _openRatingForPlotAtAssessment(
+                                      plot,
+                                      plots,
+                                      assessments,
+                                      assessIdx >= 0 ? assessIdx : 0,
+                                    );
+                                  },
+                                );
+                              },
                               assessmentDisplayNames:
                                   assessmentDisplayNames.isNotEmpty
                                       ? assessmentDisplayNames

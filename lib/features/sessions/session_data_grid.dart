@@ -19,6 +19,7 @@ class SessionDataGrid extends ConsumerStatefulWidget {
     required this.trialId,
     required this.sessionId,
     this.onPlotTap,
+    this.onCellTap,
     this.assessmentDisplayNames,
     this.outlierKeys,
     this.plotTreatmentMap,
@@ -30,6 +31,10 @@ class SessionDataGrid extends ConsumerStatefulWidget {
   final int trialId;
   final int sessionId;
   final void Function(Plot plot)? onPlotTap;
+
+  /// Called when a data cell is tapped. Receives plot, assessment, and rating.
+  final void Function(Plot plot, Assessment assessment, RatingRecord? rating)?
+      onCellTap;
   final Map<int, String>? assessmentDisplayNames;
   final Set<(int, int)>? outlierKeys;
 
@@ -479,6 +484,13 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                                           (plot.id, a.id)) ??
                                       false,
                                   isHighlighted: rowHighlighted,
+                                  onTap: widget.onCellTap != null
+                                      ? () => widget.onCellTap!(
+                                            plot,
+                                            a,
+                                            ratingMap[(plot.id, a.id)],
+                                          )
+                                      : null,
                                   onShowLineage: () => showLineage(
                                     plotPk: plot.id,
                                     assessmentId: a.id,
@@ -558,6 +570,7 @@ class _DataCell extends StatelessWidget {
     required this.rating,
     required this.isEvenRow,
     required this.onShowLineage,
+    this.onTap,
     this.isOutlier = false,
     this.isHighlighted = false,
   });
@@ -567,6 +580,7 @@ class _DataCell extends StatelessWidget {
   final RatingRecord? rating;
   final bool isEvenRow;
   final VoidCallback onShowLineage;
+  final VoidCallback? onTap;
   final bool isOutlier;
   final bool isHighlighted;
 
@@ -646,10 +660,11 @@ class _DataCell extends StatelessWidget {
       ),
     );
 
-    if (!isEdited) return cell;
+    if (onTap == null && !isEdited) return cell;
 
     return GestureDetector(
-      onTap: onShowLineage,
+      onTap: onTap,
+      onLongPress: isEdited ? onShowLineage : null,
       child: cell,
     );
   }
