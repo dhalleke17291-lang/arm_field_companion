@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'dart:math' show sqrt;
+
+import 'package:flutter/foundation.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
@@ -9,6 +12,7 @@ import '../../data/repositories/assignment_repository.dart';
 import '../../data/repositories/seeding_repository.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../data/repositories/weather_snapshot_repository.dart';
+import '../photos/photo_repository.dart';
 import '../plots/plot_repository.dart';
 import '../ratings/rating_repository.dart';
 import '../sessions/session_repository.dart';
@@ -26,6 +30,7 @@ class EvidenceReportAssemblyService {
     required RatingRepository ratingRepository,
     required WeatherSnapshotRepository weatherSnapshotRepository,
     required SeedingRepository seedingRepository,
+    required PhotoRepository photoRepository,
     required AppDatabase db,
   })  : _plotRepo = plotRepository,
         _treatmentRepo = treatmentRepository,
@@ -35,6 +40,7 @@ class EvidenceReportAssemblyService {
         _ratingRepo = ratingRepository,
         _weatherRepo = weatherSnapshotRepository,
         _seedingRepo = seedingRepository,
+        _photoRepo = photoRepository,
         _db = db;
 
   final PlotRepository _plotRepo;
@@ -45,6 +51,7 @@ class EvidenceReportAssemblyService {
   final RatingRepository _ratingRepo;
   final WeatherSnapshotRepository _weatherRepo;
   final SeedingRepository _seedingRepo;
+  final PhotoRepository _photoRepo;
   final AppDatabase _db;
 
   Future<EvidenceReportData> assembleForTrial(Trial trial) async {
@@ -434,7 +441,43 @@ class EvidenceReportAssemblyService {
             ))
         .toList();
 
-    // ── 10. Evidence Completeness Score ──
+    // ── 10. Photos ──
+    final trialPhotos = await _photoRepo.getPhotosForTrial(trialId);
+    final sessionMap = {for (final s in sessions) s.id: s};
+    final plotMap = {for (final p in plots) p.id: p};
+    final evidencePhotos = <EvidencePhoto>[];
+
+    // Limit to 50 photos max to keep PDF size reasonable
+    final photosToEmbed = trialPhotos.take(50).toList();
+    for (final photo in photosToEmbed) {
+      final session = sessionMap[photo.sessionId];
+      final plot = plotMap[photo.plotPk];
+      final plotLabel =
+          plot != null ? getDisplayPlotLabel(plot, plots) : 'Plot ${photo.plotPk}';
+
+      // Read file bytes for thumbnail
+      List<int>? imageBytes;
+      try {
+        final file = File(photo.filePath);
+        if (await file.exists()) {
+          imageBytes = await file.readAsBytes();
+        }
+      } catch (e) {
+        debugPrint('Could not read photo file: ${photo.filePath} — $e');
+      }
+
+      evidencePhotos.add(EvidencePhoto(
+        plotLabel: plotLabel,
+        sessionName: session?.name ?? '?',
+        sessionDate: session?.sessionDateLocal ?? '?',
+        createdAt: photo.createdAt,
+        caption: photo.caption,
+        filePath: photo.filePath,
+        imageBytes: imageBytes,
+      ));
+    }
+
+    // ── 11. Evidence Completeness Score ──
     final completenessScore = _computeCompletenessScore(
       trial: trial,
       sessions: evidenceSessions,
@@ -457,6 +500,7 @@ class EvidenceReportAssemblyService {
       sessions: evidenceSessions,
       integrity: integrity,
       outliers: outliers,
+      photos: evidencePhotos,
       weatherRecords: weatherRecords,
       completenessScore: completenessScore,
       generatedAt: DateTime.now(),

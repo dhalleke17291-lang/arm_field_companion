@@ -1132,6 +1132,7 @@ final exportEvidenceReportUseCaseProvider =
       ratingRepository: ref.watch(ratingRepositoryProvider),
       weatherSnapshotRepository: ref.watch(weatherSnapshotRepositoryProvider),
       seedingRepository: ref.watch(seedingRepositoryProvider),
+      photoRepository: ref.watch(photoRepositoryProvider),
       db: ref.watch(databaseProvider),
     ),
     pdfBuilder: EvidenceReportPdfBuilder(),

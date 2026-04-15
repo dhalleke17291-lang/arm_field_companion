@@ -427,6 +427,29 @@ class EvidenceScoreComponent {
   final String detail;
 }
 
+/// Photo evidence entry.
+class EvidencePhoto {
+  const EvidencePhoto({
+    required this.plotLabel,
+    required this.sessionName,
+    required this.sessionDate,
+    required this.createdAt,
+    this.caption,
+    this.filePath,
+    this.imageBytes,
+  });
+
+  final String plotLabel;
+  final String sessionName;
+  final String sessionDate;
+  final DateTime createdAt;
+  final String? caption;
+  final String? filePath;
+
+  /// JPEG bytes for PDF embedding; null if file could not be read.
+  final List<int>? imageBytes;
+}
+
 /// Full assembled evidence report.
 class EvidenceReportData {
   const EvidenceReportData({
@@ -438,6 +461,7 @@ class EvidenceReportData {
     required this.sessions,
     required this.integrity,
     required this.outliers,
+    required this.photos,
     required this.weatherRecords,
     required this.completenessScore,
     required this.generatedAt,
@@ -452,6 +476,7 @@ class EvidenceReportData {
   final List<EvidenceSession> sessions;
   final EvidenceDataIntegrity integrity;
   final List<EvidenceOutlier> outliers;
+  final List<EvidencePhoto> photos;
   final List<EvidenceWeather> weatherRecords;
   final EvidenceCompletenessScore completenessScore;
   final DateTime generatedAt;

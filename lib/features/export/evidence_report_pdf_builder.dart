@@ -137,6 +137,13 @@ class EvidenceReportPdfBuilder {
           _weatherSection(data.sessions),
           pw.SizedBox(height: 16),
         ],
+
+        // ── PHOTO EVIDENCE ──
+        if (data.photos.isNotEmpty) ...[
+          _sectionTitle('13. Photo Evidence'),
+          _photoSection(data.photos, dateTimeFmt),
+          pw.SizedBox(height: 16),
+        ],
       ],
     ));
 
@@ -941,6 +948,87 @@ class EvidenceReportPdfBuilder {
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 3),
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
       oddRowDecoration: const pw.BoxDecoration(color: _rowAlt),
+    );
+  }
+
+  // ── PHOTOS ──
+  pw.Widget _photoSection(List<EvidencePhoto> photos, DateFormat fmt) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          '${photos.length} photo(s) attached to this trial.',
+          style: const pw.TextStyle(fontSize: 8, color: _textSecondary),
+        ),
+        pw.SizedBox(height: 8),
+        // Photo grid — 2 per row with metadata
+        pw.Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final photo in photos)
+              pw.Container(
+                width: 250,
+                padding: const pw.EdgeInsets.all(4),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: _borderColor),
+                  borderRadius:
+                      const pw.BorderRadius.all(pw.Radius.circular(3)),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    // Thumbnail or placeholder
+                    if (photo.imageBytes != null)
+                      pw.ClipRRect(
+                        horizontalRadius: 2,
+                        verticalRadius: 2,
+                        child: pw.Image(
+                          pw.MemoryImage(
+                              photo.imageBytes! is Uint8List
+                                  ? photo.imageBytes! as Uint8List
+                                  : Uint8List.fromList(photo.imageBytes!)),
+                          width: 242,
+                          height: 160,
+                          fit: pw.BoxFit.cover,
+                        ),
+                      )
+                    else
+                      pw.Container(
+                        width: 242,
+                        height: 160,
+                        color: _rowAlt,
+                        alignment: pw.Alignment.center,
+                        child: pw.Text('Photo not available',
+                            style: const pw.TextStyle(
+                                fontSize: 8, color: _textSecondary)),
+                      ),
+                    pw.SizedBox(height: 4),
+                    // Metadata
+                    pw.Text(
+                      '${photo.plotLabel} · ${photo.sessionName}',
+                      style: pw.TextStyle(
+                          fontSize: 8, fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.Text(
+                      '${photo.sessionDate} · '
+                      '${DateFormat('HH:mm').format(photo.createdAt)}',
+                      style:
+                          const pw.TextStyle(fontSize: 7, color: _textSecondary),
+                    ),
+                    if (photo.caption != null && photo.caption!.isNotEmpty)
+                      pw.Text(
+                        photo.caption!,
+                        style: const pw.TextStyle(
+                            fontSize: 7, color: _textSecondary),
+                        maxLines: 2,
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 

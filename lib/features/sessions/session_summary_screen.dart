@@ -24,6 +24,8 @@ import 'domain/session_completeness_report.dart';
 import 'session_completeness_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../backup/backup_reminder_store.dart';
+import '../../data/repositories/weather_snapshot_repository.dart';
+import '../weather/weather_capture_form.dart';
 import 'session_data_grid.dart';
 import 'session_grid_pdf_export.dart';
 import 'session_summary_assessment_coverage.dart';
@@ -377,6 +379,46 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
   }
 
   Future<void> _closeSession({bool force = false}) async {
+    // Weather soft prompt — ask before closing if no weather recorded
+    if (!force) {
+      final weatherRepo = ref.read(weatherSnapshotRepositoryProvider);
+      final snap = await weatherRepo.getWeatherSnapshotForParent(
+        kWeatherParentTypeRatingSession,
+        widget.session.id,
+      );
+      if (snap == null && mounted) {
+        final addWeather = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Add weather conditions?'),
+            content: const Text(
+              'No weather recorded for this session. Adding weather '
+              'improves your evidence report score.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Skip'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Add Weather'),
+              ),
+            ],
+          ),
+        );
+        if (addWeather == true && mounted) {
+          await showWeatherCaptureBottomSheet(
+            context,
+            trial: widget.trial,
+            session: widget.session,
+          );
+          // After weather entry, continue with close
+        }
+        if (!mounted) return;
+      }
+    }
+
     setState(() => _isClosing = true);
     try {
       final userId = await ref.read(currentUserIdProvider.future);
