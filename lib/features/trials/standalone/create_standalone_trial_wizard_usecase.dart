@@ -138,6 +138,13 @@ class CreateStandaloneTrialWizardUseCase {
     if (name.isEmpty) {
       return CreateStandaloneTrialWizardResult.failure('Trial name must not be empty');
     }
+    // Check for duplicate name (case-insensitive)
+    if (await _trialRepository.trialNameExists(name)) {
+      return CreateStandaloneTrialWizardResult.failure(
+        'A trial named \'$name\' already exists. Choose a different name.',
+      );
+    }
+
     if (input.treatments.length < 2) {
       return CreateStandaloneTrialWizardResult.failure('At least two treatments are required');
     }

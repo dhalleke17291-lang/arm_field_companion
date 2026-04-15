@@ -13,6 +13,14 @@ class CreateTrialUseCase {
         return CreateTrialResult.failure('Trial name must not be empty');
       }
 
+      // Check for duplicate name (case-insensitive)
+      if (await _trialRepository.trialNameExists(input.name.trim())) {
+        return CreateTrialResult.failure(
+          'A trial named \'${input.name.trim()}\' already exists. '
+          'Choose a different name.',
+        );
+      }
+
       final trialId = await _trialRepository.createTrial(
         name: input.name.trim(),
         crop: input.crop,

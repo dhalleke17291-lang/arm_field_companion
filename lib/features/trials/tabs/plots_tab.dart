@@ -1341,7 +1341,6 @@ class _TrialPlotsWorkingSurfaceState
 
   /// Display-only: when false, guard plots are hidden from list and layout in this screen.
   bool _showGuardPlots = false;
-  bool _showGuardPlotsDefaultApplied = false;
 
   List<Plot> _plotsVisibleInPlotsTab(List<Plot> all) => _showGuardPlots
       ? List<Plot>.from(all)
@@ -1464,11 +1463,6 @@ class _TrialPlotsWorkingSurfaceState
     required List<Assignment> assignmentsList,
     required List<TrialApplicationEvent> applicationsList,
   }) {
-    final guardCount = plots.where((p) => p.isGuardRow).length;
-    if (!_showGuardPlotsDefaultApplied) {
-      _showGuardPlotsDefaultApplied = true;
-      _showGuardPlots = guardCount > 0;
-    }
     final displayPlots = _plotsVisibleInPlotsTab(plots);
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
@@ -2009,10 +2003,6 @@ class _TrialPlotsWorkingSurfaceState
     final plotAssignmentsLocked =
         plotAssignmentsEditLocked(widget.trial, hasSessionData);
     final guardCount = allTrialPlots.where((p) => p.isGuardRow).length;
-    final guardsInToolbar =
-        widget.compactSurroundings && guardCount > 0
-            ? _buildShowGuardsToggleStrip(context, guardCount)
-            : null;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -2066,10 +2056,6 @@ class _TrialPlotsWorkingSurfaceState
           ),
         ),
         const SizedBox(width: 4),
-        if (guardsInToolbar != null) ...[
-          guardsInToolbar,
-          const SizedBox(width: 4),
-        ],
         if (widget.onTreatmentsShortcut != null)
           IconButton(
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -2126,9 +2112,17 @@ class _TrialPlotsWorkingSurfaceState
               );
             } else if (value == 'repGuards') {
               _runGenerateRepGuardPlots(context, ref, widget.trial.id);
+            } else if (value == 'toggleGuards') {
+              setState(() => _showGuardPlots = !_showGuardPlots);
             }
           },
           itemBuilder: (ctx) => [
+            if (guardCount > 0)
+              CheckedPopupMenuItem<String>(
+                value: 'toggleGuards',
+                checked: _showGuardPlots,
+                child: const Text('Show guard plots'),
+              ),
             PopupMenuItem<String>(
               value: 'bulk',
               enabled: !plotAssignmentsLocked,
@@ -3376,7 +3370,6 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   final GlobalKey _gridContentKey = GlobalKey();
   bool _gridCenterScheduled = false;
   bool _showGuardPlots = false;
-  bool _showGuardPlotsDefaultApplied = false;
 
   List<Plot> _plotsVisibleInPlotsTab(List<Plot> all) => _showGuardPlots
       ? List<Plot>.from(all)
@@ -3484,10 +3477,6 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               plotAssignmentsEditLocked(widget.trial, hasSessionData);
           final sessions = sessionsAsync.value ?? [];
           final guardCount = plots.where((p) => p.isGuardRow).length;
-          if (!_showGuardPlotsDefaultApplied) {
-            _showGuardPlotsDefaultApplied = true;
-            _showGuardPlots = guardCount > 0;
-          }
           final displayPlots = _plotsVisibleInPlotsTab(plots);
           if (!widget.isLayoutView) {
             final scheme = Theme.of(context).colorScheme;

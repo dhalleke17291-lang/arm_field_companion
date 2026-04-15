@@ -20,65 +20,7 @@ import '../../core/session_walk_order_store.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/crop_stage_bbch_editor_dialog.dart';
 import '../sessions/session_export_trust_dialog.dart';
-import '../sessions/session_timing_helper.dart';
 import '../weather/weather_capture_form.dart';
-
-String? _formatWeatherSnapshotBrief(WeatherSnapshot? w) {
-  if (w == null) return null;
-  final parts = <String>[];
-  final t = w.temperature;
-  if (t != null) {
-    final u = w.temperatureUnit.toUpperCase() == 'F' ? '°F' : '°C';
-    final s = t == t.roundToDouble() ? t.round().toString() : t.toStringAsFixed(1);
-    parts.add('$s$u');
-  }
-  final cc = w.cloudCover?.trim();
-  if (cc != null && cc.isNotEmpty) {
-    parts.add(cc);
-  } else {
-    final p = w.precipitation?.trim();
-    if (p != null && p.isNotEmpty) parts.add(p);
-  }
-  if (parts.isEmpty) return null;
-  return parts.join(' ');
-}
-
-String _plotQueueHeaderContextLine2({
-  required Session session,
-  SessionTimingContext? timing,
-  required WeatherSnapshot? weather,
-  required int ratedCount,
-  required int totalPlots,
-}) {
-  final parts = <String>[];
-  if (session.cropStageBbch != null) {
-    parts.add('BBCH ${session.cropStageBbch}');
-  }
-  final wx = _formatWeatherSnapshotBrief(weather);
-  if (wx != null) parts.add(wx);
-  if (timing != null) {
-    final bothZero = timing.daysAfterFirstApp != null &&
-        timing.daysAfterSeeding != null &&
-        timing.daysAfterFirstApp == 0 &&
-        timing.daysAfterSeeding == 0;
-    if (timing.daysAfterFirstApp != null) {
-      parts.add(timing.daysAfterFirstApp == 0
-          ? 'Application day'
-          : '${timing.daysAfterFirstApp} days after application');
-    }
-    if (timing.daysAfterSeeding != null) {
-      if (bothZero) {
-        // Application day already added; omit duplicate seeding label.
-      } else if (timing.daysAfterSeeding == 0) {
-        parts.add('Seeding day');
-      } else {
-        parts.add('Day ${timing.daysAfterSeeding} after seeding');
-      }
-    }
-  }
-  parts.add('$ratedCount / $totalPlots rated');
-  return parts.join(' · ');
-}
 
 typedef _PlotQueueOpenRating = Future<void> Function(
   Plot plot,
@@ -578,16 +520,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     );
   }
 
-  String _plotQueueSubtitleLine1(Session liveSession) {
-    final walk =
-        '${liveSession.name} · Walk order: ${SessionWalkOrderStore.labelForMode(_walkOrderMode)}';
-    final r = liveSession.raterName?.trim();
-    if (r != null && r.isNotEmpty) {
-      return '$walk · Rating as: $r';
-    }
-    return walk;
-  }
-
   @override
   Widget build(BuildContext context) {
     final plotsAsync = ref.watch(plotsForTrialProvider(widget.trial.id));
@@ -597,8 +529,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final ratingsAsync = ref.watch(sessionRatingsProvider(widget.session.id));
     final liveSession = ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull ??
         widget.session;
-    final timingCtx =
-        ref.watch(sessionTimingContextProvider(widget.session.id)).valueOrNull;
     final weatherSnap =
         ref.watch(weatherSnapshotForSessionProvider(widget.session.id)).valueOrNull;
     final treatments =
@@ -618,39 +548,15 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             .valueOrNull ??
         <int>{};
 
-    final ratedForHeader =
-        ratedPlotsAsync.valueOrNull ?? <int>{};
-    final plotsCountForHeader = plotsAsync.valueOrNull?.length ?? 0;
     final weatherRecorded = weatherSnap != null;
-    final headerLine2 = _plotQueueHeaderContextLine2(
-      session: liveSession,
-      timing: timingCtx,
-      weather: weatherSnap,
-      ratedCount: ratedForHeader.length,
-      totalPlots: plotsCountForHeader,
-    );
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: GradientScreenHeader(
         title: widget.trial.name,
-        subtitle: _plotQueueSubtitleLine1(liveSession),
-        subtitleLine2: headerLine2,
+        subtitle:
+            '${liveSession.sessionDateLocal} · ${liveSession.name}',
         titleFontSize: 17,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.directions_walk),
-            tooltip: 'Change walk order',
-            onPressed: () => _showWalkOrderSheet(context),
-          ),
-          IconButton(
-            icon: Icon(
-              weatherRecorded ? Icons.wb_cloudy : Icons.wb_cloudy_outlined,
-              color: Colors.white,
-            ),
-            tooltip: 'Weather',
-            onPressed: () => _openWeatherCapture(context),
-          ),
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Jump to plot',
@@ -658,7 +564,47 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.filter_list),
+            tooltip: 'Filter',
             onPressed: () => _showFilterSheet(context),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            tooltip: 'Options',
+            onSelected: (value) {
+              if (value == 'walk') _showWalkOrderSheet(context);
+              if (value == 'weather') _openWeatherCapture(context);
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'walk',
+                child: ListTile(
+                  leading: Icon(Icons.directions_walk, size: 20),
+                  title:
+                      Text('Walk order', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'weather',
+                child: ListTile(
+                  leading: Icon(
+                    weatherRecorded
+                        ? Icons.wb_cloudy
+                        : Icons.wb_cloudy_outlined,
+                    size: 20,
+                  ),
+                  title: Text(
+                    weatherRecorded ? 'Edit weather' : 'Add weather',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -30,7 +30,10 @@ class MoreScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
-      appBar: const GradientScreenHeader(title: 'More'),
+      appBar: const GradientScreenHeader(
+        title: 'More',
+        leading: SizedBox(width: 48),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(

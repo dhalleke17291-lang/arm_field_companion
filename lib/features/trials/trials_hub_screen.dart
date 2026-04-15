@@ -117,14 +117,14 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                   children: [
                     _ContinueSessionCard(ref: ref),
                     _AgTrialCard(
-                      title: 'Custom Trials',
-                      subtitle: 'Design your own experiments',
+                      title: 'Standalone Trials',
+                      subtitle: 'Full trial design with templates',
                       description:
-                          'Flexible, user-defined trials without strict protocol structure',
+                          'RCBD/CRD randomization, statistical analysis, and evidence tracking',
                       icon: Icons.science_outlined,
                       imageAsset: 'assets/images/trials/custom_trials_field.jpg',
                       accentColor: _HubPalette.accentGreen,
-                      topBadgeLeft: 'CUSTOM PLOT',
+                      topBadgeLeft: 'STANDALONE',
                       topBadgeRight: stats.customCropCount == 1
                           ? '1 Crop'
                           : '${stats.customCropCount} Crops',
@@ -139,16 +139,15 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                     ),
                     const SizedBox(height: AppDesignTokens.spacing24),
                     _AgTrialCard(
-                      title: 'Protocol Trials',
-                      subtitle: 'Pre-validated methodologies',
+                      title: 'Imported Trials',
+                      subtitle: 'Import ARM rating shells',
                       description:
-                          'Structured trials based on standardized protocols',
-                      descriptionFootnote: '(Import compatible)',
+                          'Collect data with full evidence tracking, return results to ARM',
                       icon: Icons.assignment_outlined,
                       imageAsset:
                           'assets/images/trials/protocol_trials_greenhouse.jpg',
                       accentColor: _HubPalette.accentAmber,
-                      topBadgeLeft: 'STANDARDIZED',
+                      topBadgeLeft: 'IMPORTED',
                       topBadgeRight: stats.protocolTrialCount == 1
                           ? '1 Protocol'
                           : '${stats.protocolTrialCount} Protocols',
@@ -254,7 +253,6 @@ class _AgTrialCard extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.description,
-    this.descriptionFootnote,
     required this.icon,
     required this.imageAsset,
     required this.accentColor,
@@ -268,7 +266,6 @@ class _AgTrialCard extends StatefulWidget {
   final String title;
   final String subtitle;
   final String description;
-  final String? descriptionFootnote;
   final IconData icon;
   final String imageAsset;
   final Color accentColor;
@@ -489,18 +486,6 @@ class _AgTrialCardState extends State<_AgTrialCard>
                                       maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    if (widget.descriptionFootnote != null) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        widget.descriptionFootnote!,
-                                        style: AppDesignTokens.bodyCrispStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: _HubPalette.textPrimary,
-                                          letterSpacing: 0.06,
-                                        ),
-                                      ),
-                                    ],
                                   ],
                                 ),
                               ),

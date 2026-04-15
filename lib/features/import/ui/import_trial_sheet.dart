@@ -79,9 +79,10 @@ class ImportTrialSheet extends StatelessWidget {
             ),
             const SizedBox(height: AppDesignTokens.spacing16),
             _ImportOptionTile(
-              icon: Icons.table_chart_outlined,
-              title: 'Import from CSV',
-              subtitle: 'Use an exported CSV for imported trials',
+              icon: Icons.table_view_outlined,
+              title: 'Import ARM Rating Shell',
+              subtitle:
+                  'Import plots, treatments, and assessments from an ARM Excel file',
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push<void>(
@@ -95,8 +96,9 @@ class ImportTrialSheet extends StatelessWidget {
             const SizedBox(height: AppDesignTokens.spacing8),
             _ImportOptionTile(
               icon: Icons.file_download_outlined,
-              title: 'Import Protocol (CSV)',
-              subtitle: 'Use the trial protocol CSV format (ARM-compatible)',
+              title: 'Import from CSV',
+              subtitle:
+                  'Import trial structure from a CSV file (protocol format)',
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push<void>(
@@ -107,17 +109,20 @@ class ImportTrialSheet extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: AppDesignTokens.spacing8),
-            _ImportOptionTile(
-              icon: Icons.link_outlined,
-              title: 'Link Rating Sheet',
-              subtitle: 'Enrich trial metadata from Excel rating sheet',
-              onTap: () => _onLinkArmShellTap(
-                    sheetContext: context,
-                    parentContext: parentContext,
-                    trialId: trialId,
-                  ),
-            ),
+            if (trialId != null) ...[
+              const SizedBox(height: AppDesignTokens.spacing8),
+              _ImportOptionTile(
+                icon: Icons.link_outlined,
+                title: 'Link Rating Sheet',
+                subtitle:
+                    'Add ARM metadata to an existing imported trial',
+                onTap: () => _onLinkArmShellTap(
+                      sheetContext: context,
+                      parentContext: parentContext,
+                      trialId: trialId,
+                    ),
+              ),
+            ],
           ],
         ),
       ),

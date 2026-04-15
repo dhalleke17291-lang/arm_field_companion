@@ -169,7 +169,7 @@ class FakeTrialRepository implements TrialRepository {
       throw UnimplementedError();
 
   @override
-  Future<bool> trialNameExists(String name) async => false;
+  Future<bool> trialNameExists(String name, {int? excludeTrialId}) async => false;
 
   @override
   Future<bool> updateTrial(Trial trial) async => throw UnimplementedError();

@@ -43,7 +43,6 @@ import 'widgets/trial_assessment_completion_widgets.dart';
 import 'trial_setup_screen.dart';
 import '../diagnostics/audit_log_screen.dart';
 import '../diagnostics/edited_items_screen.dart';
-import '../recovery/recovery_screen.dart';
 import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
 import '../derived/trial_attention_provider.dart';
@@ -700,19 +699,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  Future<void> _openReadinessReview(
-      BuildContext context, WidgetRef ref, Trial trial) async {
-    final report = await ref.read(trialReadinessProvider(trial.id).future);
-    if (!context.mounted) return;
-    _showReadinessSheet(
-      context,
-      ref,
-      trial,
-      report,
-      showExportAnyway: report.blockerCount == 0,
-    );
-  }
-
   void _showReadinessSheet(
     BuildContext context,
     WidgetRef ref,
@@ -932,58 +918,20 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
         ],
         if (hasPlotOrCorrectionLines) const SizedBox(height: 10),
-        Wrap(
-          spacing: 4,
-          runSpacing: 0,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            TextButton(
-              onPressed: () => _openReadinessReview(context, ref, trial),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        TextButton.icon(
+          onPressed: () {
+            Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(
+                builder: (_) => EditedItemsScreen(trialId: trial.id),
               ),
-              child: const Text('Review Readiness'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) => EditedItemsScreen(trialId: trial.id),
-                  ),
-                );
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text('Edited Items'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) => RecoveryScreen(trialId: trial.id),
-                  ),
-                );
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text('Recovery'),
-            ),
-          ],
-        ),
-        Text(
-          'Edited Items and Recovery are app-wide.',
-          style: TextStyle(
-            fontSize: 10,
-            height: 1.3,
-            color: AppDesignTokens.secondaryText.withValues(alpha: 0.85),
+            );
+          },
+          icon: const Icon(Icons.edit_note, size: 16),
+          label: const Text('View Edited Items'),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
       ],

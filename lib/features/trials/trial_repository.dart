@@ -58,10 +58,15 @@ class TrialRepository {
   }
 
   /// Whether a non-deleted trial already uses this exact name (case-sensitive).
-  Future<bool> trialNameExists(String name) async {
-    final existing = await (_db.select(_db.trials)
-          ..where((t) => t.name.equals(name) & t.isDeleted.equals(false)))
-        .getSingleOrNull();
+  Future<bool> trialNameExists(String name, {int? excludeTrialId}) async {
+    final query = _db.select(_db.trials)
+      ..where((t) =>
+          t.name.lower().equals(name.trim().toLowerCase()) &
+          t.isDeleted.equals(false));
+    if (excludeTrialId != null) {
+      query.where((t) => t.id.equals(excludeTrialId).not());
+    }
+    final existing = await query.getSingleOrNull();
     return existing != null;
   }
 

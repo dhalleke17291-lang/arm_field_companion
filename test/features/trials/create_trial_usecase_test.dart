@@ -12,8 +12,8 @@ class MockTrialRepository implements TrialRepository {
   }
 
   @override
-  Future<bool> trialNameExists(String name) async {
-    return _trials.any((t) => t.name == name);
+  Future<bool> trialNameExists(String name, {int? excludeTrialId}) async {
+    return _trials.any((t) => t.name == name && t.id != excludeTrialId);
   }
 
   @override
