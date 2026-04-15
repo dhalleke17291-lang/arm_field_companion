@@ -52,6 +52,10 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
   /// Treatment ID currently highlighted; null = no highlight active.
   int? _highlightedTreatmentId;
 
+  /// Sort state: assessment ID to sort by, and direction.
+  int? _sortByAssessmentId;
+  bool _sortAscending = true;
+
   @override
   void initState() {
     super.initState();
@@ -128,19 +132,48 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
       );
     }
 
-    final dataPlots = plots.where(isAnalyzablePlot).toList();
-    if (dataPlots.isEmpty) {
+    final unsortedDataPlots = plots.where(isAnalyzablePlot).toList();
+    if (unsortedDataPlots.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(16),
         child: Text('No data plots.', style: TextStyle(fontSize: 14)),
       );
     }
 
-    // Rating lookup
+    // Rating lookup (build before sorting since sort uses it)
     final ratingMap = <(int, int), RatingRecord>{};
     for (final r in widget.ratings) {
       if (!r.isCurrent || r.isDeleted) continue;
       ratingMap[(r.plotPk, r.assessmentId)] = r;
+    }
+
+    // Apply sorting
+    final dataPlots = List<Plot>.from(unsortedDataPlots);
+    if (_sortByAssessmentId != null) {
+      dataPlots.sort((a, b) {
+        final ra = ratingMap[(a.id, _sortByAssessmentId!)];
+        final rb = ratingMap[(b.id, _sortByAssessmentId!)];
+        final va = ra?.numericValue;
+        final vb = rb?.numericValue;
+        // Nulls go to bottom
+        if (va == null && vb == null) return 0;
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        return _sortAscending ? va.compareTo(vb) : vb.compareTo(va);
+      });
+    }
+
+    // Build rep boundary set for visual grouping
+    final repBoundaryIndices = <int>{};
+    if (_sortByAssessmentId == null) {
+      // Only show rep lines when not sorted (natural order)
+      for (var i = 1; i < dataPlots.length; i++) {
+        if (dataPlots[i].rep != null &&
+            dataPlots[i - 1].rep != null &&
+            dataPlots[i].rep != dataPlots[i - 1].rep) {
+          repBoundaryIndices.add(i);
+        }
+      }
     }
 
     // Plot → treatment map for highlighting (from pre-resolved assignments)
@@ -150,7 +183,6 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
         plotTreatmentId[p.id] = widget.plotTreatmentMap![p.id] ?? p.treatmentId;
       }
     } else {
-      // Fallback to legacy plot.treatmentId
       for (final p in dataPlots) {
         plotTreatmentId[p.id] = p.treatmentId;
       }
@@ -265,27 +297,60 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
         itemExtent: cellWidth,
         itemBuilder: (_, i) {
           final a = assessments[i];
-          return Container(
-            width: cellWidth,
-            height: headerHeight,
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              border: const Border(
-                bottom: BorderSide(color: AppDesignTokens.borderCrisp),
-                right: BorderSide(color: AppDesignTokens.borderCrisp),
+          final isSorted = _sortByAssessmentId == a.id;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                if (_sortByAssessmentId == a.id) {
+                  if (_sortAscending) {
+                    _sortAscending = false; // second tap: reverse
+                  } else {
+                    _sortByAssessmentId = null; // third tap: reset
+                    _sortAscending = true;
+                  }
+                } else {
+                  _sortByAssessmentId = a.id;
+                  _sortAscending = true;
+                }
+              });
+            },
+            child: Container(
+              width: cellWidth,
+              height: headerHeight,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: isSorted
+                    ? AppDesignTokens.primary.withValues(alpha: 0.08)
+                    : scheme.surfaceContainerHighest,
+                border: const Border(
+                  bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+                  right: BorderSide(color: AppDesignTokens.borderCrisp),
+                ),
               ),
-            ),
-            child: Text(
-              displayName(a),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                height: 1.2,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    displayName(a),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+                  if (isSorted)
+                    Icon(
+                      _sortAscending
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward,
+                      size: 10,
+                      color: AppDesignTokens.primary,
+                    ),
+                ],
               ),
             ),
           );
@@ -322,6 +387,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                     final plot = dataPlots[i];
                     final isHighlighted =
                         highlightedPlotPks.contains(plot.id);
+                    final isRepBoundary = repBoundaryIndices.contains(i);
                     return GestureDetector(
                       onTap: widget.onPlotTap != null
                           ? () => widget.onPlotTap!(plot)
@@ -347,6 +413,12 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                                   : scheme.surfaceContainerHighest
                                       .withValues(alpha: 0.4)),
                           border: Border(
+                            top: isRepBoundary
+                                ? BorderSide(
+                                    color: AppDesignTokens.primary
+                                        .withValues(alpha: 0.4),
+                                    width: 2)
+                                : BorderSide.none,
                             bottom: BorderSide(
                                 color: AppDesignTokens.borderCrisp
                                     .withValues(alpha: 0.5)),
