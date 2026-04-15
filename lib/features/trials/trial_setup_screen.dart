@@ -393,10 +393,52 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
             _SectionCard(
               title: 'Trial design & field',
               children: [
-                _dropdown('Experimental design', _experimentalDesign,
-                    _experimentalDesigns, (v) {
-                  setState(() => _experimentalDesign = v);
-                }),
+                Builder(
+                  builder: (context) {
+                    final plotCount = ref
+                        .watch(plotsForTrialProvider(widget.trial.id))
+                        .valueOrNull
+                        ?.length ??
+                        0;
+                    final hasPlots = plotCount > 0;
+                    if (hasPlots) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Experimental design',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: AppDesignTokens.secondaryText,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              _experimentalDesign ?? '—',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppDesignTokens.primaryText,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.lock_outline,
+                              size: 16,
+                              color: AppDesignTokens.secondaryText
+                                  .withValues(alpha: 0.6),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return _dropdown('Experimental design', _experimentalDesign,
+                        _experimentalDesigns, (v) {
+                      setState(() => _experimentalDesign = v);
+                    });
+                  },
+                ),
                 _textField('Plot length m', _plotLengthM,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true)),

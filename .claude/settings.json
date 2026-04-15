@@ -16,7 +16,11 @@
       "Bash(curl -sL -o \"PlusJakartaSans-SemiBold.ttf\" \"https://fonts.gstatic.com/s/plusjakartasans/v8/LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_d0nNShXUEKi4Rw.ttf\")",
       "Bash(grep -r \"PlusJakartaSans\" /Users/parminder/.pub-cache/hosted/pub.dev/google_fonts-*/lib/)",
       "Bash(flutter install:*)",
-      "Bash(open /Users/parminder/Desktop/arm_field_companion/ios/Runner.xcworkspace)"
+      "Bash(open /Users/parminder/Desktop/arm_field_companion/ios/Runner.xcworkspace)",
+      "Bash(flutter logs:*)",
+      "Bash(sips -g pixelWidth -g pixelHeight -g hasAlpha /Users/parminder/Desktop/arm_field_companion/assets/Branding/app_icon.png)",
+      "Bash(pip3 install:*)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }

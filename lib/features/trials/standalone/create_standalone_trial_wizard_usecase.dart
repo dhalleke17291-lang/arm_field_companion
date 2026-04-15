@@ -146,10 +146,16 @@ class CreateStandaloneTrialWizardUseCase {
         return CreateStandaloneTrialWizardResult.failure('Each treatment needs a code');
       }
     }
-    if (input.repCount < 1 || input.repCount > 8) {
-      return CreateStandaloneTrialWizardResult.failure('Reps must be between 1 and 8');
+    if (input.repCount < 1 || input.repCount > 50) {
+      return CreateStandaloneTrialWizardResult.failure('Reps must be between 1 and 50');
     }
     final tCount = input.treatments.length;
+    if (input.experimentalDesign == PlotGenerationEngine.designRcbd &&
+        input.plotsPerRep % tCount != 0) {
+      return CreateStandaloneTrialWizardResult.failure(
+        'RCBD requires plots per rep to be a multiple of $tCount treatments',
+      );
+    }
     if (input.plotsPerRep < tCount || input.plotsPerRep > 50) {
       return CreateStandaloneTrialWizardResult.failure(
         'Plots per rep must be between $tCount and 50',

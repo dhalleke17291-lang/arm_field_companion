@@ -268,7 +268,12 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
         }
       }
       _treatmentCount = n;
-      if (_plotsPerRep < _treatmentRows.length) {
+      if (_design == PlotGenerationEngine.designRcbd) {
+        // RCBD: snap to nearest valid multiple of new treatment count
+        final tc = _treatmentRows.length;
+        final reps = (_plotsPerRep / tc).ceil().clamp(1, 50 ~/ tc);
+        _plotsPerRep = reps * tc;
+      } else if (_plotsPerRep < _treatmentRows.length) {
         _plotsPerRep = _treatmentRows.length;
       }
     });
@@ -624,7 +629,15 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
                         : AppDesignTokens.cardSurface,
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
-                      onTap: () => setState(() => _design = d),
+                      onTap: () => setState(() {
+                        _design = d;
+                        if (d == PlotGenerationEngine.designRcbd) {
+                          // Snap to nearest valid multiple
+                          final tc = _treatmentRows.length;
+                          final reps = (_plotsPerRep / tc).ceil().clamp(1, 50 ~/ tc);
+                          _plotsPerRep = reps * tc;
+                        }
+                      }),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
                         width: double.infinity,
@@ -941,7 +954,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
               ),
               IconButton(
                 tooltip: 'Increase reps',
-                onPressed: _repCount < 8
+                onPressed: _repCount < 50
                     ? () => setState(() => _repCount++)
                     : null,
                 icon: const Icon(Icons.add_circle_outline),
@@ -949,82 +962,98 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Plots per rep (minimum: $tMin for your treatments)',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppDesignTokens.primaryText,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Decrease plots per rep',
-                onPressed: _plotsPerRep > tMin
-                    ? () => setState(() => _plotsPerRep--)
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline),
-              ),
-              Text(
-                '$_plotsPerRep',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: AppDesignTokens.primaryText,
-                ),
-              ),
-              IconButton(
-                tooltip: 'Increase plots per rep',
-                onPressed: _plotsPerRep < 50
-                    ? () => setState(() => _plotsPerRep++)
-                    : null,
-                icon: const Icon(Icons.add_circle_outline),
-              ),
-            ],
-          ),
-        ),
-        if (_design == PlotGenerationEngine.designRcbd &&
-            _plotsPerRep != _treatmentRows.length)
+        if (_design == PlotGenerationEngine.designRcbd)
+          // RCBD: plots per rep must be an even multiple of treatment count
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 20,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'RCBD typically uses one plot per treatment per rep '
-                        '(${_treatmentRows.length} plots).\n'
-                        'Extra plots will receive repeated treatment assignments.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.35,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        'Plots per rep (must be multiple of $tMin treatments)',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.primaryText,
                         ),
                       ),
                     ),
+                    IconButton(
+                      tooltip: 'Decrease plots per rep',
+                      onPressed: _plotsPerRep > tMin
+                          ? () => setState(() => _plotsPerRep -= tMin)
+                          : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    Text(
+                      '$_plotsPerRep',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Increase plots per rep',
+                      onPressed: _plotsPerRep < 50
+                          ? () => setState(() => _plotsPerRep += tMin)
+                          : null,
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
                   ],
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '${_plotsPerRep ~/ tMin} per treatment — RCBD balanced',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Plots per rep (minimum: $tMin for your treatments)',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Decrease plots per rep',
+                  onPressed: _plotsPerRep > tMin
+                      ? () => setState(() => _plotsPerRep--)
+                      : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text(
+                  '$_plotsPerRep',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Increase plots per rep',
+                  onPressed: _plotsPerRep < 50
+                      ? () => setState(() => _plotsPerRep++)
+                      : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
             ),
           ),
         Padding(

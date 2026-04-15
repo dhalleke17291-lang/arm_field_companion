@@ -65,8 +65,8 @@ class GenerateStandalonePlotLayoutUseCase {
   Future<GenerateStandalonePlotLayoutResult> execute(
     GenerateStandalonePlotLayoutInput input,
   ) async {
-    if (input.repCount < 1 || input.repCount > 8) {
-      return GenerateStandalonePlotLayoutResult.failure('Reps must be between 1 and 8');
+    if (input.repCount < 1 || input.repCount > 50) {
+      return GenerateStandalonePlotLayoutResult.failure('Reps must be between 1 and 50');
     }
     if (input.guardRowsPerRep < 0 || input.guardRowsPerRep > 3) {
       return GenerateStandalonePlotLayoutResult.failure('Guards per rep end must be 0–3');
