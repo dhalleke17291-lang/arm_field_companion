@@ -560,7 +560,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
       child: Scaffold(
         backgroundColor: AppDesignTokens.backgroundSurface,
         appBar: GradientScreenHeader(
-          title: 'New Standalone Trial',
+          title: 'New Custom Trial',
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: _onCancelPressed,
