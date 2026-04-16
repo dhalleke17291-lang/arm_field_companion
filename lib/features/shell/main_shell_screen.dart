@@ -62,17 +62,14 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: AppDesignTokens.spacing4,
-              horizontal: AppDesignTokens.spacing8,
+              vertical: AppDesignTokens.spacing8,
+              horizontal: AppDesignTokens.spacing16,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(_tabs.length, (int i) {
                 final item = _tabs[i];
                 final selected = _currentIndex == i;
-                const activeColor = AppDesignTokens.primary;
-                final inactiveColor =
-                    AppDesignTokens.primaryText.withValues(alpha: 0.75);
                 return InkWell(
                   onTap: () {
                     if (i == _workLogTabIndex) {
@@ -83,36 +80,33 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                     }
                     setState(() => _currentIndex = i);
                   },
-                  borderRadius: BorderRadius.circular(10),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 140),
-                    curve: Curves.easeOut,
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusSmall),
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppDesignTokens.spacing12,
-                      vertical: AppDesignTokens.spacing8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppDesignTokens.primaryTint
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
+                      horizontal: AppDesignTokens.spacing16,
+                      vertical: AppDesignTokens.spacing12,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          item.icon,
-                          size: 20,
-                          color: selected ? activeColor : inactiveColor,
+                          selected ? item.selectedIcon : item.icon,
+                          size: 26,
+                          color: selected
+                              ? AppDesignTokens.primary
+                              : AppDesignTokens.primaryText,
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 6),
                         Text(
                           item.label,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight:
-                                selected ? FontWeight.w600 : FontWeight.w500,
-                            color: selected ? activeColor : inactiveColor,
+                                selected ? FontWeight.w700 : FontWeight.w600,
+                            color: selected
+                                ? AppDesignTokens.primary
+                                : AppDesignTokens.primaryText,
                           ),
                         ),
                       ],
