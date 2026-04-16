@@ -26,7 +26,10 @@
       "Bash(grep -E \"\\\\.dart$\")",
       "Bash(find . -name \"*.dart\" -type f -exec grep -l \"resultStatus.*count\\\\|validation.*count\\\\|status.*distribution\\\\|histogram\" {} \\\\;)",
       "Bash(grep -n \"class.*Session.*Complete\" /Users/parminder/Desktop/arm_field_companion/lib/features/sessions/*.dart)",
-      "Bash(grep -n \"kWeatherParentType\" /Users/parminder/Desktop/arm_field_companion/lib/features/weather/*.dart)"
+      "Bash(grep -n \"kWeatherParentType\" /Users/parminder/Desktop/arm_field_companion/lib/features/weather/*.dart)",
+      "Bash(grep \"\\\\.dart$\")",
+      "Bash(find /Users/parminder/Desktop/arm_field_companion -name \"*.dart\" -type f -exec grep -l \"enum TrialTab\" {} \\\\;)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }
