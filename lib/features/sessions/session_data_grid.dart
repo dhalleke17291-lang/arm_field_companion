@@ -61,6 +61,13 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
   int? _sortByAssessmentId;
   bool _sortAscending = true;
 
+  /// Pinch-to-zoom: multiplies cell/row dimensions and font sizes.
+  /// 1.0 = default. Clamped to [_kMinZoom, _kMaxZoom].
+  static const double _kMinZoom = 0.75;
+  static const double _kMaxZoom = 2.0;
+  double _zoomLevel = 1.0;
+  double _zoomAtGestureStart = 1.0;
+
   @override
   void initState() {
     super.initState();
@@ -246,19 +253,28 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
       );
     }
 
-    // Sizing
+    // Sizing — base values (zoom 1.0), then multiplied by _zoomLevel.
     final colCount = assessments.length;
     final screenWidth = MediaQuery.sizeOf(context).width;
-    const plotColWidth = 64.0;
-    const minCellWidth = 72.0;
-    const maxCellWidth = 110.0;
-    const headerHeight = 52.0;
-    const rowHeight = 40.0;
-    const statsRowHeight = 48.0;
+    const basePlotColWidth = 64.0;
+    const baseMinCellWidth = 72.0;
+    const baseMaxCellWidth = 110.0;
+    const baseHeaderHeight = 52.0;
+    const baseRowHeight = 40.0;
+    const baseStatsRowHeight = 48.0;
 
-    final availableWidth = screenWidth - plotColWidth - 16;
-    var cellWidth = colCount > 0 ? availableWidth / colCount : maxCellWidth;
-    cellWidth = cellWidth.clamp(minCellWidth, maxCellWidth);
+    final z = _zoomLevel;
+    final plotColWidth = basePlotColWidth * z;
+    final headerHeight = baseHeaderHeight * z;
+    final rowHeight = baseRowHeight * z;
+    final statsRowHeight = baseStatsRowHeight * z;
+
+    // At zoom 1.0, cellWidth auto-fits; at other zoom, we scale the auto-fit width.
+    final availableWidth = screenWidth - basePlotColWidth - 16;
+    var baseCellWidth =
+        colCount > 0 ? availableWidth / colCount : baseMaxCellWidth;
+    baseCellWidth = baseCellWidth.clamp(baseMinCellWidth, baseMaxCellWidth);
+    final cellWidth = baseCellWidth * z;
     final totalDataWidth = cellWidth * colCount;
     final hasStats = colStats.isNotEmpty;
 
@@ -285,9 +301,9 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
           right: BorderSide(color: AppDesignTokens.borderCrisp),
         ),
       ),
-      child: const Text(
+      child: Text(
         'Plot',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+        style: TextStyle(fontSize: 11 * z, fontWeight: FontWeight.w700),
       ),
     );
 
@@ -341,8 +357,8 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10,
+                    style: TextStyle(
+                      fontSize: 10 * z,
                       fontWeight: FontWeight.w700,
                       height: 1.2,
                     ),
@@ -352,7 +368,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                       _sortAscending
                           ? Icons.arrow_upward
                           : Icons.arrow_downward,
-                      size: 10,
+                      size: 10 * z,
                       color: AppDesignTokens.primary,
                     ),
                 ],
@@ -367,15 +383,32 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
     // Both scroll vertically in sync. Data also scrolls horizontally.
     // Stats footer is pinned below the scrollable area.
 
-    return Column(
-      children: [
-        // TOP: corner + assessment headers
-        Row(
-          children: [
-            corner,
-            Expanded(child: headerRow),
-          ],
-        ),
+    return GestureDetector(
+      onScaleStart: (_) => _zoomAtGestureStart = _zoomLevel,
+      onScaleUpdate: (details) {
+        // Only react to pinch (2+ pointers). Single-finger drag passes
+        // through to the inner scroll controllers via the gesture arena.
+        if (details.pointerCount < 2) return;
+        final next = (_zoomAtGestureStart * details.scale)
+            .clamp(_kMinZoom, _kMaxZoom);
+        if (next != _zoomLevel) {
+          setState(() => _zoomLevel = next);
+        }
+      },
+      onDoubleTap: () {
+        if (_zoomLevel != 1.0) {
+          setState(() => _zoomLevel = 1.0);
+        }
+      },
+      child: Column(
+        children: [
+          // TOP: corner + assessment headers
+          Row(
+            children: [
+              corner,
+              Expanded(child: headerRow),
+            ],
+          ),
         // MIDDLE: scrollable plot labels + data cells
         Expanded(
           child: Row(
@@ -439,7 +472,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                         child: Text(
                           getDisplayPlotLabel(plot, plots),
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12 * z,
                             fontWeight: FontWeight.w700,
                             color: isHighlighted
                                 ? AppDesignTokens.primary
@@ -478,6 +511,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                                 _DataCell(
                                   width: cellWidth,
                                   height: rowHeight,
+                                  fontSize: 12 * z,
                                   rating: ratingMap[(plot.id, a.id)],
                                   isEvenRow: rowIndex.isEven,
                                   isOutlier: widget.outlierKeys?.contains(
@@ -525,10 +559,10 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                     right: BorderSide(color: AppDesignTokens.borderCrisp),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Stats',
                   style:
-                      TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                      TextStyle(fontSize: 10 * z, fontWeight: FontWeight.w700),
                 ),
               ),
               Expanded(
@@ -545,6 +579,8 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                               width: cellWidth,
                               height: statsRowHeight,
                               stats: colStats[a.id],
+                              meanFontSize: 11 * z,
+                              rangeFontSize: 9 * z,
                             ),
                         ],
                       ),
@@ -554,7 +590,8 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
               ),
             ],
           ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -573,6 +610,7 @@ class _DataCell extends StatelessWidget {
     this.onTap,
     this.isOutlier = false,
     this.isHighlighted = false,
+    this.fontSize = 12,
   });
 
   final double width;
@@ -583,6 +621,7 @@ class _DataCell extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isOutlier;
   final bool isHighlighted;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -639,7 +678,7 @@ class _DataCell extends StatelessWidget {
             child: Text(
               text,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: fontSize,
                 fontWeight: weight,
                 color: textColor,
               ),
@@ -688,11 +727,15 @@ class _StatsCell extends StatelessWidget {
     required this.width,
     required this.height,
     required this.stats,
+    this.meanFontSize = 11,
+    this.rangeFontSize = 9,
   });
 
   final double width;
   final double height;
   final ({double mean, double min, double max, int n})? stats;
+  final double meanFontSize;
+  final double rangeFontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -730,8 +773,8 @@ class _StatsCell extends StatelessWidget {
         children: [
           Text(
             'x̄ $meanStr',
-            style: const TextStyle(
-              fontSize: 11,
+            style: TextStyle(
+              fontSize: meanFontSize,
               fontWeight: FontWeight.w700,
             ),
             maxLines: 1,
@@ -740,7 +783,7 @@ class _StatsCell extends StatelessWidget {
           Text(
             rangeStr,
             style: TextStyle(
-              fontSize: 9,
+              fontSize: rangeFontSize,
               color: scheme.onSurfaceVariant,
             ),
             maxLines: 1,
