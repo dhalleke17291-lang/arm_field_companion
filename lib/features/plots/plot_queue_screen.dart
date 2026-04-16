@@ -81,10 +81,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
   int? _highlightPlotPk;
   bool _consumedScrollToPlotOnOpen = false;
 
-  /// In-memory only for this visit; banner rows return on next queue open.
-  bool _skipBbchReadinessRow = false;
-  bool _skipWeatherReadinessRow = false;
-
   GlobalKey _keyForPlotRow(int plotPk) =>
       _plotRowKeys.putIfAbsent(plotPk, GlobalKey.new);
 
@@ -122,20 +118,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     return filtered;
   }
 
-  /// Approximate vertical extent of the readiness banner as the first ListView item.
-  double _readinessBannerScrollExtent(bool showBbch, bool showWeather) {
-    if (!showBbch && !showWeather) return 0;
-    var h = 8.0 + 8.0 + 8.0 + 8.0; // outer + material vertical padding
-    if (showBbch) h += 48;
-    if (showBbch && showWeather) h += 16;
-    if (showWeather) h += 48;
-    return h;
-  }
-
-  void _scheduleScrollToPlotPkOnOpen(
-    List<Plot> filteredPlots, {
-    double listReadinessLeadExtent = 0,
-  }) {
+  void _scheduleScrollToPlotPkOnOpen(List<Plot> filteredPlots) {
     final pk = widget.scrollToPlotPkOnOpen;
     if (pk == null || _consumedScrollToPlotOnOpen) return;
     if (!filteredPlots.any((p) => p.id == pk)) {
@@ -146,7 +129,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final entries = _flattenGroupedQueueItems(filteredPlots);
     const double headerH = 40;
     const double rowH = 88;
-    double y = listReadinessLeadExtent;
+    double y = 0;
     var found = false;
     for (final item in entries) {
       if (item.isHeader) {
@@ -418,106 +401,73 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     );
   }
 
-  /// First item inside the plot [ListView] so it scrolls with rows (not pinned).
-  Widget _buildReadinessListBanner(
+  /// Compact context chips: BBCH growth stage + weather. Tap to edit/add.
+  /// Replaces the old 96px readiness banner — same data, 1/3 the space.
+  Widget _buildContextChips(
     BuildContext context,
     ColorScheme scheme,
     Session liveSession,
-    bool showBbchRow,
-    bool showWeatherRow,
+    WeatherSnapshot? weatherSnap,
   ) {
     return Padding(
-      key: const ValueKey<String>('plot_queue_readiness_banner'),
       padding: const EdgeInsets.fromLTRB(
         AppDesignTokens.spacing16,
-        AppDesignTokens.spacing8,
-        AppDesignTokens.spacing16,
         AppDesignTokens.spacing4,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing8,
       ),
-      child: Material(
-        color: AppDesignTokens.cardSurface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-          side: const BorderSide(color: AppDesignTokens.borderCrisp),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (showBbchRow)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(Icons.eco_outlined, size: 18, color: scheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Growth stage not set',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        final ok = await showCropStageBbchEditorDialog(
-                          context: context,
-                          ref: ref,
-                          session: liveSession,
-                          trialId: widget.trial.id,
-                        );
-                        if (ok && mounted) setState(() {});
-                      },
-                      child: const Text('Set Growth Stage'),
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          setState(() => _skipBbchReadinessRow = true),
-                      child: const Text('Skip'),
-                    ),
-                  ],
-                ),
-              if (showBbchRow && showWeatherRow) const Divider(height: 16),
-              if (showWeatherRow)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(Icons.wb_cloudy_outlined,
-                        size: 18, color: scheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Weather not recorded',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        await _openWeatherCapture(context);
-                        if (mounted) setState(() {});
-                      },
-                      child: const Text('Record'),
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          setState(() => _skipWeatherReadinessRow = true),
-                      child: const Text('Skip'),
-                    ),
-                  ],
-                ),
-            ],
+      child: Row(
+        children: [
+          Expanded(
+            child: _ContextChip(
+              icon: Icons.eco_outlined,
+              label: liveSession.cropStageBbch != null
+                  ? 'BBCH ${liveSession.cropStageBbch}'
+                  : '+ Growth stage',
+              filled: liveSession.cropStageBbch != null,
+              onTap: () async {
+                final ok = await showCropStageBbchEditorDialog(
+                  context: context,
+                  ref: ref,
+                  session: liveSession,
+                  trialId: widget.trial.id,
+                );
+                if (ok && mounted) setState(() {});
+              },
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ContextChip(
+              icon: Icons.wb_cloudy_outlined,
+              label: _weatherChipLabel(weatherSnap),
+              filled: weatherSnap != null,
+              onTap: () async {
+                await _openWeatherCapture(context);
+                if (mounted) setState(() {});
+              },
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  String _weatherChipLabel(WeatherSnapshot? w) {
+    if (w == null) return '+ Weather';
+    final parts = <String>[];
+    final t = w.temperature;
+    if (t != null) {
+      final u = w.temperatureUnit.toUpperCase() == 'F' ? '°F' : '°C';
+      final s = t == t.roundToDouble()
+          ? t.round().toString()
+          : t.toStringAsFixed(1);
+      parts.add('$s$u');
+    }
+    final cc = w.cloudCover?.trim();
+    if (cc != null && cc.isNotEmpty) parts.add(cc);
+    if (parts.isEmpty) return 'Weather recorded';
+    return parts.join(' · ');
   }
 
   @override
@@ -687,25 +637,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     final hasFieldRow = plots.any((p) => p.fieldRow != null);
     const serpentineGreen = Color(0xFF2D5A40);
 
-    final showBbchRow =
-        liveSession.cropStageBbch == null && !_skipBbchReadinessRow;
-    final showWeatherRow = weatherSnap == null && !_skipWeatherReadinessRow;
+    final contextChips =
+        _buildContextChips(context, scheme, liveSession, weatherSnap);
 
-    final readinessListHeader = (showBbchRow || showWeatherRow)
-        ? _buildReadinessListBanner(
-            context,
-            scheme,
-            liveSession,
-            showBbchRow,
-            showWeatherRow,
-          )
-        : null;
-    final readinessLeadExtent =
-        _readinessBannerScrollExtent(showBbchRow, showWeatherRow);
-    _scheduleScrollToPlotPkOnOpen(
-      filtered,
-      listReadinessLeadExtent: readinessLeadExtent,
-    );
+    _scheduleScrollToPlotPkOnOpen(filtered);
 
     return Column(
       children: [
@@ -886,6 +821,9 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
             ),
           ),
 
+        // Context chips: BBCH + weather (above plot list)
+        contextChips,
+
         // Plot list grouped by rep
         Expanded(
           child: filtered.isEmpty
@@ -894,7 +832,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (readinessListHeader != null) readinessListHeader,
                       Icon(
                         plots.isEmpty ? Icons.grid_off : Icons.check_circle,
                         size: 64,
@@ -1055,7 +992,6 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
                               fIds, fMode, navLabel),
                   highlightPlotPk: _highlightPlotPk,
                   rowKeyForPlot: _keyForPlotRow,
-                  listReadinessHeader: readinessListHeader,
                 ),
         ),
       ],
@@ -1096,19 +1032,14 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     required _PlotQueueOpenRating onOpenRating,
     required int? highlightPlotPk,
     required GlobalKey Function(int plotPk) rowKeyForPlot,
-    Widget? listReadinessHeader,
   }) {
     final entries = _flattenGroupedQueueItems(filteredPlots);
-    final lead = listReadinessHeader != null ? 1 : 0;
     return ListView.builder(
       controller: _plotQueueScrollController,
       padding: EdgeInsets.zero,
-      itemCount: entries.length + lead,
+      itemCount: entries.length,
       itemBuilder: (context, index) {
-        if (listReadinessHeader != null && index == 0) {
-          return listReadinessHeader;
-        }
-        final item = entries[index - lead];
+        final item = entries[index];
         if (item.isHeader) {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1901,6 +1832,72 @@ class _PlotQueueDockTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: activeColor,
                 borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact chip showing session context (BBCH, weather). Filled when set, outlined when empty.
+class _ContextChip extends StatelessWidget {
+  const _ContextChip({
+    required this.icon,
+    required this.label,
+    required this.filled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool filled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: filled
+              ? AppDesignTokens.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: filled
+                ? AppDesignTokens.primary.withValues(alpha: 0.3)
+                : AppDesignTokens.borderCrisp,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: filled
+                  ? AppDesignTokens.primary
+                  : scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: filled
+                      ? AppDesignTokens.primary
+                      : scheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

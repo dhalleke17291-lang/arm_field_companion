@@ -99,6 +99,10 @@ class MockSessionRepository implements SessionRepository {
   }
 
   @override
+  Future<List<Session>> getAllActiveSessions() async =>
+      _sessions.where((s) => !s.isDeleted).toList();
+
+  @override
   Future<void> softDeleteSession(int sessionId,
       {String? deletedBy, int? deletedByUserId}) async {}
 

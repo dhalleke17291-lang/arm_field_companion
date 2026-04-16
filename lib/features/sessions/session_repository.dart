@@ -35,6 +35,14 @@ class SessionRepository {
         .map((rows) => rows.isEmpty ? null : rows.first);
   }
 
+  /// All non-deleted sessions across all trials, most recent first.
+  Future<List<Session>> getAllActiveSessions() {
+    return (_db.select(_db.sessions)
+          ..where((s) => s.isDeleted.equals(false))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
+        .get();
+  }
+
   Future<List<Session>> getSessionsForTrial(int trialId) {
     return (_db.select(_db.sessions)
           ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false))

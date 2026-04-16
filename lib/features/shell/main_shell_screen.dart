@@ -26,9 +26,9 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
     _NavItem(
         label: 'Home', icon: Icons.home_outlined, selectedIcon: Icons.home),
     _NavItem(
-        label: 'Work Log',
-        icon: Icons.work_history_outlined,
-        selectedIcon: Icons.work_history),
+        label: 'Sessions',
+        icon: Icons.play_circle_outline,
+        selectedIcon: Icons.play_circle),
     _NavItem(
         label: 'More', icon: Icons.more_horiz, selectedIcon: Icons.more_horiz),
   ];
@@ -73,7 +73,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                 return InkWell(
                   onTap: () {
                     if (i == _workLogTabIndex) {
-                      ref.invalidate(workLogDatesProvider);
+                      ref.invalidate(allActiveSessionsProvider);
                     }
                     if (i == 0) {
                       ref.read(homeTabResetProvider.notifier).state++;

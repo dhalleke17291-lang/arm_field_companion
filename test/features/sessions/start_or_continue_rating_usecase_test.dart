@@ -57,6 +57,10 @@ class _FakeSessionRepository implements SessionRepository {
       _sessions.where((s) => s.trialId == trialId).toList();
 
   @override
+  Future<List<Session>> getAllActiveSessions() async =>
+      _sessions.where((s) => !s.isDeleted).toList();
+
+  @override
   Future<List<Session>> getSessionsForDate(String dateLocal,
           {int? createdByUserId}) async =>
       _sessions.where((s) => s.sessionDateLocal == dateLocal).toList();

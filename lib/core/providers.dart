@@ -551,6 +551,12 @@ final workLogSessionsProvider = FutureProvider.autoDispose
   return repo.getSessionsForDate(dateLocal, createdByUserId: userId);
 });
 
+/// All non-deleted sessions across all trials, most recent first.
+final allActiveSessionsProvider =
+    FutureProvider.autoDispose<List<Session>>((ref) {
+  return ref.watch(sessionRepositoryProvider).getAllActiveSessions();
+});
+
 /// Number of plots rated in this session (current ratings only).
 final ratingCountForSessionProvider =
     FutureProvider.autoDispose.family<int, int>((ref, sessionId) async {
