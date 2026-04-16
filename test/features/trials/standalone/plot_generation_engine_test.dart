@@ -243,4 +243,137 @@ void main() {
     );
     expect(g.treatmentIndexPerPlot, [0, 1, 2, 0, 1, 2]);
   });
+
+  group('RCBD hard constraints (H1/H2/H3)', () {
+    List<List<int>> toReps(List<int> flat, int plotsPerRep) {
+      final out = <List<int>>[];
+      for (var i = 0; i < flat.length; i += plotsPerRep) {
+        out.add(flat.sublist(i, i + plotsPerRep));
+      }
+      return out;
+    }
+
+    test('4 treatments × 6 reps: no canonical rep, no identical pair', () {
+      final g = PlotGenerationEngine.generate(
+        treatmentCount: 4,
+        plotsPerRep: 4,
+        repCount: 6,
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        random: Random(1),
+      );
+      final reps = toReps(g.treatmentIndexPerPlot, 4);
+      final canonical = [0, 1, 2, 3];
+      for (var i = 0; i < reps.length; i++) {
+        expect(reps[i], isNot(equals(canonical)),
+            reason: 'Rep ${i + 1} is canonical');
+      }
+      for (var i = 0; i < reps.length; i++) {
+        for (var j = i + 1; j < reps.length; j++) {
+          expect(reps[i], isNot(equals(reps[j])),
+              reason: 'Rep ${i + 1} == Rep ${j + 1}');
+        }
+      }
+    });
+
+    test('2 treatments × 4 reps: H3 relaxes to adjacent-only', () {
+      final g = PlotGenerationEngine.generate(
+        treatmentCount: 2,
+        plotsPerRep: 2,
+        repCount: 4,
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        random: Random(7),
+      );
+      final reps = toReps(g.treatmentIndexPerPlot, 2);
+      for (var i = 1; i < reps.length; i++) {
+        expect(reps[i], isNot(equals(reps[i - 1])),
+            reason: 'Rep ${i + 1} duplicates Rep $i (adjacent)');
+      }
+    });
+
+    test('3 treatments × 10 reps: adjacent-only H3, no canonical rep', () {
+      final g = PlotGenerationEngine.generate(
+        treatmentCount: 3,
+        plotsPerRep: 3,
+        repCount: 10,
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        random: Random(3),
+      );
+      final reps = toReps(g.treatmentIndexPerPlot, 3);
+      final canonical = [0, 1, 2];
+      for (var i = 0; i < reps.length; i++) {
+        expect(reps[i], isNot(equals(canonical)),
+            reason: 'Rep ${i + 1} is canonical');
+      }
+      for (var i = 1; i < reps.length; i++) {
+        expect(reps[i], isNot(equals(reps[i - 1])),
+            reason: 'Rep ${i + 1} duplicates Rep $i (adjacent)');
+      }
+    });
+
+    test('Reproducibility: same seed + inputs → identical layout', () {
+      final g1 = PlotGenerationEngine.generate(
+        treatmentCount: 4,
+        plotsPerRep: 4,
+        repCount: 6,
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        random: Random(42),
+      );
+      final g2 = PlotGenerationEngine.generate(
+        treatmentCount: 4,
+        plotsPerRep: 4,
+        repCount: 6,
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        random: Random(42),
+      );
+      expect(g1.treatmentIndexPerPlot, equals(g2.treatmentIndexPerPlot));
+    });
+  });
+
+  group('validateRcbdLayout', () {
+    test('flags canonical first rep + duplicate reps (screenshot failure)',
+        () {
+      final reps = [
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+        [1, 3, 0, 2],
+      ];
+      final report = validateRcbdLayout(reps, 4);
+      expect(report.isValid, false);
+      expect(report.hardViolations.any((v) => v.contains('canonical')), true,
+          reason: 'should flag canonical Rep 1');
+      expect(report.hardViolations.any((v) => v.contains('identical')), true,
+          reason: 'should flag Rep 1 == Rep 2');
+    });
+
+    test('valid layout passes', () {
+      final reps = [
+        [2, 0, 3, 1],
+        [3, 1, 0, 2],
+        [1, 2, 0, 3],
+      ];
+      final report = validateRcbdLayout(reps, 4);
+      expect(report.isValid, true);
+      expect(report.hardViolations, isEmpty);
+    });
+
+    test('flags unbalanced rep (H1)', () {
+      final reps = [
+        [0, 0, 2, 3],
+        [1, 2, 0, 3],
+      ];
+      final report = validateRcbdLayout(reps, 4);
+      expect(report.isValid, false);
+      expect(report.hardViolations.any((v) => v.contains('Rep 1')), true);
+    });
+
+    test('counts S1 vertical adjacencies', () {
+      final reps = [
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+      ];
+      final report = validateRcbdLayout(reps, 4);
+      expect(report.softViolations.any((v) => v.contains('4 same-treatment')),
+          true);
+    });
+  });
 }
