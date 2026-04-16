@@ -14,6 +14,7 @@ import '../../shared/widgets/app_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/diagnostics/reset_app_data.dart';
 import 'integrity_check_result.dart';
+import 'scan_rcbd_layouts_usecase.dart';
 import 'audit_log_screen.dart';
 import 'edited_items_screen.dart';
 
@@ -27,6 +28,10 @@ class DiagnosticsScreen extends ConsumerStatefulWidget {
 class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
   List<IntegrityIssue>? _integrityIssues;
   bool _integrityLoading = false;
+
+  RcbdLayoutScanReport? _rcbdScanReport;
+  bool _rcbdScanLoading = false;
+  String? _rcbdScanError;
 
   Future<void> _runIntegrityChecks() async {
     setState(() {
@@ -50,6 +55,23 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
       }
     } finally {
       if (mounted) setState(() => _integrityLoading = false);
+    }
+  }
+
+  Future<void> _runRcbdScan() async {
+    setState(() {
+      _rcbdScanLoading = true;
+      _rcbdScanReport = null;
+      _rcbdScanError = null;
+    });
+    try {
+      final useCase = ref.read(scanRcbdLayoutsUseCaseProvider);
+      final report = await useCase.execute();
+      if (mounted) setState(() => _rcbdScanReport = report);
+    } catch (e) {
+      if (mounted) setState(() => _rcbdScanError = e.toString());
+    } finally {
+      if (mounted) setState(() => _rcbdScanLoading = false);
     }
   }
 
@@ -528,6 +550,154 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                   )),
           ],
           const SizedBox(height: 24),
+
+          // RCBD layout audit — read-only scan of standalone RCBD trials
+          Text(
+            'RCBD layout audit',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Scans standalone RCBD trials for canonical reps, duplicate reps, '
+            'or heavy vertical stripes. ARM-imported and protocol-imported '
+            'trials are skipped. Read-only — no data is modified.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed: _rcbdScanLoading ? null : _runRcbdScan,
+            icon: _rcbdScanLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.science_outlined),
+            label: Text(_rcbdScanLoading ? 'Scanning...' : 'Audit RCBD layouts'),
+          ),
+          if (_rcbdScanError != null) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  'Scan failed: $_rcbdScanError',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (_rcbdScanReport != null) ...[
+            const SizedBox(height: 12),
+            if (_rcbdScanReport!.isClean)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check,
+                          color: AppDesignTokens.successFg),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _rcbdScanReport!.trialsScanned == 0
+                              ? 'No standalone RCBD trials to scan.'
+                              : 'No issues found across '
+                                  '${_rcbdScanReport!.trialsScanned} '
+                                  'standalone RCBD trial${_rcbdScanReport!.trialsScanned == 1 ? '' : 's'}.',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '${_rcbdScanReport!.affectedTrials.length} of '
+                  '${_rcbdScanReport!.trialsScanned} trial${_rcbdScanReport!.trialsScanned == 1 ? '' : 's'} '
+                  'flagged.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                  ),
+                ),
+              ),
+              ..._rcbdScanReport!.affectedTrials.map(
+                (audit) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              audit.hasHardViolations
+                                  ? Icons.warning_amber_rounded
+                                  : Icons.info_outline,
+                              size: 20,
+                              color: audit.hasHardViolations
+                                  ? AppDesignTokens.warningFg
+                                  : theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                audit.trialName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (audit.report.hardViolations.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          for (final v in audit.report.hardViolations)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 28, top: 2),
+                              child: Text(
+                                '\u2022 $v',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppDesignTokens.warningFg,
+                                ),
+                              ),
+                            ),
+                        ],
+                        if (audit.report.softViolations.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          for (final v in audit.report.softViolations)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 28, top: 2),
+                              child: Text(
+                                '\u2022 $v',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+          const SizedBox(height: 24),
+
           // Reset App Data
           AppCard(
             padding: const EdgeInsets.all(AppDesignTokens.spacing16),

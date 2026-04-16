@@ -80,6 +80,7 @@ import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
 import '../features/diagnostics/integrity_check_repository.dart';
+import '../features/diagnostics/scan_rcbd_layouts_usecase.dart';
 import '../features/diagnostics/assessment_completion.dart';
 import 'plot_analysis_eligibility.dart';
 import '../features/diagnostics/trial_readiness.dart';
@@ -503,6 +504,14 @@ final diagnosticsStoreProvider = Provider<DiagnosticsStore>((ref) {
 final integrityCheckRepositoryProvider =
     Provider<IntegrityCheckRepository>((ref) {
   return IntegrityCheckRepository(ref.watch(databaseProvider));
+});
+
+final scanRcbdLayoutsUseCaseProvider = Provider<ScanRcbdLayoutsUseCase>((ref) {
+  return ScanRcbdLayoutsUseCase(
+    db: ref.watch(databaseProvider),
+    plotRepository: ref.watch(plotRepositoryProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+  );
 });
 
 final todayActivityRepositoryProvider =
