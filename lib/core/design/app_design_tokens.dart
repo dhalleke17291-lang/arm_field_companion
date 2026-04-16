@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Design tokens for Agnexis.
 /// Use these for consistent colors, spacing, and radii across the app.
@@ -222,7 +221,7 @@ class AppDesignTokens {
     FontWeight fontWeight = FontWeight.w600,
     double letterSpacing = -0.2,
   }) =>
-      GoogleFonts.plusJakartaSans(
+      TextStyle(
         fontSize: fontSize,
         fontWeight: fontWeight,
         color: color,
@@ -236,7 +235,7 @@ class AppDesignTokens {
     FontWeight fontWeight = FontWeight.w400,
     double letterSpacing = 0.15,
   }) =>
-      GoogleFonts.plusJakartaSans(
+      TextStyle(
         fontSize: fontSize,
         fontWeight: fontWeight,
         color: color,
@@ -249,7 +248,7 @@ class AppDesignTokens {
     Color? color,
     double letterSpacing = 0.15,
   }) =>
-      GoogleFonts.plusJakartaSans(
+      TextStyle(
         fontSize: fontSize,
         fontWeight: FontWeight.w400,
         color: color,
@@ -262,7 +261,7 @@ class AppDesignTokens {
     Color? color,
     double letterSpacing = 0.2,
   }) =>
-      GoogleFonts.plusJakartaSans(
+      TextStyle(
         fontSize: fontSize,
         fontWeight: FontWeight.w600,
         color: color,

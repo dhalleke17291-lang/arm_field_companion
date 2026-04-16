@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'core/config/app_info.dart';
 import 'core/current_user.dart';
 import 'features/shell/main_shell_screen.dart';
@@ -205,7 +204,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Text(
                             AppInfo.appName.toUpperCase(),
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w300,
                               color: Colors.white,
@@ -234,7 +233,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Text(
                             'Professional field trial data collection\nand execution platform',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w300,
                               color: Colors.white.withValues(alpha: 0.5),

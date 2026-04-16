@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/app_info.dart';
@@ -54,7 +53,7 @@ class AboutScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               Text(
                 developerCredit,
-                style: GoogleFonts.dmSans(
+                style: TextStyle(
                   fontSize: 12,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                   fontWeight: FontWeight.w400,

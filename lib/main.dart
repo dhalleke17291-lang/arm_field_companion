@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/design/app_design_tokens.dart';
 import 'core/diagnostics/diagnostics_store.dart';
@@ -8,9 +7,6 @@ import 'core/providers.dart';
 import 'splash_screen.dart';
 
 void main() {
-  // Offline-first: never fetch fonts from the network.
-  GoogleFonts.config.allowRuntimeFetching = false;
-
   final diagnosticsStore = DiagnosticsStore(maxErrors: 50);
 
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -210,7 +206,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: colorScheme.surfaceContainerHighest,
-        contentTextStyle: GoogleFonts.plusJakartaSans(
+        contentTextStyle: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: colorScheme.onSurface,
@@ -227,7 +223,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -241,7 +237,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -265,7 +261,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
           fontSize: 20,
           color: onSurfaceWarm,
         ),
-        contentTextStyle: GoogleFonts.plusJakartaSans(
+        contentTextStyle: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w400,
           color: subtleGrey,
@@ -291,43 +287,43 @@ class ArmFieldCompanionApp extends StatelessWidget {
         space: 1,
       ),
       textTheme: TextTheme(
-        headlineLarge: GoogleFonts.plusJakartaSans(
+        headlineLarge: TextStyle(
           fontSize: 40,
           fontWeight: FontWeight.w900,
           color: onSurfaceWarm,
           letterSpacing: -0.5,
         ),
-        headlineMedium: GoogleFonts.plusJakartaSans(
+        headlineMedium: TextStyle(
           fontSize: 34,
           fontWeight: FontWeight.w800,
           color: onSurfaceWarm,
           letterSpacing: -0.25,
         ),
-        titleLarge: GoogleFonts.plusJakartaSans(
+        titleLarge: TextStyle(
           fontSize: 26,
           fontWeight: FontWeight.w800,
           color: onSurfaceWarm,
           letterSpacing: -0.2,
         ),
-        titleMedium: GoogleFonts.plusJakartaSans(
+        titleMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: onSurfaceWarm,
           letterSpacing: 0,
         ),
-        bodyLarge: GoogleFonts.plusJakartaSans(
+        bodyLarge: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: onSurfaceWarm,
           letterSpacing: 0.15,
         ),
-        bodyMedium: GoogleFonts.plusJakartaSans(
+        bodyMedium: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w500,
           color: subtleGrey,
           letterSpacing: 0.15,
         ),
-        labelLarge: GoogleFonts.plusJakartaSans(
+        labelLarge: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.3,
