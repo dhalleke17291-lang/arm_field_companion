@@ -1,5 +1,3 @@
-import 'dart:ui' show ColorFilter, ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,14 +115,13 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                   children: [
                     _ContinueSessionCard(ref: ref),
                     _AgTrialCard(
-                      title: 'Standalone Trials',
+                      title: 'Custom Trials',
                       subtitle: 'Full trial design with templates',
                       description:
                           'RCBD/CRD randomization, statistical analysis, and evidence tracking',
                       icon: Icons.science_outlined,
-                      imageAsset: 'assets/images/trials/custom_trials_field.jpg',
                       accentColor: _HubPalette.accentGreen,
-                      topBadgeLeft: 'STANDALONE',
+                      topBadgeLeft: 'CUSTOM',
                       topBadgeRight: stats.customCropCount == 1
                           ? '1 Crop'
                           : '${stats.customCropCount} Crops',
@@ -139,15 +136,13 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                     ),
                     const SizedBox(height: AppDesignTokens.spacing24),
                     _AgTrialCard(
-                      title: 'Imported Trials',
+                      title: 'Protocol Trials',
                       subtitle: 'Import ARM rating shells',
                       description:
                           'Collect data with full evidence tracking, return results to ARM',
                       icon: Icons.assignment_outlined,
-                      imageAsset:
-                          'assets/images/trials/protocol_trials_greenhouse.jpg',
                       accentColor: _HubPalette.accentAmber,
-                      topBadgeLeft: 'IMPORTED',
+                      topBadgeLeft: 'PROTOCOL',
                       topBadgeRight: stats.protocolTrialCount == 1
                           ? '1 Protocol'
                           : '${stats.protocolTrialCount} Protocols',
@@ -254,7 +249,6 @@ class _AgTrialCard extends StatefulWidget {
     required this.subtitle,
     required this.description,
     required this.icon,
-    required this.imageAsset,
     required this.accentColor,
     required this.topBadgeLeft,
     required this.topBadgeRight,
@@ -267,7 +261,6 @@ class _AgTrialCard extends StatefulWidget {
   final String subtitle;
   final String description;
   final IconData icon;
-  final String imageAsset;
   final Color accentColor;
   final String topBadgeLeft;
   final String topBadgeRight;
@@ -322,52 +315,11 @@ class _AgTrialCardState extends State<_AgTrialCard>
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: Material(
-              color: Colors.transparent,
+              color: AppDesignTokens.cardSurface,
               child: InkWell(
                 onTap: widget.onTap,
                 child: Stack(
                   children: [
-                    // Photo background: minimal desaturation, soft yet visible
-                    Positioned.fill(
-                      child: ColorFiltered(
-                        colorFilter: ColorFilter.saturation(0.72),
-                        child: Image.asset(
-                          widget.imageAsset,
-                          fit: BoxFit.cover,
-                          semanticLabel: 'Trial category background',
-                          errorBuilder: (_, __, ___) => Container(
-                            color: widget.accentColor.withValues(alpha: 0.3),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Light blur: soft, not too much
-                    Positioned.fill(
-                      child: ClipRect(
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 1.2, sigmaY: 1.2),
-                          child: Container(color: Colors.transparent),
-                        ),
-                      ),
-                    ),
-                    // Soothing gradient overlay; text area stays clear for readability
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              _HubPalette.background.withValues(alpha: 0.05),
-                              _HubPalette.background.withValues(alpha: 0.25),
-                              _HubPalette.background.withValues(alpha: 0.65),
-                              _HubPalette.background.withValues(alpha: 0.92),
-                            ],
-                            stops: const [0.0, 0.3, 0.55, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
                     // Top badges
                     Positioned(
                       top: 16,

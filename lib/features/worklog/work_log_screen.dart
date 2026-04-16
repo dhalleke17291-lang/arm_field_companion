@@ -110,7 +110,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildFilterChips(),
+            _buildFilterRow(),
             Expanded(
               child: sessionsAsync.when(
                 loading: () =>
@@ -137,6 +137,16 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                   final closedSessions =
                       filtered.where((s) => s.endedAt != null).toList();
 
+                  // Group closed sessions by sessionDateLocal
+                  final closedByDate = <String, List<Session>>{};
+                  for (final s in closedSessions) {
+                    closedByDate
+                        .putIfAbsent(s.sessionDateLocal, () => [])
+                        .add(s);
+                  }
+                  final sortedDates = closedByDate.keys.toList()
+                    ..sort((a, b) => b.compareTo(a));
+
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(
                       AppDesignTokens.spacing16,
@@ -146,7 +156,7 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                     ),
                     children: [
                       if (openSessions.isNotEmpty) ...[
-                        _sectionHeader('Open Sessions', isFirst: true),
+                        _sectionHeader('Open', isFirst: true),
                         ...openSessions.map(
                           (s) => _buildSessionCard(
                             context,
@@ -156,12 +166,12 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                           ),
                         ),
                       ],
-                      if (closedSessions.isNotEmpty) ...[
+                      for (var i = 0; i < sortedDates.length; i++) ...[
                         _sectionHeader(
-                          'Session History',
-                          isFirst: openSessions.isEmpty,
+                          _formatDateHeader(sortedDates[i]),
+                          isFirst: openSessions.isEmpty && i == 0,
                         ),
-                        ...closedSessions.map(
+                        ...closedByDate[sortedDates[i]]!.map(
                           (s) => _buildSessionCard(
                             context,
                             s,
@@ -181,91 +191,157 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     );
   }
 
-  Widget _buildFilterChips() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDesignTokens.spacing16,
-        vertical: AppDesignTokens.spacing8,
+  Widget _buildFilterRow() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing12,
+        AppDesignTokens.spacing16,
+        AppDesignTokens.spacing12,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: const BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        border: Border(
+          bottom: BorderSide(color: AppDesignTokens.borderCrisp, width: 0.5),
+        ),
+      ),
+      child: Row(
         children: [
-          // Status filter row
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              _filterChip(
-                'All',
-                selected: _statusFilter == _StatusFilter.all,
-                onTap: () =>
-                    setState(() => _statusFilter = _StatusFilter.all),
-              ),
-              _filterChip(
-                'Open',
-                selected: _statusFilter == _StatusFilter.open,
-                onTap: () =>
-                    setState(() => _statusFilter = _StatusFilter.open),
-              ),
-              _filterChip(
-                'Closed',
-                selected: _statusFilter == _StatusFilter.closed,
-                onTap: () =>
-                    setState(() => _statusFilter = _StatusFilter.closed),
-              ),
-              const SizedBox(width: 8),
-              _filterChip(
-                'Standalone',
-                selected: _typeFilter == _TypeFilter.standalone,
-                onTap: () => setState(() {
-                  _typeFilter = _typeFilter == _TypeFilter.standalone
-                      ? _TypeFilter.all
-                      : _TypeFilter.standalone;
-                }),
-              ),
-              _filterChip(
-                'Imported',
-                selected: _typeFilter == _TypeFilter.imported,
-                onTap: () => setState(() {
-                  _typeFilter = _typeFilter == _TypeFilter.imported
-                      ? _TypeFilter.all
-                      : _TypeFilter.imported;
-                }),
-              ),
-            ],
+          Expanded(
+            child: _filterDropdown<_StatusFilter>(
+              label: 'Status',
+              value: _statusFilter,
+              items: const [
+                (_StatusFilter.all, 'All'),
+                (_StatusFilter.open, 'Open'),
+                (_StatusFilter.closed, 'Closed'),
+              ],
+              onChanged: (v) => setState(() => _statusFilter = v),
+            ),
+          ),
+          const SizedBox(width: AppDesignTokens.spacing8),
+          Expanded(
+            child: _filterDropdown<_TypeFilter>(
+              label: 'Type',
+              value: _typeFilter,
+              items: const [
+                (_TypeFilter.all, 'All'),
+                (_TypeFilter.standalone, 'Custom'),
+                (_TypeFilter.imported, 'Protocol'),
+              ],
+              onChanged: (v) => setState(() => _typeFilter = v),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _filterChip(String label,
-      {required bool selected, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppDesignTokens.primary
-              : AppDesignTokens.cardSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: selected
-              ? null
-              : Border.all(color: AppDesignTokens.borderCrisp),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected
-                ? AppDesignTokens.onPrimary
-                : AppDesignTokens.secondaryText,
+  /// Compact outlined dropdown — "Label: Value ▾".
+  /// Follows visual calm rule: no fill, subtle border, secondary text weight.
+  Widget _filterDropdown<T>({
+    required String label,
+    required T value,
+    required List<(T, String)> items,
+    required ValueChanged<T> onChanged,
+  }) {
+    final selectedLabel =
+        items.firstWhere((e) => e.$1 == value, orElse: () => items.first).$2;
+    return Container(
+      height: 34,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: ButtonTheme(
+          alignedDropdown: true,
+          child: DropdownButton<T>(
+            value: value,
+            isExpanded: true,
+            iconSize: 18,
+            icon: Icon(
+              Icons.arrow_drop_down,
+              color: AppDesignTokens.secondaryText.withValues(alpha: 0.7),
+            ),
+            borderRadius: BorderRadius.circular(8),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppDesignTokens.primaryText,
+            ),
+            selectedItemBuilder: (_) => items
+                .map((e) => Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '$label: ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: AppDesignTokens.secondaryText
+                                    .withValues(alpha: 0.75),
+                              ),
+                            ),
+                            TextSpan(
+                              text: selectedLabel,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppDesignTokens.primaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ))
+                .toList(),
+            items: items
+                .map((e) => DropdownMenuItem<T>(
+                      value: e.$1,
+                      child: Text(e.$2),
+                    ))
+                .toList(),
+            onChanged: (v) {
+              if (v != null) onChanged(v);
+            },
           ),
         ),
       ),
     );
+  }
+
+  String _formatDateHeader(String sessionDateLocal) {
+    final now = DateTime.now();
+    final today =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    if (sessionDateLocal == today) return 'Today';
+
+    final yesterday = now.subtract(const Duration(days: 1));
+    final yesterdayStr =
+        '${yesterday.year.toString().padLeft(4, '0')}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+    if (sessionDateLocal == yesterdayStr) return 'Yesterday';
+
+    final d = DateTime.tryParse('$sessionDateLocal 12:00:00');
+    if (d == null) return sessionDateLocal;
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    final month = months[d.month - 1];
+    return '$month ${d.day}, ${d.year}';
   }
 
   Widget _buildEmptyState(VoidCallback? onGoToTrials) {
@@ -324,14 +400,17 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: AppDesignTokens.spacing8,
-        top: isFirst ? AppDesignTokens.spacing4 : AppDesignTokens.spacing8,
+        top: isFirst
+            ? AppDesignTokens.spacing4
+            : AppDesignTokens.spacing16,
       ),
       child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: AppDesignTokens.secondaryText,
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppDesignTokens.secondaryText.withValues(alpha: 0.7),
+          letterSpacing: 0.8,
         ),
       ),
     );
@@ -456,51 +535,74 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
     final isCustom =
         WorkspaceConfig.forType(wt).mode == TrialMode.standalone;
 
+    // Soft accent color for trial type distinction — left bar only, no pill.
+    final accentColor = isCustom
+        ? AppDesignTokens.primary.withValues(alpha: 0.45)
+        : const Color(0xFFB8860B).withValues(alpha: 0.45); // muted amber
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
-      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
       decoration: BoxDecoration(
         color: AppDesignTokens.cardSurface,
-        borderRadius:
-            BorderRadius.circular(AppDesignTokens.radiusCard),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
         border: Border.all(color: AppDesignTokens.borderCrisp),
         boxShadow: AppDesignTokens.cardShadow,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: session name + badges
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      session.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppDesignTokens.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$trialName · ${session.sessionDateLocal}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppDesignTokens.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppDesignTokens.spacing12,
+          AppDesignTokens.spacing12,
+          AppDesignTokens.spacing16,
+          AppDesignTokens.spacing12,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Trial type accent line (soft green = Custom, soft amber = Protocol).
+            Container(
+              width: 3,
+              height: 44,
+              margin: const EdgeInsets.only(
+                  right: AppDesignTokens.spacing12, top: 2),
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.circular(2),
               ),
-              _buildWorkspaceBadge(isCustom),
-              const SizedBox(width: 6),
-              _buildOpenClosedBadge(isOpen),
-            ],
-          ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                    // Header: session name + status
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                session.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppDesignTokens.primaryText,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$trialName · ${session.sessionDateLocal}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppDesignTokens.secondaryText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _buildOpenClosedBadge(isOpen),
+                      ],
+                    ),
           const SizedBox(height: AppDesignTokens.spacing8),
           // Time info
           Text(
@@ -569,6 +671,10 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
             ],
           ),
         ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -664,27 +770,6 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
         builder: (_) => TrialDetailScreen(
           trial: trial,
           initialTabIndex: tabIndex,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWorkspaceBadge(bool isCustom) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDesignTokens.spacing8,
-        vertical: AppDesignTokens.spacing4,
-      ),
-      decoration: BoxDecoration(
-        color: AppDesignTokens.primaryTint.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        isCustom ? 'Standalone' : 'Imported',
-        style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: AppDesignTokens.primary,
         ),
       ),
     );
