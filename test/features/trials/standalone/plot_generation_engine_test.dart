@@ -375,5 +375,75 @@ void main() {
       expect(report.softViolations.any((v) => v.contains('4 same-treatment')),
           true);
     });
+
+    test('flags S4 column clustering over cap', () {
+      // 4 treatments × 4 reps: cap per (treatment, column) = ceil(4/4) = 1.
+      // Here treatment 0 appears in column 0 three times → overage 2.
+      final reps = [
+        [0, 1, 2, 3],
+        [0, 2, 3, 1],
+        [0, 3, 1, 2],
+        [2, 0, 1, 3],
+      ];
+      final report = validateRcbdLayout(reps, 4);
+      expect(
+        report.softViolations.any((v) =>
+            v.contains('Treatment 1 occupies column 1 3 times (cap 1)')),
+        true,
+        reason: 'S4 should flag column 1 holding T1 three times',
+      );
+    });
+
+    test('S4: balanced layout reports no column-clustering violations', () {
+      // Latin square: each treatment once per column → zero overage.
+      final reps = [
+        [0, 1, 2, 3],
+        [1, 2, 3, 0],
+        [2, 3, 0, 1],
+        [3, 0, 1, 2],
+      ];
+      final report = validateRcbdLayout(reps, 4);
+      // No S4 violations. (S1 adjacencies are 0 here as well.)
+      expect(
+        report.softViolations.any((v) => v.contains('occupies column')),
+        false,
+      );
+    });
+  });
+
+  group('RCBD generator S4 (column clustering)', () {
+    // Walk through multiple seeds; generator should keep per-column
+    // treatment overage within 1 of the cap for 4×4 layouts
+    // (cap = ceil(4/4) = 1; any overage beyond 2 suggests S4 not
+    // influencing the chosen layout).
+    test('4×4 generator keeps column overage minimal', () {
+      for (final seed in [1, 7, 11, 42, 99, 137, 314]) {
+        final g = PlotGenerationEngine.generate(
+          treatmentCount: 4,
+          plotsPerRep: 4,
+          repCount: 4,
+          experimentalDesign: PlotGenerationEngine.designRcbd,
+          random: Random(seed),
+        );
+        final reps = <List<int>>[];
+        for (var i = 0; i < g.treatmentIndexPerPlot.length; i += 4) {
+          reps.add(g.treatmentIndexPerPlot.sublist(i, i + 4));
+        }
+        const cap = 1; // ceil(4/4)
+        var maxOverage = 0;
+        for (var t = 0; t < 4; t++) {
+          for (var c = 0; c < 4; c++) {
+            var count = 0;
+            for (final rep in reps) {
+              if (rep[c] == t) count++;
+            }
+            if (count - cap > maxOverage) maxOverage = count - cap;
+          }
+        }
+        // Latin-square (overage 0) is achievable for 4×4 within 500 attempts.
+        expect(maxOverage, lessThanOrEqualTo(1),
+            reason: 'seed $seed produced overage $maxOverage');
+      }
+    });
   });
 }

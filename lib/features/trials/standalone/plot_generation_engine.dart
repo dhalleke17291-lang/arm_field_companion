@@ -220,7 +220,12 @@ class PlotGenerationEngine {
         continue;
       }
 
-      final score = _rcbdAdjacencyScore(reps);
+      final score = _rcbdAdjacencyScore(reps) +
+          _rcbdColumnClusteringScore(
+            reps,
+            treatmentCount: treatmentCount,
+            plotsPerRep: plotsPerRep,
+          );
       if (score == 0) {
         return reps.expand((r) => r).toList();
       }
@@ -254,6 +259,37 @@ class PlotGenerationEngine {
       }
     }
     return total;
+  }
+
+  /// S4: sum of (treatment, column) occurrences above the ideal balance.
+  ///
+  /// Ideal balance = ceil(repCount / treatmentCount). Any (treatment, column)
+  /// pair that exceeds the balance contributes `count - cap` to the score.
+  /// Zero when every treatment is evenly distributed across columns. Keeps
+  /// controls (and any one treatment) from clustering in a single field
+  /// column, which would confound analysis of column/gradient effects.
+  static int _rcbdColumnClusteringScore(
+    List<List<int>> reps, {
+    required int treatmentCount,
+    required int plotsPerRep,
+  }) {
+    if (reps.isEmpty) return 0;
+    final cap = (reps.length + treatmentCount - 1) ~/ treatmentCount;
+    // counts[treatment * plotsPerRep + column]
+    final counts = List<int>.filled(treatmentCount * plotsPerRep, 0);
+    for (final rep in reps) {
+      final len = rep.length < plotsPerRep ? rep.length : plotsPerRep;
+      for (var c = 0; c < len; c++) {
+        final t = rep[c];
+        if (t < 0 || t >= treatmentCount) continue;
+        counts[t * plotsPerRep + c]++;
+      }
+    }
+    var overage = 0;
+    for (final count in counts) {
+      if (count > cap) overage += count - cap;
+    }
+    return overage;
   }
 
   /// Exact count of distinct orderings of `[0, 1, ..., t-1]` repeated
@@ -413,6 +449,25 @@ RcbdValidationReport validateRcbdLayout(
       soft.add(
         '$adj same-treatment vertical adjacencies between Rep $r and Rep ${r + 1}',
       );
+    }
+  }
+
+  // S4: (treatment, column) occurrences above ideal balance.
+  // Ideal cap per column per treatment = ceil(repCount / treatmentCount).
+  if (reps.isNotEmpty) {
+    final cap = (reps.length + treatmentCount - 1) ~/ treatmentCount;
+    for (var t = 0; t < treatmentCount; t++) {
+      for (var c = 0; c < plotsPerRep; c++) {
+        var count = 0;
+        for (final rep in reps) {
+          if (c < rep.length && rep[c] == t) count++;
+        }
+        if (count > cap) {
+          soft.add(
+            'Treatment ${t + 1} occupies column ${c + 1} $count times (cap $cap)',
+          );
+        }
+      }
     }
   }
 
