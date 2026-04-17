@@ -201,10 +201,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   /// Formatted date from previous record timestamp (e.g. "Mar 16, 2026").
-  static String _formatDatePrev(DateTime dt) {
-    return DateFormat('MMM d, yyyy').format(dt);
-  }
-
   String? _ratingSessionContextStrip(
     Session session,
     SessionTimingContext? timing,
@@ -2482,16 +2478,71 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              'Previous Value${_priorSessionName != null && _priorSessionName!.trim().isNotEmpty ? ' · ${_priorSessionName!.trim()}' : ''} · ${_formatDatePrev(_priorRating!.createdAt)}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade600,
-                                letterSpacing: 0.2,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Prev: ${_priorRating!.numericValue?.toString() ?? _priorRating!.textValue ?? '—'}'
+                                  '${_priorSessionName != null && _priorSessionName!.trim().isNotEmpty ? ' · ${_priorSessionName!.trim()}' : ''}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Builder(builder: (_) {
+                                  final plotCtx = ref
+                                      .read(plotContextProvider(widget.plot.id))
+                                      .valueOrNull;
+                                  if (plotCtx == null || !plotCtx.hasTreatment) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final sessionRatings = ref
+                                          .read(sessionRatingsProvider(
+                                              widget.session.id))
+                                          .valueOrNull ??
+                                      [];
+                                  final trtId = plotCtx.treatment!.id;
+                                  final vals = <double>[];
+                                  for (final r in sessionRatings) {
+                                    if (r.assessmentId ==
+                                            _currentAssessment.id &&
+                                        r.isCurrent &&
+                                        !r.isDeleted &&
+                                        r.resultStatus == 'RECORDED' &&
+                                        r.numericValue != null) {
+                                      // Check if this plot belongs to same treatment.
+                                      final p = ref
+                                          .read(plotContextProvider(r.plotPk))
+                                          .valueOrNull;
+                                      if (p?.treatment?.id == trtId) {
+                                        vals.add(r.numericValue!);
+                                      }
+                                    }
+                                  }
+                                  if (vals.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final mean = vals.reduce((a, b) => a + b) /
+                                      vals.length;
+                                  final meanStr = mean == mean.roundToDouble()
+                                      ? '${mean.round()}'
+                                      : mean.toStringAsFixed(1);
+                                  return Text(
+                                    '${plotCtx.treatmentCode} avg: $meanStr (n=${vals.length})',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  );
+                                }),
+                              ],
                             ),
                           ),
                           Text(
