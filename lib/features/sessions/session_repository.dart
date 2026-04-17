@@ -270,6 +270,20 @@ class SessionRepository {
     ));
   }
 
+  Future<void> updateSessionCropInjury(
+    int sessionId, {
+    required String status,
+    String? notes,
+    String? photoIds,
+  }) async {
+    await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
+        .write(SessionsCompanion(
+      cropInjuryStatus: Value(status),
+      cropInjuryNotes: Value(notes),
+      cropInjuryPhotoIds: Value(photoIds),
+    ));
+  }
+
   /// Soft-delete session and all rating_records for that session.
   /// [deletedByUserId] optional; stored on audit event as [performedByUserId].
   Future<void> softDeleteSession(int sessionId,

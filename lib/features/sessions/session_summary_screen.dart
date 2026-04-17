@@ -413,7 +413,23 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
             trial: widget.trial,
             session: widget.session,
           );
-          // After weather entry, continue with close
+        }
+        if (!mounted) return;
+      }
+
+      // Crop injury prompt — ask before closing if not yet recorded
+      final liveSession =
+          ref.read(sessionByIdProvider(widget.session.id)).valueOrNull ??
+              widget.session;
+      if (liveSession.cropInjuryStatus == null && mounted) {
+        final result = await _showCropInjuryPrompt();
+        if (result != null && mounted) {
+          await ref.read(sessionRepositoryProvider).updateSessionCropInjury(
+                widget.session.id,
+                status: result.status,
+                notes: result.notes,
+              );
+          ref.invalidate(sessionByIdProvider(widget.session.id));
         }
         if (!mounted) return;
       }
@@ -455,6 +471,105 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     } finally {
       if (mounted) setState(() => _isClosing = false);
     }
+  }
+
+  Future<_CropInjuryResult?> _showCropInjuryPrompt() {
+    return showDialog<_CropInjuryResult>(
+      context: context,
+      builder: (ctx) {
+        String? notes;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: const Text('Any crop injury observed?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Recording crop injury status is required by EPPO/GLP standards. '
+                  '"None observed" is positive evidence that the crop was checked.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _CropInjuryOption(
+                  label: 'None observed',
+                  subtitle: 'Crop looks healthy, no injury symptoms',
+                  icon: Icons.check_circle_outline,
+                  color: AppDesignTokens.successFg,
+                  onTap: () => Navigator.pop(
+                    ctx,
+                    const _CropInjuryResult(status: 'none_observed'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _CropInjuryOption(
+                  label: 'Symptoms observed',
+                  subtitle: 'Describe symptoms below',
+                  icon: Icons.warning_amber_rounded,
+                  color: AppDesignTokens.warningFg,
+                  onTap: () {
+                    if (notes == null || notes!.trim().isEmpty) {
+                      setDialogState(() => notes = '');
+                    } else {
+                      Navigator.pop(
+                        ctx,
+                        _CropInjuryResult(
+                          status: 'symptoms_observed',
+                          notes: notes?.trim(),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                if (notes != null) ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    autofocus: true,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: 'Describe symptoms (type, severity, affected treatments)',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (v) => notes = v,
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(
+                      ctx,
+                      _CropInjuryResult(
+                        status: 'symptoms_observed',
+                        notes: notes?.trim(),
+                      ),
+                    ),
+                    child: const Text('Save'),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                _CropInjuryOption(
+                  label: 'Not assessed',
+                  subtitle: 'Crop injury check not applicable this session',
+                  icon: Icons.remove_circle_outline,
+                  color: AppDesignTokens.secondaryText,
+                  onTap: () => Navigator.pop(
+                    ctx,
+                    const _CropInjuryResult(status: 'not_assessed'),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Skip'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _showForceCloseDialog() {
@@ -1988,6 +2103,74 @@ class _MetricRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: row,
+      ),
+    );
+  }
+}
+
+class _CropInjuryResult {
+  const _CropInjuryResult({required this.status, this.notes});
+  final String status;
+  final String? notes;
+}
+
+class _CropInjuryOption extends StatelessWidget {
+  const _CropInjuryOption({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: color),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -69,6 +69,9 @@ class _FakeSessionRepository implements SessionRepository {
   Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {}
 
   @override
+  Future<void> updateSessionCropInjury(int sessionId, {required String status, String? notes, String? photoIds}) async {}
+
+  @override
   Future<Session> createSession({
     required int trialId,
     required String name,

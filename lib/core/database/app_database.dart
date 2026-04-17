@@ -314,6 +314,16 @@ class Sessions extends Table {
 
   /// Optional BBCH growth stage (0–99) at rating session; null if not recorded.
   IntColumn get cropStageBbch => integer().nullable()();
+
+  /// Crop injury / phytotoxicity status recorded at session close.
+  /// Values: 'none_observed', 'symptoms_observed', 'not_assessed', or null (not yet recorded).
+  TextColumn get cropInjuryStatus => text().nullable()();
+
+  /// Free-text description when cropInjuryStatus = 'symptoms_observed'.
+  TextColumn get cropInjuryNotes => text().nullable()();
+
+  /// JSON array of photo IDs attached to the crop injury observation.
+  TextColumn get cropInjuryPhotoIds => text().nullable()();
 }
 
 class SessionAssessments extends Table {
@@ -843,7 +853,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 49;
+  int get schemaVersion => 50;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1300,6 +1310,24 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
               await m.createTable(applicationPlotRecords);
             }
           }
+
+          if (from < 50) {
+            final sessionCols = await customSelect(
+              "SELECT name FROM pragma_table_info('sessions')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            for (final col in [
+              'crop_injury_status',
+              'crop_injury_notes',
+              'crop_injury_photo_ids',
+            ]) {
+              if (!sessionCols.contains(col)) {
+                await customStatement(
+                    'ALTER TABLE sessions ADD COLUMN $col TEXT');
+              }
+            }
+          }
+
           await _createIndexes();
         },
       );

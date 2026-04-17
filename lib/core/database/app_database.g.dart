@@ -9411,6 +9411,24 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   late final GeneratedColumn<int> cropStageBbch = GeneratedColumn<int>(
       'crop_stage_bbch', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _cropInjuryStatusMeta =
+      const VerificationMeta('cropInjuryStatus');
+  @override
+  late final GeneratedColumn<String> cropInjuryStatus = GeneratedColumn<String>(
+      'crop_injury_status', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cropInjuryNotesMeta =
+      const VerificationMeta('cropInjuryNotes');
+  @override
+  late final GeneratedColumn<String> cropInjuryNotes = GeneratedColumn<String>(
+      'crop_injury_notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cropInjuryPhotoIdsMeta =
+      const VerificationMeta('cropInjuryPhotoIds');
+  @override
+  late final GeneratedColumn<String> cropInjuryPhotoIds =
+      GeneratedColumn<String>('crop_injury_photo_ids', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -9425,7 +9443,10 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         isDeleted,
         deletedAt,
         deletedBy,
-        cropStageBbch
+        cropStageBbch,
+        cropInjuryStatus,
+        cropInjuryNotes,
+        cropInjuryPhotoIds
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9500,6 +9521,24 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
           cropStageBbch.isAcceptableOrUnknown(
               data['crop_stage_bbch']!, _cropStageBbchMeta));
     }
+    if (data.containsKey('crop_injury_status')) {
+      context.handle(
+          _cropInjuryStatusMeta,
+          cropInjuryStatus.isAcceptableOrUnknown(
+              data['crop_injury_status']!, _cropInjuryStatusMeta));
+    }
+    if (data.containsKey('crop_injury_notes')) {
+      context.handle(
+          _cropInjuryNotesMeta,
+          cropInjuryNotes.isAcceptableOrUnknown(
+              data['crop_injury_notes']!, _cropInjuryNotesMeta));
+    }
+    if (data.containsKey('crop_injury_photo_ids')) {
+      context.handle(
+          _cropInjuryPhotoIdsMeta,
+          cropInjuryPhotoIds.isAcceptableOrUnknown(
+              data['crop_injury_photo_ids']!, _cropInjuryPhotoIdsMeta));
+    }
     return context;
   }
 
@@ -9535,6 +9574,12 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
           .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
       cropStageBbch: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}crop_stage_bbch']),
+      cropInjuryStatus: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}crop_injury_status']),
+      cropInjuryNotes: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}crop_injury_notes']),
+      cropInjuryPhotoIds: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}crop_injury_photo_ids']),
     );
   }
 
@@ -9560,6 +9605,16 @@ class Session extends DataClass implements Insertable<Session> {
 
   /// Optional BBCH growth stage (0–99) at rating session; null if not recorded.
   final int? cropStageBbch;
+
+  /// Crop injury / phytotoxicity status recorded at session close.
+  /// Values: 'none_observed', 'symptoms_observed', 'not_assessed', or null (not yet recorded).
+  final String? cropInjuryStatus;
+
+  /// Free-text description when cropInjuryStatus = 'symptoms_observed'.
+  final String? cropInjuryNotes;
+
+  /// JSON array of photo IDs attached to the crop injury observation.
+  final String? cropInjuryPhotoIds;
   const Session(
       {required this.id,
       required this.trialId,
@@ -9573,7 +9628,10 @@ class Session extends DataClass implements Insertable<Session> {
       required this.isDeleted,
       this.deletedAt,
       this.deletedBy,
-      this.cropStageBbch});
+      this.cropStageBbch,
+      this.cropInjuryStatus,
+      this.cropInjuryNotes,
+      this.cropInjuryPhotoIds});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -9601,6 +9659,15 @@ class Session extends DataClass implements Insertable<Session> {
     }
     if (!nullToAbsent || cropStageBbch != null) {
       map['crop_stage_bbch'] = Variable<int>(cropStageBbch);
+    }
+    if (!nullToAbsent || cropInjuryStatus != null) {
+      map['crop_injury_status'] = Variable<String>(cropInjuryStatus);
+    }
+    if (!nullToAbsent || cropInjuryNotes != null) {
+      map['crop_injury_notes'] = Variable<String>(cropInjuryNotes);
+    }
+    if (!nullToAbsent || cropInjuryPhotoIds != null) {
+      map['crop_injury_photo_ids'] = Variable<String>(cropInjuryPhotoIds);
     }
     return map;
   }
@@ -9632,6 +9699,15 @@ class Session extends DataClass implements Insertable<Session> {
       cropStageBbch: cropStageBbch == null && nullToAbsent
           ? const Value.absent()
           : Value(cropStageBbch),
+      cropInjuryStatus: cropInjuryStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropInjuryStatus),
+      cropInjuryNotes: cropInjuryNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropInjuryNotes),
+      cropInjuryPhotoIds: cropInjuryPhotoIds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropInjuryPhotoIds),
     );
   }
 
@@ -9652,6 +9728,10 @@ class Session extends DataClass implements Insertable<Session> {
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
       cropStageBbch: serializer.fromJson<int?>(json['cropStageBbch']),
+      cropInjuryStatus: serializer.fromJson<String?>(json['cropInjuryStatus']),
+      cropInjuryNotes: serializer.fromJson<String?>(json['cropInjuryNotes']),
+      cropInjuryPhotoIds:
+          serializer.fromJson<String?>(json['cropInjuryPhotoIds']),
     );
   }
   @override
@@ -9671,6 +9751,9 @@ class Session extends DataClass implements Insertable<Session> {
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
       'cropStageBbch': serializer.toJson<int?>(cropStageBbch),
+      'cropInjuryStatus': serializer.toJson<String?>(cropInjuryStatus),
+      'cropInjuryNotes': serializer.toJson<String?>(cropInjuryNotes),
+      'cropInjuryPhotoIds': serializer.toJson<String?>(cropInjuryPhotoIds),
     };
   }
 
@@ -9687,7 +9770,10 @@ class Session extends DataClass implements Insertable<Session> {
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
           Value<String?> deletedBy = const Value.absent(),
-          Value<int?> cropStageBbch = const Value.absent()}) =>
+          Value<int?> cropStageBbch = const Value.absent(),
+          Value<String?> cropInjuryStatus = const Value.absent(),
+          Value<String?> cropInjuryNotes = const Value.absent(),
+          Value<String?> cropInjuryPhotoIds = const Value.absent()}) =>
       Session(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -9705,6 +9791,15 @@ class Session extends DataClass implements Insertable<Session> {
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
         cropStageBbch:
             cropStageBbch.present ? cropStageBbch.value : this.cropStageBbch,
+        cropInjuryStatus: cropInjuryStatus.present
+            ? cropInjuryStatus.value
+            : this.cropInjuryStatus,
+        cropInjuryNotes: cropInjuryNotes.present
+            ? cropInjuryNotes.value
+            : this.cropInjuryNotes,
+        cropInjuryPhotoIds: cropInjuryPhotoIds.present
+            ? cropInjuryPhotoIds.value
+            : this.cropInjuryPhotoIds,
       );
   Session copyWithCompanion(SessionsCompanion data) {
     return Session(
@@ -9727,6 +9822,15 @@ class Session extends DataClass implements Insertable<Session> {
       cropStageBbch: data.cropStageBbch.present
           ? data.cropStageBbch.value
           : this.cropStageBbch,
+      cropInjuryStatus: data.cropInjuryStatus.present
+          ? data.cropInjuryStatus.value
+          : this.cropInjuryStatus,
+      cropInjuryNotes: data.cropInjuryNotes.present
+          ? data.cropInjuryNotes.value
+          : this.cropInjuryNotes,
+      cropInjuryPhotoIds: data.cropInjuryPhotoIds.present
+          ? data.cropInjuryPhotoIds.value
+          : this.cropInjuryPhotoIds,
     );
   }
 
@@ -9745,7 +9849,10 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy, ')
-          ..write('cropStageBbch: $cropStageBbch')
+          ..write('cropStageBbch: $cropStageBbch, ')
+          ..write('cropInjuryStatus: $cropInjuryStatus, ')
+          ..write('cropInjuryNotes: $cropInjuryNotes, ')
+          ..write('cropInjuryPhotoIds: $cropInjuryPhotoIds')
           ..write(')'))
         .toString();
   }
@@ -9764,7 +9871,10 @@ class Session extends DataClass implements Insertable<Session> {
       isDeleted,
       deletedAt,
       deletedBy,
-      cropStageBbch);
+      cropStageBbch,
+      cropInjuryStatus,
+      cropInjuryNotes,
+      cropInjuryPhotoIds);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -9781,7 +9891,10 @@ class Session extends DataClass implements Insertable<Session> {
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
           other.deletedBy == this.deletedBy &&
-          other.cropStageBbch == this.cropStageBbch);
+          other.cropStageBbch == this.cropStageBbch &&
+          other.cropInjuryStatus == this.cropInjuryStatus &&
+          other.cropInjuryNotes == this.cropInjuryNotes &&
+          other.cropInjuryPhotoIds == this.cropInjuryPhotoIds);
 }
 
 class SessionsCompanion extends UpdateCompanion<Session> {
@@ -9798,6 +9911,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
   final Value<int?> cropStageBbch;
+  final Value<String?> cropInjuryStatus;
+  final Value<String?> cropInjuryNotes;
+  final Value<String?> cropInjuryPhotoIds;
   const SessionsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -9812,6 +9928,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
     this.cropStageBbch = const Value.absent(),
+    this.cropInjuryStatus = const Value.absent(),
+    this.cropInjuryNotes = const Value.absent(),
+    this.cropInjuryPhotoIds = const Value.absent(),
   });
   SessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -9827,6 +9946,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
     this.cropStageBbch = const Value.absent(),
+    this.cropInjuryStatus = const Value.absent(),
+    this.cropInjuryNotes = const Value.absent(),
+    this.cropInjuryPhotoIds = const Value.absent(),
   })  : trialId = Value(trialId),
         name = Value(name),
         sessionDateLocal = Value(sessionDateLocal);
@@ -9844,6 +9966,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
     Expression<int>? cropStageBbch,
+    Expression<String>? cropInjuryStatus,
+    Expression<String>? cropInjuryNotes,
+    Expression<String>? cropInjuryPhotoIds,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -9859,6 +9984,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
       if (cropStageBbch != null) 'crop_stage_bbch': cropStageBbch,
+      if (cropInjuryStatus != null) 'crop_injury_status': cropInjuryStatus,
+      if (cropInjuryNotes != null) 'crop_injury_notes': cropInjuryNotes,
+      if (cropInjuryPhotoIds != null)
+        'crop_injury_photo_ids': cropInjuryPhotoIds,
     });
   }
 
@@ -9875,7 +10004,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
       Value<String?>? deletedBy,
-      Value<int?>? cropStageBbch}) {
+      Value<int?>? cropStageBbch,
+      Value<String?>? cropInjuryStatus,
+      Value<String?>? cropInjuryNotes,
+      Value<String?>? cropInjuryPhotoIds}) {
     return SessionsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -9890,6 +10022,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       cropStageBbch: cropStageBbch ?? this.cropStageBbch,
+      cropInjuryStatus: cropInjuryStatus ?? this.cropInjuryStatus,
+      cropInjuryNotes: cropInjuryNotes ?? this.cropInjuryNotes,
+      cropInjuryPhotoIds: cropInjuryPhotoIds ?? this.cropInjuryPhotoIds,
     );
   }
 
@@ -9935,6 +10070,15 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (cropStageBbch.present) {
       map['crop_stage_bbch'] = Variable<int>(cropStageBbch.value);
     }
+    if (cropInjuryStatus.present) {
+      map['crop_injury_status'] = Variable<String>(cropInjuryStatus.value);
+    }
+    if (cropInjuryNotes.present) {
+      map['crop_injury_notes'] = Variable<String>(cropInjuryNotes.value);
+    }
+    if (cropInjuryPhotoIds.present) {
+      map['crop_injury_photo_ids'] = Variable<String>(cropInjuryPhotoIds.value);
+    }
     return map;
   }
 
@@ -9953,7 +10097,10 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy, ')
-          ..write('cropStageBbch: $cropStageBbch')
+          ..write('cropStageBbch: $cropStageBbch, ')
+          ..write('cropInjuryStatus: $cropInjuryStatus, ')
+          ..write('cropInjuryNotes: $cropInjuryNotes, ')
+          ..write('cropInjuryPhotoIds: $cropInjuryPhotoIds')
           ..write(')'))
         .toString();
   }
@@ -31866,6 +32013,9 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
   Value<int?> cropStageBbch,
+  Value<String?> cropInjuryStatus,
+  Value<String?> cropInjuryNotes,
+  Value<String?> cropInjuryPhotoIds,
 });
 typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<int> id,
@@ -31881,6 +32031,9 @@ typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
   Value<int?> cropStageBbch,
+  Value<String?> cropInjuryStatus,
+  Value<String?> cropInjuryNotes,
+  Value<String?> cropInjuryPhotoIds,
 });
 
 class $$SessionsTableTableManager extends RootTableManager<
@@ -31913,6 +32066,9 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
             Value<int?> cropStageBbch = const Value.absent(),
+            Value<String?> cropInjuryStatus = const Value.absent(),
+            Value<String?> cropInjuryNotes = const Value.absent(),
+            Value<String?> cropInjuryPhotoIds = const Value.absent(),
           }) =>
               SessionsCompanion(
             id: id,
@@ -31928,6 +32084,9 @@ class $$SessionsTableTableManager extends RootTableManager<
             deletedAt: deletedAt,
             deletedBy: deletedBy,
             cropStageBbch: cropStageBbch,
+            cropInjuryStatus: cropInjuryStatus,
+            cropInjuryNotes: cropInjuryNotes,
+            cropInjuryPhotoIds: cropInjuryPhotoIds,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -31943,6 +32102,9 @@ class $$SessionsTableTableManager extends RootTableManager<
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
             Value<int?> cropStageBbch = const Value.absent(),
+            Value<String?> cropInjuryStatus = const Value.absent(),
+            Value<String?> cropInjuryNotes = const Value.absent(),
+            Value<String?> cropInjuryPhotoIds = const Value.absent(),
           }) =>
               SessionsCompanion.insert(
             id: id,
@@ -31958,6 +32120,9 @@ class $$SessionsTableTableManager extends RootTableManager<
             deletedAt: deletedAt,
             deletedBy: deletedBy,
             cropStageBbch: cropStageBbch,
+            cropInjuryStatus: cropInjuryStatus,
+            cropInjuryNotes: cropInjuryNotes,
+            cropInjuryPhotoIds: cropInjuryPhotoIds,
           ),
         ));
 }
@@ -32017,6 +32182,21 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<int> get cropStageBbch => $state.composableBuilder(
       column: $state.table.cropStageBbch,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cropInjuryStatus => $state.composableBuilder(
+      column: $state.table.cropInjuryStatus,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cropInjuryNotes => $state.composableBuilder(
+      column: $state.table.cropInjuryNotes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cropInjuryPhotoIds => $state.composableBuilder(
+      column: $state.table.cropInjuryPhotoIds,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -32256,6 +32436,21 @@ class $$SessionsTableOrderingComposer
 
   ColumnOrderings<int> get cropStageBbch => $state.composableBuilder(
       column: $state.table.cropStageBbch,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cropInjuryStatus => $state.composableBuilder(
+      column: $state.table.cropInjuryStatus,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cropInjuryNotes => $state.composableBuilder(
+      column: $state.table.cropInjuryNotes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cropInjuryPhotoIds => $state.composableBuilder(
+      column: $state.table.cropInjuryPhotoIds,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
