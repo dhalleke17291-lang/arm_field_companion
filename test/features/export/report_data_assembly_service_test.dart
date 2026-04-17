@@ -744,7 +744,7 @@ void main() {
           trialId: 42,
           productName: 'Product A',
           sortOrder: 0,
-          isDeleted: false,
+          isDeleted: false, isTestProduct: false,
         ),
       ];
       mockSessionRepo.sessionsForTrial = [
@@ -844,14 +844,14 @@ void main() {
             trialId: 1,
             productName: 'A',
             sortOrder: 0,
-            isDeleted: false),
+            isDeleted: false, isTestProduct: false),
         const TreatmentComponent(
             id: 2,
             treatmentId: 1,
             trialId: 1,
             productName: 'B',
             sortOrder: 1,
-            isDeleted: false),
+            isDeleted: false, isTestProduct: false),
       ];
       mockTreatmentRepo.componentsByTreatmentId[2] = [];
 

@@ -166,6 +166,18 @@ class TreatmentComponents extends Table {
   TextColumn get registrationNumber => text().nullable()();
   TextColumn get eppoCode => text().nullable()();
 
+  /// Active ingredient common name (e.g. "glyphosate").
+  TextColumn get activeIngredientName => text().nullable()();
+  /// AI concentration (g/L or g/kg). Paired with [aiConcentrationUnit].
+  RealColumn get aiConcentration => real().nullable()();
+  TextColumn get aiConcentrationUnit => text().nullable()();
+  /// Maximum legal rate from the product label, separate from trial rate.
+  RealColumn get labelRate => real().nullable()();
+  TextColumn get labelRateUnit => text().nullable()();
+  /// Distinguishes test product from reference standard.
+  BoolColumn get isTestProduct =>
+      boolean().withDefault(const Constant(false))();
+
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
@@ -919,7 +931,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 52;
+  int get schemaVersion => 53;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1506,6 +1518,27 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
               if (!prodCols.contains(col.key)) {
                 await customStatement(
                     'ALTER TABLE trial_application_products '
+                    'ADD COLUMN ${col.key} ${col.value}');
+              }
+            }
+          }
+
+          if (from < 53) {
+            final compCols = await customSelect(
+              "SELECT name FROM pragma_table_info('treatment_components')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            for (final col in {
+              'active_ingredient_name': 'TEXT',
+              'ai_concentration': 'REAL',
+              'ai_concentration_unit': 'TEXT',
+              'label_rate': 'REAL',
+              'label_rate_unit': 'TEXT',
+              'is_test_product': 'INTEGER DEFAULT 0',
+            }.entries) {
+              if (!compCols.contains(col.key)) {
+                await customStatement(
+                    'ALTER TABLE treatment_components '
                     'ADD COLUMN ${col.key} ${col.value}');
               }
             }

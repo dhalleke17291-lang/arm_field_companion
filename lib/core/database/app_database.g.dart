@@ -4338,6 +4338,46 @@ class $TreatmentComponentsTable extends TreatmentComponents
   late final GeneratedColumn<String> eppoCode = GeneratedColumn<String>(
       'eppo_code', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _activeIngredientNameMeta =
+      const VerificationMeta('activeIngredientName');
+  @override
+  late final GeneratedColumn<String> activeIngredientName =
+      GeneratedColumn<String>('active_ingredient_name', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _aiConcentrationMeta =
+      const VerificationMeta('aiConcentration');
+  @override
+  late final GeneratedColumn<double> aiConcentration = GeneratedColumn<double>(
+      'ai_concentration', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _aiConcentrationUnitMeta =
+      const VerificationMeta('aiConcentrationUnit');
+  @override
+  late final GeneratedColumn<String> aiConcentrationUnit =
+      GeneratedColumn<String>('ai_concentration_unit', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _labelRateMeta =
+      const VerificationMeta('labelRate');
+  @override
+  late final GeneratedColumn<double> labelRate = GeneratedColumn<double>(
+      'label_rate', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _labelRateUnitMeta =
+      const VerificationMeta('labelRateUnit');
+  @override
+  late final GeneratedColumn<String> labelRateUnit = GeneratedColumn<String>(
+      'label_rate_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isTestProductMeta =
+      const VerificationMeta('isTestProduct');
+  @override
+  late final GeneratedColumn<bool> isTestProduct = GeneratedColumn<bool>(
+      'is_test_product', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_test_product" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _isDeletedMeta =
       const VerificationMeta('isDeleted');
   @override
@@ -4391,6 +4431,12 @@ class $TreatmentComponentsTable extends TreatmentComponents
         manufacturer,
         registrationNumber,
         eppoCode,
+        activeIngredientName,
+        aiConcentration,
+        aiConcentrationUnit,
+        labelRate,
+        labelRateUnit,
+        isTestProduct,
         isDeleted,
         deletedAt,
         deletedBy,
@@ -4482,6 +4528,40 @@ class $TreatmentComponentsTable extends TreatmentComponents
       context.handle(_eppoCodeMeta,
           eppoCode.isAcceptableOrUnknown(data['eppo_code']!, _eppoCodeMeta));
     }
+    if (data.containsKey('active_ingredient_name')) {
+      context.handle(
+          _activeIngredientNameMeta,
+          activeIngredientName.isAcceptableOrUnknown(
+              data['active_ingredient_name']!, _activeIngredientNameMeta));
+    }
+    if (data.containsKey('ai_concentration')) {
+      context.handle(
+          _aiConcentrationMeta,
+          aiConcentration.isAcceptableOrUnknown(
+              data['ai_concentration']!, _aiConcentrationMeta));
+    }
+    if (data.containsKey('ai_concentration_unit')) {
+      context.handle(
+          _aiConcentrationUnitMeta,
+          aiConcentrationUnit.isAcceptableOrUnknown(
+              data['ai_concentration_unit']!, _aiConcentrationUnitMeta));
+    }
+    if (data.containsKey('label_rate')) {
+      context.handle(_labelRateMeta,
+          labelRate.isAcceptableOrUnknown(data['label_rate']!, _labelRateMeta));
+    }
+    if (data.containsKey('label_rate_unit')) {
+      context.handle(
+          _labelRateUnitMeta,
+          labelRateUnit.isAcceptableOrUnknown(
+              data['label_rate_unit']!, _labelRateUnitMeta));
+    }
+    if (data.containsKey('is_test_product')) {
+      context.handle(
+          _isTestProductMeta,
+          isTestProduct.isAcceptableOrUnknown(
+              data['is_test_product']!, _isTestProductMeta));
+    }
     if (data.containsKey('is_deleted')) {
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
@@ -4543,6 +4623,19 @@ class $TreatmentComponentsTable extends TreatmentComponents
           DriftSqlType.string, data['${effectivePrefix}registration_number']),
       eppoCode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}eppo_code']),
+      activeIngredientName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}active_ingredient_name']),
+      aiConcentration: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}ai_concentration']),
+      aiConcentrationUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}ai_concentration_unit']),
+      labelRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}label_rate']),
+      labelRateUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label_rate_unit']),
+      isTestProduct: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_test_product'])!,
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
       deletedAt: attachedDatabase.typeMapping
@@ -4578,6 +4671,20 @@ class TreatmentComponent extends DataClass
   final String? manufacturer;
   final String? registrationNumber;
   final String? eppoCode;
+
+  /// Active ingredient common name (e.g. "glyphosate").
+  final String? activeIngredientName;
+
+  /// AI concentration (g/L or g/kg). Paired with [aiConcentrationUnit].
+  final double? aiConcentration;
+  final String? aiConcentrationUnit;
+
+  /// Maximum legal rate from the product label, separate from trial rate.
+  final double? labelRate;
+  final String? labelRateUnit;
+
+  /// Distinguishes test product from reference standard.
+  final bool isTestProduct;
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
@@ -4598,6 +4705,12 @@ class TreatmentComponent extends DataClass
       this.manufacturer,
       this.registrationNumber,
       this.eppoCode,
+      this.activeIngredientName,
+      this.aiConcentration,
+      this.aiConcentrationUnit,
+      this.labelRate,
+      this.labelRateUnit,
+      required this.isTestProduct,
       required this.isDeleted,
       this.deletedAt,
       this.deletedBy,
@@ -4638,6 +4751,22 @@ class TreatmentComponent extends DataClass
     if (!nullToAbsent || eppoCode != null) {
       map['eppo_code'] = Variable<String>(eppoCode);
     }
+    if (!nullToAbsent || activeIngredientName != null) {
+      map['active_ingredient_name'] = Variable<String>(activeIngredientName);
+    }
+    if (!nullToAbsent || aiConcentration != null) {
+      map['ai_concentration'] = Variable<double>(aiConcentration);
+    }
+    if (!nullToAbsent || aiConcentrationUnit != null) {
+      map['ai_concentration_unit'] = Variable<String>(aiConcentrationUnit);
+    }
+    if (!nullToAbsent || labelRate != null) {
+      map['label_rate'] = Variable<double>(labelRate);
+    }
+    if (!nullToAbsent || labelRateUnit != null) {
+      map['label_rate_unit'] = Variable<String>(labelRateUnit);
+    }
+    map['is_test_product'] = Variable<bool>(isTestProduct);
     map['is_deleted'] = Variable<bool>(isDeleted);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
@@ -4685,6 +4814,22 @@ class TreatmentComponent extends DataClass
       eppoCode: eppoCode == null && nullToAbsent
           ? const Value.absent()
           : Value(eppoCode),
+      activeIngredientName: activeIngredientName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(activeIngredientName),
+      aiConcentration: aiConcentration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(aiConcentration),
+      aiConcentrationUnit: aiConcentrationUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(aiConcentrationUnit),
+      labelRate: labelRate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(labelRate),
+      labelRateUnit: labelRateUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(labelRateUnit),
+      isTestProduct: Value(isTestProduct),
       isDeleted: Value(isDeleted),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -4722,6 +4867,14 @@ class TreatmentComponent extends DataClass
       registrationNumber:
           serializer.fromJson<String?>(json['registrationNumber']),
       eppoCode: serializer.fromJson<String?>(json['eppoCode']),
+      activeIngredientName:
+          serializer.fromJson<String?>(json['activeIngredientName']),
+      aiConcentration: serializer.fromJson<double?>(json['aiConcentration']),
+      aiConcentrationUnit:
+          serializer.fromJson<String?>(json['aiConcentrationUnit']),
+      labelRate: serializer.fromJson<double?>(json['labelRate']),
+      labelRateUnit: serializer.fromJson<String?>(json['labelRateUnit']),
+      isTestProduct: serializer.fromJson<bool>(json['isTestProduct']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
@@ -4747,6 +4900,12 @@ class TreatmentComponent extends DataClass
       'manufacturer': serializer.toJson<String?>(manufacturer),
       'registrationNumber': serializer.toJson<String?>(registrationNumber),
       'eppoCode': serializer.toJson<String?>(eppoCode),
+      'activeIngredientName': serializer.toJson<String?>(activeIngredientName),
+      'aiConcentration': serializer.toJson<double?>(aiConcentration),
+      'aiConcentrationUnit': serializer.toJson<String?>(aiConcentrationUnit),
+      'labelRate': serializer.toJson<double?>(labelRate),
+      'labelRateUnit': serializer.toJson<String?>(labelRateUnit),
+      'isTestProduct': serializer.toJson<bool>(isTestProduct),
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
@@ -4770,6 +4929,12 @@ class TreatmentComponent extends DataClass
           Value<String?> manufacturer = const Value.absent(),
           Value<String?> registrationNumber = const Value.absent(),
           Value<String?> eppoCode = const Value.absent(),
+          Value<String?> activeIngredientName = const Value.absent(),
+          Value<double?> aiConcentration = const Value.absent(),
+          Value<String?> aiConcentrationUnit = const Value.absent(),
+          Value<double?> labelRate = const Value.absent(),
+          Value<String?> labelRateUnit = const Value.absent(),
+          bool? isTestProduct,
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
           Value<String?> deletedBy = const Value.absent(),
@@ -4799,6 +4964,19 @@ class TreatmentComponent extends DataClass
             ? registrationNumber.value
             : this.registrationNumber,
         eppoCode: eppoCode.present ? eppoCode.value : this.eppoCode,
+        activeIngredientName: activeIngredientName.present
+            ? activeIngredientName.value
+            : this.activeIngredientName,
+        aiConcentration: aiConcentration.present
+            ? aiConcentration.value
+            : this.aiConcentration,
+        aiConcentrationUnit: aiConcentrationUnit.present
+            ? aiConcentrationUnit.value
+            : this.aiConcentrationUnit,
+        labelRate: labelRate.present ? labelRate.value : this.labelRate,
+        labelRateUnit:
+            labelRateUnit.present ? labelRateUnit.value : this.labelRateUnit,
+        isTestProduct: isTestProduct ?? this.isTestProduct,
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
@@ -4836,6 +5014,22 @@ class TreatmentComponent extends DataClass
           ? data.registrationNumber.value
           : this.registrationNumber,
       eppoCode: data.eppoCode.present ? data.eppoCode.value : this.eppoCode,
+      activeIngredientName: data.activeIngredientName.present
+          ? data.activeIngredientName.value
+          : this.activeIngredientName,
+      aiConcentration: data.aiConcentration.present
+          ? data.aiConcentration.value
+          : this.aiConcentration,
+      aiConcentrationUnit: data.aiConcentrationUnit.present
+          ? data.aiConcentrationUnit.value
+          : this.aiConcentrationUnit,
+      labelRate: data.labelRate.present ? data.labelRate.value : this.labelRate,
+      labelRateUnit: data.labelRateUnit.present
+          ? data.labelRateUnit.value
+          : this.labelRateUnit,
+      isTestProduct: data.isTestProduct.present
+          ? data.isTestProduct.value
+          : this.isTestProduct,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
@@ -4865,6 +5059,12 @@ class TreatmentComponent extends DataClass
           ..write('manufacturer: $manufacturer, ')
           ..write('registrationNumber: $registrationNumber, ')
           ..write('eppoCode: $eppoCode, ')
+          ..write('activeIngredientName: $activeIngredientName, ')
+          ..write('aiConcentration: $aiConcentration, ')
+          ..write('aiConcentrationUnit: $aiConcentrationUnit, ')
+          ..write('labelRate: $labelRate, ')
+          ..write('labelRateUnit: $labelRateUnit, ')
+          ..write('isTestProduct: $isTestProduct, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy, ')
@@ -4875,26 +5075,33 @@ class TreatmentComponent extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      treatmentId,
-      trialId,
-      productName,
-      rate,
-      rateUnit,
-      applicationTiming,
-      notes,
-      sortOrder,
-      activeIngredientPct,
-      formulationType,
-      manufacturer,
-      registrationNumber,
-      eppoCode,
-      isDeleted,
-      deletedAt,
-      deletedBy,
-      lastEditedByUserId,
-      lastEditedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        treatmentId,
+        trialId,
+        productName,
+        rate,
+        rateUnit,
+        applicationTiming,
+        notes,
+        sortOrder,
+        activeIngredientPct,
+        formulationType,
+        manufacturer,
+        registrationNumber,
+        eppoCode,
+        activeIngredientName,
+        aiConcentration,
+        aiConcentrationUnit,
+        labelRate,
+        labelRateUnit,
+        isTestProduct,
+        isDeleted,
+        deletedAt,
+        deletedBy,
+        lastEditedByUserId,
+        lastEditedAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4913,6 +5120,12 @@ class TreatmentComponent extends DataClass
           other.manufacturer == this.manufacturer &&
           other.registrationNumber == this.registrationNumber &&
           other.eppoCode == this.eppoCode &&
+          other.activeIngredientName == this.activeIngredientName &&
+          other.aiConcentration == this.aiConcentration &&
+          other.aiConcentrationUnit == this.aiConcentrationUnit &&
+          other.labelRate == this.labelRate &&
+          other.labelRateUnit == this.labelRateUnit &&
+          other.isTestProduct == this.isTestProduct &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
           other.deletedBy == this.deletedBy &&
@@ -4935,6 +5148,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
   final Value<String?> manufacturer;
   final Value<String?> registrationNumber;
   final Value<String?> eppoCode;
+  final Value<String?> activeIngredientName;
+  final Value<double?> aiConcentration;
+  final Value<String?> aiConcentrationUnit;
+  final Value<double?> labelRate;
+  final Value<String?> labelRateUnit;
+  final Value<bool> isTestProduct;
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
@@ -4955,6 +5174,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.manufacturer = const Value.absent(),
     this.registrationNumber = const Value.absent(),
     this.eppoCode = const Value.absent(),
+    this.activeIngredientName = const Value.absent(),
+    this.aiConcentration = const Value.absent(),
+    this.aiConcentrationUnit = const Value.absent(),
+    this.labelRate = const Value.absent(),
+    this.labelRateUnit = const Value.absent(),
+    this.isTestProduct = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -4976,6 +5201,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.manufacturer = const Value.absent(),
     this.registrationNumber = const Value.absent(),
     this.eppoCode = const Value.absent(),
+    this.activeIngredientName = const Value.absent(),
+    this.aiConcentration = const Value.absent(),
+    this.aiConcentrationUnit = const Value.absent(),
+    this.labelRate = const Value.absent(),
+    this.labelRateUnit = const Value.absent(),
+    this.isTestProduct = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -4999,6 +5230,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     Expression<String>? manufacturer,
     Expression<String>? registrationNumber,
     Expression<String>? eppoCode,
+    Expression<String>? activeIngredientName,
+    Expression<double>? aiConcentration,
+    Expression<String>? aiConcentrationUnit,
+    Expression<double>? labelRate,
+    Expression<String>? labelRateUnit,
+    Expression<bool>? isTestProduct,
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
@@ -5021,6 +5258,14 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       if (manufacturer != null) 'manufacturer': manufacturer,
       if (registrationNumber != null) 'registration_number': registrationNumber,
       if (eppoCode != null) 'eppo_code': eppoCode,
+      if (activeIngredientName != null)
+        'active_ingredient_name': activeIngredientName,
+      if (aiConcentration != null) 'ai_concentration': aiConcentration,
+      if (aiConcentrationUnit != null)
+        'ai_concentration_unit': aiConcentrationUnit,
+      if (labelRate != null) 'label_rate': labelRate,
+      if (labelRateUnit != null) 'label_rate_unit': labelRateUnit,
+      if (isTestProduct != null) 'is_test_product': isTestProduct,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
@@ -5045,6 +5290,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       Value<String?>? manufacturer,
       Value<String?>? registrationNumber,
       Value<String?>? eppoCode,
+      Value<String?>? activeIngredientName,
+      Value<double?>? aiConcentration,
+      Value<String?>? aiConcentrationUnit,
+      Value<double?>? labelRate,
+      Value<String?>? labelRateUnit,
+      Value<bool>? isTestProduct,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
       Value<String?>? deletedBy,
@@ -5065,6 +5316,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       manufacturer: manufacturer ?? this.manufacturer,
       registrationNumber: registrationNumber ?? this.registrationNumber,
       eppoCode: eppoCode ?? this.eppoCode,
+      activeIngredientName: activeIngredientName ?? this.activeIngredientName,
+      aiConcentration: aiConcentration ?? this.aiConcentration,
+      aiConcentrationUnit: aiConcentrationUnit ?? this.aiConcentrationUnit,
+      labelRate: labelRate ?? this.labelRate,
+      labelRateUnit: labelRateUnit ?? this.labelRateUnit,
+      isTestProduct: isTestProduct ?? this.isTestProduct,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
@@ -5119,6 +5376,26 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     if (eppoCode.present) {
       map['eppo_code'] = Variable<String>(eppoCode.value);
     }
+    if (activeIngredientName.present) {
+      map['active_ingredient_name'] =
+          Variable<String>(activeIngredientName.value);
+    }
+    if (aiConcentration.present) {
+      map['ai_concentration'] = Variable<double>(aiConcentration.value);
+    }
+    if (aiConcentrationUnit.present) {
+      map['ai_concentration_unit'] =
+          Variable<String>(aiConcentrationUnit.value);
+    }
+    if (labelRate.present) {
+      map['label_rate'] = Variable<double>(labelRate.value);
+    }
+    if (labelRateUnit.present) {
+      map['label_rate_unit'] = Variable<String>(labelRateUnit.value);
+    }
+    if (isTestProduct.present) {
+      map['is_test_product'] = Variable<bool>(isTestProduct.value);
+    }
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
@@ -5154,6 +5431,12 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
           ..write('manufacturer: $manufacturer, ')
           ..write('registrationNumber: $registrationNumber, ')
           ..write('eppoCode: $eppoCode, ')
+          ..write('activeIngredientName: $activeIngredientName, ')
+          ..write('aiConcentration: $aiConcentration, ')
+          ..write('aiConcentrationUnit: $aiConcentrationUnit, ')
+          ..write('labelRate: $labelRate, ')
+          ..write('labelRateUnit: $labelRateUnit, ')
+          ..write('isTestProduct: $isTestProduct, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy, ')
@@ -31466,6 +31749,12 @@ typedef $$TreatmentComponentsTableCreateCompanionBuilder
   Value<String?> manufacturer,
   Value<String?> registrationNumber,
   Value<String?> eppoCode,
+  Value<String?> activeIngredientName,
+  Value<double?> aiConcentration,
+  Value<String?> aiConcentrationUnit,
+  Value<double?> labelRate,
+  Value<String?> labelRateUnit,
+  Value<bool> isTestProduct,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -31488,6 +31777,12 @@ typedef $$TreatmentComponentsTableUpdateCompanionBuilder
   Value<String?> manufacturer,
   Value<String?> registrationNumber,
   Value<String?> eppoCode,
+  Value<String?> activeIngredientName,
+  Value<double?> aiConcentration,
+  Value<String?> aiConcentrationUnit,
+  Value<double?> labelRate,
+  Value<String?> labelRateUnit,
+  Value<bool> isTestProduct,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -31527,6 +31822,12 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<String?> manufacturer = const Value.absent(),
             Value<String?> registrationNumber = const Value.absent(),
             Value<String?> eppoCode = const Value.absent(),
+            Value<String?> activeIngredientName = const Value.absent(),
+            Value<double?> aiConcentration = const Value.absent(),
+            Value<String?> aiConcentrationUnit = const Value.absent(),
+            Value<double?> labelRate = const Value.absent(),
+            Value<String?> labelRateUnit = const Value.absent(),
+            Value<bool> isTestProduct = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -31548,6 +31849,12 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             manufacturer: manufacturer,
             registrationNumber: registrationNumber,
             eppoCode: eppoCode,
+            activeIngredientName: activeIngredientName,
+            aiConcentration: aiConcentration,
+            aiConcentrationUnit: aiConcentrationUnit,
+            labelRate: labelRate,
+            labelRateUnit: labelRateUnit,
+            isTestProduct: isTestProduct,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -31569,6 +31876,12 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<String?> manufacturer = const Value.absent(),
             Value<String?> registrationNumber = const Value.absent(),
             Value<String?> eppoCode = const Value.absent(),
+            Value<String?> activeIngredientName = const Value.absent(),
+            Value<double?> aiConcentration = const Value.absent(),
+            Value<String?> aiConcentrationUnit = const Value.absent(),
+            Value<double?> labelRate = const Value.absent(),
+            Value<String?> labelRateUnit = const Value.absent(),
+            Value<bool> isTestProduct = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -31590,6 +31903,12 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             manufacturer: manufacturer,
             registrationNumber: registrationNumber,
             eppoCode: eppoCode,
+            activeIngredientName: activeIngredientName,
+            aiConcentration: aiConcentration,
+            aiConcentrationUnit: aiConcentrationUnit,
+            labelRate: labelRate,
+            labelRateUnit: labelRateUnit,
+            isTestProduct: isTestProduct,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -31659,6 +31978,36 @@ class $$TreatmentComponentsTableFilterComposer
 
   ColumnFilters<String> get eppoCode => $state.composableBuilder(
       column: $state.table.eppoCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get activeIngredientName => $state.composableBuilder(
+      column: $state.table.activeIngredientName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get aiConcentration => $state.composableBuilder(
+      column: $state.table.aiConcentration,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get aiConcentrationUnit => $state.composableBuilder(
+      column: $state.table.aiConcentrationUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get labelRate => $state.composableBuilder(
+      column: $state.table.labelRate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get labelRateUnit => $state.composableBuilder(
+      column: $state.table.labelRateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isTestProduct => $state.composableBuilder(
+      column: $state.table.isTestProduct,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -31779,6 +32128,36 @@ class $$TreatmentComponentsTableOrderingComposer
 
   ColumnOrderings<String> get eppoCode => $state.composableBuilder(
       column: $state.table.eppoCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get activeIngredientName => $state.composableBuilder(
+      column: $state.table.activeIngredientName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get aiConcentration => $state.composableBuilder(
+      column: $state.table.aiConcentration,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get aiConcentrationUnit => $state.composableBuilder(
+      column: $state.table.aiConcentrationUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get labelRate => $state.composableBuilder(
+      column: $state.table.labelRate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get labelRateUnit => $state.composableBuilder(
+      column: $state.table.labelRateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isTestProduct => $state.composableBuilder(
+      column: $state.table.isTestProduct,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
