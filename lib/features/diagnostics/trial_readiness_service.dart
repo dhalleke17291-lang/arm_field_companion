@@ -429,6 +429,93 @@ class TrialReadinessService {
       ));
     }
 
+    // BBCH coverage: sessions with vs without growth stage.
+    if (sessions.isNotEmpty) {
+      final sessionsMissingBbch =
+          sessions.where((s) => s.cropStageBbch == null).length;
+      if (sessionsMissingBbch > 0) {
+        checks.add(TrialReadinessCheck(
+          code: 'bbch_missing',
+          label: '$sessionsMissingBbch session(s) missing BBCH growth stage',
+          severity: TrialCheckSeverity.warning,
+        ));
+      } else {
+        checks.add(const TrialReadinessCheck(
+          code: 'bbch_ok',
+          label: 'BBCH recorded on all sessions',
+          severity: TrialCheckSeverity.pass,
+        ));
+      }
+    }
+
+    // Crop injury coverage: sessions with vs without crop injury status.
+    if (sessions.isNotEmpty) {
+      final sessionsMissingCropInjury =
+          sessions.where((s) => s.cropInjuryStatus == null).length;
+      if (sessionsMissingCropInjury > 0) {
+        checks.add(TrialReadinessCheck(
+          code: 'crop_injury_missing',
+          label:
+              '$sessionsMissingCropInjury session(s) missing crop injury status',
+          severity: TrialCheckSeverity.warning,
+        ));
+      } else {
+        checks.add(const TrialReadinessCheck(
+          code: 'crop_injury_ok',
+          label: 'Crop injury recorded on all sessions',
+          severity: TrialCheckSeverity.pass,
+        ));
+      }
+    }
+
+    // Site details coverage.
+    final siteFields = [
+      trial.latitude,
+      trial.soilTexture,
+      trial.soilPh,
+      trial.crop,
+      trial.cultivar,
+    ];
+    final siteFilled = siteFields.where((f) => f != null).length;
+    if (siteFilled < siteFields.length) {
+      final missing = siteFields.length - siteFilled;
+      checks.add(TrialReadinessCheck(
+        code: 'site_details_incomplete',
+        label: '$missing key site detail(s) missing',
+        detail: [
+          if (trial.latitude == null) 'GPS',
+          if (trial.soilTexture == null) 'soil texture',
+          if (trial.soilPh == null) 'soil pH',
+          if (trial.crop == null) 'crop',
+          if (trial.cultivar == null) 'cultivar',
+        ].join(', '),
+        severity: TrialCheckSeverity.info,
+      ));
+    } else {
+      checks.add(const TrialReadinessCheck(
+        code: 'site_details_ok',
+        label: 'Key site details recorded',
+        severity: TrialCheckSeverity.pass,
+      ));
+    }
+
+    // Photo coverage.
+    final photoRepo = ref.read(photoRepositoryProvider);
+    final photos = await photoRepo.getPhotosForTrial(trialPk);
+    if (photos.isEmpty) {
+      checks.add(const TrialReadinessCheck(
+        code: 'no_photos',
+        label: 'No photos attached',
+        severity: TrialCheckSeverity.info,
+      ));
+    } else {
+      checks.add(TrialReadinessCheck(
+        code: 'photos_ok',
+        label: '${photos.length} photo(s) attached',
+        severity: TrialCheckSeverity.pass,
+      ));
+    }
+
     return TrialReadinessReport(checks: checks);
   }
 }
