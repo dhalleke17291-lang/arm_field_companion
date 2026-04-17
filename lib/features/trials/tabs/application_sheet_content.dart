@@ -100,6 +100,7 @@ class _ApplicationSheetContentState
   late Set<String> _selectedPlotLabels;
 
   bool _saving = false;
+  bool _sameAsLastApplied = false;
   bool _initialExpandedEquip = false;
   bool _initialExpandedTank = false;
   bool _initialExpandedWeather = false;
@@ -436,6 +437,52 @@ class _ApplicationSheetContentState
     return null;
   }
 
+  /// Copies equipment + weather fields from the most recent application
+  /// on this trial. Only available when creating a new application.
+  Future<void> _applyFromLast() async {
+    final repo = ref.read(applicationRepositoryProvider);
+    final apps = await repo.getApplicationsForTrial(widget.trial.id);
+    if (apps.isEmpty || !mounted) return;
+    // Most recent by applicationDate.
+    final sorted = List<TrialApplicationEvent>.from(apps)
+      ..sort((a, b) => b.applicationDate.compareTo(a.applicationDate));
+    final last = sorted.first;
+    setState(() {
+      _sameAsLastApplied = true;
+      // Equipment
+      _applicationMethod = last.applicationMethod ?? _applicationMethod;
+      _equipmentController.text = last.equipmentUsed ?? '';
+      _nozzleType = last.nozzleType ?? _nozzleType;
+      _nozzleSpacingController.text =
+          last.nozzleSpacingCm?.toString() ?? '';
+      _operatingPressureController.text =
+          last.operatingPressure?.toString() ?? '';
+      _pressureUnit = last.pressureUnit ?? _pressureUnit;
+      _groundSpeedController.text = last.groundSpeed?.toString() ?? '';
+      _speedUnit = last.speedUnit ?? _speedUnit;
+      // Tank mix
+      _waterVolumeController.text = last.waterVolume?.toString() ?? '';
+      _waterVolumeUnit = last.waterVolumeUnit ?? _waterVolumeUnit;
+      _adjuvantNameController.text = last.adjuvantName ?? '';
+      _adjuvantRateController.text =
+          last.adjuvantRate?.toString() ?? '';
+      _adjuvantRateUnit = last.adjuvantRateUnit ?? _adjuvantRateUnit;
+      _spraySolutionPhController.text =
+          last.spraySolutionPh?.toString() ?? '';
+      // Expand sections that now have data.
+      _initialExpandedEquip = true;
+      _initialExpandedTank = true;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Equipment and tank mix copied from last application'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Future<void> _save() async {
     if (_saving) return;
     final trial =
@@ -560,6 +607,7 @@ class _ApplicationSheetContentState
         growthStageCode: drift.Value(_trim(_growthStageController.text)),
         plotsTreated: drift.Value(plotsTreatedStr),
         notes: drift.Value(_trim(_notesController.text)),
+        startedAt: drift.Value(DateTime.now().toUtc()),
       );
     }
     return TrialApplicationEventsCompanion(
@@ -628,6 +676,19 @@ class _ApplicationSheetContentState
           FormStyles.formSheetSectionSpacing,
         ),
         children: [
+          // "Same as last" — copies equipment + tank mix from most recent app.
+          if (widget.existing == null && !_sameAsLastApplied)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: OutlinedButton.icon(
+                onPressed: _applyFromLast,
+                icon: const Icon(Icons.content_copy, size: 16),
+                label: const Text('Same as last application'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
           // Section 1 — Core (always visible)
           const Padding(
             padding: FormStyles.sectionLabelPadding,
