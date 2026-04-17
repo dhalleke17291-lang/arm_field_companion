@@ -43,6 +43,7 @@ import 'widgets/trial_assessment_completion_widgets.dart';
 import 'trial_setup_screen.dart';
 import 'widgets/site_details_card.dart';
 import '../diagnostics/completeness_dashboard_screen.dart';
+import '../more/more_backup_actions.dart';
 import '../diagnostics/audit_log_screen.dart';
 import '../diagnostics/edited_items_screen.dart';
 import '../derived/derived_snapshot_provider.dart'
@@ -1572,33 +1573,111 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         return;
       }
       if (!context.mounted) return;
-      final latestForClose =
-          ref.read(trialProvider(widget.trial.id)).valueOrNull ?? widget.trial;
-      if (trialWorkspaceIsStandalone(latestForClose.workspaceType)) {
-        final confirmed = await showDialog<bool>(
+
+      // Run completeness check before closing.
+      final report = await ref
+          .read(trialReadinessProvider(widget.trial.id).future);
+      if (!context.mounted) return;
+
+      // Blockers prevent close.
+      if (report.blockerCount > 0) {
+        await showDialog<void>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Close this trial?'),
-            content: const Text(
-              'After closing:\n'
-              '• No new rating sessions can be started\n'
-              '• Existing corrections with reason still allowed\n'
-              '• Export remains available\n'
-              '• Structure remains locked',
+            title: const Text('Cannot close trial'),
+            content: Text(
+              '${report.blockerCount} blocker(s) must be resolved '
+              'before closing.\n\nOpen Export Readiness to review.',
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
               ),
               FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Close Trial'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => CompletenessDashboardScreen(
+                          trial: widget.trial),
+                    ),
+                  );
+                },
+                child: const Text('Review'),
               ),
             ],
           ),
         );
-        if (confirmed != true || !context.mounted) return;
+        return;
+      }
+
+      // Warnings: show but allow proceeding.
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Close this trial?'),
+          content: Text(
+            report.warningCount > 0
+                ? '${report.warningCount} warning(s) remain. '
+                    'You can still close.\n\n'
+                    'After closing:\n'
+                    '• No new sessions can be started\n'
+                    '• Corrections with reason still allowed\n'
+                    '• Export remains available'
+                : 'After closing:\n'
+                    '• No new sessions can be started\n'
+                    '• Corrections with reason still allowed\n'
+                    '• Export remains available',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Close Trial'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+
+      // Prompt for trial report generation.
+      final generateReport = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Generate trial report?'),
+          content: const Text(
+            'Create a PDF trial report before closing?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Skip'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Generate'),
+            ),
+          ],
+        ),
+      );
+      if (!context.mounted) return;
+      if (generateReport == true) {
+        try {
+          final useCase = ref.read(exportTrialReportUseCaseProvider);
+          await useCase.execute(trial: widget.trial);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Report failed: $e')),
+            );
+          }
+        }
+        if (!context.mounted) return;
       }
     }
     final repo = ref.read(trialRepositoryProvider);
@@ -1607,6 +1686,32 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     if (ok) {
       ref.invalidate(trialProvider(widget.trial.id));
       setState(() {});
+
+      // Prompt backup after trial close.
+      if (newStatus == kTrialStatusClosed && context.mounted) {
+        final doBackup = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Trial closed'),
+            content: const Text(
+              'Create a backup now to preserve this trial?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Later'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Back Up'),
+              ),
+            ],
+          ),
+        );
+        if (doBackup == true && context.mounted) {
+          await runBackupFlow(context, ref);
+        }
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not update trial status')),
