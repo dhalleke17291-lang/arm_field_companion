@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
+import '../backup/backup_passphrase_store.dart';
 import '../backup/backup_reminder_store.dart';
 import '../diagnostics/diagnostics_screen.dart';
 import '../recovery/recovery_screen.dart';
@@ -97,13 +98,9 @@ class MoreScreen extends ConsumerWidget {
               },
             ),
             const SizedBox(height: AppDesignTokens.spacing12),
-            _buildActionCard(
-              context,
-              icon: Icons.backup_outlined,
-              title: 'Backup',
-              subtitle: 'Create an encrypted backup file to save or share',
-              onTap: () => runBackupFlow(context, ref),
-            ),
+            _BackupActionCard(onTap: () => runBackupFlow(context, ref)),
+            // Forget-passphrase lives inside the card when a passphrase is
+            // cached; the card renders it conditionally.
             const SizedBox(height: AppDesignTokens.spacing12),
             _BackupReminderCard(),
             const SizedBox(height: AppDesignTokens.spacing12),
@@ -195,6 +192,241 @@ class MoreScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Threshold for "stale backup" — nudge the user with a muted amber chip.
+const int _kStaleBackupDays = 7;
+
+/// Backup action card — tap to back up. Shows last-backup age inline so
+/// the user sees status where they'd act, without scrolling to the
+/// reminder card below.
+class _BackupActionCard extends StatefulWidget {
+  const _BackupActionCard({required this.onTap});
+
+  /// Expected to be async — the card awaits the future and refreshes its
+  /// state (last-backup timestamp, cached-passphrase indicator) when done.
+  final Future<void> Function() onTap;
+
+  @override
+  State<_BackupActionCard> createState() => _BackupActionCardState();
+}
+
+class _BackupActionCardState extends State<_BackupActionCard> {
+  BackupReminderStore? _store;
+  final _passphraseStore = BackupPassphraseStore();
+  bool _hasCachedPassphrase = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStore();
+    _refreshPassphraseState();
+  }
+
+  Future<void> _loadStore() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) setState(() => _store = BackupReminderStore(prefs));
+  }
+
+  Future<void> _refreshPassphraseState() async {
+    final has = await _passphraseStore.hasCached();
+    if (mounted) setState(() => _hasCachedPassphrase = has);
+  }
+
+  Future<void> _forgetPassphrase() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppDesignTokens.cardSurface,
+        title: const Text(
+          'Forget saved passphrase?',
+          style: TextStyle(color: AppDesignTokens.primaryText),
+        ),
+        content: const Text(
+          'Next backup will ask you to enter a passphrase again.',
+          style: TextStyle(color: AppDesignTokens.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppDesignTokens.primary),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppDesignTokens.primary,
+              foregroundColor: AppDesignTokens.onPrimary,
+            ),
+            child: const Text('Forget'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _passphraseStore.clear();
+    await _refreshPassphraseState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = _store;
+    final last = store?.lastBackupTime;
+    final ageDays =
+        last == null ? null : DateTime.now().difference(last).inDays;
+    final isStale = store != null &&
+        (last == null || (ageDays != null && ageDays >= _kStaleBackupDays));
+    final lastLabel = store?.lastBackupLabel ?? 'Never';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: AppDesignTokens.cardSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          ),
+          clipBehavior: Clip.antiAlias,
+          elevation: 0,
+          child: InkWell(
+            onTap: () async {
+              await widget.onTap();
+              if (!mounted) return;
+              await _loadStore();
+              await _refreshPassphraseState();
+            },
+            child: Container(
+              padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusCard),
+                border: Border.all(color: AppDesignTokens.borderCrisp),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppDesignTokens.shadowLight,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppDesignTokens.primaryTint,
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusSmall),
+                ),
+                child: const Icon(
+                  Icons.backup_outlined,
+                  size: 24,
+                  color: AppDesignTokens.primary,
+                ),
+              ),
+              const SizedBox(width: AppDesignTokens.spacing16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Backup',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Create an encrypted backup file to save or share',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(
+                          'Last backup: $lastLabel',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isStale
+                                ? AppDesignTokens.warningFg
+                                : AppDesignTokens.secondaryText
+                                    .withValues(alpha: 0.85),
+                          ),
+                        ),
+                        if (isStale) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppDesignTokens.warningBg,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              last == null
+                                  ? 'No backup yet'
+                                  : 'Back up now',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppDesignTokens.warningFg,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 24,
+                    color: AppDesignTokens.iconSubtle,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_hasCachedPassphrase)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _forgetPassphrase,
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor:
+                    AppDesignTokens.secondaryText.withValues(alpha: 0.85),
+              ),
+              child: const Text(
+                'Forget saved passphrase',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

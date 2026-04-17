@@ -2,22 +2,57 @@ import 'package:flutter/material.dart';
 
 import '../../core/design/app_design_tokens.dart';
 
+/// Result of the password dialog.
+class BackupPasswordResult {
+  const BackupPasswordResult({
+    required this.passphrase,
+    required this.savePassphrase,
+  });
+
+  final String passphrase;
+
+  /// True when the user ticked "Save for next time". Only meaningful on
+  /// backup flows; always false on restore (we don't offer save there).
+  final bool savePassphrase;
+}
+
 /// Password entry for backup (confirm) or restore (single field).
-Future<String?> showBackupPasswordDialog(
+///
+/// [showSaveCheckbox] — when true on a backup flow, renders a
+/// "Save for next time" checkbox (default on). Callers only pass true
+/// the first time the user backs up; once a passphrase is cached and
+/// the opt-in persisted, the dialog is skipped entirely.
+///
+/// [helperMessage] — optional. Shown above the password field. Used
+/// on restore when a cached passphrase just failed to decrypt the file,
+/// so the user sees *why* they're being asked to type something now.
+Future<BackupPasswordResult?> showBackupPasswordDialog(
   BuildContext context, {
   required bool isBackup,
+  bool showSaveCheckbox = false,
+  String? helperMessage,
 }) {
-  return showDialog<String>(
+  return showDialog<BackupPasswordResult>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => _BackupPasswordDialogBody(isBackup: isBackup),
+    builder: (ctx) => _BackupPasswordDialogBody(
+      isBackup: isBackup,
+      showSaveCheckbox: showSaveCheckbox,
+      helperMessage: helperMessage,
+    ),
   );
 }
 
 class _BackupPasswordDialogBody extends StatefulWidget {
-  const _BackupPasswordDialogBody({required this.isBackup});
+  const _BackupPasswordDialogBody({
+    required this.isBackup,
+    required this.showSaveCheckbox,
+    this.helperMessage,
+  });
 
   final bool isBackup;
+  final bool showSaveCheckbox;
+  final String? helperMessage;
 
   @override
   State<_BackupPasswordDialogBody> createState() =>
@@ -29,6 +64,7 @@ class _BackupPasswordDialogBodyState extends State<_BackupPasswordDialogBody> {
   final _pw2 = TextEditingController();
   bool _obscure1 = true;
   bool _obscure2 = true;
+  bool _savePassphrase = true;
   String? _error;
 
   @override
@@ -54,7 +90,10 @@ class _BackupPasswordDialogBodyState extends State<_BackupPasswordDialogBody> {
         return;
       }
     }
-    Navigator.of(context).pop(p1);
+    Navigator.of(context).pop(BackupPasswordResult(
+      passphrase: p1,
+      savePassphrase: widget.showSaveCheckbox && _savePassphrase,
+    ));
   }
 
   @override
@@ -70,6 +109,16 @@ class _BackupPasswordDialogBodyState extends State<_BackupPasswordDialogBody> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (widget.helperMessage != null) ...[
+              Text(
+                widget.helperMessage!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             TextField(
               controller: _pw1,
               obscureText: _obscure1,
@@ -113,6 +162,49 @@ class _BackupPasswordDialogBodyState extends State<_BackupPasswordDialogBody> {
                       color: AppDesignTokens.iconSubtle,
                     ),
                     onPressed: () => setState(() => _obscure2 = !_obscure2),
+                  ),
+                ),
+              ),
+            ],
+            if (widget.showSaveCheckbox) ...[
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: () =>
+                    setState(() => _savePassphrase = !_savePassphrase),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: _savePassphrase,
+                        onChanged: (v) =>
+                            setState(() => _savePassphrase = v ?? false),
+                        activeColor: AppDesignTokens.primary,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 4),
+                      const Expanded(
+                        child: Text(
+                          'Save for next time',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppDesignTokens.primaryText,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(left: 34),
+                child: Text(
+                  'Stored securely in the device keychain',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppDesignTokens.secondaryText,
                   ),
                 ),
               ),

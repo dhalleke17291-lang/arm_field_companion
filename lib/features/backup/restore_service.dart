@@ -7,6 +7,7 @@ import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqlite3/sqlite3.dart' as sqlite;
 
 import '../../core/database/app_database.dart';
 import 'backup_encryption.dart';
@@ -157,15 +158,68 @@ class RestoreService {
       }
 
       final backedShells = Directory(p.join(extractDir.path, 'shells'));
+      final outShells = Directory(p.join(docsDir.path, 'restored_shells'));
       if (await backedShells.exists()) {
-        final outShells = Directory(p.join(docsDir.path, 'restored_shells'));
         await deleteDirectoryIfExists(outShells);
         await copyDirectory(backedShells, outShells);
+      }
+
+      // Rewrite trials.armLinkedShellPath so restored shells are findable on
+      // this device. Both absolute (from the source device) and relative
+      // paths are replaced with the new absolute path under
+      // docsDir/restored_shells/. Wrapped in a transaction — partial failure
+      // rolls back, so DB never ends up in a mixed-path state.
+      if (await outShells.exists()) {
+        await _rewriteShellPaths(dbPath: dbPath, shellsDir: outShells);
       }
     } finally {
       await deleteDirectoryIfExists(extractDir);
     }
     return true;
+  }
+
+  /// Opens the restored DB directly (Drift _db is already closed at this
+  /// point), scans trials with a non-null armLinkedShellPath, and rewrites
+  /// each to the matching file in [shellsDir] if present.
+  Future<void> _rewriteShellPaths({
+    required String dbPath,
+    required Directory shellsDir,
+  }) async {
+    // Index available shell files by trial id.
+    final shellByTrial = <int, String>{};
+    await for (final entity in shellsDir.list()) {
+      if (entity is! File) continue;
+      final name = p.basename(entity.path);
+      // Expected name: trial_{id}_shell.{ext}
+      final match =
+          RegExp(r'^trial_(\d+)_shell\.[^.]+$').firstMatch(name);
+      if (match == null) continue;
+      final tid = int.tryParse(match.group(1)!);
+      if (tid == null) continue;
+      shellByTrial[tid] = entity.path;
+    }
+    if (shellByTrial.isEmpty) return;
+
+    final db = sqlite.sqlite3.open(dbPath);
+    try {
+      db.execute('BEGIN TRANSACTION');
+      final stmt = db.prepare(
+        'UPDATE trials SET arm_linked_shell_path = ? WHERE id = ?',
+      );
+      try {
+        for (final entry in shellByTrial.entries) {
+          stmt.execute([entry.value, entry.key]);
+        }
+        db.execute('COMMIT');
+      } catch (e) {
+        db.execute('ROLLBACK');
+        rethrow;
+      } finally {
+        stmt.dispose();
+      }
+    } finally {
+      db.dispose();
+    }
   }
 }
 

@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../backup/backup_models.dart';
+import '../backup/backup_passphrase_store.dart';
 import '../backup/backup_password_dialog.dart';
 import '../backup/backup_reminder_store.dart';
 
@@ -44,9 +45,30 @@ Future<void> showBackupProgressDialog(
 }
 
 Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
-  final pwd = await showBackupPasswordDialog(context, isBackup: true);
-  if (pwd == null || !context.mounted) return;
+  final store = BackupPassphraseStore();
 
+  // Try cached passphrase first (silent path).
+  final cached = await store.retrieve();
+  String passphrase;
+  bool saveChoice = false;
+
+  if (cached != null && cached.isNotEmpty) {
+    passphrase = cached;
+  } else {
+    if (!context.mounted) return;
+    final hasOptedIn = await store.hasOptedIn();
+    if (!context.mounted) return;
+    final result = await showBackupPasswordDialog(
+      context,
+      isBackup: true,
+      showSaveCheckbox: !hasOptedIn,
+    );
+    if (result == null || !context.mounted) return;
+    passphrase = result.passphrase;
+    saveChoice = result.savePassphrase;
+  }
+
+  if (!context.mounted) return;
   final status = ValueNotifier<String>('Preparing database...');
   final nav = Navigator.of(context, rootNavigator: true);
   showDialog<void>(
@@ -77,16 +99,21 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
   await Future<void>.delayed(const Duration(milliseconds: 50));
   try {
     final file = await ref.read(backupServiceProvider).createBackup(
-      pwd,
+      passphrase,
       onProgress: (s) => status.value = s,
     );
     if (context.mounted) nav.pop();
+    // Cache passphrase only after a successful backup. Opt-in decision
+    // made in the dialog; if user never saw the dialog (cached path),
+    // the passphrase is already stored.
+    if (saveChoice) {
+      await store.save(passphrase);
+    }
     if (context.mounted) {
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'application/octet-stream')],
         text: 'Agnexis encrypted backup',
       );
-      // Record backup timestamp for reminder system.
       final prefs = await SharedPreferences.getInstance();
       await BackupReminderStore(prefs).recordBackupCompleted();
     }
@@ -157,49 +184,85 @@ Future<void> runRestoreFlow(BuildContext context, WidgetRef ref) async {
     return;
   }
 
-  final pwd = await showBackupPasswordDialog(context, isBackup: false);
-  if (pwd == null || !context.mounted) return;
-
+  // Resolve passphrase: try cached first, fall back to manual entry with
+  // a clear helper message when the cache fails to decrypt.
+  final store = BackupPassphraseStore();
+  String? pwd;
+  BackupMeta? meta;
   final nav = Navigator.of(context, rootNavigator: true);
-  await showBackupProgressDialog(context, 'Validating backup...');
-  BackupMeta meta;
-  try {
-    meta = await ref
-        .read(restoreServiceProvider)
-        .validateBackup(File(path), pwd);
-  } catch (e) {
-    if (context.mounted) nav.pop();
-    if (context.mounted) {
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppDesignTokens.cardSurface,
-          title: const Text(
-            'Restore Failed',
-            style: TextStyle(color: AppDesignTokens.primaryText),
-          ),
-          content: Text(
-            e.toString(),
-            style: const TextStyle(color: AppDesignTokens.secondaryText),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'OK',
-                style: TextStyle(color: AppDesignTokens.primary),
-              ),
-            ),
-          ],
-        ),
-      );
+
+  final cached = await store.retrieve();
+  if (!context.mounted) return;
+
+  if (cached != null && cached.isNotEmpty) {
+    await showBackupProgressDialog(context, 'Validating backup...');
+    try {
+      meta = await ref
+          .read(restoreServiceProvider)
+          .validateBackup(File(path), cached);
+      pwd = cached;
+    } catch (_) {
+      // Cached passphrase didn't work for this file — fall through to
+      // manual entry with an explanation.
     }
-    return;
+    if (context.mounted) nav.pop();
   }
-  if (context.mounted) nav.pop();
+
+  if (pwd == null) {
+    if (!context.mounted) return;
+    final result = await showBackupPasswordDialog(
+      context,
+      isBackup: false,
+      helperMessage: cached != null
+          ? "Saved passphrase didn't work for this file. Enter the passphrase "
+              'used when this backup was created.'
+          : null,
+    );
+    if (result == null || !context.mounted) return;
+    pwd = result.passphrase;
+
+    await showBackupProgressDialog(context, 'Validating backup...');
+    try {
+      meta = await ref
+          .read(restoreServiceProvider)
+          .validateBackup(File(path), pwd);
+    } catch (e) {
+      if (context.mounted) nav.pop();
+      if (context.mounted) {
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppDesignTokens.cardSurface,
+            title: const Text(
+              'Restore Failed',
+              style: TextStyle(color: AppDesignTokens.primaryText),
+            ),
+            content: Text(
+              e.toString(),
+              style: const TextStyle(color: AppDesignTokens.secondaryText),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(color: AppDesignTokens.primary),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+    if (context.mounted) nav.pop();
+  }
+
+  final resolvedMeta = meta;
+  if (resolvedMeta == null) return;
 
   final fmt = DateFormat.yMMMd().add_jm();
-  final localDate = fmt.format(meta.backupDate.toLocal());
+  final localDate = fmt.format(resolvedMeta.backupDate.toLocal());
   if (!context.mounted) return;
   final confirm = await showDialog<bool>(
     context: context,
@@ -211,9 +274,9 @@ Future<void> runRestoreFlow(BuildContext context, WidgetRef ref) async {
       ),
       content: Text(
         'Backup date: $localDate\n'
-        'Schema version: ${meta.schemaVersion}\n'
-        'Trials: ${meta.trialCount}\n'
-        'Photos: ${meta.photoCount}\n\n'
+        'Schema version: ${resolvedMeta.schemaVersion}\n'
+        'Trials: ${resolvedMeta.trialCount}\n'
+        'Photos: ${resolvedMeta.photoCount}\n\n'
         'This will REPLACE ALL current data.\n'
         'A safety snapshot of your current data will be saved first.\n\n'
         'Linked rating sheets were preserved in the backup but may need to be re-linked.',
