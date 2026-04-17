@@ -60,6 +60,7 @@ import '../features/export/export_trial_usecase.dart';
 import '../features/export/evidence_report_assembly_service.dart';
 import '../features/export/evidence_report_pdf_builder.dart';
 import '../features/export/export_evidence_report_usecase.dart';
+import '../features/export/export_trial_report_usecase.dart';
 import '../features/export/export_trial_pdf_report_usecase.dart';
 import '../features/export/domain/arm_shell_link_usecase.dart';
 import '../features/export/domain/export_arm_rating_shell_usecase.dart';
@@ -1151,6 +1152,18 @@ final exportEvidenceReportUseCaseProvider =
       db: ref.watch(databaseProvider),
     ),
     pdfBuilder: EvidenceReportPdfBuilder(),
+  );
+});
+
+final exportTrialReportUseCaseProvider =
+    Provider<ExportTrialReportUseCase>((ref) {
+  return ExportTrialReportUseCase(
+    plotRepository: ref.watch(plotRepositoryProvider),
+    treatmentRepository: ref.watch(treatmentRepositoryProvider),
+    applicationRepository: ref.watch(applicationRepositoryProvider),
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
   );
 });
 

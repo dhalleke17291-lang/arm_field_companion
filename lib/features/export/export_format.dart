@@ -8,6 +8,9 @@ enum ExportFormat {
   /// Field Evidence Report — provenance document with timestamps, amendments,
   /// outliers, device/rater certification, and completeness scoring.
   evidenceReport,
+  /// Trial Report PDF — structured document for the regulatory binder.
+  /// Site summary, treatments, design, applications, assessment data tables.
+  trialReport,
   /// Excel rating shell for imported protocol trials; handled by [ExportArmRatingShellUseCase].
   /// Listed on the trial export sheet only when the trial is ARM-linked.
   armRatingShell,
@@ -26,6 +29,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'Field Report (PDF)';
       case ExportFormat.evidenceReport:
         return 'Evidence Report (PDF)';
+      case ExportFormat.trialReport:
+        return 'Trial Report (PDF)';
       case ExportFormat.armRatingShell:
         return 'Rating Sheet (Excel)';
     }
@@ -43,6 +48,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'Formatted report with treatment results, significance analysis, and per-plot detail — share with sponsors or archive';
       case ExportFormat.evidenceReport:
         return 'Provenance document with timestamps, amendments, outliers, device/rater certification, and completeness scoring — GLP-ready evidence';
+      case ExportFormat.trialReport:
+        return 'Structured trial report with site summary, treatments, applications, and assessment data tables — for the regulatory binder';
       case ExportFormat.armRatingShell:
         return 'Inject collected ratings back into the original protocol spreadsheet';
     }
@@ -60,6 +67,8 @@ extension ExportFormatDetails on ExportFormat {
         return Icons.description_outlined;
       case ExportFormat.evidenceReport:
         return Icons.verified_outlined;
+      case ExportFormat.trialReport:
+        return Icons.article_outlined;
       case ExportFormat.armRatingShell:
         return Icons.table_view_outlined;
     }
@@ -71,6 +80,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'Recommended';
       case ExportFormat.evidenceReport:
         return 'GLP';
+      case ExportFormat.trialReport:
+        return 'Report';
       case ExportFormat.armRatingShell:
         return 'Protocol';
       default:
