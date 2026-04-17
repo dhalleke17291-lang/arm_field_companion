@@ -19,6 +19,7 @@ class _TrialTimelineEvent {
     this.subtitle,
     this.timingText,
     this.beforeFirstApplication = false,
+    this.hasDeviation = false,
     this.ratingSessionId,
     this.noteTimestampCaption,
     this.noteMetaCaption,
@@ -30,6 +31,8 @@ class _TrialTimelineEvent {
   final String? subtitle;
   final String? timingText;
   final bool beforeFirstApplication;
+  /// True when this application has deviation-flagged products.
+  final bool hasDeviation;
   /// Set for rating sessions only (weather badge).
   final int? ratingSessionId;
   /// Field note: full date · time line (matches list/detail surfaces).
@@ -130,6 +133,7 @@ class TimelineTab extends ConsumerWidget {
             appSubtitleParts.add(ratePart);
           }
           appSubtitleParts.add(statusLabel);
+
           events.add(_TrialTimelineEvent(
             date: app.applicationDate,
             type: _TimelineEventType.application,
@@ -231,7 +235,14 @@ class TimelineTab extends ConsumerWidget {
             AppDesignTokens.spacing24,
           ),
           children: [
-            for (final group in groups) _TimelineDateGroupSection(group: group),
+            for (var i = 0; i < groups.length; i++) ...[
+              _TimelineDateGroupSection(group: groups[i]),
+              if (i < groups.length - 1)
+                _IntervalLabel(
+                  from: groups[i].date,
+                  to: groups[i + 1].date,
+                ),
+            ],
           ],
         );
       },
@@ -469,6 +480,17 @@ class _TimelineEventRow extends ConsumerWidget {
                               ),
                             ),
                           ],
+                          if (event.hasDeviation) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Rate deviation flagged',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppDesignTokens.warningFg,
+                              ),
+                            ),
+                          ],
                           if (event.beforeFirstApplication) ...[
                             const SizedBox(height: 4),
                             Text(
@@ -489,6 +511,33 @@ class _TimelineEventRow extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Shows the number of days between two date groups on the timeline.
+class _IntervalLabel extends StatelessWidget {
+  const _IntervalLabel({required this.from, required this.to});
+  final DateTime from;
+  final DateTime to;
+
+  @override
+  Widget build(BuildContext context) {
+    final days = to.difference(from).inDays.abs();
+    if (days <= 1) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: 40,
+        bottom: AppDesignTokens.spacing8,
+      ),
+      child: Text(
+        '$days days',
+        style: TextStyle(
+          fontSize: 11,
+          fontStyle: FontStyle.italic,
+          color: AppDesignTokens.secondaryText.withValues(alpha: 0.6),
+        ),
+      ),
     );
   }
 }
