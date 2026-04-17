@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/export_hash.dart';
 import '../../data/repositories/application_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
 import '../../data/repositories/treatment_repository.dart';
@@ -86,11 +87,15 @@ class ExportTrialReportUseCase {
     final timestamp =
         DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final path = '${dir.path}/TrialReport_${safeName}_$timestamp.pdf';
-    await File(path).writeAsBytes(bytes);
+    final file = File(path);
+    await file.writeAsBytes(bytes);
+
+    // Compute and return hash for audit trail.
+    final hash = await computeExportHash(file);
 
     await Share.shareXFiles(
       [XFile(path, mimeType: 'application/pdf')],
-      text: '${trial.name} — Trial Report',
+      text: '${trial.name} — Trial Report\n${formatExportHash(hash)}',
     );
   }
 }

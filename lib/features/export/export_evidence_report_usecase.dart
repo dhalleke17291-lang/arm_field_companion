@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/export_hash.dart';
 import 'evidence_report_assembly_service.dart';
 import 'evidence_report_pdf_builder.dart';
 
@@ -30,10 +31,12 @@ class ExportEvidenceReportUseCase {
         DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final path = '${dir.path}/Evidence_${safeName}_$timestamp.pdf';
 
-    await File(path).writeAsBytes(bytes);
+    final file = File(path);
+    await file.writeAsBytes(bytes);
+    final hash = await computeExportHash(file);
     await Share.shareXFiles(
       [XFile(path, mimeType: 'application/pdf')],
-      text: '${trial.name} — Field Evidence Report',
+      text: '${trial.name} — Field Evidence Report\n${formatExportHash(hash)}',
     );
   }
 }
