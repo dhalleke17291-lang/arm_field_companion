@@ -21256,6 +21256,54 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
   late final GeneratedColumn<DateTime> lastEditedAt = GeneratedColumn<DateTime>(
       'last_edited_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _precipitationMeta =
+      const VerificationMeta('precipitation');
+  @override
+  late final GeneratedColumn<String> precipitation = GeneratedColumn<String>(
+      'precipitation', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _precipitationMmMeta =
+      const VerificationMeta('precipitationMm');
+  @override
+  late final GeneratedColumn<double> precipitationMm = GeneratedColumn<double>(
+      'precipitation_mm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _conditionsRecordedAtMeta =
+      const VerificationMeta('conditionsRecordedAt');
+  @override
+  late final GeneratedColumn<DateTime> conditionsRecordedAt =
+      GeneratedColumn<DateTime>('conditions_recorded_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _boomHeightCmMeta =
+      const VerificationMeta('boomHeightCm');
+  @override
+  late final GeneratedColumn<double> boomHeightCm = GeneratedColumn<double>(
+      'boom_height_cm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _sessionNameMeta =
+      const VerificationMeta('sessionName');
+  @override
+  late final GeneratedColumn<String> sessionName = GeneratedColumn<String>(
+      'session_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _startedAtMeta =
+      const VerificationMeta('startedAt');
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+      'started_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _completedAtMeta =
+      const VerificationMeta('completedAt');
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+      'completed_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _closedAtMeta =
+      const VerificationMeta('closedAt');
+  @override
+  late final GeneratedColumn<DateTime> closedAt = GeneratedColumn<DateTime>(
+      'closed_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -21300,7 +21348,15 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
         appliedAt,
         createdAt,
         lastEditedByUserId,
-        lastEditedAt
+        lastEditedAt,
+        precipitation,
+        precipitationMm,
+        conditionsRecordedAt,
+        boomHeightCm,
+        sessionName,
+        startedAt,
+        completedAt,
+        closedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -21550,6 +21606,50 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           lastEditedAt.isAcceptableOrUnknown(
               data['last_edited_at']!, _lastEditedAtMeta));
     }
+    if (data.containsKey('precipitation')) {
+      context.handle(
+          _precipitationMeta,
+          precipitation.isAcceptableOrUnknown(
+              data['precipitation']!, _precipitationMeta));
+    }
+    if (data.containsKey('precipitation_mm')) {
+      context.handle(
+          _precipitationMmMeta,
+          precipitationMm.isAcceptableOrUnknown(
+              data['precipitation_mm']!, _precipitationMmMeta));
+    }
+    if (data.containsKey('conditions_recorded_at')) {
+      context.handle(
+          _conditionsRecordedAtMeta,
+          conditionsRecordedAt.isAcceptableOrUnknown(
+              data['conditions_recorded_at']!, _conditionsRecordedAtMeta));
+    }
+    if (data.containsKey('boom_height_cm')) {
+      context.handle(
+          _boomHeightCmMeta,
+          boomHeightCm.isAcceptableOrUnknown(
+              data['boom_height_cm']!, _boomHeightCmMeta));
+    }
+    if (data.containsKey('session_name')) {
+      context.handle(
+          _sessionNameMeta,
+          sessionName.isAcceptableOrUnknown(
+              data['session_name']!, _sessionNameMeta));
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(_startedAtMeta,
+          startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta));
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+          _completedAtMeta,
+          completedAt.isAcceptableOrUnknown(
+              data['completed_at']!, _completedAtMeta));
+    }
+    if (data.containsKey('closed_at')) {
+      context.handle(_closedAtMeta,
+          closedAt.isAcceptableOrUnknown(data['closed_at']!, _closedAtMeta));
+    }
     return context;
   }
 
@@ -21645,6 +21745,23 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           DriftSqlType.int, data['${effectivePrefix}last_edited_by_user_id']),
       lastEditedAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime, data['${effectivePrefix}last_edited_at']),
+      precipitation: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}precipitation']),
+      precipitationMm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}precipitation_mm']),
+      conditionsRecordedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}conditions_recorded_at']),
+      boomHeightCm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}boom_height_cm']),
+      sessionName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}session_name']),
+      startedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}started_at']),
+      completedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
+      closedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}closed_at']),
     );
   }
 
@@ -21699,6 +21816,14 @@ class TrialApplicationEvent extends DataClass
   final DateTime createdAt;
   final int? lastEditedByUserId;
   final DateTime? lastEditedAt;
+  final String? precipitation;
+  final double? precipitationMm;
+  final DateTime? conditionsRecordedAt;
+  final double? boomHeightCm;
+  final String? sessionName;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final DateTime? closedAt;
   const TrialApplicationEvent(
       {required this.id,
       required this.trialId,
@@ -21742,7 +21867,15 @@ class TrialApplicationEvent extends DataClass
       this.appliedAt,
       required this.createdAt,
       this.lastEditedByUserId,
-      this.lastEditedAt});
+      this.lastEditedAt,
+      this.precipitation,
+      this.precipitationMm,
+      this.conditionsRecordedAt,
+      this.boomHeightCm,
+      this.sessionName,
+      this.startedAt,
+      this.completedAt,
+      this.closedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -21865,6 +21998,30 @@ class TrialApplicationEvent extends DataClass
     if (!nullToAbsent || lastEditedAt != null) {
       map['last_edited_at'] = Variable<DateTime>(lastEditedAt);
     }
+    if (!nullToAbsent || precipitation != null) {
+      map['precipitation'] = Variable<String>(precipitation);
+    }
+    if (!nullToAbsent || precipitationMm != null) {
+      map['precipitation_mm'] = Variable<double>(precipitationMm);
+    }
+    if (!nullToAbsent || conditionsRecordedAt != null) {
+      map['conditions_recorded_at'] = Variable<DateTime>(conditionsRecordedAt);
+    }
+    if (!nullToAbsent || boomHeightCm != null) {
+      map['boom_height_cm'] = Variable<double>(boomHeightCm);
+    }
+    if (!nullToAbsent || sessionName != null) {
+      map['session_name'] = Variable<String>(sessionName);
+    }
+    if (!nullToAbsent || startedAt != null) {
+      map['started_at'] = Variable<DateTime>(startedAt);
+    }
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    if (!nullToAbsent || closedAt != null) {
+      map['closed_at'] = Variable<DateTime>(closedAt);
+    }
     return map;
   }
 
@@ -21986,6 +22143,30 @@ class TrialApplicationEvent extends DataClass
       lastEditedAt: lastEditedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastEditedAt),
+      precipitation: precipitation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(precipitation),
+      precipitationMm: precipitationMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(precipitationMm),
+      conditionsRecordedAt: conditionsRecordedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conditionsRecordedAt),
+      boomHeightCm: boomHeightCm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boomHeightCm),
+      sessionName: sessionName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionName),
+      startedAt: startedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      closedAt: closedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closedAt),
     );
   }
 
@@ -22038,6 +22219,15 @@ class TrialApplicationEvent extends DataClass
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       lastEditedByUserId: serializer.fromJson<int?>(json['lastEditedByUserId']),
       lastEditedAt: serializer.fromJson<DateTime?>(json['lastEditedAt']),
+      precipitation: serializer.fromJson<String?>(json['precipitation']),
+      precipitationMm: serializer.fromJson<double?>(json['precipitationMm']),
+      conditionsRecordedAt:
+          serializer.fromJson<DateTime?>(json['conditionsRecordedAt']),
+      boomHeightCm: serializer.fromJson<double?>(json['boomHeightCm']),
+      sessionName: serializer.fromJson<String?>(json['sessionName']),
+      startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      closedAt: serializer.fromJson<DateTime?>(json['closedAt']),
     );
   }
   @override
@@ -22087,6 +22277,15 @@ class TrialApplicationEvent extends DataClass
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'lastEditedByUserId': serializer.toJson<int?>(lastEditedByUserId),
       'lastEditedAt': serializer.toJson<DateTime?>(lastEditedAt),
+      'precipitation': serializer.toJson<String?>(precipitation),
+      'precipitationMm': serializer.toJson<double?>(precipitationMm),
+      'conditionsRecordedAt':
+          serializer.toJson<DateTime?>(conditionsRecordedAt),
+      'boomHeightCm': serializer.toJson<double?>(boomHeightCm),
+      'sessionName': serializer.toJson<String?>(sessionName),
+      'startedAt': serializer.toJson<DateTime?>(startedAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'closedAt': serializer.toJson<DateTime?>(closedAt),
     };
   }
 
@@ -22133,7 +22332,15 @@ class TrialApplicationEvent extends DataClass
           Value<DateTime?> appliedAt = const Value.absent(),
           DateTime? createdAt,
           Value<int?> lastEditedByUserId = const Value.absent(),
-          Value<DateTime?> lastEditedAt = const Value.absent()}) =>
+          Value<DateTime?> lastEditedAt = const Value.absent(),
+          Value<String?> precipitation = const Value.absent(),
+          Value<double?> precipitationMm = const Value.absent(),
+          Value<DateTime?> conditionsRecordedAt = const Value.absent(),
+          Value<double?> boomHeightCm = const Value.absent(),
+          Value<String?> sessionName = const Value.absent(),
+          Value<DateTime?> startedAt = const Value.absent(),
+          Value<DateTime?> completedAt = const Value.absent(),
+          Value<DateTime?> closedAt = const Value.absent()}) =>
       TrialApplicationEvent(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -22212,6 +22419,20 @@ class TrialApplicationEvent extends DataClass
             : this.lastEditedByUserId,
         lastEditedAt:
             lastEditedAt.present ? lastEditedAt.value : this.lastEditedAt,
+        precipitation:
+            precipitation.present ? precipitation.value : this.precipitation,
+        precipitationMm: precipitationMm.present
+            ? precipitationMm.value
+            : this.precipitationMm,
+        conditionsRecordedAt: conditionsRecordedAt.present
+            ? conditionsRecordedAt.value
+            : this.conditionsRecordedAt,
+        boomHeightCm:
+            boomHeightCm.present ? boomHeightCm.value : this.boomHeightCm,
+        sessionName: sessionName.present ? sessionName.value : this.sessionName,
+        startedAt: startedAt.present ? startedAt.value : this.startedAt,
+        completedAt: completedAt.present ? completedAt.value : this.completedAt,
+        closedAt: closedAt.present ? closedAt.value : this.closedAt,
       );
   TrialApplicationEvent copyWithCompanion(
       TrialApplicationEventsCompanion data) {
@@ -22314,6 +22535,24 @@ class TrialApplicationEvent extends DataClass
       lastEditedAt: data.lastEditedAt.present
           ? data.lastEditedAt.value
           : this.lastEditedAt,
+      precipitation: data.precipitation.present
+          ? data.precipitation.value
+          : this.precipitation,
+      precipitationMm: data.precipitationMm.present
+          ? data.precipitationMm.value
+          : this.precipitationMm,
+      conditionsRecordedAt: data.conditionsRecordedAt.present
+          ? data.conditionsRecordedAt.value
+          : this.conditionsRecordedAt,
+      boomHeightCm: data.boomHeightCm.present
+          ? data.boomHeightCm.value
+          : this.boomHeightCm,
+      sessionName:
+          data.sessionName.present ? data.sessionName.value : this.sessionName,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      completedAt:
+          data.completedAt.present ? data.completedAt.value : this.completedAt,
+      closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
     );
   }
 
@@ -22362,7 +22601,15 @@ class TrialApplicationEvent extends DataClass
           ..write('appliedAt: $appliedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('lastEditedByUserId: $lastEditedByUserId, ')
-          ..write('lastEditedAt: $lastEditedAt')
+          ..write('lastEditedAt: $lastEditedAt, ')
+          ..write('precipitation: $precipitation, ')
+          ..write('precipitationMm: $precipitationMm, ')
+          ..write('conditionsRecordedAt: $conditionsRecordedAt, ')
+          ..write('boomHeightCm: $boomHeightCm, ')
+          ..write('sessionName: $sessionName, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('closedAt: $closedAt')
           ..write(')'))
         .toString();
   }
@@ -22411,7 +22658,15 @@ class TrialApplicationEvent extends DataClass
         appliedAt,
         createdAt,
         lastEditedByUserId,
-        lastEditedAt
+        lastEditedAt,
+        precipitation,
+        precipitationMm,
+        conditionsRecordedAt,
+        boomHeightCm,
+        sessionName,
+        startedAt,
+        completedAt,
+        closedAt
       ]);
   @override
   bool operator ==(Object other) =>
@@ -22459,7 +22714,15 @@ class TrialApplicationEvent extends DataClass
           other.appliedAt == this.appliedAt &&
           other.createdAt == this.createdAt &&
           other.lastEditedByUserId == this.lastEditedByUserId &&
-          other.lastEditedAt == this.lastEditedAt);
+          other.lastEditedAt == this.lastEditedAt &&
+          other.precipitation == this.precipitation &&
+          other.precipitationMm == this.precipitationMm &&
+          other.conditionsRecordedAt == this.conditionsRecordedAt &&
+          other.boomHeightCm == this.boomHeightCm &&
+          other.sessionName == this.sessionName &&
+          other.startedAt == this.startedAt &&
+          other.completedAt == this.completedAt &&
+          other.closedAt == this.closedAt);
 }
 
 class TrialApplicationEventsCompanion
@@ -22507,6 +22770,14 @@ class TrialApplicationEventsCompanion
   final Value<DateTime> createdAt;
   final Value<int?> lastEditedByUserId;
   final Value<DateTime?> lastEditedAt;
+  final Value<String?> precipitation;
+  final Value<double?> precipitationMm;
+  final Value<DateTime?> conditionsRecordedAt;
+  final Value<double?> boomHeightCm;
+  final Value<String?> sessionName;
+  final Value<DateTime?> startedAt;
+  final Value<DateTime?> completedAt;
+  final Value<DateTime?> closedAt;
   final Value<int> rowid;
   const TrialApplicationEventsCompanion({
     this.id = const Value.absent(),
@@ -22552,6 +22823,14 @@ class TrialApplicationEventsCompanion
     this.createdAt = const Value.absent(),
     this.lastEditedByUserId = const Value.absent(),
     this.lastEditedAt = const Value.absent(),
+    this.precipitation = const Value.absent(),
+    this.precipitationMm = const Value.absent(),
+    this.conditionsRecordedAt = const Value.absent(),
+    this.boomHeightCm = const Value.absent(),
+    this.sessionName = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.closedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TrialApplicationEventsCompanion.insert({
@@ -22598,6 +22877,14 @@ class TrialApplicationEventsCompanion
     this.createdAt = const Value.absent(),
     this.lastEditedByUserId = const Value.absent(),
     this.lastEditedAt = const Value.absent(),
+    this.precipitation = const Value.absent(),
+    this.precipitationMm = const Value.absent(),
+    this.conditionsRecordedAt = const Value.absent(),
+    this.boomHeightCm = const Value.absent(),
+    this.sessionName = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.closedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
         applicationDate = Value(applicationDate);
@@ -22645,6 +22932,14 @@ class TrialApplicationEventsCompanion
     Expression<DateTime>? createdAt,
     Expression<int>? lastEditedByUserId,
     Expression<DateTime>? lastEditedAt,
+    Expression<String>? precipitation,
+    Expression<double>? precipitationMm,
+    Expression<DateTime>? conditionsRecordedAt,
+    Expression<double>? boomHeightCm,
+    Expression<String>? sessionName,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? completedAt,
+    Expression<DateTime>? closedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -22692,6 +22987,15 @@ class TrialApplicationEventsCompanion
       if (lastEditedByUserId != null)
         'last_edited_by_user_id': lastEditedByUserId,
       if (lastEditedAt != null) 'last_edited_at': lastEditedAt,
+      if (precipitation != null) 'precipitation': precipitation,
+      if (precipitationMm != null) 'precipitation_mm': precipitationMm,
+      if (conditionsRecordedAt != null)
+        'conditions_recorded_at': conditionsRecordedAt,
+      if (boomHeightCm != null) 'boom_height_cm': boomHeightCm,
+      if (sessionName != null) 'session_name': sessionName,
+      if (startedAt != null) 'started_at': startedAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (closedAt != null) 'closed_at': closedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -22740,6 +23044,14 @@ class TrialApplicationEventsCompanion
       Value<DateTime>? createdAt,
       Value<int?>? lastEditedByUserId,
       Value<DateTime?>? lastEditedAt,
+      Value<String?>? precipitation,
+      Value<double?>? precipitationMm,
+      Value<DateTime?>? conditionsRecordedAt,
+      Value<double?>? boomHeightCm,
+      Value<String?>? sessionName,
+      Value<DateTime?>? startedAt,
+      Value<DateTime?>? completedAt,
+      Value<DateTime?>? closedAt,
       Value<int>? rowid}) {
     return TrialApplicationEventsCompanion(
       id: id ?? this.id,
@@ -22785,6 +23097,14 @@ class TrialApplicationEventsCompanion
       createdAt: createdAt ?? this.createdAt,
       lastEditedByUserId: lastEditedByUserId ?? this.lastEditedByUserId,
       lastEditedAt: lastEditedAt ?? this.lastEditedAt,
+      precipitation: precipitation ?? this.precipitation,
+      precipitationMm: precipitationMm ?? this.precipitationMm,
+      conditionsRecordedAt: conditionsRecordedAt ?? this.conditionsRecordedAt,
+      boomHeightCm: boomHeightCm ?? this.boomHeightCm,
+      sessionName: sessionName ?? this.sessionName,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      closedAt: closedAt ?? this.closedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -22921,6 +23241,31 @@ class TrialApplicationEventsCompanion
     if (lastEditedAt.present) {
       map['last_edited_at'] = Variable<DateTime>(lastEditedAt.value);
     }
+    if (precipitation.present) {
+      map['precipitation'] = Variable<String>(precipitation.value);
+    }
+    if (precipitationMm.present) {
+      map['precipitation_mm'] = Variable<double>(precipitationMm.value);
+    }
+    if (conditionsRecordedAt.present) {
+      map['conditions_recorded_at'] =
+          Variable<DateTime>(conditionsRecordedAt.value);
+    }
+    if (boomHeightCm.present) {
+      map['boom_height_cm'] = Variable<double>(boomHeightCm.value);
+    }
+    if (sessionName.present) {
+      map['session_name'] = Variable<String>(sessionName.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (closedAt.present) {
+      map['closed_at'] = Variable<DateTime>(closedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -22973,6 +23318,14 @@ class TrialApplicationEventsCompanion
           ..write('createdAt: $createdAt, ')
           ..write('lastEditedByUserId: $lastEditedByUserId, ')
           ..write('lastEditedAt: $lastEditedAt, ')
+          ..write('precipitation: $precipitation, ')
+          ..write('precipitationMm: $precipitationMm, ')
+          ..write('conditionsRecordedAt: $conditionsRecordedAt, ')
+          ..write('boomHeightCm: $boomHeightCm, ')
+          ..write('sessionName: $sessionName, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('closedAt: $closedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -23028,9 +23381,54 @@ class $TrialApplicationProductsTable extends TrialApplicationProducts
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _plannedProductMeta =
+      const VerificationMeta('plannedProduct');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, trialApplicationEventId, productName, rate, rateUnit, sortOrder];
+  late final GeneratedColumn<String> plannedProduct = GeneratedColumn<String>(
+      'planned_product', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _plannedRateMeta =
+      const VerificationMeta('plannedRate');
+  @override
+  late final GeneratedColumn<double> plannedRate = GeneratedColumn<double>(
+      'planned_rate', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _plannedRateUnitMeta =
+      const VerificationMeta('plannedRateUnit');
+  @override
+  late final GeneratedColumn<String> plannedRateUnit = GeneratedColumn<String>(
+      'planned_rate_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _deviationFlagMeta =
+      const VerificationMeta('deviationFlag');
+  @override
+  late final GeneratedColumn<bool> deviationFlag = GeneratedColumn<bool>(
+      'deviation_flag', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("deviation_flag" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _deviationNotesMeta =
+      const VerificationMeta('deviationNotes');
+  @override
+  late final GeneratedColumn<String> deviationNotes = GeneratedColumn<String>(
+      'deviation_notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialApplicationEventId,
+        productName,
+        rate,
+        rateUnit,
+        sortOrder,
+        plannedProduct,
+        plannedRate,
+        plannedRateUnit,
+        deviationFlag,
+        deviationNotes
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -23074,6 +23472,36 @@ class $TrialApplicationProductsTable extends TrialApplicationProducts
       context.handle(_sortOrderMeta,
           sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
     }
+    if (data.containsKey('planned_product')) {
+      context.handle(
+          _plannedProductMeta,
+          plannedProduct.isAcceptableOrUnknown(
+              data['planned_product']!, _plannedProductMeta));
+    }
+    if (data.containsKey('planned_rate')) {
+      context.handle(
+          _plannedRateMeta,
+          plannedRate.isAcceptableOrUnknown(
+              data['planned_rate']!, _plannedRateMeta));
+    }
+    if (data.containsKey('planned_rate_unit')) {
+      context.handle(
+          _plannedRateUnitMeta,
+          plannedRateUnit.isAcceptableOrUnknown(
+              data['planned_rate_unit']!, _plannedRateUnitMeta));
+    }
+    if (data.containsKey('deviation_flag')) {
+      context.handle(
+          _deviationFlagMeta,
+          deviationFlag.isAcceptableOrUnknown(
+              data['deviation_flag']!, _deviationFlagMeta));
+    }
+    if (data.containsKey('deviation_notes')) {
+      context.handle(
+          _deviationNotesMeta,
+          deviationNotes.isAcceptableOrUnknown(
+              data['deviation_notes']!, _deviationNotesMeta));
+    }
     return context;
   }
 
@@ -23097,6 +23525,16 @@ class $TrialApplicationProductsTable extends TrialApplicationProducts
           .read(DriftSqlType.string, data['${effectivePrefix}rate_unit']),
       sortOrder: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
+      plannedProduct: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}planned_product']),
+      plannedRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}planned_rate']),
+      plannedRateUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}planned_rate_unit']),
+      deviationFlag: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}deviation_flag'])!,
+      deviationNotes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}deviation_notes']),
     );
   }
 
@@ -23114,13 +23552,23 @@ class TrialApplicationProduct extends DataClass
   final double? rate;
   final String? rateUnit;
   final int sortOrder;
+  final String? plannedProduct;
+  final double? plannedRate;
+  final String? plannedRateUnit;
+  final bool deviationFlag;
+  final String? deviationNotes;
   const TrialApplicationProduct(
       {required this.id,
       required this.trialApplicationEventId,
       required this.productName,
       this.rate,
       this.rateUnit,
-      required this.sortOrder});
+      required this.sortOrder,
+      this.plannedProduct,
+      this.plannedRate,
+      this.plannedRateUnit,
+      required this.deviationFlag,
+      this.deviationNotes});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -23135,6 +23583,19 @@ class TrialApplicationProduct extends DataClass
       map['rate_unit'] = Variable<String>(rateUnit);
     }
     map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || plannedProduct != null) {
+      map['planned_product'] = Variable<String>(plannedProduct);
+    }
+    if (!nullToAbsent || plannedRate != null) {
+      map['planned_rate'] = Variable<double>(plannedRate);
+    }
+    if (!nullToAbsent || plannedRateUnit != null) {
+      map['planned_rate_unit'] = Variable<String>(plannedRateUnit);
+    }
+    map['deviation_flag'] = Variable<bool>(deviationFlag);
+    if (!nullToAbsent || deviationNotes != null) {
+      map['deviation_notes'] = Variable<String>(deviationNotes);
+    }
     return map;
   }
 
@@ -23148,6 +23609,19 @@ class TrialApplicationProduct extends DataClass
           ? const Value.absent()
           : Value(rateUnit),
       sortOrder: Value(sortOrder),
+      plannedProduct: plannedProduct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plannedProduct),
+      plannedRate: plannedRate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plannedRate),
+      plannedRateUnit: plannedRateUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plannedRateUnit),
+      deviationFlag: Value(deviationFlag),
+      deviationNotes: deviationNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deviationNotes),
     );
   }
 
@@ -23162,6 +23636,11 @@ class TrialApplicationProduct extends DataClass
       rate: serializer.fromJson<double?>(json['rate']),
       rateUnit: serializer.fromJson<String?>(json['rateUnit']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      plannedProduct: serializer.fromJson<String?>(json['plannedProduct']),
+      plannedRate: serializer.fromJson<double?>(json['plannedRate']),
+      plannedRateUnit: serializer.fromJson<String?>(json['plannedRateUnit']),
+      deviationFlag: serializer.fromJson<bool>(json['deviationFlag']),
+      deviationNotes: serializer.fromJson<String?>(json['deviationNotes']),
     );
   }
   @override
@@ -23175,6 +23654,11 @@ class TrialApplicationProduct extends DataClass
       'rate': serializer.toJson<double?>(rate),
       'rateUnit': serializer.toJson<String?>(rateUnit),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'plannedProduct': serializer.toJson<String?>(plannedProduct),
+      'plannedRate': serializer.toJson<double?>(plannedRate),
+      'plannedRateUnit': serializer.toJson<String?>(plannedRateUnit),
+      'deviationFlag': serializer.toJson<bool>(deviationFlag),
+      'deviationNotes': serializer.toJson<String?>(deviationNotes),
     };
   }
 
@@ -23184,7 +23668,12 @@ class TrialApplicationProduct extends DataClass
           String? productName,
           Value<double?> rate = const Value.absent(),
           Value<String?> rateUnit = const Value.absent(),
-          int? sortOrder}) =>
+          int? sortOrder,
+          Value<String?> plannedProduct = const Value.absent(),
+          Value<double?> plannedRate = const Value.absent(),
+          Value<String?> plannedRateUnit = const Value.absent(),
+          bool? deviationFlag,
+          Value<String?> deviationNotes = const Value.absent()}) =>
       TrialApplicationProduct(
         id: id ?? this.id,
         trialApplicationEventId:
@@ -23193,6 +23682,15 @@ class TrialApplicationProduct extends DataClass
         rate: rate.present ? rate.value : this.rate,
         rateUnit: rateUnit.present ? rateUnit.value : this.rateUnit,
         sortOrder: sortOrder ?? this.sortOrder,
+        plannedProduct:
+            plannedProduct.present ? plannedProduct.value : this.plannedProduct,
+        plannedRate: plannedRate.present ? plannedRate.value : this.plannedRate,
+        plannedRateUnit: plannedRateUnit.present
+            ? plannedRateUnit.value
+            : this.plannedRateUnit,
+        deviationFlag: deviationFlag ?? this.deviationFlag,
+        deviationNotes:
+            deviationNotes.present ? deviationNotes.value : this.deviationNotes,
       );
   TrialApplicationProduct copyWithCompanion(
       TrialApplicationProductsCompanion data) {
@@ -23206,6 +23704,20 @@ class TrialApplicationProduct extends DataClass
       rate: data.rate.present ? data.rate.value : this.rate,
       rateUnit: data.rateUnit.present ? data.rateUnit.value : this.rateUnit,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      plannedProduct: data.plannedProduct.present
+          ? data.plannedProduct.value
+          : this.plannedProduct,
+      plannedRate:
+          data.plannedRate.present ? data.plannedRate.value : this.plannedRate,
+      plannedRateUnit: data.plannedRateUnit.present
+          ? data.plannedRateUnit.value
+          : this.plannedRateUnit,
+      deviationFlag: data.deviationFlag.present
+          ? data.deviationFlag.value
+          : this.deviationFlag,
+      deviationNotes: data.deviationNotes.present
+          ? data.deviationNotes.value
+          : this.deviationNotes,
     );
   }
 
@@ -23217,14 +23729,29 @@ class TrialApplicationProduct extends DataClass
           ..write('productName: $productName, ')
           ..write('rate: $rate, ')
           ..write('rateUnit: $rateUnit, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('plannedProduct: $plannedProduct, ')
+          ..write('plannedRate: $plannedRate, ')
+          ..write('plannedRateUnit: $plannedRateUnit, ')
+          ..write('deviationFlag: $deviationFlag, ')
+          ..write('deviationNotes: $deviationNotes')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(
-      id, trialApplicationEventId, productName, rate, rateUnit, sortOrder);
+      id,
+      trialApplicationEventId,
+      productName,
+      rate,
+      rateUnit,
+      sortOrder,
+      plannedProduct,
+      plannedRate,
+      plannedRateUnit,
+      deviationFlag,
+      deviationNotes);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -23234,7 +23761,12 @@ class TrialApplicationProduct extends DataClass
           other.productName == this.productName &&
           other.rate == this.rate &&
           other.rateUnit == this.rateUnit &&
-          other.sortOrder == this.sortOrder);
+          other.sortOrder == this.sortOrder &&
+          other.plannedProduct == this.plannedProduct &&
+          other.plannedRate == this.plannedRate &&
+          other.plannedRateUnit == this.plannedRateUnit &&
+          other.deviationFlag == this.deviationFlag &&
+          other.deviationNotes == this.deviationNotes);
 }
 
 class TrialApplicationProductsCompanion
@@ -23245,6 +23777,11 @@ class TrialApplicationProductsCompanion
   final Value<double?> rate;
   final Value<String?> rateUnit;
   final Value<int> sortOrder;
+  final Value<String?> plannedProduct;
+  final Value<double?> plannedRate;
+  final Value<String?> plannedRateUnit;
+  final Value<bool> deviationFlag;
+  final Value<String?> deviationNotes;
   const TrialApplicationProductsCompanion({
     this.id = const Value.absent(),
     this.trialApplicationEventId = const Value.absent(),
@@ -23252,6 +23789,11 @@ class TrialApplicationProductsCompanion
     this.rate = const Value.absent(),
     this.rateUnit = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.plannedProduct = const Value.absent(),
+    this.plannedRate = const Value.absent(),
+    this.plannedRateUnit = const Value.absent(),
+    this.deviationFlag = const Value.absent(),
+    this.deviationNotes = const Value.absent(),
   });
   TrialApplicationProductsCompanion.insert({
     this.id = const Value.absent(),
@@ -23260,6 +23802,11 @@ class TrialApplicationProductsCompanion
     this.rate = const Value.absent(),
     this.rateUnit = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.plannedProduct = const Value.absent(),
+    this.plannedRate = const Value.absent(),
+    this.plannedRateUnit = const Value.absent(),
+    this.deviationFlag = const Value.absent(),
+    this.deviationNotes = const Value.absent(),
   })  : trialApplicationEventId = Value(trialApplicationEventId),
         productName = Value(productName);
   static Insertable<TrialApplicationProduct> custom({
@@ -23269,6 +23816,11 @@ class TrialApplicationProductsCompanion
     Expression<double>? rate,
     Expression<String>? rateUnit,
     Expression<int>? sortOrder,
+    Expression<String>? plannedProduct,
+    Expression<double>? plannedRate,
+    Expression<String>? plannedRateUnit,
+    Expression<bool>? deviationFlag,
+    Expression<String>? deviationNotes,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -23278,6 +23830,11 @@ class TrialApplicationProductsCompanion
       if (rate != null) 'rate': rate,
       if (rateUnit != null) 'rate_unit': rateUnit,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (plannedProduct != null) 'planned_product': plannedProduct,
+      if (plannedRate != null) 'planned_rate': plannedRate,
+      if (plannedRateUnit != null) 'planned_rate_unit': plannedRateUnit,
+      if (deviationFlag != null) 'deviation_flag': deviationFlag,
+      if (deviationNotes != null) 'deviation_notes': deviationNotes,
     });
   }
 
@@ -23287,7 +23844,12 @@ class TrialApplicationProductsCompanion
       Value<String>? productName,
       Value<double?>? rate,
       Value<String?>? rateUnit,
-      Value<int>? sortOrder}) {
+      Value<int>? sortOrder,
+      Value<String?>? plannedProduct,
+      Value<double?>? plannedRate,
+      Value<String?>? plannedRateUnit,
+      Value<bool>? deviationFlag,
+      Value<String?>? deviationNotes}) {
     return TrialApplicationProductsCompanion(
       id: id ?? this.id,
       trialApplicationEventId:
@@ -23296,6 +23858,11 @@ class TrialApplicationProductsCompanion
       rate: rate ?? this.rate,
       rateUnit: rateUnit ?? this.rateUnit,
       sortOrder: sortOrder ?? this.sortOrder,
+      plannedProduct: plannedProduct ?? this.plannedProduct,
+      plannedRate: plannedRate ?? this.plannedRate,
+      plannedRateUnit: plannedRateUnit ?? this.plannedRateUnit,
+      deviationFlag: deviationFlag ?? this.deviationFlag,
+      deviationNotes: deviationNotes ?? this.deviationNotes,
     );
   }
 
@@ -23321,6 +23888,21 @@ class TrialApplicationProductsCompanion
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (plannedProduct.present) {
+      map['planned_product'] = Variable<String>(plannedProduct.value);
+    }
+    if (plannedRate.present) {
+      map['planned_rate'] = Variable<double>(plannedRate.value);
+    }
+    if (plannedRateUnit.present) {
+      map['planned_rate_unit'] = Variable<String>(plannedRateUnit.value);
+    }
+    if (deviationFlag.present) {
+      map['deviation_flag'] = Variable<bool>(deviationFlag.value);
+    }
+    if (deviationNotes.present) {
+      map['deviation_notes'] = Variable<String>(deviationNotes.value);
+    }
     return map;
   }
 
@@ -23332,7 +23914,12 @@ class TrialApplicationProductsCompanion
           ..write('productName: $productName, ')
           ..write('rate: $rate, ')
           ..write('rateUnit: $rateUnit, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('plannedProduct: $plannedProduct, ')
+          ..write('plannedRate: $plannedRate, ')
+          ..write('plannedRateUnit: $plannedRateUnit, ')
+          ..write('deviationFlag: $deviationFlag, ')
+          ..write('deviationNotes: $deviationNotes')
           ..write(')'))
         .toString();
   }
@@ -38547,6 +39134,14 @@ typedef $$TrialApplicationEventsTableCreateCompanionBuilder
   Value<DateTime> createdAt,
   Value<int?> lastEditedByUserId,
   Value<DateTime?> lastEditedAt,
+  Value<String?> precipitation,
+  Value<double?> precipitationMm,
+  Value<DateTime?> conditionsRecordedAt,
+  Value<double?> boomHeightCm,
+  Value<String?> sessionName,
+  Value<DateTime?> startedAt,
+  Value<DateTime?> completedAt,
+  Value<DateTime?> closedAt,
   Value<int> rowid,
 });
 typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
@@ -38594,6 +39189,14 @@ typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
   Value<DateTime> createdAt,
   Value<int?> lastEditedByUserId,
   Value<DateTime?> lastEditedAt,
+  Value<String?> precipitation,
+  Value<double?> precipitationMm,
+  Value<DateTime?> conditionsRecordedAt,
+  Value<double?> boomHeightCm,
+  Value<String?> sessionName,
+  Value<DateTime?> startedAt,
+  Value<DateTime?> completedAt,
+  Value<DateTime?> closedAt,
   Value<int> rowid,
 });
 
@@ -38658,6 +39261,14 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<DateTime> createdAt = const Value.absent(),
             Value<int?> lastEditedByUserId = const Value.absent(),
             Value<DateTime?> lastEditedAt = const Value.absent(),
+            Value<String?> precipitation = const Value.absent(),
+            Value<double?> precipitationMm = const Value.absent(),
+            Value<DateTime?> conditionsRecordedAt = const Value.absent(),
+            Value<double?> boomHeightCm = const Value.absent(),
+            Value<String?> sessionName = const Value.absent(),
+            Value<DateTime?> startedAt = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
+            Value<DateTime?> closedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion(
@@ -38704,6 +39315,14 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             createdAt: createdAt,
             lastEditedByUserId: lastEditedByUserId,
             lastEditedAt: lastEditedAt,
+            precipitation: precipitation,
+            precipitationMm: precipitationMm,
+            conditionsRecordedAt: conditionsRecordedAt,
+            boomHeightCm: boomHeightCm,
+            sessionName: sessionName,
+            startedAt: startedAt,
+            completedAt: completedAt,
+            closedAt: closedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -38750,6 +39369,14 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<DateTime> createdAt = const Value.absent(),
             Value<int?> lastEditedByUserId = const Value.absent(),
             Value<DateTime?> lastEditedAt = const Value.absent(),
+            Value<String?> precipitation = const Value.absent(),
+            Value<double?> precipitationMm = const Value.absent(),
+            Value<DateTime?> conditionsRecordedAt = const Value.absent(),
+            Value<double?> boomHeightCm = const Value.absent(),
+            Value<String?> sessionName = const Value.absent(),
+            Value<DateTime?> startedAt = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
+            Value<DateTime?> closedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion.insert(
@@ -38796,6 +39423,14 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             createdAt: createdAt,
             lastEditedByUserId: lastEditedByUserId,
             lastEditedAt: lastEditedAt,
+            precipitation: precipitation,
+            precipitationMm: precipitationMm,
+            conditionsRecordedAt: conditionsRecordedAt,
+            boomHeightCm: boomHeightCm,
+            sessionName: sessionName,
+            startedAt: startedAt,
+            completedAt: completedAt,
+            closedAt: closedAt,
             rowid: rowid,
           ),
         ));
@@ -39001,6 +39636,46 @@ class $$TrialApplicationEventsTableFilterComposer
 
   ColumnFilters<DateTime> get lastEditedAt => $state.composableBuilder(
       column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get precipitation => $state.composableBuilder(
+      column: $state.table.precipitation,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get precipitationMm => $state.composableBuilder(
+      column: $state.table.precipitationMm,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get conditionsRecordedAt => $state.composableBuilder(
+      column: $state.table.conditionsRecordedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get boomHeightCm => $state.composableBuilder(
+      column: $state.table.boomHeightCm,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sessionName => $state.composableBuilder(
+      column: $state.table.sessionName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get startedAt => $state.composableBuilder(
+      column: $state.table.startedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get completedAt => $state.composableBuilder(
+      column: $state.table.completedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get closedAt => $state.composableBuilder(
+      column: $state.table.closedAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -39262,6 +39937,47 @@ class $$TrialApplicationEventsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<String> get precipitation => $state.composableBuilder(
+      column: $state.table.precipitation,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get precipitationMm => $state.composableBuilder(
+      column: $state.table.precipitationMm,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get conditionsRecordedAt =>
+      $state.composableBuilder(
+          column: $state.table.conditionsRecordedAt,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get boomHeightCm => $state.composableBuilder(
+      column: $state.table.boomHeightCm,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get sessionName => $state.composableBuilder(
+      column: $state.table.sessionName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get startedAt => $state.composableBuilder(
+      column: $state.table.startedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get completedAt => $state.composableBuilder(
+      column: $state.table.completedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get closedAt => $state.composableBuilder(
+      column: $state.table.closedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -39307,6 +40023,11 @@ typedef $$TrialApplicationProductsTableCreateCompanionBuilder
   Value<double?> rate,
   Value<String?> rateUnit,
   Value<int> sortOrder,
+  Value<String?> plannedProduct,
+  Value<double?> plannedRate,
+  Value<String?> plannedRateUnit,
+  Value<bool> deviationFlag,
+  Value<String?> deviationNotes,
 });
 typedef $$TrialApplicationProductsTableUpdateCompanionBuilder
     = TrialApplicationProductsCompanion Function({
@@ -39316,6 +40037,11 @@ typedef $$TrialApplicationProductsTableUpdateCompanionBuilder
   Value<double?> rate,
   Value<String?> rateUnit,
   Value<int> sortOrder,
+  Value<String?> plannedProduct,
+  Value<double?> plannedRate,
+  Value<String?> plannedRateUnit,
+  Value<bool> deviationFlag,
+  Value<String?> deviationNotes,
 });
 
 class $$TrialApplicationProductsTableTableManager extends RootTableManager<
@@ -39342,6 +40068,11 @@ class $$TrialApplicationProductsTableTableManager extends RootTableManager<
             Value<double?> rate = const Value.absent(),
             Value<String?> rateUnit = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
+            Value<String?> plannedProduct = const Value.absent(),
+            Value<double?> plannedRate = const Value.absent(),
+            Value<String?> plannedRateUnit = const Value.absent(),
+            Value<bool> deviationFlag = const Value.absent(),
+            Value<String?> deviationNotes = const Value.absent(),
           }) =>
               TrialApplicationProductsCompanion(
             id: id,
@@ -39350,6 +40081,11 @@ class $$TrialApplicationProductsTableTableManager extends RootTableManager<
             rate: rate,
             rateUnit: rateUnit,
             sortOrder: sortOrder,
+            plannedProduct: plannedProduct,
+            plannedRate: plannedRate,
+            plannedRateUnit: plannedRateUnit,
+            deviationFlag: deviationFlag,
+            deviationNotes: deviationNotes,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -39358,6 +40094,11 @@ class $$TrialApplicationProductsTableTableManager extends RootTableManager<
             Value<double?> rate = const Value.absent(),
             Value<String?> rateUnit = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
+            Value<String?> plannedProduct = const Value.absent(),
+            Value<double?> plannedRate = const Value.absent(),
+            Value<String?> plannedRateUnit = const Value.absent(),
+            Value<bool> deviationFlag = const Value.absent(),
+            Value<String?> deviationNotes = const Value.absent(),
           }) =>
               TrialApplicationProductsCompanion.insert(
             id: id,
@@ -39366,6 +40107,11 @@ class $$TrialApplicationProductsTableTableManager extends RootTableManager<
             rate: rate,
             rateUnit: rateUnit,
             sortOrder: sortOrder,
+            plannedProduct: plannedProduct,
+            plannedRate: plannedRate,
+            plannedRateUnit: plannedRateUnit,
+            deviationFlag: deviationFlag,
+            deviationNotes: deviationNotes,
           ),
         ));
 }
@@ -39395,6 +40141,31 @@ class $$TrialApplicationProductsTableFilterComposer
 
   ColumnFilters<int> get sortOrder => $state.composableBuilder(
       column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plannedProduct => $state.composableBuilder(
+      column: $state.table.plannedProduct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get plannedRate => $state.composableBuilder(
+      column: $state.table.plannedRate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plannedRateUnit => $state.composableBuilder(
+      column: $state.table.plannedRateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get deviationFlag => $state.composableBuilder(
+      column: $state.table.deviationFlag,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get deviationNotes => $state.composableBuilder(
+      column: $state.table.deviationNotes,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -39440,6 +40211,31 @@ class $$TrialApplicationProductsTableOrderingComposer
 
   ColumnOrderings<int> get sortOrder => $state.composableBuilder(
       column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plannedProduct => $state.composableBuilder(
+      column: $state.table.plannedProduct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get plannedRate => $state.composableBuilder(
+      column: $state.table.plannedRate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plannedRateUnit => $state.composableBuilder(
+      column: $state.table.plannedRateUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get deviationFlag => $state.composableBuilder(
+      column: $state.table.deviationFlag,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get deviationNotes => $state.composableBuilder(
+      column: $state.table.deviationNotes,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

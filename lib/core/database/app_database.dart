@@ -688,6 +688,16 @@ class TrialApplicationEvents extends Table {
       integer().nullable().references(Users, #id)();
   DateTimeColumn get lastEditedAt => dateTime().nullable()();
 
+  // Session lifecycle fields (Sprint 3).
+  TextColumn get precipitation => text().nullable()();
+  RealColumn get precipitationMm => real().nullable()();
+  DateTimeColumn get conditionsRecordedAt => dateTime().nullable()();
+  RealColumn get boomHeightCm => real().nullable()();
+  TextColumn get sessionName => text().nullable()();
+  DateTimeColumn get startedAt => dateTime().nullable()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  DateTimeColumn get closedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -702,6 +712,14 @@ class TrialApplicationProducts extends Table {
   RealColumn get rate => real().nullable()();
   TextColumn get rateUnit => text().nullable()();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  // Plan-vs-actual deviation fields (Sprint 3).
+  TextColumn get plannedProduct => text().nullable()();
+  RealColumn get plannedRate => real().nullable()();
+  TextColumn get plannedRateUnit => text().nullable()();
+  BoolColumn get deviationFlag =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get deviationNotes => text().nullable()();
 }
 
 class ImportSnapshots extends Table {
@@ -896,7 +914,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 51;
+  int get schemaVersion => 52;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1441,6 +1459,48 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
                 'WHERE id = ?',
                 [trialId],
               );
+            }
+          }
+
+          if (from < 52) {
+            // Application session lifecycle + deviation fields.
+            final appCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_application_events')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            for (final col in {
+              'precipitation': 'TEXT',
+              'precipitation_mm': 'REAL',
+              'conditions_recorded_at': 'INTEGER',
+              'boom_height_cm': 'REAL',
+              'session_name': 'TEXT',
+              'started_at': 'INTEGER',
+              'completed_at': 'INTEGER',
+              'closed_at': 'INTEGER',
+            }.entries) {
+              if (!appCols.contains(col.key)) {
+                await customStatement(
+                    'ALTER TABLE trial_application_events '
+                    'ADD COLUMN ${col.key} ${col.value}');
+              }
+            }
+
+            final prodCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_application_products')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            for (final col in {
+              'planned_product': 'TEXT',
+              'planned_rate': 'REAL',
+              'planned_rate_unit': 'TEXT',
+              'deviation_flag': 'INTEGER DEFAULT 0',
+              'deviation_notes': 'TEXT',
+            }.entries) {
+              if (!prodCols.contains(col.key)) {
+                await customStatement(
+                    'ALTER TABLE trial_application_products '
+                    'ADD COLUMN ${col.key} ${col.value}');
+              }
             }
           }
 
