@@ -33,6 +33,7 @@ class SessionTimingContext {
     this.daysAfterFirstApp,
     this.daysAfterLastApp,
     this.cropStageBbch,
+    this.lastAppLabel,
   });
 
   final int? daysAfterSeeding;
@@ -40,14 +41,24 @@ class SessionTimingContext {
   final int? daysAfterLastApp;
   final int? cropStageBbch;
 
-  /// BBCH · DAT · DAS — only non-null parts (matches export/session UX order).
+  /// Human-readable label for the most recent application, e.g.
+  /// "Application 2, Apr 15". Null when no applications exist.
+  final String? lastAppLabel;
+
+  /// BBCH · DAT (App label) · DAS — non-null parts with application context.
   String get displayLine {
     final parts = <String>[];
     if (cropStageBbch != null) parts.add('BBCH $cropStageBbch');
-    parts.addAll(timingDatDasDisplayParts(
+    final datDas = timingDatDasDisplayParts(
       daysAfterFirstApp: daysAfterFirstApp,
       daysAfterSeeding: daysAfterSeeding,
-    ));
+    );
+    if (datDas.isNotEmpty && lastAppLabel != null) {
+      parts.add('${datDas.first} ($lastAppLabel)');
+      if (datDas.length > 1) parts.addAll(datDas.skip(1));
+    } else {
+      parts.addAll(datDas);
+    }
     return parts.join(' · ');
   }
 
@@ -84,6 +95,21 @@ SessionTimingContext buildSessionTimingContext({
     lastAppDate = applied.map((e) => e.applicationDate).reduce((a, b) => a.isAfter(b) ? a : b);
   }
 
+  // Build a label for the most recent application.
+  String? lastAppLabel;
+  if (applied.isNotEmpty) {
+    applied.sort((a, b) => a.applicationDate.compareTo(b.applicationDate));
+    final lastIdx = applied.length;
+    final lastApp = applied.last;
+    final m = lastApp.applicationDate.month;
+    final d = lastApp.applicationDate.day;
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    lastAppLabel = 'Application $lastIdx, ${months[m - 1]} $d';
+  }
+
   return SessionTimingContext(
     daysAfterSeeding: seedingDate != null
         ? sessionStartedAt.difference(seedingDate).inDays
@@ -93,6 +119,7 @@ SessionTimingContext buildSessionTimingContext({
     daysAfterLastApp:
         lastAppDate != null ? sessionStartedAt.difference(lastAppDate).inDays : null,
     cropStageBbch: cropStageBbch,
+    lastAppLabel: lastAppLabel,
   );
 }
 

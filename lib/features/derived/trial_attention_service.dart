@@ -180,6 +180,22 @@ class TrialAttentionService {
           count: pending.length,
         ));
       }
+
+      // Application weather completeness.
+      final applied =
+          applications.where((a) => a.status == 'applied').toList();
+      final missingWeather = applied
+          .where((a) => a.temperature == null && a.windSpeed == null)
+          .length;
+      if (missingWeather > 0) {
+        items.add(AttentionItem(
+          type: AttentionType.applicationsPending,
+          label:
+              '$missingWeather application${missingWeather == 1 ? '' : 's'} missing weather',
+          severity: AttentionSeverity.medium,
+          count: missingWeather,
+        ));
+      }
     }
 
     // PLOTS

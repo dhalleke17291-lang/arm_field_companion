@@ -2399,6 +2399,120 @@ class _OverviewPlotSummary extends ConsumerWidget {
 }
 
 /// Overview stack slot ([_overviewTabIndex]): primary trial dashboard.
+/// Compact status strip: last application, readiness traffic light, days since
+/// last activity. Command-center view — researcher opens trial and sees
+/// what needs attention immediately.
+class _TrialStatusStrip extends ConsumerWidget {
+  const _TrialStatusStrip({required this.trialId});
+  final int trialId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final readiness = ref.watch(trialReadinessProvider(trialId));
+    final apps = ref.watch(trialApplicationsForTrialProvider(trialId));
+    final sessions = ref.watch(sessionsForTrialProvider(trialId));
+
+    return readiness.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (report) {
+        final appList = apps.valueOrNull ?? [];
+        final sessionList = sessions.valueOrNull ?? [];
+
+        // Last activity: most recent session or application.
+        DateTime? lastActivity;
+        if (sessionList.isNotEmpty) {
+          lastActivity = sessionList
+              .map((s) => s.startedAt)
+              .reduce((a, b) => a.isAfter(b) ? a : b);
+        }
+        final appliedApps =
+            appList.where((a) => a.status == 'applied').toList();
+        if (appliedApps.isNotEmpty) {
+          final lastAppDate = appliedApps
+              .map((a) => a.applicationDate)
+              .reduce((a, b) => a.isAfter(b) ? a : b);
+          if (lastActivity == null || lastAppDate.isAfter(lastActivity)) {
+            lastActivity = lastAppDate;
+          }
+        }
+
+        final daysSince = lastActivity != null
+            ? DateTime.now().difference(lastActivity).inDays
+            : null;
+
+        // Traffic light.
+        final Color statusColor;
+        final String statusLabel;
+        if (report.blockerCount > 0) {
+          statusColor = const Color(0xFFCC3333);
+          statusLabel = '${report.blockerCount} blocker(s)';
+        } else if (report.warningCount > 0) {
+          statusColor = AppDesignTokens.warningFg;
+          statusLabel = '${report.warningCount} warning(s)';
+        } else {
+          statusColor = AppDesignTokens.successFg;
+          statusLabel = 'Ready';
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppDesignTokens.spacing16,
+            0,
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing8,
+          ),
+          child: Row(
+            children: [
+              // Traffic light dot + label.
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                statusLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
+              ),
+              const Spacer(),
+              if (appliedApps.isNotEmpty)
+                Text(
+                  '${appliedApps.length} app${appliedApps.length == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppDesignTokens.secondaryText
+                        .withValues(alpha: 0.75),
+                  ),
+                ),
+              if (daysSince != null) ...[
+                const SizedBox(width: 8),
+                Text(
+                  daysSince == 0
+                      ? 'Active today'
+                      : '$daysSince day${daysSince == 1 ? '' : 's'} ago',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppDesignTokens.secondaryText
+                        .withValues(alpha: 0.75),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _OverviewTabBody extends ConsumerWidget {
   const _OverviewTabBody({
     required this.trial,
@@ -2427,6 +2541,7 @@ class _OverviewTabBody extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TrialCompletionSummaryCard(trialId: trial.id),
+          _TrialStatusStrip(trialId: trial.id),
           if (trialWorkspaceIsStandalone(trial.workspaceType)) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(
