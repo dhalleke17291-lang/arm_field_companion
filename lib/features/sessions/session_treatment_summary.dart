@@ -72,22 +72,37 @@ class SessionTreatmentSummary extends StatelessWidget {
     final sortedTreatments = List<Treatment>.from(treatments)
       ..sort((a, b) => a.code.compareTo(b.code));
 
-    // Compute stats: treatment × assessment → (mean, cv, n)
+    // Build walk-order index for drift computation: plot pk → walk position.
+    final walkOrder = <int, int>{};
+    final sortedDataPlots = List<Plot>.from(dataPlots)
+      ..sort((a, b) =>
+          (a.plotSortIndex ?? 0).compareTo(b.plotSortIndex ?? 0));
+    for (var i = 0; i < sortedDataPlots.length; i++) {
+      walkOrder[sortedDataPlots[i].id] = i;
+    }
+
+    // Compute stats: treatment × assessment → (mean, cv, n, driftNote)
     final stats =
-        <int, Map<int, ({double mean, double cv, int n})>>{};
+        <int, Map<int, ({double mean, double cv, int n, String? driftNote})>>{};
     for (final t in sortedTreatments) {
       final tPlotPks = plotTreatmentMap.entries
           .where((e) => e.value == t.id)
           .map((e) => e.key)
           .toSet();
-      final aStats = <int, ({double mean, double cv, int n})>{};
+      final aStats =
+          <int, ({double mean, double cv, int n, String? driftNote})>{};
       for (final a in assessments) {
-        final values = <double>[];
+        // Collect values with walk-order position for drift detection.
+        final entries = <({int walkPos, double value})>[];
         for (final pk in tPlotPks) {
           final v = ratingMap[(pk, a.id)];
-          if (v != null) values.add(v);
+          final pos = walkOrder[pk];
+          if (v != null && pos != null) {
+            entries.add((walkPos: pos, value: v));
+          }
         }
-        if (values.isNotEmpty) {
+        if (entries.isNotEmpty) {
+          final values = entries.map((e) => e.value).toList();
           final mean = values.reduce((a, b) => a + b) / values.length;
           double cv = 0;
           if (values.length > 1 && mean.abs() > 1e-9) {
@@ -96,7 +111,31 @@ class SessionTreatmentSummary extends StatelessWidget {
                     (values.length - 1);
             cv = (math.sqrt(variance) / mean.abs()) * 100;
           }
-          aStats[a.id] = (mean: mean, cv: cv, n: values.length);
+
+          // Drift detection: split by walk order, compare halves.
+          String? driftNote;
+          if (entries.length >= 4) {
+            entries.sort((a, b) => a.walkPos.compareTo(b.walkPos));
+            final mid = entries.length ~/ 2;
+            final earlyVals = entries.sublist(0, mid).map((e) => e.value);
+            final lateVals = entries.sublist(mid).map((e) => e.value);
+            final earlyMean =
+                earlyVals.reduce((a, b) => a + b) / earlyVals.length;
+            final lateMean =
+                lateVals.reduce((a, b) => a + b) / lateVals.length;
+            final diff = (lateMean - earlyMean).abs();
+            // Threshold: >15 points absolute OR >15% of overall mean.
+            final threshold = mean.abs() > 1e-9
+                ? math.max(15.0, mean.abs() * 0.15)
+                : 15.0;
+            if (diff >= threshold) {
+              driftNote =
+                  'Early ${earlyMean.round()} → Late ${lateMean.round()}';
+            }
+          }
+
+          aStats[a.id] = (mean: mean, cv: cv, n: values.length,
+              driftNote: driftNote);
         }
       }
       stats[t.id] = aStats;
@@ -108,7 +147,7 @@ class SessionTreatmentSummary extends StatelessWidget {
     const minCellWidth = 80.0;
     const maxCellWidth = 120.0;
     const headerHeight = 52.0;
-    const rowHeight = 48.0;
+    const rowHeight = 56.0;
 
     final colCount = assessments.length;
     final availableWidth = screenWidth - trtColWidth - 16;
@@ -277,7 +316,7 @@ class _TreatmentCell extends StatelessWidget {
 
   final double width;
   final double height;
-  final ({double mean, double cv, int n})? stats;
+  final ({double mean, double cv, int n, String? driftNote})? stats;
   final bool isEvenRow;
 
   @override
@@ -360,6 +399,18 @@ class _TreatmentCell extends StatelessWidget {
                 fontSize: 9,
                 color: scheme.onSurfaceVariant,
               ),
+            ),
+          if (s.driftNote != null)
+            Text(
+              s.driftNote!,
+              style: TextStyle(
+                fontSize: 8,
+                fontStyle: FontStyle.italic,
+                color: AppDesignTokens.secondaryText
+                    .withValues(alpha: 0.75),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
         ],
       ),
