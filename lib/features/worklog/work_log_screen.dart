@@ -590,13 +590,25 @@ class _WorkLogScreenState extends ConsumerState<WorkLogScreen> {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                '$trialName · ${session.sessionDateLocal}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppDesignTokens.secondaryText,
-                                ),
-                              ),
+                              Builder(builder: (_) {
+                                final timing = ref
+                                    .watch(sessionTimingContextProvider(
+                                        session.id))
+                                    .valueOrNull;
+                                final datDas = timing != null &&
+                                        !timing.isEmpty
+                                    ? ' · ${timing.displayLineDatDasOnly}'
+                                    : '';
+                                return Text(
+                                  '$trialName · ${session.sessionDateLocal}$datDas',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppDesignTokens.secondaryText,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                );
+                              }),
                             ],
                           ),
                         ),

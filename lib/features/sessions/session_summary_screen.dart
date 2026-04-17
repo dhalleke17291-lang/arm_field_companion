@@ -721,11 +721,19 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       }
     }
 
+    // DAT/DAS timing for header subtitle.
+    final timing = ref
+        .watch(sessionTimingContextProvider(widget.session.id))
+        .valueOrNull;
+    final datDas =
+        timing != null && !timing.isEmpty ? ' · ${timing.displayLine}' : '';
+    final subtitle = '${widget.session.sessionDateLocal}$datDas';
+
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: GradientScreenHeader(
         title: widget.session.name,
-        subtitle: widget.session.sessionDateLocal,
+        subtitle: subtitle,
         titleFontSize: 17,
         actions: [
           // Tools menu — advanced screens
