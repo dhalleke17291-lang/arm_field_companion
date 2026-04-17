@@ -247,6 +247,8 @@ class ExportTrialUseCase {
     'notes',
     'export_timestamp',
     'crop_stage_bbch',
+    'crop_injury_status',
+    'crop_injury_notes',
     'days_after_seeding',
     'days_after_first_application',
   ];
@@ -1563,6 +1565,8 @@ class ExportTrialUseCase {
         '', // notes not on Session in schema
         exportTimestamp,
         _cell(s.cropStageBbch),
+        _cell(s.cropInjuryStatus),
+        _cell(s.cropInjuryNotes),
         das != null ? _cell(das) : '',
         daf != null ? _cell(daf) : '',
       ]);
