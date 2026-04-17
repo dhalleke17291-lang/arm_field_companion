@@ -698,6 +698,11 @@ class TrialApplicationEvents extends Table {
   DateTimeColumn get completedAt => dateTime().nullable()();
   DateTimeColumn get closedAt => dateTime().nullable()();
 
+  /// Total product mixed in the tank (g, mL, or other unit matching rate).
+  RealColumn get totalProductMixed => real().nullable()();
+  /// Total area actually sprayed (hectares).
+  RealColumn get totalAreaSprayedHa => real().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -1477,6 +1482,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
               'started_at': 'INTEGER',
               'completed_at': 'INTEGER',
               'closed_at': 'INTEGER',
+              'total_product_mixed': 'REAL',
+              'total_area_sprayed_ha': 'REAL',
             }.entries) {
               if (!appCols.contains(col.key)) {
                 await customStatement(

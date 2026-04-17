@@ -21304,6 +21304,18 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
   late final GeneratedColumn<DateTime> closedAt = GeneratedColumn<DateTime>(
       'closed_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _totalProductMixedMeta =
+      const VerificationMeta('totalProductMixed');
+  @override
+  late final GeneratedColumn<double> totalProductMixed =
+      GeneratedColumn<double>('total_product_mixed', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _totalAreaSprayedHaMeta =
+      const VerificationMeta('totalAreaSprayedHa');
+  @override
+  late final GeneratedColumn<double> totalAreaSprayedHa =
+      GeneratedColumn<double>('total_area_sprayed_ha', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -21356,7 +21368,9 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
         sessionName,
         startedAt,
         completedAt,
-        closedAt
+        closedAt,
+        totalProductMixed,
+        totalAreaSprayedHa
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -21650,6 +21664,18 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
       context.handle(_closedAtMeta,
           closedAt.isAcceptableOrUnknown(data['closed_at']!, _closedAtMeta));
     }
+    if (data.containsKey('total_product_mixed')) {
+      context.handle(
+          _totalProductMixedMeta,
+          totalProductMixed.isAcceptableOrUnknown(
+              data['total_product_mixed']!, _totalProductMixedMeta));
+    }
+    if (data.containsKey('total_area_sprayed_ha')) {
+      context.handle(
+          _totalAreaSprayedHaMeta,
+          totalAreaSprayedHa.isAcceptableOrUnknown(
+              data['total_area_sprayed_ha']!, _totalAreaSprayedHaMeta));
+    }
     return context;
   }
 
@@ -21762,6 +21788,10 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
       closedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}closed_at']),
+      totalProductMixed: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}total_product_mixed']),
+      totalAreaSprayedHa: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}total_area_sprayed_ha']),
     );
   }
 
@@ -21824,6 +21854,12 @@ class TrialApplicationEvent extends DataClass
   final DateTime? startedAt;
   final DateTime? completedAt;
   final DateTime? closedAt;
+
+  /// Total product mixed in the tank (g, mL, or other unit matching rate).
+  final double? totalProductMixed;
+
+  /// Total area actually sprayed (hectares).
+  final double? totalAreaSprayedHa;
   const TrialApplicationEvent(
       {required this.id,
       required this.trialId,
@@ -21875,7 +21911,9 @@ class TrialApplicationEvent extends DataClass
       this.sessionName,
       this.startedAt,
       this.completedAt,
-      this.closedAt});
+      this.closedAt,
+      this.totalProductMixed,
+      this.totalAreaSprayedHa});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -22022,6 +22060,12 @@ class TrialApplicationEvent extends DataClass
     if (!nullToAbsent || closedAt != null) {
       map['closed_at'] = Variable<DateTime>(closedAt);
     }
+    if (!nullToAbsent || totalProductMixed != null) {
+      map['total_product_mixed'] = Variable<double>(totalProductMixed);
+    }
+    if (!nullToAbsent || totalAreaSprayedHa != null) {
+      map['total_area_sprayed_ha'] = Variable<double>(totalAreaSprayedHa);
+    }
     return map;
   }
 
@@ -22167,6 +22211,12 @@ class TrialApplicationEvent extends DataClass
       closedAt: closedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(closedAt),
+      totalProductMixed: totalProductMixed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalProductMixed),
+      totalAreaSprayedHa: totalAreaSprayedHa == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalAreaSprayedHa),
     );
   }
 
@@ -22228,6 +22278,10 @@ class TrialApplicationEvent extends DataClass
       startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       closedAt: serializer.fromJson<DateTime?>(json['closedAt']),
+      totalProductMixed:
+          serializer.fromJson<double?>(json['totalProductMixed']),
+      totalAreaSprayedHa:
+          serializer.fromJson<double?>(json['totalAreaSprayedHa']),
     );
   }
   @override
@@ -22286,6 +22340,8 @@ class TrialApplicationEvent extends DataClass
       'startedAt': serializer.toJson<DateTime?>(startedAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'closedAt': serializer.toJson<DateTime?>(closedAt),
+      'totalProductMixed': serializer.toJson<double?>(totalProductMixed),
+      'totalAreaSprayedHa': serializer.toJson<double?>(totalAreaSprayedHa),
     };
   }
 
@@ -22340,7 +22396,9 @@ class TrialApplicationEvent extends DataClass
           Value<String?> sessionName = const Value.absent(),
           Value<DateTime?> startedAt = const Value.absent(),
           Value<DateTime?> completedAt = const Value.absent(),
-          Value<DateTime?> closedAt = const Value.absent()}) =>
+          Value<DateTime?> closedAt = const Value.absent(),
+          Value<double?> totalProductMixed = const Value.absent(),
+          Value<double?> totalAreaSprayedHa = const Value.absent()}) =>
       TrialApplicationEvent(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -22433,6 +22491,12 @@ class TrialApplicationEvent extends DataClass
         startedAt: startedAt.present ? startedAt.value : this.startedAt,
         completedAt: completedAt.present ? completedAt.value : this.completedAt,
         closedAt: closedAt.present ? closedAt.value : this.closedAt,
+        totalProductMixed: totalProductMixed.present
+            ? totalProductMixed.value
+            : this.totalProductMixed,
+        totalAreaSprayedHa: totalAreaSprayedHa.present
+            ? totalAreaSprayedHa.value
+            : this.totalAreaSprayedHa,
       );
   TrialApplicationEvent copyWithCompanion(
       TrialApplicationEventsCompanion data) {
@@ -22553,6 +22617,12 @@ class TrialApplicationEvent extends DataClass
       completedAt:
           data.completedAt.present ? data.completedAt.value : this.completedAt,
       closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
+      totalProductMixed: data.totalProductMixed.present
+          ? data.totalProductMixed.value
+          : this.totalProductMixed,
+      totalAreaSprayedHa: data.totalAreaSprayedHa.present
+          ? data.totalAreaSprayedHa.value
+          : this.totalAreaSprayedHa,
     );
   }
 
@@ -22609,7 +22679,9 @@ class TrialApplicationEvent extends DataClass
           ..write('sessionName: $sessionName, ')
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
-          ..write('closedAt: $closedAt')
+          ..write('closedAt: $closedAt, ')
+          ..write('totalProductMixed: $totalProductMixed, ')
+          ..write('totalAreaSprayedHa: $totalAreaSprayedHa')
           ..write(')'))
         .toString();
   }
@@ -22666,7 +22738,9 @@ class TrialApplicationEvent extends DataClass
         sessionName,
         startedAt,
         completedAt,
-        closedAt
+        closedAt,
+        totalProductMixed,
+        totalAreaSprayedHa
       ]);
   @override
   bool operator ==(Object other) =>
@@ -22722,7 +22796,9 @@ class TrialApplicationEvent extends DataClass
           other.sessionName == this.sessionName &&
           other.startedAt == this.startedAt &&
           other.completedAt == this.completedAt &&
-          other.closedAt == this.closedAt);
+          other.closedAt == this.closedAt &&
+          other.totalProductMixed == this.totalProductMixed &&
+          other.totalAreaSprayedHa == this.totalAreaSprayedHa);
 }
 
 class TrialApplicationEventsCompanion
@@ -22778,6 +22854,8 @@ class TrialApplicationEventsCompanion
   final Value<DateTime?> startedAt;
   final Value<DateTime?> completedAt;
   final Value<DateTime?> closedAt;
+  final Value<double?> totalProductMixed;
+  final Value<double?> totalAreaSprayedHa;
   final Value<int> rowid;
   const TrialApplicationEventsCompanion({
     this.id = const Value.absent(),
@@ -22831,6 +22909,8 @@ class TrialApplicationEventsCompanion
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.closedAt = const Value.absent(),
+    this.totalProductMixed = const Value.absent(),
+    this.totalAreaSprayedHa = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TrialApplicationEventsCompanion.insert({
@@ -22885,6 +22965,8 @@ class TrialApplicationEventsCompanion
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.closedAt = const Value.absent(),
+    this.totalProductMixed = const Value.absent(),
+    this.totalAreaSprayedHa = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
         applicationDate = Value(applicationDate);
@@ -22940,6 +23022,8 @@ class TrialApplicationEventsCompanion
     Expression<DateTime>? startedAt,
     Expression<DateTime>? completedAt,
     Expression<DateTime>? closedAt,
+    Expression<double>? totalProductMixed,
+    Expression<double>? totalAreaSprayedHa,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -22996,6 +23080,9 @@ class TrialApplicationEventsCompanion
       if (startedAt != null) 'started_at': startedAt,
       if (completedAt != null) 'completed_at': completedAt,
       if (closedAt != null) 'closed_at': closedAt,
+      if (totalProductMixed != null) 'total_product_mixed': totalProductMixed,
+      if (totalAreaSprayedHa != null)
+        'total_area_sprayed_ha': totalAreaSprayedHa,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -23052,6 +23139,8 @@ class TrialApplicationEventsCompanion
       Value<DateTime?>? startedAt,
       Value<DateTime?>? completedAt,
       Value<DateTime?>? closedAt,
+      Value<double?>? totalProductMixed,
+      Value<double?>? totalAreaSprayedHa,
       Value<int>? rowid}) {
     return TrialApplicationEventsCompanion(
       id: id ?? this.id,
@@ -23105,6 +23194,8 @@ class TrialApplicationEventsCompanion
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       closedAt: closedAt ?? this.closedAt,
+      totalProductMixed: totalProductMixed ?? this.totalProductMixed,
+      totalAreaSprayedHa: totalAreaSprayedHa ?? this.totalAreaSprayedHa,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -23266,6 +23357,12 @@ class TrialApplicationEventsCompanion
     if (closedAt.present) {
       map['closed_at'] = Variable<DateTime>(closedAt.value);
     }
+    if (totalProductMixed.present) {
+      map['total_product_mixed'] = Variable<double>(totalProductMixed.value);
+    }
+    if (totalAreaSprayedHa.present) {
+      map['total_area_sprayed_ha'] = Variable<double>(totalAreaSprayedHa.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -23326,6 +23423,8 @@ class TrialApplicationEventsCompanion
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('closedAt: $closedAt, ')
+          ..write('totalProductMixed: $totalProductMixed, ')
+          ..write('totalAreaSprayedHa: $totalAreaSprayedHa, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -39142,6 +39241,8 @@ typedef $$TrialApplicationEventsTableCreateCompanionBuilder
   Value<DateTime?> startedAt,
   Value<DateTime?> completedAt,
   Value<DateTime?> closedAt,
+  Value<double?> totalProductMixed,
+  Value<double?> totalAreaSprayedHa,
   Value<int> rowid,
 });
 typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
@@ -39197,6 +39298,8 @@ typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
   Value<DateTime?> startedAt,
   Value<DateTime?> completedAt,
   Value<DateTime?> closedAt,
+  Value<double?> totalProductMixed,
+  Value<double?> totalAreaSprayedHa,
   Value<int> rowid,
 });
 
@@ -39269,6 +39372,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<DateTime?> startedAt = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
             Value<DateTime?> closedAt = const Value.absent(),
+            Value<double?> totalProductMixed = const Value.absent(),
+            Value<double?> totalAreaSprayedHa = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion(
@@ -39323,6 +39428,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             startedAt: startedAt,
             completedAt: completedAt,
             closedAt: closedAt,
+            totalProductMixed: totalProductMixed,
+            totalAreaSprayedHa: totalAreaSprayedHa,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -39377,6 +39484,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<DateTime?> startedAt = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
             Value<DateTime?> closedAt = const Value.absent(),
+            Value<double?> totalProductMixed = const Value.absent(),
+            Value<double?> totalAreaSprayedHa = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion.insert(
@@ -39431,6 +39540,8 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             startedAt: startedAt,
             completedAt: completedAt,
             closedAt: closedAt,
+            totalProductMixed: totalProductMixed,
+            totalAreaSprayedHa: totalAreaSprayedHa,
             rowid: rowid,
           ),
         ));
@@ -39676,6 +39787,16 @@ class $$TrialApplicationEventsTableFilterComposer
 
   ColumnFilters<DateTime> get closedAt => $state.composableBuilder(
       column: $state.table.closedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get totalProductMixed => $state.composableBuilder(
+      column: $state.table.totalProductMixed,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get totalAreaSprayedHa => $state.composableBuilder(
+      column: $state.table.totalAreaSprayedHa,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -39975,6 +40096,16 @@ class $$TrialApplicationEventsTableOrderingComposer
 
   ColumnOrderings<DateTime> get closedAt => $state.composableBuilder(
       column: $state.table.closedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get totalProductMixed => $state.composableBuilder(
+      column: $state.table.totalProductMixed,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get totalAreaSprayedHa => $state.composableBuilder(
+      column: $state.table.totalAreaSprayedHa,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
