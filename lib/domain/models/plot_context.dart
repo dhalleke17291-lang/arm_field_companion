@@ -30,6 +30,16 @@ class PlotContext {
 
   bool get hasComponents => components.isNotEmpty;
 
+  /// True when this plot is an untreated check / control based on treatment
+  /// code convention (CHK, UTC, CONTROL) or treatment type flag.
+  bool get isUntreatedCheck {
+    final code = treatment?.code.trim().toUpperCase();
+    if (code == 'CHK' || code == 'UTC' || code == 'CONTROL') return true;
+    final type = treatment?.treatmentType?.trim().toUpperCase();
+    if (type == 'CHK' || type == 'UTC' || type == 'CONTROL') return true;
+    return false;
+  }
+
   /// Display label shown in field UI — e.g. "Plot 101 · T2"
   String get displayLabel {
     final tCode = treatment?.code;

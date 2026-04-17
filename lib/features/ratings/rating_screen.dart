@@ -1233,15 +1233,40 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Plot $plotLabel',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppDesignTokens.primaryText,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Plot $plotLabel',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: AppDesignTokens.primaryText,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        if (plotCtx.valueOrNull?.isUntreatedCheck == true) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppDesignTokens.warningBg,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Check',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppDesignTokens.warningFg,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     if (secondaryLine.isNotEmpty) ...[
                       const SizedBox(height: 2),
@@ -3678,6 +3703,40 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       }
       return _saveRating(context,
           navigateAfterSave: navigateAfterSave, skipCarryForwardConfirm: true);
+    }
+
+    // Check-plot value confirmation: if this is a check plot and the
+    // researcher entered a non-zero numeric value on a control/efficacy
+    // assessment, prompt them to confirm. Non-blocking — they can proceed.
+    if (_selectedStatus == 'RECORDED' && !_isTextAssessment) {
+      final plotCtx = ref.read(plotContextProvider(widget.plot.id)).valueOrNull;
+      if (plotCtx != null && plotCtx.isUntreatedCheck) {
+        final v = double.tryParse(_valueController.text);
+        if (v != null && v > 0 && mounted) {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Check plot value'),
+              content: Text(
+                'This is an untreated check plot. '
+                'You entered ${_valueController.text} — confirm this value?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Edit'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Confirm'),
+                ),
+              ],
+            ),
+          );
+          if (confirm != true) return false;
+          if (!mounted) return false;
+        }
+      }
     }
 
     double? numericValue;
