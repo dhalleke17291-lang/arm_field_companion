@@ -41,6 +41,7 @@ import 'tabs/photos_tab.dart';
 import 'tabs/timeline_tab.dart';
 import 'widgets/trial_assessment_completion_widgets.dart';
 import 'trial_setup_screen.dart';
+import 'widgets/site_details_card.dart';
 import '../diagnostics/audit_log_screen.dart';
 import '../diagnostics/edited_items_screen.dart';
 import '../derived/derived_snapshot_provider.dart'
@@ -2450,6 +2451,7 @@ class _OverviewTabBody extends ConsumerWidget {
             ),
           ),
           _OverviewPlotSummary(trial: trial),
+          SiteDetailsCard(trial: trial),
         ],
       ),
     );
