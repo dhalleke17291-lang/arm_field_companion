@@ -400,6 +400,14 @@ class MockApplicationRepository implements ApplicationRepository {
   @override
   Future<void> deleteEvent(int eventId) async =>
       throw UnimplementedError();
+
+  @override
+  Future<void> completeApplication(String id,
+      {String? performedBy, int? performedByUserId}) async {}
+
+  @override
+  Future<void> closeApplication(String id,
+      {String? performedBy, int? performedByUserId}) async {}
 }
 
 class MockSeedingRepository implements SeedingRepository {

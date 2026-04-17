@@ -203,6 +203,65 @@ class ApplicationRepository {
     });
   }
 
+  /// Marks application as complete — researcher confirms all data entered.
+  /// Fields still editable but changes are logged.
+  Future<void> completeApplication(String id, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    await _db.transaction(() async {
+      await (_db.update(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .write(TrialApplicationEventsCompanion(
+        completedAt: Value(DateTime.now().toUtc()),
+        status: const Value('complete'),
+      ));
+      final existing = await (_db.select(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .getSingleOrNull();
+      if (existing != null) {
+        await _db.into(_db.auditEvents).insert(
+              AuditEventsCompanion.insert(
+                trialId: Value(existing.trialId),
+                eventType: 'TRIAL_APPLICATION_COMPLETED',
+                description: 'Application session completed',
+                performedBy: Value(performedBy),
+                performedByUserId: Value(performedByUserId),
+              ),
+            );
+      }
+    });
+  }
+
+  /// Locks the application — no further edits without correction workflow.
+  Future<void> closeApplication(String id, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    await _db.transaction(() async {
+      await (_db.update(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .write(TrialApplicationEventsCompanion(
+        closedAt: Value(DateTime.now().toUtc()),
+        status: const Value('closed'),
+      ));
+      final existing = await (_db.select(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .getSingleOrNull();
+      if (existing != null) {
+        await _db.into(_db.auditEvents).insert(
+              AuditEventsCompanion.insert(
+                trialId: Value(existing.trialId),
+                eventType: 'TRIAL_APPLICATION_CLOSED',
+                description: 'Application session closed',
+                performedBy: Value(performedBy),
+                performedByUserId: Value(performedByUserId),
+              ),
+            );
+      }
+    });
+  }
+
   TrialApplicationEventsCompanion _withLastEditIfUser(
     TrialApplicationEventsCompanion base,
     int? performedByUserId,
