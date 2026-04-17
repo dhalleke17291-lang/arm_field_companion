@@ -381,6 +381,859 @@ class UsersCompanion extends UpdateCompanion<User> {
   }
 }
 
+class $SitesTable extends Sites with TableInfo<$SitesTable, Site> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SitesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _latitudeMeta =
+      const VerificationMeta('latitude');
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+      'latitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _longitudeMeta =
+      const VerificationMeta('longitude');
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+      'longitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _elevationMMeta =
+      const VerificationMeta('elevationM');
+  @override
+  late final GeneratedColumn<double> elevationM = GeneratedColumn<double>(
+      'elevation_m', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _soilSeriesMeta =
+      const VerificationMeta('soilSeries');
+  @override
+  late final GeneratedColumn<String> soilSeries = GeneratedColumn<String>(
+      'soil_series', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _soilTextureMeta =
+      const VerificationMeta('soilTexture');
+  @override
+  late final GeneratedColumn<String> soilTexture = GeneratedColumn<String>(
+      'soil_texture', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _soilPhMeta = const VerificationMeta('soilPh');
+  @override
+  late final GeneratedColumn<double> soilPh = GeneratedColumn<double>(
+      'soil_ph', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _organicMatterPctMeta =
+      const VerificationMeta('organicMatterPct');
+  @override
+  late final GeneratedColumn<double> organicMatterPct = GeneratedColumn<double>(
+      'organic_matter_pct', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _previousCropMeta =
+      const VerificationMeta('previousCrop');
+  @override
+  late final GeneratedColumn<String> previousCrop = GeneratedColumn<String>(
+      'previous_crop', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tillageMeta =
+      const VerificationMeta('tillage');
+  @override
+  late final GeneratedColumn<String> tillage = GeneratedColumn<String>(
+      'tillage', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _irrigatedMeta =
+      const VerificationMeta('irrigated');
+  @override
+  late final GeneratedColumn<bool> irrigated = GeneratedColumn<bool>(
+      'irrigated', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("irrigated" IN (0, 1))'));
+  static const VerificationMeta _fieldNameMeta =
+      const VerificationMeta('fieldName');
+  @override
+  late final GeneratedColumn<String> fieldName = GeneratedColumn<String>(
+      'field_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _countyMeta = const VerificationMeta('county');
+  @override
+  late final GeneratedColumn<String> county = GeneratedColumn<String>(
+      'county', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _stateProvinceMeta =
+      const VerificationMeta('stateProvince');
+  @override
+  late final GeneratedColumn<String> stateProvince = GeneratedColumn<String>(
+      'state_province', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _countryMeta =
+      const VerificationMeta('country');
+  @override
+  late final GeneratedColumn<String> country = GeneratedColumn<String>(
+      'country', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _modifiedAtMeta =
+      const VerificationMeta('modifiedAt');
+  @override
+  late final GeneratedColumn<DateTime> modifiedAt = GeneratedColumn<DateTime>(
+      'modified_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        latitude,
+        longitude,
+        elevationM,
+        soilSeries,
+        soilTexture,
+        soilPh,
+        organicMatterPct,
+        previousCrop,
+        tillage,
+        irrigated,
+        fieldName,
+        county,
+        stateProvince,
+        country,
+        createdAt,
+        modifiedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sites';
+  @override
+  VerificationContext validateIntegrity(Insertable<Site> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(_latitudeMeta,
+          latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta));
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(_longitudeMeta,
+          longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta));
+    }
+    if (data.containsKey('elevation_m')) {
+      context.handle(
+          _elevationMMeta,
+          elevationM.isAcceptableOrUnknown(
+              data['elevation_m']!, _elevationMMeta));
+    }
+    if (data.containsKey('soil_series')) {
+      context.handle(
+          _soilSeriesMeta,
+          soilSeries.isAcceptableOrUnknown(
+              data['soil_series']!, _soilSeriesMeta));
+    }
+    if (data.containsKey('soil_texture')) {
+      context.handle(
+          _soilTextureMeta,
+          soilTexture.isAcceptableOrUnknown(
+              data['soil_texture']!, _soilTextureMeta));
+    }
+    if (data.containsKey('soil_ph')) {
+      context.handle(_soilPhMeta,
+          soilPh.isAcceptableOrUnknown(data['soil_ph']!, _soilPhMeta));
+    }
+    if (data.containsKey('organic_matter_pct')) {
+      context.handle(
+          _organicMatterPctMeta,
+          organicMatterPct.isAcceptableOrUnknown(
+              data['organic_matter_pct']!, _organicMatterPctMeta));
+    }
+    if (data.containsKey('previous_crop')) {
+      context.handle(
+          _previousCropMeta,
+          previousCrop.isAcceptableOrUnknown(
+              data['previous_crop']!, _previousCropMeta));
+    }
+    if (data.containsKey('tillage')) {
+      context.handle(_tillageMeta,
+          tillage.isAcceptableOrUnknown(data['tillage']!, _tillageMeta));
+    }
+    if (data.containsKey('irrigated')) {
+      context.handle(_irrigatedMeta,
+          irrigated.isAcceptableOrUnknown(data['irrigated']!, _irrigatedMeta));
+    }
+    if (data.containsKey('field_name')) {
+      context.handle(_fieldNameMeta,
+          fieldName.isAcceptableOrUnknown(data['field_name']!, _fieldNameMeta));
+    }
+    if (data.containsKey('county')) {
+      context.handle(_countyMeta,
+          county.isAcceptableOrUnknown(data['county']!, _countyMeta));
+    }
+    if (data.containsKey('state_province')) {
+      context.handle(
+          _stateProvinceMeta,
+          stateProvince.isAcceptableOrUnknown(
+              data['state_province']!, _stateProvinceMeta));
+    }
+    if (data.containsKey('country')) {
+      context.handle(_countryMeta,
+          country.isAcceptableOrUnknown(data['country']!, _countryMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('modified_at')) {
+      context.handle(
+          _modifiedAtMeta,
+          modifiedAt.isAcceptableOrUnknown(
+              data['modified_at']!, _modifiedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Site map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Site(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name']),
+      latitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}latitude']),
+      longitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}longitude']),
+      elevationM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}elevation_m']),
+      soilSeries: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_series']),
+      soilTexture: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_texture']),
+      soilPh: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}soil_ph']),
+      organicMatterPct: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}organic_matter_pct']),
+      previousCrop: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}previous_crop']),
+      tillage: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tillage']),
+      irrigated: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}irrigated']),
+      fieldName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}field_name']),
+      county: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}county']),
+      stateProvince: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}state_province']),
+      country: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}country']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      modifiedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}modified_at'])!,
+    );
+  }
+
+  @override
+  $SitesTable createAlias(String alias) {
+    return $SitesTable(attachedDatabase, alias);
+  }
+}
+
+class Site extends DataClass implements Insertable<Site> {
+  final int id;
+  final String? name;
+  final double? latitude;
+  final double? longitude;
+  final double? elevationM;
+  final String? soilSeries;
+  final String? soilTexture;
+  final double? soilPh;
+  final double? organicMatterPct;
+  final String? previousCrop;
+  final String? tillage;
+  final bool? irrigated;
+  final String? fieldName;
+  final String? county;
+  final String? stateProvince;
+  final String? country;
+  final DateTime createdAt;
+  final DateTime modifiedAt;
+  const Site(
+      {required this.id,
+      this.name,
+      this.latitude,
+      this.longitude,
+      this.elevationM,
+      this.soilSeries,
+      this.soilTexture,
+      this.soilPh,
+      this.organicMatterPct,
+      this.previousCrop,
+      this.tillage,
+      this.irrigated,
+      this.fieldName,
+      this.county,
+      this.stateProvince,
+      this.country,
+      required this.createdAt,
+      required this.modifiedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    if (!nullToAbsent || latitude != null) {
+      map['latitude'] = Variable<double>(latitude);
+    }
+    if (!nullToAbsent || longitude != null) {
+      map['longitude'] = Variable<double>(longitude);
+    }
+    if (!nullToAbsent || elevationM != null) {
+      map['elevation_m'] = Variable<double>(elevationM);
+    }
+    if (!nullToAbsent || soilSeries != null) {
+      map['soil_series'] = Variable<String>(soilSeries);
+    }
+    if (!nullToAbsent || soilTexture != null) {
+      map['soil_texture'] = Variable<String>(soilTexture);
+    }
+    if (!nullToAbsent || soilPh != null) {
+      map['soil_ph'] = Variable<double>(soilPh);
+    }
+    if (!nullToAbsent || organicMatterPct != null) {
+      map['organic_matter_pct'] = Variable<double>(organicMatterPct);
+    }
+    if (!nullToAbsent || previousCrop != null) {
+      map['previous_crop'] = Variable<String>(previousCrop);
+    }
+    if (!nullToAbsent || tillage != null) {
+      map['tillage'] = Variable<String>(tillage);
+    }
+    if (!nullToAbsent || irrigated != null) {
+      map['irrigated'] = Variable<bool>(irrigated);
+    }
+    if (!nullToAbsent || fieldName != null) {
+      map['field_name'] = Variable<String>(fieldName);
+    }
+    if (!nullToAbsent || county != null) {
+      map['county'] = Variable<String>(county);
+    }
+    if (!nullToAbsent || stateProvince != null) {
+      map['state_province'] = Variable<String>(stateProvince);
+    }
+    if (!nullToAbsent || country != null) {
+      map['country'] = Variable<String>(country);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['modified_at'] = Variable<DateTime>(modifiedAt);
+    return map;
+  }
+
+  SitesCompanion toCompanion(bool nullToAbsent) {
+    return SitesCompanion(
+      id: Value(id),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      latitude: latitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latitude),
+      longitude: longitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(longitude),
+      elevationM: elevationM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(elevationM),
+      soilSeries: soilSeries == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilSeries),
+      soilTexture: soilTexture == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilTexture),
+      soilPh:
+          soilPh == null && nullToAbsent ? const Value.absent() : Value(soilPh),
+      organicMatterPct: organicMatterPct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(organicMatterPct),
+      previousCrop: previousCrop == null && nullToAbsent
+          ? const Value.absent()
+          : Value(previousCrop),
+      tillage: tillage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tillage),
+      irrigated: irrigated == null && nullToAbsent
+          ? const Value.absent()
+          : Value(irrigated),
+      fieldName: fieldName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldName),
+      county:
+          county == null && nullToAbsent ? const Value.absent() : Value(county),
+      stateProvince: stateProvince == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stateProvince),
+      country: country == null && nullToAbsent
+          ? const Value.absent()
+          : Value(country),
+      createdAt: Value(createdAt),
+      modifiedAt: Value(modifiedAt),
+    );
+  }
+
+  factory Site.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Site(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String?>(json['name']),
+      latitude: serializer.fromJson<double?>(json['latitude']),
+      longitude: serializer.fromJson<double?>(json['longitude']),
+      elevationM: serializer.fromJson<double?>(json['elevationM']),
+      soilSeries: serializer.fromJson<String?>(json['soilSeries']),
+      soilTexture: serializer.fromJson<String?>(json['soilTexture']),
+      soilPh: serializer.fromJson<double?>(json['soilPh']),
+      organicMatterPct: serializer.fromJson<double?>(json['organicMatterPct']),
+      previousCrop: serializer.fromJson<String?>(json['previousCrop']),
+      tillage: serializer.fromJson<String?>(json['tillage']),
+      irrigated: serializer.fromJson<bool?>(json['irrigated']),
+      fieldName: serializer.fromJson<String?>(json['fieldName']),
+      county: serializer.fromJson<String?>(json['county']),
+      stateProvince: serializer.fromJson<String?>(json['stateProvince']),
+      country: serializer.fromJson<String?>(json['country']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String?>(name),
+      'latitude': serializer.toJson<double?>(latitude),
+      'longitude': serializer.toJson<double?>(longitude),
+      'elevationM': serializer.toJson<double?>(elevationM),
+      'soilSeries': serializer.toJson<String?>(soilSeries),
+      'soilTexture': serializer.toJson<String?>(soilTexture),
+      'soilPh': serializer.toJson<double?>(soilPh),
+      'organicMatterPct': serializer.toJson<double?>(organicMatterPct),
+      'previousCrop': serializer.toJson<String?>(previousCrop),
+      'tillage': serializer.toJson<String?>(tillage),
+      'irrigated': serializer.toJson<bool?>(irrigated),
+      'fieldName': serializer.toJson<String?>(fieldName),
+      'county': serializer.toJson<String?>(county),
+      'stateProvince': serializer.toJson<String?>(stateProvince),
+      'country': serializer.toJson<String?>(country),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
+    };
+  }
+
+  Site copyWith(
+          {int? id,
+          Value<String?> name = const Value.absent(),
+          Value<double?> latitude = const Value.absent(),
+          Value<double?> longitude = const Value.absent(),
+          Value<double?> elevationM = const Value.absent(),
+          Value<String?> soilSeries = const Value.absent(),
+          Value<String?> soilTexture = const Value.absent(),
+          Value<double?> soilPh = const Value.absent(),
+          Value<double?> organicMatterPct = const Value.absent(),
+          Value<String?> previousCrop = const Value.absent(),
+          Value<String?> tillage = const Value.absent(),
+          Value<bool?> irrigated = const Value.absent(),
+          Value<String?> fieldName = const Value.absent(),
+          Value<String?> county = const Value.absent(),
+          Value<String?> stateProvince = const Value.absent(),
+          Value<String?> country = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? modifiedAt}) =>
+      Site(
+        id: id ?? this.id,
+        name: name.present ? name.value : this.name,
+        latitude: latitude.present ? latitude.value : this.latitude,
+        longitude: longitude.present ? longitude.value : this.longitude,
+        elevationM: elevationM.present ? elevationM.value : this.elevationM,
+        soilSeries: soilSeries.present ? soilSeries.value : this.soilSeries,
+        soilTexture: soilTexture.present ? soilTexture.value : this.soilTexture,
+        soilPh: soilPh.present ? soilPh.value : this.soilPh,
+        organicMatterPct: organicMatterPct.present
+            ? organicMatterPct.value
+            : this.organicMatterPct,
+        previousCrop:
+            previousCrop.present ? previousCrop.value : this.previousCrop,
+        tillage: tillage.present ? tillage.value : this.tillage,
+        irrigated: irrigated.present ? irrigated.value : this.irrigated,
+        fieldName: fieldName.present ? fieldName.value : this.fieldName,
+        county: county.present ? county.value : this.county,
+        stateProvince:
+            stateProvince.present ? stateProvince.value : this.stateProvince,
+        country: country.present ? country.value : this.country,
+        createdAt: createdAt ?? this.createdAt,
+        modifiedAt: modifiedAt ?? this.modifiedAt,
+      );
+  Site copyWithCompanion(SitesCompanion data) {
+    return Site(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      elevationM:
+          data.elevationM.present ? data.elevationM.value : this.elevationM,
+      soilSeries:
+          data.soilSeries.present ? data.soilSeries.value : this.soilSeries,
+      soilTexture:
+          data.soilTexture.present ? data.soilTexture.value : this.soilTexture,
+      soilPh: data.soilPh.present ? data.soilPh.value : this.soilPh,
+      organicMatterPct: data.organicMatterPct.present
+          ? data.organicMatterPct.value
+          : this.organicMatterPct,
+      previousCrop: data.previousCrop.present
+          ? data.previousCrop.value
+          : this.previousCrop,
+      tillage: data.tillage.present ? data.tillage.value : this.tillage,
+      irrigated: data.irrigated.present ? data.irrigated.value : this.irrigated,
+      fieldName: data.fieldName.present ? data.fieldName.value : this.fieldName,
+      county: data.county.present ? data.county.value : this.county,
+      stateProvince: data.stateProvince.present
+          ? data.stateProvince.value
+          : this.stateProvince,
+      country: data.country.present ? data.country.value : this.country,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      modifiedAt:
+          data.modifiedAt.present ? data.modifiedAt.value : this.modifiedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Site(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('elevationM: $elevationM, ')
+          ..write('soilSeries: $soilSeries, ')
+          ..write('soilTexture: $soilTexture, ')
+          ..write('soilPh: $soilPh, ')
+          ..write('organicMatterPct: $organicMatterPct, ')
+          ..write('previousCrop: $previousCrop, ')
+          ..write('tillage: $tillage, ')
+          ..write('irrigated: $irrigated, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('county: $county, ')
+          ..write('stateProvince: $stateProvince, ')
+          ..write('country: $country, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('modifiedAt: $modifiedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      name,
+      latitude,
+      longitude,
+      elevationM,
+      soilSeries,
+      soilTexture,
+      soilPh,
+      organicMatterPct,
+      previousCrop,
+      tillage,
+      irrigated,
+      fieldName,
+      county,
+      stateProvince,
+      country,
+      createdAt,
+      modifiedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Site &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
+          other.elevationM == this.elevationM &&
+          other.soilSeries == this.soilSeries &&
+          other.soilTexture == this.soilTexture &&
+          other.soilPh == this.soilPh &&
+          other.organicMatterPct == this.organicMatterPct &&
+          other.previousCrop == this.previousCrop &&
+          other.tillage == this.tillage &&
+          other.irrigated == this.irrigated &&
+          other.fieldName == this.fieldName &&
+          other.county == this.county &&
+          other.stateProvince == this.stateProvince &&
+          other.country == this.country &&
+          other.createdAt == this.createdAt &&
+          other.modifiedAt == this.modifiedAt);
+}
+
+class SitesCompanion extends UpdateCompanion<Site> {
+  final Value<int> id;
+  final Value<String?> name;
+  final Value<double?> latitude;
+  final Value<double?> longitude;
+  final Value<double?> elevationM;
+  final Value<String?> soilSeries;
+  final Value<String?> soilTexture;
+  final Value<double?> soilPh;
+  final Value<double?> organicMatterPct;
+  final Value<String?> previousCrop;
+  final Value<String?> tillage;
+  final Value<bool?> irrigated;
+  final Value<String?> fieldName;
+  final Value<String?> county;
+  final Value<String?> stateProvince;
+  final Value<String?> country;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> modifiedAt;
+  const SitesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.elevationM = const Value.absent(),
+    this.soilSeries = const Value.absent(),
+    this.soilTexture = const Value.absent(),
+    this.soilPh = const Value.absent(),
+    this.organicMatterPct = const Value.absent(),
+    this.previousCrop = const Value.absent(),
+    this.tillage = const Value.absent(),
+    this.irrigated = const Value.absent(),
+    this.fieldName = const Value.absent(),
+    this.county = const Value.absent(),
+    this.stateProvince = const Value.absent(),
+    this.country = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.modifiedAt = const Value.absent(),
+  });
+  SitesCompanion.insert({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.elevationM = const Value.absent(),
+    this.soilSeries = const Value.absent(),
+    this.soilTexture = const Value.absent(),
+    this.soilPh = const Value.absent(),
+    this.organicMatterPct = const Value.absent(),
+    this.previousCrop = const Value.absent(),
+    this.tillage = const Value.absent(),
+    this.irrigated = const Value.absent(),
+    this.fieldName = const Value.absent(),
+    this.county = const Value.absent(),
+    this.stateProvince = const Value.absent(),
+    this.country = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.modifiedAt = const Value.absent(),
+  });
+  static Insertable<Site> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
+    Expression<double>? elevationM,
+    Expression<String>? soilSeries,
+    Expression<String>? soilTexture,
+    Expression<double>? soilPh,
+    Expression<double>? organicMatterPct,
+    Expression<String>? previousCrop,
+    Expression<String>? tillage,
+    Expression<bool>? irrigated,
+    Expression<String>? fieldName,
+    Expression<String>? county,
+    Expression<String>? stateProvince,
+    Expression<String>? country,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? modifiedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (elevationM != null) 'elevation_m': elevationM,
+      if (soilSeries != null) 'soil_series': soilSeries,
+      if (soilTexture != null) 'soil_texture': soilTexture,
+      if (soilPh != null) 'soil_ph': soilPh,
+      if (organicMatterPct != null) 'organic_matter_pct': organicMatterPct,
+      if (previousCrop != null) 'previous_crop': previousCrop,
+      if (tillage != null) 'tillage': tillage,
+      if (irrigated != null) 'irrigated': irrigated,
+      if (fieldName != null) 'field_name': fieldName,
+      if (county != null) 'county': county,
+      if (stateProvince != null) 'state_province': stateProvince,
+      if (country != null) 'country': country,
+      if (createdAt != null) 'created_at': createdAt,
+      if (modifiedAt != null) 'modified_at': modifiedAt,
+    });
+  }
+
+  SitesCompanion copyWith(
+      {Value<int>? id,
+      Value<String?>? name,
+      Value<double?>? latitude,
+      Value<double?>? longitude,
+      Value<double?>? elevationM,
+      Value<String?>? soilSeries,
+      Value<String?>? soilTexture,
+      Value<double?>? soilPh,
+      Value<double?>? organicMatterPct,
+      Value<String?>? previousCrop,
+      Value<String?>? tillage,
+      Value<bool?>? irrigated,
+      Value<String?>? fieldName,
+      Value<String?>? county,
+      Value<String?>? stateProvince,
+      Value<String?>? country,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? modifiedAt}) {
+    return SitesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      elevationM: elevationM ?? this.elevationM,
+      soilSeries: soilSeries ?? this.soilSeries,
+      soilTexture: soilTexture ?? this.soilTexture,
+      soilPh: soilPh ?? this.soilPh,
+      organicMatterPct: organicMatterPct ?? this.organicMatterPct,
+      previousCrop: previousCrop ?? this.previousCrop,
+      tillage: tillage ?? this.tillage,
+      irrigated: irrigated ?? this.irrigated,
+      fieldName: fieldName ?? this.fieldName,
+      county: county ?? this.county,
+      stateProvince: stateProvince ?? this.stateProvince,
+      country: country ?? this.country,
+      createdAt: createdAt ?? this.createdAt,
+      modifiedAt: modifiedAt ?? this.modifiedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
+    if (elevationM.present) {
+      map['elevation_m'] = Variable<double>(elevationM.value);
+    }
+    if (soilSeries.present) {
+      map['soil_series'] = Variable<String>(soilSeries.value);
+    }
+    if (soilTexture.present) {
+      map['soil_texture'] = Variable<String>(soilTexture.value);
+    }
+    if (soilPh.present) {
+      map['soil_ph'] = Variable<double>(soilPh.value);
+    }
+    if (organicMatterPct.present) {
+      map['organic_matter_pct'] = Variable<double>(organicMatterPct.value);
+    }
+    if (previousCrop.present) {
+      map['previous_crop'] = Variable<String>(previousCrop.value);
+    }
+    if (tillage.present) {
+      map['tillage'] = Variable<String>(tillage.value);
+    }
+    if (irrigated.present) {
+      map['irrigated'] = Variable<bool>(irrigated.value);
+    }
+    if (fieldName.present) {
+      map['field_name'] = Variable<String>(fieldName.value);
+    }
+    if (county.present) {
+      map['county'] = Variable<String>(county.value);
+    }
+    if (stateProvince.present) {
+      map['state_province'] = Variable<String>(stateProvince.value);
+    }
+    if (country.present) {
+      map['country'] = Variable<String>(country.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (modifiedAt.present) {
+      map['modified_at'] = Variable<DateTime>(modifiedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SitesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('elevationM: $elevationM, ')
+          ..write('soilSeries: $soilSeries, ')
+          ..write('soilTexture: $soilTexture, ')
+          ..write('soilPh: $soilPh, ')
+          ..write('organicMatterPct: $organicMatterPct, ')
+          ..write('previousCrop: $previousCrop, ')
+          ..write('tillage: $tillage, ')
+          ..write('irrigated: $irrigated, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('county: $county, ')
+          ..write('stateProvince: $stateProvince, ')
+          ..write('country: $country, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('modifiedAt: $modifiedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -686,6 +1539,42 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   late final GeneratedColumn<DateTime> armLinkedShellAt =
       GeneratedColumn<DateTime>('arm_linked_shell_at', aliasedName, true,
           type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _siteRefIdMeta =
+      const VerificationMeta('siteRefId');
+  @override
+  late final GeneratedColumn<int> siteRefId = GeneratedColumn<int>(
+      'site_ref_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES sites (id)'));
+  static const VerificationMeta _cultivarMeta =
+      const VerificationMeta('cultivar');
+  @override
+  late final GeneratedColumn<String> cultivar = GeneratedColumn<String>(
+      'cultivar', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _rowSpacingCmMeta =
+      const VerificationMeta('rowSpacingCm');
+  @override
+  late final GeneratedColumn<double> rowSpacingCm = GeneratedColumn<double>(
+      'row_spacing_cm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _plantSpacingCmMeta =
+      const VerificationMeta('plantSpacingCm');
+  @override
+  late final GeneratedColumn<double> plantSpacingCm = GeneratedColumn<double>(
+      'plant_spacing_cm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _gepComplianceFlagMeta =
+      const VerificationMeta('gepComplianceFlag');
+  @override
+  late final GeneratedColumn<bool> gepComplianceFlag = GeneratedColumn<bool>(
+      'gep_compliance_flag', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("gep_compliance_flag" IN (0, 1))'));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -734,7 +1623,12 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         armVersion,
         armImportSessionId,
         armLinkedShellPath,
-        armLinkedShellAt
+        armLinkedShellAt,
+        siteRefId,
+        cultivar,
+        rowSpacingCm,
+        plantSpacingCm,
+        gepComplianceFlag
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -983,6 +1877,34 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           armLinkedShellAt.isAcceptableOrUnknown(
               data['arm_linked_shell_at']!, _armLinkedShellAtMeta));
     }
+    if (data.containsKey('site_ref_id')) {
+      context.handle(
+          _siteRefIdMeta,
+          siteRefId.isAcceptableOrUnknown(
+              data['site_ref_id']!, _siteRefIdMeta));
+    }
+    if (data.containsKey('cultivar')) {
+      context.handle(_cultivarMeta,
+          cultivar.isAcceptableOrUnknown(data['cultivar']!, _cultivarMeta));
+    }
+    if (data.containsKey('row_spacing_cm')) {
+      context.handle(
+          _rowSpacingCmMeta,
+          rowSpacingCm.isAcceptableOrUnknown(
+              data['row_spacing_cm']!, _rowSpacingCmMeta));
+    }
+    if (data.containsKey('plant_spacing_cm')) {
+      context.handle(
+          _plantSpacingCmMeta,
+          plantSpacingCm.isAcceptableOrUnknown(
+              data['plant_spacing_cm']!, _plantSpacingCmMeta));
+    }
+    if (data.containsKey('gep_compliance_flag')) {
+      context.handle(
+          _gepComplianceFlagMeta,
+          gepComplianceFlag.isAcceptableOrUnknown(
+              data['gep_compliance_flag']!, _gepComplianceFlagMeta));
+    }
     return context;
   }
 
@@ -1086,6 +2008,16 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           DriftSqlType.string, data['${effectivePrefix}arm_linked_shell_path']),
       armLinkedShellAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime, data['${effectivePrefix}arm_linked_shell_at']),
+      siteRefId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}site_ref_id']),
+      cultivar: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cultivar']),
+      rowSpacingCm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}row_spacing_cm']),
+      plantSpacingCm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}plant_spacing_cm']),
+      gepComplianceFlag: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}gep_compliance_flag']),
     );
   }
 
@@ -1158,6 +2090,22 @@ class Trial extends DataClass implements Insertable<Trial> {
 
   /// When [armLinkedShellPath] was last applied.
   final DateTime? armLinkedShellAt;
+
+  /// FK to shared site record. Nullable — trials without a linked site
+  /// still store location/soil fields directly (denormalized copies).
+  final int? siteRefId;
+
+  /// Cultivar / variety name (distinct from [crop] which is species).
+  final String? cultivar;
+
+  /// Row spacing in cm. Combined with [plantSpacingCm] gives crop density.
+  final double? rowSpacingCm;
+
+  /// Plant spacing within row, in cm.
+  final double? plantSpacingCm;
+
+  /// Whether the trial follows Good Experimental Practice guidelines.
+  final bool? gepComplianceFlag;
   const Trial(
       {required this.id,
       required this.name,
@@ -1205,7 +2153,12 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.armVersion,
       this.armImportSessionId,
       this.armLinkedShellPath,
-      this.armLinkedShellAt});
+      this.armLinkedShellAt,
+      this.siteRefId,
+      this.cultivar,
+      this.rowSpacingCm,
+      this.plantSpacingCm,
+      this.gepComplianceFlag});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1334,6 +2287,21 @@ class Trial extends DataClass implements Insertable<Trial> {
     if (!nullToAbsent || armLinkedShellAt != null) {
       map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt);
     }
+    if (!nullToAbsent || siteRefId != null) {
+      map['site_ref_id'] = Variable<int>(siteRefId);
+    }
+    if (!nullToAbsent || cultivar != null) {
+      map['cultivar'] = Variable<String>(cultivar);
+    }
+    if (!nullToAbsent || rowSpacingCm != null) {
+      map['row_spacing_cm'] = Variable<double>(rowSpacingCm);
+    }
+    if (!nullToAbsent || plantSpacingCm != null) {
+      map['plant_spacing_cm'] = Variable<double>(plantSpacingCm);
+    }
+    if (!nullToAbsent || gepComplianceFlag != null) {
+      map['gep_compliance_flag'] = Variable<bool>(gepComplianceFlag);
+    }
     return map;
   }
 
@@ -1458,6 +2426,21 @@ class Trial extends DataClass implements Insertable<Trial> {
       armLinkedShellAt: armLinkedShellAt == null && nullToAbsent
           ? const Value.absent()
           : Value(armLinkedShellAt),
+      siteRefId: siteRefId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(siteRefId),
+      cultivar: cultivar == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cultivar),
+      rowSpacingCm: rowSpacingCm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rowSpacingCm),
+      plantSpacingCm: plantSpacingCm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plantSpacingCm),
+      gepComplianceFlag: gepComplianceFlag == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gepComplianceFlag),
     );
   }
 
@@ -1515,6 +2498,11 @@ class Trial extends DataClass implements Insertable<Trial> {
           serializer.fromJson<String?>(json['armLinkedShellPath']),
       armLinkedShellAt:
           serializer.fromJson<DateTime?>(json['armLinkedShellAt']),
+      siteRefId: serializer.fromJson<int?>(json['siteRefId']),
+      cultivar: serializer.fromJson<String?>(json['cultivar']),
+      rowSpacingCm: serializer.fromJson<double?>(json['rowSpacingCm']),
+      plantSpacingCm: serializer.fromJson<double?>(json['plantSpacingCm']),
+      gepComplianceFlag: serializer.fromJson<bool?>(json['gepComplianceFlag']),
     );
   }
   @override
@@ -1568,6 +2556,11 @@ class Trial extends DataClass implements Insertable<Trial> {
       'armImportSessionId': serializer.toJson<int?>(armImportSessionId),
       'armLinkedShellPath': serializer.toJson<String?>(armLinkedShellPath),
       'armLinkedShellAt': serializer.toJson<DateTime?>(armLinkedShellAt),
+      'siteRefId': serializer.toJson<int?>(siteRefId),
+      'cultivar': serializer.toJson<String?>(cultivar),
+      'rowSpacingCm': serializer.toJson<double?>(rowSpacingCm),
+      'plantSpacingCm': serializer.toJson<double?>(plantSpacingCm),
+      'gepComplianceFlag': serializer.toJson<bool?>(gepComplianceFlag),
     };
   }
 
@@ -1618,7 +2611,12 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<String?> armVersion = const Value.absent(),
           Value<int?> armImportSessionId = const Value.absent(),
           Value<String?> armLinkedShellPath = const Value.absent(),
-          Value<DateTime?> armLinkedShellAt = const Value.absent()}) =>
+          Value<DateTime?> armLinkedShellAt = const Value.absent(),
+          Value<int?> siteRefId = const Value.absent(),
+          Value<String?> cultivar = const Value.absent(),
+          Value<double?> rowSpacingCm = const Value.absent(),
+          Value<double?> plantSpacingCm = const Value.absent(),
+          Value<bool?> gepComplianceFlag = const Value.absent()}) =>
       Trial(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -1687,6 +2685,15 @@ class Trial extends DataClass implements Insertable<Trial> {
         armLinkedShellAt: armLinkedShellAt.present
             ? armLinkedShellAt.value
             : this.armLinkedShellAt,
+        siteRefId: siteRefId.present ? siteRefId.value : this.siteRefId,
+        cultivar: cultivar.present ? cultivar.value : this.cultivar,
+        rowSpacingCm:
+            rowSpacingCm.present ? rowSpacingCm.value : this.rowSpacingCm,
+        plantSpacingCm:
+            plantSpacingCm.present ? plantSpacingCm.value : this.plantSpacingCm,
+        gepComplianceFlag: gepComplianceFlag.present
+            ? gepComplianceFlag.value
+            : this.gepComplianceFlag,
       );
   Trial copyWithCompanion(TrialsCompanion data) {
     return Trial(
@@ -1776,6 +2783,17 @@ class Trial extends DataClass implements Insertable<Trial> {
       armLinkedShellAt: data.armLinkedShellAt.present
           ? data.armLinkedShellAt.value
           : this.armLinkedShellAt,
+      siteRefId: data.siteRefId.present ? data.siteRefId.value : this.siteRefId,
+      cultivar: data.cultivar.present ? data.cultivar.value : this.cultivar,
+      rowSpacingCm: data.rowSpacingCm.present
+          ? data.rowSpacingCm.value
+          : this.rowSpacingCm,
+      plantSpacingCm: data.plantSpacingCm.present
+          ? data.plantSpacingCm.value
+          : this.plantSpacingCm,
+      gepComplianceFlag: data.gepComplianceFlag.present
+          ? data.gepComplianceFlag.value
+          : this.gepComplianceFlag,
     );
   }
 
@@ -1828,7 +2846,12 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('armVersion: $armVersion, ')
           ..write('armImportSessionId: $armImportSessionId, ')
           ..write('armLinkedShellPath: $armLinkedShellPath, ')
-          ..write('armLinkedShellAt: $armLinkedShellAt')
+          ..write('armLinkedShellAt: $armLinkedShellAt, ')
+          ..write('siteRefId: $siteRefId, ')
+          ..write('cultivar: $cultivar, ')
+          ..write('rowSpacingCm: $rowSpacingCm, ')
+          ..write('plantSpacingCm: $plantSpacingCm, ')
+          ..write('gepComplianceFlag: $gepComplianceFlag')
           ..write(')'))
         .toString();
   }
@@ -1881,7 +2904,12 @@ class Trial extends DataClass implements Insertable<Trial> {
         armVersion,
         armImportSessionId,
         armLinkedShellPath,
-        armLinkedShellAt
+        armLinkedShellAt,
+        siteRefId,
+        cultivar,
+        rowSpacingCm,
+        plantSpacingCm,
+        gepComplianceFlag
       ]);
   @override
   bool operator ==(Object other) =>
@@ -1933,7 +2961,12 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.armVersion == this.armVersion &&
           other.armImportSessionId == this.armImportSessionId &&
           other.armLinkedShellPath == this.armLinkedShellPath &&
-          other.armLinkedShellAt == this.armLinkedShellAt);
+          other.armLinkedShellAt == this.armLinkedShellAt &&
+          other.siteRefId == this.siteRefId &&
+          other.cultivar == this.cultivar &&
+          other.rowSpacingCm == this.rowSpacingCm &&
+          other.plantSpacingCm == this.plantSpacingCm &&
+          other.gepComplianceFlag == this.gepComplianceFlag);
 }
 
 class TrialsCompanion extends UpdateCompanion<Trial> {
@@ -1984,6 +3017,11 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<int?> armImportSessionId;
   final Value<String?> armLinkedShellPath;
   final Value<DateTime?> armLinkedShellAt;
+  final Value<int?> siteRefId;
+  final Value<String?> cultivar;
+  final Value<double?> rowSpacingCm;
+  final Value<double?> plantSpacingCm;
+  final Value<bool?> gepComplianceFlag;
   const TrialsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -2032,6 +3070,11 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.armImportSessionId = const Value.absent(),
     this.armLinkedShellPath = const Value.absent(),
     this.armLinkedShellAt = const Value.absent(),
+    this.siteRefId = const Value.absent(),
+    this.cultivar = const Value.absent(),
+    this.rowSpacingCm = const Value.absent(),
+    this.plantSpacingCm = const Value.absent(),
+    this.gepComplianceFlag = const Value.absent(),
   });
   TrialsCompanion.insert({
     this.id = const Value.absent(),
@@ -2081,6 +3124,11 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.armImportSessionId = const Value.absent(),
     this.armLinkedShellPath = const Value.absent(),
     this.armLinkedShellAt = const Value.absent(),
+    this.siteRefId = const Value.absent(),
+    this.cultivar = const Value.absent(),
+    this.rowSpacingCm = const Value.absent(),
+    this.plantSpacingCm = const Value.absent(),
+    this.gepComplianceFlag = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Trial> custom({
     Expression<int>? id,
@@ -2130,6 +3178,11 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<int>? armImportSessionId,
     Expression<String>? armLinkedShellPath,
     Expression<DateTime>? armLinkedShellAt,
+    Expression<int>? siteRefId,
+    Expression<String>? cultivar,
+    Expression<double>? rowSpacingCm,
+    Expression<double>? plantSpacingCm,
+    Expression<bool>? gepComplianceFlag,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2181,6 +3234,11 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (armLinkedShellPath != null)
         'arm_linked_shell_path': armLinkedShellPath,
       if (armLinkedShellAt != null) 'arm_linked_shell_at': armLinkedShellAt,
+      if (siteRefId != null) 'site_ref_id': siteRefId,
+      if (cultivar != null) 'cultivar': cultivar,
+      if (rowSpacingCm != null) 'row_spacing_cm': rowSpacingCm,
+      if (plantSpacingCm != null) 'plant_spacing_cm': plantSpacingCm,
+      if (gepComplianceFlag != null) 'gep_compliance_flag': gepComplianceFlag,
     });
   }
 
@@ -2231,7 +3289,12 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<String?>? armVersion,
       Value<int?>? armImportSessionId,
       Value<String?>? armLinkedShellPath,
-      Value<DateTime?>? armLinkedShellAt}) {
+      Value<DateTime?>? armLinkedShellAt,
+      Value<int?>? siteRefId,
+      Value<String?>? cultivar,
+      Value<double?>? rowSpacingCm,
+      Value<double?>? plantSpacingCm,
+      Value<bool?>? gepComplianceFlag}) {
     return TrialsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -2280,6 +3343,11 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       armImportSessionId: armImportSessionId ?? this.armImportSessionId,
       armLinkedShellPath: armLinkedShellPath ?? this.armLinkedShellPath,
       armLinkedShellAt: armLinkedShellAt ?? this.armLinkedShellAt,
+      siteRefId: siteRefId ?? this.siteRefId,
+      cultivar: cultivar ?? this.cultivar,
+      rowSpacingCm: rowSpacingCm ?? this.rowSpacingCm,
+      plantSpacingCm: plantSpacingCm ?? this.plantSpacingCm,
+      gepComplianceFlag: gepComplianceFlag ?? this.gepComplianceFlag,
     );
   }
 
@@ -2427,6 +3495,21 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (armLinkedShellAt.present) {
       map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt.value);
     }
+    if (siteRefId.present) {
+      map['site_ref_id'] = Variable<int>(siteRefId.value);
+    }
+    if (cultivar.present) {
+      map['cultivar'] = Variable<String>(cultivar.value);
+    }
+    if (rowSpacingCm.present) {
+      map['row_spacing_cm'] = Variable<double>(rowSpacingCm.value);
+    }
+    if (plantSpacingCm.present) {
+      map['plant_spacing_cm'] = Variable<double>(plantSpacingCm.value);
+    }
+    if (gepComplianceFlag.present) {
+      map['gep_compliance_flag'] = Variable<bool>(gepComplianceFlag.value);
+    }
     return map;
   }
 
@@ -2479,7 +3562,12 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('armVersion: $armVersion, ')
           ..write('armImportSessionId: $armImportSessionId, ')
           ..write('armLinkedShellPath: $armLinkedShellPath, ')
-          ..write('armLinkedShellAt: $armLinkedShellAt')
+          ..write('armLinkedShellAt: $armLinkedShellAt, ')
+          ..write('siteRefId: $siteRefId, ')
+          ..write('cultivar: $cultivar, ')
+          ..write('rowSpacingCm: $rowSpacingCm, ')
+          ..write('plantSpacingCm: $plantSpacingCm, ')
+          ..write('gepComplianceFlag: $gepComplianceFlag')
           ..write(')'))
         .toString();
   }
@@ -27305,6 +28393,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $UsersTable users = $UsersTable(this);
+  late final $SitesTable sites = $SitesTable(this);
   late final $TrialsTable trials = $TrialsTable(this);
   late final $TreatmentsTable treatments = $TreatmentsTable(this);
   late final $TreatmentComponentsTable treatmentComponents =
@@ -27362,6 +28451,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
         users,
+        sites,
         trials,
         treatments,
         treatmentComponents,
@@ -27708,6 +28798,347 @@ class $$UsersTableOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
+typedef $$SitesTableCreateCompanionBuilder = SitesCompanion Function({
+  Value<int> id,
+  Value<String?> name,
+  Value<double?> latitude,
+  Value<double?> longitude,
+  Value<double?> elevationM,
+  Value<String?> soilSeries,
+  Value<String?> soilTexture,
+  Value<double?> soilPh,
+  Value<double?> organicMatterPct,
+  Value<String?> previousCrop,
+  Value<String?> tillage,
+  Value<bool?> irrigated,
+  Value<String?> fieldName,
+  Value<String?> county,
+  Value<String?> stateProvince,
+  Value<String?> country,
+  Value<DateTime> createdAt,
+  Value<DateTime> modifiedAt,
+});
+typedef $$SitesTableUpdateCompanionBuilder = SitesCompanion Function({
+  Value<int> id,
+  Value<String?> name,
+  Value<double?> latitude,
+  Value<double?> longitude,
+  Value<double?> elevationM,
+  Value<String?> soilSeries,
+  Value<String?> soilTexture,
+  Value<double?> soilPh,
+  Value<double?> organicMatterPct,
+  Value<String?> previousCrop,
+  Value<String?> tillage,
+  Value<bool?> irrigated,
+  Value<String?> fieldName,
+  Value<String?> county,
+  Value<String?> stateProvince,
+  Value<String?> country,
+  Value<DateTime> createdAt,
+  Value<DateTime> modifiedAt,
+});
+
+class $$SitesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SitesTable,
+    Site,
+    $$SitesTableFilterComposer,
+    $$SitesTableOrderingComposer,
+    $$SitesTableCreateCompanionBuilder,
+    $$SitesTableUpdateCompanionBuilder> {
+  $$SitesTableTableManager(_$AppDatabase db, $SitesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$SitesTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$SitesTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String?> name = const Value.absent(),
+            Value<double?> latitude = const Value.absent(),
+            Value<double?> longitude = const Value.absent(),
+            Value<double?> elevationM = const Value.absent(),
+            Value<String?> soilSeries = const Value.absent(),
+            Value<String?> soilTexture = const Value.absent(),
+            Value<double?> soilPh = const Value.absent(),
+            Value<double?> organicMatterPct = const Value.absent(),
+            Value<String?> previousCrop = const Value.absent(),
+            Value<String?> tillage = const Value.absent(),
+            Value<bool?> irrigated = const Value.absent(),
+            Value<String?> fieldName = const Value.absent(),
+            Value<String?> county = const Value.absent(),
+            Value<String?> stateProvince = const Value.absent(),
+            Value<String?> country = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> modifiedAt = const Value.absent(),
+          }) =>
+              SitesCompanion(
+            id: id,
+            name: name,
+            latitude: latitude,
+            longitude: longitude,
+            elevationM: elevationM,
+            soilSeries: soilSeries,
+            soilTexture: soilTexture,
+            soilPh: soilPh,
+            organicMatterPct: organicMatterPct,
+            previousCrop: previousCrop,
+            tillage: tillage,
+            irrigated: irrigated,
+            fieldName: fieldName,
+            county: county,
+            stateProvince: stateProvince,
+            country: country,
+            createdAt: createdAt,
+            modifiedAt: modifiedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String?> name = const Value.absent(),
+            Value<double?> latitude = const Value.absent(),
+            Value<double?> longitude = const Value.absent(),
+            Value<double?> elevationM = const Value.absent(),
+            Value<String?> soilSeries = const Value.absent(),
+            Value<String?> soilTexture = const Value.absent(),
+            Value<double?> soilPh = const Value.absent(),
+            Value<double?> organicMatterPct = const Value.absent(),
+            Value<String?> previousCrop = const Value.absent(),
+            Value<String?> tillage = const Value.absent(),
+            Value<bool?> irrigated = const Value.absent(),
+            Value<String?> fieldName = const Value.absent(),
+            Value<String?> county = const Value.absent(),
+            Value<String?> stateProvince = const Value.absent(),
+            Value<String?> country = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> modifiedAt = const Value.absent(),
+          }) =>
+              SitesCompanion.insert(
+            id: id,
+            name: name,
+            latitude: latitude,
+            longitude: longitude,
+            elevationM: elevationM,
+            soilSeries: soilSeries,
+            soilTexture: soilTexture,
+            soilPh: soilPh,
+            organicMatterPct: organicMatterPct,
+            previousCrop: previousCrop,
+            tillage: tillage,
+            irrigated: irrigated,
+            fieldName: fieldName,
+            county: county,
+            stateProvince: stateProvince,
+            country: country,
+            createdAt: createdAt,
+            modifiedAt: modifiedAt,
+          ),
+        ));
+}
+
+class $$SitesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $SitesTable> {
+  $$SitesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get latitude => $state.composableBuilder(
+      column: $state.table.latitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get longitude => $state.composableBuilder(
+      column: $state.table.longitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get elevationM => $state.composableBuilder(
+      column: $state.table.elevationM,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilSeries => $state.composableBuilder(
+      column: $state.table.soilSeries,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilTexture => $state.composableBuilder(
+      column: $state.table.soilTexture,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get soilPh => $state.composableBuilder(
+      column: $state.table.soilPh,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get organicMatterPct => $state.composableBuilder(
+      column: $state.table.organicMatterPct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get previousCrop => $state.composableBuilder(
+      column: $state.table.previousCrop,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get tillage => $state.composableBuilder(
+      column: $state.table.tillage,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get irrigated => $state.composableBuilder(
+      column: $state.table.irrigated,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get fieldName => $state.composableBuilder(
+      column: $state.table.fieldName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get county => $state.composableBuilder(
+      column: $state.table.county,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get stateProvince => $state.composableBuilder(
+      column: $state.table.stateProvince,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get country => $state.composableBuilder(
+      column: $state.table.country,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get modifiedAt => $state.composableBuilder(
+      column: $state.table.modifiedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ComposableFilter trialsRefs(
+      ComposableFilter Function($$TrialsTableFilterComposer f) f) {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.siteRefId,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$SitesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $SitesTable> {
+  $$SitesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get latitude => $state.composableBuilder(
+      column: $state.table.latitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get longitude => $state.composableBuilder(
+      column: $state.table.longitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get elevationM => $state.composableBuilder(
+      column: $state.table.elevationM,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilSeries => $state.composableBuilder(
+      column: $state.table.soilSeries,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilTexture => $state.composableBuilder(
+      column: $state.table.soilTexture,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get soilPh => $state.composableBuilder(
+      column: $state.table.soilPh,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get organicMatterPct => $state.composableBuilder(
+      column: $state.table.organicMatterPct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get previousCrop => $state.composableBuilder(
+      column: $state.table.previousCrop,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get tillage => $state.composableBuilder(
+      column: $state.table.tillage,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get irrigated => $state.composableBuilder(
+      column: $state.table.irrigated,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get fieldName => $state.composableBuilder(
+      column: $state.table.fieldName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get county => $state.composableBuilder(
+      column: $state.table.county,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get stateProvince => $state.composableBuilder(
+      column: $state.table.stateProvince,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get country => $state.composableBuilder(
+      column: $state.table.country,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get modifiedAt => $state.composableBuilder(
+      column: $state.table.modifiedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
 typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<int> id,
   required String name,
@@ -27756,6 +29187,11 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<int?> armImportSessionId,
   Value<String?> armLinkedShellPath,
   Value<DateTime?> armLinkedShellAt,
+  Value<int?> siteRefId,
+  Value<String?> cultivar,
+  Value<double?> rowSpacingCm,
+  Value<double?> plantSpacingCm,
+  Value<bool?> gepComplianceFlag,
 });
 typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<int> id,
@@ -27805,6 +29241,11 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<int?> armImportSessionId,
   Value<String?> armLinkedShellPath,
   Value<DateTime?> armLinkedShellAt,
+  Value<int?> siteRefId,
+  Value<String?> cultivar,
+  Value<double?> rowSpacingCm,
+  Value<double?> plantSpacingCm,
+  Value<bool?> gepComplianceFlag,
 });
 
 class $$TrialsTableTableManager extends RootTableManager<
@@ -27871,6 +29312,11 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<int?> armImportSessionId = const Value.absent(),
             Value<String?> armLinkedShellPath = const Value.absent(),
             Value<DateTime?> armLinkedShellAt = const Value.absent(),
+            Value<int?> siteRefId = const Value.absent(),
+            Value<String?> cultivar = const Value.absent(),
+            Value<double?> rowSpacingCm = const Value.absent(),
+            Value<double?> plantSpacingCm = const Value.absent(),
+            Value<bool?> gepComplianceFlag = const Value.absent(),
           }) =>
               TrialsCompanion(
             id: id,
@@ -27920,6 +29366,11 @@ class $$TrialsTableTableManager extends RootTableManager<
             armImportSessionId: armImportSessionId,
             armLinkedShellPath: armLinkedShellPath,
             armLinkedShellAt: armLinkedShellAt,
+            siteRefId: siteRefId,
+            cultivar: cultivar,
+            rowSpacingCm: rowSpacingCm,
+            plantSpacingCm: plantSpacingCm,
+            gepComplianceFlag: gepComplianceFlag,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -27969,6 +29420,11 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<int?> armImportSessionId = const Value.absent(),
             Value<String?> armLinkedShellPath = const Value.absent(),
             Value<DateTime?> armLinkedShellAt = const Value.absent(),
+            Value<int?> siteRefId = const Value.absent(),
+            Value<String?> cultivar = const Value.absent(),
+            Value<double?> rowSpacingCm = const Value.absent(),
+            Value<double?> plantSpacingCm = const Value.absent(),
+            Value<bool?> gepComplianceFlag = const Value.absent(),
           }) =>
               TrialsCompanion.insert(
             id: id,
@@ -28018,6 +29474,11 @@ class $$TrialsTableTableManager extends RootTableManager<
             armImportSessionId: armImportSessionId,
             armLinkedShellPath: armLinkedShellPath,
             armLinkedShellAt: armLinkedShellAt,
+            siteRefId: siteRefId,
+            cultivar: cultivar,
+            rowSpacingCm: rowSpacingCm,
+            plantSpacingCm: plantSpacingCm,
+            gepComplianceFlag: gepComplianceFlag,
           ),
         ));
 }
@@ -28259,6 +29720,38 @@ class $$TrialsTableFilterComposer
       column: $state.table.armLinkedShellAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cultivar => $state.composableBuilder(
+      column: $state.table.cultivar,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get rowSpacingCm => $state.composableBuilder(
+      column: $state.table.rowSpacingCm,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get plantSpacingCm => $state.composableBuilder(
+      column: $state.table.plantSpacingCm,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get gepComplianceFlag => $state.composableBuilder(
+      column: $state.table.gepComplianceFlag,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$SitesTableFilterComposer get siteRefId {
+    final $$SitesTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.siteRefId,
+        referencedTable: $state.db.sites,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$SitesTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.sites, joinBuilder, parentComposers)));
+    return composer;
+  }
 
   ComposableFilter treatmentsRefs(
       ComposableFilter Function($$TreatmentsTableFilterComposer f) f) {
@@ -28900,6 +30393,38 @@ class $$TrialsTableOrderingComposer
       column: $state.table.armLinkedShellAt,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cultivar => $state.composableBuilder(
+      column: $state.table.cultivar,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get rowSpacingCm => $state.composableBuilder(
+      column: $state.table.rowSpacingCm,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get plantSpacingCm => $state.composableBuilder(
+      column: $state.table.plantSpacingCm,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get gepComplianceFlag => $state.composableBuilder(
+      column: $state.table.gepComplianceFlag,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$SitesTableOrderingComposer get siteRefId {
+    final $$SitesTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.siteRefId,
+        referencedTable: $state.db.sites,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$SitesTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.sites, joinBuilder, parentComposers)));
+    return composer;
+  }
 }
 
 typedef $$TreatmentsTableCreateCompanionBuilder = TreatmentsCompanion Function({
@@ -40016,6 +41541,8 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$UsersTableTableManager get users =>
       $$UsersTableTableManager(_db, _db.users);
+  $$SitesTableTableManager get sites =>
+      $$SitesTableTableManager(_db, _db.sites);
   $$TrialsTableTableManager get trials =>
       $$TrialsTableTableManager(_db, _db.trials);
   $$TreatmentsTableTableManager get treatments =>

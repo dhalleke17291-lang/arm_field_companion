@@ -88,6 +88,48 @@ class Trials extends Table {
 
   /// When [armLinkedShellPath] was last applied.
   DateTimeColumn get armLinkedShellAt => dateTime().nullable()();
+
+  /// FK to shared site record. Nullable — trials without a linked site
+  /// still store location/soil fields directly (denormalized copies).
+  IntColumn get siteRefId =>
+      integer().references(Sites, #id).nullable()();
+
+  /// Cultivar / variety name (distinct from [crop] which is species).
+  TextColumn get cultivar => text().nullable()();
+
+  /// Row spacing in cm. Combined with [plantSpacingCm] gives crop density.
+  RealColumn get rowSpacingCm => real().nullable()();
+
+  /// Plant spacing within row, in cm.
+  RealColumn get plantSpacingCm => real().nullable()();
+
+  /// Whether the trial follows Good Experimental Practice guidelines.
+  BoolColumn get gepComplianceFlag => boolean().nullable()();
+}
+
+/// Shared site record. Contains location, soil, and management fields
+/// that are properties of the physical field, not of any individual trial.
+/// One trial = one site record (no dedup in v1). Future: GPS proximity
+/// matching for site history across seasons.
+class Sites extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().nullable()();
+  RealColumn get latitude => real().nullable()();
+  RealColumn get longitude => real().nullable()();
+  RealColumn get elevationM => real().nullable()();
+  TextColumn get soilSeries => text().nullable()();
+  TextColumn get soilTexture => text().nullable()();
+  RealColumn get soilPh => real().nullable()();
+  RealColumn get organicMatterPct => real().nullable()();
+  TextColumn get previousCrop => text().nullable()();
+  TextColumn get tillage => text().nullable()();
+  BoolColumn get irrigated => boolean().nullable()();
+  TextColumn get fieldName => text().nullable()();
+  TextColumn get county => text().nullable()();
+  TextColumn get stateProvince => text().nullable()();
+  TextColumn get country => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get modifiedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 class Treatments extends Table {
@@ -845,6 +887,7 @@ class TrialExportDiagnostics extends Table {
   YieldDetails,
   TrialExportDiagnostics,
   WeatherSnapshots,
+  Sites,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -853,7 +896,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 50;
+  int get schemaVersion => 51;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1325,6 +1368,79 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
                 await customStatement(
                     'ALTER TABLE sessions ADD COLUMN $col TEXT');
               }
+            }
+          }
+
+          if (from < 51) {
+            // Create Sites table.
+            final existingTables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            if (!existingTables.contains('sites')) {
+              await m.createTable(sites);
+            }
+
+            // Add new Trial columns (defensive: check before adding).
+            final trialCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            for (final col in {
+              'site_ref_id': 'INTEGER REFERENCES sites(id)',
+              'cultivar': 'TEXT',
+              'row_spacing_cm': 'REAL',
+              'plant_spacing_cm': 'REAL',
+              'gep_compliance_flag': 'INTEGER',
+            }.entries) {
+              if (!trialCols.contains(col.key)) {
+                await customStatement(
+                    'ALTER TABLE trials ADD COLUMN ${col.key} ${col.value}');
+              }
+            }
+
+            // Backfill: create a Site record for each trial that has
+            // GPS or soil data. One site per trial, no dedup.
+            final trialsWithSiteData = await customSelect(
+              'SELECT id, latitude, longitude, elevation_m, '
+              'soil_series, soil_texture, soil_ph, organic_matter_pct, '
+              'previous_crop, tillage, irrigated, field_name, '
+              'county, state_province, country '
+              'FROM trials WHERE is_deleted = 0 AND '
+              '(latitude IS NOT NULL OR soil_texture IS NOT NULL '
+              'OR soil_ph IS NOT NULL)',
+            ).get();
+            for (final row in trialsWithSiteData) {
+              final trialId = row.read<int>('id');
+              await customStatement(
+                'INSERT INTO sites (latitude, longitude, elevation_m, '
+                'soil_series, soil_texture, soil_ph, organic_matter_pct, '
+                'previous_crop, tillage, irrigated, field_name, '
+                'county, state_province, country) '
+                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [
+                  row.readNullable<double>('latitude'),
+                  row.readNullable<double>('longitude'),
+                  row.readNullable<double>('elevation_m'),
+                  row.readNullable<String>('soil_series'),
+                  row.readNullable<String>('soil_texture'),
+                  row.readNullable<double>('soil_ph'),
+                  row.readNullable<double>('organic_matter_pct'),
+                  row.readNullable<String>('previous_crop'),
+                  row.readNullable<String>('tillage'),
+                  row.readNullable<bool>('irrigated'),
+                  row.readNullable<String>('field_name'),
+                  row.readNullable<String>('county'),
+                  row.readNullable<String>('state_province'),
+                  row.readNullable<String>('country'),
+                ],
+              );
+              // Link trial → newly created site.
+              await customStatement(
+                'UPDATE trials SET site_ref_id = last_insert_rowid() '
+                'WHERE id = ?',
+                [trialId],
+              );
             }
           }
 
