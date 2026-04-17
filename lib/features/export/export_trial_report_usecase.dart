@@ -8,6 +8,7 @@ import '../../core/database/app_database.dart';
 import '../../core/export_hash.dart';
 import '../../data/repositories/application_repository.dart';
 import '../../data/repositories/assignment_repository.dart';
+import '../../data/repositories/notes_repository.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../plots/plot_repository.dart';
 import '../ratings/rating_repository.dart';
@@ -24,12 +25,14 @@ class ExportTrialReportUseCase {
     required SessionRepository sessionRepository,
     required AssignmentRepository assignmentRepository,
     required RatingRepository ratingRepository,
+    required NotesRepository notesRepository,
   })  : _plotRepo = plotRepository,
         _treatmentRepo = treatmentRepository,
         _applicationRepo = applicationRepository,
         _sessionRepo = sessionRepository,
         _assignmentRepo = assignmentRepository,
-        _ratingRepo = ratingRepository;
+        _ratingRepo = ratingRepository,
+        _notesRepo = notesRepository;
 
   final PlotRepository _plotRepo;
   final TreatmentRepository _treatmentRepo;
@@ -37,6 +40,7 @@ class ExportTrialReportUseCase {
   final SessionRepository _sessionRepo;
   final AssignmentRepository _assignmentRepo;
   final RatingRepository _ratingRepo;
+  final NotesRepository _notesRepo;
 
   Future<void> execute({required Trial trial}) async {
     final plots = await _plotRepo.getPlotsForTrial(trial.id);
@@ -50,6 +54,7 @@ class ExportTrialReportUseCase {
     final applications =
         await _applicationRepo.getApplicationsForTrial(trial.id);
     final assignments = await _assignmentRepo.getForTrial(trial.id);
+    final notes = await _notesRepo.getNotesForTrial(trial.id);
 
     // Collect all ratings across sessions.
     final allRatings = <RatingRecord>[];
@@ -79,6 +84,7 @@ class ExportTrialReportUseCase {
       assessments: assessments,
       applications: applications,
       assignments: assignments,
+      fieldNotes: notes,
     );
 
     final dir = await getTemporaryDirectory();

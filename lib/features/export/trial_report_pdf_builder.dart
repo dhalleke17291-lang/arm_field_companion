@@ -32,6 +32,7 @@ class TrialReportPdfBuilder {
     required List<TrialApplicationEvent> applications,
     required List<Assignment> assignments,
     Map<int, String>? assessmentDisplayNames,
+    List<Note>? fieldNotes,
   }) async {
     final pdf = pw.Document();
     final dateFmt = DateFormat('yyyy-MM-dd');
@@ -150,7 +151,211 @@ class TrialReportPdfBuilder {
       ));
     }
 
+    // Sections 6-10 on portrait pages.
+    pdf.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(36),
+      header: (ctx) => _pageHeader(logo, trial, dateTimeFmt, ctx),
+      footer: (ctx) => _pageFooter(trial, ctx),
+      build: (ctx) => [
+        // Section 6: Treatment summary statistics.
+        _sectionTitle('6. Treatment Summary Statistics'),
+        _treatmentSummaryStats(
+            dataPlots, assessments, sessions, ratingMap,
+            plotTreatment, treatmentById, displayName),
+        pw.SizedBox(height: 16),
+
+        // Section 7: Crop injury log.
+        _sectionTitle('7. Crop Injury Log'),
+        _cropInjuryLog(sessions, dateFmt),
+        pw.SizedBox(height: 16),
+
+        // Section 8: Field notes.
+        _sectionTitle('8. Field Notes'),
+        if (fieldNotes == null || fieldNotes.isEmpty)
+          pw.Text('No field notes recorded.',
+              style: const pw.TextStyle(fontSize: 9, color: _textSecondary))
+        else
+          _fieldNotesSection(fieldNotes, dateFmt),
+        pw.SizedBox(height: 16),
+
+        // Section 9: Completeness summary (text form).
+        _sectionTitle('9. Completeness Summary'),
+        _completenessSummary(trial, sessions, applications, dataPlots),
+        pw.SizedBox(height: 16),
+
+        // Section 10: Conclusions.
+        _sectionTitle('10. Conclusions'),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: _borderColor),
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+          ),
+          child: pw.Text(
+            '[To be completed by Study Director]',
+            style: const pw.TextStyle(
+              fontSize: 10,
+              color: _textSecondary,
+            ),
+          ),
+        ),
+      ],
+    ));
+
     return pdf.save();
+  }
+
+  // Section 6
+  pw.Widget _treatmentSummaryStats(
+    List<Plot> dataPlots,
+    List<Assessment> assessments,
+    List<Session> sessions,
+    Map<(int, int, int), RatingRecord> ratingMap,
+    Map<int, int> plotTreatment,
+    Map<int, Treatment> treatmentById,
+    String Function(Assessment) displayName,
+  ) {
+    final trtIds = treatmentById.keys.toList()..sort();
+    if (trtIds.isEmpty || assessments.isEmpty) {
+      return pw.Text('No treatment data.',
+          style: const pw.TextStyle(fontSize: 9, color: _textSecondary));
+    }
+    // Per treatment × assessment: mean across all sessions.
+    final rows = <List<String>>[];
+    for (final tid in trtIds) {
+      final trt = treatmentById[tid]!;
+      for (final a in assessments) {
+        final values = <double>[];
+        for (final s in sessions) {
+          for (final p in dataPlots) {
+            if ((plotTreatment[p.id] ?? p.treatmentId) != tid) continue;
+            final r = ratingMap[(p.id, a.id, s.id)];
+            if (r != null && r.resultStatus == 'RECORDED' &&
+                r.numericValue != null) {
+              values.add(r.numericValue!);
+            }
+          }
+        }
+        if (values.isEmpty) continue;
+        final mean = values.reduce((a, b) => a + b) / values.length;
+        double sd = 0;
+        if (values.length > 1) {
+          final variance = values
+              .map((v) => (v - mean) * (v - mean))
+              .reduce((a, b) => a + b) / (values.length - 1);
+          sd = variance > 0 ? _sqrt(variance) : 0;
+        }
+        final cv = mean.abs() > 0.001 ? (sd / mean.abs()) * 100 : 0.0;
+        rows.add([
+          trt.code,
+          displayName(a),
+          _fmt(mean),
+          _fmt(sd),
+          '${cv.toStringAsFixed(1)}%',
+          '${values.length}',
+        ]);
+      }
+    }
+    return pw.TableHelper.fromTextArray(
+      headers: ['Treatment', 'Assessment', 'Mean', 'SD', 'CV%', 'n'],
+      data: rows,
+      headerStyle: _tableHeaderStyle(),
+      headerDecoration: const pw.BoxDecoration(color: _primary),
+      cellStyle: const pw.TextStyle(fontSize: 8),
+      cellAlignment: pw.Alignment.center,
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      border: pw.TableBorder.all(color: _borderColor, width: 0.5),
+      oddRowDecoration: const pw.BoxDecoration(color: _rowAlt),
+    );
+  }
+
+  static double _sqrt(double v) {
+    if (v <= 0) return 0;
+    double x = v;
+    for (var i = 0; i < 20; i++) {
+      x = (x + v / x) / 2;
+    }
+    return x;
+  }
+
+  // Section 7
+  pw.Widget _cropInjuryLog(List<Session> sessions, DateFormat dateFmt) {
+    final rows = <List<String>>[];
+    for (final s in sessions) {
+      rows.add([
+        s.name,
+        s.sessionDateLocal,
+        s.cropInjuryStatus ?? 'Not recorded',
+        s.cropInjuryNotes ?? '',
+      ]);
+    }
+    if (rows.isEmpty) {
+      return pw.Text('No sessions.',
+          style: const pw.TextStyle(fontSize: 9, color: _textSecondary));
+    }
+    return pw.TableHelper.fromTextArray(
+      headers: ['Session', 'Date', 'Status', 'Notes'],
+      data: rows,
+      headerStyle: _tableHeaderStyle(),
+      headerDecoration: const pw.BoxDecoration(color: _primary),
+      cellStyle: const pw.TextStyle(fontSize: 8),
+      cellAlignment: pw.Alignment.centerLeft,
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      border: pw.TableBorder.all(color: _borderColor, width: 0.5),
+      oddRowDecoration: const pw.BoxDecoration(color: _rowAlt),
+    );
+  }
+
+  // Section 8
+  pw.Widget _fieldNotesSection(List<Note> notes, DateFormat dateFmt) {
+    final rows = notes
+        .where((n) => !n.isDeleted)
+        .map((n) => [
+              dateFmt.format(n.createdAt),
+              n.content.length > 150
+                  ? '${n.content.substring(0, 150)}...'
+                  : n.content,
+            ])
+        .toList();
+    return pw.TableHelper.fromTextArray(
+      headers: ['Date', 'Note'],
+      data: rows,
+      headerStyle: _tableHeaderStyle(),
+      headerDecoration: const pw.BoxDecoration(color: _primary),
+      cellStyle: const pw.TextStyle(fontSize: 8),
+      cellAlignment: pw.Alignment.centerLeft,
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      border: pw.TableBorder.all(color: _borderColor, width: 0.5),
+      oddRowDecoration: const pw.BoxDecoration(color: _rowAlt),
+    );
+  }
+
+  // Section 9
+  pw.Widget _completenessSummary(
+    Trial trial,
+    List<Session> sessions,
+    List<TrialApplicationEvent> applications,
+    List<Plot> dataPlots,
+  ) {
+    final bbchCount =
+        sessions.where((s) => s.cropStageBbch != null).length;
+    final injuryCount =
+        sessions.where((s) => s.cropInjuryStatus != null).length;
+    final appliedCount =
+        applications.where((a) => a.status == 'applied').length;
+
+    final rows = <List<String>>[
+      ['Sessions', '${sessions.length}'],
+      ['BBCH recorded', '$bbchCount / ${sessions.length}'],
+      ['Crop injury recorded', '$injuryCount / ${sessions.length}'],
+      ['Data plots', '${dataPlots.length}'],
+      ['Applications recorded', '$appliedCount'],
+      ['GPS', trial.latitude != null ? 'Recorded' : 'Missing'],
+      ['Soil texture', trial.soilTexture ?? 'Missing'],
+      ['Cultivar', trial.cultivar ?? 'Missing'],
+    ];
+    return _kvTable(rows);
   }
 
   pw.Widget _pageHeader(pw.ImageProvider? logo, Trial trial,

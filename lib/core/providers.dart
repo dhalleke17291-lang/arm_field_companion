@@ -1164,6 +1164,7 @@ final exportTrialReportUseCaseProvider =
     sessionRepository: ref.watch(sessionRepositoryProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     ratingRepository: ref.watch(ratingRepositoryProvider),
+    notesRepository: ref.watch(notesRepositoryProvider),
   );
 });
 
