@@ -2186,12 +2186,25 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               FilledButton(
                 onPressed: () async {
                   final reason = reasonController.text.trim();
-                  if (reason.isEmpty) {
+                  // Mode-aware reason requirement:
+                  // GLP: always required. GEP/Efficacy: required only
+                  // on closed sessions. Standalone: optional (auto-filled
+                  // if empty).
+                  final isGlp = widget.trial.workspaceType == 'glp';
+                  final isStandalone =
+                      widget.trial.workspaceType == 'standalone';
+                  final sessionClosed = widget.session.endedAt != null;
+                  final reasonRequired =
+                      isGlp || (!isStandalone && sessionClosed);
+                  if (reason.isEmpty && reasonRequired) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(content: Text('Reason is required')),
                     );
                     return;
                   }
+                  final effectiveReason = reason.isEmpty
+                      ? 'Value updated'
+                      : reason;
                   double? newNumeric;
                   if (newStatus == 'RECORDED') {
                     final assess = assessmentForRecord(existing);
@@ -2239,7 +2252,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                             ? null
                             : newValueController.text.trim()
                         : null,
-                    reason: reason,
+                    reason: effectiveReason,
                     correctedByUserId: userId,
                     assessmentForScale: assessForScale,
                     definitionScale: definitionScaleForCorrection,
