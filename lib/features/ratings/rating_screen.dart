@@ -1526,6 +1526,80 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  /// Runs after each save. Checks if the current plot's ratings violate
+  /// known logical relationships (weed >= broadleaf, weed >= grass).
+  /// Shows a non-blocking amber SnackBar if violated.
+  void _runAssessmentConsistencyCheck(BuildContext ctx) {
+    // Collect current ratings for this plot from the in-memory provider.
+    final ratings =
+        ref.read(sessionRatingsProvider(widget.session.id)).valueOrNull ?? [];
+    final plotRatings = ratings
+        .where((r) =>
+            r.plotPk == widget.plot.id &&
+            r.isCurrent &&
+            !r.isDeleted &&
+            r.resultStatus == 'RECORDED' &&
+            r.numericValue != null)
+        .toList();
+    if (plotRatings.length < 2) return;
+
+    // Build assessment-id → name lookup from widget.assessments.
+    final nameById = {
+      for (final a in widget.assessments) a.id: a.name.toLowerCase(),
+    };
+
+    // Find values by assessment name pattern.
+    double? weedControl;
+    double? broadleafControl;
+    double? grassControl;
+    for (final r in plotRatings) {
+      final name = nameById[r.assessmentId] ?? '';
+      if (name.contains('weed') && name.contains('control')) {
+        weedControl = r.numericValue;
+      } else if (name.contains('broadleaf') && name.contains('control')) {
+        broadleafControl = r.numericValue;
+      } else if (name.contains('grass') && name.contains('control')) {
+        grassControl = r.numericValue;
+      }
+    }
+
+    final violations = <String>[];
+    if (weedControl != null && broadleafControl != null) {
+      if (weedControl < broadleafControl) {
+        violations.add(
+          'Weed control (${weedControl.round()}%) < broadleaf control '
+          '(${broadleafControl.round()}%)',
+        );
+      }
+    }
+    if (weedControl != null && grassControl != null) {
+      if (weedControl < grassControl) {
+        violations.add(
+          'Weed control (${weedControl.round()}%) < grass control '
+          '(${grassControl.round()}%)',
+        );
+      }
+    }
+
+    if (violations.isEmpty) return;
+    if (!ctx.mounted) return;
+    ScaffoldMessenger.of(ctx).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${violations.join('. ')} — please verify',
+          style: const TextStyle(fontSize: 13),
+        ),
+        backgroundColor: AppDesignTokens.warningBg,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: AppDesignTokens.warningFg,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
   static String _formatNeighborValue(double v) {
     if (v == v.roundToDouble()) return v.toInt().toString();
     return v.toStringAsFixed(1);
@@ -3839,6 +3913,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       }
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
+      // Assessment consistency check (non-blocking, SnackBar only).
+      _runAssessmentConsistencyCheck(context);
       if (numericValue != null) {
         ref.read(lastValueMemoryProvider.notifier).set(
               widget.session.id,
