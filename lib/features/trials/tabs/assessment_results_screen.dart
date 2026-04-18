@@ -68,6 +68,17 @@ String _resultsFooterNote(bool isStandalone, bool isGlp) {
   return 'Full statistical analysis available when data collection is complete';
 }
 
+/// When plots are complete but [AssessmentStatistics.anovaResult] is null.
+String _anovaWithheldExplanation(AssessmentStatistics stat) {
+  if (stat.treatmentMeans.length < 2) {
+    return 'ANOVA is not shown because at least two treatments with '
+        'recorded numeric values are required.';
+  }
+  return 'ANOVA is not shown: the plot-by-rep layout does not meet the '
+      'supported RCBD or one-way CRD requirements (for example too few '
+      'replicates or incomplete cells). Treatment means remain descriptive.';
+}
+
 /// Full-screen assessment statistics and per-plot ratings for one trial assessment.
 class AssessmentResultsScreen extends ConsumerWidget {
   const AssessmentResultsScreen({
@@ -107,8 +118,8 @@ class AssessmentResultsScreen extends ConsumerWidget {
           sortTreatmentMeans(stat.treatmentMeans, stat.resultDirection);
     }
 
-    final showFooter = stat.isPreliminary ||
-        completeness == AssessmentCompleteness.noData;
+    final showFooter =
+        stat.isPreliminary || completeness == AssessmentCompleteness.noData;
 
     return Scaffold(
       appBar: AppBar(
@@ -151,42 +162,42 @@ class AssessmentResultsScreen extends ConsumerWidget {
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _StatusBanner(stat: stat),
-            const SizedBox(height: 16),
-            if (stat.treatmentMeans.isNotEmpty) ...[
-              _TreatmentResultsSection(
-                stat: stat,
-                sortedMeans: sortedTreatmentMeans,
-                isStandalone: isStandalone,
-                isGlp: isGlp,
-              ),
-              const SizedBox(height: 20),
-            ],
-            _PerPlotDetailSection(
-              stat: stat,
-              rowsAsync: rowsAsync,
-            ),
-            if (showFooter) ...[
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _StatusBanner(stat: stat),
               const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  _resultsFooterNote(isStandalone, isGlp),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                    color: AppDesignTokens.secondaryText,
+              if (stat.treatmentMeans.isNotEmpty) ...[
+                _TreatmentResultsSection(
+                  stat: stat,
+                  sortedMeans: sortedTreatmentMeans,
+                  isStandalone: isStandalone,
+                  isGlp: isGlp,
+                ),
+                const SizedBox(height: 20),
+              ],
+              _PerPlotDetailSection(
+                stat: stat,
+                rowsAsync: rowsAsync,
+              ),
+              if (showFooter) ...[
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    _resultsFooterNote(isStandalone, isGlp),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      color: AppDesignTokens.secondaryText,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -390,6 +401,19 @@ class _TreatmentResultsSection extends StatelessWidget {
         if (stat.anovaResult != null) ...[
           const SizedBox(height: 10),
           _AnovaSummaryRow(anova: stat.anovaResult!),
+        ] else if (!stat.isPreliminary) ...[
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              _anovaWithheldExplanation(stat),
+              style: const TextStyle(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ),
         ],
       ],
     );
@@ -415,8 +439,8 @@ class _TreatmentTable extends StatelessWidget {
   Widget build(BuildContext context) {
     // Build letter lookup from ANOVA results.
     final letterMap = <String, String>{};
-    final hasLetters = anova != null &&
-        anova!.treatmentMeansWithLetters.isNotEmpty;
+    final hasLetters =
+        anova != null && anova!.treatmentMeansWithLetters.isNotEmpty;
     if (hasLetters) {
       for (final m in anova!.treatmentMeansWithLetters) {
         letterMap[m.treatmentCode] = m.letter;
