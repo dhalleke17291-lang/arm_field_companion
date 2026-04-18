@@ -655,10 +655,11 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
       ),
       floatingActionButton: widget.workspaceFilter == TrialListFilter.protocolOnly
           ? null
-          : FilledButton.tonalIcon(
+          : FloatingActionButton(
+              heroTag: 'new_custom_trial',
               onPressed: () => _openStandaloneTrialWizard(context),
-              icon: const Icon(Icons.add),
-              label: const Text('New Custom Trial'),
+              backgroundColor: AppDesignTokens.primary,
+              child: const Icon(Icons.add, color: Colors.white),
             ),
     );
   }
