@@ -3337,14 +3337,15 @@ class SessionsView extends ConsumerWidget {
         Positioned(
           bottom: 16,
           right: 16,
-          child: FloatingActionButton.extended(
+          child: FloatingActionButton(
+            heroTag: 'new_session',
             onPressed: () => tryOpenCreateSessionScreen(
               context: context,
               ref: ref,
               trial: trial,
             ),
-            icon: const Icon(Icons.add),
-            label: const Text('New Session'),
+            backgroundColor: AppDesignTokens.primary,
+            child: const Icon(Icons.add, color: Colors.white),
           ),
         ),
       ],
