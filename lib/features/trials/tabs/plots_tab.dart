@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../domain/models/trial_insight.dart';
 import '../../../core/plot_analysis_eligibility.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/plot_display.dart';
@@ -167,6 +168,25 @@ Widget _buildAddRepGuardsRow(
   );
 }
 
+const double _kHeatMapMinSpread = 5.0;
+
+/// Interpolates a heat map color from blue (low) → yellow (mid) → red (high)
+/// relative to session min/max. When spread < 5 pts, returns mid color
+/// to avoid exaggerating trivial differences.
+Color _heatMapColor(double value, double min, double max) {
+  if (max - min < _kHeatMapMinSpread) return AppDesignTokens.heatMapMid;
+  final t = ((value - min) / (max - min)).clamp(0.0, 1.0);
+  if (t < 0.5) {
+    final localT = t * 2;
+    return Color.lerp(AppDesignTokens.heatMapLow, AppDesignTokens.heatMapMid, localT)!;
+  } else {
+    final localT = (t - 0.5) * 2;
+    return Color.lerp(AppDesignTokens.heatMapMid, AppDesignTokens.heatMapHigh, localT)!;
+  }
+}
+
+bool _isLowSpread(double min, double max) => max - min < _kHeatMapMinSpread;
+
 Color _ratingCellColor(String? status) {
   switch (status) {
     case 'RECORDED':
@@ -300,6 +320,8 @@ Widget _buildRatingsOverlay({
   required List<Session> sessions,
   required Session? selectedRatingSession,
   required ValueChanged<Session> onSessionChanged,
+  required bool heatMapEnabled,
+  required ValueChanged<bool> onHeatMapToggled,
 }) {
   if (sessions.isEmpty) {
     return const Center(
@@ -386,6 +408,26 @@ Widget _buildRatingsOverlay({
             },
           ),
         ),
+      // Heat map toggle
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+        child: Row(
+          children: [
+            const Icon(Icons.thermostat, size: 16, color: AppDesignTokens.secondaryText),
+            const SizedBox(width: 6),
+            const Text('Heat map', style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText)),
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 28,
+              child: Switch.adaptive(
+                value: heatMapEnabled,
+                onChanged: onHeatMapToggled,
+                activeColor: AppDesignTokens.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
       Expanded(
         child: ratingsAsync.when(
           loading: () => const Center(
@@ -403,6 +445,36 @@ Widget _buildRatingsOverlay({
               ratingByPlot.putIfAbsent(r.plotPk, () => r);
               assessmentCountByPlot[r.plotPk] =
                   (assessmentCountByPlot[r.plotPk] ?? 0) + 1;
+            }
+
+            // Heat map: compute min/max for relative gradient
+            double heatMin = double.infinity;
+            double heatMax = double.negativeInfinity;
+            if (heatMapEnabled) {
+              for (final r in ratingByPlot.values) {
+                if (r.resultStatus == 'RECORDED' && r.numericValue != null) {
+                  if (r.numericValue! < heatMin) heatMin = r.numericValue!;
+                  if (r.numericValue! > heatMax) heatMax = r.numericValue!;
+                }
+              }
+              if (heatMin == double.infinity) {
+                heatMin = 0;
+                heatMax = 100;
+              }
+            }
+
+            // Rep variability insight for amber border
+            final insightsAsync =
+                ref.watch(trialInsightsProvider(trial.id));
+            final outlierReps = <int>{};
+            if (heatMapEnabled) {
+              final insights = insightsAsync.valueOrNull ?? [];
+              for (final i in insights) {
+                if (i.type == InsightType.repVariability &&
+                    i.detail.contains('Outlier')) {
+                  outlierReps.addAll(i.relatedPlotIds);
+                }
+              }
             }
 
             final byRep = <int?, List<Plot>>{};
@@ -435,9 +507,28 @@ Widget _buildRatingsOverlay({
                       repPlots.sort((a, b) =>
                           (a.fieldColumn ?? 0).compareTo(b.fieldColumn ?? 0));
 
+                      // Outlier rep border from intelligence
+                      final isOutlierRep = heatMapEnabled &&
+                          rep != null &&
+                          repPlots.any((p) => outlierReps.contains(p.id));
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: tileSpacing),
-                        child: Row(
+                        child: Container(
+                          decoration: isOutlierRep
+                              ? BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppDesignTokens.warningFg
+                                        .withValues(alpha: 0.5),
+                                    width: 2,
+                                  ),
+                                )
+                              : null,
+                          padding: isOutlierRep
+                              ? const EdgeInsets.all(2)
+                              : null,
+                          child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
@@ -452,11 +543,31 @@ Widget _buildRatingsOverlay({
                             ...repPlots.map((plot) {
                               final rating = ratingByPlot[plot.id];
                               final count = assessmentCountByPlot[plot.id] ?? 0;
-                              final cellColor =
-                                  _ratingCellColor(rating?.resultStatus);
-                              final textColor =
-                                  _ratingTextColor(rating?.resultStatus);
-                              final label = _ratingCellLabel(rating);
+
+                              // Heat map mode: gradient color from value
+                              final Color cellColor;
+                              final Color textColor;
+                              final String label;
+                              if (heatMapEnabled) {
+                                final val = (rating?.resultStatus == 'RECORDED')
+                                    ? rating?.numericValue
+                                    : null;
+                                cellColor = val != null
+                                    ? _heatMapColor(val, heatMin, heatMax)
+                                    : AppDesignTokens.heatMapEmpty;
+                                textColor = val != null
+                                    ? Colors.white
+                                    : AppDesignTokens.secondaryText;
+                                label = val != null
+                                    ? val.round().toString()
+                                    : '—';
+                              } else {
+                                cellColor =
+                                    _ratingCellColor(rating?.resultStatus);
+                                textColor =
+                                    _ratingTextColor(rating?.resultStatus);
+                                label = _ratingCellLabel(rating);
+                              }
 
                               return Padding(
                                 padding:
@@ -476,7 +587,41 @@ Widget _buildRatingsOverlay({
                                           width: 1.5,
                                         ),
                                       ),
-                                      child: Column(
+                                      child: heatMapEnabled
+                                          ? Stack(
+                                              children: [
+                                                // Plot number top-left
+                                                Positioned(
+                                                  left: 3,
+                                                  top: 2,
+                                                  child: Text(
+                                                    getDisplayPlotLabel(
+                                                        plot, plots),
+                                                    style: TextStyle(
+                                                      fontSize: 8,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: textColor
+                                                          .withValues(
+                                                              alpha: 0.7),
+                                                    ),
+                                                  ),
+                                                ),
+                                                // Value centered
+                                                Center(
+                                                  child: Text(
+                                                    label,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      color: textColor,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          : Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
@@ -506,7 +651,7 @@ Widget _buildRatingsOverlay({
                                         ],
                                       ),
                                     ),
-                                    if (count > 1)
+                                    if (!heatMapEnabled && count > 1)
                                       Positioned(
                                         top: 3,
                                         right: 3,
@@ -540,51 +685,116 @@ Widget _buildRatingsOverlay({
                             }),
                           ],
                         ),
+                        ),
                       );
                     }),
                     const SizedBox(height: 8),
-                    DecoratedBox(
-                      decoration: _plotLayoutLegendPanelDecoration(context),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 10,
+                    if (heatMapEnabled)
+                      DecoratedBox(
+                        decoration: _plotLayoutLegendPanelDecoration(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 10),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isLowSpread(heatMin, heatMax))
+                                Text(
+                                  'Low spread — values range ${heatMin.round()}–${heatMax.round()}%',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    fontStyle: FontStyle.italic,
+                                    color: AppDesignTokens.secondaryText,
+                                  ),
+                                )
+                              else
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Low ${heatMin.round()}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppDesignTokens.secondaryText,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Container(
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(5),
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              AppDesignTokens.heatMapLow,
+                                              AppDesignTokens.heatMapMid,
+                                              AppDesignTokens.heatMapHigh,
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'High ${heatMax.round()}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppDesignTokens.secondaryText,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
                         ),
-                        child: Wrap(
-                          spacing: 14,
-                          runSpacing: 4,
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            _ratingOverlayLegendChip(
-                              context,
-                              const Color(0xFF2D5A40),
-                              'Recorded',
-                            ),
-                            _ratingOverlayLegendChip(
-                              context,
-                              Colors.grey.shade400,
-                              'Not observed',
-                            ),
-                            _ratingOverlayLegendChip(
-                              context,
-                              const Color(0xFFF59E0B),
-                              'Missing',
-                            ),
-                            _ratingOverlayLegendChip(
-                              context,
-                              const Color(0xFFEA580C),
-                              'Tech issue',
-                            ),
-                            _ratingOverlayLegendChip(
-                              context,
-                              Colors.white,
-                              'No record',
-                            ),
-                          ],
+                      )
+                    else
+                      DecoratedBox(
+                        decoration:
+                            _plotLayoutLegendPanelDecoration(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
+                          ),
+                          child: Wrap(
+                            spacing: 14,
+                            runSpacing: 4,
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _ratingOverlayLegendChip(
+                                context,
+                                const Color(0xFF2D5A40),
+                                'Recorded',
+                              ),
+                              _ratingOverlayLegendChip(
+                                context,
+                                Colors.grey.shade400,
+                                'Not observed',
+                              ),
+                              _ratingOverlayLegendChip(
+                                context,
+                                const Color(0xFFF59E0B),
+                                'Missing',
+                              ),
+                              _ratingOverlayLegendChip(
+                                context,
+                                const Color(0xFFEA580C),
+                                'Tech issue',
+                              ),
+                              _ratingOverlayLegendChip(
+                                context,
+                                Colors.white,
+                                'No record',
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -1331,6 +1541,7 @@ class _TrialPlotsWorkingSurfaceState
   _LayoutLayer _layoutLayer = _LayoutLayer.treatments;
   ApplicationEvent? _selectedAppEvent;
   Session? _selectedRatingSession;
+  bool _heatMapEnabled = false;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
   final TransformationController _gridTransformController =
@@ -1576,6 +1787,9 @@ class _TrialPlotsWorkingSurfaceState
                     selectedRatingSession: _selectedRatingSession,
                     onSessionChanged: (s) =>
                         setState(() => _selectedRatingSession = s),
+                    heatMapEnabled: _heatMapEnabled,
+                    onHeatMapToggled: (v) =>
+                        setState(() => _heatMapEnabled = v),
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
@@ -3362,6 +3576,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   late _LayoutLayer _layoutLayer;
   ApplicationEvent? _selectedAppEvent;
   Session? _selectedRatingSession;
+  bool _heatMapEnabled = false;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
   final TransformationController _gridTransformController =
@@ -3612,6 +3827,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                         selectedRatingSession: _selectedRatingSession,
                         onSessionChanged: (s) =>
                             setState(() => _selectedRatingSession = s),
+                        heatMapEnabled: _heatMapEnabled,
+                        onHeatMapToggled: (v) =>
+                            setState(() => _heatMapEnabled = v),
                       )
                     : LayoutBuilder(
                         builder: (context, constraints) {

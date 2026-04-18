@@ -75,7 +75,6 @@ class TrialCard extends ConsumerWidget {
     required this.index,
     required this.totalCount,
     required this.onTap,
-    required this.onContinueSession,
     required this.onQuickRate,
     this.attentionSummary,
   });
@@ -84,7 +83,6 @@ class TrialCard extends ConsumerWidget {
   final int index;
   final int totalCount;
   final VoidCallback onTap;
-  final void Function(Session session) onContinueSession;
   final VoidCallback onQuickRate;
   /// Most urgent HIGH attention line for active trials; null hides the row.
   final String? attentionSummary;
@@ -297,7 +295,6 @@ class TrialCard extends ConsumerWidget {
                 const SizedBox(height: 10),
                 _TrialQuickActions(
                     trial: trial,
-                    onContinueSession: onContinueSession,
                     onQuickRate: onQuickRate,
                   ),
               ],
@@ -312,12 +309,10 @@ class TrialCard extends ConsumerWidget {
 class _TrialQuickActions extends ConsumerWidget {
   const _TrialQuickActions({
     required this.trial,
-    required this.onContinueSession,
     required this.onQuickRate,
   });
 
   final Trial trial;
-  final void Function(Session session) onContinueSession;
   final VoidCallback onQuickRate;
 
   @override
@@ -329,40 +324,10 @@ class _TrialQuickActions extends ConsumerWidget {
       error: (e, __) => AppErrorHint(error: e),
       data: (openSession) {
         final hasOpenSession = openSession != null;
-        final colorScheme = Theme.of(context).colorScheme;
+        if (hasOpenSession) return const SizedBox.shrink();
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (hasOpenSession)
-              TextButton(
-                onPressed: () => onContinueSession(openSession),
-                style: TextButton.styleFrom(
-                  foregroundColor: colorScheme.primary,
-                  padding: const EdgeInsets.only(left: 0, right: 8, top: 4, bottom: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Continue Session',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward,
-                      size: 14,
-                      color: colorScheme.primary,
-                    ),
-                  ],
-                ),
-              ),
-            if (!hasOpenSession)
               TextButton.icon(
                 onPressed: onQuickRate,
                 icon: const Icon(Icons.flash_on, size: 14),

@@ -401,17 +401,66 @@ class _TreatmentCell extends StatelessWidget {
               ),
             ),
           if (s.driftNote != null)
-            Text(
-              s.driftNote!,
-              style: TextStyle(
-                fontSize: 8,
-                fontStyle: FontStyle.italic,
-                color: AppDesignTokens.secondaryText
-                    .withValues(alpha: 0.75),
+            GestureDetector(
+              onTap: () => _showDriftDetail(context, s),
+              child: Text(
+                s.driftNote!,
+                style: TextStyle(
+                  fontSize: 8,
+                  fontStyle: FontStyle.italic,
+                  color: AppDesignTokens.warningFg
+                      .withValues(alpha: 0.8),
+                  decoration: TextDecoration.underline,
+                  decorationStyle: TextDecorationStyle.dotted,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
+        ],
+      ),
+    );
+  }
+
+  void _showDriftDetail(
+    BuildContext context,
+    ({double mean, double cv, int n, String? driftNote}) s,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rater drift detail'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(s.driftNote ?? ''),
+            const SizedBox(height: 8),
+            Text(
+              '${s.n} plots split by walk order into early and late halves.\n'
+              'Treatment mean: ${_fmt(s.mean)}%.\n'
+              'Threshold: difference >15 pts or >15% of treatment mean.',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Method: first-half vs second-half arithmetic mean by walk-order position.',
+              style: TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );

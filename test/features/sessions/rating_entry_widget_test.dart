@@ -98,44 +98,6 @@ void main() {
     fakeUseCase = FakeStartOrContinueRatingUseCase();
   });
 
-  group('Continue Session (trial list)', () {
-    testWidgets(
-        'tapping Continue Session runs use case and navigates to RatingScreen',
-        (WidgetTester tester) async {
-      fakeUseCase.result = StartOrContinueRatingResult.success(
-        trial: trial,
-        session: session,
-        allPlotsSerpentine: plots,
-        assessments: assessments,
-        startPlotIndex: 0,
-        isWalkEndReachedWithAnyRating: false,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            trialsStreamProvider.overrideWith((ref) => Stream.value([trial])),
-            openSessionProvider(1).overrideWith((ref) => Stream.value(session)),
-            startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
-          ],
-          child: const MaterialApp(
-            home: TrialListScreen(),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.text('Continue Session'), findsOneWidget);
-      await tester.tap(find.text('Continue Session'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(RatingScreen), findsOneWidget);
-    });
-  });
-
   group('Quick Rate (trial list, no open session)', () {
     testWidgets(
         'tapping Quick Rate creates session and navigates to RatingScreen',

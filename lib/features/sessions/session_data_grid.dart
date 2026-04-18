@@ -1,3 +1,5 @@
+import 'dart:math' show sqrt;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
@@ -23,6 +25,10 @@ class SessionDataGrid extends ConsumerStatefulWidget {
     this.assessmentDisplayNames,
     this.outlierKeys,
     this.plotTreatmentMap,
+    this.treatmentCodes,
+    this.checkTreatmentIds,
+    this.assessmentCoverage,
+    this.treatmentColors,
   });
 
   final List<Plot> plots;
@@ -40,6 +46,18 @@ class SessionDataGrid extends ConsumerStatefulWidget {
 
   /// Pre-resolved plot → treatment ID map. Used for treatment highlighting.
   final Map<int, int>? plotTreatmentMap;
+
+  /// Treatment ID → short code (e.g. "T2", "CHK"). Shown beside plot label.
+  final Map<int, String>? treatmentCodes;
+
+  /// Treatment IDs that are untreated checks (CHK/UTC/CONTROL).
+  final Set<int>? checkTreatmentIds;
+
+  /// Treatment ID → palette color from plot layout map. Used for tinted highlighting.
+  final Map<int, Color>? treatmentColors;
+
+  /// Per-assessment completion fraction (0.0–1.0). Shown as thin bar under header.
+  final Map<int, double>? assessmentCoverage;
 
   @override
   ConsumerState<SessionDataGrid> createState() => _SessionDataGridState();
@@ -202,7 +220,10 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
 
     // Set of plot PKs that match the highlighted treatment
     final highlightedPlotPks = <int>{};
+    Color highlightColor = AppDesignTokens.primary;
     if (_highlightedTreatmentId != null) {
+      highlightColor = widget.treatmentColors?[_highlightedTreatmentId!] ??
+          AppDesignTokens.primary;
       for (final e in plotTreatmentId.entries) {
         if (e.value == _highlightedTreatmentId) {
           highlightedPlotPks.add(e.key);
@@ -211,7 +232,8 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
     }
 
     // Column stats
-    final colStats = <int, ({double mean, double min, double max, int n})>{};
+    final colStats =
+        <int, ({double mean, double min, double max, int n, double? cv})>{};
     for (final a in assessments) {
       final values = <double>[];
       for (final p in dataPlots) {
@@ -225,11 +247,21 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
       if (values.isNotEmpty) {
         values.sort();
         final sum = values.reduce((a, b) => a + b);
+        final mean = sum / values.length;
+        double? cv;
+        if (values.length > 1 && mean.abs() > 1e-9) {
+          final variance = values
+                  .map((v) => (v - mean) * (v - mean))
+                  .reduce((a, b) => a + b) /
+              (values.length - 1);
+          cv = (sqrt(variance) / mean.abs()) * 100;
+        }
         colStats[a.id] = (
-          mean: sum / values.length,
+          mean: mean,
           min: values.first,
           max: values.last,
           n: values.length,
+          cv: cv,
         );
       }
     }
@@ -256,7 +288,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
     // Sizing — base values (zoom 1.0), then multiplied by _zoomLevel.
     final colCount = assessments.length;
     final screenWidth = MediaQuery.sizeOf(context).width;
-    const basePlotColWidth = 64.0;
+    const basePlotColWidth = 80.0;
     const baseMinCellWidth = 72.0;
     const baseMaxCellWidth = 110.0;
     const baseHeaderHeight = 52.0;
@@ -371,6 +403,16 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                       size: 10 * z,
                       color: AppDesignTokens.primary,
                     ),
+                  if (widget.assessmentCoverage != null &&
+                      widget.assessmentCoverage!.containsKey(a.id))
+                    Padding(
+                      padding: EdgeInsets.only(top: 3 * z),
+                      child: _CoverageBar(
+                        fraction: widget.assessmentCoverage![a.id]!,
+                        width: cellWidth - 12,
+                        height: 3 * z,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -426,12 +468,21 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                     final isHighlighted =
                         highlightedPlotPks.contains(plot.id);
                     final isRepBoundary = repBoundaryIndices.contains(i);
+                    final tid = plotTreatmentId[plot.id];
+                    final tCodes = widget.treatmentCodes;
+                    final tCode = tid != null && tCodes != null
+                        ? tCodes[tid]
+                        : null;
+                    final isCheck = tid != null &&
+                        (widget.checkTreatmentIds?.contains(tid) ?? false);
+                    final plotLabel = tCode != null
+                        ? '${getDisplayPlotLabel(plot, plots)} · $tCode'
+                        : getDisplayPlotLabel(plot, plots);
                     return GestureDetector(
                       onTap: widget.onPlotTap != null
                           ? () => widget.onPlotTap!(plot)
                           : null,
                       onLongPress: () {
-                        final tid = plotTreatmentId[plot.id];
                         if (tid == null) return;
                         setState(() {
                           _highlightedTreatmentId =
@@ -444,12 +495,14 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: isHighlighted
-                              ? AppDesignTokens.primary
-                                  .withValues(alpha: 0.12)
-                              : (i.isEven
-                                  ? scheme.surface
-                                  : scheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.4)),
+                              ? highlightColor.withValues(alpha: 0.12)
+                              : isCheck
+                                  ? AppDesignTokens.warningBg
+                                      .withValues(alpha: 0.35)
+                                  : (i.isEven
+                                      ? scheme.surface
+                                      : scheme.surfaceContainerHighest
+                                          .withValues(alpha: 0.4)),
                           border: Border(
                             top: isRepBoundary
                                 ? BorderSide(
@@ -463,22 +516,29 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                             right: const BorderSide(
                                 color: AppDesignTokens.borderCrisp),
                             left: isHighlighted
-                                ? const BorderSide(
-                                    color: AppDesignTokens.primary,
+                                ? BorderSide(
+                                    color: highlightColor,
                                     width: 3)
-                                : BorderSide.none,
+                                : isCheck
+                                    ? BorderSide(
+                                        color: AppDesignTokens.warningFg
+                                            .withValues(alpha: 0.5),
+                                        width: 2)
+                                    : BorderSide.none,
                           ),
                         ),
                         child: Text(
-                          getDisplayPlotLabel(plot, plots),
+                          plotLabel,
                           style: TextStyle(
-                            fontSize: 12 * z,
+                            fontSize: 11 * z,
                             fontWeight: FontWeight.w700,
                             color: isHighlighted
-                                ? AppDesignTokens.primary
-                                : (widget.onPlotTap != null
-                                    ? AppDesignTokens.primary
-                                    : null),
+                                ? highlightColor
+                                : isCheck
+                                    ? AppDesignTokens.warningFg
+                                    : (widget.onPlotTap != null
+                                        ? AppDesignTokens.primary
+                                        : null),
                           ),
                         ),
                       ),
@@ -518,6 +578,7 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
                                           (plot.id, a.id)) ??
                                       false,
                                   isHighlighted: rowHighlighted,
+                                  highlightColor: highlightColor,
                                   onTap: widget.onCellTap != null
                                       ? () => widget.onCellTap!(
                                             plot,
@@ -610,6 +671,7 @@ class _DataCell extends StatelessWidget {
     this.onTap,
     this.isOutlier = false,
     this.isHighlighted = false,
+    this.highlightColor,
     this.fontSize = 12,
   });
 
@@ -621,6 +683,7 @@ class _DataCell extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isOutlier;
   final bool isHighlighted;
+  final Color? highlightColor;
   final double fontSize;
 
   @override
@@ -653,7 +716,7 @@ class _DataCell extends StatelessWidget {
     final isEdited = r != null && (r.amended || r.previousId != null);
 
     final baseBg = isHighlighted
-        ? AppDesignTokens.primary.withValues(alpha: 0.08)
+        ? (highlightColor ?? AppDesignTokens.primary).withValues(alpha: 0.10)
         : (isEvenRow
             ? scheme.surface
             : scheme.surfaceContainerHighest.withValues(alpha: 0.4));
@@ -733,7 +796,7 @@ class _StatsCell extends StatelessWidget {
 
   final double width;
   final double height;
-  final ({double mean, double min, double max, int n})? stats;
+  final ({double mean, double min, double max, int n, double? cv})? stats;
   final double meanFontSize;
   final double rangeFontSize;
 
@@ -755,7 +818,8 @@ class _StatsCell extends StatelessWidget {
     }
     final s = stats!;
     final meanStr = _fmt(s.mean);
-    final rangeStr = '${_fmt(s.min)}–${_fmt(s.max)} n=${s.n}';
+    final cvStr = s.cv != null ? ' CV ${s.cv!.toStringAsFixed(0)}%' : '';
+    final rangeStr = '${_fmt(s.min)}–${_fmt(s.max)}$cvStr';
 
     return Container(
       width: width,
@@ -797,6 +861,38 @@ class _StatsCell extends StatelessWidget {
   static String _fmt(double v) {
     if (v == v.roundToDouble()) return v.toInt().toString();
     return v.toStringAsFixed(1);
+  }
+}
+
+class _CoverageBar extends StatelessWidget {
+  const _CoverageBar({
+    required this.fraction,
+    required this.width,
+    required this.height,
+  });
+
+  final double fraction;
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final isComplete = fraction >= 1.0;
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(height / 2),
+        child: LinearProgressIndicator(
+          value: fraction.clamp(0.0, 1.0),
+          backgroundColor: AppDesignTokens.borderCrisp,
+          valueColor: AlwaysStoppedAnimation<Color>(
+            isComplete ? AppDesignTokens.successFg : AppDesignTokens.warningFg,
+          ),
+          minHeight: height,
+        ),
+      ),
+    );
   }
 }
 

@@ -29,6 +29,8 @@ import '../weather/weather_capture_form.dart';
 import 'session_data_grid.dart';
 import 'session_grid_pdf_export.dart';
 import 'session_summary_assessment_coverage.dart';
+import '../../domain/models/trial_insight.dart';
+import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
 
 /// Bottom sheet showing full rating context for a tapped grid cell.
@@ -460,6 +462,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       ));
       if (result.success) {
         _invalidate();
+        _offerShareSummary();
         _checkBackupReminder();
       }
       // If warnings blocked the close, offer force close
@@ -595,6 +598,65 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _offerShareSummary() async {
+    if (!mounted) return;
+    final share = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Share session summary?'),
+        content: const Text(
+          'Send a plain-text summary of this session via text, email, or any app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Skip'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+    if (share != true || !mounted) return;
+
+    final plots =
+        await ref.read(plotsForTrialProvider(widget.trial.id).future);
+    final assessments =
+        await ref.read(sessionAssessmentsProvider(widget.session.id).future);
+    final ratings =
+        await ref.read(sessionRatingsProvider(widget.session.id).future);
+    final treatments =
+        await ref.read(treatmentsForTrialProvider(widget.trial.id).future);
+    final assignments =
+        await ref.read(assignmentsForTrialProvider(widget.trial.id).future);
+    final timing = await ref
+        .read(sessionTimingContextProvider(widget.session.id).future);
+    final weatherRepo = ref.read(weatherSnapshotRepositoryProvider);
+    final weather = await weatherRepo.getWeatherSnapshotForParent(
+      kWeatherParentTypeRatingSession, widget.session.id);
+    final insights = await ref
+        .read(trialInsightsProvider(widget.trial.id).future)
+        .catchError((_) => <TrialInsight>[]);
+
+    final text = composeSessionSummary(
+      trial: widget.trial,
+      session: widget.session,
+      plots: plots,
+      assessments: assessments,
+      ratings: ratings,
+      treatments: treatments,
+      assignments: assignments,
+      timing: timing,
+      weather: weather,
+      insights: insights,
+    );
+
+    if (!mounted) return;
+    await Share.share(text, subject: '${widget.trial.name} — ${widget.session.name}');
   }
 
   bool _isExporting = false;
@@ -865,6 +927,37 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                   plotTreatmentMap: plotTreatmentMap,
                 );
 
+                // Treatment codes + check IDs for grid labels
+                final treatmentCodes = <int, String>{
+                  for (final t in treatments)
+                    t.id: t.code.isNotEmpty ? t.code : t.name,
+                };
+                final checkTreatmentIds = <int>{
+                  for (final t in treatments)
+                    if (_isCheckTreatment(t)) t.id,
+                };
+
+                // Per-assessment coverage for header bars
+                final coverageRows =
+                    computeSessionSummaryAssessmentCoverage(
+                  plotsForTrial: plots,
+                  sessionAssessments: assessments,
+                  currentSessionRatings: ratings,
+                );
+                final assessmentCoverage = <int, double>{
+                  for (final c in coverageRows)
+                    c.assessmentId: c.progressFraction,
+                };
+
+                // Treatment colors from palette (same source as plot layout)
+                final sortedTrts = treatments.toList()
+                  ..sort((a, b) => a.code.compareTo(b.code));
+                final treatmentColorMap = <int, Color>{
+                  for (var i = 0; i < sortedTrts.length; i++)
+                    sortedTrts[i].id: AppDesignTokens.treatmentPalette[
+                        i % AppDesignTokens.treatmentPalette.length],
+                };
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1098,6 +1191,10 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                                       : null,
                               outlierKeys: outlierKeys,
                               plotTreatmentMap: plotTreatmentMap,
+                              treatmentCodes: treatmentCodes,
+                              checkTreatmentIds: checkTreatmentIds,
+                              assessmentCoverage: assessmentCoverage,
+                              treatmentColors: treatmentColorMap,
                             ),
                     ),
                   ],
@@ -1108,6 +1205,14 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ),
       ),
     );
+  }
+
+  static bool _isCheckTreatment(Treatment t) {
+    final code = t.code.trim().toUpperCase();
+    if (code == 'CHK' || code == 'UTC' || code == 'CONTROL') return true;
+    final type = t.treatmentType?.trim().toUpperCase();
+    if (type == 'CHK' || type == 'UTC' || type == 'CONTROL') return true;
+    return false;
   }
 
   /// Returns set of (plotPk, assessmentId) keys where value is >2 SD from treatment mean.

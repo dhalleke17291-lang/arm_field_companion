@@ -478,6 +478,13 @@ class Photos extends Table {
   TextColumn get caption => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
+  /// Assessment linked to this photo (photo-anchored rating).
+  IntColumn get assessmentId =>
+      integer().nullable().references(Assessments, #id)();
+
+  /// Rating value at the time the photo was captured.
+  RealColumn get ratingValue => real().nullable()();
+
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
@@ -931,7 +938,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 53;
+  int get schemaVersion => 54;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1541,6 +1548,22 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
                     'ALTER TABLE treatment_components '
                     'ADD COLUMN ${col.key} ${col.value}');
               }
+            }
+          }
+
+          if (from < 54) {
+            final photoCols = await customSelect(
+              "SELECT name FROM pragma_table_info('photos')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            if (!photoCols.contains('assessment_id')) {
+              await customStatement(
+                  'ALTER TABLE photos ADD COLUMN assessment_id INTEGER '
+                  'REFERENCES assessments(id)');
+            }
+            if (!photoCols.contains('rating_value')) {
+              await customStatement(
+                  'ALTER TABLE photos ADD COLUMN rating_value REAL');
             }
           }
 

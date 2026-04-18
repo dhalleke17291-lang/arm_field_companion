@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/ui/field_note_timestamp_format.dart';
+import '../../../domain/application_deviation.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../sessions/session_timing_helper.dart';
 
@@ -134,12 +135,22 @@ class TimelineTab extends ConsumerWidget {
           }
           appSubtitleParts.add(statusLabel);
 
+          final appProducts =
+              ref.watch(trialApplicationProductsForEventProvider(app.id))
+                  .valueOrNull ?? [];
+          final appDeviations = appProducts.isNotEmpty
+              ? computeApplicationDeviations(app, appProducts)
+              : <ProductDeviationResult>[];
+          final appHasDeviation =
+              appDeviations.any((d) => d.exceedsTolerance);
+
           events.add(_TrialTimelineEvent(
             date: app.applicationDate,
             type: _TimelineEventType.application,
             title: productLabel,
             subtitle: appSubtitleParts.join(' · '),
             timingText: timingText,
+            hasDeviation: appHasDeviation,
           ));
         }
 

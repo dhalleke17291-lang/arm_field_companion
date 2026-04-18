@@ -52,6 +52,12 @@ class ArmFieldCompanionApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       home: isExpired ? const _ExpiredScreen() : const SplashScreen(),
+      builder: (context, child) {
+        return GestureDetector(
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: child,
+        );
+      },
     );
   }
 

@@ -592,11 +592,20 @@ class MockPhotoRepository implements PhotoRepository {
     String? caption,
     String? raterName,
     int? performedByUserId,
+    int? assessmentId,
+    double? ratingValue,
   }) async =>
       throw UnimplementedError();
 
   @override
   Future<int> getPhotoCountForSession(int sessionId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<Photo>> getPhotosForPlotAllSessions({
+    required int trialId,
+    required int plotPk,
+  }) async =>
       throw UnimplementedError();
 
   @override

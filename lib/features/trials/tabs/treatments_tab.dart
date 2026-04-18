@@ -37,7 +37,7 @@ String buildTreatmentFormula(List<TreatmentComponent> components) {
   return '${one(components.first)} + ${components.length - 1} more';
 }
 
-Future<void> _softDeleteTreatmentComponentWithAudit(
+Future<void> _deleteTreatmentComponent(
   WidgetRef ref,
   int componentId,
 ) async {
@@ -48,6 +48,15 @@ Future<void> _softDeleteTreatmentComponentWithAudit(
         deletedBy: user?.displayName,
         deletedByUserId: userId,
       );
+}
+
+Future<bool> _treatmentHasApplications(WidgetRef ref, int treatmentId) async {
+  final db = ref.read(databaseProvider);
+  final rows = await (db.select(db.trialApplicationEvents)
+        ..where((a) => a.treatmentId.equals(treatmentId))
+        ..limit(1))
+      .get();
+  return rows.isNotEmpty;
 }
 
 /// One line per component for the compact treatments list.
@@ -767,7 +776,7 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                           ),
                         );
                         if (ok == true && context.mounted) {
-                          await _softDeleteTreatmentComponentWithAudit(
+                          await _deleteTreatmentComponent(
                               ref, c.id);
                           ref.invalidate(
                             treatmentComponentsForTreatmentProvider(
@@ -1081,7 +1090,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                                   .read(treatmentRepositoryProvider);
                               final existing = widget.existingComponent;
                               if (existing != null) {
-                                await _softDeleteTreatmentComponentWithAudit(
+                                await _deleteTreatmentComponent(
                                     widget.ref, existing.id);
                               }
                               await repo.insertComponent(
@@ -1689,43 +1698,50 @@ class _TreatmentComponentsSheetState
 
   Future<void> _confirmDelete(
       BuildContext context, TreatmentComponent component) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppDesignTokens.backgroundSurface,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDesignTokens.radiusLarge)),
-        title: const Text('Remove Product',
-            style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: AppDesignTokens.primaryText)),
-        content: Text(
-          'Remove "${component.productName}" from ${widget.treatment.code}?',
-          style: const TextStyle(
-              fontSize: 14, color: AppDesignTokens.secondaryText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppDesignTokens.secondaryText)),
+    final hasApps =
+        await _treatmentHasApplications(ref, widget.treatment.id);
+    if (hasApps) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppDesignTokens.backgroundSurface,
+          shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(AppDesignTokens.radiusLarge)),
+          title: const Text('Remove Product',
+              style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppDesignTokens.primaryText)),
+          content: Text(
+            'Remove "${component.productName}" from ${widget.treatment.code}?\n\n'
+            'This treatment has application records. '
+            'Removing this product will lose planned rate comparison data.',
+            style: const TextStyle(
+                fontSize: 14, color: AppDesignTokens.secondaryText),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: AppDesignTokens.secondaryText)),
             ),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    await _softDeleteTreatmentComponentWithAudit(ref, component.id);
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+    await _deleteTreatmentComponent(ref, component.id);
     ref.invalidate(
       treatmentComponentsForTreatmentProvider(widget.treatment.id),
     );

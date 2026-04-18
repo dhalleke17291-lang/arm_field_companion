@@ -10,6 +10,7 @@ import '../../../core/field_operation_date_rules.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
+import '../../../domain/application_deviation.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import 'application_sheet_content.dart';
 
@@ -226,29 +227,64 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     final plannedDateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
     final productsAsync =
         ref.watch(trialApplicationProductsForEventProvider(e.id));
-    final prods = productsAsync.valueOrNull;
+    final prods = productsAsync.valueOrNull ?? [];
+
+    // Treatment name from linked treatmentId.
+    final treatments =
+        ref.watch(treatmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            [];
+    final linkedTreatment = e.treatmentId != null
+        ? treatments
+            .where((t) => t.id == e.treatmentId)
+            .map((t) => t.code.isNotEmpty ? t.code : t.name)
+            .firstOrNull
+        : null;
+
+    // Compute deviations from existing domain logic.
+    final deviations = prods.isNotEmpty
+        ? computeApplicationDeviations(e, prods)
+        : <ProductDeviationResult>[];
+    final hasAnyDeviation = deviations.any((d) => d.exceedsTolerance);
+
+    // Primary product name.
     final String primaryLine;
-    final String? rateLine;
-    if (prods == null || prods.isEmpty) {
+    if (prods.isEmpty) {
       primaryLine = e.productName?.trim().isNotEmpty == true
           ? e.productName!.trim()
           : 'No product specified';
-      rateLine = (e.rate != null && e.rateUnit != null)
-          ? '${e.rate} ${e.rateUnit}'
-          : null;
-    } else if (prods.length == 1) {
-      final p = prods.first;
-      primaryLine = p.productName;
-      rateLine = (p.rate != null && p.rateUnit != null)
-          ? '${p.rate} ${p.rateUnit}'
-          : (p.rate != null ? '${p.rate}' : null);
     } else {
-      primaryLine = '${prods.first.productName} + ${prods.length - 1} more';
-      rateLine = '${prods.length} products';
+      primaryLine = prods.first.productName;
     }
+
     final appliedAtStr = e.appliedAt != null
         ? DateFormat('MMM d, yyyy HH:mm').format(e.appliedAt!)
         : null;
+
+    // Context line: treatment · label · date.
+    final contextParts = <String>[
+      if (linkedTreatment != null) linkedTreatment,
+      label,
+      plannedDateStr,
+    ];
+
+    // Equipment line (only if any field populated).
+    final equipParts = <String>[
+      if (e.applicationMethod?.trim().isNotEmpty == true) e.applicationMethod!,
+      if (e.nozzleType?.trim().isNotEmpty == true) e.nozzleType!,
+      if (e.operatingPressure != null && e.pressureUnit != null)
+        '${e.operatingPressure} ${e.pressureUnit}',
+      if (e.groundSpeed != null && e.speedUnit != null)
+        '${e.groundSpeed} ${e.speedUnit}',
+    ];
+
+    // Weather line (only if any field populated).
+    final weatherParts = <String>[
+      if (e.temperature != null) '${e.temperature!.round()}°',
+      if (e.humidity != null) '${e.humidity!.round()}% RH',
+      if (e.windSpeed != null)
+        '${e.windSpeed} m/s${e.windDirection?.trim().isNotEmpty == true ? ' ${e.windDirection}' : ''}',
+      if (e.cloudCoverPct != null) '${e.cloudCoverPct!.round()}% cloud',
+    ];
 
     return Card(
       margin: EdgeInsets.fromLTRB(16, index == 0 ? 6 : 4, 16, 4),
@@ -260,6 +296,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header: product name + status chip.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -276,22 +313,29 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  _StatusChip(isPending: isPending),
+                  if (hasAnyDeviation)
+                    _DeviationChip()
+                  else
+                    _StatusChip(isPending: isPending),
                 ],
               ),
               const SizedBox(height: 2),
+
+              // Context line: treatment · growth stage · date.
               Text(
-                '$label · $plannedDateStr',
+                contextParts.join(' · '),
                 style: const TextStyle(
                   fontSize: 12,
                   height: 1.2,
                   color: AppDesignTokens.secondaryText,
                 ),
               ),
-              if (rateLine != null) ...[
+
+              // Product rates with deviation info.
+              if (prods.isEmpty && e.rate != null) ...[
                 const SizedBox(height: 1),
                 Text(
-                  rateLine,
+                  '${e.rate} ${e.rateUnit ?? ''}',
                   style: const TextStyle(
                     fontSize: 12,
                     height: 1.2,
@@ -299,7 +343,76 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                   ),
                 ),
               ],
+              for (var i = 0; i < prods.length; i++)
+                _buildProductLine(prods[i],
+                    i < deviations.length ? deviations[i] : null),
+
+              // Tank-computed rate (when totalProductMixed + totalAreaSprayedHa populated).
+              if (deviations.any((d) => d.tankComputedRate != null)) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Tank rate: ${deviations.firstWhere((d) => d.tankComputedRate != null).tankComputedRate!.toStringAsFixed(2)} '
+                  '(±5% tolerance)',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    height: 1.2,
+                    color: AppDesignTokens.secondaryText,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+
+              // Equipment line.
+              if (equipParts.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    const Icon(Icons.precision_manufacturing_outlined,
+                        size: 12, color: AppDesignTokens.secondaryText),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        equipParts.join(' · '),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          height: 1.2,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              // Weather line.
+              if (weatherParts.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(Icons.cloud_outlined,
+                        size: 12, color: AppDesignTokens.secondaryText),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        weatherParts.join(' · '),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          height: 1.2,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
               const SizedBox(height: 6),
+
+              // Action row.
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -321,7 +434,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                     Expanded(
                       child: Text(
                         appliedAtStr != null
-                            ? 'Applied on $appliedAtStr'
+                            ? 'Applied $appliedAtStr'
                             : 'Applied',
                         style: const TextStyle(
                           fontSize: 12,
@@ -346,6 +459,44 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildProductLine(
+      TrialApplicationProduct p, ProductDeviationResult? dev) {
+    final ratePart = (p.rate != null && p.rateUnit != null)
+        ? '${p.rate} ${p.rateUnit}'
+        : (p.rate != null ? '${p.rate}' : null);
+    if (ratePart == null) return const SizedBox.shrink();
+
+    final parts = <InlineSpan>[];
+    parts.add(TextSpan(text: ratePart));
+
+    if (dev != null && dev.plannedRate != null && dev.deviationPct != null) {
+      final devLabel = deviationLabel(dev.deviationPct);
+      final devColor = dev.exceedsTolerance
+          ? AppDesignTokens.warningFg
+          : AppDesignTokens.successFg;
+      parts.add(TextSpan(
+        text: ' (planned: ${dev.plannedRate} · $devLabel)',
+        style: TextStyle(color: devColor),
+      ));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 1),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(
+            fontSize: 12,
+            height: 1.2,
+            color: AppDesignTokens.secondaryText,
+          ),
+          children: parts,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -669,6 +820,29 @@ class _StatusChip extends StatelessWidget {
           color: isPending
               ? AppDesignTokens.secondaryText
               : AppDesignTokens.successFg,
+        ),
+      ),
+    );
+  }
+}
+
+class _DeviationChip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.warningBg,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+        border: Border.all(color: AppDesignTokens.warningBorder, width: 0.5),
+      ),
+      child: const Text(
+        'Deviation',
+        style: TextStyle(
+          fontSize: 11,
+          height: 1.1,
+          fontWeight: FontWeight.w600,
+          color: AppDesignTokens.warningFg,
         ),
       ),
     );

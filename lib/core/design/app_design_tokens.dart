@@ -82,15 +82,30 @@ class AppDesignTokens {
   /// Unassigned plot tile in grid.
   static const Color unassignedColor = Color(0xFF9CA3AF);
 
-  /// Treatment palette for bird's-eye grid — cycles by index.
+  /// Treatment palette — 12 perceptually distinct, colorblind-friendly colors.
+  /// Designed to remain distinguishable at full saturation (plot layout tiles)
+  /// and at 10-15% opacity (session grid row tints).
+  /// Covers most real trial sizes (4-12 treatments). Cycles for 13+.
   static const List<Color> treatmentPalette = [
-    Color(0xFF2D5A40),
-    Color(0xFF1D4ED8),
-    Color(0xFFEA580C),
-    Color(0xFF7C3AED),
-    Color(0xFFDC2626),
-    Color(0xFF0F766E),
+    Color(0xFF2D5A40), // forest green (CHK default position)
+    Color(0xFF1D4ED8), // blue
+    Color(0xFFEA580C), // orange
+    Color(0xFF7C3AED), // purple
+    Color(0xFFDC2626), // red
+    Color(0xFF0F766E), // teal
+    Color(0xFFC2410C), // burnt sienna
+    Color(0xFF0369A1), // steel blue
+    Color(0xFF9333EA), // violet
+    Color(0xFF15803D), // emerald
+    Color(0xFFB45309), // amber
+    Color(0xFF6D28D9), // deep purple
   ];
+
+  /// Heat map gradient — low (cool) to high (warm).
+  static const Color heatMapLow = Color(0xFF3B82F6);
+  static const Color heatMapMid = Color(0xFFFBBF24);
+  static const Color heatMapHigh = Color(0xFFDC2626);
+  static const Color heatMapEmpty = Color(0xFFE5E7EB);
 
   /// Open session badge background.
   static const Color openSessionBg = Color(0xFF16A34A);

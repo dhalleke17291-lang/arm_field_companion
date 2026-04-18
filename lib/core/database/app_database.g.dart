@@ -14595,6 +14595,21 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _assessmentIdMeta =
+      const VerificationMeta('assessmentId');
+  @override
+  late final GeneratedColumn<int> assessmentId = GeneratedColumn<int>(
+      'assessment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES assessments (id)'));
+  static const VerificationMeta _ratingValueMeta =
+      const VerificationMeta('ratingValue');
+  @override
+  late final GeneratedColumn<double> ratingValue = GeneratedColumn<double>(
+      'rating_value', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
   static const VerificationMeta _isDeletedMeta =
       const VerificationMeta('isDeleted');
   @override
@@ -14628,6 +14643,8 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
         status,
         caption,
         createdAt,
+        assessmentId,
+        ratingValue,
         isDeleted,
         deletedAt,
         deletedBy
@@ -14685,6 +14702,18 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('assessment_id')) {
+      context.handle(
+          _assessmentIdMeta,
+          assessmentId.isAcceptableOrUnknown(
+              data['assessment_id']!, _assessmentIdMeta));
+    }
+    if (data.containsKey('rating_value')) {
+      context.handle(
+          _ratingValueMeta,
+          ratingValue.isAcceptableOrUnknown(
+              data['rating_value']!, _ratingValueMeta));
+    }
     if (data.containsKey('is_deleted')) {
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
@@ -14724,6 +14753,10 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
           .read(DriftSqlType.string, data['${effectivePrefix}caption']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      assessmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}assessment_id']),
+      ratingValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}rating_value']),
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
       deletedAt: attachedDatabase.typeMapping
@@ -14749,6 +14782,12 @@ class Photo extends DataClass implements Insertable<Photo> {
   final String status;
   final String? caption;
   final DateTime createdAt;
+
+  /// Assessment linked to this photo (photo-anchored rating).
+  final int? assessmentId;
+
+  /// Rating value at the time the photo was captured.
+  final double? ratingValue;
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
@@ -14762,6 +14801,8 @@ class Photo extends DataClass implements Insertable<Photo> {
       required this.status,
       this.caption,
       required this.createdAt,
+      this.assessmentId,
+      this.ratingValue,
       required this.isDeleted,
       this.deletedAt,
       this.deletedBy});
@@ -14781,6 +14822,12 @@ class Photo extends DataClass implements Insertable<Photo> {
       map['caption'] = Variable<String>(caption);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || assessmentId != null) {
+      map['assessment_id'] = Variable<int>(assessmentId);
+    }
+    if (!nullToAbsent || ratingValue != null) {
+      map['rating_value'] = Variable<double>(ratingValue);
+    }
     map['is_deleted'] = Variable<bool>(isDeleted);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
@@ -14806,6 +14853,12 @@ class Photo extends DataClass implements Insertable<Photo> {
           ? const Value.absent()
           : Value(caption),
       createdAt: Value(createdAt),
+      assessmentId: assessmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assessmentId),
+      ratingValue: ratingValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ratingValue),
       isDeleted: Value(isDeleted),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -14829,6 +14882,8 @@ class Photo extends DataClass implements Insertable<Photo> {
       status: serializer.fromJson<String>(json['status']),
       caption: serializer.fromJson<String?>(json['caption']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      assessmentId: serializer.fromJson<int?>(json['assessmentId']),
+      ratingValue: serializer.fromJson<double?>(json['ratingValue']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
@@ -14847,6 +14902,8 @@ class Photo extends DataClass implements Insertable<Photo> {
       'status': serializer.toJson<String>(status),
       'caption': serializer.toJson<String?>(caption),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'assessmentId': serializer.toJson<int?>(assessmentId),
+      'ratingValue': serializer.toJson<double?>(ratingValue),
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
@@ -14863,6 +14920,8 @@ class Photo extends DataClass implements Insertable<Photo> {
           String? status,
           Value<String?> caption = const Value.absent(),
           DateTime? createdAt,
+          Value<int?> assessmentId = const Value.absent(),
+          Value<double?> ratingValue = const Value.absent(),
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
           Value<String?> deletedBy = const Value.absent()}) =>
@@ -14876,6 +14935,9 @@ class Photo extends DataClass implements Insertable<Photo> {
         status: status ?? this.status,
         caption: caption.present ? caption.value : this.caption,
         createdAt: createdAt ?? this.createdAt,
+        assessmentId:
+            assessmentId.present ? assessmentId.value : this.assessmentId,
+        ratingValue: ratingValue.present ? ratingValue.value : this.ratingValue,
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
@@ -14891,6 +14953,11 @@ class Photo extends DataClass implements Insertable<Photo> {
       status: data.status.present ? data.status.value : this.status,
       caption: data.caption.present ? data.caption.value : this.caption,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      assessmentId: data.assessmentId.present
+          ? data.assessmentId.value
+          : this.assessmentId,
+      ratingValue:
+          data.ratingValue.present ? data.ratingValue.value : this.ratingValue,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
@@ -14909,6 +14976,8 @@ class Photo extends DataClass implements Insertable<Photo> {
           ..write('status: $status, ')
           ..write('caption: $caption, ')
           ..write('createdAt: $createdAt, ')
+          ..write('assessmentId: $assessmentId, ')
+          ..write('ratingValue: $ratingValue, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy')
@@ -14917,8 +14986,21 @@ class Photo extends DataClass implements Insertable<Photo> {
   }
 
   @override
-  int get hashCode => Object.hash(id, trialId, plotPk, sessionId, filePath,
-      tempPath, status, caption, createdAt, isDeleted, deletedAt, deletedBy);
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      plotPk,
+      sessionId,
+      filePath,
+      tempPath,
+      status,
+      caption,
+      createdAt,
+      assessmentId,
+      ratingValue,
+      isDeleted,
+      deletedAt,
+      deletedBy);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -14932,6 +15014,8 @@ class Photo extends DataClass implements Insertable<Photo> {
           other.status == this.status &&
           other.caption == this.caption &&
           other.createdAt == this.createdAt &&
+          other.assessmentId == this.assessmentId &&
+          other.ratingValue == this.ratingValue &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
           other.deletedBy == this.deletedBy);
@@ -14947,6 +15031,8 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   final Value<String> status;
   final Value<String?> caption;
   final Value<DateTime> createdAt;
+  final Value<int?> assessmentId;
+  final Value<double?> ratingValue;
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
@@ -14960,6 +15046,8 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     this.status = const Value.absent(),
     this.caption = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.assessmentId = const Value.absent(),
+    this.ratingValue = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -14974,6 +15062,8 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     this.status = const Value.absent(),
     this.caption = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.assessmentId = const Value.absent(),
+    this.ratingValue = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -14991,6 +15081,8 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     Expression<String>? status,
     Expression<String>? caption,
     Expression<DateTime>? createdAt,
+    Expression<int>? assessmentId,
+    Expression<double>? ratingValue,
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
@@ -15005,6 +15097,8 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
       if (status != null) 'status': status,
       if (caption != null) 'caption': caption,
       if (createdAt != null) 'created_at': createdAt,
+      if (assessmentId != null) 'assessment_id': assessmentId,
+      if (ratingValue != null) 'rating_value': ratingValue,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
@@ -15021,6 +15115,8 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
       Value<String>? status,
       Value<String?>? caption,
       Value<DateTime>? createdAt,
+      Value<int?>? assessmentId,
+      Value<double?>? ratingValue,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
       Value<String?>? deletedBy}) {
@@ -15034,6 +15130,8 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
       status: status ?? this.status,
       caption: caption ?? this.caption,
       createdAt: createdAt ?? this.createdAt,
+      assessmentId: assessmentId ?? this.assessmentId,
+      ratingValue: ratingValue ?? this.ratingValue,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
@@ -15070,6 +15168,12 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (assessmentId.present) {
+      map['assessment_id'] = Variable<int>(assessmentId.value);
+    }
+    if (ratingValue.present) {
+      map['rating_value'] = Variable<double>(ratingValue.value);
+    }
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
@@ -15094,6 +15198,8 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
           ..write('status: $status, ')
           ..write('caption: $caption, ')
           ..write('createdAt: $createdAt, ')
+          ..write('assessmentId: $assessmentId, ')
+          ..write('ratingValue: $ratingValue, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy')
@@ -32393,6 +32499,19 @@ class $$AssessmentsTableFilterComposer
                 $state.db.ratingRecords, joinBuilder, parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter photosRefs(
+      ComposableFilter Function($$PhotosTableFilterComposer f) f) {
+    final $$PhotosTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.photos,
+        getReferencedColumn: (t) => t.assessmentId,
+        builder: (joinBuilder, parentComposers) => $$PhotosTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.photos, joinBuilder, parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$AssessmentsTableOrderingComposer
@@ -36482,6 +36601,8 @@ typedef $$PhotosTableCreateCompanionBuilder = PhotosCompanion Function({
   Value<String> status,
   Value<String?> caption,
   Value<DateTime> createdAt,
+  Value<int?> assessmentId,
+  Value<double?> ratingValue,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -36496,6 +36617,8 @@ typedef $$PhotosTableUpdateCompanionBuilder = PhotosCompanion Function({
   Value<String> status,
   Value<String?> caption,
   Value<DateTime> createdAt,
+  Value<int?> assessmentId,
+  Value<double?> ratingValue,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -36527,6 +36650,8 @@ class $$PhotosTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<String?> caption = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int?> assessmentId = const Value.absent(),
+            Value<double?> ratingValue = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -36541,6 +36666,8 @@ class $$PhotosTableTableManager extends RootTableManager<
             status: status,
             caption: caption,
             createdAt: createdAt,
+            assessmentId: assessmentId,
+            ratingValue: ratingValue,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -36555,6 +36682,8 @@ class $$PhotosTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<String?> caption = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int?> assessmentId = const Value.absent(),
+            Value<double?> ratingValue = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -36569,6 +36698,8 @@ class $$PhotosTableTableManager extends RootTableManager<
             status: status,
             caption: caption,
             createdAt: createdAt,
+            assessmentId: assessmentId,
+            ratingValue: ratingValue,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -36606,6 +36737,11 @@ class $$PhotosTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
       column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get ratingValue => $state.composableBuilder(
+      column: $state.table.ratingValue,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -36659,6 +36795,18 @@ class $$PhotosTableFilterComposer
                 $state.db, $state.db.sessions, joinBuilder, parentComposers)));
     return composer;
   }
+
+  $$AssessmentsTableFilterComposer get assessmentId {
+    final $$AssessmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assessmentId,
+        referencedTable: $state.db.assessments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$AssessmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.assessments, joinBuilder, parentComposers)));
+    return composer;
+  }
 }
 
 class $$PhotosTableOrderingComposer
@@ -36691,6 +36839,11 @@ class $$PhotosTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
       column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get ratingValue => $state.composableBuilder(
+      column: $state.table.ratingValue,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -36742,6 +36895,18 @@ class $$PhotosTableOrderingComposer
         builder: (joinBuilder, parentComposers) =>
             $$SessionsTableOrderingComposer(ComposerState(
                 $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$AssessmentsTableOrderingComposer get assessmentId {
+    final $$AssessmentsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assessmentId,
+        referencedTable: $state.db.assessments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$AssessmentsTableOrderingComposer(ComposerState($state.db,
+                $state.db.assessments, joinBuilder, parentComposers)));
     return composer;
   }
 }

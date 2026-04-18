@@ -29,6 +29,8 @@ import '../features/plots/usecases/update_plot_assignment_usecase.dart';
 import '../features/protocol_import/protocol_import_usecase.dart';
 import '../features/sessions/session_repository.dart';
 import '../features/sessions/session_timing_helper.dart';
+import '../domain/intelligence/trial_intelligence_service.dart';
+import '../domain/models/trial_insight.dart';
 import '../features/ratings/rating_repository.dart';
 import '../features/photos/photo_repository.dart';
 import '../features/trials/usecases/create_trial_usecase.dart';
@@ -1377,6 +1379,14 @@ final photosForTrialProvider =
   return ref.watch(photoRepositoryProvider).watchPhotosForTrial(trialId);
 });
 
+final photosForPlotAllSessionsProvider = FutureProvider.autoDispose
+    .family<List<Photo>, ({int trialId, int plotPk})>((ref, params) {
+  return ref.watch(photoRepositoryProvider).getPhotosForPlotAllSessions(
+        trialId: params.trialId,
+        plotPk: params.plotPk,
+      );
+});
+
 class PlotRatingParams {
   final int trialId;
   final int plotPk;
@@ -1424,7 +1434,8 @@ final treatmentComponentsForTreatmentProvider = StreamProvider.autoDispose
     .family<List<TreatmentComponent>, int>((ref, treatmentId) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.treatmentComponents)
-        ..where((c) => c.treatmentId.equals(treatmentId))
+        ..where((c) =>
+            c.treatmentId.equals(treatmentId) & c.isDeleted.equals(false))
         ..orderBy([(c) => drift.OrderingTerm.asc(c.sortOrder)]))
       .watch();
 });
@@ -1582,4 +1593,29 @@ final backupServiceProvider = Provider<BackupService>((ref) {
 
 final restoreServiceProvider = Provider<RestoreService>((ref) {
   return RestoreService(ref.watch(databaseProvider));
+});
+
+// ---------------------------------------------------------------------------
+// Intelligence
+// ---------------------------------------------------------------------------
+
+final trialIntelligenceServiceProvider =
+    Provider<TrialIntelligenceService>((ref) {
+  return TrialIntelligenceService(
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+    plotRepository: ref.watch(plotRepositoryProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+    treatmentRepository: ref.watch(treatmentRepositoryProvider),
+    weatherSnapshotRepository: ref.watch(weatherSnapshotRepositoryProvider),
+  );
+});
+
+final trialInsightsProvider = FutureProvider.autoDispose
+    .family<List<TrialInsight>, int>((ref, trialId) async {
+  final treatments =
+      await ref.watch(treatmentsForTrialProvider(trialId).future);
+  return ref
+      .watch(trialIntelligenceServiceProvider)
+      .computeInsights(trialId: trialId, treatments: treatments);
 });

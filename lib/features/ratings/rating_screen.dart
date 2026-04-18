@@ -814,6 +814,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       }
 
       final userId = await ref.read(currentUserIdProvider.future);
+      final currentValue =
+          double.tryParse(_valueController.text.trim());
       final usecase = ref.read(savePhotoUseCaseProvider);
       final res = await usecase.execute(
         SavePhotoInput(
@@ -825,6 +827,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           caption: null,
           raterName: widget.session.raterName,
           performedByUserId: userId,
+          assessmentId: _currentAssessment.id,
+          ratingValue: currentValue,
         ),
       );
 
@@ -1041,7 +1045,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               ),
               Positioned(
                 left: 4,
-                right: 4,
                 bottom: 4,
                 child: Container(
                   padding:
@@ -1057,10 +1060,30 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       fontSize: 10,
                     ),
                     overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
+              if (photo.ratingValue != null)
+                Positioned(
+                  right: 4,
+                  bottom: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppDesignTokens.primary.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${photo.ratingValue!.round()}%',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -1582,7 +1605,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
         content: Text(
-          '${violations.join('. ')} — please verify',
+          '${violations.join('. ')}. Rule: weed control ≥ component control.',
           style: const TextStyle(fontSize: 13),
         ),
         backgroundColor: AppDesignTokens.warningBg,
@@ -3851,13 +3874,41 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       if (plotCtx != null && plotCtx.isUntreatedCheck) {
         final v = double.tryParse(_valueController.text);
         if (v != null && v > 0 && mounted) {
+          // Compute check average for context
+          final sessionRatings = ref
+              .read(sessionRatingsProvider(widget.session.id))
+              .valueOrNull ?? [];
+          final checkPlotPks = <int>[];
+          for (final p in widget.allPlots) {
+            if (p.id == widget.plot.id) continue;
+            final pc = ref.read(plotContextProvider(p.id)).valueOrNull;
+            if (pc != null && pc.isUntreatedCheck) checkPlotPks.add(p.id);
+          }
+          final otherCheckValues = <double>[];
+          for (final cpk in checkPlotPks) {
+            final r = sessionRatings
+                .where((r) =>
+                    r.plotPk == cpk &&
+                    r.assessmentId == _currentAssessment.id &&
+                    r.isCurrent &&
+                    r.resultStatus == 'RECORDED' &&
+                    r.numericValue != null)
+                .firstOrNull;
+            if (r != null) otherCheckValues.add(r.numericValue!);
+          }
+          final checkAvgStr = otherCheckValues.isNotEmpty
+              ? '${(otherCheckValues.reduce((a, b) => a + b) / otherCheckValues.length).round()}%'
+              : null;
+
           final confirm = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
               title: const Text('Check plot value'),
               content: Text(
-                'This is an untreated check plot. '
-                'You entered ${_valueController.text} — confirm this value?',
+                'Plot ${plotCtx.plotId} is assigned to ${plotCtx.treatmentCode} (untreated check). '
+                'You entered ${_valueController.text}.'
+                '${checkAvgStr != null ? '\nOther check plots this session average: $checkAvgStr.' : ''}'
+                '\nConfirm this value?',
               ),
               actions: [
                 TextButton(

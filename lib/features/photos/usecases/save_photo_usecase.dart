@@ -37,6 +37,8 @@ class SavePhotoUseCase {
         caption: input.caption,
         raterName: input.raterName,
         performedByUserId: input.performedByUserId,
+        assessmentId: input.assessmentId,
+        ratingValue: input.ratingValue,
       );
 
       return SavePhotoResult.success(photo);
@@ -57,6 +59,8 @@ class SavePhotoInput {
   final String? caption;
   final String? raterName;
   final int? performedByUserId;
+  final int? assessmentId;
+  final double? ratingValue;
 
   const SavePhotoInput({
     required this.trialId,
@@ -67,6 +71,8 @@ class SavePhotoInput {
     this.caption,
     this.raterName,
     this.performedByUserId,
+    this.assessmentId,
+    this.ratingValue,
   });
 }
 

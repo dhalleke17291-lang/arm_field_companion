@@ -50,6 +50,7 @@ import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
+import '../../domain/models/trial_insight.dart';
 import '../import/ui/import_trial_sheet.dart';
 import '../backup/backup_reminder_store.dart';
 import '../notes/field_notes_list_screen.dart';
@@ -2078,14 +2079,14 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
             ),
           ),
         ),
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: isDisplayActive ? 10 : 12,
-                vertical: 6,
+                vertical: 4,
               ),
               decoration: BoxDecoration(
                 color: pill.bg,
@@ -2114,14 +2115,13 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                             color: AppDesignTokens.openSessionBg,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Text(
                           labelForTrialStatus(statusForDisplay),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: pill.fg,
-                            letterSpacing: 0.2,
                           ),
                         ),
                       ],
@@ -2132,28 +2132,10 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: pill.fg,
-                        letterSpacing: 0.2,
                       ),
                     ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                statusDescriptionForTrialDisplay(
-                  statusForDisplay,
-                  workspaceType: trial.workspaceType,
-                ),
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  height: 1.35,
-                  fontWeight: FontWeight.w500,
-                  color: AppDesignTokens.primaryText,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 12),
+            const Spacer(),
             if (buttonLabel != null && nextStatus != null)
               FilledButton(
                 onPressed: () =>
@@ -2164,21 +2146,20 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                   elevation: 0,
                   shadowColor: Colors.transparent,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+                    horizontal: 14,
+                    vertical: 6,
                   ),
-                  minimumSize: const Size(0, 40),
-                  tapTargetSize: MaterialTapTargetSize.padded,
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
                   buttonLabel,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 0.15,
                     color: Colors.white,
                   ),
                 ),
@@ -2503,6 +2484,184 @@ class _OverviewPlotSummary extends ConsumerWidget {
   }
 }
 
+class _TrialInsightsCard extends ConsumerWidget {
+  const _TrialInsightsCard({required this.trialId});
+
+  final int trialId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final insightsAsync = ref.watch(trialInsightsProvider(trialId));
+
+    return insightsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (insights) {
+        if (insights.isEmpty) return const SizedBox.shrink();
+        return _OverviewDashboardCard(
+          title: 'Intelligence',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < insights.length; i++) ...[
+                if (i > 0)
+                  const Divider(height: 1, color: AppDesignTokens.borderCrisp),
+                _InsightRow(insight: insights[i]),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _InsightRow extends StatefulWidget {
+  const _InsightRow({required this.insight});
+
+  final TrialInsight insight;
+
+  @override
+  State<_InsightRow> createState() => _InsightRowState();
+}
+
+class _InsightRowState extends State<_InsightRow> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final insight = widget.insight;
+    final confidence = insight.basis.confidence;
+    final confidenceColor = switch (confidence) {
+      InsightConfidence.preliminary => AppDesignTokens.secondaryText,
+      InsightConfidence.moderate => AppDesignTokens.warningFg,
+      InsightConfidence.established => AppDesignTokens.successFg,
+    };
+    final severityColor = switch (insight.severity) {
+      InsightSeverity.info => AppDesignTokens.primary,
+      InsightSeverity.notable => AppDesignTokens.warningFg,
+      InsightSeverity.attention => AppDesignTokens.missedColor,
+    };
+
+    return GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: insight.severity != InsightSeverity.info
+            ? BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: severityColor, width: 2),
+                ),
+              )
+            : null,
+        child: Padding(
+          padding: EdgeInsets.only(
+              left: insight.severity != InsightSeverity.info ? 8 : 0),
+          child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    insight.title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: confidenceColor.withValues(alpha: 0.1),
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusChip),
+                  ),
+                  child: Text(
+                    insight.basis.confidenceLabel,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: confidenceColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 3),
+            Text(
+              insight.detail,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.35,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            if (_expanded) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppDesignTokens.sectionHeaderBg,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      insight.basis.basisSummary,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Method: ${insight.basis.method}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                    if (insight.basis.threshold != null) ...[
+                      const SizedBox(height: 1),
+                      Text(
+                        insight.basis.threshold!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ] else
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  'Tap for method',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color:
+                        AppDesignTokens.secondaryText.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Overview stack slot ([_overviewTabIndex]): primary trial dashboard.
 /// Compact status strip: last application, readiness traffic light, days since
 /// last activity. Command-center view — researcher opens trial and sees
@@ -2647,28 +2806,6 @@ class _OverviewTabBody extends ConsumerWidget {
         children: [
           TrialCompletionSummaryCard(trialId: trial.id),
           _TrialStatusStrip(trialId: trial.id),
-          if (trialWorkspaceIsStandalone(trial.workspaceType)) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppDesignTokens.spacing16,
-                0,
-                AppDesignTokens.spacing16,
-                AppDesignTokens.spacing8,
-              ),
-              child: Text(
-                statusDescriptionForTrialDisplay(
-                  trial.status,
-                  workspaceType: trial.workspaceType,
-                ),
-                style: const TextStyle(
-                  fontSize: 12,
-                  height: 1.35,
-                  fontWeight: FontWeight.w400,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
-            ),
-          ],
           _TrialWorkflowReadinessStack(
             trial: trial,
             onAttentionTap: onAttentionTap,
@@ -2682,6 +2819,7 @@ class _OverviewTabBody extends ConsumerWidget {
             ),
           ),
           _OverviewPlotSummary(trial: trial),
+          _TrialInsightsCard(trialId: trial.id),
           SiteDetailsCard(trial: trial),
           Padding(
             padding: const EdgeInsets.fromLTRB(

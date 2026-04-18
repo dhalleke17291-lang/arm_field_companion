@@ -14,6 +14,8 @@ enum ExportFormat {
   /// Excel rating shell for imported protocol trials; handled by [ExportArmRatingShellUseCase].
   /// Listed on the trial export sheet only when the trial is ARM-linked.
   armRatingShell,
+  /// Full trial as structured JSON — all data, insights, and completeness.
+  jsonExport,
 }
 
 extension ExportFormatDetails on ExportFormat {
@@ -33,6 +35,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'Trial Report (PDF)';
       case ExportFormat.armRatingShell:
         return 'Rating Sheet (Excel)';
+      case ExportFormat.jsonExport:
+        return 'Trial Data (JSON)';
     }
   }
 
@@ -52,6 +56,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'Structured trial report with site summary, treatments, applications, and assessment data tables — for the regulatory binder';
       case ExportFormat.armRatingShell:
         return 'Inject collected ratings back into the original protocol spreadsheet';
+      case ExportFormat.jsonExport:
+        return 'Complete trial data as structured JSON — all sessions, ratings, treatments, applications, insights, and completeness';
     }
   }
 
@@ -71,6 +77,8 @@ extension ExportFormatDetails on ExportFormat {
         return Icons.article_outlined;
       case ExportFormat.armRatingShell:
         return Icons.table_view_outlined;
+      case ExportFormat.jsonExport:
+        return Icons.data_object_outlined;
     }
   }
 

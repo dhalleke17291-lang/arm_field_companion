@@ -830,11 +830,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
       padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16, 0,
           AppDesignTokens.spacing16, AppDesignTokens.spacing24),
       children: [
-        _ContinueLastSessionSection(
-          onNavigate: (trial, session) =>
-              _navigateToRatingForSession(context, ref, trial, session),
-          workspaceFilter: widget.workspaceFilter,
-        ),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
@@ -948,8 +943,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                       builder: (_) => TrialDetailScreen(trial: t),
                     ),
                   ),
-                  onContinueSession: (Session session) =>
-                      _navigateToRatingForSession(context, ref, t, session),
                   onQuickRate: () => _quickRateFromList(context, ref, t),
                 ),
               );

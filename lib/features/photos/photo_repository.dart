@@ -18,6 +18,8 @@ class PhotoRepository {
     String? caption,
     String? raterName,
     int? performedByUserId,
+    int? assessmentId,
+    double? ratingValue,
   }) async {
     return _db.transaction(() async {
       final photoId = await _db.into(_db.photos).insert(
@@ -29,6 +31,8 @@ class PhotoRepository {
               tempPath: Value(tempPath),
               status: const Value('pending'),
               caption: Value(caption),
+              assessmentId: Value(assessmentId),
+              ratingValue: Value(ratingValue),
             ),
           );
 
@@ -170,6 +174,22 @@ class PhotoRepository {
               p.isDeleted.equals(false))
           ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
         .watch();
+  }
+
+  Future<List<Photo>> getPhotosForPlotAllSessions({
+    required int trialId,
+    required int plotPk,
+  }) {
+    return (_db.select(_db.photos)
+          ..where((p) =>
+              p.trialId.equals(trialId) &
+              p.plotPk.equals(plotPk) &
+              p.isDeleted.equals(false))
+          ..orderBy([
+            (p) => OrderingTerm.asc(p.sessionId),
+            (p) => OrderingTerm.asc(p.createdAt),
+          ]))
+        .get();
   }
 
   Stream<List<Photo>> watchPhotosForTrial(int trialId) {
