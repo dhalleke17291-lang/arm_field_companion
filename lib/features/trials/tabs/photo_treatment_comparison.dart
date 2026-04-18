@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/widgets/photo_thumbnail.dart';
 import '../../../core/providers.dart';
 import '../../photos/photo_viewer_screen.dart';
 
@@ -445,7 +444,6 @@ class _ExpandedPlotTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final file = File(photo.filePath);
     final valStr = photo.ratingValue != null
         ? '${photo.ratingValue!.round()}%'
         : '—';
@@ -464,23 +462,11 @@ class _ExpandedPlotTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 72,
-                height: 72,
-                child: file.existsSync()
-                    ? Image.file(file,
-                        fit: BoxFit.cover,
-                        cacheWidth: 144,
-                        cacheHeight: 144)
-                    : Container(
-                        color: AppDesignTokens.emptyBadgeBg,
-                        child: const Icon(Icons.broken_image,
-                            size: 20,
-                            color: AppDesignTokens.secondaryText),
-                      ),
-              ),
+            PhotoThumbnail(
+              filePath: photo.filePath,
+              width: 72,
+              height: 72,
+              borderRadius: 8,
             ),
             const SizedBox(height: 2),
             Text(
@@ -522,19 +508,19 @@ class _PhotoThumbnail extends StatelessWidget {
               )
           : null,
       borderRadius: BorderRadius.circular(8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          width: 80,
-          height: 80,
-          child: photo != null && File(photo!.filePath).existsSync()
-              ? Image.file(
-                  File(photo!.filePath),
-                  fit: BoxFit.cover,
-                  cacheWidth: 160,
-                  cacheHeight: 160,
-                )
-              : Container(
+      child: photo != null
+          ? PhotoThumbnail(
+              filePath: photo!.filePath,
+              width: 80,
+              height: 80,
+              borderRadius: 8,
+            )
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 80,
+                height: 80,
+                child: Container(
                   color: AppDesignTokens.emptyBadgeBg,
                   child: const Center(
                     child: Icon(
@@ -544,8 +530,8 @@ class _PhotoThumbnail extends StatelessWidget {
                     ),
                   ),
                 ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 }

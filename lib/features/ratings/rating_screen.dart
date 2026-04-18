@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/widgets/photo_thumbnail.dart';
 import '../../core/ui/assessment_display_helper.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
@@ -991,8 +992,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     double size,
   ) {
     final theme = Theme.of(context);
-    final file = File(photo.filePath);
-    final exists = file.existsSync();
     final timeStr = DateFormat('HH:mm').format(photo.createdAt);
 
     return Padding(
@@ -1011,18 +1010,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(7),
-                child: exists
-                    ? Image.file(file, fit: BoxFit.cover, semanticLabel: 'Photo thumbnail', cacheWidth: 176, cacheHeight: 176)
-                    : Center(
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          size: 32,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.5),
-                        ),
-                      ),
+              PhotoThumbnail(
+                filePath: photo.filePath,
+                width: size,
+                height: size,
+                borderRadius: 7,
               ),
               Positioned(
                 left: 4,

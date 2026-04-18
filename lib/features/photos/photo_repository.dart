@@ -2,7 +2,38 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import '../../core/database/app_database.dart';
+
+const int kThumbnailSize = 200;
+
+String thumbnailPathFor(String originalPath) {
+  final lastDot = originalPath.lastIndexOf('.');
+  if (lastDot < 0) return '${originalPath}_thumb';
+  return '${originalPath.substring(0, lastDot)}_thumb${originalPath.substring(lastDot)}';
+}
+
+Future<void> generateThumbnailInBackground(String originalPath) async {
+  try {
+    await compute(_generateThumbnail, originalPath);
+  } catch (_) {
+    // Thumbnail generation failure is non-fatal.
+  }
+}
+
+void _generateThumbnail(String originalPath) {
+  final file = File(originalPath);
+  if (!file.existsSync()) return;
+  final bytes = file.readAsBytesSync();
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) return;
+  final thumb = img.copyResize(decoded,
+      width: kThumbnailSize, height: kThumbnailSize,
+      interpolation: img.Interpolation.average);
+  final thumbPath = thumbnailPathFor(originalPath);
+  File(thumbPath).writeAsBytesSync(img.encodeJpg(thumb, quality: 80));
+}
 
 class PhotoRepository {
   final AppDatabase _db;
@@ -21,7 +52,7 @@ class PhotoRepository {
     int? assessmentId,
     double? ratingValue,
   }) async {
-    return _db.transaction(() async {
+    final photo = await _db.transaction(() async {
       final photoId = await _db.into(_db.photos).insert(
             PhotosCompanion.insert(
               trialId: trialId,
@@ -62,6 +93,11 @@ class PhotoRepository {
       return await (_db.select(_db.photos)..where((p) => p.id.equals(photoId)))
           .getSingle();
     });
+
+    // Fire-and-forget: generate thumbnail in background isolate.
+    generateThumbnailInBackground(finalPath);
+
+    return photo;
   }
 
   Future<int> getPhotoCountForSession(int sessionId) async {

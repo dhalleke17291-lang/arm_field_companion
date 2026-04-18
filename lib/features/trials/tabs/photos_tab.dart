@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/widgets/photo_thumbnail.dart';
 import '../../../core/plot_display.dart';
 import '../../../core/providers.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -454,9 +453,6 @@ class _TimelinePhotoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final file = File(photo.filePath);
-    final exists = file.existsSync();
-
     return InkWell(
       onTap: () => Navigator.push(
         context,
@@ -476,21 +472,11 @@ class _TimelinePhotoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Photo thumbnail
-            ClipRRect(
-              borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(9)),
-              child: SizedBox(
-                width: 88,
-                height: 88,
-                child: exists
-                    ? Image.file(file,
-                        fit: BoxFit.cover,
-                        cacheWidth: 176,
-                        cacheHeight: 176)
-                    : const Center(
-                        child: Icon(Icons.broken_image,
-                            color: AppDesignTokens.secondaryText)),
-              ),
+            PhotoThumbnail(
+              filePath: photo.filePath,
+              width: 88,
+              height: 88,
+              borderRadius: 9,
             ),
             // Metadata
             Expanded(
@@ -581,7 +567,6 @@ class _PhotoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final file = File(photo.filePath);
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: () => Navigator.push(
@@ -597,20 +582,11 @@ class _PhotoTile extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                color: AppDesignTokens.borderCrisp,
-                child: file.existsSync()
-                    ? Image.file(file,
-                        fit: BoxFit.cover,
-                        semanticLabel: 'Photo thumbnail',
-                        cacheWidth: 176,
-                        cacheHeight: 176)
-                    : const Center(
-                        child: Icon(Icons.broken_image,
-                            color: AppDesignTokens.secondaryText)),
-              ),
+            PhotoThumbnail(
+              filePath: photo.filePath,
+              width: 88,
+              height: 88,
+              borderRadius: 10,
             ),
             if (photo.ratingValue != null)
               Positioned(

@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/widgets/photo_thumbnail.dart';
 import '../../../core/providers.dart';
 import '../../photos/photo_viewer_screen.dart';
 import 'photo_treatment_comparison.dart';
@@ -383,32 +382,32 @@ class _PairSide extends StatelessWidget {
                   )
               : null,
           borderRadius: BorderRadius.circular(8),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: photo != null && File(photo!.filePath).existsSync()
-                  ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.file(File(photo!.filePath),
-                            fit: BoxFit.cover,
-                            cacheWidth: 200,
-                            cacheHeight: 200),
-                        if (photo!.ratingValue != null)
-                          Positioned(
-                            right: 4,
-                            bottom: 4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppDesignTokens.primary
-                                    .withValues(alpha: 0.85),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '${photo!.ratingValue!.round()}%',
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: photo != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      PhotoThumbnail(
+                        filePath: photo!.filePath,
+                        width: 200,
+                        height: 200,
+                        borderRadius: 8,
+                      ),
+                      if (photo!.ratingValue != null)
+                        Positioned(
+                          right: 4,
+                          bottom: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppDesignTokens.primary
+                                  .withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${photo!.ratingValue!.round()}%',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -426,7 +425,6 @@ class _PairSide extends StatelessWidget {
                             color: AppDesignTokens.secondaryText, size: 28),
                       ),
                     ),
-            ),
           ),
         ),
         const SizedBox(height: 4),
@@ -473,7 +471,6 @@ class _ExpandedPhotoRow extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (context, i) {
           final p = sorted[i];
-          final file = File(p.filePath);
           final val = p.ratingValue != null
               ? '${p.ratingValue!.round()}%'
               : '—';
@@ -489,22 +486,11 @@ class _ExpandedPhotoRow extends StatelessWidget {
               width: 60,
               child: Column(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: file.existsSync()
-                          ? Image.file(file,
-                              fit: BoxFit.cover,
-                              cacheWidth: 120,
-                              cacheHeight: 120)
-                          : Container(
-                              color: AppDesignTokens.emptyBadgeBg,
-                              child: const Icon(Icons.broken_image,
-                                  size: 16,
-                                  color: AppDesignTokens.secondaryText)),
-                    ),
+                  PhotoThumbnail(
+                    filePath: p.filePath,
+                    width: 60,
+                    height: 60,
+                    borderRadius: 6,
                   ),
                   const SizedBox(height: 2),
                   Text(val,
