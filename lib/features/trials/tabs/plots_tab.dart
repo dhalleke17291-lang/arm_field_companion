@@ -34,7 +34,6 @@ enum _LayoutLayer { treatments, applications, ratings }
 
 const double _kGridMinScale = 0.3;
 const double _kGridMaxScale = 3.0;
-const double _kGridZoomFactor = 1.25;
 
 /// Left gutter for "Rep n" labels — same width on layout grid and ratings overlay.
 const double _kRepLabelWidth = 52.0;
@@ -178,10 +177,12 @@ Color _heatMapColor(double value, double min, double max) {
   final t = ((value - min) / (max - min)).clamp(0.0, 1.0);
   if (t < 0.5) {
     final localT = t * 2;
-    return Color.lerp(AppDesignTokens.heatMapLow, AppDesignTokens.heatMapMid, localT)!;
+    return Color.lerp(
+        AppDesignTokens.heatMapLow, AppDesignTokens.heatMapMid, localT)!;
   } else {
     final localT = (t - 0.5) * 2;
-    return Color.lerp(AppDesignTokens.heatMapMid, AppDesignTokens.heatMapHigh, localT)!;
+    return Color.lerp(
+        AppDesignTokens.heatMapMid, AppDesignTokens.heatMapHigh, localT)!;
   }
 }
 
@@ -312,6 +313,669 @@ Widget _compactTreatmentLegendLine(
   return row;
 }
 
+/// Plot layout Ratings layer: one [Assessment] at a time so heat map and cells
+/// are not silently taken from mixed multi-trait session data.
+class _PlotLayoutRatingsOverlay extends ConsumerStatefulWidget {
+  const _PlotLayoutRatingsOverlay({
+    required this.trial,
+    required this.plots,
+    required this.sessions,
+    required this.selectedRatingSession,
+    required this.onSessionChanged,
+    required this.heatMapEnabled,
+    required this.onHeatMapToggled,
+  });
+
+  final Trial trial;
+  final List<Plot> plots;
+  final List<Session> sessions;
+  final Session? selectedRatingSession;
+  final ValueChanged<Session> onSessionChanged;
+  final bool heatMapEnabled;
+  final ValueChanged<bool> onHeatMapToggled;
+
+  @override
+  ConsumerState<_PlotLayoutRatingsOverlay> createState() =>
+      _PlotLayoutRatingsOverlayState();
+}
+
+class _PlotLayoutRatingsOverlayState
+    extends ConsumerState<_PlotLayoutRatingsOverlay> {
+  /// Cleared when the selected session changes; until then defaults to first assessment.
+  int? _pickedAssessmentId;
+
+  @override
+  void didUpdateWidget(covariant _PlotLayoutRatingsOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldSid = oldWidget.selectedRatingSession?.id ??
+        (oldWidget.sessions.isNotEmpty ? oldWidget.sessions.first.id : null);
+    final newSid = widget.selectedRatingSession?.id ??
+        (widget.sessions.isNotEmpty ? widget.sessions.first.id : null);
+    if (oldSid != newSid) {
+      _pickedAssessmentId = null;
+    }
+  }
+
+  int _resolveAssessmentId(List<Assessment> assessments) {
+    final ids = assessments.map((a) => a.id).toSet();
+    final picked = _pickedAssessmentId;
+    if (picked != null && ids.contains(picked)) return picked;
+    return assessments.first.id;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.sessions.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bar_chart_outlined, size: 48, color: Color(0xFFBBBBBB)),
+            SizedBox(height: 12),
+            Text(
+              'No sessions yet',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFBBBBBB),
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Start a rating session to see the overlay',
+              style: TextStyle(fontSize: 12, color: Color(0xFFCCCCCC)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    var activeSession = widget.sessions.first;
+    final sel = widget.selectedRatingSession;
+    if (sel != null) {
+      for (final s in widget.sessions) {
+        if (s.id == sel.id) {
+          activeSession = s;
+          break;
+        }
+      }
+    }
+
+    final assessmentsAsync =
+        ref.watch(sessionAssessmentsProvider(activeSession.id));
+
+    return Column(
+      key: ValueKey<Object>(Object.hash(
+        widget.trial.id,
+        activeSession.id,
+        _pickedAssessmentId,
+      )),
+      children: [
+        if (widget.sessions.length > 1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: DropdownButtonFormField<int>(
+              // ignore: deprecated_member_use
+              value: activeSession.id,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE0DDD6)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE0DDD6)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF2D5A40),
+                    width: 1.5,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              items: widget.sessions
+                  .map(
+                    (s) => DropdownMenuItem<int>(
+                      value: s.id,
+                      child: Text(s.name, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (id) {
+                if (id == null) return;
+                final s = widget.sessions.firstWhere((e) => e.id == id);
+                widget.onSessionChanged(s);
+              },
+            ),
+          ),
+        Expanded(
+          child: assessmentsAsync.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2D5A40)),
+            ),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (assessments) {
+              if (assessments.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'This session has no assessments.',
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+              final resolvedAssessmentId = _resolveAssessmentId(assessments);
+              final selectedAssessment =
+                  assessments.firstWhere((a) => a.id == resolvedAssessmentId);
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (assessments.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                      child: DropdownButtonFormField<int>(
+                        // ignore: deprecated_member_use
+                        value: resolvedAssessmentId,
+                        decoration: InputDecoration(
+                          labelText: 'Assessment',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE0DDD6)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE0DDD6)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF2D5A40),
+                              width: 1.5,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        items: assessments
+                            .map(
+                              (a) => DropdownMenuItem<int>(
+                                value: a.id,
+                                child: Text(
+                                  a.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (id) {
+                          if (id == null) return;
+                          setState(() => _pickedAssessmentId = id);
+                        },
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                    child: Text(
+                      'Assessment: ${selectedAssessment.name}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppDesignTokens.secondaryText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.thermostat,
+                            size: 16, color: AppDesignTokens.secondaryText),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Heat map',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          height: 28,
+                          child: Switch.adaptive(
+                            value: widget.heatMapEnabled,
+                            onChanged: widget.onHeatMapToggled,
+                            activeTrackColor:
+                                AppDesignTokens.primary.withValues(alpha: 0.55),
+                            activeThumbColor: AppDesignTokens.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildRatingsGridForAssessment(
+                      context: context,
+                      ref: ref,
+                      trial: widget.trial,
+                      plots: widget.plots,
+                      activeSession: activeSession,
+                      assessmentId: resolvedAssessmentId,
+                      heatMapEnabled: widget.heatMapEnabled,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Widget _buildRatingsGridForAssessment({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Trial trial,
+  required List<Plot> plots,
+  required Session activeSession,
+  required int assessmentId,
+  required bool heatMapEnabled,
+}) {
+  final ratingsAsync = ref.watch(sessionRatingsProvider(activeSession.id));
+
+  return ratingsAsync.when(
+    loading: () => const Center(
+      child: CircularProgressIndicator(color: Color(0xFF2D5A40)),
+    ),
+    error: (e, _) => Center(child: Text('Error: $e')),
+    data: (allRatings) {
+      final ratings = allRatings
+          .where(
+              (r) => r.resultStatus != 'VOID' && r.assessmentId == assessmentId)
+          .toList();
+
+      final ratingByPlot = <int, RatingRecord>{};
+      final assessmentCountByPlot = <int, int>{};
+
+      for (final r in ratings) {
+        ratingByPlot.putIfAbsent(r.plotPk, () => r);
+        assessmentCountByPlot[r.plotPk] =
+            (assessmentCountByPlot[r.plotPk] ?? 0) + 1;
+      }
+
+      // Heat map: compute min/max for relative gradient (single assessment only).
+      double heatMin = double.infinity;
+      double heatMax = double.negativeInfinity;
+      var hasNumericHeat = false;
+      if (heatMapEnabled) {
+        for (final r in ratingByPlot.values) {
+          if (r.resultStatus == 'RECORDED' && r.numericValue != null) {
+            hasNumericHeat = true;
+            if (r.numericValue! < heatMin) heatMin = r.numericValue!;
+            if (r.numericValue! > heatMax) heatMax = r.numericValue!;
+          }
+        }
+        // Keep legend math safe; cells already use heatMapEmpty when no numeric.
+        if (!hasNumericHeat) {
+          heatMin = 0;
+          heatMax = 100;
+        }
+      }
+
+      // Rep variability insight for amber border
+      final insightsAsync = ref.watch(trialInsightsProvider(trial.id));
+      final outlierReps = <int>{};
+      if (heatMapEnabled) {
+        final insights = insightsAsync.valueOrNull ?? [];
+        for (final i in insights) {
+          if (i.type == InsightType.repVariability &&
+              i.detail.contains('Outlier')) {
+            outlierReps.addAll(i.relatedPlotIds);
+          }
+        }
+      }
+
+      final byRep = <int?, List<Plot>>{};
+      for (final p in plots) {
+        byRep.putIfAbsent(p.rep, () => []).add(p);
+      }
+
+      final sortedReps = byRep.keys.toList()
+        ..sort((a, b) {
+          if (a == null) return 1;
+          if (b == null) return -1;
+          return a.compareTo(b);
+        });
+
+      const tileSize = 56.0;
+      const tileSpacing = 6.0;
+
+      return InteractiveViewer(
+        constrained: false,
+        minScale: 0.3,
+        maxScale: 3.0,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ...sortedReps.map((rep) {
+                final repPlots = List<Plot>.from(byRep[rep]!);
+                repPlots.sort((a, b) =>
+                    (a.fieldColumn ?? 0).compareTo(b.fieldColumn ?? 0));
+
+                // Outlier rep border from intelligence
+                final isOutlierRep = heatMapEnabled &&
+                    rep != null &&
+                    repPlots.any((p) => outlierReps.contains(p.id));
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: tileSpacing),
+                  child: Container(
+                    decoration: isOutlierRep
+                        ? BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppDesignTokens.warningFg
+                                  .withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          )
+                        : null,
+                    padding: isOutlierRep ? const EdgeInsets.all(2) : null,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: _kRepLabelWidth,
+                          child: Text(
+                            'Rep ${rep ?? '?'}',
+                            style: _plotDetailsRepLabelStyle(context),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        ...repPlots.map((plot) {
+                          final rating = ratingByPlot[plot.id];
+                          final count = assessmentCountByPlot[plot.id] ?? 0;
+
+                          // Heat map mode: gradient color from value
+                          final Color cellColor;
+                          final Color textColor;
+                          final String label;
+                          if (heatMapEnabled) {
+                            final val = (rating?.resultStatus == 'RECORDED')
+                                ? rating?.numericValue
+                                : null;
+                            cellColor = val != null
+                                ? _heatMapColor(val, heatMin, heatMax)
+                                : AppDesignTokens.heatMapEmpty;
+                            textColor = val != null
+                                ? Colors.white
+                                : AppDesignTokens.secondaryText;
+                            label = val != null ? val.round().toString() : '—';
+                          } else {
+                            cellColor = _ratingCellColor(rating?.resultStatus);
+                            textColor = _ratingTextColor(rating?.resultStatus);
+                            label = _ratingCellLabel(rating);
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: tileSpacing),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: tileSize,
+                                  height: tileSize,
+                                  decoration: BoxDecoration(
+                                    color: cellColor,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: rating == null
+                                          ? const Color(0xFFE0DDD6)
+                                          : cellColor,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: heatMapEnabled
+                                      ? Stack(
+                                          children: [
+                                            // Plot number top-left
+                                            Positioned(
+                                              left: 3,
+                                              top: 2,
+                                              child: Text(
+                                                getDisplayPlotLabel(
+                                                    plot, plots),
+                                                style: TextStyle(
+                                                  fontSize: 8,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: textColor.withValues(
+                                                      alpha: 0.7),
+                                                ),
+                                              ),
+                                            ),
+                                            // Value centered
+                                            Center(
+                                              child: Text(
+                                                label,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: textColor,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              getDisplayPlotLabel(plot, plots),
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: rating == null
+                                                    ? Colors.grey.shade400
+                                                    : textColor.withValues(
+                                                        alpha: 0.78,
+                                                      ),
+                                              ),
+                                            ),
+                                            if (label.isNotEmpty)
+                                              Text(
+                                                label,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: textColor,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                          ],
+                                        ),
+                                ),
+                                if (!heatMapEnabled && count > 1)
+                                  Positioned(
+                                    top: 3,
+                                    right: 3,
+                                    child: Tooltip(
+                                      message:
+                                          '$count rating rows for this assessment',
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          '+${count - 1}A',
+                                          style: const TextStyle(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+              if (heatMapEnabled)
+                DecoratedBox(
+                  decoration: _plotLayoutLegendPanelDecoration(context),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!hasNumericHeat)
+                          Text(
+                            'No recorded numeric values for this assessment.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.italic,
+                              color: AppDesignTokens.secondaryText,
+                            ),
+                          )
+                        else if (_isLowSpread(heatMin, heatMax))
+                          Text(
+                            'Low spread — values range ${heatMin.round()}–${heatMax.round()}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.italic,
+                              color: AppDesignTokens.secondaryText,
+                            ),
+                          )
+                        else
+                          Row(
+                            children: [
+                              Text(
+                                'Low ${heatMin.round()}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppDesignTokens.secondaryText,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Container(
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(5),
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        AppDesignTokens.heatMapLow,
+                                        AppDesignTokens.heatMapMid,
+                                        AppDesignTokens.heatMapHigh,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'High ${heatMax.round()}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppDesignTokens.secondaryText,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                DecoratedBox(
+                  decoration: _plotLayoutLegendPanelDecoration(context),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
+                    child: Wrap(
+                      spacing: 14,
+                      runSpacing: 4,
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _ratingOverlayLegendChip(
+                          context,
+                          const Color(0xFF2D5A40),
+                          'Recorded',
+                        ),
+                        _ratingOverlayLegendChip(
+                          context,
+                          Colors.grey.shade400,
+                          'Not observed',
+                        ),
+                        _ratingOverlayLegendChip(
+                          context,
+                          const Color(0xFFF59E0B),
+                          'Missing',
+                        ),
+                        _ratingOverlayLegendChip(
+                          context,
+                          const Color(0xFFEA580C),
+                          'Tech issue',
+                        ),
+                        _ratingOverlayLegendChip(
+                          context,
+                          Colors.white,
+                          'No record',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 Widget _buildRatingsOverlay({
   required BuildContext context,
   required WidgetRef ref,
@@ -323,486 +987,14 @@ Widget _buildRatingsOverlay({
   required bool heatMapEnabled,
   required ValueChanged<bool> onHeatMapToggled,
 }) {
-  if (sessions.isEmpty) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.bar_chart_outlined, size: 48, color: Color(0xFFBBBBBB)),
-          SizedBox(height: 12),
-          Text(
-            'No sessions yet',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFFBBBBBB),
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            'Start a rating session to see the overlay',
-            style: TextStyle(fontSize: 12, color: Color(0xFFCCCCCC)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  var activeSession = sessions.first;
-  final sel = selectedRatingSession;
-  if (sel != null) {
-    for (final s in sessions) {
-      if (s.id == sel.id) {
-        activeSession = s;
-        break;
-      }
-    }
-  }
-
-  final ratingsAsync = ref.watch(sessionRatingsProvider(activeSession.id));
-
-  return Column(
-    key: ValueKey<Object>(Object.hash(trial.id, activeSession.id)),
-    children: [
-      if (sessions.length > 1)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-          child: DropdownButtonFormField<int>(
-            // ignore: deprecated_member_use
-            value: activeSession.id,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE0DDD6)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE0DDD6)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(
-                  color: Color(0xFF2D5A40),
-                  width: 1.5,
-                ),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            items: sessions
-                .map(
-                  (s) => DropdownMenuItem<int>(
-                    value: s.id,
-                    child: Text(s.name, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(),
-            onChanged: (id) {
-              if (id == null) return;
-              final s = sessions.firstWhere((e) => e.id == id);
-              onSessionChanged(s);
-            },
-          ),
-        ),
-      // Heat map toggle
-      Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-        child: Row(
-          children: [
-            const Icon(Icons.thermostat, size: 16, color: AppDesignTokens.secondaryText),
-            const SizedBox(width: 6),
-            const Text('Heat map', style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText)),
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 28,
-              child: Switch.adaptive(
-                value: heatMapEnabled,
-                onChanged: onHeatMapToggled,
-                activeColor: AppDesignTokens.primary,
-              ),
-            ),
-          ],
-        ),
-      ),
-      Expanded(
-        child: ratingsAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: Color(0xFF2D5A40)),
-          ),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (allRatings) {
-            final ratings =
-                allRatings.where((r) => r.resultStatus != 'VOID').toList();
-
-            final ratingByPlot = <int, RatingRecord>{};
-            final assessmentCountByPlot = <int, int>{};
-
-            for (final r in ratings) {
-              ratingByPlot.putIfAbsent(r.plotPk, () => r);
-              assessmentCountByPlot[r.plotPk] =
-                  (assessmentCountByPlot[r.plotPk] ?? 0) + 1;
-            }
-
-            // Heat map: compute min/max for relative gradient
-            double heatMin = double.infinity;
-            double heatMax = double.negativeInfinity;
-            if (heatMapEnabled) {
-              for (final r in ratingByPlot.values) {
-                if (r.resultStatus == 'RECORDED' && r.numericValue != null) {
-                  if (r.numericValue! < heatMin) heatMin = r.numericValue!;
-                  if (r.numericValue! > heatMax) heatMax = r.numericValue!;
-                }
-              }
-              if (heatMin == double.infinity) {
-                heatMin = 0;
-                heatMax = 100;
-              }
-            }
-
-            // Rep variability insight for amber border
-            final insightsAsync =
-                ref.watch(trialInsightsProvider(trial.id));
-            final outlierReps = <int>{};
-            if (heatMapEnabled) {
-              final insights = insightsAsync.valueOrNull ?? [];
-              for (final i in insights) {
-                if (i.type == InsightType.repVariability &&
-                    i.detail.contains('Outlier')) {
-                  outlierReps.addAll(i.relatedPlotIds);
-                }
-              }
-            }
-
-            final byRep = <int?, List<Plot>>{};
-            for (final p in plots) {
-              byRep.putIfAbsent(p.rep, () => []).add(p);
-            }
-
-            final sortedReps = byRep.keys.toList()
-              ..sort((a, b) {
-                if (a == null) return 1;
-                if (b == null) return -1;
-                return a.compareTo(b);
-              });
-
-            const tileSize = 56.0;
-            const tileSpacing = 6.0;
-
-            return InteractiveViewer(
-              constrained: false,
-              minScale: 0.3,
-              maxScale: 3.0,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...sortedReps.map((rep) {
-                      final repPlots = List<Plot>.from(byRep[rep]!);
-                      repPlots.sort((a, b) =>
-                          (a.fieldColumn ?? 0).compareTo(b.fieldColumn ?? 0));
-
-                      // Outlier rep border from intelligence
-                      final isOutlierRep = heatMapEnabled &&
-                          rep != null &&
-                          repPlots.any((p) => outlierReps.contains(p.id));
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: tileSpacing),
-                        child: Container(
-                          decoration: isOutlierRep
-                              ? BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppDesignTokens.warningFg
-                                        .withValues(alpha: 0.5),
-                                    width: 2,
-                                  ),
-                                )
-                              : null,
-                          padding: isOutlierRep
-                              ? const EdgeInsets.all(2)
-                              : null,
-                          child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: _kRepLabelWidth,
-                              child: Text(
-                                'Rep ${rep ?? '?'}',
-                                style: _plotDetailsRepLabelStyle(context),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            ...repPlots.map((plot) {
-                              final rating = ratingByPlot[plot.id];
-                              final count = assessmentCountByPlot[plot.id] ?? 0;
-
-                              // Heat map mode: gradient color from value
-                              final Color cellColor;
-                              final Color textColor;
-                              final String label;
-                              if (heatMapEnabled) {
-                                final val = (rating?.resultStatus == 'RECORDED')
-                                    ? rating?.numericValue
-                                    : null;
-                                cellColor = val != null
-                                    ? _heatMapColor(val, heatMin, heatMax)
-                                    : AppDesignTokens.heatMapEmpty;
-                                textColor = val != null
-                                    ? Colors.white
-                                    : AppDesignTokens.secondaryText;
-                                label = val != null
-                                    ? val.round().toString()
-                                    : '—';
-                              } else {
-                                cellColor =
-                                    _ratingCellColor(rating?.resultStatus);
-                                textColor =
-                                    _ratingTextColor(rating?.resultStatus);
-                                label = _ratingCellLabel(rating);
-                              }
-
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.only(right: tileSpacing),
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      width: tileSize,
-                                      height: tileSize,
-                                      decoration: BoxDecoration(
-                                        color: cellColor,
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: rating == null
-                                              ? const Color(0xFFE0DDD6)
-                                              : cellColor,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      child: heatMapEnabled
-                                          ? Stack(
-                                              children: [
-                                                // Plot number top-left
-                                                Positioned(
-                                                  left: 3,
-                                                  top: 2,
-                                                  child: Text(
-                                                    getDisplayPlotLabel(
-                                                        plot, plots),
-                                                    style: TextStyle(
-                                                      fontSize: 8,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: textColor
-                                                          .withValues(
-                                                              alpha: 0.7),
-                                                    ),
-                                                  ),
-                                                ),
-                                                // Value centered
-                                                Center(
-                                                  child: Text(
-                                                    label,
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      color: textColor,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            )
-                                          : Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            getDisplayPlotLabel(plot, plots),
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: rating == null
-                                                  ? Colors.grey.shade400
-                                                  : textColor.withValues(
-                                                      alpha: 0.78,
-                                                    ),
-                                            ),
-                                          ),
-                                          if (label.isNotEmpty)
-                                            Text(
-                                              label,
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                                color: textColor,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (!heatMapEnabled && count > 1)
-                                      Positioned(
-                                        top: 3,
-                                        right: 3,
-                                        child: Tooltip(
-                                          message:
-                                              '$count assessments recorded',
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 4,
-                                              vertical: 1,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black54,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              '+${count - 1}A',
-                                              style: const TextStyle(
-                                                fontSize: 8,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 8),
-                    if (heatMapEnabled)
-                      DecoratedBox(
-                        decoration: _plotLayoutLegendPanelDecoration(context),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 10),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_isLowSpread(heatMin, heatMax))
-                                Text(
-                                  'Low spread — values range ${heatMin.round()}–${heatMax.round()}%',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                    fontStyle: FontStyle.italic,
-                                    color: AppDesignTokens.secondaryText,
-                                  ),
-                                )
-                              else
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Low ${heatMin.round()}',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppDesignTokens.secondaryText,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Container(
-                                        height: 10,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(5),
-                                          gradient: const LinearGradient(
-                                            colors: [
-                                              AppDesignTokens.heatMapLow,
-                                              AppDesignTokens.heatMapMid,
-                                              AppDesignTokens.heatMapHigh,
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'High ${heatMax.round()}',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppDesignTokens.secondaryText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      DecoratedBox(
-                        decoration:
-                            _plotLayoutLegendPanelDecoration(context),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 10,
-                          ),
-                          child: Wrap(
-                            spacing: 14,
-                            runSpacing: 4,
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              _ratingOverlayLegendChip(
-                                context,
-                                const Color(0xFF2D5A40),
-                                'Recorded',
-                              ),
-                              _ratingOverlayLegendChip(
-                                context,
-                                Colors.grey.shade400,
-                                'Not observed',
-                              ),
-                              _ratingOverlayLegendChip(
-                                context,
-                                const Color(0xFFF59E0B),
-                                'Missing',
-                              ),
-                              _ratingOverlayLegendChip(
-                                context,
-                                const Color(0xFFEA580C),
-                                'Tech issue',
-                              ),
-                              _ratingOverlayLegendChip(
-                                context,
-                                Colors.white,
-                                'No record',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    ],
+  return _PlotLayoutRatingsOverlay(
+    trial: trial,
+    plots: plots,
+    sessions: sessions,
+    selectedRatingSession: selectedRatingSession,
+    onSessionChanged: onSessionChanged,
+    heatMapEnabled: heatMapEnabled,
+    onHeatMapToggled: onHeatMapToggled,
   );
 }
 
@@ -880,21 +1072,6 @@ class _LayoutMinimap extends StatelessWidget {
       ),
     );
   }
-}
-
-void _plotGridZoom(TransformationController controller,
-    {required bool zoomIn}) {
-  final m = controller.value;
-  final scale = m.entry(0, 0).abs();
-  final newScale = zoomIn
-      ? (scale * _kGridZoomFactor).clamp(_kGridMinScale, _kGridMaxScale)
-      : (scale / _kGridZoomFactor).clamp(_kGridMinScale, _kGridMaxScale);
-  if ((newScale - scale).abs() < 0.001) return;
-  final tx = m.entry(0, 3);
-  final ty = m.entry(1, 3);
-  controller.value = Matrix4.identity()
-    ..scaleByDouble(newScale, newScale, 1.0, 1.0)
-    ..translateByDouble(tx, ty, 0.0, 1.0);
 }
 
 Future<void> showAssignTreatmentDialogForTrial({
@@ -1120,14 +1297,16 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
           ),
           const SizedBox(width: 12),
           if (allAssigned)
-            const Icon(Icons.check_circle, size: 14,
-                color: AppDesignTokens.successFg)
+            const Icon(Icons.check_circle,
+                size: 14, color: AppDesignTokens.successFg)
           else
-            Icon(Icons.warning_amber_rounded, size: 14,
-                color: AppDesignTokens.warningFg),
+            Icon(Icons.warning_amber_rounded,
+                size: 14, color: AppDesignTokens.warningFg),
           const SizedBox(width: 4),
           Text(
-            allAssigned ? 'All assigned' : '$excludedFromAnalysisCount unassigned',
+            allAssigned
+                ? 'All assigned'
+                : '$excludedFromAnalysisCount unassigned',
             style: TextStyle(
               fontSize: 11,
               color: allAssigned
@@ -1217,8 +1396,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
           compactSurroundings: true,
           onTreatmentsShortcut: widget.onSelectStackIndex == null
               ? null
-              : () =>
-                  widget.onSelectStackIndex!(kTrialTreatmentsStackIndex),
+              : () => widget.onSelectStackIndex!(kTrialTreatmentsStackIndex),
         );
         final head = <Widget>[
           ratedCard,
@@ -1478,12 +1656,14 @@ class _PlotDetailsScreenState extends ConsumerState<_PlotDetailsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(top: false, child: _TrialPlotsWorkingSurface(
-        trial: widget.trial,
-        initialShowLayoutView: widget.initialShowLayoutView,
-        compactSurroundings: false,
-        onTreatmentsShortcut: null,
-      )),
+      body: SafeArea(
+          top: false,
+          child: _TrialPlotsWorkingSurface(
+            trial: widget.trial,
+            initialShowLayoutView: widget.initialShowLayoutView,
+            compactSurroundings: false,
+            onTreatmentsShortcut: null,
+          )),
     );
   }
 }
@@ -1629,7 +1809,6 @@ class _TrialPlotsWorkingSurfaceState
       ..translateByDouble(dx, dy, 0.0, 1.0);
   }
 
-
   Future<void> _loadAppRecords(ApplicationEvent event) async {
     setState(() {
       _selectedAppEvent = event;
@@ -1770,8 +1949,7 @@ class _TrialPlotsWorkingSurfaceState
           toolbarChrome
         else
           ConstrainedBox(
-            constraints:
-                const BoxConstraints(maxHeight: maxTopSectionHeight),
+            constraints: const BoxConstraints(maxHeight: maxTopSectionHeight),
             child: SingleChildScrollView(
               child: toolbarChrome,
             ),
@@ -3651,7 +3829,6 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
       ..translateByDouble(dxClamped, dyClamped, 0.0, 1.0);
   }
 
-
   Future<void> _loadAppRecords(ApplicationEvent event) async {
     setState(() {
       _selectedAppEvent = event;
@@ -3686,267 +3863,278 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(top: false, child: plotsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Error: $e')),
-        data: (plots) {
-          if (plots.isEmpty) {
-            return _PlotDetailsEmptyContent(trial: widget.trial);
-          }
-          final hasSessionData = hasSessionDataAsync.valueOrNull ?? false;
-          final plotAssignmentsLocked =
-              plotAssignmentsEditLocked(widget.trial, hasSessionData);
-          final sessions = sessionsAsync.value ?? [];
-          final guardCount = plots.where((p) => p.isGuardRow).length;
-          final displayPlots = _plotsVisibleInPlotsTab(plots);
-          if (!widget.isLayoutView) {
-            final scheme = Theme.of(context).colorScheme;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (guardCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Show guards',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: scheme.onSurface,
+      body: SafeArea(
+          top: false,
+          child: plotsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, st) => Center(child: Text('Error: $e')),
+            data: (plots) {
+              if (plots.isEmpty) {
+                return _PlotDetailsEmptyContent(trial: widget.trial);
+              }
+              final hasSessionData = hasSessionDataAsync.valueOrNull ?? false;
+              final plotAssignmentsLocked =
+                  plotAssignmentsEditLocked(widget.trial, hasSessionData);
+              final sessions = sessionsAsync.value ?? [];
+              final guardCount = plots.where((p) => p.isGuardRow).length;
+              final displayPlots = _plotsVisibleInPlotsTab(plots);
+              if (!widget.isLayoutView) {
+                final scheme = Theme.of(context).colorScheme;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (guardCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Show guards',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: scheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: _showGuardPlots,
+                              onChanged: (v) =>
+                                  setState(() => _showGuardPlots = v),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ],
+                        ),
+                      ),
+                    _buildAddRepGuardsRow(context, ref, widget.trial),
+                    Expanded(
+                      child: _buildListBody(
+                        context,
+                        ref,
+                        displayPlots,
+                        plots,
+                        hasSessionData,
+                        treatments: treatmentsAsync.value ?? [],
+                        assignmentsList: assignmentsAsync.value ?? [],
+                      ),
+                    ),
+                  ],
+                );
+              }
+              final treatments = treatmentsAsync.value ?? [];
+              final assignments = assignmentsAsync.value ?? [];
+              final Map<int, int?> plotIdToTreatmentId = {
+                for (final a in assignments) a.plotId: a.treatmentId
+              };
+              const double maxTopHeight = 240;
+              final scheme = Theme.of(context).colorScheme;
+              final topSection = Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (guardCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Show guards',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: scheme.onSurface,
+                              ),
                             ),
                           ),
-                        ),
-                        Switch.adaptive(
-                          value: _showGuardPlots,
-                          onChanged: (v) =>
-                              setState(() => _showGuardPlots = v),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                        ),
+                          Switch.adaptive(
+                            value: _showGuardPlots,
+                            onChanged: (v) {
+                              setState(() {
+                                _showGuardPlots = v;
+                                _gridCenterScheduled = false;
+                              });
+                            },
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ],
+                      ),
+                    ),
+                  _buildAddRepGuardsRow(context, ref, widget.trial),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: SegmentedButton<_LayoutLayer>(
+                      style: const ButtonStyle(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      segments: const [
+                        ButtonSegment(
+                            value: _LayoutLayer.treatments,
+                            label: Text('Treats'),
+                            icon: Icon(Icons.science, size: 14)),
+                        ButtonSegment(
+                            value: _LayoutLayer.applications,
+                            label: Text('Apps'),
+                            icon: Icon(Icons.water_drop, size: 14)),
+                        ButtonSegment(
+                            value: _LayoutLayer.ratings,
+                            label: Text('Ratings'),
+                            icon: Icon(Icons.bar_chart, size: 14)),
                       ],
+                      selected: {_layoutLayer},
+                      onSelectionChanged: (val) =>
+                          setState(() => _layoutLayer = val.first),
                     ),
                   ),
-                _buildAddRepGuardsRow(context, ref, widget.trial),
-                Expanded(
-                  child: _buildListBody(
-                    context,
-                    ref,
-                    displayPlots,
-                    plots,
-                    hasSessionData,
-                    treatments: treatmentsAsync.value ?? [],
-                    assignmentsList: assignmentsAsync.value ?? [],
+                  if (_layoutLayer == _LayoutLayer.applications)
+                    _buildAppEventSelector(context, ref),
+                ],
+              );
+              return Column(
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: maxTopHeight),
+                    child: SingleChildScrollView(
+                      child: topSection,
+                    ),
                   ),
-                ),
-              ],
-            );
-          }
-          final treatments = treatmentsAsync.value ?? [];
-          final assignments = assignmentsAsync.value ?? [];
-          final Map<int, int?> plotIdToTreatmentId = {
-            for (final a in assignments) a.plotId: a.treatmentId
-          };
-          const double maxTopHeight = 240;
-          final scheme = Theme.of(context).colorScheme;
-          final topSection = Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (guardCount > 0)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Show guards',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: scheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      Switch.adaptive(
-                        value: _showGuardPlots,
-                        onChanged: (v) {
-                          setState(() {
-                            _showGuardPlots = v;
-                            _gridCenterScheduled = false;
-                          });
-                        },
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ],
-                  ),
-                ),
-              _buildAddRepGuardsRow(context, ref, widget.trial),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: SegmentedButton<_LayoutLayer>(
-                  style: const ButtonStyle(
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  segments: const [
-                    ButtonSegment(
-                        value: _LayoutLayer.treatments,
-                        label: Text('Treats'),
-                        icon: Icon(Icons.science, size: 14)),
-                    ButtonSegment(
-                        value: _LayoutLayer.applications,
-                        label: Text('Apps'),
-                        icon: Icon(Icons.water_drop, size: 14)),
-                    ButtonSegment(
-                        value: _LayoutLayer.ratings,
-                        label: Text('Ratings'),
-                        icon: Icon(Icons.bar_chart, size: 14)),
-                  ],
-                  selected: {_layoutLayer},
-                  onSelectionChanged: (val) =>
-                      setState(() => _layoutLayer = val.first),
-                ),
-              ),
-              if (_layoutLayer == _LayoutLayer.applications)
-                _buildAppEventSelector(context, ref),
-            ],
-          );
-          return Column(
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: maxTopHeight),
-                child: SingleChildScrollView(
-                  child: topSection,
-                ),
-              ),
-              Expanded(
-                child: _layoutLayer == _LayoutLayer.ratings
-                    ? _buildRatingsOverlay(
-                        context: context,
-                        ref: ref,
-                        trial: widget.trial,
-                        plots: displayPlots,
-                        sessions: sessions,
-                        selectedRatingSession: _selectedRatingSession,
-                        onSessionChanged: (s) =>
-                            setState(() => _selectedRatingSession = s),
-                        heatMapEnabled: _heatMapEnabled,
-                        onHeatMapToggled: (v) =>
-                            setState(() => _heatMapEnabled = v),
-                      )
-                    : LayoutBuilder(
-                        builder: (context, constraints) {
-                          if (!_gridCenterScheduled) {
-                            _gridCenterScheduled = true;
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _centerGridOnFirstFrame(context, displayPlots);
-                            });
-                          }
-                          final size = MediaQuery.sizeOf(context);
-                          final viewportWidth = constraints.maxWidth.isFinite &&
-                                  constraints.maxWidth > 0
-                              ? constraints.maxWidth
-                              : size.width;
-                          final viewportHeight =
-                              constraints.maxHeight.isFinite &&
-                                      constraints.maxHeight > 0
-                                  ? constraints.maxHeight
-                                  : size.height;
-                          final blocks = buildRepBasedLayout(displayPlots);
-                          int columnCount = 0;
-                          for (final block in blocks) {
-                            for (final row in block.repRows) {
-                              if (row.plots.length > columnCount) {
-                                columnCount = row.plots.length;
+                  Expanded(
+                    child: _layoutLayer == _LayoutLayer.ratings
+                        ? _buildRatingsOverlay(
+                            context: context,
+                            ref: ref,
+                            trial: widget.trial,
+                            plots: displayPlots,
+                            sessions: sessions,
+                            selectedRatingSession: _selectedRatingSession,
+                            onSessionChanged: (s) =>
+                                setState(() => _selectedRatingSession = s),
+                            heatMapEnabled: _heatMapEnabled,
+                            onHeatMapToggled: (v) =>
+                                setState(() => _heatMapEnabled = v),
+                          )
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              if (!_gridCenterScheduled) {
+                                _gridCenterScheduled = true;
+                                WidgetsBinding.instance
+                                    .addPostFrameCallback((_) {
+                                  _centerGridOnFirstFrame(
+                                      context, displayPlots);
+                                });
                               }
-                            }
-                          }
-                          const double repLabelW = 52.0;
-                          const double tileSpace = 6.0;
-                          const double cellW = 56.0;
-                          const double gridHorizontalPadding =
-                              24.0; // 12 + 12 from Padding in _buildRepBasedGrid
-                          const double gridWidthBuffer =
-                              8.0; // avoid last column clipping from rounding
-                          final double rowContentWidth = columnCount > 0
-                              ? repLabelW +
-                                  tileSpace +
-                                  columnCount * cellW +
-                                  (columnCount - 1) * tileSpace
-                              : viewportWidth;
-                          final double totalGridWidth = rowContentWidth +
-                              gridHorizontalPadding +
-                              gridWidthBuffer;
-                          final double gridContentWidth =
-                              totalGridWidth > viewportWidth
-                                  ? totalGridWidth
+                              final size = MediaQuery.sizeOf(context);
+                              final viewportWidth =
+                                  constraints.maxWidth.isFinite &&
+                                          constraints.maxWidth > 0
+                                      ? constraints.maxWidth
+                                      : size.width;
+                              final viewportHeight =
+                                  constraints.maxHeight.isFinite &&
+                                          constraints.maxHeight > 0
+                                      ? constraints.maxHeight
+                                      : size.height;
+                              final blocks = buildRepBasedLayout(displayPlots);
+                              int columnCount = 0;
+                              for (final block in blocks) {
+                                for (final row in block.repRows) {
+                                  if (row.plots.length > columnCount) {
+                                    columnCount = row.plots.length;
+                                  }
+                                }
+                              }
+                              const double repLabelW = 52.0;
+                              const double tileSpace = 6.0;
+                              const double cellW = 56.0;
+                              const double gridHorizontalPadding =
+                                  24.0; // 12 + 12 from Padding in _buildRepBasedGrid
+                              const double gridWidthBuffer =
+                                  8.0; // avoid last column clipping from rounding
+                              final double rowContentWidth = columnCount > 0
+                                  ? repLabelW +
+                                      tileSpace +
+                                      columnCount * cellW +
+                                      (columnCount - 1) * tileSpace
                                   : viewportWidth;
-                          final applicationsList =
-                              trialApplicationsAsync.value ?? [];
-                          final treatmentIdsWithApp = applicationsList
-                              .map((e) => e.treatmentId)
-                              .whereType<int>()
-                              .toSet();
-                          final plotPksWithTrialApplication = <int>{};
-                          for (final p in displayPlots) {
-                            final tid =
-                                plotIdToTreatmentId[p.id] ?? p.treatmentId;
-                            if (tid != null &&
-                                treatmentIdsWithApp.contains(tid)) {
-                              plotPksWithTrialApplication.add(p.id);
-                            }
-                          }
-                          return ClipRect(
-                            child: Stack(
-                              children: [
-                                SizedBox(
-                                  key: _plotViewportKey,
-                                  width: viewportWidth,
-                                  height: viewportHeight,
-                                  child: InteractiveViewer(
-                                    transformationController:
-                                        _gridTransformController,
-                                    boundaryMargin: EdgeInsets.zero,
-                                    constrained: false,
-                                    minScale: _kGridMinScale,
-                                    maxScale: _kGridMaxScale,
-                                    panEnabled: true,
-                                    scaleEnabled: true,
-                                    child: SizedBox(
-                                      key: _gridContentKey,
-                                      width: gridContentWidth,
-                                      child: _PlotLayoutGrid(
-                                        plots: displayPlots,
-                                        plotLabelContextPlots: plots,
-                                        treatments: treatments,
-                                        trial: widget.trial,
-                                        layer: _layoutLayer,
-                                        appPlotRecords: _appPlotRecords,
-                                        plotPksWithTrialApplication:
-                                            plotPksWithTrialApplication,
-                                        plotIdToTreatmentId:
-                                            plotIdToTreatmentId,
-                                        onLongPressPlot: plotAssignmentsLocked
-                                            ? null
-                                            : (plot) => _showAssignDialog(
-                                                context, ref, plot, plots),
+                              final double totalGridWidth = rowContentWidth +
+                                  gridHorizontalPadding +
+                                  gridWidthBuffer;
+                              final double gridContentWidth =
+                                  totalGridWidth > viewportWidth
+                                      ? totalGridWidth
+                                      : viewportWidth;
+                              final applicationsList =
+                                  trialApplicationsAsync.value ?? [];
+                              final treatmentIdsWithApp = applicationsList
+                                  .map((e) => e.treatmentId)
+                                  .whereType<int>()
+                                  .toSet();
+                              final plotPksWithTrialApplication = <int>{};
+                              for (final p in displayPlots) {
+                                final tid =
+                                    plotIdToTreatmentId[p.id] ?? p.treatmentId;
+                                if (tid != null &&
+                                    treatmentIdsWithApp.contains(tid)) {
+                                  plotPksWithTrialApplication.add(p.id);
+                                }
+                              }
+                              return ClipRect(
+                                child: Stack(
+                                  children: [
+                                    SizedBox(
+                                      key: _plotViewportKey,
+                                      width: viewportWidth,
+                                      height: viewportHeight,
+                                      child: InteractiveViewer(
+                                        transformationController:
+                                            _gridTransformController,
+                                        boundaryMargin: EdgeInsets.zero,
+                                        constrained: false,
+                                        minScale: _kGridMinScale,
+                                        maxScale: _kGridMaxScale,
+                                        panEnabled: true,
+                                        scaleEnabled: true,
+                                        child: SizedBox(
+                                          key: _gridContentKey,
+                                          width: gridContentWidth,
+                                          child: _PlotLayoutGrid(
+                                            plots: displayPlots,
+                                            plotLabelContextPlots: plots,
+                                            treatments: treatments,
+                                            trial: widget.trial,
+                                            layer: _layoutLayer,
+                                            appPlotRecords: _appPlotRecords,
+                                            plotPksWithTrialApplication:
+                                                plotPksWithTrialApplication,
+                                            plotIdToTreatmentId:
+                                                plotIdToTreatmentId,
+                                            onLongPressPlot:
+                                                plotAssignmentsLocked
+                                                    ? null
+                                                    : (plot) =>
+                                                        _showAssignDialog(
+                                                            context,
+                                                            ref,
+                                                            plot,
+                                                            plots),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
-      )),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          )),
     );
   }
 
