@@ -8,7 +8,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/field_operation_date_rules.dart';
 import '../../../core/providers.dart';
-import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../domain/application_deviation.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -196,19 +195,23 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return Column(
+    return Stack(
       children: [
-        const Expanded(
-          child: AppEmptyState(
-            icon: Icons.science,
-            title: 'No Applications Yet',
-            subtitle: 'Record an application for this trial',
-            action: null,
-          ),
+        const AppEmptyState(
+          icon: Icons.science,
+          title: 'No Applications Yet',
+          subtitle: 'Record an application for this trial',
+          action: null,
         ),
-        TabListBottomAddButton(
-          label: 'Add Application',
-          onPressed: () => _showApplicationSheet(context, ref, null),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            heroTag: 'add_application_empty',
+            onPressed: () => _showApplicationSheet(context, ref, null),
+            backgroundColor: AppDesignTokens.primary,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
         ),
       ],
     );
@@ -724,11 +727,11 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
               Positioned(
                 bottom: 16,
                 right: 16,
-                child: FloatingActionButton.extended(
+                child: FloatingActionButton(
                   heroTag: 'add_application',
                   onPressed: () => _showApplicationSheet(context, ref, null),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Application'),
+                  backgroundColor: AppDesignTokens.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
                 ),
               ),
             ],

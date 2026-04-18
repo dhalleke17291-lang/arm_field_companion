@@ -45,7 +45,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
         title: widget.trial == null
             ? 'Import Protocol (New Trial)'
             : 'Import Protocol (Add to Trial)',
-        titleFontSize: 18,
+        
       ),
       body: SafeArea(top: false, child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

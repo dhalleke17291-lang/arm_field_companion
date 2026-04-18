@@ -105,7 +105,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
   List<_TreatmentRowState> _buildTreatmentRows(int count) {
     final list = <_TreatmentRowState>[];
     for (var i = 0; i < count; i++) {
-      final code = i == 0 ? 'CHK' : 'TRT${i + 1}';
+      final code = i == 0 ? 'CHK' : 'T${i + 1}';
       list.add(
         _TreatmentRowState(
           codeController: TextEditingController(text: code),
@@ -327,7 +327,7 @@ class _TrialCreationWizardState extends ConsumerState<TrialCreationWizard> {
         for (var i = _treatmentRows.length; i < n; i++) {
           _treatmentRows.add(
             _TreatmentRowState(
-              codeController: TextEditingController(text: 'TRT${i + 1}'),
+              codeController: TextEditingController(text: 'T${i + 1}'),
               nameController: TextEditingController(),
               type: null,
             ),

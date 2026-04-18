@@ -1089,59 +1089,81 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     required int analyzablePlotCount,
     required int excludedFromAnalysisCount,
   }) {
-    final ratedLine = '$ratedPlotsCount/$dataPlotCount data plots rated'
-        '${excludedFromAnalysisCount > 0 ? ' · $excludedFromAnalysisCount excluded' : ''}';
-    final subtitle = totalPlots == dataPlotCount
-        ? '$totalPlots plots · $treatmentCount treatments · $replicateCount reps'
-        : '$totalPlots layout plot rows · $dataPlotCount data plots · $treatmentCount treatments · $replicateCount reps';
+    final progress = analyzablePlotCount == 0
+        ? 0.0
+        : (ratedPlotsCount / analyzablePlotCount).clamp(0.0, 1.0);
+    final allAssigned = excludedFromAnalysisCount == 0;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE0DDD6)),
+        color: AppDesignTokens.sectionHeaderBg,
+        border: const Border(
+          bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Rated plots',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-              ),
-              Flexible(
-                child: Text(
-                  ratedLine,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF2D5A40),
-                  ),
-                  textAlign: TextAlign.end,
-                ),
-              ),
-            ],
+          // Plot count
+          _StatChip(
+            label: '$dataPlotCount',
+            sub: 'plots',
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: analyzablePlotCount == 0
-                  ? 0.0
-                  : ratedPlotsCount / analyzablePlotCount,
-              backgroundColor: const Color(0xFFE8E5E0),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFF2D5A40)),
-              minHeight: 6,
+          const SizedBox(width: 12),
+          _StatChip(
+            label: '$treatmentCount',
+            sub: 'trt',
+          ),
+          const SizedBox(width: 12),
+          _StatChip(
+            label: '$replicateCount',
+            sub: 'reps',
+          ),
+          const SizedBox(width: 12),
+          if (allAssigned)
+            const Icon(Icons.check_circle, size: 14,
+                color: AppDesignTokens.successFg)
+          else
+            Icon(Icons.warning_amber_rounded, size: 14,
+                color: AppDesignTokens.warningFg),
+          const SizedBox(width: 4),
+          Text(
+            allAssigned ? 'All assigned' : '$excludedFromAnalysisCount unassigned',
+            style: TextStyle(
+              fontSize: 11,
+              color: allAssigned
+                  ? AppDesignTokens.successFg
+                  : AppDesignTokens.warningFg,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 10),
+          const Spacer(),
+          // Rated progress
           Text(
-            subtitle,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+            '$ratedPlotsCount/$analyzablePlotCount',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: ratedPlotsCount >= analyzablePlotCount
+                  ? AppDesignTokens.successFg
+                  : AppDesignTokens.primary,
+            ),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 36,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: AppDesignTokens.borderCrisp,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  ratedPlotsCount >= analyzablePlotCount
+                      ? AppDesignTokens.successFg
+                      : AppDesignTokens.primary,
+                ),
+                minHeight: 4,
+              ),
+            ),
           ),
         ],
       ),
@@ -1199,11 +1221,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                   widget.onSelectStackIndex!(kTrialTreatmentsStackIndex),
         );
         final head = <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: ratedCard,
-          ),
-          const SizedBox(height: 8),
+          ratedCard,
         ];
         if (plots.isEmpty) {
           final extra = _standalonePlotsEmptyExtra(
@@ -1611,8 +1629,6 @@ class _TrialPlotsWorkingSurfaceState
       ..translateByDouble(dx, dy, 0.0, 1.0);
   }
 
-  void _gridZoomIn() => _plotGridZoom(_gridTransformController, zoomIn: true);
-  void _gridZoomOut() => _plotGridZoom(_gridTransformController, zoomIn: false);
 
   Future<void> _loadAppRecords(ApplicationEvent event) async {
     setState(() {
@@ -1688,25 +1704,10 @@ class _TrialPlotsWorkingSurfaceState
           thickness: 1,
           color: colorScheme.outlineVariant.withValues(alpha: 0.35),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 4),
       ],
       if (widget.compactSurroundings) ...[
-        Text(
-          _plotsAssignmentDetailLine(ref, plots, hasSessionData),
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: AppDesignTokens.secondaryText,
-            height: 1.35,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 2),
       ],
       _buildListLayoutToggleForDetails(
         context,
@@ -1736,7 +1737,7 @@ class _TrialPlotsWorkingSurfaceState
     );
     final Widget toolbarChrome = widget.compactSurroundings
         ? Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
             child: toolbarColumn,
           )
         : Padding(
@@ -1953,31 +1954,6 @@ class _TrialPlotsWorkingSurfaceState
                                   scale: _scale,
                                 ),
                               ),
-                            Positioned(
-                              right: AppDesignTokens.spacing12,
-                              bottom: AppDesignTokens.spacing12,
-                              child: Material(
-                                elevation: 2,
-                                borderRadius: BorderRadius.circular(
-                                    AppDesignTokens.radiusSmall),
-                                color: AppDesignTokens.cardSurface,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.zoom_out),
-                                      onPressed: _gridZoomOut,
-                                      tooltip: 'Zoom out',
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.zoom_in),
-                                      onPressed: _gridZoomIn,
-                                      tooltip: 'Zoom in',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       );
@@ -3431,6 +3407,38 @@ class _PlotLayoutGrid extends StatelessWidget {
   }
 }
 
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.label, required this.sub});
+
+  final String label;
+  final String sub;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        const SizedBox(width: 3),
+        Text(
+          sub,
+          style: const TextStyle(
+            fontSize: 10,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _PlotGridTile extends StatefulWidget {
   final Plot plot;
   final Map<int, Treatment> treatmentMap;
@@ -3643,8 +3651,6 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
       ..translateByDouble(dxClamped, dyClamped, 0.0, 1.0);
   }
 
-  void _gridZoomIn() => _plotGridZoom(_gridTransformController, zoomIn: true);
-  void _gridZoomOut() => _plotGridZoom(_gridTransformController, zoomIn: false);
 
   Future<void> _loadAppRecords(ApplicationEvent event) async {
     setState(() {
@@ -3928,31 +3934,6 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                             : (plot) => _showAssignDialog(
                                                 context, ref, plot, plots),
                                       ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  right: AppDesignTokens.spacing12,
-                                  bottom: AppDesignTokens.spacing12,
-                                  child: Material(
-                                    elevation: 2,
-                                    borderRadius: BorderRadius.circular(
-                                        AppDesignTokens.radiusSmall),
-                                    color: AppDesignTokens.cardSurface,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.zoom_out),
-                                          onPressed: _gridZoomOut,
-                                          tooltip: 'Zoom out',
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.zoom_in),
-                                          onPressed: _gridZoomIn,
-                                          tooltip: 'Zoom in',
-                                        ),
-                                      ],
                                     ),
                                   ),
                                 ),

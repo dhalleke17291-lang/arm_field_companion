@@ -223,10 +223,9 @@ class TreatmentsTab extends ConsumerWidget {
     bool hasSessionData,
   ) {
     final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
-    return Column(
+    return Stack(
       children: [
-        Expanded(
-          child: AppEmptyState(
+        AppEmptyState(
             icon: Icons.science_outlined,
             title: 'No Treatments Yet',
             subtitle: locked
@@ -237,18 +236,17 @@ class TreatmentsTab extends ConsumerWidget {
                 : 'Add the treatment groups for this trial.',
             action: null,
           ),
-        ),
-        TabListBottomAddButton(
-          label: 'Add Treatment',
-          onPressed:
-              locked ? null : () => _showAddTreatmentDialog(context, ref),
-          disabledTooltip: locked
-              ? structureEditBlockedMessage(
-                  trial,
-                  hasSessionData: hasSessionData,
-                )
-              : null,
-        ),
+        if (!locked)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton(
+              heroTag: 'add_treatment_empty',
+              onPressed: () => _showAddTreatmentDialog(context, ref),
+              backgroundColor: AppDesignTokens.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+          ),
       ],
     );
   }
@@ -260,12 +258,12 @@ class TreatmentsTab extends ConsumerWidget {
     bool hasSessionData,
   ) {
     final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+            padding: const EdgeInsets.fromLTRB(8, 4, 8, 72),
             itemCount: treatments.length + (locked ? 1 : 0),
             itemBuilder: (context, index) {
               if (locked && index == 0) {
@@ -313,17 +311,22 @@ class TreatmentsTab extends ConsumerWidget {
             },
           ),
         ),
-        TabListBottomAddButton(
-          label: 'Add Treatment',
-          onPressed:
-              locked ? null : () => _showAddTreatmentDialog(context, ref),
-          disabledTooltip: locked
-              ? structureEditBlockedMessage(
-                  trial,
-                  hasSessionData: hasSessionData,
-                )
-              : null,
-        ),
+      ],
+    );
+    return Stack(
+      children: [
+        content,
+        if (!locked)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton(
+              heroTag: 'add_treatment',
+              onPressed: () => _showAddTreatmentDialog(context, ref),
+              backgroundColor: AppDesignTokens.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+          ),
       ],
     );
   }

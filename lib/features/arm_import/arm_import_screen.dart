@@ -158,7 +158,7 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(
         title: 'Import Trial (CSV)',
-        titleFontSize: 18,
+        
       ),
       body: SafeArea(
         top: false,

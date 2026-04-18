@@ -83,39 +83,36 @@ class AssessmentsTab extends ConsumerWidget {
         .firstOrNull;
     final total = libraryList.length + customLegacyList.length;
     if (total == 0) {
-      return Column(
+      return Stack(
         children: [
-          Expanded(
-            child: AppEmptyState(
-              icon: Icons.assessment,
-              title: 'No Assessments Yet',
-              subtitle: locked
-                  ? structureEditBlockedMessage(
-                      trial,
-                      hasSessionData: hasSessionData,
-                    )
-                  : '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData)}. Add from library or create a custom assessment.',
-              action: null,
-            ),
-          ),
-          TabListBottomAddButton(
-            label: 'Add Assessment',
-            onPressed: locked
-                ? null
-                : () => _showAddAssessmentOptions(context, ref),
-            disabledTooltip: locked
+          AppEmptyState(
+            icon: Icons.assessment,
+            title: 'No Assessments Yet',
+            subtitle: locked
                 ? structureEditBlockedMessage(
                     trial,
                     hasSessionData: hasSessionData,
                   )
-                : null,
+                : '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData)}. Add from library or create a custom assessment.',
+            action: null,
           ),
+          if (!locked)
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: FloatingActionButton(
+                heroTag: 'add_assessment_empty',
+                onPressed: () => _showAddAssessmentOptions(context, ref),
+                backgroundColor: AppDesignTokens.primary,
+                child: const Icon(Icons.add, color: Colors.white),
+              ),
+            ),
         ],
       );
     }
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Column(
+    final content = Column(
       children: [
         Container(
           padding: const EdgeInsets.symmetric(
@@ -435,18 +432,22 @@ class AssessmentsTab extends ConsumerWidget {
             ],
           ),
         ),
-        TabListBottomAddButton(
-          label: 'Add Assessment',
-          onPressed: locked
-              ? null
-              : () => _showAddAssessmentOptions(context, ref),
-          disabledTooltip: locked
-              ? structureEditBlockedMessage(
-                  trial,
-                  hasSessionData: hasSessionData,
-                )
-              : null,
-        ),
+      ],
+    );
+    return Stack(
+      children: [
+        content,
+        if (!locked)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton(
+              heroTag: 'add_assessment',
+              onPressed: () => _showAddAssessmentOptions(context, ref),
+              backgroundColor: AppDesignTokens.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+          ),
       ],
     );
   }

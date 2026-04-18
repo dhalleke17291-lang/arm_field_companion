@@ -53,7 +53,7 @@ class _ImportedProtocolFileScreenState
       appBar: GradientScreenHeader(
         title: widget.title ?? 'Imported protocol file',
         subtitle: 'Read-only',
-        titleFontSize: 18,
+        
       ),
       body: SafeArea(top: false, child: _error != null
           ? Center(

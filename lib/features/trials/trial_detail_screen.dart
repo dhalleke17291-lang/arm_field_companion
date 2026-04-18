@@ -1032,7 +1032,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
   }
 
-  /// White bar: Add, Protocol, Export — keeps the green block for title + overflow only.
+  /// White bar: Setup, Protocol, Export — trial-level actions.
   Widget _buildTrialDetailActionsBar(
     BuildContext context,
     WidgetRef ref,
@@ -1063,12 +1063,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   ),
                 ),
                 icon: const Icon(
-                  Icons.add_circle_outline,
+                  Icons.edit_outlined,
                   size: 20,
                   color: AppDesignTokens.primary,
                 ),
                 label: const Text(
-                  'Add',
+                  'Setup',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -1472,7 +1472,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           trial: currentTrial,
           onTransitionStatus: _transitionTrialStatus,
         ),
-        const SizedBox(height: AppDesignTokens.spacing8),
         SizedBox(
           height: 110,
           child: _TrialModuleHub(
@@ -1485,7 +1484,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             onUserScroll: _dismissHubHint,
           ),
         ),
-        const SizedBox(height: AppDesignTokens.spacing8),
         Expanded(
           child: IndexedStack(
             index: _selectedTabIndex == _sessionsIndex
@@ -2872,13 +2870,13 @@ class _TrialModuleHub extends StatelessWidget {
     // Overview (8) is always shown; module tabs use TrialTab for visibility.
     const allItems = <(int, IconData, String, TrialTab?)>[
       (_overviewTabIndex, Icons.dashboard_outlined, 'Overview', null),
+      (6, Icons.timeline, 'Timeline', TrialTab.timeline),
       (0, Icons.grid_on, 'Plots', TrialTab.plots),
       (1, Icons.agriculture, 'Seeding', TrialTab.seeding),
-      (2, Icons.science, 'Applications', TrialTab.applications),
       (3, Icons.assessment, 'Assessments', TrialTab.assessments),
       (4, Icons.science_outlined, 'Treatments', TrialTab.treatments),
+      (2, Icons.science, 'Applications', TrialTab.applications),
       (5, Icons.photo_library, 'Photos', TrialTab.photos),
-      (6, Icons.timeline, 'Timeline', TrialTab.timeline),
     ];
 
     final items = allItems

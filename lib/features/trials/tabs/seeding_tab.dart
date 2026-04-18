@@ -10,7 +10,7 @@ import '../../../core/field_operation_date_rules.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
-import '../../../core/widgets/app_standard_widgets.dart';
+
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
@@ -95,32 +95,42 @@ class SeedingTab extends ConsumerWidget {
           );
         }
         if (event == null) {
-          return Column(
+          return Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      tooltip: 'Full screen',
-                      icon: const Icon(Icons.fullscreen),
-                      onPressed: openSeedingFullScreen,
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          tooltip: 'Full screen',
+                          icon: const Icon(Icons.fullscreen),
+                          onPressed: openSeedingFullScreen,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const Expanded(
+                    child: AppEmptyState(
+                      icon: Icons.agriculture,
+                      title: 'No Seeding Event Yet',
+                      subtitle: 'Record the seeding operation for this trial',
+                      action: null,
+                    ),
+                  ),
+                ],
               ),
-              const Expanded(
-                child: AppEmptyState(
-                  icon: Icons.agriculture,
-                  title: 'No Seeding Event Yet',
-                  subtitle: 'Record the seeding operation for this trial',
-                  action: null,
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: FloatingActionButton(
+                  heroTag: 'add_seeding',
+                  onPressed: () => _openSeedingEventSheet(context, ref, null),
+                  backgroundColor: AppDesignTokens.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
                 ),
-              ),
-              TabListBottomAddButton(
-                label: 'Add Seeding Event',
-                onPressed: () => _openSeedingEventSheet(context, ref, null),
               ),
             ],
           );

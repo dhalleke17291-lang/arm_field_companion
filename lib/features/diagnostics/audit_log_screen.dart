@@ -267,7 +267,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
           appBar: GradientScreenHeader(
             title: title,
             subtitle: subtitle,
-            titleFontSize: 18,
+            
             actions: [
               PopupMenuButton<AuditLogSort>(
                 icon: const Icon(Icons.sort, color: Colors.white),

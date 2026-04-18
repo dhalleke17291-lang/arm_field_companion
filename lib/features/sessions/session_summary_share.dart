@@ -11,7 +11,7 @@ import '../sessions/session_timing_helper.dart';
 ///   24/24 plots rated · Rater: J. Smith
 ///
 ///   Treatment means (WEED1):
-///     CHK: 52%  TRT2: 72%  TRT3: 58%  TRT4: 79%
+///     CHK: 52%  T2: 72%  T3: 58%  T4: 79%
 ///
 ///   Crop injury: none observed
 ///   Weather: 22°C, 65% RH, 8 km/h SW

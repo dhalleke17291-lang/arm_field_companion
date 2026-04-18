@@ -11,7 +11,7 @@ class GradientScreenHeader extends StatelessWidget
     this.subtitleLine2,
     this.leading,
     this.actions,
-    this.titleFontSize = 22,
+    this.titleFontSize = 20,
   });
 
   final String title;

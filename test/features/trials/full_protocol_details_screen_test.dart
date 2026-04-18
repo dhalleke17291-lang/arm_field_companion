@@ -145,7 +145,7 @@ void main() {
   });
 
   group('FullProtocolDetailsScreen', () {
-    testWidgets('shows Full Protocol title and trial name',
+    testWidgets('shows Trial Summary title and trial name',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -169,7 +169,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Full Protocol'), findsOneWidget);
+      expect(find.text('Trial Summary'), findsOneWidget);
       expect(find.text('Wheat 2026'), findsOneWidget);
     });
 
@@ -312,7 +312,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Full Protocol'), findsOneWidget);
+      expect(find.text('Trial Summary'), findsOneWidget);
       expect(find.text('Wheat 2026'), findsOneWidget);
       expect(find.byType(FullProtocolDetailsScreen), findsOneWidget);
     });

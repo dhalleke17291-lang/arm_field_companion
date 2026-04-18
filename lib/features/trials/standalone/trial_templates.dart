@@ -51,7 +51,7 @@ class TrialTemplate {
     required this.assessments,
     this.design = PlotGenerationEngine.designRcbd,
     this.reps = 4,
-    this.guardRowsPerEnd = 1,
+    this.guardRowsPerEnd = 0,
   });
 
   final String id;
@@ -82,9 +82,9 @@ const List<TrialTemplate> trialTemplates = [
     category: 'Herbicide',
     treatments: [
       TemplateTreatment(code: 'CHK', name: 'Untreated check', type: 'CHK'),
-      TemplateTreatment(code: 'TRT2', type: 'HERB'),
-      TemplateTreatment(code: 'TRT3', type: 'HERB'),
-      TemplateTreatment(code: 'TRT4', type: 'HERB'),
+      TemplateTreatment(code: 'T2', type: 'HERB'),
+      TemplateTreatment(code: 'T3', type: 'HERB'),
+      TemplateTreatment(code: 'T4', type: 'HERB'),
     ],
     assessments: [
       TemplateAssessment(
@@ -121,9 +121,9 @@ const List<TrialTemplate> trialTemplates = [
     category: 'Fungicide',
     treatments: [
       TemplateTreatment(code: 'CHK', name: 'Untreated check', type: 'CHK'),
-      TemplateTreatment(code: 'TRT2', type: 'FUNG'),
-      TemplateTreatment(code: 'TRT3', type: 'FUNG'),
-      TemplateTreatment(code: 'TRT4', type: 'FUNG'),
+      TemplateTreatment(code: 'T2', type: 'FUNG'),
+      TemplateTreatment(code: 'T3', type: 'FUNG'),
+      TemplateTreatment(code: 'T4', type: 'FUNG'),
     ],
     assessments: [
       TemplateAssessment(
@@ -160,9 +160,9 @@ const List<TrialTemplate> trialTemplates = [
     category: 'Insecticide',
     treatments: [
       TemplateTreatment(code: 'CHK', name: 'Untreated check', type: 'CHK'),
-      TemplateTreatment(code: 'TRT2', type: 'INSEC'),
-      TemplateTreatment(code: 'TRT3', type: 'INSEC'),
-      TemplateTreatment(code: 'TRT4', type: 'INSEC'),
+      TemplateTreatment(code: 'T2', type: 'INSEC'),
+      TemplateTreatment(code: 'T3', type: 'INSEC'),
+      TemplateTreatment(code: 'T4', type: 'INSEC'),
     ],
     assessments: [
       TemplateAssessment(
@@ -238,9 +238,9 @@ const List<TrialTemplate> trialTemplates = [
     category: 'Seed',
     treatments: [
       TemplateTreatment(code: 'CHK', name: 'Untreated seed', type: 'CHK'),
-      TemplateTreatment(code: 'TRT2'),
-      TemplateTreatment(code: 'TRT3'),
-      TemplateTreatment(code: 'TRT4'),
+      TemplateTreatment(code: 'T2'),
+      TemplateTreatment(code: 'T3'),
+      TemplateTreatment(code: 'T4'),
     ],
     assessments: [
       TemplateAssessment(

@@ -26,7 +26,7 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
-      appBar: const GradientScreenHeader(title: 'Full Protocol'),
+      appBar: const GradientScreenHeader(title: 'Trial Summary'),
       body: SafeArea(
         top: false,
         child: ListView(
@@ -70,12 +70,11 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: list
-                          .map((t) => Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Text('${t.code} — ${t.name}',
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppDesignTokens.primaryText)),
+                          .map((t) => _TreatmentRow(
+                                treatment: t,
+                                componentsAsync: ref.watch(
+                                    treatmentComponentsForTreatmentProvider(
+                                        t.id)),
                               ))
                           .toList(),
                     ),
@@ -174,6 +173,47 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      ),
+    );
+  }
+}
+
+class _TreatmentRow extends StatelessWidget {
+  const _TreatmentRow({
+    required this.treatment,
+    required this.componentsAsync,
+  });
+
+  final Treatment treatment;
+  final AsyncValue<List<TreatmentComponent>> componentsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final comps = componentsAsync.valueOrNull ?? [];
+    final String display;
+    if (treatment.name.isNotEmpty &&
+        treatment.name != treatment.code &&
+        comps.isEmpty) {
+      display = '${treatment.code} — ${treatment.name}';
+    } else if (comps.isEmpty) {
+      display = treatment.code;
+    } else {
+      final compParts = comps.map((c) {
+        final rate = (c.rate != null && c.rateUnit != null)
+            ? ' · ${c.rate} ${c.rateUnit}'
+            : '';
+        return '${c.productName}$rate';
+      }).join(', ');
+      display = '${treatment.code} — $compParts';
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        display,
+        style: const TextStyle(
+          fontSize: 14,
+          color: AppDesignTokens.primaryText,
+        ),
       ),
     );
   }
