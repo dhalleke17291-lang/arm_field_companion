@@ -900,8 +900,14 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
   final _manufacturerController = TextEditingController();
   final _registrationNumberController = TextEditingController();
   final _eppoController = TextEditingController();
+  final _aiNameController = TextEditingController();
+  final _aiConcentrationController = TextEditingController();
+  final _labelRateController = TextEditingController();
   String _rateUnit = _componentRateUnits.first;
   String? _formulationType;
+  String _aiConcentrationUnit = 'g/L';
+  String _labelRateUnit = 'g ai/ha';
+  bool _isTestProduct = false;
 
   @override
   void initState() {
@@ -927,6 +933,24 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
       _registrationNumberController.text = e.registrationNumber ?? '';
       _eppoController.text = e.eppoCode ?? '';
       _formulationType = e.formulationType;
+      _aiNameController.text = e.activeIngredientName ?? '';
+      if (e.aiConcentration != null) {
+        _aiConcentrationController.text = e.aiConcentration == e.aiConcentration!.roundToDouble()
+            ? '${e.aiConcentration!.round()}'
+            : '${e.aiConcentration}';
+      }
+      if (e.aiConcentrationUnit != null && e.aiConcentrationUnit!.isNotEmpty) {
+        _aiConcentrationUnit = e.aiConcentrationUnit!;
+      }
+      if (e.labelRate != null) {
+        _labelRateController.text = e.labelRate == e.labelRate!.roundToDouble()
+            ? '${e.labelRate!.round()}'
+            : '${e.labelRate}';
+      }
+      if (e.labelRateUnit != null && e.labelRateUnit!.isNotEmpty) {
+        _labelRateUnit = e.labelRateUnit!;
+      }
+      _isTestProduct = e.isTestProduct;
     }
   }
 
@@ -940,6 +964,9 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
     _manufacturerController.dispose();
     _registrationNumberController.dispose();
     _eppoController.dispose();
+    _aiNameController.dispose();
+    _aiConcentrationController.dispose();
+    _labelRateController.dispose();
     super.dispose();
   }
 
@@ -1030,6 +1057,98 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                   labelText: 'Active ingredient %',
                   suffixText: '%',
                 ),
+              ),
+              const SizedBox(height: 12),
+              ExpansionTile(
+                title: const Text('Active ingredient'),
+                initiallyExpanded: _aiNameController.text.isNotEmpty,
+                children: [
+                  TextField(
+                    controller: _aiNameController,
+                    decoration: FormStyles.inputDecoration(
+                      labelText: 'Active ingredient name',
+                      hintText: 'e.g. glyphosate',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _aiConcentrationController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: FormStyles.inputDecoration(
+                            labelText: 'AI concentration',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 80,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _aiConcentrationUnit,
+                          decoration: FormStyles.inputDecoration(
+                              labelText: 'Unit'),
+                          items: const [
+                            DropdownMenuItem(value: 'g/L', child: Text('g/L')),
+                            DropdownMenuItem(value: 'g/kg', child: Text('g/kg')),
+                            DropdownMenuItem(value: '%', child: Text('%')),
+                          ],
+                          onChanged: (v) => setState(
+                              () => _aiConcentrationUnit = v ?? 'g/L'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _labelRateController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: FormStyles.inputDecoration(
+                            labelText: 'Label rate',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 100,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _labelRateUnit,
+                          decoration: FormStyles.inputDecoration(
+                              labelText: 'Unit'),
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'g ai/ha', child: Text('g ai/ha')),
+                            DropdownMenuItem(
+                                value: 'L/ha', child: Text('L/ha')),
+                            DropdownMenuItem(
+                                value: 'mL/ha', child: Text('mL/ha')),
+                            DropdownMenuItem(
+                                value: 'kg/ha', child: Text('kg/ha')),
+                          ],
+                          onChanged: (v) => setState(
+                              () => _labelRateUnit = v ?? 'g ai/ha'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Test product',
+                        style: TextStyle(fontSize: 14)),
+                    subtitle: const Text('Mark as test product for comparison',
+                        style: TextStyle(fontSize: 12,
+                            color: AppDesignTokens.secondaryText)),
+                    value: _isTestProduct,
+                    onChanged: (v) => setState(() => _isTestProduct = v),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               TextField(
@@ -1133,6 +1252,25 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                                 eppoCode: _eppoController.text.trim().isEmpty
                                     ? null
                                     : _eppoController.text.trim(),
+                                activeIngredientName:
+                                    _aiNameController.text.trim().isEmpty
+                                        ? null
+                                        : _aiNameController.text.trim(),
+                                aiConcentration: double.tryParse(
+                                    _aiConcentrationController.text.trim()),
+                                aiConcentrationUnit:
+                                    _aiConcentrationController.text
+                                            .trim()
+                                            .isNotEmpty
+                                        ? _aiConcentrationUnit
+                                        : null,
+                                labelRate: double.tryParse(
+                                    _labelRateController.text.trim()),
+                                labelRateUnit:
+                                    _labelRateController.text.trim().isNotEmpty
+                                        ? _labelRateUnit
+                                        : null,
+                                isTestProduct: _isTestProduct,
                                 performedByUserId: userId,
                               );
                               if (!context.mounted) return;

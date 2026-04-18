@@ -275,6 +275,12 @@ class MockTreatmentRepository implements TreatmentRepository {
     String? registrationNumber,
     String? eppoCode,
     int? performedByUserId,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    double? labelRate,
+    String? labelRateUnit,
+    bool? isTestProduct,
   }) async =>
       throw UnimplementedError();
 

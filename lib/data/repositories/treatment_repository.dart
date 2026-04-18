@@ -293,6 +293,12 @@ class TreatmentRepository {
     String? registrationNumber,
     String? eppoCode,
     int? performedByUserId,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    double? labelRate,
+    String? labelRateUnit,
+    bool? isTestProduct,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.into(_db.treatmentComponents).insert(
@@ -310,6 +316,12 @@ class TreatmentRepository {
             manufacturer: Value(manufacturer),
             registrationNumber: Value(registrationNumber),
             eppoCode: Value(eppoCode),
+            activeIngredientName: Value(activeIngredientName),
+            aiConcentration: Value(aiConcentration),
+            aiConcentrationUnit: Value(aiConcentrationUnit),
+            labelRate: Value(labelRate),
+            labelRateUnit: Value(labelRateUnit),
+            isTestProduct: Value(isTestProduct ?? false),
             lastEditedByUserId: Value(performedByUserId),
             lastEditedAt: Value(DateTime.now()),
           ),
