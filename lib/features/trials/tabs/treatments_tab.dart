@@ -379,8 +379,12 @@ class TreatmentsTab extends ConsumerWidget {
         TextEditingController(text: treatment.description ?? '');
     final eppoController =
         TextEditingController(text: treatment.eppoCode ?? '');
-    String? treatmentType = treatment.treatmentType;
-    String? timingCode = treatment.timingCode;
+    String? treatmentType = _treatmentTypes.contains(treatment.treatmentType)
+        ? treatment.treatmentType
+        : null;
+    String? timingCode = _timingCodes.contains(treatment.timingCode)
+        ? treatment.timingCode
+        : null;
 
     await showDialog(
       context: context,
@@ -424,7 +428,7 @@ class TreatmentsTab extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String?>(
-                key: ValueKey('edit_timing_$timingCode'),
+                key: ValueKey('edit_timing_${timingCode ?? 'null'}'),
                 initialValue: timingCode,
                 decoration: FormStyles.inputDecoration(
                     labelText: 'Timing code'),
