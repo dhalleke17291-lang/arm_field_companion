@@ -327,6 +327,9 @@ class TrialAssessmentRepository {
               maxValue: Value(def.scaleMax),
             ),
           );
+      await (_db.update(_db.trialAssessments)
+            ..where((t) => t.id.equals(taId)))
+          .write(TrialAssessmentsCompanion(legacyAssessmentId: Value(id)));
       result.add(id);
     }
     return result;
