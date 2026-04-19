@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -15,15 +18,24 @@ import 'backup_models.dart';
 /// Creates encrypted `.agnexis` backups (WAL checkpoint, streaming ZIP, then encrypt).
 ///
 /// V1: Encryption step reads the full ZIP into memory (large backups use significant RAM).
+///
+/// When [createBackup] is called with [clearAuditLogOnDeviceAfterSuccess] true, after a
+/// **successful** backup the on-device [audit_events] table is cleared and a single
+/// [AUDIT_TRAIL_ARCHIVED] row is inserted. The backup file already contains the full
+/// database snapshot (including all prior audit rows) taken at the start of this run.
 class BackupService {
   BackupService(this._db);
 
   final AppDatabase _db;
 
   /// Returns the `.agnexis` file ready for sharing.
+  ///
+  /// [clearAuditLogOnDeviceAfterSuccess] — user-controlled; when true, clears on-device
+  /// audit rows after the backup file is written (see [BackupAuditPreferences]).
   Future<File> createBackup(
     String password, {
     void Function(String status)? onProgress,
+    bool clearAuditLogOnDeviceAfterSuccess = false,
   }) async {
     if (password.isEmpty) {
       throw BackupException('Password cannot be empty');
@@ -135,11 +147,43 @@ class BackupService {
 
       await deleteDirectoryIfExists(workRoot);
 
+      final backupName = p.basename(agnexisFile.path);
+      if (clearAuditLogOnDeviceAfterSuccess) {
+        onProgress?.call('Archiving audit log on device...');
+        try {
+          await _archiveAuditTrailOnDeviceAfterBackup(backupFileName: backupName);
+        } catch (e, st) {
+          // Encrypted backup file is still valid; cleanup is best-effort.
+          debugPrint('Audit trail cleanup after backup failed: $e\n$st');
+        }
+      }
+
       return agnexisFile;
     } catch (e) {
       await deleteDirectoryIfExists(workRoot);
       if (e is BackupException) rethrow;
       throw BackupException('Backup failed: $e');
     }
+  }
+
+  /// Clears [audit_events] and inserts a marker row. Prior rows exist only in [backupFileName].
+  Future<void> _archiveAuditTrailOnDeviceAfterBackup({
+    required String backupFileName,
+  }) async {
+    await _db.transaction(() async {
+      await _db.delete(_db.auditEvents).go();
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              eventType: 'AUDIT_TRAIL_ARCHIVED',
+              description:
+                  'Full audit/events history through this backup was saved in "$backupFileName". '
+                  'The on-device log was cleared; keep that .agnexis file to retain those records.',
+              metadata: Value(jsonEncode({
+                'backup_file': backupFileName,
+                'archived_at': DateTime.now().toUtc().toIso8601String(),
+              })),
+            ),
+          );
+    });
   }
 }

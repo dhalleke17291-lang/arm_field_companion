@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
+import '../backup/backup_audit_preferences.dart';
 import '../backup/backup_models.dart';
 import '../backup/backup_passphrase_store.dart';
 import '../backup/backup_password_dialog.dart';
@@ -98,9 +99,13 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
   );
   await Future<void>.delayed(const Duration(milliseconds: 50));
   try {
+    final prefs = await SharedPreferences.getInstance();
+    final clearAudit =
+        BackupAuditPreferences(prefs).clearAuditLogAfterSuccessfulBackup;
     final file = await ref.read(backupServiceProvider).createBackup(
       passphrase,
       onProgress: (s) => status.value = s,
+      clearAuditLogOnDeviceAfterSuccess: clearAudit,
     );
     if (context.mounted) nav.pop();
     // Cache passphrase only after a successful backup. Opt-in decision
@@ -114,8 +119,18 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
         [XFile(file.path, mimeType: 'application/octet-stream')],
         text: 'Agnexis encrypted backup',
       );
-      final prefs = await SharedPreferences.getInstance();
       await BackupReminderStore(prefs).recordBackupCompleted();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              clearAudit
+                  ? 'Backup complete. On-device audit log was cleared — full history is in the backup file.'
+                  : 'Backup complete.',
+            ),
+          ),
+        );
+      }
     }
   } catch (e) {
     if (context.mounted) nav.pop();

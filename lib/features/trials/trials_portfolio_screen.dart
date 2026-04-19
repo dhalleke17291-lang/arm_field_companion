@@ -5,9 +5,18 @@ import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/session_state.dart';
-import '../../core/trial_state.dart';
+import '../../core/trial_state.dart' show
+    effectiveTrialStatusForListDisplay,
+    kTrialStatusActive,
+    kTrialStatusArchived,
+    kTrialStatusClosed,
+    kTrialStatusDraft,
+    kTrialStatusReady,
+    labelForTrialStatus,
+    trialIsListedAsActive;
 import '../../core/workspace/workspace_filter.dart';
 import '../derived/trial_attention_provider.dart';
+import '../derived/trial_attention_service.dart';
 import 'portfolio_attention_preview.dart';
 import 'trial_detail_screen.dart';
 import 'trials_portfolio_provider.dart';
@@ -24,6 +33,24 @@ String _formatLastActivity(DateTime? at) {
   if (d.inHours >= 1) return '${d.inHours}h ago';
   if (d.inMinutes >= 1) return '${d.inMinutes}m ago';
   return 'Just now';
+}
+
+/// Status chip on portfolio tiles — tinted fills so Active reads “on,” not disabled grey.
+({Color bg, Color fg}) _portfolioStatusChipColors(String statusLower) {
+  switch (statusLower) {
+    case kTrialStatusActive:
+      return (bg: AppDesignTokens.successBg, fg: AppDesignTokens.successFg);
+    case kTrialStatusReady:
+      return (bg: const Color(0xFFDBEAFE), fg: const Color(0xFF1E40AF));
+    case kTrialStatusDraft:
+      return (bg: AppDesignTokens.warningBg, fg: AppDesignTokens.warningFg);
+    case kTrialStatusClosed:
+      return (bg: AppDesignTokens.emptyBadgeBg, fg: AppDesignTokens.secondaryText);
+    case kTrialStatusArchived:
+      return (bg: AppDesignTokens.emptyBadgeBg, fg: AppDesignTokens.emptyBadgeFg);
+    default:
+      return (bg: AppDesignTokens.sectionHeaderBg, fg: AppDesignTokens.primaryText);
+  }
 }
 
 List<Trial> _workspaceFilter(List<Trial> all, PortfolioWorkspaceSegment w) {
@@ -175,18 +202,9 @@ class _TrialsPortfolioScreenState extends ConsumerState<TrialsPortfolioScreen> {
                             ),
                           ],
                         )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 8),
-                          itemBuilder: (context, i) {
-                            return _PortfolioTrialTile(
-                              trial: filtered[i],
-                              lastSessionAt: lastByTrial[filtered[i].id],
-                            );
-                          },
+                      : _PortfolioTrialList(
+                          trials: filtered,
+                          lastByTrial: lastByTrial,
                         ),
                 ),
               ),
@@ -198,18 +216,55 @@ class _TrialsPortfolioScreenState extends ConsumerState<TrialsPortfolioScreen> {
   }
 }
 
+/// Builds the scrollable list with cross-trial attention label de-duplication.
+class _PortfolioTrialList extends ConsumerWidget {
+  const _PortfolioTrialList({
+    required this.trials,
+    required this.lastByTrial,
+  });
+
+  final List<Trial> trials;
+  final Map<int, DateTime> lastByTrial;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final usedLabels = <String>{};
+    final primaryByTrialId = <int, AttentionItem?>{};
+    for (final t in trials) {
+      final items = ref.watch(trialAttentionProvider(t.id)).valueOrNull;
+      primaryByTrialId[t.id] =
+          portfolioPrimaryAttentionLineDeduped(items, t.id, usedLabels);
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      physics: const AlwaysScrollableScrollPhysics(),
+      itemCount: trials.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, i) {
+        final trial = trials[i];
+        return _PortfolioTrialTile(
+          trial: trial,
+          lastSessionAt: lastByTrial[trial.id],
+          primaryAttention: primaryByTrialId[trial.id],
+        );
+      },
+    );
+  }
+}
+
 class _PortfolioTrialTile extends ConsumerWidget {
   const _PortfolioTrialTile({
     required this.trial,
     required this.lastSessionAt,
+    required this.primaryAttention,
   });
 
   final Trial trial;
   final DateTime? lastSessionAt;
+  final AttentionItem? primaryAttention;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
     final openAsync = ref.watch(openSessionProvider(trial.id));
     final openSession = openAsync.valueOrNull;
     final hasOpenField =
@@ -220,7 +275,7 @@ class _PortfolioTrialTile extends ConsumerWidget {
     );
     final attentionAsync = ref.watch(trialAttentionProvider(trial.id));
     final attentionItems = attentionAsync.valueOrNull;
-    final primary = portfolioPrimaryAttentionLine(attentionItems);
+    final primary = primaryAttention;
     final extraAttention = portfolioAdditionalAttentionCount(attentionItems);
     final attentionPreview = primary == null
         ? null
@@ -233,14 +288,15 @@ class _PortfolioTrialTile extends ConsumerWidget {
       if (attentionPreview != null) attentionPreview,
     ];
 
+    final chipColors = _portfolioStatusChipColors(displayStatus.toLowerCase());
+
     return Material(
-      color: scheme.surface,
-      elevation: 0,
+      color: AppDesignTokens.cardSurface,
+      elevation: 1,
+      shadowColor: Colors.black.withValues(alpha: 0.07),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: scheme.outline.withValues(alpha: 0.12),
-        ),
+        side: const BorderSide(color: AppDesignTokens.borderCrisp),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -267,6 +323,8 @@ class _PortfolioTrialTile extends ConsumerWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
+                        height: 1.25,
+                        color: AppDesignTokens.primaryText,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -274,9 +332,10 @@ class _PortfolioTrialTile extends ConsumerWidget {
                       subtitleParts.join(' · '),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: scheme.onSurfaceVariant,
+                        height: 1.3,
+                        color: AppDesignTokens.secondaryText,
                       ),
                     ),
                   ],
@@ -286,7 +345,7 @@ class _PortfolioTrialTile extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  color: chipColors.bg,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -294,7 +353,7 @@ class _PortfolioTrialTile extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
+                    color: chipColors.fg,
                   ),
                 ),
               ),

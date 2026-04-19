@@ -75,13 +75,20 @@ void main() {
       );
     });
 
-    test('same severity: first matching item in list order', () {
-      final a = _item(AttentionType.setupIncomplete, AttentionSeverity.high,
-          label: 'first');
-      final b = _item(AttentionType.plotsUnassigned, AttentionSeverity.high,
-          label: 'second');
-      expect(portfolioPrimaryAttentionLine([a, b]), same(a));
-      expect(portfolioPrimaryAttentionLine([b, a]), same(b));
+    test('same severity: tier sorted by type then label; trialId rotates', () {
+      // plotsUnassigned (enum index) sorts before setupIncomplete
+      final plots = _item(AttentionType.plotsUnassigned, AttentionSeverity.high,
+          label: 'plots line');
+      final setup = _item(AttentionType.setupIncomplete, AttentionSeverity.high,
+          label: 'setup line');
+      expect(
+        portfolioPrimaryAttentionLine([setup, plots], trialId: 0)?.label,
+        'plots line',
+      );
+      expect(
+        portfolioPrimaryAttentionLine([setup, plots], trialId: 1)?.label,
+        'setup line',
+      );
     });
 
     test('ignores openSession when choosing primary', () {
@@ -89,6 +96,41 @@ void main() {
       final medium = _item(
           AttentionType.plotsPartiallyRated, AttentionSeverity.medium);
       expect(portfolioPrimaryAttentionLine([open, medium]), same(medium));
+    });
+  });
+
+  group('portfolioPrimaryAttentionLineDeduped', () {
+    test('second trial picks different label when available', () {
+      final used = <String>{};
+      final seeding = _item(
+          AttentionType.seedingMissing, AttentionSeverity.high, label: 'Seeding');
+      final plots = _item(
+          AttentionType.plotsPartiallyRated, AttentionSeverity.medium,
+          label: 'Plots');
+      expect(
+        portfolioPrimaryAttentionLineDeduped([seeding], 1, used)?.label,
+        'Seeding',
+      );
+      expect(used, contains('Seeding'));
+      final second = portfolioPrimaryAttentionLineDeduped(
+        [seeding, plots],
+        2,
+        used,
+      );
+      expect(second?.label, 'Plots');
+    });
+
+    test('falls through to lower severity when top label already used', () {
+      final used = <String>{'Only high'};
+      final high = _item(AttentionType.setupIncomplete, AttentionSeverity.high,
+          label: 'Only high');
+      final medium = _item(
+          AttentionType.plotsPartiallyRated, AttentionSeverity.medium,
+          label: 'Medium line');
+      expect(
+        portfolioPrimaryAttentionLineDeduped([high, medium], 0, used)?.label,
+        'Medium line',
+      );
     });
   });
 

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
+import '../backup/backup_audit_preferences.dart';
 import '../backup/backup_passphrase_store.dart';
 import '../backup/backup_reminder_store.dart';
 import '../diagnostics/diagnostics_screen.dart';
@@ -103,6 +104,8 @@ class MoreScreen extends ConsumerWidget {
             // cached; the card renders it conditionally.
             const SizedBox(height: AppDesignTokens.spacing12),
             _BackupReminderCard(),
+            const SizedBox(height: AppDesignTokens.spacing12),
+            const _BackupAuditClearPrefCard(),
             const SizedBox(height: AppDesignTokens.spacing12),
             _buildActionCard(
               context,
@@ -571,5 +574,89 @@ class _BackupReminderCardState extends State<_BackupReminderCard> {
       await store.setMode(selected);
       setState(() {});
     }
+  }
+}
+
+/// User opt-in: clear [audit_events] on device after successful backup (manual or auto).
+class _BackupAuditClearPrefCard extends StatefulWidget {
+  const _BackupAuditClearPrefCard();
+
+  @override
+  State<_BackupAuditClearPrefCard> createState() =>
+      _BackupAuditClearPrefCardState();
+}
+
+class _BackupAuditClearPrefCardState extends State<_BackupAuditClearPrefCard> {
+  BackupAuditPreferences? _prefs;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final p = await SharedPreferences.getInstance();
+    if (mounted) setState(() => _prefs = BackupAuditPreferences(p));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = _prefs;
+    if (store == null) {
+      return const SizedBox(height: 8);
+    }
+    final value = store.clearAuditLogAfterSuccessfulBackup;
+    return Material(
+      color: AppDesignTokens.cardSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+      ),
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          border: Border.all(color: AppDesignTokens.borderCrisp),
+          boxShadow: const [
+            BoxShadow(
+              color: AppDesignTokens.shadowLight,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppDesignTokens.spacing16,
+            vertical: AppDesignTokens.spacing8,
+          ),
+          title: const Text(
+            'Clear audit log after backup',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+          subtitle: const Text(
+            'When enabled, a successful encrypted backup removes audit history from this device only. '
+            'The full history remains inside the .agnexis file. Leave off to keep the log on device.',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          value: value,
+          activeThumbColor: AppDesignTokens.onPrimary,
+          activeTrackColor: AppDesignTokens.primary,
+          onChanged: (next) async {
+            await store.setClearAuditLogAfterSuccessfulBackup(next);
+            if (mounted) setState(() {});
+          },
+        ),
+      ),
+    );
   }
 }

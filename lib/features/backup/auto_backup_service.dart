@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'backup_audit_preferences.dart';
 import 'backup_passphrase_store.dart';
 import 'backup_service.dart';
 
@@ -69,7 +71,13 @@ class AutoBackupService {
       final passphrase = await _passphraseStore.retrieve();
       if (passphrase == null || passphrase.isEmpty) return;
 
-      final backup = await _backupService.createBackup(passphrase);
+      final prefs = await SharedPreferences.getInstance();
+      final clearAudit =
+          BackupAuditPreferences(prefs).clearAuditLogAfterSuccessfulBackup;
+      final backup = await _backupService.createBackup(
+        passphrase,
+        clearAuditLogOnDeviceAfterSuccess: clearAudit,
+      );
 
       final dir = await _autoBackupDir();
       final dest = File(

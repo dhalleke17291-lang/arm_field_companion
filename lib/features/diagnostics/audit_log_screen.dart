@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
@@ -9,6 +13,7 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import 'audit_log_enrichment.dart';
+import 'audit_log_pdf_export.dart';
 
 enum AuditLogSort {
   dateNewest,
@@ -107,48 +112,93 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     return copy;
   }
 
-  Future<void> _export(BuildContext context, List<AuditEvent> events) async {
+  /// Exports **all** matching rows from the database (not limited to [widget.limit]).
+  Future<void> _exportFull(BuildContext context) async {
     final guard = ref.read(exportGuardProvider);
     final ran = await guard.runExclusive(() async {
-      final buffer = StringBuffer();
-      buffer.writeln(
-          widget.trialId != null ? 'Trial activity' : 'Audit Log');
-      buffer.writeln('Exported: ${DateTime.now().toIso8601String()}');
-      buffer.writeln('Rows: ${events.length}');
-      buffer.writeln('');
-
-      buffer.writeln(
-          'created_at,event_type,trial_id,session_id,plot_pk,performed_by,description');
-      for (final e in events) {
-        buffer.writeln(_csvRow([
-          e.createdAt.toIso8601String(),
-          e.eventType,
-          e.trialId?.toString() ?? '',
-          e.sessionId?.toString() ?? '',
-          e.plotPk?.toString() ?? '',
-          e.performedBy ?? '',
-          e.description,
-        ]));
-      }
-
+      if (!context.mounted) return;
+      final nav = Navigator.of(context, rootNavigator: true);
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            backgroundColor: AppDesignTokens.cardSurface,
+            content: Row(
+              children: [
+                const CircularProgressIndicator(color: AppDesignTokens.primary),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Text(
+                    'Building PDF export…',
+                    style: TextStyle(
+                      color: AppDesignTokens.primaryText.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
       try {
-        await Share.share(
-          buffer.toString(),
+        final db = ref.read(databaseProvider);
+        final q = db.select(db.auditEvents);
+        final tid = widget.trialId;
+        if (tid != null) {
+          q.where((t) => t.trialId.equals(tid));
+        }
+        q.orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]);
+        final events = await q.get();
+        nav.pop();
+
+        if (events.isEmpty) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Nothing to export.')),
+            );
+          }
+          return;
+        }
+
+        final pdfBytes = await AuditLogPdfExport(
+          events: events,
+          scopeDescription: widget.trialId != null
+              ? 'Trial id ${widget.trialId} only'
+              : 'All trials',
+        ).build();
+
+        final tempDir = await getTemporaryDirectory();
+        final safeStamp =
+            DateTime.now().toUtc().toIso8601String().replaceAll(RegExp(r'[:.]'), '-');
+        final filePath = p.join(
+          tempDir.path,
+          widget.trialId != null
+              ? 'trial_${widget.trialId}_audit_$safeStamp.pdf'
+              : 'agnexis_audit_$safeStamp.pdf',
+        );
+        await File(filePath).writeAsBytes(pdfBytes);
+
+        await Share.shareXFiles(
+          [XFile(filePath, mimeType: 'application/pdf')],
           subject: widget.trialId != null
-              ? 'Trial activity ${DateTime.now().toIso8601String().substring(0, 10)}'
-              : 'Audit log ${DateTime.now().toIso8601String().substring(0, 10)}',
+              ? 'Trial activity export ${DateTime.now().toIso8601String().substring(0, 10)}'
+              : 'Audit log export ${DateTime.now().toIso8601String().substring(0, 10)}',
         );
         if (context.mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Export opened')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Exported ${events.length} events as PDF'),
+            ),
+          );
         }
       } catch (e) {
+        if (nav.canPop()) nav.pop();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
-              ),
+            SnackBar(
+              content: Text('Export failed: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -160,17 +210,6 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
         const SnackBar(content: Text(ExportGuard.busyMessage)),
       );
     }
-  }
-
-  static String _csvRow(List<String> values) {
-    return values.map(_csvEscape).join(',');
-  }
-
-  static String _csvEscape(String v) {
-    final needsQuotes = v.contains(',') || v.contains('\n') || v.contains('"');
-    if (!needsQuotes) return v;
-    final escaped = v.replaceAll('"', '""');
-    return '"$escaped"';
   }
 
   /// Replaces raw plotPk in description with display label (e.g. 101) when available.
@@ -219,7 +258,9 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
 
     final scoped = widget.trialId != null;
     final title = scoped ? 'Activity' : 'Audit log';
-    final subtitle = scoped ? 'This trial' : 'Recent events';
+    final subtitle = scoped
+        ? 'This trial · export = full history (PDF)'
+        : 'Latest ${widget.limit} on screen · export = full history (PDF)';
 
     final stream = () {
       final q = db.select(db.auditEvents);
@@ -281,10 +322,10 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                     .toList(),
               ),
               IconButton(
-                icon: const Icon(Icons.file_download_outlined,
+                icon: const Icon(Icons.picture_as_pdf_outlined,
                     color: Colors.white),
-                tooltip: 'Export audit log',
-                onPressed: () => _export(context, events),
+                tooltip: 'Export full history as PDF',
+                onPressed: () => _exportFull(context),
               ),
             ],
           ),
