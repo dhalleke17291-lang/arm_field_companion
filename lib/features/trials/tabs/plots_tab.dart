@@ -188,6 +188,45 @@ Color _heatMapColor(double value, double min, double max) {
 
 bool _isLowSpread(double min, double max) => max - min < _kHeatMapMinSpread;
 
+/// Explains how many layout plots have a numeric rating for the selected
+/// assessment—important when the session is incomplete so "—" is not mistaken
+/// for a display bug.
+String _heatMapLayoutCoverageCaption({
+  required List<Plot> plots,
+  required Map<int, RatingRecord> ratingByPlot,
+}) {
+  final layoutPlots = plots.where((p) => !p.isGuardRow).toList();
+  final total = layoutPlots.length;
+  if (total == 0) return '';
+  var withNumeric = 0;
+  for (final p in layoutPlots) {
+    final r = ratingByPlot[p.id];
+    if (r != null && r.resultStatus == 'RECORDED' && r.numericValue != null) {
+      withNumeric++;
+    }
+  }
+  if (withNumeric == 0) {
+    return 'No layout plots have a numeric value for this assessment yet (—).';
+  }
+  if (withNumeric == total) {
+    return 'All $total layout plots have a numeric value for this assessment.';
+  }
+  return '$withNumeric of $total layout plots have a numeric value; others show — until rated.';
+}
+
+/// One current rating per plot PK for [assessmentId] (non-VOID rows only).
+Map<int, RatingRecord> _ratingByPlotForAssessment(
+  List<RatingRecord> allRatings,
+  int assessmentId,
+) {
+  final out = <int, RatingRecord>{};
+  for (final r in allRatings) {
+    if (r.resultStatus == 'VOID' || r.assessmentId != assessmentId) continue;
+    out.putIfAbsent(r.plotPk, () => r);
+  }
+  return out;
+}
+
 Color _ratingCellColor(String? status) {
   switch (status) {
     case 'RECORDED':
@@ -344,6 +383,26 @@ class _PlotLayoutRatingsOverlayState
   /// Cleared when the selected session changes; until then defaults to first assessment.
   int? _pickedAssessmentId;
 
+  /// Shared with [InteractiveViewer] so we can snap back to the top-left after
+  /// heat / session / assessment changes. Otherwise pan/zoom can leave the
+  /// viewport over the bottom rows only (e.g. Rep 4) while Reps 1–3 sit
+  /// above the clipped area — not a data / zero-value issue.
+  final TransformationController _ratingsPanZoomController =
+      TransformationController();
+
+  void _resetRatingsLayoutViewport() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _ratingsPanZoomController.value = Matrix4.identity();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ratingsPanZoomController.dispose();
+    super.dispose();
+  }
+
   @override
   void didUpdateWidget(covariant _PlotLayoutRatingsOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -353,6 +412,13 @@ class _PlotLayoutRatingsOverlayState
         (widget.sessions.isNotEmpty ? widget.sessions.first.id : null);
     if (oldSid != newSid) {
       _pickedAssessmentId = null;
+      _resetRatingsLayoutViewport();
+    }
+    if (oldWidget.trial.id != widget.trial.id) {
+      _resetRatingsLayoutViewport();
+    }
+    if (oldWidget.heatMapEnabled != widget.heatMapEnabled) {
+      _resetRatingsLayoutViewport();
     }
   }
 
@@ -404,12 +470,12 @@ class _PlotLayoutRatingsOverlayState
     final assessmentsAsync =
         ref.watch(sessionAssessmentsProvider(activeSession.id));
 
+    // Key only trial + session so changing the assessment dropdown does not
+    // replace the whole subtree (that remount broke heat-map cells vs provider).
     return Column(
-      key: ValueKey<Object>(Object.hash(
-        widget.trial.id,
-        activeSession.id,
-        _pickedAssessmentId,
-      )),
+      key: ValueKey<Object>(
+        Object.hash(widget.trial.id, activeSession.id),
+      ),
       children: [
         if (widget.sessions.length > 1)
           Padding(
@@ -523,6 +589,7 @@ class _PlotLayoutRatingsOverlayState
                         onChanged: (id) {
                           if (id == null) return;
                           setState(() => _pickedAssessmentId = id);
+                          _resetRatingsLayoutViewport();
                         },
                       ),
                     ),
@@ -576,6 +643,7 @@ class _PlotLayoutRatingsOverlayState
                       activeSession: activeSession,
                       assessmentId: resolvedAssessmentId,
                       heatMapEnabled: widget.heatMapEnabled,
+                      panZoomController: _ratingsPanZoomController,
                     ),
                   ),
                 ],
@@ -596,6 +664,7 @@ Widget _buildRatingsGridForAssessment({
   required Session activeSession,
   required int assessmentId,
   required bool heatMapEnabled,
+  required TransformationController panZoomController,
 }) {
   final ratingsAsync = ref.watch(sessionRatingsProvider(activeSession.id));
 
@@ -610,11 +679,10 @@ Widget _buildRatingsGridForAssessment({
               (r) => r.resultStatus != 'VOID' && r.assessmentId == assessmentId)
           .toList();
 
-      final ratingByPlot = <int, RatingRecord>{};
+      final ratingByPlot = _ratingByPlotForAssessment(allRatings, assessmentId);
       final assessmentCountByPlot = <int, int>{};
 
       for (final r in ratings) {
-        ratingByPlot.putIfAbsent(r.plotPk, () => r);
         assessmentCountByPlot[r.plotPk] =
             (assessmentCountByPlot[r.plotPk] ?? 0) + 1;
       }
@@ -667,6 +735,8 @@ Widget _buildRatingsGridForAssessment({
       const tileSpacing = 6.0;
 
       return InteractiveViewer(
+        key: ValueKey<Object>(Object.hash(activeSession.id, assessmentId)),
+        transformationController: panZoomController,
         constrained: false,
         minScale: 0.3,
         maxScale: 3.0,
@@ -852,6 +922,21 @@ Widget _buildRatingsGridForAssessment({
                   ),
                 );
               }),
+              if (heatMapEnabled)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 8),
+                  child: Text(
+                    _heatMapLayoutCoverageCaption(
+                      plots: plots,
+                      ratingByPlot: ratingByPlot,
+                    ),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontStyle: FontStyle.italic,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 8),
               if (heatMapEnabled)
                 DecoratedBox(
