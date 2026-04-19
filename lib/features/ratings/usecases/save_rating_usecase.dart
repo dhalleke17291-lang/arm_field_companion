@@ -81,6 +81,8 @@ class SaveRatingUseCase {
         ratingTime: input.ratingTime,
         ratingMethod: input.ratingMethod,
         confidence: input.confidence,
+        capturedLatitude: input.capturedLatitude,
+        capturedLongitude: input.capturedLongitude,
       );
 
       return SaveRatingResult.success(rating);

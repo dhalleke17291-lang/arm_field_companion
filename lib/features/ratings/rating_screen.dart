@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/connectivity/gps_service.dart';
 import '../../core/widgets/photo_thumbnail.dart';
 import '../../core/ui/assessment_display_helper.dart';
 import '../../core/plot_display.dart';
@@ -163,6 +164,19 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   // ignore: unused_field — kept for potential future display (e.g. session context)
   String? _priorSessionName;
 
+  double? _gpsLatitude;
+  double? _gpsLongitude;
+
+  Future<void> _captureGps() async {
+    final pos = await GpsService.getCurrentPosition();
+    if (pos != null && mounted) {
+      setState(() {
+        _gpsLatitude = pos.latitude;
+        _gpsLongitude = pos.longitude;
+      });
+    }
+  }
+
   final ScrollController _assessmentScrollController = ScrollController();
 
   Future<void> _loadPriorRating() async {
@@ -230,6 +244,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     _assessmentIndex = raw.clamp(0, widget.assessments.length - 1);
     _currentAssessment = widget.assessments[_assessmentIndex];
     _loadPriorRating();
+    _captureGps();
     WakelockPlus.enable();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _scrollToActiveAssessment());
@@ -4008,6 +4023,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         maxValue: scaleBounds.max,
         ratingTime: ratingTime,
         confidence: _confidence,
+        capturedLatitude: _gpsLatitude,
+        capturedLongitude: _gpsLongitude,
         assessmentConstraints: RatingAssessmentConstraints(
           dataType: _currentAssessment.dataType,
           minValue: scaleBounds.min,

@@ -36,6 +36,8 @@ class SaveRatingInput {
   final String? ratingTime;
   final String? ratingMethod;
   final String? confidence;
+  final double? capturedLatitude;
+  final double? capturedLongitude;
 
   /// Optional resolved assessment metadata for validation (min/max, data type, unit).
   /// When null, validation stays conservative (status/null + ids only, plus min/max from [minValue]/[maxValue]).
@@ -58,6 +60,8 @@ class SaveRatingInput {
     this.ratingTime,
     this.ratingMethod,
     this.confidence,
+    this.capturedLatitude,
+    this.capturedLongitude,
     this.assessmentConstraints,
   });
 }

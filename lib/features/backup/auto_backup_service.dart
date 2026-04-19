@@ -37,7 +37,7 @@ class AutoBackupService {
   final BackupService _backupService;
   final BackupPassphraseStore _passphraseStore;
 
-  static const int _maxAutoBackups = 3;
+  static const int _maxAutoBackups = 5;
 
   Future<AutoBackupStatus> getStatus() async {
     final hasCached = await _passphraseStore.hasCached();

@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
 import '../features/backup/auto_backup_service.dart';
+import 'connectivity/connectivity_service.dart';
 import '../features/backup/backup_passphrase_store.dart';
 import '../features/backup/backup_service.dart';
 import '../features/backup/restore_service.dart';
@@ -1607,6 +1608,12 @@ final autoBackupServiceProvider = Provider<AutoBackupService>((ref) {
 final autoBackupStatusProvider =
     FutureProvider.autoDispose<AutoBackupStatus>((ref) {
   return ref.watch(autoBackupServiceProvider).getStatus();
+});
+
+final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
+  final service = ConnectivityService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 // ---------------------------------------------------------------------------
