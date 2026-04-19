@@ -67,6 +67,8 @@ class _ApplicationSheetContentState
   /// Parallel to product rows when a treatment is selected: the treatment
   /// component for protocol-bound rows, or null for extra rows (legacy / not on protocol).
   List<TreatmentComponent?> _protocolRowSources = [];
+  /// Seeded a single free-form row when the trial has no treatments (only option).
+  bool _seededManualRowForEmptyTrial = false;
   late String? _applicationMethod;
 
   late final TextEditingController _nozzleSpacingController;
@@ -132,13 +134,22 @@ class _ApplicationSheetContentState
     _date = e?.applicationDate.toLocal() ?? DateTime.now();
     _timeStr = e?.applicationTime;
     _treatmentId = e?.treatmentId;
-    _productControllers = [
-      TextEditingController(text: e?.productName ?? ''),
-    ];
-    _rateControllers = [
-      TextEditingController(text: e?.rate != null ? e!.rate.toString() : ''),
-    ];
-    _rateUnits = [e?.rateUnit ?? widget.rateUnits.first];
+    if (e == null) {
+      // New application: no free-form products until we know the trial has zero
+      // treatments (then [didChangeDependencies] adds one row) or user picks a
+      // treatment (protocol rows). Avoids duplicating product entry vs Treatments tab.
+      _productControllers = [];
+      _rateControllers = [];
+      _rateUnits = [];
+    } else {
+      _productControllers = [
+        TextEditingController(text: e.productName ?? ''),
+      ];
+      _rateControllers = [
+        TextEditingController(text: e.rate != null ? e.rate.toString() : ''),
+      ];
+      _rateUnits = [e.rateUnit ?? widget.rateUnits.first];
+    }
     _applicationMethod = e?.applicationMethod;
 
     _nozzleType = e?.nozzleType;
@@ -345,6 +356,20 @@ class _ApplicationSheetContentState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (widget.existing == null && !_seededManualRowForEmptyTrial) {
+      final list =
+          ref.read(treatmentsForTrialProvider(widget.trial.id)).valueOrNull;
+      if (list != null) {
+        _seededManualRowForEmptyTrial = true;
+        if (list.isEmpty && _productControllers.isEmpty && mounted) {
+          setState(() {
+            _productControllers = [TextEditingController()];
+            _rateControllers = [TextEditingController()];
+            _rateUnits = [widget.rateUnits.first];
+          });
+        }
+      }
+    }
     if (widget.existing != null && !_junctionLoadScheduled) {
       _junctionLoadScheduled = true;
       unawaited(_loadJunctionProducts());
@@ -599,6 +624,25 @@ class _ApplicationSheetContentState
       return;
     }
 
+    final trialTreatments =
+        ref.read(treatmentsForTrialProvider(widget.trial.id)).valueOrNull ?? [];
+    if (widget.existing == null &&
+        trialTreatments.isNotEmpty &&
+        _treatmentId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Select which treatment was applied. Tank-mix products are defined '
+              'under the Treatments tab — not here — so there is a single protocol.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     final numErr = _applicationNumericValidationError();
     if (numErr != null) {
       if (mounted) {
@@ -760,6 +804,14 @@ class _ApplicationSheetContentState
   Widget build(BuildContext context) {
     final treatments =
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).value ?? [];
+    final trialHasTreatments = treatments.isNotEmpty;
+    final strictNewAppRequiresTreatment =
+        widget.existing == null && trialHasTreatments;
+    final legacyUnlinkedApplication = widget.existing != null &&
+        widget.existing!.treatmentId == null &&
+        trialHasTreatments;
+    final showManualAddProduct = _treatmentId == null &&
+        !strictNewAppRequiresTreatment;
     final plots = ref.watch(plotsForTrialProvider(widget.trial.id)).value ?? [];
     final seedingEvent =
         ref.watch(seedingEventForTrialProvider(widget.trial.id)).valueOrNull;
@@ -834,9 +886,13 @@ class _ApplicationSheetContentState
                 setState(() {
                   _protocolRowSources = [];
                   _disposeProductRows();
-                  _productControllers = [TextEditingController()];
-                  _rateControllers = [TextEditingController()];
-                  _rateUnits = [widget.rateUnits.first];
+                  if (strictNewAppRequiresTreatment) {
+                    // Stay empty until user picks a treatment again.
+                  } else {
+                    _productControllers = [TextEditingController()];
+                    _rateControllers = [TextEditingController()];
+                    _rateUnits = [widget.rateUnits.first];
+                  }
                 });
                 return;
               }
@@ -869,6 +925,65 @@ class _ApplicationSheetContentState
             ),
           ],
           const SizedBox(height: FormStyles.formSheetFieldSpacing),
+          if (strictNewAppRequiresTreatment && _treatmentId == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Choose a treatment first. Under Treatments → Add component, '
+                          'enter product name, rate, and optional EPPO (text field '
+                          'directly under the name — not a separate picker). This '
+                          'screen records when you applied and as-applied rates only.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.35,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          if (legacyUnlinkedApplication)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppDesignTokens.warningBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'This application is not linked to a treatment. Select a '
+                    'treatment to align with your protocol, or keep legacy rows as-is.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -876,11 +991,13 @@ class _ApplicationSheetContentState
                 child: Text(
                   _treatmentId != null
                       ? 'PRODUCTS (from treatment protocol)'
-                      : 'PRODUCTS',
+                      : (strictNewAppRequiresTreatment
+                          ? 'PRODUCTS (after treatment)'
+                          : 'PRODUCTS'),
                   style: FormStyles.sectionLabelStyle,
                 ),
               ),
-              if (_treatmentId == null)
+              if (showManualAddProduct)
                 TextButton.icon(
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Add Product'),
@@ -894,7 +1011,7 @@ class _ApplicationSheetContentState
                   }),
                 ),
             ],
-            ),
+          ),
           if (_treatmentId != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),

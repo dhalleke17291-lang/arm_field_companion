@@ -1002,6 +1002,25 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                 ),
                 textCapitalization: TextCapitalization.words,
               ),
+              const SizedBox(height: 6),
+              Text(
+                'EPPO / product identifier (optional) — enter a standard code for '
+                'research and regulatory records.',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.3,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _eppoController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: FormStyles.inputDecoration(
+                  labelText: 'EPPO code',
+                  hintText: 'e.g. 1BAS5B4048',
+                ),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -1167,6 +1186,10 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
               const SizedBox(height: 12),
               ExpansionTile(
                 title: const Text('Regulatory details'),
+                subtitle: const Text(
+                  'Manufacturer, registration',
+                  style: TextStyle(fontSize: 12),
+                ),
                 initiallyExpanded: false,
                 children: [
                   TextField(
@@ -1180,14 +1203,6 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                     controller: _registrationNumberController,
                     decoration: FormStyles.inputDecoration(
                       labelText: 'Registration number',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _eppoController,
-                    decoration: FormStyles.inputDecoration(
-                      labelText: 'EPPO code',
-                      hintText: 'e.g. 1BAS5B4048',
                     ),
                   ),
                 ],
@@ -1381,6 +1396,24 @@ decoration: FormStyles.inputDecoration(
                 labelText: 'Product Name *',
             ),
           ),
+          const SizedBox(height: 6),
+          Text(
+            'EPPO (optional) — standard product code for research records.',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.3,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: eppoController,
+            textCapitalization: TextCapitalization.characters,
+            decoration: FormStyles.inputDecoration(
+              labelText: 'EPPO code',
+              hintText: 'e.g. 1BAS5B4048',
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -1442,6 +1475,10 @@ decoration: FormStyles.inputDecoration(
           const SizedBox(height: 12),
           ExpansionTile(
             title: const Text('Regulatory details'),
+            subtitle: const Text(
+              'Manufacturer, registration',
+              style: TextStyle(fontSize: 12),
+            ),
             initiallyExpanded: false,
             children: [
               TextField(
@@ -1455,14 +1492,6 @@ decoration: FormStyles.inputDecoration(
                 controller: registrationNumberController,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Registration number',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: eppoController,
-                decoration: FormStyles.inputDecoration(
-                  labelText: 'EPPO code',
-                  hintText: 'e.g. 1BAS5B4048',
                 ),
               ),
             ],
