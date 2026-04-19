@@ -917,6 +917,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
             ],
           ),
         ),
+        if (noResultsMessage == null && trials.isNotEmpty)
+          const SizedBox(height: AppDesignTokens.spacing12),
         if (noResultsMessage != null)
           Padding(
             padding:
@@ -949,7 +951,7 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                   ? topUrgent?.label
                   : null;
               return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
                 child: TrialCard(
                   trial: t,
                   index: i + 1,

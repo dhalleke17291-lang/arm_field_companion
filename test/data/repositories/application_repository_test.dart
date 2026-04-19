@@ -1,6 +1,7 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/field_operation_date_rules.dart';
-import 'package:arm_field_companion/data/repositories/application_product_repository.dart';
+import 'package:arm_field_companion/data/repositories/application_product_repository.dart'
+    show ApplicationProductRepository, ApplicationProductSaveRow;
 import 'package:arm_field_companion/data/repositories/application_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -162,7 +163,8 @@ void main() {
 
       // Add products
       await productRepo.saveProductsForEvent(id, [
-        (productName: 'Fungicide X', rate: 250.0, rateUnit: 'mL/ha'),
+        const ApplicationProductSaveRow(
+            productName: 'Fungicide X', rate: 250.0, rateUnit: 'mL/ha'),
       ]);
 
       await repo.deleteApplication(id);
@@ -187,8 +189,10 @@ void main() {
       );
 
       await productRepo.saveProductsForEvent(eventId, [
-        (productName: 'Product A', rate: 100.0, rateUnit: 'g/ha'),
-        (productName: 'Product B', rate: null, rateUnit: null),
+        const ApplicationProductSaveRow(
+            productName: 'Product A', rate: 100.0, rateUnit: 'g/ha'),
+        const ApplicationProductSaveRow(
+            productName: 'Product B', rate: null, rateUnit: null),
       ]);
 
       final products = await productRepo.getProductsForEvent(eventId);
@@ -211,17 +215,49 @@ void main() {
       );
 
       await productRepo.saveProductsForEvent(eventId, [
-        (productName: 'Old', rate: null, rateUnit: null),
+        const ApplicationProductSaveRow(
+            productName: 'Old', rate: null, rateUnit: null),
       ]);
       await productRepo.saveProductsForEvent(eventId, [
-        (productName: 'New A', rate: 50.0, rateUnit: 'mL/ha'),
-        (productName: 'New B', rate: 75.0, rateUnit: 'g/ha'),
+        const ApplicationProductSaveRow(
+            productName: 'New A', rate: 50.0, rateUnit: 'mL/ha'),
+        const ApplicationProductSaveRow(
+            productName: 'New B', rate: 75.0, rateUnit: 'g/ha'),
       ]);
 
       final products = await productRepo.getProductsForEvent(eventId);
       expect(products.length, 2);
       expect(products[0].productName, 'New A');
       expect(products[1].productName, 'New B');
+    });
+
+    test('persists planned protocol fields for deviation tracking', () async {
+      final trialId = await createTrial();
+      final eventId = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+          status: const Value('planned'),
+        ),
+      );
+
+      await productRepo.saveProductsForEvent(eventId, [
+        const ApplicationProductSaveRow(
+          productName: 'Herbicide X',
+          rate: 1.02,
+          rateUnit: 'L/ha',
+          plannedProduct: 'Herbicide X',
+          plannedRate: 1.0,
+          plannedRateUnit: 'L/ha',
+        ),
+      ]);
+
+      final products = await productRepo.getProductsForEvent(eventId);
+      expect(products.length, 1);
+      expect(products[0].plannedProduct, 'Herbicide X');
+      expect(products[0].plannedRate, 1.0);
+      expect(products[0].plannedRateUnit, 'L/ha');
+      expect(products[0].rate, closeTo(1.02, 0.0001));
     });
   });
 }

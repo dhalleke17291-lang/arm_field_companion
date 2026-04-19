@@ -51,7 +51,6 @@ import '../derived/derived_snapshot_provider.dart'
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
 import '../../domain/models/trial_insight.dart';
-import '../import/ui/import_trial_sheet.dart';
 import '../backup/backup_reminder_store.dart';
 import '../notes/field_notes_list_screen.dart';
 
@@ -1181,9 +1180,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       tooltip: 'More',
       padding: const EdgeInsets.all(8),
       onSelected: (value) {
-        if (value == 'import') {
-          ImportTrialSheet.show(context, trialId: trial.id);
-        } else if (value == 'activity') {
+        if (value == 'activity') {
           Navigator.push<void>(
             context,
             MaterialPageRoute<void>(
@@ -1195,10 +1192,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         }
       },
       itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'import',
-          child: Text('Import'),
-        ),
         const PopupMenuItem<String>(
           value: 'activity',
           child: Text('Activity'),

@@ -10,36 +10,29 @@ import '../../arm_import/arm_import_screen.dart';
 import '../../export/domain/shell_link_preview.dart';
 import '../../protocol_import/protocol_import_screen.dart';
 
-/// Bottom sheet: choose ARM CSV, Protocol CSV, or shell link.
+/// Bottom sheet: ARM Rating Shell, protocol CSV, or link rating sheet to a trial.
 ///
-/// [trialId] when set skips trial selection for shell link (e.g. trial detail).
+/// Open from the trials hub toolbar only — not duplicated inside [TrialDetailScreen].
 class ImportTrialSheet extends StatelessWidget {
   const ImportTrialSheet({
     super.key,
     required this.parentContext,
-    this.trialId,
   });
 
   final BuildContext parentContext;
 
-  /// Pre-selected trial for shell link; null opens ARM-linked trial picker.
-  final int? trialId;
-
   /// Presents the sheet; routes use [parentContext] after the sheet is closed.
-  static Future<void> show(
-    BuildContext parentContext, {
-    int? trialId,
-  }) {
+  static Future<void> show(BuildContext parentContext) {
     return showModalBottomSheet<void>(
       context: parentContext,
       backgroundColor: Colors.white,
       isScrollControlled: true,
+      showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => ImportTrialSheet(
         parentContext: parentContext,
-        trialId: trialId,
       ),
     );
   }
@@ -58,17 +51,6 @@ class ImportTrialSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
-                decoration: BoxDecoration(
-                  color: AppDesignTokens.borderCrisp,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
             Text(
               'Import Trial',
               style: AppDesignTokens.bodyCrispStyle(
@@ -109,20 +91,18 @@ class ImportTrialSheet extends StatelessWidget {
                 );
               },
             ),
-            if (trialId != null) ...[
-              const SizedBox(height: AppDesignTokens.spacing8),
-              _ImportOptionTile(
-                icon: Icons.link_outlined,
-                title: 'Link Rating Sheet',
-                subtitle:
-                    'Add ARM metadata to an existing imported trial',
-                onTap: () => _onLinkArmShellTap(
-                      sheetContext: context,
-                      parentContext: parentContext,
-                      trialId: trialId,
-                    ),
-              ),
-            ],
+            const SizedBox(height: AppDesignTokens.spacing8),
+            _ImportOptionTile(
+              icon: Icons.link_outlined,
+              title: 'Link Rating Sheet',
+              subtitle:
+                  'Add ARM metadata to an existing imported trial',
+              onTap: () => _onLinkArmShellTap(
+                    sheetContext: context,
+                    parentContext: parentContext,
+                    trialId: null,
+                  ),
+            ),
           ],
         ),
       ),
@@ -230,6 +210,7 @@ Future<void> _onLinkArmShellTap({
     context: parentContext,
     isScrollControlled: true,
     backgroundColor: Colors.white,
+    showDragHandle: false,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),

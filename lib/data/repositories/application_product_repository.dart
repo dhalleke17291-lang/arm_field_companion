@@ -2,6 +2,30 @@ import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
 
+/// One row to persist for an application event's tank-mix / product list.
+///
+/// [plannedProduct], [plannedRate], [plannedRateUnit] mirror the treatment
+/// protocol (from [TreatmentComponent]) when the application is tied to a
+/// treatment; [rate] / [rateUnit] are the as-applied values recorded for this
+/// event.
+class ApplicationProductSaveRow {
+  const ApplicationProductSaveRow({
+    required this.productName,
+    this.rate,
+    this.rateUnit,
+    this.plannedProduct,
+    this.plannedRate,
+    this.plannedRateUnit,
+  });
+
+  final String productName;
+  final double? rate;
+  final String? rateUnit;
+  final String? plannedProduct;
+  final double? plannedRate;
+  final String? plannedRateUnit;
+}
+
 class ApplicationProductRepository {
   ApplicationProductRepository(this._db);
 
@@ -28,7 +52,7 @@ class ApplicationProductRepository {
   /// Replaces all products for the event inside a single transaction.
   Future<void> saveProductsForEvent(
     String trialApplicationEventId,
-    List<({String productName, double? rate, String? rateUnit})> rows,
+    List<ApplicationProductSaveRow> rows,
   ) async {
     await _db.transaction(() async {
       await (_db.delete(_db.trialApplicationProducts)
@@ -45,6 +69,15 @@ class ApplicationProductRepository {
                 rateUnit:
                     r.rateUnit != null ? Value(r.rateUnit) : const Value.absent(),
                 sortOrder: Value(i),
+                plannedProduct: r.plannedProduct != null
+                    ? Value(r.plannedProduct)
+                    : const Value.absent(),
+                plannedRate: r.plannedRate != null
+                    ? Value(r.plannedRate)
+                    : const Value.absent(),
+                plannedRateUnit: r.plannedRateUnit != null
+                    ? Value(r.plannedRateUnit)
+                    : const Value.absent(),
               ),
             );
       }

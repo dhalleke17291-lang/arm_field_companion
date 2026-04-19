@@ -13,6 +13,7 @@ import '../../../core/plot_display.dart';
 import '../../../core/application_event_numeric_rules.dart';
 import '../../../core/field_operation_date_rules.dart';
 import '../../../core/providers.dart';
+import '../../../data/repositories/application_product_repository.dart';
 
 /// Five-section add/edit application bottom sheet content.
 class ApplicationSheetContent extends ConsumerStatefulWidget {
@@ -63,6 +64,9 @@ class _ApplicationSheetContentState
   late List<TextEditingController> _rateControllers;
   late List<String> _rateUnits;
   bool _junctionLoadScheduled = false;
+  /// Parallel to product rows when a treatment is selected: the treatment
+  /// component for protocol-bound rows, or null for extra rows (legacy / not on protocol).
+  List<TreatmentComponent?> _protocolRowSources = [];
   late String? _applicationMethod;
 
   late final TextEditingController _nozzleSpacingController;
@@ -111,6 +115,14 @@ class _ApplicationSheetContentState
   static double? _parseDouble(String s) {
     final t = s.trim();
     return t.isEmpty ? null : double.tryParse(t);
+  }
+
+  /// Parses protocol rate from [TreatmentComponent.rate] (stored as text).
+  static double? _parsePlannedRateString(String? s) {
+    if (s == null) return null;
+    final t = s.trim().replaceAll(',', '.');
+    if (t.isEmpty) return null;
+    return double.tryParse(t);
   }
 
   @override
@@ -222,6 +234,7 @@ class _ApplicationSheetContentState
     _productControllers = [];
     _rateControllers = [];
     _rateUnits = [];
+    _protocolRowSources = [];
   }
 
   Future<void> _loadJunctionProducts() async {
@@ -230,21 +243,103 @@ class _ApplicationSheetContentState
     final list = await ref
         .read(applicationProductRepositoryProvider)
         .getProductsForEvent(id);
-    if (!mounted || list.isEmpty) return;
+    if (!mounted) return;
+    if (list.isNotEmpty) {
+      setState(() {
+        _disposeProductRows();
+        _productControllers =
+            list.map((p) => TextEditingController(text: p.productName)).toList();
+        _rateControllers = list
+            .map((p) => TextEditingController(
+                text: p.rate != null ? p.rate.toString() : ''))
+            .toList();
+        _rateUnits = list
+            .map((p) => (p.rateUnit != null && p.rateUnit!.trim().isNotEmpty)
+                ? p.rateUnit!.trim()
+                : widget.rateUnits.first)
+            .toList();
+      });
+    }
+    await _applyTreatmentProtocolBinding();
+  }
+
+  /// Binds product rows to [TreatmentComponent]s when a treatment is selected.
+  /// Preserves as-applied rates by matching on product name where possible.
+  Future<void> _applyTreatmentProtocolBinding() async {
+    if (_treatmentId == null) {
+      if (!mounted) return;
+      setState(() => _protocolRowSources = []);
+      return;
+    }
+
+    final comps = await ref
+        .read(treatmentRepositoryProvider)
+        .getComponentsForTreatment(_treatmentId!);
+
+    if (!mounted) return;
+
+    final savedByName = <String, ({String rateText, String unit})>{};
+    for (var i = 0; i < _productControllers.length; i++) {
+      final n = _productControllers[i].text.trim();
+      if (n.isEmpty) continue;
+      savedByName[n] = (
+        rateText: _rateControllers[i].text,
+        unit: i < _rateUnits.length ? _rateUnits[i] : widget.rateUnits.first,
+      );
+    }
+
     setState(() {
       _disposeProductRows();
-      _productControllers =
-          list.map((p) => TextEditingController(text: p.productName)).toList();
-      _rateControllers = list
-          .map((p) => TextEditingController(
-              text: p.rate != null ? p.rate.toString() : ''))
-          .toList();
-      _rateUnits = list
-          .map((p) => (p.rateUnit != null && p.rateUnit!.trim().isNotEmpty)
-              ? p.rateUnit!.trim()
-              : widget.rateUnits.first)
-          .toList();
+
+      final compNames = comps.map((c) => c.productName.trim()).toSet();
+
+      for (final c in comps) {
+        _protocolRowSources.add(c);
+        _productControllers.add(TextEditingController(text: c.productName));
+        final preserved = savedByName[c.productName.trim()];
+        final planned = _parsePlannedRateString(c.rate);
+        final rateText = preserved?.rateText.trim().isNotEmpty == true
+            ? preserved!.rateText
+            : (planned != null ? planned.toString() : '');
+        _rateControllers.add(TextEditingController(text: rateText));
+        _rateUnits.add(
+          preserved?.unit ??
+              (c.rateUnit != null && c.rateUnit!.trim().isNotEmpty
+                  ? c.rateUnit!.trim()
+                  : widget.rateUnits.first),
+        );
+      }
+
+      for (final e in savedByName.entries) {
+        if (compNames.contains(e.key)) continue;
+        _protocolRowSources.add(null);
+        _productControllers.add(TextEditingController(text: e.key));
+        _rateControllers.add(TextEditingController(text: e.value.rateText));
+        _rateUnits.add(e.value.unit);
+      }
     });
+  }
+
+  bool _isProtocolLockedRow(int i) =>
+      _treatmentId != null &&
+      i < _protocolRowSources.length &&
+      _protocolRowSources[i] != null;
+
+  bool _canRemoveProductRow(int i) {
+    if (_productControllers.length <= 1) return false;
+    if (_treatmentId == null) return true;
+    return i < _protocolRowSources.length && _protocolRowSources[i] == null;
+  }
+
+  String? _protocolPlannedRateLine(TreatmentComponent c) {
+    final pr = _parsePlannedRateString(c.rate);
+    final pu = c.rateUnit?.trim();
+    if (pr == null && (pu == null || pu.isEmpty)) return null;
+    if (pr != null && pu != null && pu.isNotEmpty) {
+      return 'Protocol rate: $pr $pu';
+    }
+    if (pr != null) return 'Protocol rate: $pr';
+    return 'Protocol rate: $pu';
   }
 
   @override
@@ -537,14 +632,21 @@ class _ApplicationSheetContentState
         );
         eventId = widget.existing!.id;
       }
-      final rows = <({String productName, double? rate, String? rateUnit})>[];
+      final rows = <ApplicationProductSaveRow>[];
       for (var i = 0; i < _productControllers.length; i++) {
         final name = _productControllers[i].text.trim();
         if (name.isEmpty) continue;
-        rows.add((
+        final TreatmentComponent? c =
+            _treatmentId != null && i < _protocolRowSources.length
+                ? _protocolRowSources[i]
+                : null;
+        rows.add(ApplicationProductSaveRow(
           productName: name,
           rate: _parseDouble(_rateControllers[i].text),
           rateUnit: i < _rateUnits.length ? _rateUnits[i] : null,
+          plannedProduct: c?.productName,
+          plannedRate: c != null ? _parsePlannedRateString(c.rate) : null,
+          plannedRateUnit: c?.rateUnit,
         ));
       }
       await productRepo.saveProductsForEvent(eventId, rows);
@@ -725,29 +827,105 @@ class _ApplicationSheetContentState
               ...treatments.map((t) =>
                   DropdownMenuItem<int?>(value: t.id, child: Text(t.code))),
             ],
-            onChanged: (v) => setState(() => _treatmentId = v),
+            onChanged: (v) async {
+              final prev = _treatmentId;
+              setState(() => _treatmentId = v);
+              if (prev != null && v == null) {
+                setState(() {
+                  _protocolRowSources = [];
+                  _disposeProductRows();
+                  _productControllers = [TextEditingController()];
+                  _rateControllers = [TextEditingController()];
+                  _rateUnits = [widget.rateUnits.first];
+                });
+                return;
+              }
+              await _applyTreatmentProtocolBinding();
+            },
           ),
+          if (_treatmentId != null) ...[
+            Builder(
+              builder: (context) {
+                Treatment? tr;
+                for (final t in treatments) {
+                  if (t.id == _treatmentId) {
+                    tr = t;
+                    break;
+                  }
+                }
+                final code = tr?.eppoCode?.trim();
+                if (code == null || code.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Treatment EPPO: $code',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
           const SizedBox(height: FormStyles.formSheetFieldSpacing),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('PRODUCTS', style: FormStyles.sectionLabelStyle),
-              TextButton.icon(
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Product'),
-                style: TextButton.styleFrom(
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              Expanded(
+                child: Text(
+                  _treatmentId != null
+                      ? 'PRODUCTS (from treatment protocol)'
+                      : 'PRODUCTS',
+                  style: FormStyles.sectionLabelStyle,
                 ),
-                onPressed: () => setState(() {
-                  _productControllers.add(TextEditingController());
-                  _rateControllers.add(TextEditingController());
-                  _rateUnits.add(widget.rateUnits.first);
-                }),
               ),
+              if (_treatmentId == null)
+                TextButton.icon(
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add Product'),
+                  style: TextButton.styleFrom(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () => setState(() {
+                    _productControllers.add(TextEditingController());
+                    _rateControllers.add(TextEditingController());
+                    _rateUnits.add(widget.rateUnits.first);
+                  }),
+                ),
             ],
-          ),
+            ),
+          if (_treatmentId != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Product names and protocol rates come from the Treatments tab. '
+                'Adjust rates here only for as-applied values (planned vs actual is tracked). '
+                'Per-product EPPO codes are shown below when set.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          if (_treatmentId != null && _productControllers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'No products in this treatment yet. Add components in the Treatments tab.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           const SizedBox(height: FormStyles.formSheetFieldSpacing),
           ...List.generate(_productControllers.length, (i) {
+            final TreatmentComponent? src =
+                i < _protocolRowSources.length ? _protocolRowSources[i] : null;
+            final protocolLine =
+                src != null ? _protocolPlannedRateLine(src) : null;
+            final componentEppo = src?.eppoCode?.trim();
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -766,42 +944,84 @@ class _ApplicationSheetContentState
                         ),
                       ),
                       Expanded(child: Divider(color: Colors.grey.shade200)),
-                      IconButton(
-                        tooltip: 'Remove product',
-                        icon: Icon(Icons.remove_circle_outline,
-                            color: Colors.grey.shade400, size: 18),
-                        onPressed: () {
-                          if (_productControllers.length <= 1) return;
-                          setState(() {
-                            _productControllers[i].dispose();
-                            _rateControllers[i].dispose();
-                            _productControllers.removeAt(i);
-                            _rateControllers.removeAt(i);
-                            _rateUnits.removeAt(i);
-                          });
-                        },
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            const BoxConstraints(minWidth: 32, minHeight: 32),
-                      ),
+                      if (_canRemoveProductRow(i))
+                        IconButton(
+                          tooltip: 'Remove product',
+                          icon: Icon(Icons.remove_circle_outline,
+                              color: Colors.grey.shade400, size: 18),
+                          onPressed: () {
+                            if (!_canRemoveProductRow(i)) return;
+                            setState(() {
+                              _productControllers[i].dispose();
+                              _rateControllers[i].dispose();
+                              _productControllers.removeAt(i);
+                              _rateControllers.removeAt(i);
+                              _rateUnits.removeAt(i);
+                              if (i < _protocolRowSources.length) {
+                                _protocolRowSources.removeAt(i);
+                              }
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints:
+                              const BoxConstraints(minWidth: 32, minHeight: 32),
+                        )
+                      else
+                        const SizedBox(width: 32, height: 32),
                     ],
                   ),
                   const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 ],
                 TextField(
                   controller: _productControllers[i],
+                  readOnly: _isProtocolLockedRow(i),
                   decoration: FormStyles.inputDecoration(
                     hintText: 'Product name',
+                    labelText:
+                        _isProtocolLockedRow(i) ? 'Product (protocol)' : null,
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
+                if (componentEppo != null && componentEppo.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'EPPO: $componentEppo',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (protocolLine != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    protocolLine,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (_treatmentId != null && src == null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Not on treatment protocol — retained from a previous save; '
+                    'you can edit the name or remove this row.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 TextField(
                   controller: _rateControllers[i],
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: FormStyles.inputDecoration(
-                    hintText: 'Rate',
+                    labelText:
+                        _isProtocolLockedRow(i) ? 'As-applied rate' : null,
+                    hintText: _isProtocolLockedRow(i) ? null : 'Rate',
                     suffixIcon: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: i < _rateUnits.length

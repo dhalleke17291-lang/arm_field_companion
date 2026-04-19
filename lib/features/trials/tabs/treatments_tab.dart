@@ -1006,6 +1006,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
               Row(
                 children: [
                   Expanded(
+                    flex: 2,
                     child: TextFormField(
                       controller: _rateController,
                       keyboardType:
@@ -1015,8 +1016,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  SizedBox(
-                    width: 100,
+                  Expanded(
+                    flex: 1,
                     child: DropdownButtonFormField<String>(
                       key: ValueKey('sheet_rate_unit_$_rateUnit'),
                       isExpanded: true,
@@ -1074,6 +1075,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                   Row(
                     children: [
                       Expanded(
+                        flex: 2,
                         child: TextFormField(
                           controller: _aiConcentrationController,
                           keyboardType: const TextInputType.numberWithOptions(
@@ -1084,9 +1086,11 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      SizedBox(
-                        width: 80,
+                      Expanded(
+                        flex: 1,
                         child: DropdownButtonFormField<String>(
+                          key: ValueKey('sheet_ai_unit_$_aiConcentrationUnit'),
+                          isExpanded: true,
                           initialValue: _aiConcentrationUnit,
                           decoration: FormStyles.inputDecoration(
                               labelText: 'Unit'),
@@ -1105,6 +1109,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                   Row(
                     children: [
                       Expanded(
+                        flex: 2,
                         child: TextFormField(
                           controller: _labelRateController,
                           keyboardType: const TextInputType.numberWithOptions(
@@ -1115,9 +1120,11 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      SizedBox(
-                        width: 100,
+                      Expanded(
+                        flex: 1,
                         child: DropdownButtonFormField<String>(
+                          key: ValueKey('sheet_label_unit_$_labelRateUnit'),
+                          isExpanded: true,
                           initialValue: _labelRateUnit,
                           decoration: FormStyles.inputDecoration(
                               labelText: 'Unit'),
