@@ -1364,7 +1364,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                       .withValues(alpha: 0.7)),
                               const SizedBox(width: 3),
                               Text(
-                                '${_gpsLatitude!.toStringAsFixed(5)}, ${_gpsLongitude!.toStringAsFixed(5)}',
+                                '${_gpsLatitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3)}, ${_gpsLongitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3)}',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: AppDesignTokens.secondaryText
