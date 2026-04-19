@@ -29,6 +29,7 @@ import '../weather/weather_capture_form.dart';
 import 'session_data_grid.dart';
 import 'session_grid_pdf_export.dart';
 import 'session_summary_assessment_coverage.dart';
+import '../../core/connectivity/gps_service.dart';
 import '../../domain/models/trial_insight.dart';
 import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
@@ -465,6 +466,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         _offerShareSummary();
         _checkBackupReminder();
         ref.read(autoBackupServiceProvider).performAutoBackup();
+        _queueWeatherBackfillIfNeeded();
       }
       // If warnings blocked the close, offer force close
       if (!result.success &&
@@ -658,6 +660,28 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
 
     if (!mounted) return;
     await Share.share(text, subject: '${widget.trial.name} — ${widget.session.name}');
+  }
+
+  Future<void> _queueWeatherBackfillIfNeeded() async {
+    try {
+      final weatherRepo = ref.read(weatherSnapshotRepositoryProvider);
+      final snap = await weatherRepo.getWeatherSnapshotForParent(
+        kWeatherParentTypeRatingSession, widget.session.id);
+      if (snap != null) return;
+
+      final pos = await GpsService.getCurrentPosition(
+          timeout: const Duration(seconds: 3));
+      if (pos == null) return;
+
+      await ref.read(weatherBackfillServiceProvider).queueBackfill(
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        eventTimestamp: widget.session.startedAt,
+        parentType: kWeatherParentTypeRatingSession,
+        parentId: widget.session.id,
+        trialId: widget.trial.id,
+      );
+    } catch (_) {}
   }
 
   bool _isExporting = false;

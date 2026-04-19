@@ -73,4 +73,63 @@ class WeatherSnapshotRepository {
           w.parentType.equals(parentType) & w.parentId.equals(parentId));
     return q.watch().map((rows) => rows.isEmpty ? null : rows.first);
   }
+
+  /// Upsert from backfill service. Only fills empty records — never
+  /// overwrites manual or real-time API data.
+  Future<void> upsertWeatherSnapshotFromBackfill({
+    required int trialId,
+    required String parentType,
+    required int parentId,
+    double? temperatureC,
+    double? humidityPct,
+    double? windSpeedKmh,
+    String? windDirection,
+    String? cloudCover,
+    String? precipitation,
+    required String source,
+  }) async {
+    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+    final existing = await getWeatherSnapshotForParent(parentType, parentId);
+
+    if (existing != null) {
+      if (existing.source != 'missing') return;
+      await updateWeatherSnapshot(
+        existing.id,
+        WeatherSnapshotsCompanion(
+          source: Value(source),
+          temperature: Value(temperatureC),
+          temperatureUnit: const Value('C'),
+          humidity: Value(humidityPct),
+          windSpeed: Value(windSpeedKmh),
+          windSpeedUnit: const Value('km/h'),
+          windDirection: Value(windDirection),
+          cloudCover: Value(cloudCover),
+          precipitation: Value(precipitation),
+          modifiedAt: Value(nowMs),
+        ),
+      );
+    } else {
+      await _db.into(_db.weatherSnapshots).insert(
+            WeatherSnapshotsCompanion.insert(
+              uuid: DateTime.now().microsecondsSinceEpoch.toString(),
+              trialId: trialId,
+              parentType: Value(parentType),
+              parentId: parentId,
+              source: Value(source),
+              temperature: Value(temperatureC),
+              temperatureUnit: const Value('C'),
+              humidity: Value(humidityPct),
+              windSpeed: Value(windSpeedKmh),
+              windSpeedUnit: const Value('km/h'),
+              windDirection: Value(windDirection),
+              cloudCover: Value(cloudCover),
+              precipitation: Value(precipitation),
+              recordedAt: nowMs,
+              createdAt: nowMs,
+              modifiedAt: nowMs,
+              createdBy: 'weather_backfill',
+            ),
+          );
+    }
+  }
 }
