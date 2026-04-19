@@ -1,8 +1,11 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/connectivity/gps_service.dart';
+import '../../core/connectivity/weather_api_service.dart';
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
@@ -64,6 +67,10 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
   String? _soilCondition;
 
   bool _localeDefaultsApplied = false;
+  bool _autoFetching = false;
+  String? _weatherSource;
+
+  static const String _kWeatherProviderKey = 'weather_provider';
 
   @override
   void initState() {
@@ -85,6 +92,84 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
     _cloudCover = w?.cloudCover;
     _precipitation = w?.precipitation;
     _soilCondition = w?.soilCondition;
+    _weatherSource = w?.source ?? 'manual';
+
+    if (w == null) {
+      _tryAutoFetch();
+    }
+  }
+
+  Future<void> _tryAutoFetch() async {
+    final pos = await GpsService.getCurrentPosition(
+        timeout: const Duration(seconds: 5));
+    if (pos == null || !mounted) return;
+
+    setState(() => _autoFetching = true);
+
+    final prefs = await SharedPreferences.getInstance();
+    final providerName = prefs.getString(_kWeatherProviderKey);
+    final providerType = providerName == 'environment_canada'
+        ? WeatherProviderType.environmentCanada
+        : WeatherProviderType.openMeteo;
+    final provider = weatherProviderFor(providerType);
+
+    final result = await provider.fetchCurrent(
+      latitude: pos.latitude,
+      longitude: pos.longitude,
+    );
+
+    if (!mounted) return;
+    setState(() => _autoFetching = false);
+
+    if (result == null) return;
+
+    setState(() {
+      _weatherSource = 'api';
+      if (_tempCtrl.text.trim().isEmpty) {
+        final temp = _tempUnit == 'F'
+            ? result.temperatureC * 9 / 5 + 32
+            : result.temperatureC;
+        _tempCtrl.text = temp.round().toString();
+      }
+      if (_humidityCtrl.text.trim().isEmpty) {
+        _humidityCtrl.text = result.humidityPct.round().toString();
+      }
+      if (_windCtrl.text.trim().isEmpty) {
+        final wind = _windUnit == 'mph'
+            ? result.windSpeedKmh * 0.621371
+            : result.windSpeedKmh;
+        _windCtrl.text = wind.round().toString();
+      }
+      _windDir ??= result.windDirection;
+      if (result.cloudCoverPct != null && _cloudCover == null) {
+        final pct = result.cloudCoverPct!;
+        if (pct < 15) {
+          _cloudCover = 'Clear';
+        } else if (pct < 50) {
+          _cloudCover = 'Partly cloudy';
+        } else if (pct < 85) {
+          _cloudCover = 'Mostly cloudy';
+        } else {
+          _cloudCover = 'Overcast';
+        }
+      }
+      _precipitation ??= result.precipitation;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Weather pre-filled from ${provider.displayName}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _markManualEdit() {
+    if (_weatherSource == 'api') {
+      setState(() => _weatherSource = 'manual');
+    }
   }
 
   @override
@@ -181,6 +266,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
         await repo.updateWeatherSnapshot(
           existing.id,
           WeatherSnapshotsCompanion(
+            source: Value(_weatherSource ?? 'manual'),
             temperature: Value(temp),
             temperatureUnit: Value(_tempUnit),
             humidity: Value(humidity),
@@ -206,6 +292,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
             modifiedAt: nowMs,
             createdBy: createdBy,
             parentType: const Value(kWeatherParentTypeRatingSession),
+            source: Value(_weatherSource ?? 'manual'),
             temperature: Value(temp),
             temperatureUnit: Value(_tempUnit),
             humidity: Value(humidity),
@@ -334,6 +421,47 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
                   fontSize: 13,
                 ),
               ),
+              if (_autoFetching)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Fetching weather...',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_weatherSource == 'api')
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.cloud_done,
+                          size: 13,
+                          color: AppDesignTokens.successFg
+                              .withValues(alpha: 0.7)),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Auto-filled from weather API — edit to override',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               const Text(
                 'Temperature',
@@ -350,6 +478,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
                     child: TextField(
                       key: const Key('weather_field_temperature'),
                       controller: _tempCtrl,
+                      onChanged: (_) => _markManualEdit(),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                         signed: true,
@@ -392,6 +521,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
               TextField(
                 key: const Key('weather_field_humidity'),
                 controller: _humidityCtrl,
+                onChanged: (_) => _markManualEdit(),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   hintText: '% (optional)',
@@ -416,6 +546,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
                     child: TextField(
                       key: const Key('weather_field_wind'),
                       controller: _windCtrl,
+                      onChanged: (_) => _markManualEdit(),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
@@ -458,7 +589,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
                 values: kWeatherWindDirections,
                 labelFn: (s) => s,
                 selected: _windDir,
-                onChanged: (v) => setState(() => _windDir = v),
+                onChanged: (v) { setState(() => _windDir = v); _markManualEdit(); },
               ),
               const SizedBox(height: 14),
               const Text(
@@ -473,7 +604,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
                 values: kWeatherCloudCovers,
                 labelFn: weatherCloudCoverLabel,
                 selected: _cloudCover,
-                onChanged: (v) => setState(() => _cloudCover = v),
+                onChanged: (v) { setState(() => _cloudCover = v); _markManualEdit(); },
               ),
               const SizedBox(height: 14),
               const Text(
@@ -488,7 +619,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
                 values: kWeatherPrecipitations,
                 labelFn: weatherPrecipitationLabel,
                 selected: _precipitation,
-                onChanged: (v) => setState(() => _precipitation = v),
+                onChanged: (v) { setState(() => _precipitation = v); _markManualEdit(); },
               ),
               const SizedBox(height: 14),
               const Text(
