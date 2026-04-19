@@ -36,6 +36,9 @@ class _FakeSessionRepository implements SessionRepository {
   Future<int> deduplicateSessionAssessmentsForTrial(int trialId) async => 0;
 
   @override
+  Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async => {};
+
+  @override
   Future<bool> isAssessmentInSession(int assessmentId, int sessionId) async {
     final list = _sessionAssessments[sessionId] ?? const [];
     return list.any((a) => a.id == assessmentId);
@@ -134,6 +137,7 @@ class _FakeTrialRepository implements TrialRepository {
   Future<Trial?> getTrialById(int id) async {
     return _trials.where((t) => t.id == id).firstOrNull;
   }
+
 
   // Unused members for this test.
   @override

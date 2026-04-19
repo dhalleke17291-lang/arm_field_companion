@@ -622,9 +622,19 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  '${_rcbdScanReport!.affectedTrials.length} of '
-                  '${_rcbdScanReport!.trialsScanned} trial${_rcbdScanReport!.trialsScanned == 1 ? '' : 's'} '
-                  'flagged.',
+                  () {
+                    final total = _rcbdScanReport!.affectedTrials.length;
+                    final scanned = _rcbdScanReport!.trialsScanned;
+                    final hardCount = _rcbdScanReport!.affectedTrials
+                        .where((a) => a.hasHardViolations)
+                        .length;
+                    if (hardCount > 0) {
+                      return '$hardCount of $scanned trial${scanned == 1 ? '' : 's'} '
+                          'with invalid layout. $total total flagged.';
+                    }
+                    return '$total of $scanned trial${scanned == 1 ? '' : 's'} '
+                        'with spatial concerns (all layouts valid).';
+                  }(),
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
@@ -634,6 +644,14 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               ..._rcbdScanReport!.affectedTrials.map(
                 (audit) => Card(
                   margin: const EdgeInsets.only(bottom: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(
+                      color: audit.hasHardViolations
+                          ? AppDesignTokens.missedColor.withValues(alpha: 0.4)
+                          : AppDesignTokens.warningBorder,
+                    ),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
@@ -643,34 +661,52 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                           children: [
                             Icon(
                               audit.hasHardViolations
-                                  ? Icons.warning_amber_rounded
+                                  ? Icons.error_outline
                                   : Icons.info_outline,
                               size: 20,
                               color: audit.hasHardViolations
-                                  ? AppDesignTokens.warningFg
-                                  : theme.colorScheme.primary,
+                                  ? AppDesignTokens.missedColor
+                                  : AppDesignTokens.warningFg,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
-                                audit.trialName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    audit.trialName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    audit.hasHardViolations
+                                        ? 'Layout invalid — must regenerate'
+                                        : 'Spatial concern — valid layout',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: audit.hasHardViolations
+                                          ? AppDesignTokens.missedColor
+                                          : AppDesignTokens.warningFg,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                         if (audit.report.hardViolations.isNotEmpty) ...[
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           for (final v in audit.report.hardViolations)
                             Padding(
                               padding: const EdgeInsets.only(left: 28, top: 2),
                               child: Text(
                                 '\u2022 $v',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppDesignTokens.warningFg,
+                                  color: AppDesignTokens.missedColor,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -683,8 +719,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                               child: Text(
                                 '\u2022 $v',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.7),
+                                  color: AppDesignTokens.secondaryText,
                                 ),
                               ),
                             ),

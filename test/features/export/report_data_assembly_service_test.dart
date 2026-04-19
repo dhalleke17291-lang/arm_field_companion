@@ -530,6 +530,9 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Future<int> deduplicateSessionAssessmentsForTrial(int trialId) async => 0;
+
+  @override
+  Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async => {};
 }
 
 class MockAssignmentRepository implements AssignmentRepository {
@@ -567,6 +570,7 @@ class MockAssignmentRepository implements AssignmentRepository {
     int? assignedBy,
     String? notes,
   }) async {}
+
 
   @override
   Future<void> upsertBulk({

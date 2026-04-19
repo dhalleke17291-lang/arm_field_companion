@@ -164,6 +164,9 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Future<int> deduplicateSessionAssessmentsForTrial(int trialId) async => 0;
+
+  @override
+  Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async => {};
 }
 
 class MockAssignmentIntegrity implements AssignmentIntegrityChecks {
@@ -172,6 +175,7 @@ class MockAssignmentIntegrity implements AssignmentIntegrityChecks {
     required int plotPk,
     required int trialId,
   }) async {}
+
 
   @override
   Future<void> assertTreatmentBelongsToTrial({

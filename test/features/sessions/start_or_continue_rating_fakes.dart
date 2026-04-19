@@ -150,6 +150,9 @@ class FakeSessionRepository implements SessionRepository {
     }
     return list.first.id;
   }
+
+  @override
+  Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async => {};
 }
 
 class FakeTrialRepository implements TrialRepository {

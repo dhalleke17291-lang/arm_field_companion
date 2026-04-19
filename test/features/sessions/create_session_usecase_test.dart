@@ -135,6 +135,9 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Future<int> deduplicateSessionAssessmentsForTrial(int trialId) async => 0;
+
+  @override
+  Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async => {};
 }
 
 void main() {
@@ -148,6 +151,7 @@ void main() {
       promoteTrialToActiveIfReady: (_) async {},
     );
   });
+
 
   group('CreateSessionUseCase — Invariants', () {
     test('SUCCESS: creates session with valid input', () async {

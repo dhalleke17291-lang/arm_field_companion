@@ -128,6 +128,9 @@ class _MockSessionRepository implements SessionRepository {
 
   @override
   Future<int> deduplicateSessionAssessmentsForTrial(int trialId) async => 0;
+
+  @override
+  Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async => {};
 }
 
 class _FakePathProvider extends PathProviderPlatform {
@@ -158,6 +161,7 @@ void main() {
     tempPath = dir.path;
     PathProviderPlatform.instance = _FakePathProvider(tempPath);
   });
+
 
   setUp(() {
     mockExportRepo = _MockExportRepository();
