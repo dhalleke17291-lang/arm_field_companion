@@ -15,6 +15,8 @@ import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
+import '../features/backup/auto_backup_service.dart';
+import '../features/backup/backup_passphrase_store.dart';
 import '../features/backup/backup_service.dart';
 import '../features/backup/restore_service.dart';
 import 'trial_operational_watch_merge.dart';
@@ -1593,6 +1595,13 @@ final backupServiceProvider = Provider<BackupService>((ref) {
 
 final restoreServiceProvider = Provider<RestoreService>((ref) {
   return RestoreService(ref.watch(databaseProvider));
+});
+
+final autoBackupServiceProvider = Provider<AutoBackupService>((ref) {
+  return AutoBackupService(
+    ref.watch(backupServiceProvider),
+    BackupPassphraseStore(),
+  );
 });
 
 // ---------------------------------------------------------------------------

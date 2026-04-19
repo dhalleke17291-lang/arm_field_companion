@@ -464,6 +464,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         _invalidate();
         _offerShareSummary();
         _checkBackupReminder();
+        ref.read(autoBackupServiceProvider).performAutoBackup();
       }
       // If warnings blocked the close, offer force close
       if (!result.success &&

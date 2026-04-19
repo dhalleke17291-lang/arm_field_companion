@@ -8,6 +8,7 @@ import 'splash_screen.dart';
 
 void main() {
   final diagnosticsStore = DiagnosticsStore(maxErrors: 50);
+  diagnosticsStore.loadFromDisk();
 
   FlutterError.onError = (FlutterErrorDetails details) {
     diagnosticsStore.recordError(

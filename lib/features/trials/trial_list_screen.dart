@@ -15,7 +15,6 @@ import '../../core/plot_sort.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/trial_state.dart';
 import '../../core/database/app_database.dart';
-import '../about/about_screen.dart';
 import '../import/ui/import_trial_sheet.dart';
 import 'standalone/trial_creation_wizard.dart';
 import '../derived/trial_attention_provider.dart';
@@ -224,7 +223,7 @@ void _showAppInfoDialog(BuildContext context) {
           Text('Version $kAppVersion', style: const TextStyle(fontSize: 14)),
           const SizedBox(height: 8),
           Text(
-            AboutScreen.developerCredit,
+            'Developed by Parminder Singh',
             style: TextStyle(
                 fontSize: 13,
                 color:
