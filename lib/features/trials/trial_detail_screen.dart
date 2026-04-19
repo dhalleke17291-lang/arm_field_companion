@@ -1619,7 +1619,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           title: const Text('Close this trial?'),
           content: Text(
             report.warningCount > 0
-                ? '${report.warningCount} warning(s) remain. '
+                ? '${report.warningCount} advisor${report.warningCount == 1 ? 'y' : 'ies'} remain. '
                     'You can still close.\n\n'
                     'After closing:\n'
                     '• No new sessions can be started\n'
@@ -2244,7 +2244,7 @@ class _TrialWorkflowReadinessStack extends ConsumerWidget {
                   title: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Workflow Status', style: captionStyle),
+                      const Text('Blockers', style: captionStyle),
                       const SizedBox(height: 3),
                       Text(
                         summary,
@@ -2320,7 +2320,7 @@ class _TrialWorkflowReadinessStack extends ConsumerWidget {
                   title: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Trial Readiness', style: captionStyle),
+                      const Text('Advisories', style: captionStyle),
                       const SizedBox(height: 3),
                       Text(
                         summary,
@@ -2708,10 +2708,10 @@ class _TrialStatusStrip extends ConsumerWidget {
         final String statusLabel;
         if (report.blockerCount > 0) {
           statusColor = const Color(0xFFCC3333);
-          statusLabel = '${report.blockerCount} blocker(s)';
+          statusLabel = '${report.blockerCount} blocker${report.blockerCount == 1 ? '' : 's'}';
         } else if (report.warningCount > 0) {
           statusColor = AppDesignTokens.warningFg;
-          statusLabel = '${report.warningCount} warning(s)';
+          statusLabel = '${report.warningCount} advisor${report.warningCount == 1 ? 'y' : 'ies'}';
         } else {
           statusColor = AppDesignTokens.successFg;
           statusLabel = 'Ready';
