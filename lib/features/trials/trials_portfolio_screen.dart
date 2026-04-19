@@ -289,14 +289,24 @@ class _PortfolioTrialTile extends ConsumerWidget {
     ];
 
     final chipColors = _portfolioStatusChipColors(displayStatus.toLowerCase());
+    final isActive = displayStatus.toLowerCase() == kTrialStatusActive;
+    final accentColor = isActive
+        ? AppDesignTokens.primaryGreen
+        : AppDesignTokens.borderCrisp;
 
     return Material(
       color: AppDesignTokens.cardSurface,
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.07),
+      elevation: isActive ? 2 : 0,
+      shadowColor: isActive
+          ? AppDesignTokens.primaryGreen.withValues(alpha: 0.15)
+          : Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppDesignTokens.borderCrisp),
+        side: BorderSide(
+          color: isActive
+              ? AppDesignTokens.primaryGreen.withValues(alpha: 0.3)
+              : AppDesignTokens.borderCrisp,
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -307,58 +317,81 @@ class _PortfolioTrialTile extends ConsumerWidget {
             ),
           );
         },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 64,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(12)),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      trial.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        height: 1.25,
-                        color: AppDesignTokens.primaryText,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            trial.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              height: 1.25,
+                              color: isActive
+                                  ? AppDesignTokens.primaryText
+                                  : AppDesignTokens.secondaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitleParts.join(' · '),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              height: 1.3,
+                              color: AppDesignTokens.secondaryText,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitleParts.join(' · '),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.3,
-                        color: AppDesignTokens.secondaryText,
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: chipColors.bg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: isActive
+                            ? Border.all(
+                                color: AppDesignTokens.primaryGreen
+                                    .withValues(alpha: 0.3))
+                            : null,
+                      ),
+                      child: Text(
+                        labelForTrialStatus(displayStatus.toLowerCase()),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: chipColors.fg,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: chipColors.bg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  labelForTrialStatus(displayStatus.toLowerCase()),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: chipColors.fg,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
