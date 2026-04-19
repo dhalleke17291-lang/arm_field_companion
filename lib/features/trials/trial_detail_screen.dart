@@ -2843,7 +2843,44 @@ class _OverviewTabBody extends ConsumerWidget {
               ),
             ),
           ),
+          // Auto-backup status
+          _AutoBackupStatusLine(),
         ],
+      ),
+    );
+  }
+}
+
+class _AutoBackupStatusLine extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statusAsync = ref.watch(autoBackupStatusProvider);
+    return statusAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (status) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Row(
+          children: [
+            Icon(
+              status.enabled ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+              size: 14,
+              color: status.enabled
+                  ? AppDesignTokens.successFg
+                  : AppDesignTokens.secondaryText,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              status.label,
+              style: TextStyle(
+                fontSize: 11,
+                color: status.enabled
+                    ? AppDesignTokens.secondaryText
+                    : AppDesignTokens.warningFg,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

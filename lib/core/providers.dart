@@ -1604,6 +1604,11 @@ final autoBackupServiceProvider = Provider<AutoBackupService>((ref) {
   );
 });
 
+final autoBackupStatusProvider =
+    FutureProvider.autoDispose<AutoBackupStatus>((ref) {
+  return ref.watch(autoBackupServiceProvider).getStatus();
+});
+
 // ---------------------------------------------------------------------------
 // Intelligence
 // ---------------------------------------------------------------------------

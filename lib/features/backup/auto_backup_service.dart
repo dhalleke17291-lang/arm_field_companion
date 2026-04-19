@@ -11,6 +11,26 @@ import 'backup_service.dart';
 ///
 /// Backups are saved to a dedicated auto-backup directory. Only the most
 /// recent 3 auto-backups are kept to avoid filling storage.
+class AutoBackupStatus {
+  const AutoBackupStatus({
+    required this.enabled,
+    this.lastBackupAt,
+  });
+
+  final bool enabled;
+  final DateTime? lastBackupAt;
+
+  String get label {
+    if (!enabled) return 'Auto-backup disabled — no saved passphrase';
+    if (lastBackupAt == null) return 'Auto-backup enabled — no backup yet';
+    final ago = DateTime.now().difference(lastBackupAt!);
+    if (ago.inMinutes < 5) return 'Auto-backup: just now';
+    if (ago.inHours < 1) return 'Auto-backup: ${ago.inMinutes} min ago';
+    if (ago.inHours < 24) return 'Auto-backup: ${ago.inHours}h ago';
+    return 'Auto-backup: ${ago.inDays}d ago';
+  }
+}
+
 class AutoBackupService {
   AutoBackupService(this._backupService, this._passphraseStore);
 
@@ -18,6 +38,31 @@ class AutoBackupService {
   final BackupPassphraseStore _passphraseStore;
 
   static const int _maxAutoBackups = 3;
+
+  Future<AutoBackupStatus> getStatus() async {
+    final hasCached = await _passphraseStore.hasCached();
+    if (!hasCached) {
+      return const AutoBackupStatus(enabled: false);
+    }
+    final dir = await _autoBackupDir();
+    if (!await dir.exists()) {
+      return const AutoBackupStatus(enabled: true);
+    }
+    final files = await dir
+        .list()
+        .where((e) => e is File && e.path.endsWith('.agnexis'))
+        .cast<File>()
+        .toList();
+    if (files.isEmpty) {
+      return const AutoBackupStatus(enabled: true);
+    }
+    files.sort((a, b) =>
+        b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+    return AutoBackupStatus(
+      enabled: true,
+      lastBackupAt: files.first.lastModifiedSync(),
+    );
+  }
 
   Future<void> performAutoBackup() async {
     try {
@@ -33,8 +78,7 @@ class AutoBackupService {
 
       await _pruneOldBackups(dir);
     } catch (_) {
-      // Auto-backup failure is non-fatal. The user still has the
-      // reminder flow and manual backup as fallback.
+      // Auto-backup failure is non-fatal.
     }
   }
 
