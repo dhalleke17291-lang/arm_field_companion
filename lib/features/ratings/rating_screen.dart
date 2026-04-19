@@ -167,6 +167,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   double? _gpsLatitude;
   double? _gpsLongitude;
 
+  static const String _kGpsModeKey = 'gps_capture_mode';
+
+  /// true = capture on every save, false = capture once at session start.
+  bool _gpsCaptureOnEachSave = false;
+
   Future<void> _captureGps() async {
     final pos = await GpsService.getCurrentPosition();
     if (pos != null && mounted) {
@@ -174,6 +179,34 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _gpsLatitude = pos.latitude;
         _gpsLongitude = pos.longitude;
       });
+    }
+  }
+
+  Future<void> _loadGpsMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _gpsCaptureOnEachSave = prefs.getBool(_kGpsModeKey) ?? false;
+      });
+    }
+  }
+
+  Future<void> _toggleGpsMode() async {
+    final newMode = !_gpsCaptureOnEachSave;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kGpsModeKey, newMode);
+    if (mounted) {
+      setState(() => _gpsCaptureOnEachSave = newMode);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            newMode
+                ? 'GPS: capturing on every save (higher battery use)'
+                : 'GPS: capturing once at session start',
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -245,6 +278,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     _currentAssessment = widget.assessments[_assessmentIndex];
     _loadPriorRating();
     _captureGps();
+    _loadGpsMode();
     WakelockPlus.enable();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _scrollToActiveAssessment());
@@ -1318,24 +1352,36 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       maxLines: 1,
                     ),
                     if (_gpsLatitude != null && _gpsLongitude != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Row(
-                          children: [
-                            Icon(Icons.location_on,
-                                size: 11,
-                                color: AppDesignTokens.successFg
-                                    .withValues(alpha: 0.7)),
-                            const SizedBox(width: 3),
-                            Text(
-                              '${_gpsLatitude!.toStringAsFixed(5)}, ${_gpsLongitude!.toStringAsFixed(5)}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: AppDesignTokens.secondaryText
-                                    .withValues(alpha: 0.7),
+                      GestureDetector(
+                        onTap: _toggleGpsMode,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Row(
+                            children: [
+                              Icon(Icons.location_on,
+                                  size: 11,
+                                  color: AppDesignTokens.successFg
+                                      .withValues(alpha: 0.7)),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${_gpsLatitude!.toStringAsFixed(3)}, ${_gpsLongitude!.toStringAsFixed(3)}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppDesignTokens.secondaryText
+                                      .withValues(alpha: 0.7),
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Icon(
+                                _gpsCaptureOnEachSave
+                                    ? Icons.gps_fixed
+                                    : Icons.gps_not_fixed,
+                                size: 10,
+                                color: AppDesignTokens.secondaryText
+                                    .withValues(alpha: 0.5),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                   ],
@@ -4019,6 +4065,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
 
     setState(() => _isSaving = true);
+
+    if (_gpsCaptureOnEachSave) {
+      final pos = await GpsService.getCurrentPosition(
+          timeout: const Duration(seconds: 5));
+      if (pos != null && mounted) {
+        _gpsLatitude = pos.latitude;
+        _gpsLongitude = pos.longitude;
+      }
+    }
 
     final userId = await ref.read(currentUserIdProvider.future);
     final now = DateTime.now();
