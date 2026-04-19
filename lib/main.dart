@@ -7,6 +7,7 @@ import 'core/providers.dart';
 import 'splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   final diagnosticsStore = DiagnosticsStore(maxErrors: 50);
   diagnosticsStore.loadFromDisk();
 
