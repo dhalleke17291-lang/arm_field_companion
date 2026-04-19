@@ -1317,6 +1317,27 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
+                    if (_gpsLatitude != null && _gpsLongitude != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          children: [
+                            Icon(Icons.location_on,
+                                size: 11,
+                                color: AppDesignTokens.successFg
+                                    .withValues(alpha: 0.7)),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${_gpsLatitude!.toStringAsFixed(5)}, ${_gpsLongitude!.toStringAsFixed(5)}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppDesignTokens.secondaryText
+                                    .withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
