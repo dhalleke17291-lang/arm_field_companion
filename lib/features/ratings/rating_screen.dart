@@ -1683,10 +1683,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             : null);
 
     final instrOverride = ta.instructionOverride?.trim();
-    final instrDef = def?.defaultInstructions?.trim();
-    final instrLine = (instrOverride != null && instrOverride.isNotEmpty)
+    // Filter out machine tags (librarySourceId:...) — not user-facing.
+    final instrOverrideClean = (instrOverride != null &&
+            instrOverride.isNotEmpty &&
+            !instrOverride.startsWith('librarySourceId:'))
         ? instrOverride
-        : (instrDef != null && instrDef.isNotEmpty ? instrDef : null);
+        : null;
+    final instrDef = def?.defaultInstructions?.trim();
+    final instrLine = instrOverrideClean ??
+        (instrDef != null && instrDef.isNotEmpty ? instrDef : null);
 
     if (methodLine == null && instrLine == null) return null;
 
@@ -1777,7 +1782,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       Assessment assessment, Map<int, TrialAssessment> taByLegacy) {
     final ta = taByLegacy[assessment.id];
     if (ta != null) return AssessmentDisplayHelper.compactName(ta);
-    return assessment.name;
+    return _assessmentPillLabel(assessment);
   }
 
   String _ratingAssessmentChipLabel(
@@ -1868,7 +1873,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   /// Pill display label: name without trailing unit to reduce clutter.
   static String _assessmentPillLabel(Assessment assessment) {
-    final name = assessment.name.trim();
+    var name = assessment.name.trim();
+    // Strip internal "— TA{id}" suffix from legacy bridge names.
+    final taMatch = RegExp(r'\s*—\s*TA\d+$').firstMatch(name);
+    if (taMatch != null) {
+      name = name.substring(0, taMatch.start).trim();
+    }
     final unit = assessment.unit?.trim();
     if (unit == null || unit.isEmpty) return name;
     final suffix = ' $unit';
