@@ -8,7 +8,7 @@ import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
 import '../../core/workspace/workspace_filter.dart';
 import '../derived/trial_attention_provider.dart';
-import '../derived/trial_attention_service.dart';
+import 'portfolio_attention_preview.dart';
 import 'trial_detail_screen.dart';
 import 'trials_portfolio_provider.dart';
 
@@ -24,23 +24,6 @@ String _formatLastActivity(DateTime? at) {
   if (d.inHours >= 1) return '${d.inHours}h ago';
   if (d.inMinutes >= 1) return '${d.inMinutes}m ago';
   return 'Just now';
-}
-
-AttentionItem? _primaryAttentionLine(List<AttentionItem>? items) {
-  if (items == null || items.isEmpty) return null;
-  final skipOpen =
-      items.where((i) => i.type != AttentionType.openSession).toList();
-  if (skipOpen.isEmpty) return null;
-  for (final sev in [
-    AttentionSeverity.high,
-    AttentionSeverity.medium,
-    AttentionSeverity.low,
-    AttentionSeverity.info,
-  ]) {
-    final m = skipOpen.where((i) => i.severity == sev).firstOrNull;
-    if (m != null) return m;
-  }
-  return skipOpen.first;
 }
 
 List<Trial> _workspaceFilter(List<Trial> all, PortfolioWorkspaceSegment w) {
@@ -236,11 +219,18 @@ class _PortfolioTrialTile extends ConsumerWidget {
       hasOpenFieldSession: hasOpenField,
     );
     final attentionAsync = ref.watch(trialAttentionProvider(trial.id));
-    final primary = _primaryAttentionLine(attentionAsync.valueOrNull);
+    final attentionItems = attentionAsync.valueOrNull;
+    final primary = portfolioPrimaryAttentionLine(attentionItems);
+    final extraAttention = portfolioAdditionalAttentionCount(attentionItems);
+    final attentionPreview = primary == null
+        ? null
+        : extraAttention > 0
+            ? '${primary.label} · +$extraAttention more'
+            : primary.label;
     final subtitleParts = <String>[
       _formatLastActivity(lastSessionAt),
       if (hasOpenField) 'Open session',
-      if (primary != null) primary.label,
+      if (attentionPreview != null) attentionPreview,
     ];
 
     return Material(

@@ -294,11 +294,12 @@ class _PortfolioHubCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Portfolio',
                       style: TextStyle(
                         fontSize: 16,
@@ -306,8 +307,8 @@ class _PortfolioHubCard extends StatelessWidget {
                         color: AppDesignTokens.primaryText,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
+                    SizedBox(height: 4),
+                    Text(
                       'Cross-trial priority, open sessions, and recent activity',
                       style: TextStyle(
                         fontSize: 12.5,
