@@ -1088,14 +1088,20 @@ class TrialIntelligenceService {
     }
     if (intervals.length < kMinPlotsForRaterPace) return null;
 
-    final avgSeconds =
-        intervals.map((e) => e.seconds).reduce((a, b) => a + b) / intervals.length;
-    final totalMinutes = intervals.map((e) => e.seconds).reduce((a, b) => a + b) / 60;
+    final totalSeconds =
+        intervals.map((e) => e.seconds).reduce((a, b) => a + b);
+    final totalMinutes = totalSeconds / 60;
 
-    // Find slow plots (> 2× average)
+    // Skip pace analysis for sessions under 5 minutes — not enough
+    // walking time for meaningful pace variation.
+    if (totalMinutes < 5) return null;
+
+    final avgSeconds = totalSeconds / intervals.length;
+
+    // Flag as slow only if BOTH: >2× session average AND >60s absolute.
     final slowPlots = <int>{};
     for (final iv in intervals) {
-      if (iv.seconds > avgSeconds * 2) {
+      if (iv.seconds > avgSeconds * 2 && iv.seconds > 60) {
         slowPlots.add(iv.plotPk);
       }
     }
@@ -1133,7 +1139,7 @@ class TrialIntelligenceService {
         method: 'Per-plot rating timestamp interval analysis',
         minimumDataMet: true,
         confidence: InsightConfidence.preliminary,
-        threshold: 'Slow: >2× session average. Breaks: gaps >10 min excluded',
+        threshold: 'Minimum session: 5 min. Slow: >2× session average AND >1 min absolute. Breaks: gaps >10 min excluded',
       ),
     );
   }

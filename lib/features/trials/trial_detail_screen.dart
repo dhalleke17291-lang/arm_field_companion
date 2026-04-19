@@ -2497,7 +2497,7 @@ class _TrialInsightsCard extends ConsumerWidget {
       data: (insights) {
         if (insights.isEmpty) return const SizedBox.shrink();
         return _OverviewDashboardCard(
-          title: 'Intelligence',
+          title: 'Trial insights',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
