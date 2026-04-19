@@ -261,12 +261,12 @@ class SessionRepository {
   }
 
   /// Updates optional BBCH growth stage (0–99) for an existing session.
-  Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {
+  Future<void> updateSessionCropStageBbch(
+      int sessionId, int? cropStageBbch) async {
     await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
         .write(SessionsCompanion(
-      cropStageBbch: cropStageBbch == null
-          ? const Value(null)
-          : Value(cropStageBbch),
+      cropStageBbch:
+          cropStageBbch == null ? const Value(null) : Value(cropStageBbch),
     ));
   }
 
@@ -316,8 +316,7 @@ class SessionRepository {
 
       await _db.into(_db.auditEvents).insert(
             AuditEventsCompanion.insert(
-              trialId:
-                  trialId != null ? Value(trialId) : const Value.absent(),
+              trialId: trialId != null ? Value(trialId) : const Value.absent(),
               sessionId: Value(sessionId),
               eventType: 'SESSION_DELETED',
               description: 'Session deleted and moved to Recovery',
@@ -441,7 +440,8 @@ class SessionRepository {
 
     if (trial.isArmLinked) {
       for (final s in sessions) {
-        if (s.name.contains('Import Session') || s.name.contains('ARM Import')) {
+        if (s.name.contains('Import Session') ||
+            s.name.contains('ARM Import')) {
           return s.id;
         }
       }
@@ -462,6 +462,27 @@ class SessionRepository {
       }
     }
     return sessions.first.id;
+  }
+
+  /// Latest [Session.startedAt] per trial (non-deleted sessions only).
+  /// Used by the portfolio screen for “last activity” sorting and subtitles.
+  Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async {
+    final rows = await _db.customSelect(
+      '''
+SELECT trial_id AS tid, MAX(started_at) AS last_started
+FROM sessions
+WHERE is_deleted = 0
+GROUP BY trial_id
+''',
+      readsFrom: {_db.sessions},
+    ).get();
+    final out = <int, DateTime>{};
+    for (final row in rows) {
+      final tid = row.read<int>('tid');
+      final last = row.read<DateTime>('last_started');
+      out[tid] = last;
+    }
+    return out;
   }
 
   /// True when this trial has any row in rating_records, photos, or plot_flags.

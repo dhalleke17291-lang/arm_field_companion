@@ -14,16 +14,17 @@ import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../shell/shell_providers.dart';
 import 'trial_list_screen.dart';
 import 'trials_hub_providers.dart';
+import 'trials_portfolio_screen.dart';
 
 /// Soothing light-mode palette inspired by ag research references.
 class _HubPalette {
   _HubPalette._();
-  static const Color background    = AppDesignTokens.backgroundSurface;
-  static const Color textPrimary   = AppDesignTokens.primaryText;
+  static const Color background = AppDesignTokens.backgroundSurface;
+  static const Color textPrimary = AppDesignTokens.primaryText;
   static const Color textSecondary = AppDesignTokens.secondaryText;
-  static const Color accentGreen   = AppDesignTokens.primary;
-  static const Color accentAmber   = Color(0xFFB8860B); // no token equivalent
-  static const Color mutedGrey     = AppDesignTokens.emptyBadgeFg;
+  static const Color accentGreen = AppDesignTokens.primary;
+  static const Color accentAmber = Color(0xFFB8860B); // no token equivalent
+  static const Color mutedGrey = AppDesignTokens.emptyBadgeFg;
 }
 
 /// Top-level Trials Hub: Custom Trials vs Protocol Trials.
@@ -78,6 +79,9 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
           : TrialListFilter.protocolOnly,
       titleOverride: isCustom ? 'Custom Trials' : 'Protocol Trials',
       onBackTap: () => setState(() => _view = _HubView.hub),
+      portfolioInitialWorkspace: isCustom
+          ? PortfolioWorkspaceSegment.custom
+          : PortfolioWorkspaceSegment.protocol,
     );
   }
 
@@ -114,6 +118,19 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                 child: Column(
                   children: [
                     _ContinueSessionCard(ref: ref),
+                    const SizedBox(height: AppDesignTokens.spacing16),
+                    _PortfolioHubCard(
+                      onOpen: () {
+                        Navigator.of(context).push<void>(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const TrialsPortfolioScreen(
+                              initialWorkspace: PortfolioWorkspaceSegment.all,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: AppDesignTokens.spacing24),
                     _AgTrialCard(
                       title: 'Custom Trials',
                       subtitle: 'Full trial design with templates',
@@ -131,8 +148,7 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                         '${stats.customCompleteCount} Complete',
                       ],
                       footerDotColor: _HubPalette.accentGreen,
-                      onTap: () =>
-                          setState(() => _view = _HubView.customList),
+                      onTap: () => setState(() => _view = _HubView.customList),
                     ),
                     const SizedBox(height: AppDesignTokens.spacing24),
                     _AgTrialCard(
@@ -233,6 +249,79 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                   color: Colors.white.withValues(alpha: 0.88),
                   fontWeight: FontWeight.w400,
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Entry to [TrialsPortfolioScreen] from the hub.
+class _PortfolioHubCard extends StatelessWidget {
+  const _PortfolioHubCard({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDesignTokens.spacing16,
+            vertical: AppDesignTokens.spacing12,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _HubPalette.accentGreen.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.dashboard_customize_outlined,
+                  color: _HubPalette.accentGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Portfolio',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Cross-trial priority, open sessions, and recent activity',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.25,
+                        color: _HubPalette.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: scheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -450,7 +539,8 @@ class _AgTrialCardState extends State<_AgTrialCard>
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.15),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
