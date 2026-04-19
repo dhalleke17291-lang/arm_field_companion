@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
+import 'package:arm_field_companion/core/config/app_info.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
@@ -223,6 +224,24 @@ void main() {
         await root.delete(recursive: true);
       }
     });
+    test('README.txt is present and describes the bundle', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      final ids = await _seedMinimalRatedTrial(db, trialName: 'ReadmeTrial');
+      final trial = await TrialRepository(db).getTrialById(ids.trialId);
+      expect(trial, isNotNull);
+      final archive = await _runArmHandoffAndDecodeZip(db, trial!);
+      final readmeFiles = archive.files
+          .where((f) => f.isFile && f.name == 'README.txt')
+          .toList();
+      expect(readmeFiles, hasLength(1));
+      final text = utf8.decode(readmeFiles.single.content as List<int>);
+      expect(text, contains(AppInfo.appName));
+      expect(text, contains('ReadmeTrial'));
+      expect(text, contains('import_guide.csv'));
+      expect(text, contains('App version:'));
+    });
+
     test('1: one photo → ZIP has exactly one photos/*.jpg', () async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
