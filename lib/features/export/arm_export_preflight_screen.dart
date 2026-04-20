@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,17 +76,26 @@ class _ArmExportPreflightScreenState
       _exportError = null;
     });
     try {
-      final pick = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const ['xlsx'],
-        dialogTitle: 'Select Excel Rating Sheet for ${widget.trial.name}',
-      );
-      if (!mounted) return;
-      if (pick == null || pick.files.isEmpty) {
-        setState(() => _exportBusy = false);
-        return;
+      // Use internally stored shell if available; fall back to file picker.
+      String? shellPath;
+      final internalPath = widget.trial.shellInternalPath;
+      if (internalPath != null &&
+          internalPath.isNotEmpty &&
+          File(internalPath).existsSync()) {
+        shellPath = internalPath;
+      } else {
+        final pick = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const ['xlsx'],
+          dialogTitle: 'Select Excel Rating Sheet for ${widget.trial.name}',
+        );
+        if (!mounted) return;
+        if (pick == null || pick.files.isEmpty) {
+          setState(() => _exportBusy = false);
+          return;
+        }
+        shellPath = pick.files.single.path;
       }
-      final shellPath = pick.files.single.path;
       if (shellPath == null || shellPath.isEmpty) {
         setState(() => _exportBusy = false);
         return;

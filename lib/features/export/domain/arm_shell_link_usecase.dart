@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../core/database/app_database.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
+import '../../../data/services/shell_storage_service.dart';
 import '../../trials/trial_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
 import '../../../domain/models/arm_assessment_identity.dart';
@@ -153,11 +154,25 @@ class ArmShellLinkUseCase {
         if (wrote) assessmentWriteCount++;
       }
 
+      // Store shell internally so export doesn't need a file picker.
+      String? internalPath;
+      try {
+        internalPath = await ShellStorageService.storeShell(
+          sourcePath: shellPath,
+          trialId: trialId,
+        );
+      } catch (_) {
+        // Storage unavailable (e.g. test environment) — continue without.
+      }
+
       await _trialRepository.updateTrialSetup(
         trialId,
         TrialsCompanion(
           armLinkedShellPath: Value(shellPath),
           armLinkedShellAt: Value(DateTime.now().toUtc()),
+          shellInternalPath: internalPath != null
+              ? Value(internalPath)
+              : const Value.absent(),
           updatedAt: Value(DateTime.now().toUtc()),
         ),
       );
