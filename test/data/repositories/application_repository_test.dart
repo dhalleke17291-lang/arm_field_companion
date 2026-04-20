@@ -1,3 +1,4 @@
+import 'package:arm_field_companion/core/application_state.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/field_operation_date_rules.dart';
 import 'package:arm_field_companion/data/repositories/application_product_repository.dart'
@@ -110,13 +111,12 @@ void main() {
   });
 
   group('markApplicationApplied', () {
-    test('sets status to applied', () async {
+    test('sets status to applied from pending', () async {
       final trialId = await createTrial();
       final id = await repo.createApplication(
         TrialApplicationEventsCompanion.insert(
           trialId: trialId,
           applicationDate: today(),
-          status: const Value('planned'),
         ),
       );
 
@@ -136,7 +136,6 @@ void main() {
         TrialApplicationEventsCompanion.insert(
           trialId: trialId,
           applicationDate: today(),
-          status: const Value('planned'),
         ),
       );
 
@@ -147,6 +146,146 @@ void main() {
         ),
         throwsA(isA<OperationalDateRuleException>()),
       );
+    });
+  });
+
+  group('application status state machine', () {
+    Future<String> createPendingApp(int trialId) {
+      return repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+        ),
+      );
+    }
+
+    Future<String> createAppliedApp(int trialId) async {
+      final id = await createPendingApp(trialId);
+      await repo.markApplicationApplied(id: id, appliedAt: DateTime.now());
+      return id;
+    }
+
+    // ── Valid transitions ──
+
+    test('pending → applied succeeds', () async {
+      final trialId = await createTrial();
+      final id = await createPendingApp(trialId);
+
+      await repo.markApplicationApplied(id: id, appliedAt: DateTime.now());
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].status, kAppStatusApplied);
+    });
+
+    test('applied → closed succeeds', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.closeApplication(id);
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].status, kAppStatusClosed);
+    });
+
+    test('pending → cancelled succeeds', () async {
+      final trialId = await createTrial();
+      final id = await createPendingApp(trialId);
+
+      await repo.cancelApplication(id);
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].status, kAppStatusCancelled);
+    });
+
+    test('applied → cancelled succeeds', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.cancelApplication(id);
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].status, kAppStatusCancelled);
+    });
+
+    // ── Invalid transitions ──
+
+    test('pending → closed throws', () async {
+      final trialId = await createTrial();
+      final id = await createPendingApp(trialId);
+
+      expect(
+        () => repo.closeApplication(id),
+        throwsA(isA<InvalidApplicationTransitionException>()),
+      );
+    });
+
+    test('closed → applied throws', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+      await repo.closeApplication(id);
+
+      expect(
+        () => repo.markApplicationApplied(id: id, appliedAt: DateTime.now()),
+        throwsA(isA<InvalidApplicationTransitionException>()),
+      );
+    });
+
+    test('closed → cancelled throws', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+      await repo.closeApplication(id);
+
+      expect(
+        () => repo.cancelApplication(id),
+        throwsA(isA<InvalidApplicationTransitionException>()),
+      );
+    });
+
+    test('cancelled → applied throws', () async {
+      final trialId = await createTrial();
+      final id = await createPendingApp(trialId);
+      await repo.cancelApplication(id);
+
+      expect(
+        () => repo.markApplicationApplied(id: id, appliedAt: DateTime.now()),
+        throwsA(isA<InvalidApplicationTransitionException>()),
+      );
+    });
+
+    test('cancelled → closed throws', () async {
+      final trialId = await createTrial();
+      final id = await createPendingApp(trialId);
+      await repo.cancelApplication(id);
+
+      expect(
+        () => repo.closeApplication(id),
+        throwsA(isA<InvalidApplicationTransitionException>()),
+      );
+    });
+
+    test('applied → applied (duplicate) throws', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      expect(
+        () => repo.markApplicationApplied(id: id, appliedAt: DateTime.now()),
+        throwsA(isA<InvalidApplicationTransitionException>()),
+      );
+    });
+
+    // ── Audit trail ──
+
+    test('cancelApplication writes audit event', () async {
+      final trialId = await createTrial();
+      final id = await createPendingApp(trialId);
+
+      await repo.cancelApplication(id, performedBy: 'tester');
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) => a.eventType.equals('TRIAL_APPLICATION_CANCELLED')))
+          .get();
+      expect(audits.length, 1);
+      expect(audits[0].performedBy, 'tester');
     });
   });
 
@@ -258,6 +397,108 @@ void main() {
       expect(products[0].plannedRate, 1.0);
       expect(products[0].plannedRateUnit, 'L/ha');
       expect(products[0].rate, closeTo(1.02, 0.0001));
+    });
+
+    test('deviationFlag true when rate exceeds 5% tolerance', () async {
+      final trialId = await createTrial();
+      final eventId = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+        ),
+      );
+
+      // 10% over planned → flag true
+      await productRepo.saveProductsForEvent(eventId, [
+        const ApplicationProductSaveRow(
+          productName: 'Product A',
+          rate: 1.1,
+          rateUnit: 'L/ha',
+          plannedRate: 1.0,
+        ),
+      ]);
+
+      final products = await productRepo.getProductsForEvent(eventId);
+      expect(products[0].deviationFlag, isTrue);
+    });
+
+    test('deviationFlag false when rate within 5% tolerance', () async {
+      final trialId = await createTrial();
+      final eventId = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+        ),
+      );
+
+      // 2% over planned → within tolerance → flag false
+      await productRepo.saveProductsForEvent(eventId, [
+        const ApplicationProductSaveRow(
+          productName: 'Product A',
+          rate: 1.02,
+          rateUnit: 'L/ha',
+          plannedRate: 1.0,
+        ),
+      ]);
+
+      final products = await productRepo.getProductsForEvent(eventId);
+      expect(products[0].deviationFlag, isFalse);
+    });
+
+    test('deviationFlag updates when rate is corrected', () async {
+      final trialId = await createTrial();
+      final eventId = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+        ),
+      );
+
+      // First save: 20% over → flagged
+      await productRepo.saveProductsForEvent(eventId, [
+        const ApplicationProductSaveRow(
+          productName: 'Product A',
+          rate: 1.2,
+          rateUnit: 'L/ha',
+          plannedRate: 1.0,
+        ),
+      ]);
+      var products = await productRepo.getProductsForEvent(eventId);
+      expect(products[0].deviationFlag, isTrue);
+
+      // Second save: corrected to match planned → no longer flagged
+      await productRepo.saveProductsForEvent(eventId, [
+        const ApplicationProductSaveRow(
+          productName: 'Product A',
+          rate: 1.0,
+          rateUnit: 'L/ha',
+          plannedRate: 1.0,
+        ),
+      ]);
+      products = await productRepo.getProductsForEvent(eventId);
+      expect(products[0].deviationFlag, isFalse);
+    });
+
+    test('deviationFlag false when no planned rate', () async {
+      final trialId = await createTrial();
+      final eventId = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+        ),
+      );
+
+      await productRepo.saveProductsForEvent(eventId, [
+        const ApplicationProductSaveRow(
+          productName: 'Product A',
+          rate: 5.0,
+          rateUnit: 'L/ha',
+          // no plannedRate
+        ),
+      ]);
+
+      final products = await productRepo.getProductsForEvent(eventId);
+      expect(products[0].deviationFlag, isFalse);
     });
   });
 }

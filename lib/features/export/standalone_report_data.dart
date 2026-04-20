@@ -108,7 +108,7 @@ class TreatmentComponentSummary {
   });
 
   final String productName;
-  final String? rate;
+  final double? rate;
   final String? rateUnit;
   final String? formulationType;
   final double? activeIngredientPct;

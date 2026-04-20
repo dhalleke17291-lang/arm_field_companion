@@ -155,7 +155,7 @@ class TreatmentComponents extends Table {
   IntColumn get treatmentId => integer().references(Treatments, #id)();
   IntColumn get trialId => integer().references(Trials, #id)();
   TextColumn get productName => text().withLength(min: 1, max: 255)();
-  TextColumn get rate => text().nullable()();
+  RealColumn get rate => real().nullable()();
   TextColumn get rateUnit => text().nullable()();
   TextColumn get applicationTiming => text().nullable()();
   TextColumn get notes => text().nullable()();
@@ -746,6 +746,19 @@ class TrialApplicationProducts extends Table {
   TextColumn get deviationNotes => text().nullable()();
 }
 
+/// Junction table linking application events to individual plots.
+/// Replaces the comma-separated [TrialApplicationEvents.plotsTreated] TEXT
+/// field for structured queries. The TEXT field is kept as a denormalized
+/// cache alongside this table during the transition period.
+class ApplicationPlotAssignments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get applicationEventId =>
+      text().references(TrialApplicationEvents, #id,
+          onDelete: KeyAction.cascade)();
+  TextColumn get plotLabel => text()();
+  IntColumn get plotId => integer().references(Plots, #id).nullable()();
+}
+
 class ImportSnapshots extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
@@ -922,6 +935,7 @@ class TrialExportDiagnostics extends Table {
   SeedingEvents,
   TrialApplicationEvents,
   TrialApplicationProducts,
+  ApplicationPlotAssignments,
   ImportSnapshots,
   CompatibilityProfiles,
   CropDescriptions,
@@ -938,7 +952,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 54;
+  int get schemaVersion => 55;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1565,6 +1579,78 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
               await customStatement(
                   'ALTER TABLE photos ADD COLUMN rating_value REAL');
             }
+          }
+
+          if (from < 55) {
+            // ── Item 1: ApplicationPlotAssignments junction table ──
+            await customStatement('''
+              CREATE TABLE IF NOT EXISTS application_plot_assignments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                application_event_id TEXT NOT NULL
+                  REFERENCES trial_application_events(id) ON DELETE CASCADE,
+                plot_label TEXT NOT NULL,
+                plot_id INTEGER REFERENCES plots(id)
+              )
+            ''');
+
+            // Migrate existing plotsTreated TEXT values into junction rows.
+            final rows = await customSelect(
+              'SELECT id, trial_id, plots_treated '
+              'FROM trial_application_events '
+              'WHERE plots_treated IS NOT NULL AND TRIM(plots_treated) != \'\'',
+            ).get();
+            for (final row in rows) {
+              final eventId = row.read<String>('id');
+              final trialId = row.read<int>('trial_id');
+              final plotsTreated = row.read<String>('plots_treated');
+              final labels = plotsTreated
+                  .split(',')
+                  .map((s) => s.trim())
+                  .where((s) => s.isNotEmpty)
+                  .toList();
+              for (final label in labels) {
+                // Try to resolve label to a plot PK for this trial.
+                final plotRows = await customSelect(
+                  'SELECT id FROM plots '
+                  'WHERE trial_id = ? AND (plot_id = ? OR plot_label = ?) '
+                  'AND is_deleted = 0 '
+                  'LIMIT 1',
+                  variables: [
+                    Variable.withInt(trialId),
+                    Variable.withString(label),
+                    Variable.withString(label),
+                  ],
+                ).get();
+                final plotId =
+                    plotRows.isNotEmpty ? plotRows.first.read<int>('id') : null;
+                await customStatement(
+                  'INSERT INTO application_plot_assignments '
+                  '(application_event_id, plot_label, plot_id) '
+                  'VALUES (?, ?, ?)',
+                  [eventId, label, plotId],
+                );
+              }
+            }
+
+            // ── Item 6: TreatmentComponents.rate TEXT → REAL ──
+            // SQLite doesn't support ALTER COLUMN TYPE. Use the standard
+            // rename → create → copy → drop pattern.
+            await customStatement(
+                'ALTER TABLE treatment_components '
+                'RENAME COLUMN rate TO rate_text_old');
+            await customStatement(
+                'ALTER TABLE treatment_components '
+                'ADD COLUMN rate REAL');
+            await customStatement(
+                'UPDATE treatment_components '
+                'SET rate = CAST(REPLACE(rate_text_old, \',\', \'.\') AS REAL) '
+                'WHERE rate_text_old IS NOT NULL '
+                'AND rate_text_old != \'\' '
+                'AND TYPEOF(CAST(REPLACE(rate_text_old, \',\', \'.\') AS REAL)) = \'real\'');
+            // Drop the old column (SQLite 3.35+, iOS 15+ / Android API 34+).
+            // For safety on older devices, keep the column but it is ignored
+            // by the new Drift table definition. Drift only reads columns
+            // declared in the table class.
           }
 
           await _createIndexes();

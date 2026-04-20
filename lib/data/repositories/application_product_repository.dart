@@ -49,7 +49,18 @@ class ApplicationProductRepository {
         .watch();
   }
 
+  /// Tolerance for rate deviation flagging (matches [computeApplicationDeviations]).
+  static const double _deviationTolerancePct = 5.0;
+
+  /// Computes whether actual rate deviates from planned by more than tolerance.
+  static bool _computeDeviationFlag(double? actual, double? planned) {
+    if (planned == null || actual == null || planned <= 0) return false;
+    final devPct = ((actual - planned) / planned) * 100;
+    return devPct.abs() > _deviationTolerancePct;
+  }
+
   /// Replaces all products for the event inside a single transaction.
+  /// Computes and persists [deviationFlag] per product row.
   Future<void> saveProductsForEvent(
     String trialApplicationEventId,
     List<ApplicationProductSaveRow> rows,
@@ -61,6 +72,7 @@ class ApplicationProductRepository {
           .go();
       for (var i = 0; i < rows.length; i++) {
         final r = rows[i];
+        final flag = _computeDeviationFlag(r.rate, r.plannedRate);
         await _db.into(_db.trialApplicationProducts).insert(
               TrialApplicationProductsCompanion.insert(
                 trialApplicationEventId: trialApplicationEventId,
@@ -78,6 +90,7 @@ class ApplicationProductRepository {
                 plannedRateUnit: r.plannedRateUnit != null
                     ? Value(r.plannedRateUnit)
                     : const Value.absent(),
+                deviationFlag: Value(flag),
               ),
             );
       }

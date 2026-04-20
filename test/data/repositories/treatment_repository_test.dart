@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/protocol_edit_blocked_exception.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
@@ -229,7 +231,7 @@ void main() {
         treatmentId: trtId,
         trialId: trialId,
         productName: 'Fungicide X',
-        rate: '250',
+        rate: 250.0,
         rateUnit: 'mL/ha',
         formulationType: 'SC',
         manufacturer: 'AgriCorp',
@@ -238,7 +240,7 @@ void main() {
       expect(comps.length, 1);
       expect(comps[0].id, compId);
       expect(comps[0].productName, 'Fungicide X');
-      expect(comps[0].rate, '250');
+      expect(comps[0].rate, 250.0);
       expect(comps[0].rateUnit, 'mL/ha');
     });
 
@@ -375,6 +377,117 @@ void main() {
 
       final t = await repo.getTreatmentForPlot(plotPk);
       expect(t, isNull);
+    });
+  });
+
+  group('TreatmentComponent audit events', () {
+    test('insertComponent writes TREATMENT_COMPONENT_ADDED audit', () async {
+      final trialId = await createTrial();
+      final trtId = await repo.insertTreatment(
+          trialId: trialId, code: '1', name: 'T1');
+
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Fungicide X',
+        rate: 250.0,
+        rateUnit: 'mL/ha',
+        performedBy: 'tester',
+        performedByUserId: null,
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where(
+                (a) => a.eventType.equals('TREATMENT_COMPONENT_ADDED')))
+          .get();
+      expect(audits.length, 1);
+      expect(audits[0].performedBy, 'tester');
+      expect(audits[0].trialId, trialId);
+
+      final meta = jsonDecode(audits[0].metadata!) as Map<String, dynamic>;
+      expect(meta['component_id'], compId);
+      expect(meta['treatment_id'], trtId);
+      expect(meta['product_name'], 'Fungicide X');
+      expect(meta['rate'], 250.0);
+    });
+
+    test('softDeleteComponent writes TREATMENT_COMPONENT_DELETED audit',
+        () async {
+      final trialId = await createTrial();
+      final trtId = await repo.insertTreatment(
+          trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Herbicide Y',
+      );
+
+      await repo.softDeleteComponent(
+        compId,
+        deletedBy: 'admin',
+        deletedByUserId: null,
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where(
+                (a) => a.eventType.equals('TREATMENT_COMPONENT_DELETED')))
+          .get();
+      expect(audits.length, 1);
+      expect(audits[0].performedBy, 'admin');
+
+      final meta = jsonDecode(audits[0].metadata!) as Map<String, dynamic>;
+      expect(meta['component_id'], compId);
+      expect(meta['product_name'], 'Herbicide Y');
+    });
+
+    test('updateComponent writes TREATMENT_COMPONENT_UPDATED audit with diffs',
+        () async {
+      final trialId = await createTrial();
+      final trtId = await repo.insertTreatment(
+          trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Old Product',
+        rate: 100.0,
+        rateUnit: 'g/ha',
+      );
+
+      await repo.updateComponent(
+        compId,
+        productName: 'New Product',
+        rate: 200.0,
+        performedBy: 'editor',
+      );
+
+      // Verify the component was updated in-place
+      final comps = await repo.getComponentsForTreatment(trtId);
+      expect(comps.length, 1);
+      expect(comps[0].id, compId);
+      expect(comps[0].productName, 'New Product');
+      expect(comps[0].rate, 200.0);
+      expect(comps[0].rateUnit, 'g/ha'); // unchanged
+
+      // Verify audit event
+      final audits = await (db.select(db.auditEvents)
+            ..where(
+                (a) => a.eventType.equals('TREATMENT_COMPONENT_UPDATED')))
+          .get();
+      expect(audits.length, 1);
+      expect(audits[0].performedBy, 'editor');
+
+      final meta = jsonDecode(audits[0].metadata!) as Map<String, dynamic>;
+      expect(meta['component_id'], compId);
+      final changes = (meta['changes'] as List).cast<Map<String, dynamic>>();
+      expect(changes.length, 2);
+
+      final nameChange = changes.firstWhere((c) => c['field'] == 'productName');
+      expect(nameChange['old'], 'Old Product');
+      expect(nameChange['new'], 'New Product');
+
+      final rateChange = changes.firstWhere((c) => c['field'] == 'rate');
+      expect(rateChange['old'], 100.0);
+      expect(rateChange['new'], 200.0);
     });
   });
 }

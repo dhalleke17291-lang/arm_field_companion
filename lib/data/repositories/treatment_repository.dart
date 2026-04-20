@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 import '../../core/trial_state.dart';
@@ -82,13 +84,6 @@ class TreatmentRepository {
     return t?.trialId;
   }
 
-  /// Looks up the trialId for a component by id.
-  Future<int?> _trialIdForComponent(int componentId) async {
-    final c = await (_db.select(_db.treatmentComponents)
-          ..where((r) => r.id.equals(componentId)))
-        .getSingleOrNull();
-    return c?.trialId;
-  }
 
   Future<int> insertTreatment({
     required int trialId,
@@ -182,17 +177,149 @@ class TreatmentRepository {
     String? deletedBy,
     int? deletedByUserId,
   }) async {
-    final trialId = await _trialIdForComponent(componentId);
-    if (trialId != null) await assertCanEditProtocolForTrialId(_db, trialId);
-    await (_db.update(_db.treatmentComponents)
+    final component = await (_db.select(_db.treatmentComponents)
           ..where((c) => c.id.equals(componentId)))
-        .write(
-      TreatmentComponentsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-        deletedBy: Value(deletedBy),
-      ),
-    );
+        .getSingleOrNull();
+    if (component == null) return;
+    await assertCanEditProtocolForTrialId(_db, component.trialId);
+    await _db.transaction(() async {
+      await (_db.update(_db.treatmentComponents)
+            ..where((c) => c.id.equals(componentId)))
+          .write(
+        TreatmentComponentsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+          deletedBy: Value(deletedBy),
+        ),
+      );
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(component.trialId),
+              eventType: 'TREATMENT_COMPONENT_DELETED',
+              description:
+                  'Treatment component deleted: ${component.productName}',
+              performedBy: Value(deletedBy),
+              performedByUserId: Value(deletedByUserId),
+              metadata: Value(jsonEncode({
+                'component_id': componentId,
+                'treatment_id': component.treatmentId,
+                'trial_id': component.trialId,
+                'product_name': component.productName,
+              })),
+            ),
+          );
+    });
+  }
+
+  /// Updates a treatment component in-place and records field-level changes
+  /// in the audit trail.
+  Future<void> updateComponent(
+    int componentId, {
+    String? productName,
+    double? rate,
+    String? rateUnit,
+    String? applicationTiming,
+    String? notes,
+    int? sortOrder,
+    double? activeIngredientPct,
+    String? formulationType,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    double? labelRate,
+    String? labelRateUnit,
+    bool? isTestProduct,
+    int? performedByUserId,
+    String? performedBy,
+  }) async {
+    final old = await (_db.select(_db.treatmentComponents)
+          ..where((c) => c.id.equals(componentId) & c.isDeleted.equals(false)))
+        .getSingleOrNull();
+    if (old == null) return;
+    await assertCanEditProtocolForTrialId(_db, old.trialId);
+
+    // Build field-level diff for audit metadata.
+    final changes = <Map<String, dynamic>>[];
+    void diff(String field, dynamic oldVal, dynamic newVal) {
+      if (newVal != null && newVal != oldVal) {
+        changes.add({'field': field, 'old': oldVal, 'new': newVal});
+      }
+    }
+
+    diff('productName', old.productName, productName);
+    diff('rate', old.rate, rate);
+    diff('rateUnit', old.rateUnit, rateUnit);
+    diff('applicationTiming', old.applicationTiming, applicationTiming);
+    diff('notes', old.notes, notes);
+    diff('formulationType', old.formulationType, formulationType);
+    diff('manufacturer', old.manufacturer, manufacturer);
+    diff('registrationNumber', old.registrationNumber, registrationNumber);
+    diff('eppoCode', old.eppoCode, eppoCode);
+    diff('activeIngredientName', old.activeIngredientName, activeIngredientName);
+    diff('isTestProduct', old.isTestProduct, isTestProduct);
+
+    await _db.transaction(() async {
+      await (_db.update(_db.treatmentComponents)
+            ..where((c) => c.id.equals(componentId)))
+          .write(TreatmentComponentsCompanion(
+        productName: productName != null ? Value(productName) : const Value.absent(),
+        rate: rate != null ? Value(rate) : const Value.absent(),
+        rateUnit: rateUnit != null ? Value(rateUnit) : const Value.absent(),
+        applicationTiming: applicationTiming != null
+            ? Value(applicationTiming)
+            : const Value.absent(),
+        notes: notes != null ? Value(notes) : const Value.absent(),
+        sortOrder: sortOrder != null ? Value(sortOrder) : const Value.absent(),
+        activeIngredientPct: activeIngredientPct != null
+            ? Value(activeIngredientPct)
+            : const Value.absent(),
+        formulationType: formulationType != null
+            ? Value(formulationType)
+            : const Value.absent(),
+        manufacturer:
+            manufacturer != null ? Value(manufacturer) : const Value.absent(),
+        registrationNumber: registrationNumber != null
+            ? Value(registrationNumber)
+            : const Value.absent(),
+        eppoCode: eppoCode != null ? Value(eppoCode) : const Value.absent(),
+        activeIngredientName: activeIngredientName != null
+            ? Value(activeIngredientName)
+            : const Value.absent(),
+        aiConcentration: aiConcentration != null
+            ? Value(aiConcentration)
+            : const Value.absent(),
+        aiConcentrationUnit: aiConcentrationUnit != null
+            ? Value(aiConcentrationUnit)
+            : const Value.absent(),
+        labelRate: labelRate != null ? Value(labelRate) : const Value.absent(),
+        labelRateUnit:
+            labelRateUnit != null ? Value(labelRateUnit) : const Value.absent(),
+        isTestProduct:
+            isTestProduct != null ? Value(isTestProduct) : const Value.absent(),
+        lastEditedByUserId: Value(performedByUserId),
+        lastEditedAt: Value(DateTime.now()),
+      ));
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(old.trialId),
+              eventType: 'TREATMENT_COMPONENT_UPDATED',
+              description:
+                  'Treatment component updated: ${old.productName}',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'component_id': componentId,
+                'treatment_id': old.treatmentId,
+                'trial_id': old.trialId,
+                'changes': changes,
+              })),
+            ),
+          );
+    });
   }
 
   /// Hard-deletes treatment and its components; clears plot/assignment references.
@@ -282,7 +409,7 @@ class TreatmentRepository {
     required int treatmentId,
     required int trialId,
     required String productName,
-    String? rate,
+    double? rate,
     String? rateUnit,
     String? applicationTiming,
     String? notes,
@@ -293,6 +420,7 @@ class TreatmentRepository {
     String? registrationNumber,
     String? eppoCode,
     int? performedByUserId,
+    String? performedBy,
     String? activeIngredientName,
     double? aiConcentration,
     String? aiConcentrationUnit,
@@ -301,31 +429,52 @@ class TreatmentRepository {
     bool? isTestProduct,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
-    return _db.into(_db.treatmentComponents).insert(
-          TreatmentComponentsCompanion.insert(
-            treatmentId: treatmentId,
-            trialId: trialId,
-            productName: productName,
-            rate: Value(rate),
-            rateUnit: Value(rateUnit),
-            applicationTiming: Value(applicationTiming),
-            notes: Value(notes),
-            sortOrder: Value(sortOrder),
-            activeIngredientPct: Value(activeIngredientPct),
-            formulationType: Value(formulationType),
-            manufacturer: Value(manufacturer),
-            registrationNumber: Value(registrationNumber),
-            eppoCode: Value(eppoCode),
-            activeIngredientName: Value(activeIngredientName),
-            aiConcentration: Value(aiConcentration),
-            aiConcentrationUnit: Value(aiConcentrationUnit),
-            labelRate: Value(labelRate),
-            labelRateUnit: Value(labelRateUnit),
-            isTestProduct: Value(isTestProduct ?? false),
-            lastEditedByUserId: Value(performedByUserId),
-            lastEditedAt: Value(DateTime.now()),
-          ),
-        );
+    return _db.transaction(() async {
+      final id = await _db.into(_db.treatmentComponents).insert(
+            TreatmentComponentsCompanion.insert(
+              treatmentId: treatmentId,
+              trialId: trialId,
+              productName: productName,
+              rate: Value(rate),
+              rateUnit: Value(rateUnit),
+              applicationTiming: Value(applicationTiming),
+              notes: Value(notes),
+              sortOrder: Value(sortOrder),
+              activeIngredientPct: Value(activeIngredientPct),
+              formulationType: Value(formulationType),
+              manufacturer: Value(manufacturer),
+              registrationNumber: Value(registrationNumber),
+              eppoCode: Value(eppoCode),
+              activeIngredientName: Value(activeIngredientName),
+              aiConcentration: Value(aiConcentration),
+              aiConcentrationUnit: Value(aiConcentrationUnit),
+              labelRate: Value(labelRate),
+              labelRateUnit: Value(labelRateUnit),
+              isTestProduct: Value(isTestProduct ?? false),
+              lastEditedByUserId: Value(performedByUserId),
+              lastEditedAt: Value(DateTime.now()),
+            ),
+          );
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(trialId),
+              eventType: 'TREATMENT_COMPONENT_ADDED',
+              description:
+                  'Treatment component added: $productName',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'component_id': id,
+                'treatment_id': treatmentId,
+                'trial_id': trialId,
+                'product_name': productName,
+                'rate': rate,
+                'rate_unit': rateUnit,
+              })),
+            ),
+          );
+      return id;
+    });
   }
 }
 

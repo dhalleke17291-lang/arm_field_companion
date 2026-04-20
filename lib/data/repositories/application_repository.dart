@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import '../../core/application_state.dart';
 import '../../core/database/app_database.dart';
 import '../../core/field_operation_date_rules.dart';
 
@@ -152,6 +153,7 @@ class ApplicationRepository {
           ..where((e) => e.id.equals(id)))
         .getSingleOrNull();
     if (existing == null) return;
+    assertValidApplicationTransition(existing.status, kAppStatusApplied);
     final trial = await (_db.select(_db.trials)
           ..where((t) => t.id.equals(existing.trialId)))
         .getSingleOrNull();
@@ -209,6 +211,11 @@ class ApplicationRepository {
     String? performedBy,
     int? performedByUserId,
   }) async {
+    final prior = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .getSingleOrNull();
+    if (prior == null) return;
+    assertValidApplicationTransition(prior.status, 'complete');
     await _db.transaction(() async {
       await (_db.update(_db.trialApplicationEvents)
             ..where((e) => e.id.equals(id)))
@@ -238,6 +245,11 @@ class ApplicationRepository {
     String? performedBy,
     int? performedByUserId,
   }) async {
+    final prior = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .getSingleOrNull();
+    if (prior == null) return;
+    assertValidApplicationTransition(prior.status, kAppStatusClosed);
     await _db.transaction(() async {
       await (_db.update(_db.trialApplicationEvents)
             ..where((e) => e.id.equals(id)))
@@ -259,6 +271,39 @@ class ApplicationRepository {
               ),
             );
       }
+    });
+  }
+
+  /// Cancels an application — valid from pending or applied.
+  Future<void> cancelApplication(String id, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    final prior = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .getSingleOrNull();
+    if (prior == null) return;
+    assertValidApplicationTransition(prior.status, kAppStatusCancelled);
+    await _db.transaction(() async {
+      await (_db.update(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .write(const TrialApplicationEventsCompanion(
+        status: Value('cancelled'),
+      ));
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(prior.trialId),
+              eventType: 'TRIAL_APPLICATION_CANCELLED',
+              description: 'Application cancelled',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'trial_application_event_id': id,
+                'trial_id': prior.trialId,
+                'previous_status': prior.status,
+              })),
+            ),
+          );
     });
   }
 

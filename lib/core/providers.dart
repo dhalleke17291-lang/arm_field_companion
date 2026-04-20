@@ -6,6 +6,7 @@ import "../data/repositories/assignment_repository.dart";
 import "../data/repositories/assessment_definition_repository.dart";
 import "../data/repositories/trial_assessment_repository.dart";
 import "../data/repositories/application_repository.dart";
+import "../data/repositories/application_plot_assignment_repository.dart";
 import "../data/repositories/application_product_repository.dart";
 import "../data/repositories/seeding_repository.dart";
 import '../data/repositories/weather_snapshot_repository.dart';
@@ -1496,6 +1497,11 @@ final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) {
 final applicationProductRepositoryProvider =
     Provider<ApplicationProductRepository>((ref) {
   return ApplicationProductRepository(ref.watch(databaseProvider));
+});
+
+final applicationPlotAssignmentRepositoryProvider =
+    Provider<ApplicationPlotAssignmentRepository>((ref) {
+  return ApplicationPlotAssignmentRepository(ref.watch(databaseProvider));
 });
 
 /// Products (tank mix) for a trial application event; empty stream until event exists.

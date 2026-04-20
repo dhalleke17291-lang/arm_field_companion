@@ -119,14 +119,6 @@ class _ApplicationSheetContentState
     return t.isEmpty ? null : double.tryParse(t);
   }
 
-  /// Parses protocol rate from [TreatmentComponent.rate] (stored as text).
-  static double? _parsePlannedRateString(String? s) {
-    if (s == null) return null;
-    final t = s.trim().replaceAll(',', '.');
-    if (t.isEmpty) return null;
-    return double.tryParse(t);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -308,7 +300,7 @@ class _ApplicationSheetContentState
         _protocolRowSources.add(c);
         _productControllers.add(TextEditingController(text: c.productName));
         final preserved = savedByName[c.productName.trim()];
-        final planned = _parsePlannedRateString(c.rate);
+        final planned = c.rate;
         final rateText = preserved?.rateText.trim().isNotEmpty == true
             ? preserved!.rateText
             : (planned != null ? planned.toString() : '');
@@ -343,7 +335,7 @@ class _ApplicationSheetContentState
   }
 
   String? _protocolPlannedRateLine(TreatmentComponent c) {
-    final pr = _parsePlannedRateString(c.rate);
+    final pr = c.rate;
     final pu = c.rateUnit?.trim();
     if (pr == null && (pu == null || pu.isEmpty)) return null;
     if (pr != null && pu != null && pu.isNotEmpty) {
@@ -689,11 +681,25 @@ class _ApplicationSheetContentState
           rate: _parseDouble(_rateControllers[i].text),
           rateUnit: i < _rateUnits.length ? _rateUnits[i] : null,
           plannedProduct: c?.productName,
-          plannedRate: c != null ? _parsePlannedRateString(c.rate) : null,
+          plannedRate: c?.rate,
           plannedRateUnit: c?.rateUnit,
         ));
       }
       await productRepo.saveProductsForEvent(eventId, rows);
+
+      // Dual-write: persist plot selections to junction table alongside TEXT.
+      final plotAssignmentRepo =
+          ref.read(applicationPlotAssignmentRepositoryProvider);
+      final plots =
+          ref.read(plotsForTrialProvider(widget.trial.id)).value ?? [];
+      final plotSelections = _selectedPlotLabels.map((label) {
+        final plot = plots.where((p) =>
+            getDisplayPlotLabel(p, plots) == label || p.plotId == label)
+            .firstOrNull;
+        return (label: label, plotId: plot?.id);
+      }).toList();
+      await plotAssignmentRepo.saveForEvent(eventId, plotSelections);
+
       if (mounted) widget.onSaved();
     } catch (e) {
       if (mounted) {

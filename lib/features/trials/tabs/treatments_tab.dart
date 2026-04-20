@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -21,7 +22,7 @@ String buildTreatmentFormula(List<TreatmentComponent> components) {
       c.productName.trim(),
       if (c.formulationType != null && c.formulationType!.trim().isNotEmpty)
         c.formulationType!.trim(),
-      if (c.rate != null && c.rate!.trim().isNotEmpty) c.rate!.trim(),
+      if (c.rate != null) '${c.rate}',
       if (c.rateUnit != null && c.rateUnit!.trim().isNotEmpty)
         c.rateUnit!.trim(),
     ];
@@ -64,10 +65,11 @@ String _componentOneLine(TreatmentComponent c) {
   final parts = <String>[];
   final pn = c.productName.trim();
   if (pn.isNotEmpty) parts.add(pn);
-  final rate = c.rate?.trim();
+  final rate = c.rate;
   final unit = c.rateUnit?.trim();
-  if (rate != null && rate.isNotEmpty) {
-    parts.add(unit != null && unit.isNotEmpty ? '$rate $unit' : rate);
+  if (rate != null) {
+    final rateStr = '$rate';
+    parts.add(unit != null && unit.isNotEmpty ? '$rateStr $unit' : rateStr);
   } else if (unit != null && unit.isNotEmpty) {
     parts.add(unit);
   }
@@ -915,7 +917,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
     final e = widget.existingComponent;
     if (e != null) {
       _productController.text = e.productName;
-      _rateController.text = e.rate ?? '';
+      _rateController.text = e.rate != null ? '${e.rate}' : '';
       final u = e.rateUnit?.trim();
       if (u != null &&
           u.isNotEmpty &&
@@ -1030,6 +1032,9 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                       controller: _rateController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                      ],
                       decoration: FormStyles.inputDecoration(
                           labelText: 'Rate'),
                     ),
@@ -1245,9 +1250,9 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                                 treatmentId: widget.treatment.id,
                                 trialId: widget.trial.id,
                                 productName: name,
-                                rate: _rateController.text.trim().isEmpty
-                                    ? null
-                                    : _rateController.text.trim(),
+                                rate: double.tryParse(
+                                    _rateController.text.trim()
+                                        .replaceAll(',', '.')),
                                 rateUnit: _rateUnit,
                                 applicationTiming:
                                     _formulationController.text.trim().isEmpty
@@ -1423,6 +1428,9 @@ decoration: FormStyles.inputDecoration(
                   controller: rateController,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                  ],
                   decoration: FormStyles.inputDecoration(
                     labelText: 'Rate',
                   ),
@@ -1525,9 +1533,9 @@ decoration: FormStyles.inputDecoration(
                       treatmentId: widget.treatment.id,
                       trialId: widget.trial.id,
                       productName: productController.text.trim(),
-                      rate: rateController.text.trim().isEmpty
-                          ? null
-                          : rateController.text.trim(),
+                      rate: double.tryParse(
+                          rateController.text.trim()
+                              .replaceAll(',', '.')),
                       rateUnit: rateUnitController.text.trim().isEmpty
                           ? null
                           : rateUnitController.text.trim(),

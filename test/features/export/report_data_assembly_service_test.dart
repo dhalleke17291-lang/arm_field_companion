@@ -264,7 +264,7 @@ class MockTreatmentRepository implements TreatmentRepository {
     required int treatmentId,
     required int trialId,
     required String productName,
-    String? rate,
+    double? rate,
     String? rateUnit,
     String? applicationTiming,
     String? notes,
@@ -275,6 +275,7 @@ class MockTreatmentRepository implements TreatmentRepository {
     String? registrationNumber,
     String? eppoCode,
     int? performedByUserId,
+    String? performedBy,
     String? activeIngredientName,
     double? aiConcentration,
     String? aiConcentrationUnit,
@@ -303,6 +304,29 @@ class MockTreatmentRepository implements TreatmentRepository {
   @override
   Future<TreatmentComponentRestoreResult> restoreComponent(int componentId,
           {String? restoredBy, int? restoredByUserId}) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> updateComponent(int componentId,
+      {String? productName,
+      double? rate,
+      String? rateUnit,
+      String? applicationTiming,
+      String? notes,
+      int? sortOrder,
+      double? activeIngredientPct,
+      String? formulationType,
+      String? manufacturer,
+      String? registrationNumber,
+      String? eppoCode,
+      String? activeIngredientName,
+      double? aiConcentration,
+      String? aiConcentrationUnit,
+      double? labelRate,
+      String? labelRateUnit,
+      bool? isTestProduct,
+      int? performedByUserId,
+      String? performedBy}) async =>
       throw UnimplementedError();
 }
 
@@ -413,6 +437,10 @@ class MockApplicationRepository implements ApplicationRepository {
 
   @override
   Future<void> closeApplication(String id,
+      {String? performedBy, int? performedByUserId}) async {}
+
+  @override
+  Future<void> cancelApplication(String id,
       {String? performedBy, int? performedByUserId}) async {}
 }
 

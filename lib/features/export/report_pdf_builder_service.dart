@@ -888,7 +888,7 @@ class ReportPdfBuilderService {
                   decoration: pw.BoxDecoration(color: bg),
                   children: [
                     _tableCell(c.productName),
-                    _tableCell(c.rate),
+                    _tableCell(c.rate?.toString()),
                     _tableCell(c.rateUnit),
                     _tableCell(c.formulationType),
                     _tableCell(aiStr, rightAlign: true),

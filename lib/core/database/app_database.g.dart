@@ -4280,9 +4280,9 @@ class $TreatmentComponentsTable extends TreatmentComponents
       requiredDuringInsert: true);
   static const VerificationMeta _rateMeta = const VerificationMeta('rate');
   @override
-  late final GeneratedColumn<String> rate = GeneratedColumn<String>(
+  late final GeneratedColumn<double> rate = GeneratedColumn<double>(
       'rate', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+      type: DriftSqlType.double, requiredDuringInsert: false);
   static const VerificationMeta _rateUnitMeta =
       const VerificationMeta('rateUnit');
   @override
@@ -4604,7 +4604,7 @@ class $TreatmentComponentsTable extends TreatmentComponents
       productName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}product_name'])!,
       rate: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}rate']),
+          .read(DriftSqlType.double, data['${effectivePrefix}rate']),
       rateUnit: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}rate_unit']),
       applicationTiming: attachedDatabase.typeMapping.read(
@@ -4661,7 +4661,7 @@ class TreatmentComponent extends DataClass
   final int treatmentId;
   final int trialId;
   final String productName;
-  final String? rate;
+  final double? rate;
   final String? rateUnit;
   final String? applicationTiming;
   final String? notes;
@@ -4724,7 +4724,7 @@ class TreatmentComponent extends DataClass
     map['trial_id'] = Variable<int>(trialId);
     map['product_name'] = Variable<String>(productName);
     if (!nullToAbsent || rate != null) {
-      map['rate'] = Variable<String>(rate);
+      map['rate'] = Variable<double>(rate);
     }
     if (!nullToAbsent || rateUnit != null) {
       map['rate_unit'] = Variable<String>(rateUnit);
@@ -4854,7 +4854,7 @@ class TreatmentComponent extends DataClass
       treatmentId: serializer.fromJson<int>(json['treatmentId']),
       trialId: serializer.fromJson<int>(json['trialId']),
       productName: serializer.fromJson<String>(json['productName']),
-      rate: serializer.fromJson<String?>(json['rate']),
+      rate: serializer.fromJson<double?>(json['rate']),
       rateUnit: serializer.fromJson<String?>(json['rateUnit']),
       applicationTiming:
           serializer.fromJson<String?>(json['applicationTiming']),
@@ -4890,7 +4890,7 @@ class TreatmentComponent extends DataClass
       'treatmentId': serializer.toJson<int>(treatmentId),
       'trialId': serializer.toJson<int>(trialId),
       'productName': serializer.toJson<String>(productName),
-      'rate': serializer.toJson<String?>(rate),
+      'rate': serializer.toJson<double?>(rate),
       'rateUnit': serializer.toJson<String?>(rateUnit),
       'applicationTiming': serializer.toJson<String?>(applicationTiming),
       'notes': serializer.toJson<String?>(notes),
@@ -4919,7 +4919,7 @@ class TreatmentComponent extends DataClass
           int? treatmentId,
           int? trialId,
           String? productName,
-          Value<String?> rate = const Value.absent(),
+          Value<double?> rate = const Value.absent(),
           Value<String?> rateUnit = const Value.absent(),
           Value<String?> applicationTiming = const Value.absent(),
           Value<String?> notes = const Value.absent(),
@@ -5138,7 +5138,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
   final Value<int> treatmentId;
   final Value<int> trialId;
   final Value<String> productName;
-  final Value<String?> rate;
+  final Value<double?> rate;
   final Value<String?> rateUnit;
   final Value<String?> applicationTiming;
   final Value<String?> notes;
@@ -5220,7 +5220,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     Expression<int>? treatmentId,
     Expression<int>? trialId,
     Expression<String>? productName,
-    Expression<String>? rate,
+    Expression<double>? rate,
     Expression<String>? rateUnit,
     Expression<String>? applicationTiming,
     Expression<String>? notes,
@@ -5280,7 +5280,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       Value<int>? treatmentId,
       Value<int>? trialId,
       Value<String>? productName,
-      Value<String?>? rate,
+      Value<double?>? rate,
       Value<String?>? rateUnit,
       Value<String?>? applicationTiming,
       Value<String?>? notes,
@@ -5346,7 +5346,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       map['product_name'] = Variable<String>(productName.value);
     }
     if (rate.present) {
-      map['rate'] = Variable<String>(rate.value);
+      map['rate'] = Variable<double>(rate.value);
     }
     if (rateUnit.present) {
       map['rate_unit'] = Variable<String>(rateUnit.value);
@@ -24413,6 +24413,285 @@ class TrialApplicationProductsCompanion
   }
 }
 
+class $ApplicationPlotAssignmentsTable extends ApplicationPlotAssignments
+    with
+        TableInfo<$ApplicationPlotAssignmentsTable, ApplicationPlotAssignment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ApplicationPlotAssignmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _applicationEventIdMeta =
+      const VerificationMeta('applicationEventId');
+  @override
+  late final GeneratedColumn<String> applicationEventId =
+      GeneratedColumn<String>('application_event_id', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: true,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'REFERENCES trial_application_events (id) ON DELETE CASCADE'));
+  static const VerificationMeta _plotLabelMeta =
+      const VerificationMeta('plotLabel');
+  @override
+  late final GeneratedColumn<String> plotLabel = GeneratedColumn<String>(
+      'plot_label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _plotIdMeta = const VerificationMeta('plotId');
+  @override
+  late final GeneratedColumn<int> plotId = GeneratedColumn<int>(
+      'plot_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES plots (id)'));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, applicationEventId, plotLabel, plotId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'application_plot_assignments';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ApplicationPlotAssignment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('application_event_id')) {
+      context.handle(
+          _applicationEventIdMeta,
+          applicationEventId.isAcceptableOrUnknown(
+              data['application_event_id']!, _applicationEventIdMeta));
+    } else if (isInserting) {
+      context.missing(_applicationEventIdMeta);
+    }
+    if (data.containsKey('plot_label')) {
+      context.handle(_plotLabelMeta,
+          plotLabel.isAcceptableOrUnknown(data['plot_label']!, _plotLabelMeta));
+    } else if (isInserting) {
+      context.missing(_plotLabelMeta);
+    }
+    if (data.containsKey('plot_id')) {
+      context.handle(_plotIdMeta,
+          plotId.isAcceptableOrUnknown(data['plot_id']!, _plotIdMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ApplicationPlotAssignment map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ApplicationPlotAssignment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      applicationEventId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}application_event_id'])!,
+      plotLabel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plot_label'])!,
+      plotId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}plot_id']),
+    );
+  }
+
+  @override
+  $ApplicationPlotAssignmentsTable createAlias(String alias) {
+    return $ApplicationPlotAssignmentsTable(attachedDatabase, alias);
+  }
+}
+
+class ApplicationPlotAssignment extends DataClass
+    implements Insertable<ApplicationPlotAssignment> {
+  final int id;
+  final String applicationEventId;
+  final String plotLabel;
+  final int? plotId;
+  const ApplicationPlotAssignment(
+      {required this.id,
+      required this.applicationEventId,
+      required this.plotLabel,
+      this.plotId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['application_event_id'] = Variable<String>(applicationEventId);
+    map['plot_label'] = Variable<String>(plotLabel);
+    if (!nullToAbsent || plotId != null) {
+      map['plot_id'] = Variable<int>(plotId);
+    }
+    return map;
+  }
+
+  ApplicationPlotAssignmentsCompanion toCompanion(bool nullToAbsent) {
+    return ApplicationPlotAssignmentsCompanion(
+      id: Value(id),
+      applicationEventId: Value(applicationEventId),
+      plotLabel: Value(plotLabel),
+      plotId:
+          plotId == null && nullToAbsent ? const Value.absent() : Value(plotId),
+    );
+  }
+
+  factory ApplicationPlotAssignment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ApplicationPlotAssignment(
+      id: serializer.fromJson<int>(json['id']),
+      applicationEventId:
+          serializer.fromJson<String>(json['applicationEventId']),
+      plotLabel: serializer.fromJson<String>(json['plotLabel']),
+      plotId: serializer.fromJson<int?>(json['plotId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'applicationEventId': serializer.toJson<String>(applicationEventId),
+      'plotLabel': serializer.toJson<String>(plotLabel),
+      'plotId': serializer.toJson<int?>(plotId),
+    };
+  }
+
+  ApplicationPlotAssignment copyWith(
+          {int? id,
+          String? applicationEventId,
+          String? plotLabel,
+          Value<int?> plotId = const Value.absent()}) =>
+      ApplicationPlotAssignment(
+        id: id ?? this.id,
+        applicationEventId: applicationEventId ?? this.applicationEventId,
+        plotLabel: plotLabel ?? this.plotLabel,
+        plotId: plotId.present ? plotId.value : this.plotId,
+      );
+  ApplicationPlotAssignment copyWithCompanion(
+      ApplicationPlotAssignmentsCompanion data) {
+    return ApplicationPlotAssignment(
+      id: data.id.present ? data.id.value : this.id,
+      applicationEventId: data.applicationEventId.present
+          ? data.applicationEventId.value
+          : this.applicationEventId,
+      plotLabel: data.plotLabel.present ? data.plotLabel.value : this.plotLabel,
+      plotId: data.plotId.present ? data.plotId.value : this.plotId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ApplicationPlotAssignment(')
+          ..write('id: $id, ')
+          ..write('applicationEventId: $applicationEventId, ')
+          ..write('plotLabel: $plotLabel, ')
+          ..write('plotId: $plotId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, applicationEventId, plotLabel, plotId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ApplicationPlotAssignment &&
+          other.id == this.id &&
+          other.applicationEventId == this.applicationEventId &&
+          other.plotLabel == this.plotLabel &&
+          other.plotId == this.plotId);
+}
+
+class ApplicationPlotAssignmentsCompanion
+    extends UpdateCompanion<ApplicationPlotAssignment> {
+  final Value<int> id;
+  final Value<String> applicationEventId;
+  final Value<String> plotLabel;
+  final Value<int?> plotId;
+  const ApplicationPlotAssignmentsCompanion({
+    this.id = const Value.absent(),
+    this.applicationEventId = const Value.absent(),
+    this.plotLabel = const Value.absent(),
+    this.plotId = const Value.absent(),
+  });
+  ApplicationPlotAssignmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required String applicationEventId,
+    required String plotLabel,
+    this.plotId = const Value.absent(),
+  })  : applicationEventId = Value(applicationEventId),
+        plotLabel = Value(plotLabel);
+  static Insertable<ApplicationPlotAssignment> custom({
+    Expression<int>? id,
+    Expression<String>? applicationEventId,
+    Expression<String>? plotLabel,
+    Expression<int>? plotId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (applicationEventId != null)
+        'application_event_id': applicationEventId,
+      if (plotLabel != null) 'plot_label': plotLabel,
+      if (plotId != null) 'plot_id': plotId,
+    });
+  }
+
+  ApplicationPlotAssignmentsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? applicationEventId,
+      Value<String>? plotLabel,
+      Value<int?>? plotId}) {
+    return ApplicationPlotAssignmentsCompanion(
+      id: id ?? this.id,
+      applicationEventId: applicationEventId ?? this.applicationEventId,
+      plotLabel: plotLabel ?? this.plotLabel,
+      plotId: plotId ?? this.plotId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (applicationEventId.present) {
+      map['application_event_id'] = Variable<String>(applicationEventId.value);
+    }
+    if (plotLabel.present) {
+      map['plot_label'] = Variable<String>(plotLabel.value);
+    }
+    if (plotId.present) {
+      map['plot_id'] = Variable<int>(plotId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ApplicationPlotAssignmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('applicationEventId: $applicationEventId, ')
+          ..write('plotLabel: $plotLabel, ')
+          ..write('plotId: $plotId')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ImportSnapshotsTable extends ImportSnapshots
     with TableInfo<$ImportSnapshotsTable, ImportSnapshot> {
   @override
@@ -29508,6 +29787,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TrialApplicationEventsTable(this);
   late final $TrialApplicationProductsTable trialApplicationProducts =
       $TrialApplicationProductsTable(this);
+  late final $ApplicationPlotAssignmentsTable applicationPlotAssignments =
+      $ApplicationPlotAssignmentsTable(this);
   late final $ImportSnapshotsTable importSnapshots =
       $ImportSnapshotsTable(this);
   late final $CompatibilityProfilesTable compatibilityProfiles =
@@ -29554,6 +29835,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         seedingEvents,
         trialApplicationEvents,
         trialApplicationProducts,
+        applicationPlotAssignments,
         importSnapshots,
         compatibilityProfiles,
         cropDescriptions,
@@ -29570,6 +29852,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('trial_application_products',
+                  kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trial_application_events',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('application_plot_assignments',
                   kind: UpdateKind.delete),
             ],
           ),
@@ -31845,7 +32135,7 @@ typedef $$TreatmentComponentsTableCreateCompanionBuilder
   required int treatmentId,
   required int trialId,
   required String productName,
-  Value<String?> rate,
+  Value<double?> rate,
   Value<String?> rateUnit,
   Value<String?> applicationTiming,
   Value<String?> notes,
@@ -31873,7 +32163,7 @@ typedef $$TreatmentComponentsTableUpdateCompanionBuilder
   Value<int> treatmentId,
   Value<int> trialId,
   Value<String> productName,
-  Value<String?> rate,
+  Value<double?> rate,
   Value<String?> rateUnit,
   Value<String?> applicationTiming,
   Value<String?> notes,
@@ -31918,7 +32208,7 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<int> treatmentId = const Value.absent(),
             Value<int> trialId = const Value.absent(),
             Value<String> productName = const Value.absent(),
-            Value<String?> rate = const Value.absent(),
+            Value<double?> rate = const Value.absent(),
             Value<String?> rateUnit = const Value.absent(),
             Value<String?> applicationTiming = const Value.absent(),
             Value<String?> notes = const Value.absent(),
@@ -31972,7 +32262,7 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             required int treatmentId,
             required int trialId,
             required String productName,
-            Value<String?> rate = const Value.absent(),
+            Value<double?> rate = const Value.absent(),
             Value<String?> rateUnit = const Value.absent(),
             Value<String?> applicationTiming = const Value.absent(),
             Value<String?> notes = const Value.absent(),
@@ -32037,7 +32327,7 @@ class $$TreatmentComponentsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
-  ColumnFilters<String> get rate => $state.composableBuilder(
+  ColumnFilters<double> get rate => $state.composableBuilder(
       column: $state.table.rate,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
@@ -32187,7 +32477,7 @@ class $$TreatmentComponentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
-  ColumnOrderings<String> get rate => $state.composableBuilder(
+  ColumnOrderings<double> get rate => $state.composableBuilder(
       column: $state.table.rate,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
@@ -34153,6 +34443,25 @@ class $$PlotsTableFilterComposer
         builder: (joinBuilder, parentComposers) =>
             $$AuditEventsTableFilterComposer(ComposerState($state.db,
                 $state.db.auditEvents, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter applicationPlotAssignmentsRefs(
+      ComposableFilter Function(
+              $$ApplicationPlotAssignmentsTableFilterComposer f)
+          f) {
+    final $$ApplicationPlotAssignmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.applicationPlotAssignments,
+            getReferencedColumn: (t) => t.plotId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ApplicationPlotAssignmentsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.applicationPlotAssignments,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 
@@ -40397,6 +40706,25 @@ class $$TrialApplicationEventsTableFilterComposer
                     parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter applicationPlotAssignmentsRefs(
+      ComposableFilter Function(
+              $$ApplicationPlotAssignmentsTableFilterComposer f)
+          f) {
+    final $$ApplicationPlotAssignmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.applicationPlotAssignments,
+            getReferencedColumn: (t) => t.applicationEventId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ApplicationPlotAssignmentsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.applicationPlotAssignments,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialApplicationEventsTableOrderingComposer
@@ -40927,6 +41255,149 @@ class $$TrialApplicationProductsTableOrderingComposer
                     $state.db.trialApplicationEvents,
                     joinBuilder,
                     parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$ApplicationPlotAssignmentsTableCreateCompanionBuilder
+    = ApplicationPlotAssignmentsCompanion Function({
+  Value<int> id,
+  required String applicationEventId,
+  required String plotLabel,
+  Value<int?> plotId,
+});
+typedef $$ApplicationPlotAssignmentsTableUpdateCompanionBuilder
+    = ApplicationPlotAssignmentsCompanion Function({
+  Value<int> id,
+  Value<String> applicationEventId,
+  Value<String> plotLabel,
+  Value<int?> plotId,
+});
+
+class $$ApplicationPlotAssignmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ApplicationPlotAssignmentsTable,
+    ApplicationPlotAssignment,
+    $$ApplicationPlotAssignmentsTableFilterComposer,
+    $$ApplicationPlotAssignmentsTableOrderingComposer,
+    $$ApplicationPlotAssignmentsTableCreateCompanionBuilder,
+    $$ApplicationPlotAssignmentsTableUpdateCompanionBuilder> {
+  $$ApplicationPlotAssignmentsTableTableManager(
+      _$AppDatabase db, $ApplicationPlotAssignmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$ApplicationPlotAssignmentsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$ApplicationPlotAssignmentsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> applicationEventId = const Value.absent(),
+            Value<String> plotLabel = const Value.absent(),
+            Value<int?> plotId = const Value.absent(),
+          }) =>
+              ApplicationPlotAssignmentsCompanion(
+            id: id,
+            applicationEventId: applicationEventId,
+            plotLabel: plotLabel,
+            plotId: plotId,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String applicationEventId,
+            required String plotLabel,
+            Value<int?> plotId = const Value.absent(),
+          }) =>
+              ApplicationPlotAssignmentsCompanion.insert(
+            id: id,
+            applicationEventId: applicationEventId,
+            plotLabel: plotLabel,
+            plotId: plotId,
+          ),
+        ));
+}
+
+class $$ApplicationPlotAssignmentsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ApplicationPlotAssignmentsTable> {
+  $$ApplicationPlotAssignmentsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plotLabel => $state.composableBuilder(
+      column: $state.table.plotLabel,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialApplicationEventsTableFilterComposer get applicationEventId {
+    final $$TrialApplicationEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.applicationEventId,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableFilterComposer get plotId {
+    final $$PlotsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotId,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$ApplicationPlotAssignmentsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ApplicationPlotAssignmentsTable> {
+  $$ApplicationPlotAssignmentsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plotLabel => $state.composableBuilder(
+      column: $state.table.plotLabel,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialApplicationEventsTableOrderingComposer get applicationEventId {
+    final $$TrialApplicationEventsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.applicationEventId,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableOrderingComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableOrderingComposer get plotId {
+    final $$PlotsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotId,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
     return composer;
   }
 }
@@ -43071,6 +43542,10 @@ class $AppDatabaseManager {
   $$TrialApplicationProductsTableTableManager get trialApplicationProducts =>
       $$TrialApplicationProductsTableTableManager(
           _db, _db.trialApplicationProducts);
+  $$ApplicationPlotAssignmentsTableTableManager
+      get applicationPlotAssignments =>
+          $$ApplicationPlotAssignmentsTableTableManager(
+              _db, _db.applicationPlotAssignments);
   $$ImportSnapshotsTableTableManager get importSnapshots =>
       $$ImportSnapshotsTableTableManager(_db, _db.importSnapshots);
   $$CompatibilityProfilesTableTableManager get compatibilityProfiles =>
