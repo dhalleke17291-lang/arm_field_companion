@@ -95,6 +95,7 @@ class TrialAssessmentRepository {
     String? seName,
     String? seDescription,
     String? armRatingType,
+    int? armColumnIdInteger,
   }) async {
     final existing = await getById(id);
     if (existing == null) return false;
@@ -139,6 +140,9 @@ class TrialAssessmentRepository {
       armRatingType: nextRatingType == null
           ? const Value.absent()
           : Value(nextRatingType),
+      armColumnIdInteger: armColumnIdInteger != null
+          ? Value(armColumnIdInteger)
+          : const Value.absent(),
       updatedAt: Value(DateTime.now().toUtc()),
     );
 
@@ -147,7 +151,8 @@ class TrialAssessmentRepository {
         nextRatingDate != null ||
         nextSeName != null ||
         nextSeDesc != null ||
-        nextRatingType != null;
+        nextRatingType != null ||
+        armColumnIdInteger != null;
     if (!touched) return false;
 
     await (_db.update(_db.trialAssessments)..where((t) => t.id.equals(id)))

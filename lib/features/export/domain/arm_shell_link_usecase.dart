@@ -150,6 +150,9 @@ class ArmShellLinkUseCase {
           seName: m['se_name'],
           seDescription: m['se_description'],
           armRatingType: m['arm_rating_type'],
+          armColumnIdInteger: m['arm_column_id_integer'] != null
+              ? int.tryParse(m['arm_column_id_integer']!)
+              : null,
         );
         if (wrote) assessmentWriteCount++;
       }
@@ -398,6 +401,17 @@ class ArmShellLinkUseCase {
         continue;
       }
       matchedShellColumnIndices.add(col.columnIndex);
+
+      // Store ARM Column ID integer for direct export anchor matching.
+      if (col.armColumnIdInteger != null) {
+        _proposeShellTaField(
+          assessmentFieldChanges,
+          trialAssessmentId: ta.id,
+          fieldName: 'arm_column_id_integer',
+          currentDb: ta.armColumnIdInteger?.toString(),
+          shellRaw: col.armColumnIdInteger.toString(),
+        );
+      }
 
       final shellPest = _shellPestCode(col);
       if (shellPest.isNotEmpty) {

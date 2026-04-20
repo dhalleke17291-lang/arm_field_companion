@@ -21,14 +21,18 @@ import '../../domain/models/arm_shell_import.dart';
 ///   r=4,c=2: Crop
 ///
 /// Assessment columns (c=2 onward, until empty ID cell):
-///   r=7:  ARM Column ID (identity anchor)
+///   r=7:  ARM Column ID (identity anchor; integer for AgQuest shells)
 ///   r=14: SE Description
 ///   r=15: Rating date
-///   r=17: SE Name
+///   r=17: SE Name / Pest code (W003, W001, CF013)
+///   r=18: Part rated (PLANT, LEAF3)
 ///   r=20: Rating type
 ///   r=21: Rating unit
+///   r=23: Collect basis (PLOT)
 ///   r=29: Crop stage major
-///   r=41: Rating timing
+///   r=41: Rating timing / App timing code (A1, A3, A6, A9, AA)
+///   r=42: Trt-eval interval (-28 DA-A, -7 DA-A)
+///   r=43: DAT interval (-7 DP-1, 1 DP-1, 14 DP-1)
 ///   r=46: Num subsamples
 ///
 /// Plot data:
@@ -75,6 +79,7 @@ class ArmShellParser {
       assessmentColumns.add(
         ArmColumnMap(
           armColumnId: armColumnId,
+          armColumnIdInteger: int.tryParse(armColumnId),
           columnLetter: columnIndexToLettersZeroBased(colIdx),
           columnIndex: colIdx,
           ratingDate: _cellString(sheet, 15, colIdx),
@@ -85,6 +90,12 @@ class ArmShellParser {
           cropStageMaj: _cellString(sheet, 29, colIdx),
           ratingTiming: _cellString(sheet, 41, colIdx),
           numSubsamples: int.tryParse((subs ?? '').trim()),
+          pestCode: _cellString(sheet, 17, colIdx), // same as seName (row 17)
+          partRated: _cellString(sheet, 18, colIdx), // row 18 (0-based)
+          collectBasis: _cellString(sheet, 23, colIdx), // row 23 (0-based)
+          appTimingCode: _cellString(sheet, 41, colIdx), // same as ratingTiming (row 41)
+          trtEvalInterval: _cellString(sheet, 42, colIdx), // row 42 (0-based)
+          datInterval: _cellString(sheet, 43, colIdx), // row 43 (0-based)
         ),
       );
     }
