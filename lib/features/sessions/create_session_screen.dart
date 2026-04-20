@@ -309,6 +309,30 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                       final displayName = ta.displayNameOverride ?? def.name;
                       final isSelected =
                           _selectedTrialAssessmentIds.contains(ta.id);
+                      final contextParts = <String>[
+                        if (def.cropPart != null &&
+                            def.cropPart!.trim().isNotEmpty)
+                          def.cropPart!.trim(),
+                        if (def.appTimingCode != null &&
+                            def.appTimingCode!.trim().isNotEmpty)
+                          def.appTimingCode!.trim(),
+                        if (def.trtEvalInterval != null &&
+                            def.trtEvalInterval!.trim().isNotEmpty)
+                          def.trtEvalInterval!.trim(),
+                        if (ta.armShellRatingDate != null &&
+                            ta.armShellRatingDate!.trim().isNotEmpty)
+                          ta.armShellRatingDate!.trim(),
+                      ];
+                      final contextLine = contextParts.isNotEmpty
+                          ? contextParts.join(' · ')
+                          : null;
+                      final unitLine = def.unit != null
+                          ? '${def.unit}${def.scaleMin != null && def.scaleMax != null ? " • ${def.scaleMin}–${def.scaleMax}" : ""}'
+                          : null;
+                      final subtitle = [
+                        if (contextLine != null) contextLine,
+                        if (unitLine != null) unitLine,
+                      ].join('\n');
                       return CheckboxListTile(
                         value: isSelected,
                         onChanged: (val) {
@@ -323,10 +347,10 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                         title: Text(displayName,
                             style:
                                 const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: def.unit != null
-                            ? Text(
-                                '${def.unit}${def.scaleMin != null && def.scaleMax != null ? " • ${def.scaleMin}–${def.scaleMax}" : ""}')
+                        subtitle: subtitle.isNotEmpty
+                            ? Text(subtitle)
                             : null,
+                        isThreeLine: contextLine != null && unitLine != null,
                         secondary: CircleAvatar(
                           backgroundColor: isSelected
                               ? Theme.of(context).colorScheme.primary
