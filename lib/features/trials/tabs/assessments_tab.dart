@@ -12,7 +12,9 @@ import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../derived/domain/anova.dart';
+import '../../derived/domain/trajectory_analysis.dart';
 import '../../derived/domain/trial_statistics.dart';
+import '../widgets/trajectory_chart.dart';
 import 'assessment_results_screen.dart';
 import 'add_assessment_sheet.dart';
 /// Assessments tab for trial detail: library + custom assessments list.
@@ -429,6 +431,8 @@ class AssessmentsTab extends ConsumerWidget {
                     );
                 }),
               ],
+              // Trajectory section
+              _TrajectorySection(trialId: trial.id),
             ],
           ),
         ),
@@ -1085,5 +1089,99 @@ class AssessmentsTab extends ConsumerWidget {
       case ResultDirection.neutral:
         return AppDesignTokens.secondaryText;
     }
+  }
+}
+
+/// Trajectory section: shows trajectory charts for assessment codes with ≥3 timings.
+class _TrajectorySection extends ConsumerWidget {
+  const _TrajectorySection({required this.trialId});
+
+  final int trialId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trajAsync = ref.watch(trialTrajectoriesProvider(trialId));
+
+    return trajAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (series) {
+        if (series.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                'Trajectory across timings',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesignTokens.primaryText,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final s in series) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppDesignTokens.cardSurface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppDesignTokens.borderCrisp),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.assessmentCode,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    Text(
+                      '${s.timings.length} timings · ${s.treatments.length} treatments',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TrajectoryChart(series: s),
+                    const SizedBox(height: 8),
+                    () {
+                      final interp = classifyTrajectoryInterpretation(
+                        assessmentCode: s.assessmentCode,
+                        category: s.category,
+                      );
+                      if (interp == null) return const SizedBox.shrink();
+
+                      final audpsMap = <String, double>{};
+                      for (final t in s.treatments) {
+                        final val = computeAudps(t);
+                        if (val != null) {
+                          audpsMap[t.treatmentLabel] = val;
+                        }
+                      }
+
+                      return TrajectoryInterpretationPanel(
+                        interpretation: interp,
+                        audpsValues:
+                            audpsMap.isNotEmpty ? audpsMap : null,
+                      );
+                    }(),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
   }
 }

@@ -18,6 +18,7 @@ import 'database/app_database.dart';
 import '../features/backup/auto_backup_service.dart';
 import 'connectivity/connectivity_service.dart';
 import 'connectivity/weather_backfill_service.dart';
+import '../features/derived/domain/trajectory_analysis.dart';
 import '../features/backup/backup_passphrase_store.dart';
 import '../features/backup/backup_service.dart';
 import '../features/backup/restore_service.dart';
@@ -1625,6 +1626,82 @@ final weatherBackfillServiceProvider =
     weatherRepo: ref.watch(weatherSnapshotRepositoryProvider),
     diagnosticsStore: ref.watch(diagnosticsStoreProvider),
   );
+});
+
+// ---------------------------------------------------------------------------
+// Trajectory
+// ---------------------------------------------------------------------------
+
+/// Builds trajectory series for all assessment codes in a trial that have ≥3 timings.
+final trialTrajectoriesProvider = FutureProvider.autoDispose
+    .family<List<AssessmentTrajectorySeries>, int>((ref, trialId) async {
+  final assessmentPairs = await ref
+      .watch(trialAssessmentsWithDefinitionsForTrialProvider(trialId).future);
+  final db = ref.watch(databaseProvider);
+
+  // Group TrialAssessments by armRatingType (the ARM code like CONTRO).
+  final byCode = <String, List<(dynamic ta, dynamic def)>>{};
+  for (final pair in assessmentPairs) {
+    final ta = pair.$1;
+    final code = ta.armRatingType?.trim();
+    if (code == null || code.isEmpty) continue;
+    if (ta.daysAfterTreatment == null) continue;
+    byCode.putIfAbsent(code, () => []).add(pair);
+  }
+
+  // For each code with ≥3 timings, build trajectory from rating data.
+  final result = <AssessmentTrajectorySeries>[];
+
+  for (final entry in byCode.entries) {
+    final code = entry.key;
+    final pairs = entry.value;
+    if (pairs.length < 3) continue;
+
+    // Collect rating data across all timings for this code.
+    final rows = <TrajectoryDataRow>[];
+    for (final pair in pairs) {
+      final ta = pair.$1;
+      final dat = ta.daysAfterTreatment as int?;
+      if (dat == null) continue;
+
+      final legacyId = ta.legacyAssessmentId as int?;
+      if (legacyId == null) continue;
+
+      // Get ratings for this assessment.
+      final ratingRows = await db.customSelect(
+        'SELECT r.numeric_value, p.plot_id, t.code AS trt_code, '
+        'a.treatment_id, p.rep '
+        'FROM rating_records r '
+        'JOIN plots p ON r.plot_pk = p.id '
+        'LEFT JOIN assignments a ON a.plot_id = p.id '
+        'LEFT JOIN treatments t ON t.id = COALESCE(a.treatment_id, p.treatment_id) '
+        'WHERE r.assessment_id = ? AND r.is_current = 1 AND r.is_deleted = 0 '
+        'AND r.result_status = \'RECORDED\' AND r.numeric_value IS NOT NULL '
+        'AND p.is_deleted = 0 AND (p.is_guard_row = 0 OR p.is_guard_row IS NULL) '
+        'AND (p.exclude_from_analysis = 0 OR p.exclude_from_analysis IS NULL)',
+        variables: [drift.Variable.withInt(legacyId)],
+        readsFrom: {db.ratingRecords, db.plots, db.assignments, db.treatments},
+      ).get();
+
+      for (final r in ratingRows) {
+        final value = r.read<double?>('numeric_value');
+        final trtCode = r.read<String?>('trt_code');
+        final trtId = r.read<int?>('treatment_id');
+        if (value == null) continue;
+        rows.add(TrajectoryDataRow(
+          daysAfterTreatment: dat,
+          treatmentNumber: trtId ?? 0,
+          treatmentLabel: trtCode ?? 'T${trtId ?? 0}',
+          value: value,
+        ));
+      }
+    }
+
+    final series = buildTrajectory(assessmentCode: code, rows: rows);
+    if (series != null) result.add(series);
+  }
+
+  return result;
 });
 
 // ---------------------------------------------------------------------------
