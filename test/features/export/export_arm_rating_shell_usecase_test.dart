@@ -1633,4 +1633,182 @@ void main() {
       expect(r.errorMessage, contains('duplicate armPlotNumber'));
     });
   });
+
+  test(
+    'two same-name same-date assessments export to correct columns by armColumnIdInteger',
+    () async {
+      final trialRepo = TrialRepository(db);
+      final trialId = await trialRepo.createTrial(
+          name: 'DupName', workspaceType: 'efficacy');
+      final trtId = await TreatmentRepository(db).insertTreatment(
+        trialId: trialId,
+        code: '1',
+        name: 'Check',
+      );
+      final plotPk = await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: '101',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 1,
+      );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'CONTRO_DUP',
+              name: 'CONTRO dup',
+              category: 'pest',
+              timingCode: const Value('2-Apr-26'),
+            ),
+          );
+
+      // Two legacy assessments for the two CONTRO columns
+      final legacyId1 = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+                trialId: trialId, name: 'CONTRO A1', unit: const Value('%')),
+          );
+      final legacyId2 = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+                trialId: trialId, name: 'CONTRO AA', unit: const Value('%')),
+          );
+
+      // Two TrialAssessments with distinct armColumnIdInteger values
+      final taId1 = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              legacyAssessmentId: Value(legacyId1),
+              sortOrder: const Value(0),
+              pestCode: const Value('CONTRO'),
+              armColumnIdInteger: const Value(3),
+              armImportColumnIndex: const Value(2),
+            ),
+          );
+      final taId2 = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              legacyAssessmentId: Value(legacyId2),
+              sortOrder: const Value(1),
+              pestCode: const Value('CONTRO'),
+              armColumnIdInteger: const Value(16),
+              armImportColumnIndex: const Value(3),
+            ),
+          );
+
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-04-02',
+            ),
+          );
+
+      // Rating for assessment 1 (ARM Column ID 3) → value 42.0
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: trialId,
+              plotPk: plotPk,
+              assessmentId: legacyId1,
+              sessionId: sessionId,
+              trialAssessmentId: Value(taId1),
+              resultStatus: const Value('RECORDED'),
+              numericValue: const Value(42.0),
+              isCurrent: const Value(true),
+            ),
+          );
+
+      // Rating for assessment 2 (ARM Column ID 16) → value 77.0
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: trialId,
+              plotPk: plotPk,
+              assessmentId: legacyId2,
+              sessionId: sessionId,
+              trialAssessmentId: Value(taId2),
+              resultStatus: const Value('RECORDED'),
+              numericValue: const Value(77.0),
+              isCurrent: const Value(true),
+            ),
+          );
+
+      await _pinArmExportAnchors(
+        db,
+        trialId: trialId,
+        plotPk: plotPk,
+        armPlotNumber: 101,
+        trialAssessmentId: taId1,
+        armImportColumnIndex: 2,
+        sessionId: sessionId,
+      );
+      // Pin second assessment too
+      await (db.update(db.trialAssessments)
+            ..where((t) => t.id.equals(taId2)))
+          .write(const TrialAssessmentsCompanion(
+        armImportColumnIndex: Value(3),
+      ));
+
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+        columnOrderOnExport: const [
+          'CONTRO 2-Apr-26 CONTRO %',
+          'CONTRO 2-Apr-26 CONTRO %',
+        ],
+        assessmentTokens: [
+          {
+            'rawHeader': 'CONTRO 2-Apr-26 CONTRO %',
+            'armCode': 'CONTRO',
+            'timingCode': '2-Apr-26',
+            'unit': '%',
+            'ratingDate': null,
+            'assessmentKey': 'k1',
+          },
+          {
+            'rawHeader': 'CONTRO 2-Apr-26 CONTRO %',
+            'armCode': 'CONTRO',
+            'timingCode': '2-Apr-26',
+            'unit': '%',
+            'ratingDate': null,
+            'assessmentKey': 'k2',
+          },
+        ],
+      );
+
+      // Shell has two columns: C (armColumnId "3") and D (armColumnId "16")
+      final shellPath = await writeArmShellFixture(
+        tempPath,
+        plotNumbers: const [101],
+        armColumnIds: const ['3', '16'],
+        seNames: const ['CONTRO', 'CONTRO'],
+        ratingDates: const ['2-Apr-26', '2-Apr-26'],
+        ratingTypes: const ['CONTRO', 'CONTRO'],
+        ratingUnits: const ['%', '%'],
+      );
+
+      final trialRow =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
+
+      final uc = makeUc(pickShellPathOverride: () async => shellPath);
+      final r = await uc.execute(trial: trialRow);
+      expect(r.success, true, reason: r.errorMessage);
+
+      final outPath = r.filePath;
+      expect(outPath, isNotNull);
+      final outSheet = Excel.decodeBytes(await File(outPath!).readAsBytes())
+          .sheets['Plot Data']!;
+
+      // Column C (index 2) = ARM Column ID 3 → should have value 42.0
+      final cellC = _cellString(outSheet, 48, 2);
+      // Column D (index 3) = ARM Column ID 16 → should have value 77.0
+      final cellD = _cellString(outSheet, 48, 3);
+
+      // Values may be stored as int (42) or double (42.0) depending on Excel encoding.
+      expect(double.tryParse(cellC), 42.0,
+          reason: 'ARM Column ID 3 (col C) should contain 42');
+      expect(double.tryParse(cellD), 77.0,
+          reason: 'ARM Column ID 16 (col D) should contain 77');
+    },
+  );
 }
