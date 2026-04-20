@@ -989,6 +989,37 @@ void main() {
     });
   });
 
+  group('interpretPower', () {
+    test('DD 15% → adequate, empty message', () {
+      final r = interpretPower(detectableDifferencePercentOfMean: 15);
+      expect(r.verdict, PowerVerdict.adequate);
+      expect(r.message, isEmpty);
+    });
+    test('DD 20% → adequate (boundary)', () {
+      final r = interpretPower(detectableDifferencePercentOfMean: 20);
+      expect(r.verdict, PowerVerdict.adequate);
+    });
+    test('DD 30% → marginal', () {
+      final r = interpretPower(detectableDifferencePercentOfMean: 30);
+      expect(r.verdict, PowerVerdict.marginal);
+      expect(r.message, contains('30%'));
+    });
+    test('DD 40% → marginal (boundary)', () {
+      final r = interpretPower(detectableDifferencePercentOfMean: 40);
+      expect(r.verdict, PowerVerdict.marginal);
+    });
+    test('DD 60% → underpowered', () {
+      final r = interpretPower(detectableDifferencePercentOfMean: 60);
+      expect(r.verdict, PowerVerdict.underpowered);
+      expect(r.message, contains('Underpowered'));
+      expect(r.message, contains('60%'));
+    });
+    test('DD 84% (LODGIN case) → underpowered', () {
+      final r = interpretPower(detectableDifferencePercentOfMean: 84);
+      expect(r.verdict, PowerVerdict.underpowered);
+    });
+  });
+
   group('sortTreatmentMeans', () {
     test('higherIsBetter sorts by descending mean', () {
       final means = [

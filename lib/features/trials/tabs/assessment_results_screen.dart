@@ -938,14 +938,34 @@ class _AnovaSummaryRow extends StatelessWidget {
                   color: AppDesignTokens.secondaryText,
                 ),
               ),
-            if (anova.grandMean != 0)
-              Text(
-                'Detectable difference: ~${(anova.lsd! / anova.grandMean.abs() * 100).round()}% of mean',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
+            if (anova.grandMean != 0) ...[
+              () {
+                final ddPct =
+                    (anova.lsd! / anova.grandMean.abs() * 100);
+                final power = interpretPower(
+                    detectableDifferencePercentOfMean: ddPct);
+                final ddColor = power.verdict == PowerVerdict.underpowered
+                    ? AppDesignTokens.warningFg
+                    : AppDesignTokens.secondaryText;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Detectable difference: ~${ddPct.round()}% of mean',
+                      style: TextStyle(fontSize: 11, color: ddColor),
+                    ),
+                    if (power.message.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          power.message,
+                          style: TextStyle(fontSize: 10, color: ddColor),
+                        ),
+                      ),
+                  ],
+                );
+              }(),
+            ],
           ],
           const SizedBox(height: 4),
           Text(

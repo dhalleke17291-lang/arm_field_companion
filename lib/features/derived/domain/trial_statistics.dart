@@ -54,6 +54,45 @@ const _cvBands = <AssessmentCategory, CvBands>{
 const double _percentLowMeanFloor = 10.0;
 const int _minRepsForCv = 4;
 
+// Power interpretation thresholds.
+// Extension literature (U of Maryland, U of Delaware): treatment differences
+// of ~10-20% of mean are typically the smallest detectable in well-run trials.
+// Above ~40% of mean, a null result is essentially uninformative.
+const double _adequateMax = 20.0;
+const double _marginalMax = 40.0;
+
+enum PowerVerdict { adequate, marginal, underpowered }
+
+class PowerInterpretation {
+  final PowerVerdict verdict;
+  final String message;
+  const PowerInterpretation({required this.verdict, required this.message});
+}
+
+PowerInterpretation interpretPower({
+  required double detectableDifferencePercentOfMean,
+}) {
+  final dd = detectableDifferencePercentOfMean;
+  if (dd <= _adequateMax) {
+    return const PowerInterpretation(
+      verdict: PowerVerdict.adequate,
+      message: '',
+    );
+  }
+  if (dd <= _marginalMax) {
+    return PowerInterpretation(
+      verdict: PowerVerdict.marginal,
+      message:
+          'Trial can reliably detect only moderate-to-large differences (>${dd.round()}% of mean).',
+    );
+  }
+  return PowerInterpretation(
+    verdict: PowerVerdict.underpowered,
+    message:
+        'Underpowered: treatments must differ by >${dd.round()}% of mean to detect. Interpret non-significant results with caution.',
+  );
+}
+
 // TODO(parminder): review prefix mapping before CRO handoff
 const _continuousPrefixes = [
   'YIELD', 'BIOMAS', 'HEIGHT', 'MOISTR', 'WEIGHT', 'GRNWGT', 'STWGT',
