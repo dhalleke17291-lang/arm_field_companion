@@ -453,7 +453,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         ref.watch(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
             <TrialAssessment>[];
     final taByLegacy = <int, TrialAssessment>{};
+    final taById = <int, TrialAssessment>{};
     for (final ta in trialAssessments) {
+      taById[ta.id] = ta;
       final lid = ta.legacyAssessmentId;
       if (lid != null) taByLegacy[lid] = ta;
     }
@@ -561,7 +563,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         assessmentId: _currentAssessment.id,
                         sessionId: widget.session.id,
                         assessmentName: _ratingAssessmentDisplayLabel(
-                            _currentAssessment, taByLegacy),
+                            _currentAssessment, taByLegacy, taById),
                         plotLabel:
                             getDisplayPlotLabel(widget.plot, widget.allPlots),
                       );
@@ -682,6 +684,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         _buildAssessmentSelectorPanel(
                           context,
                           taByLegacy,
+                          taById,
                           nonRecordedAssessmentIds,
                           definitions,
                         ),
@@ -1701,10 +1704,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   Widget _buildAssessmentSelectorPanel(
     BuildContext context,
     Map<int, TrialAssessment> taByLegacy,
+    Map<int, TrialAssessment> taById,
     Set<int> nonRecordedAssessmentIds,
     List<AssessmentDefinition> definitions,
   ) {
-    final desc = _shellDescriptionForCurrentAssessment(taByLegacy);
+    final desc = _shellDescriptionForCurrentAssessment(taByLegacy, taById);
     final methodHints =
         _buildAssessmentMethodInstructions(context, taByLegacy, definitions);
     return Column(
@@ -1713,6 +1717,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         _buildAssessmentSelector(
           context,
           taByLegacy,
+          taById,
           nonRecordedAssessmentIds,
         ),
         if (desc != null)
@@ -1855,21 +1860,59 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   String? _shellDescriptionForCurrentAssessment(
-      Map<int, TrialAssessment> taByLegacy) {
-    final ta = taByLegacy[_currentAssessment.id];
+      Map<int, TrialAssessment> taByLegacy,
+      Map<int, TrialAssessment> taById) {
+    final ta = _resolveTrialAssessment(_currentAssessment, taByLegacy, taById);
     return ta != null ? AssessmentDisplayHelper.description(ta) : null;
   }
 
-  String _ratingAssessmentDisplayLabel(
-      Assessment assessment, Map<int, TrialAssessment> taByLegacy) {
+  /// Resolves a legacy [Assessment] bridge row to its [TrialAssessment].
+  /// Priority: 1) legacyAssessmentId lookup, 2) extract TA id from bridge
+  /// name "... — TA{id}", 3) match by assessment definition id.
+  TrialAssessment? _resolveTrialAssessment(
+    Assessment assessment,
+    Map<int, TrialAssessment> taByLegacy,
+    Map<int, TrialAssessment> taById,
+  ) {
+    // 1) Direct link via legacyAssessmentId.
     final ta = taByLegacy[assessment.id];
+    if (ta != null) return ta;
+    // 2) Extract TA id from bridge name pattern.
+    final match = RegExp(r'— TA(\d+)$').firstMatch(assessment.name);
+    if (match != null) {
+      final taId = int.tryParse(match.group(1)!);
+      if (taId != null && taById.containsKey(taId)) return taById[taId];
+    }
+    // 3) Fuzzy match: compare stripped assessment name against TrialAssessment
+    //    display name or seDescription.
+    final stripped = _assessmentPillLabel(assessment).toLowerCase().trim();
+    if (stripped.isNotEmpty) {
+      for (final candidate in taById.values) {
+        final cName = (candidate.displayNameOverride ??
+                candidate.seDescription ??
+                '')
+            .toLowerCase()
+            .trim();
+        if (cName.isNotEmpty && cName == stripped) return candidate;
+      }
+    }
+    return null;
+  }
+
+  String _ratingAssessmentDisplayLabel(
+      Assessment assessment,
+      Map<int, TrialAssessment> taByLegacy,
+      Map<int, TrialAssessment> taById) {
+    final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
     if (ta != null) return AssessmentDisplayHelper.compactName(ta);
     return _assessmentPillLabel(assessment);
   }
 
   String _ratingAssessmentChipLabel(
-      Assessment assessment, Map<int, TrialAssessment> taByLegacy) {
-    final ta = taByLegacy[assessment.id];
+      Assessment assessment,
+      Map<int, TrialAssessment> taByLegacy,
+      Map<int, TrialAssessment> taById) {
+    final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
     if (ta != null) return AssessmentDisplayHelper.compactName(ta);
     return _assessmentPillLabel(assessment);
   }
@@ -1877,6 +1920,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   Widget _buildAssessmentSelector(
     BuildContext context,
     Map<int, TrialAssessment> taByLegacy,
+    Map<int, TrialAssessment> taById,
     Set<int> nonRecordedAssessmentIds,
   ) {
     if (widget.assessments.length == 1) {
@@ -1897,7 +1941,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             ),
             const SizedBox(width: AppDesignTokens.spacing8),
             Text(
-              _ratingAssessmentDisplayLabel(_currentAssessment, taByLegacy),
+              _ratingAssessmentDisplayLabel(_currentAssessment, taByLegacy, taById),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -1943,6 +1987,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   context,
                   index,
                   taByLegacy,
+                  taById,
                   nonRecordedAssessmentIds,
                 ),
               ],
@@ -1975,11 +2020,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     BuildContext context,
     int index,
     Map<int, TrialAssessment> taByLegacy,
+    Map<int, TrialAssessment> taById,
     Set<int> nonRecordedAssessmentIds,
   ) {
     final assessment = widget.assessments[index];
     final isSelected = assessment.id == _currentAssessment.id;
-    final label = _ratingAssessmentChipLabel(assessment, taByLegacy);
+    final label = _ratingAssessmentChipLabel(assessment, taByLegacy, taById);
     final showIssueIndicator =
         nonRecordedAssessmentIds.contains(assessment.id);
     return GestureDetector(

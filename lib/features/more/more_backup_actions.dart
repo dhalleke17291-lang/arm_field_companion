@@ -49,7 +49,13 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
   final store = BackupPassphraseStore();
 
   // Try cached passphrase first (silent path).
-  final cached = await store.retrieve();
+  // flutter_secure_storage can throw PlatformException on corrupted keystore.
+  String? cached;
+  try {
+    cached = await store.retrieve();
+  } catch (_) {
+    // Keystore unavailable — fall through to manual entry.
+  }
   String passphrase;
   bool saveChoice = false;
 
@@ -206,7 +212,12 @@ Future<void> runRestoreFlow(BuildContext context, WidgetRef ref) async {
   BackupMeta? meta;
   final nav = Navigator.of(context, rootNavigator: true);
 
-  final cached = await store.retrieve();
+  String? cached;
+  try {
+    cached = await store.retrieve();
+  } catch (_) {
+    // Keystore unavailable — fall through to manual entry.
+  }
   if (!context.mounted) return;
 
   if (cached != null && cached.isNotEmpty) {

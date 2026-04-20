@@ -11,4 +11,6 @@ Future<int?> getCurrentUserId() async {
 Future<void> setCurrentUserId(int userId) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setInt(kCurrentUserIdKey, userId);
+  // Clear stale rater name so the rating screen picks up the new user's name.
+  await prefs.remove('last_rater_name');
 }

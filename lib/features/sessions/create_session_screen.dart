@@ -117,7 +117,14 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
 
   Widget _buildForm(BuildContext context, List<Assessment> legacy,
       List<(TrialAssessment, AssessmentDefinition)> trialPairs) {
-    final assessments = legacy;
+    // Exclude legacy Assessment rows already linked to a TrialAssessment
+    // to avoid duplicates in the list.
+    final linkedLegacyIds = <int>{
+      for (final pair in trialPairs)
+        if (pair.$1.legacyAssessmentId != null) pair.$1.legacyAssessmentId!,
+    };
+    final assessments =
+        legacy.where((a) => !linkedLegacyIds.contains(a.id)).toList();
     final hasTrial = trialPairs.isNotEmpty;
     final combinedEmpty = assessments.isEmpty && !hasTrial;
 
