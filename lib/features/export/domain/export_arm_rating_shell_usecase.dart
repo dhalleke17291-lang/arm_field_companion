@@ -85,6 +85,9 @@ class ExportArmRatingShellUseCase {
     bool suppressShare = false,
     /// When set, skips the file picker (e.g. after preflight already chose the shell).
     String? selectedShellPath,
+    /// When true, the Phase 3 positional-fallback block is bypassed.
+    /// Used by "Export Anyway" after the user explicitly acknowledges risk.
+    bool allowPositionalFallback = false,
   }) async {
     if (!trial.isArmLinked) {
       throw StateError(
@@ -439,7 +442,7 @@ class ExportArmRatingShellUseCase {
         positionalAssessmentFallbackUsed: true,
         deterministicAssessmentAnchorsExpected: deterministic,
       );
-      if (fallbackStrict.blocksExport) {
+      if (fallbackStrict.blocksExport && !allowPositionalFallback) {
         exportDiagnosticsBuffer.add(
           DiagnosticFinding(
             code: 'arm_rating_shell_strict_structural_block',
@@ -453,6 +456,24 @@ class ExportArmRatingShellUseCase {
         publishExportDiagnostics();
         return ArmRatingShellResult.failure(fallbackStrict.userMessage);
       }
+      if (fallbackStrict.blocksExport && allowPositionalFallback) {
+        shellWarnings.add(
+          'Positional column matching was used for ${ids.length} assessment(s). '
+          'Data may be misaligned if the shell has changed since import.',
+        );
+        exportDiagnosticsBuffer.add(
+          DiagnosticFinding(
+            code: 'arm_rating_shell_positional_fallback_bypassed',
+            severity: DiagnosticSeverity.warning,
+            message:
+                'Phase 3 positional-fallback block bypassed by user. '
+                '${ids.length} assessment(s) used positional matching.',
+            trialId: trialPk,
+            source: DiagnosticSource.exportValidation,
+            blocksExport: false,
+          ),
+        );
+      }
     }
 
     final injector = ArmValueInjector(shellImport);
@@ -463,7 +484,36 @@ class ExportArmRatingShellUseCase {
     final safeName = safeBase.isEmpty ? 'trial_${trial.id}' : safeBase;
     final tempDir = await getTemporaryDirectory();
     final filePath = '${tempDir.path}/${safeName}_RatingShell_filled.xlsx';
-    await injector.inject(ratingValues, filePath);
+    final injectionResult = await injector.inject(ratingValues, filePath);
+
+    if (injectionResult.hasSkips) {
+      for (final reason in injectionResult.skippedReasons) {
+        exportDiagnosticsBuffer.add(
+          DiagnosticFinding(
+            code: 'arm_rating_shell_injection_skip',
+            severity: DiagnosticSeverity.warning,
+            message: reason,
+            trialId: trialPk,
+            source: DiagnosticSource.exportValidation,
+            blocksExport: false,
+          ),
+        );
+      }
+      shellWarnings.add(
+        '${injectionResult.skippedReasons.length} cell(s) could not be '
+        'matched and were not exported. Review column identity before '
+        're-exporting.',
+      );
+    }
+
+    if (injectionResult.cellsWritten == 0 &&
+        injectionResult.skippedReasons.isNotEmpty) {
+      publishExportDiagnostics();
+      return ArmRatingShellResult.failure(
+        'No rating values could be written to the shell. '
+        'All values were skipped due to matching errors.',
+      );
+    }
 
     if (!suppressShare) {
       if (shareOverride != null) {

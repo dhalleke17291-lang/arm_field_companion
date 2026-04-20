@@ -29,7 +29,45 @@ class _ArmExportPreflightScreenState
   bool _exportBusy = false;
   String? _exportError;
 
-  Future<void> _runExport() async {
+  Future<void> _runExportAnyway() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppDesignTokens.cardSurface,
+        title: const Text(
+          'Export with warnings?',
+          style: TextStyle(color: AppDesignTokens.primaryText),
+        ),
+        content: const Text(
+          'This export may use positional column matching. ARM may '
+          'misalign data if the shell has changed since import.\n\n'
+          'Proceed only if you understand the risk.',
+          style: TextStyle(color: AppDesignTokens.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppDesignTokens.primary)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppDesignTokens.warningFg,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Export Anyway'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    return _runExportCore(allowPositionalFallback: true);
+  }
+
+  Future<void> _runExport() => _runExportCore();
+
+  Future<void> _runExportCore({bool allowPositionalFallback = false}) async {
     setState(() {
       _exportBusy = true;
       _exportError = null;
@@ -156,6 +194,7 @@ class _ArmExportPreflightScreenState
         trial: trial,
         suppressShare: true,
         selectedShellPath: shellPath,
+        allowPositionalFallback: allowPositionalFallback,
       );
       if (!mounted) return;
       if (!result.success) {
@@ -245,7 +284,7 @@ class _ArmExportPreflightScreenState
               preflight: preflight,
               exportError: _exportError,
               onExport: _runExport,
-              onExportAnyway: _runExport,
+              onExportAnyway: _runExportAnyway,
             ),
           ),
           if (_exportBusy)

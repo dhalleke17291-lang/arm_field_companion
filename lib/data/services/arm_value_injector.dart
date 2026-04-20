@@ -9,6 +9,21 @@ import '../../core/excel_column_letters.dart';
 import '../../domain/models/arm_rating_value.dart';
 import '../../domain/models/arm_shell_import.dart';
 
+/// Result of an injection operation.
+class ArmInjectionResult {
+  final File file;
+  final int cellsWritten;
+  final List<String> skippedReasons;
+
+  ArmInjectionResult({
+    required this.file,
+    required this.cellsWritten,
+    this.skippedReasons = const [],
+  });
+
+  bool get hasSkips => skippedReasons.isNotEmpty;
+}
+
 /// Injects rating values into an existing ARM Rating Shell file (never creates a new workbook).
 ///
 /// Uses sheet **Plot Data** (ARM-native shells).
@@ -20,14 +35,15 @@ class ArmValueInjector {
 
   final ArmShellImport shellImport;
 
-  Future<File> inject(List<ArmRatingValue> values, String outputPath) async {
+  Future<ArmInjectionResult> inject(List<ArmRatingValue> values, String outputPath) async {
     if (outputPath == shellImport.shellFilePath) {
       throw StateError(
         'outputPath must differ from original shell path (would overwrite source).',
       );
     }
 
-    var invalidBoundsEncountered = false;
+    final skippedReasons = <String>[];
+    var cellsWritten = 0;
 
     final shellBytes = await File(shellImport.shellFilePath).readAsBytes();
     final archive = ZipDecoder().decodeBytes(shellBytes);
@@ -71,23 +87,21 @@ class ArmValueInjector {
       final rowIdx = plotRowMap[v.plotNumber];
       final colIdx = columnMap[v.armColumnId];
       if (rowIdx == null) {
-        debugPrint(
-          'ArmValueInjector: plotNumber ${v.plotNumber} not in shell, skipping',
+        skippedReasons.add(
+          'Plot ${v.plotNumber} not found in shell — skipped',
         );
         continue;
       }
       if (colIdx == null) {
-        debugPrint(
-          'ArmValueInjector: armColumnId ${v.armColumnId} not in shell, skipping',
+        skippedReasons.add(
+          'Column ${v.armColumnId} not found in shell — skipped',
         );
         continue;
       }
       if (rowIdx < 48 || colIdx < 2) {
-        invalidBoundsEncountered = true;
-        debugPrint(
-          'ArmValueInjector: skipping write — bounds violation for '
-          'plotNumber=${v.plotNumber} armColumnId=${v.armColumnId}: '
-          'rowIdx=$rowIdx (require >=48) colIdx=$colIdx (require >=2)',
+        skippedReasons.add(
+          'Plot ${v.plotNumber} column ${v.armColumnId}: bounds violation '
+          '(row=$rowIdx col=$colIdx) — skipped',
         );
         continue;
       }
@@ -106,14 +120,7 @@ class ArmValueInjector {
         cellValue,
         isNumeric,
       );
-    }
-
-    if (invalidBoundsEncountered) {
-      throw StateError(
-        'Rating sheet injection aborted: one or more cells had row/col indices '
-        'outside allowed plot-data bounds (row index >= 48, column index >= 2). '
-        'See debug log for details.',
-      );
+      cellsWritten++;
     }
 
     final updatedBytes = utf8.encode(
@@ -139,7 +146,11 @@ class ArmValueInjector {
     }
     final outFile = File(outputPath);
     await outFile.writeAsBytes(encoded);
-    return outFile;
+    return ArmInjectionResult(
+      file: outFile,
+      cellsWritten: cellsWritten,
+      skippedReasons: skippedReasons,
+    );
   }
 
   /// Resolves `xl/workbook.xml` + `xl/_rels/workbook.xml.rels` → Plot Data worksheet path.
