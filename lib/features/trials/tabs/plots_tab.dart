@@ -1363,71 +1363,69 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
           bottom: BorderSide(color: AppDesignTokens.borderCrisp),
         ),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          // Plot count
-          _StatChip(
-            label: '$dataPlotCount',
-            sub: 'plots',
+          _StatChip(label: '$dataPlotCount', sub: 'plots'),
+          _StatChip(label: '$treatmentCount', sub: 'trt'),
+          _StatChip(label: '$replicateCount', sub: 'reps'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (allAssigned)
+                const Icon(Icons.check_circle,
+                    size: 14, color: AppDesignTokens.successFg)
+              else
+                Icon(Icons.warning_amber_rounded,
+                    size: 14, color: AppDesignTokens.warningFg),
+              const SizedBox(width: 4),
+              Text(
+                allAssigned
+                    ? 'All assigned'
+                    : '$excludedFromAnalysisCount unassigned',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: allAssigned
+                      ? AppDesignTokens.successFg
+                      : AppDesignTokens.warningFg,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          _StatChip(
-            label: '$treatmentCount',
-            sub: 'trt',
-          ),
-          const SizedBox(width: 12),
-          _StatChip(
-            label: '$replicateCount',
-            sub: 'reps',
-          ),
-          const SizedBox(width: 12),
-          if (allAssigned)
-            const Icon(Icons.check_circle,
-                size: 14, color: AppDesignTokens.successFg)
-          else
-            Icon(Icons.warning_amber_rounded,
-                size: 14, color: AppDesignTokens.warningFg),
-          const SizedBox(width: 4),
-          Text(
-            allAssigned
-                ? 'All assigned'
-                : '$excludedFromAnalysisCount unassigned',
-            style: TextStyle(
-              fontSize: 11,
-              color: allAssigned
-                  ? AppDesignTokens.successFg
-                  : AppDesignTokens.warningFg,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          // Rated progress
-          Text(
-            '$ratedPlotsCount/$analyzablePlotCount',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: ratedPlotsCount >= analyzablePlotCount
-                  ? AppDesignTokens.successFg
-                  : AppDesignTokens.primary,
-            ),
-          ),
-          const SizedBox(width: 6),
-          SizedBox(
-            width: 36,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: AppDesignTokens.borderCrisp,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  ratedPlotsCount >= analyzablePlotCount
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$ratedPlotsCount/$analyzablePlotCount',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: ratedPlotsCount >= analyzablePlotCount
                       ? AppDesignTokens.successFg
                       : AppDesignTokens.primary,
                 ),
-                minHeight: 4,
               ),
-            ),
+              const SizedBox(width: 6),
+              SizedBox(
+                width: 36,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: AppDesignTokens.borderCrisp,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ratedPlotsCount >= analyzablePlotCount
+                          ? AppDesignTokens.successFg
+                          : AppDesignTokens.primary,
+                    ),
+                    minHeight: 4,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
