@@ -388,6 +388,7 @@ class ExportArmRatingShellUseCase {
           assessment: identity,
           columns: effectiveColumns,
           armImportColumnIndex: ta.armImportColumnIndex,
+          armColumnIdInteger: ta.armColumnIdInteger,
           positionalIndex: i,
           logDebug: debugPrint,
         );

@@ -387,6 +387,7 @@ class ArmShellLinkUseCase {
         assessment: identity,
         columns: effectiveColumns,
         armImportColumnIndex: ta.armImportColumnIndex,
+        armColumnIdInteger: ta.armColumnIdInteger,
         positionalIndex: i,
       );
       final col = match.column;

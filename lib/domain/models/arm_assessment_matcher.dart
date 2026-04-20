@@ -64,6 +64,7 @@ class ArmAssessmentMatcher {
     required ArmAssessmentIdentity assessment,
     required List<ArmColumnMap> columns,
     int? armImportColumnIndex,
+    int? armColumnIdInteger,
     required int positionalIndex,
     void Function(String message)? logDebug,
   }) {
@@ -77,6 +78,21 @@ class ArmAssessmentMatcher {
       );
     }
 
+    // Step 0: ARM Column ID integer match (primary anchor for shell-imported trials).
+    if (armColumnIdInteger != null) {
+      final byId = columns
+          .where((c) => c.armColumnIdInteger == armColumnIdInteger)
+          .toList();
+      if (byId.length == 1) {
+        return ArmAssessmentColumnMatch(
+          column: byId.single,
+          matchConfidence: ArmAssessmentMatchConfidence.exact,
+          wasPositionalFallback: false,
+        );
+      }
+    }
+
+    // Step 1: CSV-derived column index pin (legacy anchor for CSV-imported trials).
     final pinnedIdx = armImportColumnIndex;
     if (pinnedIdx != null) {
       final byIdx =
