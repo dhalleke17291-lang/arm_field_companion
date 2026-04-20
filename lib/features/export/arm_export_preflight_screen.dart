@@ -39,8 +39,9 @@ class _ArmExportPreflightScreenState
           style: TextStyle(color: AppDesignTokens.primaryText),
         ),
         content: const Text(
-          'This export may use positional column matching. ARM may '
-          'misalign data if the shell has changed since import.\n\n'
+          'This export may use positional column matching. Data may '
+          'be misaligned in the exported file if the shell has changed '
+          'since import.\n\n'
           'Proceed only if you understand the risk.',
           style: TextStyle(color: AppDesignTokens.secondaryText),
         ),

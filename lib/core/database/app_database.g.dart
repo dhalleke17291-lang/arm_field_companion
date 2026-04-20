@@ -1539,6 +1539,12 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   late final GeneratedColumn<DateTime> armLinkedShellAt =
       GeneratedColumn<DateTime>('arm_linked_shell_at', aliasedName, true,
           type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _shellInternalPathMeta =
+      const VerificationMeta('shellInternalPath');
+  @override
+  late final GeneratedColumn<String> shellInternalPath =
+      GeneratedColumn<String>('shell_internal_path', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _siteRefIdMeta =
       const VerificationMeta('siteRefId');
   @override
@@ -1624,6 +1630,7 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         armImportSessionId,
         armLinkedShellPath,
         armLinkedShellAt,
+        shellInternalPath,
         siteRefId,
         cultivar,
         rowSpacingCm,
@@ -1877,6 +1884,12 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           armLinkedShellAt.isAcceptableOrUnknown(
               data['arm_linked_shell_at']!, _armLinkedShellAtMeta));
     }
+    if (data.containsKey('shell_internal_path')) {
+      context.handle(
+          _shellInternalPathMeta,
+          shellInternalPath.isAcceptableOrUnknown(
+              data['shell_internal_path']!, _shellInternalPathMeta));
+    }
     if (data.containsKey('site_ref_id')) {
       context.handle(
           _siteRefIdMeta,
@@ -2008,6 +2021,8 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           DriftSqlType.string, data['${effectivePrefix}arm_linked_shell_path']),
       armLinkedShellAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime, data['${effectivePrefix}arm_linked_shell_at']),
+      shellInternalPath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_internal_path']),
       siteRefId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}site_ref_id']),
       cultivar: attachedDatabase.typeMapping
@@ -2091,6 +2106,10 @@ class Trial extends DataClass implements Insertable<Trial> {
   /// When [armLinkedShellPath] was last applied.
   final DateTime? armLinkedShellAt;
 
+  /// Internal app path where the shell file is stored (copied at import/link).
+  /// Null for existing trials or trials imported before shell storage was added.
+  final String? shellInternalPath;
+
   /// FK to shared site record. Nullable — trials without a linked site
   /// still store location/soil fields directly (denormalized copies).
   final int? siteRefId;
@@ -2154,6 +2173,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.armImportSessionId,
       this.armLinkedShellPath,
       this.armLinkedShellAt,
+      this.shellInternalPath,
       this.siteRefId,
       this.cultivar,
       this.rowSpacingCm,
@@ -2286,6 +2306,9 @@ class Trial extends DataClass implements Insertable<Trial> {
     }
     if (!nullToAbsent || armLinkedShellAt != null) {
       map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt);
+    }
+    if (!nullToAbsent || shellInternalPath != null) {
+      map['shell_internal_path'] = Variable<String>(shellInternalPath);
     }
     if (!nullToAbsent || siteRefId != null) {
       map['site_ref_id'] = Variable<int>(siteRefId);
@@ -2426,6 +2449,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       armLinkedShellAt: armLinkedShellAt == null && nullToAbsent
           ? const Value.absent()
           : Value(armLinkedShellAt),
+      shellInternalPath: shellInternalPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellInternalPath),
       siteRefId: siteRefId == null && nullToAbsent
           ? const Value.absent()
           : Value(siteRefId),
@@ -2498,6 +2524,8 @@ class Trial extends DataClass implements Insertable<Trial> {
           serializer.fromJson<String?>(json['armLinkedShellPath']),
       armLinkedShellAt:
           serializer.fromJson<DateTime?>(json['armLinkedShellAt']),
+      shellInternalPath:
+          serializer.fromJson<String?>(json['shellInternalPath']),
       siteRefId: serializer.fromJson<int?>(json['siteRefId']),
       cultivar: serializer.fromJson<String?>(json['cultivar']),
       rowSpacingCm: serializer.fromJson<double?>(json['rowSpacingCm']),
@@ -2556,6 +2584,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       'armImportSessionId': serializer.toJson<int?>(armImportSessionId),
       'armLinkedShellPath': serializer.toJson<String?>(armLinkedShellPath),
       'armLinkedShellAt': serializer.toJson<DateTime?>(armLinkedShellAt),
+      'shellInternalPath': serializer.toJson<String?>(shellInternalPath),
       'siteRefId': serializer.toJson<int?>(siteRefId),
       'cultivar': serializer.toJson<String?>(cultivar),
       'rowSpacingCm': serializer.toJson<double?>(rowSpacingCm),
@@ -2612,6 +2641,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<int?> armImportSessionId = const Value.absent(),
           Value<String?> armLinkedShellPath = const Value.absent(),
           Value<DateTime?> armLinkedShellAt = const Value.absent(),
+          Value<String?> shellInternalPath = const Value.absent(),
           Value<int?> siteRefId = const Value.absent(),
           Value<String?> cultivar = const Value.absent(),
           Value<double?> rowSpacingCm = const Value.absent(),
@@ -2685,6 +2715,9 @@ class Trial extends DataClass implements Insertable<Trial> {
         armLinkedShellAt: armLinkedShellAt.present
             ? armLinkedShellAt.value
             : this.armLinkedShellAt,
+        shellInternalPath: shellInternalPath.present
+            ? shellInternalPath.value
+            : this.shellInternalPath,
         siteRefId: siteRefId.present ? siteRefId.value : this.siteRefId,
         cultivar: cultivar.present ? cultivar.value : this.cultivar,
         rowSpacingCm:
@@ -2783,6 +2816,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       armLinkedShellAt: data.armLinkedShellAt.present
           ? data.armLinkedShellAt.value
           : this.armLinkedShellAt,
+      shellInternalPath: data.shellInternalPath.present
+          ? data.shellInternalPath.value
+          : this.shellInternalPath,
       siteRefId: data.siteRefId.present ? data.siteRefId.value : this.siteRefId,
       cultivar: data.cultivar.present ? data.cultivar.value : this.cultivar,
       rowSpacingCm: data.rowSpacingCm.present
@@ -2847,6 +2883,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('armImportSessionId: $armImportSessionId, ')
           ..write('armLinkedShellPath: $armLinkedShellPath, ')
           ..write('armLinkedShellAt: $armLinkedShellAt, ')
+          ..write('shellInternalPath: $shellInternalPath, ')
           ..write('siteRefId: $siteRefId, ')
           ..write('cultivar: $cultivar, ')
           ..write('rowSpacingCm: $rowSpacingCm, ')
@@ -2905,6 +2942,7 @@ class Trial extends DataClass implements Insertable<Trial> {
         armImportSessionId,
         armLinkedShellPath,
         armLinkedShellAt,
+        shellInternalPath,
         siteRefId,
         cultivar,
         rowSpacingCm,
@@ -2962,6 +3000,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.armImportSessionId == this.armImportSessionId &&
           other.armLinkedShellPath == this.armLinkedShellPath &&
           other.armLinkedShellAt == this.armLinkedShellAt &&
+          other.shellInternalPath == this.shellInternalPath &&
           other.siteRefId == this.siteRefId &&
           other.cultivar == this.cultivar &&
           other.rowSpacingCm == this.rowSpacingCm &&
@@ -3017,6 +3056,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<int?> armImportSessionId;
   final Value<String?> armLinkedShellPath;
   final Value<DateTime?> armLinkedShellAt;
+  final Value<String?> shellInternalPath;
   final Value<int?> siteRefId;
   final Value<String?> cultivar;
   final Value<double?> rowSpacingCm;
@@ -3070,6 +3110,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.armImportSessionId = const Value.absent(),
     this.armLinkedShellPath = const Value.absent(),
     this.armLinkedShellAt = const Value.absent(),
+    this.shellInternalPath = const Value.absent(),
     this.siteRefId = const Value.absent(),
     this.cultivar = const Value.absent(),
     this.rowSpacingCm = const Value.absent(),
@@ -3124,6 +3165,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.armImportSessionId = const Value.absent(),
     this.armLinkedShellPath = const Value.absent(),
     this.armLinkedShellAt = const Value.absent(),
+    this.shellInternalPath = const Value.absent(),
     this.siteRefId = const Value.absent(),
     this.cultivar = const Value.absent(),
     this.rowSpacingCm = const Value.absent(),
@@ -3178,6 +3220,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<int>? armImportSessionId,
     Expression<String>? armLinkedShellPath,
     Expression<DateTime>? armLinkedShellAt,
+    Expression<String>? shellInternalPath,
     Expression<int>? siteRefId,
     Expression<String>? cultivar,
     Expression<double>? rowSpacingCm,
@@ -3234,6 +3277,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (armLinkedShellPath != null)
         'arm_linked_shell_path': armLinkedShellPath,
       if (armLinkedShellAt != null) 'arm_linked_shell_at': armLinkedShellAt,
+      if (shellInternalPath != null) 'shell_internal_path': shellInternalPath,
       if (siteRefId != null) 'site_ref_id': siteRefId,
       if (cultivar != null) 'cultivar': cultivar,
       if (rowSpacingCm != null) 'row_spacing_cm': rowSpacingCm,
@@ -3290,6 +3334,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<int?>? armImportSessionId,
       Value<String?>? armLinkedShellPath,
       Value<DateTime?>? armLinkedShellAt,
+      Value<String?>? shellInternalPath,
       Value<int?>? siteRefId,
       Value<String?>? cultivar,
       Value<double?>? rowSpacingCm,
@@ -3343,6 +3388,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       armImportSessionId: armImportSessionId ?? this.armImportSessionId,
       armLinkedShellPath: armLinkedShellPath ?? this.armLinkedShellPath,
       armLinkedShellAt: armLinkedShellAt ?? this.armLinkedShellAt,
+      shellInternalPath: shellInternalPath ?? this.shellInternalPath,
       siteRefId: siteRefId ?? this.siteRefId,
       cultivar: cultivar ?? this.cultivar,
       rowSpacingCm: rowSpacingCm ?? this.rowSpacingCm,
@@ -3495,6 +3541,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (armLinkedShellAt.present) {
       map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt.value);
     }
+    if (shellInternalPath.present) {
+      map['shell_internal_path'] = Variable<String>(shellInternalPath.value);
+    }
     if (siteRefId.present) {
       map['site_ref_id'] = Variable<int>(siteRefId.value);
     }
@@ -3563,6 +3612,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('armImportSessionId: $armImportSessionId, ')
           ..write('armLinkedShellPath: $armLinkedShellPath, ')
           ..write('armLinkedShellAt: $armLinkedShellAt, ')
+          ..write('shellInternalPath: $shellInternalPath, ')
           ..write('siteRefId: $siteRefId, ')
           ..write('cultivar: $cultivar, ')
           ..write('rowSpacingCm: $rowSpacingCm, ')
@@ -6042,6 +6092,24 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('neutral'));
+  static const VerificationMeta _appTimingCodeMeta =
+      const VerificationMeta('appTimingCode');
+  @override
+  late final GeneratedColumn<String> appTimingCode = GeneratedColumn<String>(
+      'app_timing_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _trtEvalIntervalMeta =
+      const VerificationMeta('trtEvalInterval');
+  @override
+  late final GeneratedColumn<String> trtEvalInterval = GeneratedColumn<String>(
+      'trt_eval_interval', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _collectBasisMeta =
+      const VerificationMeta('collectBasis');
+  @override
+  late final GeneratedColumn<String> collectBasis = GeneratedColumn<String>(
+      'collect_basis', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -6068,7 +6136,10 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
         eppoCode,
         cropPart,
         timingDescription,
-        resultDirection
+        resultDirection,
+        appTimingCode,
+        trtEvalInterval,
+        collectBasis
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6200,6 +6271,24 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
           resultDirection.isAcceptableOrUnknown(
               data['result_direction']!, _resultDirectionMeta));
     }
+    if (data.containsKey('app_timing_code')) {
+      context.handle(
+          _appTimingCodeMeta,
+          appTimingCode.isAcceptableOrUnknown(
+              data['app_timing_code']!, _appTimingCodeMeta));
+    }
+    if (data.containsKey('trt_eval_interval')) {
+      context.handle(
+          _trtEvalIntervalMeta,
+          trtEvalInterval.isAcceptableOrUnknown(
+              data['trt_eval_interval']!, _trtEvalIntervalMeta));
+    }
+    if (data.containsKey('collect_basis')) {
+      context.handle(
+          _collectBasisMeta,
+          collectBasis.isAcceptableOrUnknown(
+              data['collect_basis']!, _collectBasisMeta));
+    }
     return context;
   }
 
@@ -6259,6 +6348,12 @@ class $AssessmentDefinitionsTable extends AssessmentDefinitions
           DriftSqlType.string, data['${effectivePrefix}timing_description']),
       resultDirection: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}result_direction'])!,
+      appTimingCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}app_timing_code']),
+      trtEvalInterval: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}trt_eval_interval']),
+      collectBasis: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}collect_basis']),
     );
   }
 
@@ -6286,15 +6381,29 @@ class AssessmentDefinition extends DataClass
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Rating date string from CSV header (e.g. "1-Jul-26"). Misnamed — stores
+  /// date, not timing code. Technical debt: do not rename in this sprint.
   final String? timingCode;
   final int? daysAfterTreatment;
   final String? assessmentMethod;
   final double? validMin;
   final double? validMax;
   final String? eppoCode;
+
+  /// Plant part assessed (PLANT, LEAF3, etc.) — populated from shell Part Rated.
   final String? cropPart;
   final String? timingDescription;
   final String resultDirection;
+
+  /// Application timing code (A1, A3, A6, A9, AA) from shell row 42 (0-based).
+  final String? appTimingCode;
+
+  /// Treatment-evaluation interval (e.g. "-28 DA-A") from shell row 42 (0-based).
+  final String? trtEvalInterval;
+
+  /// Collect basis (PLOT, etc.) from shell row 23 (0-based).
+  final String? collectBasis;
   const AssessmentDefinition(
       {required this.id,
       required this.code,
@@ -6320,7 +6429,10 @@ class AssessmentDefinition extends DataClass
       this.eppoCode,
       this.cropPart,
       this.timingDescription,
-      required this.resultDirection});
+      required this.resultDirection,
+      this.appTimingCode,
+      this.trtEvalInterval,
+      this.collectBasis});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -6379,6 +6491,15 @@ class AssessmentDefinition extends DataClass
       map['timing_description'] = Variable<String>(timingDescription);
     }
     map['result_direction'] = Variable<String>(resultDirection);
+    if (!nullToAbsent || appTimingCode != null) {
+      map['app_timing_code'] = Variable<String>(appTimingCode);
+    }
+    if (!nullToAbsent || trtEvalInterval != null) {
+      map['trt_eval_interval'] = Variable<String>(trtEvalInterval);
+    }
+    if (!nullToAbsent || collectBasis != null) {
+      map['collect_basis'] = Variable<String>(collectBasis);
+    }
     return map;
   }
 
@@ -6435,6 +6556,15 @@ class AssessmentDefinition extends DataClass
           ? const Value.absent()
           : Value(timingDescription),
       resultDirection: Value(resultDirection),
+      appTimingCode: appTimingCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(appTimingCode),
+      trtEvalInterval: trtEvalInterval == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trtEvalInterval),
+      collectBasis: collectBasis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(collectBasis),
     );
   }
 
@@ -6469,6 +6599,9 @@ class AssessmentDefinition extends DataClass
       timingDescription:
           serializer.fromJson<String?>(json['timingDescription']),
       resultDirection: serializer.fromJson<String>(json['resultDirection']),
+      appTimingCode: serializer.fromJson<String?>(json['appTimingCode']),
+      trtEvalInterval: serializer.fromJson<String?>(json['trtEvalInterval']),
+      collectBasis: serializer.fromJson<String?>(json['collectBasis']),
     );
   }
   @override
@@ -6500,6 +6633,9 @@ class AssessmentDefinition extends DataClass
       'cropPart': serializer.toJson<String?>(cropPart),
       'timingDescription': serializer.toJson<String?>(timingDescription),
       'resultDirection': serializer.toJson<String>(resultDirection),
+      'appTimingCode': serializer.toJson<String?>(appTimingCode),
+      'trtEvalInterval': serializer.toJson<String?>(trtEvalInterval),
+      'collectBasis': serializer.toJson<String?>(collectBasis),
     };
   }
 
@@ -6528,7 +6664,10 @@ class AssessmentDefinition extends DataClass
           Value<String?> eppoCode = const Value.absent(),
           Value<String?> cropPart = const Value.absent(),
           Value<String?> timingDescription = const Value.absent(),
-          String? resultDirection}) =>
+          String? resultDirection,
+          Value<String?> appTimingCode = const Value.absent(),
+          Value<String?> trtEvalInterval = const Value.absent(),
+          Value<String?> collectBasis = const Value.absent()}) =>
       AssessmentDefinition(
         id: id ?? this.id,
         code: code ?? this.code,
@@ -6563,6 +6702,13 @@ class AssessmentDefinition extends DataClass
             ? timingDescription.value
             : this.timingDescription,
         resultDirection: resultDirection ?? this.resultDirection,
+        appTimingCode:
+            appTimingCode.present ? appTimingCode.value : this.appTimingCode,
+        trtEvalInterval: trtEvalInterval.present
+            ? trtEvalInterval.value
+            : this.trtEvalInterval,
+        collectBasis:
+            collectBasis.present ? collectBasis.value : this.collectBasis,
       );
   AssessmentDefinition copyWithCompanion(AssessmentDefinitionsCompanion data) {
     return AssessmentDefinition(
@@ -6603,6 +6749,15 @@ class AssessmentDefinition extends DataClass
       resultDirection: data.resultDirection.present
           ? data.resultDirection.value
           : this.resultDirection,
+      appTimingCode: data.appTimingCode.present
+          ? data.appTimingCode.value
+          : this.appTimingCode,
+      trtEvalInterval: data.trtEvalInterval.present
+          ? data.trtEvalInterval.value
+          : this.trtEvalInterval,
+      collectBasis: data.collectBasis.present
+          ? data.collectBasis.value
+          : this.collectBasis,
     );
   }
 
@@ -6633,7 +6788,10 @@ class AssessmentDefinition extends DataClass
           ..write('eppoCode: $eppoCode, ')
           ..write('cropPart: $cropPart, ')
           ..write('timingDescription: $timingDescription, ')
-          ..write('resultDirection: $resultDirection')
+          ..write('resultDirection: $resultDirection, ')
+          ..write('appTimingCode: $appTimingCode, ')
+          ..write('trtEvalInterval: $trtEvalInterval, ')
+          ..write('collectBasis: $collectBasis')
           ..write(')'))
         .toString();
   }
@@ -6664,7 +6822,10 @@ class AssessmentDefinition extends DataClass
         eppoCode,
         cropPart,
         timingDescription,
-        resultDirection
+        resultDirection,
+        appTimingCode,
+        trtEvalInterval,
+        collectBasis
       ]);
   @override
   bool operator ==(Object other) =>
@@ -6694,7 +6855,10 @@ class AssessmentDefinition extends DataClass
           other.eppoCode == this.eppoCode &&
           other.cropPart == this.cropPart &&
           other.timingDescription == this.timingDescription &&
-          other.resultDirection == this.resultDirection);
+          other.resultDirection == this.resultDirection &&
+          other.appTimingCode == this.appTimingCode &&
+          other.trtEvalInterval == this.trtEvalInterval &&
+          other.collectBasis == this.collectBasis);
 }
 
 class AssessmentDefinitionsCompanion
@@ -6724,6 +6888,9 @@ class AssessmentDefinitionsCompanion
   final Value<String?> cropPart;
   final Value<String?> timingDescription;
   final Value<String> resultDirection;
+  final Value<String?> appTimingCode;
+  final Value<String?> trtEvalInterval;
+  final Value<String?> collectBasis;
   const AssessmentDefinitionsCompanion({
     this.id = const Value.absent(),
     this.code = const Value.absent(),
@@ -6750,6 +6917,9 @@ class AssessmentDefinitionsCompanion
     this.cropPart = const Value.absent(),
     this.timingDescription = const Value.absent(),
     this.resultDirection = const Value.absent(),
+    this.appTimingCode = const Value.absent(),
+    this.trtEvalInterval = const Value.absent(),
+    this.collectBasis = const Value.absent(),
   });
   AssessmentDefinitionsCompanion.insert({
     this.id = const Value.absent(),
@@ -6777,6 +6947,9 @@ class AssessmentDefinitionsCompanion
     this.cropPart = const Value.absent(),
     this.timingDescription = const Value.absent(),
     this.resultDirection = const Value.absent(),
+    this.appTimingCode = const Value.absent(),
+    this.trtEvalInterval = const Value.absent(),
+    this.collectBasis = const Value.absent(),
   })  : code = Value(code),
         name = Value(name),
         category = Value(category);
@@ -6806,6 +6979,9 @@ class AssessmentDefinitionsCompanion
     Expression<String>? cropPart,
     Expression<String>? timingDescription,
     Expression<String>? resultDirection,
+    Expression<String>? appTimingCode,
+    Expression<String>? trtEvalInterval,
+    Expression<String>? collectBasis,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6835,6 +7011,9 @@ class AssessmentDefinitionsCompanion
       if (cropPart != null) 'crop_part': cropPart,
       if (timingDescription != null) 'timing_description': timingDescription,
       if (resultDirection != null) 'result_direction': resultDirection,
+      if (appTimingCode != null) 'app_timing_code': appTimingCode,
+      if (trtEvalInterval != null) 'trt_eval_interval': trtEvalInterval,
+      if (collectBasis != null) 'collect_basis': collectBasis,
     });
   }
 
@@ -6863,7 +7042,10 @@ class AssessmentDefinitionsCompanion
       Value<String?>? eppoCode,
       Value<String?>? cropPart,
       Value<String?>? timingDescription,
-      Value<String>? resultDirection}) {
+      Value<String>? resultDirection,
+      Value<String?>? appTimingCode,
+      Value<String?>? trtEvalInterval,
+      Value<String?>? collectBasis}) {
     return AssessmentDefinitionsCompanion(
       id: id ?? this.id,
       code: code ?? this.code,
@@ -6890,6 +7072,9 @@ class AssessmentDefinitionsCompanion
       cropPart: cropPart ?? this.cropPart,
       timingDescription: timingDescription ?? this.timingDescription,
       resultDirection: resultDirection ?? this.resultDirection,
+      appTimingCode: appTimingCode ?? this.appTimingCode,
+      trtEvalInterval: trtEvalInterval ?? this.trtEvalInterval,
+      collectBasis: collectBasis ?? this.collectBasis,
     );
   }
 
@@ -6971,6 +7156,15 @@ class AssessmentDefinitionsCompanion
     if (resultDirection.present) {
       map['result_direction'] = Variable<String>(resultDirection.value);
     }
+    if (appTimingCode.present) {
+      map['app_timing_code'] = Variable<String>(appTimingCode.value);
+    }
+    if (trtEvalInterval.present) {
+      map['trt_eval_interval'] = Variable<String>(trtEvalInterval.value);
+    }
+    if (collectBasis.present) {
+      map['collect_basis'] = Variable<String>(collectBasis.value);
+    }
     return map;
   }
 
@@ -7001,7 +7195,10 @@ class AssessmentDefinitionsCompanion
           ..write('eppoCode: $eppoCode, ')
           ..write('cropPart: $cropPart, ')
           ..write('timingDescription: $timingDescription, ')
-          ..write('resultDirection: $resultDirection')
+          ..write('resultDirection: $resultDirection, ')
+          ..write('appTimingCode: $appTimingCode, ')
+          ..write('trtEvalInterval: $trtEvalInterval, ')
+          ..write('collectBasis: $collectBasis')
           ..write(')'))
         .toString();
   }
@@ -7230,6 +7427,12 @@ class $TrialAssessmentsTable extends TrialAssessments
   late final GeneratedColumn<String> armRatingType = GeneratedColumn<String>(
       'arm_rating_type', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armColumnIdIntegerMeta =
+      const VerificationMeta('armColumnIdInteger');
+  @override
+  late final GeneratedColumn<int> armColumnIdInteger = GeneratedColumn<int>(
+      'arm_column_id_integer', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -7261,7 +7464,8 @@ class $TrialAssessmentsTable extends TrialAssessments
         armShellRatingDate,
         seName,
         seDescription,
-        armRatingType
+        armRatingType,
+        armColumnIdInteger
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7434,6 +7638,12 @@ class $TrialAssessmentsTable extends TrialAssessments
           armRatingType.isAcceptableOrUnknown(
               data['arm_rating_type']!, _armRatingTypeMeta));
     }
+    if (data.containsKey('arm_column_id_integer')) {
+      context.handle(
+          _armColumnIdIntegerMeta,
+          armColumnIdInteger.isAcceptableOrUnknown(
+              data['arm_column_id_integer']!, _armColumnIdIntegerMeta));
+    }
     return context;
   }
 
@@ -7505,6 +7715,8 @@ class $TrialAssessmentsTable extends TrialAssessments
           .read(DriftSqlType.string, data['${effectivePrefix}se_description']),
       armRatingType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}arm_rating_type']),
+      armColumnIdInteger: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}arm_column_id_integer']),
     );
   }
 
@@ -7557,6 +7769,10 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
 
   /// Rating type from shell (row 20).
   final String? armRatingType;
+
+  /// Integer ARM Column ID from shell row 7 (0-based). Primary export anchor.
+  /// Distinct from [armShellColumnId] (text) which stores the raw cell string.
+  final int? armColumnIdInteger;
   const TrialAssessment(
       {required this.id,
       required this.trialId,
@@ -7587,7 +7803,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       this.armShellRatingDate,
       this.seName,
       this.seDescription,
-      this.armRatingType});
+      this.armRatingType,
+      this.armColumnIdInteger});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -7658,6 +7875,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
     }
     if (!nullToAbsent || armRatingType != null) {
       map['arm_rating_type'] = Variable<String>(armRatingType);
+    }
+    if (!nullToAbsent || armColumnIdInteger != null) {
+      map['arm_column_id_integer'] = Variable<int>(armColumnIdInteger);
     }
     return map;
   }
@@ -7731,6 +7951,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       armRatingType: armRatingType == null && nullToAbsent
           ? const Value.absent()
           : Value(armRatingType),
+      armColumnIdInteger: armColumnIdInteger == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armColumnIdInteger),
     );
   }
 
@@ -7775,6 +7998,7 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       seName: serializer.fromJson<String?>(json['seName']),
       seDescription: serializer.fromJson<String?>(json['seDescription']),
       armRatingType: serializer.fromJson<String?>(json['armRatingType']),
+      armColumnIdInteger: serializer.fromJson<int?>(json['armColumnIdInteger']),
     );
   }
   @override
@@ -7812,6 +8036,7 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       'seName': serializer.toJson<String?>(seName),
       'seDescription': serializer.toJson<String?>(seDescription),
       'armRatingType': serializer.toJson<String?>(armRatingType),
+      'armColumnIdInteger': serializer.toJson<int?>(armColumnIdInteger),
     };
   }
 
@@ -7845,7 +8070,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           Value<String?> armShellRatingDate = const Value.absent(),
           Value<String?> seName = const Value.absent(),
           Value<String?> seDescription = const Value.absent(),
-          Value<String?> armRatingType = const Value.absent()}) =>
+          Value<String?> armRatingType = const Value.absent(),
+          Value<int?> armColumnIdInteger = const Value.absent()}) =>
       TrialAssessment(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -7900,6 +8126,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
             seDescription.present ? seDescription.value : this.seDescription,
         armRatingType:
             armRatingType.present ? armRatingType.value : this.armRatingType,
+        armColumnIdInteger: armColumnIdInteger.present
+            ? armColumnIdInteger.value
+            : this.armColumnIdInteger,
       );
   TrialAssessment copyWithCompanion(TrialAssessmentsCompanion data) {
     return TrialAssessment(
@@ -7969,6 +8198,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       armRatingType: data.armRatingType.present
           ? data.armRatingType.value
           : this.armRatingType,
+      armColumnIdInteger: data.armColumnIdInteger.present
+          ? data.armColumnIdInteger.value
+          : this.armColumnIdInteger,
     );
   }
 
@@ -8004,7 +8236,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           ..write('armShellRatingDate: $armShellRatingDate, ')
           ..write('seName: $seName, ')
           ..write('seDescription: $seDescription, ')
-          ..write('armRatingType: $armRatingType')
+          ..write('armRatingType: $armRatingType, ')
+          ..write('armColumnIdInteger: $armColumnIdInteger')
           ..write(')'))
         .toString();
   }
@@ -8040,7 +8273,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
         armShellRatingDate,
         seName,
         seDescription,
-        armRatingType
+        armRatingType,
+        armColumnIdInteger
       ]);
   @override
   bool operator ==(Object other) =>
@@ -8075,7 +8309,8 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           other.armShellRatingDate == this.armShellRatingDate &&
           other.seName == this.seName &&
           other.seDescription == this.seDescription &&
-          other.armRatingType == this.armRatingType);
+          other.armRatingType == this.armRatingType &&
+          other.armColumnIdInteger == this.armColumnIdInteger);
 }
 
 class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
@@ -8109,6 +8344,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
   final Value<String?> seName;
   final Value<String?> seDescription;
   final Value<String?> armRatingType;
+  final Value<int?> armColumnIdInteger;
   const TrialAssessmentsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -8140,6 +8376,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.seName = const Value.absent(),
     this.seDescription = const Value.absent(),
     this.armRatingType = const Value.absent(),
+    this.armColumnIdInteger = const Value.absent(),
   });
   TrialAssessmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -8172,6 +8409,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.seName = const Value.absent(),
     this.seDescription = const Value.absent(),
     this.armRatingType = const Value.absent(),
+    this.armColumnIdInteger = const Value.absent(),
   })  : trialId = Value(trialId),
         assessmentDefinitionId = Value(assessmentDefinitionId);
   static Insertable<TrialAssessment> custom({
@@ -8205,6 +8443,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     Expression<String>? seName,
     Expression<String>? seDescription,
     Expression<String>? armRatingType,
+    Expression<int>? armColumnIdInteger,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -8246,6 +8485,8 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       if (seName != null) 'se_name': seName,
       if (seDescription != null) 'se_description': seDescription,
       if (armRatingType != null) 'arm_rating_type': armRatingType,
+      if (armColumnIdInteger != null)
+        'arm_column_id_integer': armColumnIdInteger,
     });
   }
 
@@ -8279,7 +8520,8 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       Value<String?>? armShellRatingDate,
       Value<String?>? seName,
       Value<String?>? seDescription,
-      Value<String?>? armRatingType}) {
+      Value<String?>? armRatingType,
+      Value<int?>? armColumnIdInteger}) {
     return TrialAssessmentsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -8313,6 +8555,7 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       seName: seName ?? this.seName,
       seDescription: seDescription ?? this.seDescription,
       armRatingType: armRatingType ?? this.armRatingType,
+      armColumnIdInteger: armColumnIdInteger ?? this.armColumnIdInteger,
     );
   }
 
@@ -8414,6 +8657,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     if (armRatingType.present) {
       map['arm_rating_type'] = Variable<String>(armRatingType.value);
     }
+    if (armColumnIdInteger.present) {
+      map['arm_column_id_integer'] = Variable<int>(armColumnIdInteger.value);
+    }
     return map;
   }
 
@@ -8449,7 +8695,8 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
           ..write('armShellRatingDate: $armShellRatingDate, ')
           ..write('seName: $seName, ')
           ..write('seDescription: $seDescription, ')
-          ..write('armRatingType: $armRatingType')
+          ..write('armRatingType: $armRatingType, ')
+          ..write('armColumnIdInteger: $armColumnIdInteger')
           ..write(')'))
         .toString();
   }
@@ -30552,6 +30799,7 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<int?> armImportSessionId,
   Value<String?> armLinkedShellPath,
   Value<DateTime?> armLinkedShellAt,
+  Value<String?> shellInternalPath,
   Value<int?> siteRefId,
   Value<String?> cultivar,
   Value<double?> rowSpacingCm,
@@ -30606,6 +30854,7 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<int?> armImportSessionId,
   Value<String?> armLinkedShellPath,
   Value<DateTime?> armLinkedShellAt,
+  Value<String?> shellInternalPath,
   Value<int?> siteRefId,
   Value<String?> cultivar,
   Value<double?> rowSpacingCm,
@@ -30677,6 +30926,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<int?> armImportSessionId = const Value.absent(),
             Value<String?> armLinkedShellPath = const Value.absent(),
             Value<DateTime?> armLinkedShellAt = const Value.absent(),
+            Value<String?> shellInternalPath = const Value.absent(),
             Value<int?> siteRefId = const Value.absent(),
             Value<String?> cultivar = const Value.absent(),
             Value<double?> rowSpacingCm = const Value.absent(),
@@ -30731,6 +30981,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             armImportSessionId: armImportSessionId,
             armLinkedShellPath: armLinkedShellPath,
             armLinkedShellAt: armLinkedShellAt,
+            shellInternalPath: shellInternalPath,
             siteRefId: siteRefId,
             cultivar: cultivar,
             rowSpacingCm: rowSpacingCm,
@@ -30785,6 +31036,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<int?> armImportSessionId = const Value.absent(),
             Value<String?> armLinkedShellPath = const Value.absent(),
             Value<DateTime?> armLinkedShellAt = const Value.absent(),
+            Value<String?> shellInternalPath = const Value.absent(),
             Value<int?> siteRefId = const Value.absent(),
             Value<String?> cultivar = const Value.absent(),
             Value<double?> rowSpacingCm = const Value.absent(),
@@ -30839,6 +31091,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             armImportSessionId: armImportSessionId,
             armLinkedShellPath: armLinkedShellPath,
             armLinkedShellAt: armLinkedShellAt,
+            shellInternalPath: shellInternalPath,
             siteRefId: siteRefId,
             cultivar: cultivar,
             rowSpacingCm: rowSpacingCm,
@@ -31083,6 +31336,11 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<DateTime> get armLinkedShellAt => $state.composableBuilder(
       column: $state.table.armLinkedShellAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellInternalPath => $state.composableBuilder(
+      column: $state.table.shellInternalPath,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -31756,6 +32014,11 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<DateTime> get armLinkedShellAt => $state.composableBuilder(
       column: $state.table.armLinkedShellAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellInternalPath => $state.composableBuilder(
+      column: $state.table.shellInternalPath,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -32882,6 +33145,9 @@ typedef $$AssessmentDefinitionsTableCreateCompanionBuilder
   Value<String?> cropPart,
   Value<String?> timingDescription,
   Value<String> resultDirection,
+  Value<String?> appTimingCode,
+  Value<String?> trtEvalInterval,
+  Value<String?> collectBasis,
 });
 typedef $$AssessmentDefinitionsTableUpdateCompanionBuilder
     = AssessmentDefinitionsCompanion Function({
@@ -32910,6 +33176,9 @@ typedef $$AssessmentDefinitionsTableUpdateCompanionBuilder
   Value<String?> cropPart,
   Value<String?> timingDescription,
   Value<String> resultDirection,
+  Value<String?> appTimingCode,
+  Value<String?> trtEvalInterval,
+  Value<String?> collectBasis,
 });
 
 class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
@@ -32955,6 +33224,9 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             Value<String?> cropPart = const Value.absent(),
             Value<String?> timingDescription = const Value.absent(),
             Value<String> resultDirection = const Value.absent(),
+            Value<String?> appTimingCode = const Value.absent(),
+            Value<String?> trtEvalInterval = const Value.absent(),
+            Value<String?> collectBasis = const Value.absent(),
           }) =>
               AssessmentDefinitionsCompanion(
             id: id,
@@ -32982,6 +33254,9 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             cropPart: cropPart,
             timingDescription: timingDescription,
             resultDirection: resultDirection,
+            appTimingCode: appTimingCode,
+            trtEvalInterval: trtEvalInterval,
+            collectBasis: collectBasis,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -33009,6 +33284,9 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             Value<String?> cropPart = const Value.absent(),
             Value<String?> timingDescription = const Value.absent(),
             Value<String> resultDirection = const Value.absent(),
+            Value<String?> appTimingCode = const Value.absent(),
+            Value<String?> trtEvalInterval = const Value.absent(),
+            Value<String?> collectBasis = const Value.absent(),
           }) =>
               AssessmentDefinitionsCompanion.insert(
             id: id,
@@ -33036,6 +33314,9 @@ class $$AssessmentDefinitionsTableTableManager extends RootTableManager<
             cropPart: cropPart,
             timingDescription: timingDescription,
             resultDirection: resultDirection,
+            appTimingCode: appTimingCode,
+            trtEvalInterval: trtEvalInterval,
+            collectBasis: collectBasis,
           ),
         ));
 }
@@ -33165,6 +33446,21 @@ class $$AssessmentDefinitionsTableFilterComposer
 
   ColumnFilters<String> get resultDirection => $state.composableBuilder(
       column: $state.table.resultDirection,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get appTimingCode => $state.composableBuilder(
+      column: $state.table.appTimingCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get trtEvalInterval => $state.composableBuilder(
+      column: $state.table.trtEvalInterval,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get collectBasis => $state.composableBuilder(
+      column: $state.table.collectBasis,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -33310,6 +33606,21 @@ class $$AssessmentDefinitionsTableOrderingComposer
       column: $state.table.resultDirection,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get appTimingCode => $state.composableBuilder(
+      column: $state.table.appTimingCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get trtEvalInterval => $state.composableBuilder(
+      column: $state.table.trtEvalInterval,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get collectBasis => $state.composableBuilder(
+      column: $state.table.collectBasis,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
 typedef $$TrialAssessmentsTableCreateCompanionBuilder
@@ -33344,6 +33655,7 @@ typedef $$TrialAssessmentsTableCreateCompanionBuilder
   Value<String?> seName,
   Value<String?> seDescription,
   Value<String?> armRatingType,
+  Value<int?> armColumnIdInteger,
 });
 typedef $$TrialAssessmentsTableUpdateCompanionBuilder
     = TrialAssessmentsCompanion Function({
@@ -33377,6 +33689,7 @@ typedef $$TrialAssessmentsTableUpdateCompanionBuilder
   Value<String?> seName,
   Value<String?> seDescription,
   Value<String?> armRatingType,
+  Value<int?> armColumnIdInteger,
 });
 
 class $$TrialAssessmentsTableTableManager extends RootTableManager<
@@ -33427,6 +33740,7 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<String?> seName = const Value.absent(),
             Value<String?> seDescription = const Value.absent(),
             Value<String?> armRatingType = const Value.absent(),
+            Value<int?> armColumnIdInteger = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion(
             id: id,
@@ -33459,6 +33773,7 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             seName: seName,
             seDescription: seDescription,
             armRatingType: armRatingType,
+            armColumnIdInteger: armColumnIdInteger,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -33491,6 +33806,7 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<String?> seName = const Value.absent(),
             Value<String?> seDescription = const Value.absent(),
             Value<String?> armRatingType = const Value.absent(),
+            Value<int?> armColumnIdInteger = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion.insert(
             id: id,
@@ -33523,6 +33839,7 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             seName: seName,
             seDescription: seDescription,
             armRatingType: armRatingType,
+            armColumnIdInteger: armColumnIdInteger,
           ),
         ));
 }
@@ -33662,6 +33979,11 @@ class $$TrialAssessmentsTableFilterComposer
 
   ColumnFilters<String> get armRatingType => $state.composableBuilder(
       column: $state.table.armRatingType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armColumnIdInteger => $state.composableBuilder(
+      column: $state.table.armColumnIdInteger,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -33884,6 +34206,11 @@ class $$TrialAssessmentsTableOrderingComposer
 
   ColumnOrderings<String> get armRatingType => $state.composableBuilder(
       column: $state.table.armRatingType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armColumnIdInteger => $state.composableBuilder(
+      column: $state.table.armColumnIdInteger,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

@@ -89,6 +89,10 @@ class Trials extends Table {
   /// When [armLinkedShellPath] was last applied.
   DateTimeColumn get armLinkedShellAt => dateTime().nullable()();
 
+  /// Internal app path where the shell file is stored (copied at import/link).
+  /// Null for existing trials or trials imported before shell storage was added.
+  TextColumn get shellInternalPath => text().nullable()();
+
   /// FK to shared site record. Nullable — trials without a linked site
   /// still store location/soil fields directly (denormalized copies).
   IntColumn get siteRefId =>
@@ -216,16 +220,25 @@ class AssessmentDefinitions extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
+  /// Rating date string from CSV header (e.g. "1-Jul-26"). Misnamed — stores
+  /// date, not timing code. Technical debt: do not rename in this sprint.
   TextColumn get timingCode => text().nullable()();
   IntColumn get daysAfterTreatment => integer().nullable()();
   TextColumn get assessmentMethod => text().nullable()();
   RealColumn get validMin => real().nullable()();
   RealColumn get validMax => real().nullable()();
   TextColumn get eppoCode => text().nullable()();
+  /// Plant part assessed (PLANT, LEAF3, etc.) — populated from shell Part Rated.
   TextColumn get cropPart => text().nullable()();
   TextColumn get timingDescription => text().nullable()();
   TextColumn get resultDirection =>
       text().withDefault(const Constant('neutral'))();
+  /// Application timing code (A1, A3, A6, A9, AA) from shell row 42 (0-based).
+  TextColumn get appTimingCode => text().nullable()();
+  /// Treatment-evaluation interval (e.g. "-28 DA-A") from shell row 42 (0-based).
+  TextColumn get trtEvalInterval => text().nullable()();
+  /// Collect basis (PLOT, etc.) from shell row 23 (0-based).
+  TextColumn get collectBasis => text().nullable()();
 }
 
 /// Trial-specific selection from library. Sessions only show assessments enabled here (or legacy Assessments).
@@ -278,6 +291,10 @@ class TrialAssessments extends Table {
 
   /// Rating type from shell (row 20).
   TextColumn get armRatingType => text().nullable()();
+
+  /// Integer ARM Column ID from shell row 7 (0-based). Primary export anchor.
+  /// Distinct from [armShellColumnId] (text) which stores the raw cell string.
+  IntColumn get armColumnIdInteger => integer().nullable()();
 }
 
 class Plots extends Table {
@@ -952,7 +969,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 55;
+  int get schemaVersion => 56;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1651,6 +1668,47 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // For safety on older devices, keep the column but it is ignored
             // by the new Drift table definition. Drift only reads columns
             // declared in the table class.
+          }
+
+          if (from < 56) {
+            // ── AssessmentDefinitions: new metadata columns ──
+            final defCols = await customSelect(
+              "SELECT name FROM pragma_table_info('assessment_definitions')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            for (final col in {
+              'app_timing_code': 'TEXT',
+              'trt_eval_interval': 'TEXT',
+              'collect_basis': 'TEXT',
+            }.entries) {
+              if (!defCols.contains(col.key)) {
+                await customStatement(
+                    'ALTER TABLE assessment_definitions '
+                    'ADD COLUMN ${col.key} ${col.value}');
+              }
+            }
+
+            // ── TrialAssessments: ARM Column ID integer ──
+            final taCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_assessments')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            if (!taCols.contains('arm_column_id_integer')) {
+              await customStatement(
+                  'ALTER TABLE trial_assessments '
+                  'ADD COLUMN arm_column_id_integer INTEGER');
+            }
+
+            // ── Trials: shell internal path ──
+            final trialCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get().then((rows) =>
+                rows.map((r) => r.read<String>('name')).toSet());
+            if (!trialCols.contains('shell_internal_path')) {
+              await customStatement(
+                  'ALTER TABLE trials '
+                  'ADD COLUMN shell_internal_path TEXT');
+            }
           }
 
           await _createIndexes();

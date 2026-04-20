@@ -62,9 +62,9 @@ class ImportTrialSheet extends StatelessWidget {
             const SizedBox(height: AppDesignTokens.spacing16),
             _ImportOptionTile(
               icon: Icons.table_view_outlined,
-              title: 'Import ARM Rating Shell',
+              title: 'Import Rating Shell',
               subtitle:
-                  'Import plots, treatments, and assessments from an ARM Excel file',
+                  'Import plots, treatments, and assessments from a Rating Shell file',
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push<void>(
@@ -96,7 +96,7 @@ class ImportTrialSheet extends StatelessWidget {
               icon: Icons.link_outlined,
               title: 'Link Rating Sheet',
               subtitle:
-                  'Add ARM metadata to an existing imported trial',
+                  'Add Rating Shell metadata to an existing trial',
               onTap: () => _onLinkArmShellTap(
                     sheetContext: context,
                     parentContext: parentContext,

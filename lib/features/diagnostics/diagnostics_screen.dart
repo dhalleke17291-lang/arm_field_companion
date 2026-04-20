@@ -561,7 +561,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
           const SizedBox(height: 4),
           Text(
             'Scans standalone RCBD trials for canonical reps, duplicate reps, '
-            'or heavy vertical stripes. ARM-imported and protocol-imported '
+            'or heavy vertical stripes. Protocol-imported '
             'trials are skipped. Read-only — no data is modified.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),

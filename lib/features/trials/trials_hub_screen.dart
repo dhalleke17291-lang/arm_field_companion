@@ -153,9 +153,9 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                     const SizedBox(height: AppDesignTokens.spacing24),
                     _AgTrialCard(
                       title: 'Protocol Trials',
-                      subtitle: 'Import ARM rating shells',
+                      subtitle: 'Import Rating Shells',
                       description:
-                          'Collect data with full evidence tracking, return results to ARM',
+                          'Collect data with full evidence tracking, export results via Rating Shell',
                       icon: Icons.assignment_outlined,
                       accentColor: _HubPalette.accentAmber,
                       topBadgeLeft: 'PROTOCOL',
