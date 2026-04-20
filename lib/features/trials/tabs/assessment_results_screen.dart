@@ -15,46 +15,16 @@ String _resultsPreliminaryBanner(bool isStandalone, bool isGlp) {
   return 'Preliminary — data collection in progress.\nDo not use for conclusions.';
 }
 
-String _cvInterpretationLabel(CvInterpretation? cv) {
-  switch (cv) {
-    case CvInterpretation.excellent:
-      return 'Excellent';
-    case CvInterpretation.acceptable:
-      return 'Acceptable';
-    case CvInterpretation.questionable:
-      return 'Questionable';
-    case CvInterpretation.poor:
-      return 'Poor';
-    case null:
-      return '';
-  }
-}
-
-Color _cvInterpretationColor(CvInterpretation? cv) {
-  switch (cv) {
-    case CvInterpretation.excellent:
+Color _cvSignalColor(CvSignal signal) {
+  switch (signal) {
+    case CvSignal.low:
       return AppDesignTokens.successFg;
-    case CvInterpretation.acceptable:
-      return AppDesignTokens.primary;
-    case CvInterpretation.questionable:
-      return AppDesignTokens.warningFg;
-    case CvInterpretation.poor:
-      return AppDesignTokens.missedColor;
-    case null:
+    case CvSignal.typical:
       return AppDesignTokens.secondaryText;
-  }
-}
-
-String? _cvGuidanceText(CvInterpretation? cv) {
-  switch (cv) {
-    case CvInterpretation.poor:
-      return 'High variability — consider data transformation or investigate field uniformity';
-    case CvInterpretation.questionable:
-      return 'Elevated variability — interpret differences with caution';
-    case CvInterpretation.excellent:
-    case CvInterpretation.acceptable:
-    case null:
-      return null;
+    case CvSignal.high:
+      return AppDesignTokens.warningFg;
+    case CvSignal.suppressed:
+      return AppDesignTokens.secondaryText;
   }
 }
 
@@ -364,32 +334,29 @@ class _TreatmentResultsSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        if (stat.trialCV != null) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              'CV ${stat.trialCV!.toStringAsFixed(1)}% — ${_cvInterpretationLabel(stat.cvInterpretation)}',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: _cvInterpretationColor(stat.cvInterpretation),
-              ),
-            ),
-          ),
-          if (_cvGuidanceText(stat.cvInterpretation) != null)
+        if (stat.cvInterpretation != null) ...[
+          if (stat.cvInterpretation!.showCvNumber)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 2),
               child: Text(
-                _cvGuidanceText(stat.cvInterpretation)!,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic,
-                  color: AppDesignTokens.secondaryText,
+                stat.cvInterpretation!.displayValue,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: _cvSignalColor(stat.cvInterpretation!.signal),
                 ),
               ),
             ),
-          if (_cvGuidanceText(stat.cvInterpretation) == null)
-            const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              stat.cvInterpretation!.message,
+              style: TextStyle(
+                fontSize: 11,
+                color: _cvSignalColor(stat.cvInterpretation!.signal),
+              ),
+            ),
+          ),
         ],
         _TreatmentTable(
           sortedMeans: sortedMeans,

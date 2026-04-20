@@ -914,25 +914,78 @@ void main() {
     });
   });
 
-  group('interpretCV', () {
-    test('CV below 10 is excellent', () {
-      expect(interpretCV(9.9), CvInterpretation.excellent);
-      expect(interpretCV(0.0), CvInterpretation.excellent);
+  group('classifyAssessmentCode', () {
+    test('CONTRO → percent', () {
+      expect(classifyAssessmentCode('CONTRO'), AssessmentCategory.percent);
     });
-
-    test('CV from 10 up to below 20 is acceptable', () {
-      expect(interpretCV(10.0), CvInterpretation.acceptable);
-      expect(interpretCV(19.9), CvInterpretation.acceptable);
+    test('YIELD → continuous', () {
+      expect(classifyAssessmentCode('YIELD'), AssessmentCategory.continuous);
     });
-
-    test('CV from 20 up to below 30 is questionable', () {
-      expect(interpretCV(20.0), CvInterpretation.questionable);
-      expect(interpretCV(29.9), CvInterpretation.questionable);
+    test('STAND → count', () {
+      expect(classifyAssessmentCode('STAND'), AssessmentCategory.count);
     });
+    test('null → unknown', () {
+      expect(classifyAssessmentCode(null), AssessmentCategory.unknown);
+    });
+    test('empty → unknown', () {
+      expect(classifyAssessmentCode(''), AssessmentCategory.unknown);
+    });
+    test('mixed case → matches', () {
+      expect(classifyAssessmentCode('contro'), AssessmentCategory.percent);
+    });
+    test('whitespace trimmed', () {
+      expect(classifyAssessmentCode('  LODGIN  '), AssessmentCategory.percent);
+    });
+    test('unknown code → unknown', () {
+      expect(classifyAssessmentCode('FOOBAR'), AssessmentCategory.unknown);
+    });
+  });
 
-    test('CV 30 and above is poor', () {
-      expect(interpretCV(30.0), CvInterpretation.poor);
-      expect(interpretCV(50.0), CvInterpretation.poor);
+  group('interpretCV (category-aware)', () {
+    test('continuous CV 8% → low', () {
+      final r = interpretCV(cv: 8, mean: 5000, n: 16, category: AssessmentCategory.continuous);
+      expect(r.signal, CvSignal.low);
+    });
+    test('continuous CV 18% → typical', () {
+      final r = interpretCV(cv: 18, mean: 5000, n: 16, category: AssessmentCategory.continuous);
+      expect(r.signal, CvSignal.typical);
+      expect(r.message, contains('yield/biomass'));
+    });
+    test('continuous CV 35% → high', () {
+      final r = interpretCV(cv: 35, mean: 5000, n: 16, category: AssessmentCategory.continuous);
+      expect(r.signal, CvSignal.high);
+    });
+    test('count CV 30% → typical', () {
+      final r = interpretCV(cv: 30, mean: 50, n: 16, category: AssessmentCategory.count);
+      expect(r.signal, CvSignal.typical);
+      expect(r.message, contains('count'));
+    });
+    test('percent mean 22%, CV 66% → typical (TA6 regression)', () {
+      final r = interpretCV(cv: 66, mean: 22, n: 16, category: AssessmentCategory.percent);
+      expect(r.signal, CvSignal.typical);
+    });
+    test('percent mean 22%, CV 90% → high', () {
+      final r = interpretCV(cv: 90, mean: 22, n: 16, category: AssessmentCategory.percent);
+      expect(r.signal, CvSignal.high);
+    });
+    test('percent mean 8%, CV 150% → suppressed (low-mean floor)', () {
+      final r = interpretCV(cv: 150, mean: 8, n: 16, category: AssessmentCategory.percent);
+      expect(r.signal, CvSignal.suppressed);
+      expect(r.message, contains('not informative'));
+    });
+    test('percent n=3 → suppressed (low n)', () {
+      final r = interpretCV(cv: 30, mean: 50, n: 3, category: AssessmentCategory.percent);
+      expect(r.signal, CvSignal.suppressed);
+      expect(r.message, contains('Too few'));
+    });
+    test('unknown CV 20% → typical', () {
+      final r = interpretCV(cv: 20, mean: 50, n: 16, category: AssessmentCategory.unknown);
+      expect(r.signal, CvSignal.typical);
+    });
+    test('null CV → suppressed', () {
+      final r = interpretCV(cv: null, mean: 50, n: 16, category: AssessmentCategory.unknown);
+      expect(r.signal, CvSignal.suppressed);
+      expect(r.showCvNumber, false);
     });
   });
 
@@ -1030,7 +1083,7 @@ void main() {
         {1},
       );
       expect(result.trialCV, isNull);
-      expect(result.cvInterpretation, isNull);
+      expect(result.cvInterpretation?.signal, CvSignal.suppressed);
       expect(result.outliers, isNull);
     });
 

@@ -387,6 +387,7 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
         direction,
         totalPlots,
         allReps,
+        assessmentCode: ta.armRatingType,
       );
     }
     return result;

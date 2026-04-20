@@ -607,40 +607,27 @@ class AssessmentsTab extends ConsumerWidget {
               ),
             ],
           ),
-          if (stat.trialCV != null) ...[
+          if (stat.cvInterpretation != null) ...[
             const SizedBox(height: 6),
-            Row(
-              children: [
-                Text(
-                  'CV ${stat.trialCV!.toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _cvColor(stat.cvInterpretation),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _cvLabel(stat.cvInterpretation),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _cvColor(stat.cvInterpretation),
-                  ),
-                ),
-              ],
-            ),
-            if (_cvGuidance(stat.cvInterpretation) != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  _cvGuidance(stat.cvInterpretation)!,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontStyle: FontStyle.italic,
-                    color: AppDesignTokens.secondaryText,
-                  ),
+            if (stat.cvInterpretation!.showCvNumber)
+              Text(
+                stat.cvInterpretation!.displayValue,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _cvSignalColor(stat.cvInterpretation!.signal),
                 ),
               ),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                stat.cvInterpretation!.message,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _cvSignalColor(stat.cvInterpretation!.signal),
+                ),
+              ),
+            ),
           ],
           // Show rep consistency warning only when it adds information:
           // suppress when ANOVA is not significant (inconsistency already explained
@@ -1035,46 +1022,16 @@ class AssessmentsTab extends ConsumerWidget {
     return 'Treatments sharing a letter are not significantly different (Fisher\'s protected LSD, α = 0.05).';
   }
 
-  static Color _cvColor(CvInterpretation? cv) {
-    switch (cv) {
-      case CvInterpretation.excellent:
+  static Color _cvSignalColor(CvSignal signal) {
+    switch (signal) {
+      case CvSignal.low:
         return AppDesignTokens.successFg;
-      case CvInterpretation.acceptable:
-        return AppDesignTokens.primary;
-      case CvInterpretation.questionable:
-        return AppDesignTokens.warningFg;
-      case CvInterpretation.poor:
-        return AppDesignTokens.missedColor;
-      case null:
+      case CvSignal.typical:
         return AppDesignTokens.secondaryText;
-    }
-  }
-
-  static String _cvLabel(CvInterpretation? cv) {
-    switch (cv) {
-      case CvInterpretation.excellent:
-        return 'Excellent';
-      case CvInterpretation.acceptable:
-        return 'Acceptable';
-      case CvInterpretation.questionable:
-        return 'Questionable';
-      case CvInterpretation.poor:
-        return 'Poor';
-      case null:
-        return '';
-    }
-  }
-
-  static String? _cvGuidance(CvInterpretation? cv) {
-    switch (cv) {
-      case CvInterpretation.poor:
-        return 'High variability — consider data transformation or investigate field uniformity';
-      case CvInterpretation.questionable:
-        return 'Elevated variability — interpret differences with caution';
-      case CvInterpretation.excellent:
-      case CvInterpretation.acceptable:
-      case null:
-        return null;
+      case CvSignal.high:
+        return AppDesignTokens.warningFg;
+      case CvSignal.suppressed:
+        return AppDesignTokens.secondaryText;
     }
   }
 

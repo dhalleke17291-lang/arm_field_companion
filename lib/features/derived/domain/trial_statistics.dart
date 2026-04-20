@@ -14,11 +14,73 @@ enum AssessmentCompleteness {
   complete, // all plots rated
 }
 
-enum CvInterpretation {
-  excellent, // CV < 10%
-  acceptable, // CV 10–20%
-  questionable, // CV 20–30%
-  poor, // CV > 30%
+enum CvSignal { low, typical, high, suppressed }
+
+class CvInterpretation {
+  final CvSignal signal;
+  final String displayValue;
+  final String message;
+  final bool showCvNumber;
+
+  const CvInterpretation({
+    required this.signal,
+    required this.displayValue,
+    required this.message,
+    required this.showCvNumber,
+  });
+}
+
+/// Broad category of an assessment, used to interpret statistics sensibly.
+enum AssessmentCategory {
+  continuous,
+  count,
+  percent,
+  unknown,
+}
+
+class CvBands {
+  final double lowMax;
+  final double typicalMax;
+  const CvBands({required this.lowMax, required this.typicalMax});
+}
+
+const _cvBands = <AssessmentCategory, CvBands>{
+  AssessmentCategory.continuous: CvBands(lowMax: 10, typicalMax: 25),
+  AssessmentCategory.count: CvBands(lowMax: 20, typicalMax: 50),
+  AssessmentCategory.percent: CvBands(lowMax: 25, typicalMax: 75),
+  AssessmentCategory.unknown: CvBands(lowMax: 15, typicalMax: 40),
+};
+
+const double _percentLowMeanFloor = 10.0;
+const int _minRepsForCv = 4;
+
+// TODO(parminder): review prefix mapping before CRO handoff
+const _continuousPrefixes = [
+  'YIELD', 'BIOMAS', 'HEIGHT', 'MOISTR', 'WEIGHT', 'GRNWGT', 'STWGT',
+];
+const _countPrefixes = [
+  'STAND', 'WEDCNT', 'INSCNT', 'POPCNT', 'PLTCNT',
+];
+const _percentPrefixes = [
+  'CONTRO', 'PHYGEN', 'PHYCHL', 'PHYNEC', 'CANOPY', 'WEDCON',
+  'PESINC', 'WEDINC', 'DISINC', 'DISSEV', 'LODGIN', 'COVER',
+];
+
+/// Classifies an ARM assessment code into a broad category for stats interpretation.
+AssessmentCategory classifyAssessmentCode(String? code) {
+  if (code == null) return AssessmentCategory.unknown;
+  final upper = code.trim().toUpperCase();
+  if (upper.isEmpty) return AssessmentCategory.unknown;
+  for (final p in _continuousPrefixes) {
+    if (upper.startsWith(p)) return AssessmentCategory.continuous;
+  }
+  for (final p in _countPrefixes) {
+    if (upper.startsWith(p)) return AssessmentCategory.count;
+  }
+  for (final p in _percentPrefixes) {
+    if (upper.startsWith(p)) return AssessmentCategory.percent;
+  }
+  return AssessmentCategory.unknown;
 }
 
 class AssessmentProgress {
@@ -241,13 +303,86 @@ List<TreatmentMean> computeTreatmentMeans(
   return result;
 }
 
-/// Interprets a CV% value using standard field research thresholds.
-/// CV < 10 → excellent, 10–20 → acceptable, 20–30 → questionable, > 30 → poor.
-CvInterpretation interpretCV(double cv) {
-  if (cv < 10) return CvInterpretation.excellent;
-  if (cv < 20) return CvInterpretation.acceptable;
-  if (cv < 30) return CvInterpretation.questionable;
-  return CvInterpretation.poor;
+/// Category-aware CV interpretation. Evaluates in priority order:
+/// null CV → suppressed; low n → suppressed; low-mean percent → suppressed;
+/// then band lookup by category.
+CvInterpretation interpretCV({
+  required double? cv,
+  required double mean,
+  required int n,
+  required AssessmentCategory category,
+}) {
+  if (cv == null) {
+    return const CvInterpretation(
+      signal: CvSignal.suppressed,
+      displayValue: '',
+      message: 'CV could not be computed.',
+      showCvNumber: false,
+    );
+  }
+  if (n < _minRepsForCv) {
+    return CvInterpretation(
+      signal: CvSignal.suppressed,
+      displayValue: 'CV ${cv.toStringAsFixed(1)}%',
+      message: 'Too few replications for a reliable CV estimate.',
+      showCvNumber: false,
+    );
+  }
+  if (category == AssessmentCategory.percent &&
+      mean.abs() < _percentLowMeanFloor) {
+    return CvInterpretation(
+      signal: CvSignal.suppressed,
+      displayValue: 'CV ${cv.toStringAsFixed(1)}%',
+      message:
+          'Mean is low enough that CV is not informative. Evaluate trial sensitivity via detectable difference instead.',
+      showCvNumber: false,
+    );
+  }
+
+  final bands = _cvBands[category] ?? _cvBands[AssessmentCategory.unknown]!;
+  final display = 'CV ${cv.toStringAsFixed(1)}%';
+
+  if (cv <= bands.lowMax) {
+    return CvInterpretation(
+      signal: CvSignal.low,
+      displayValue: display,
+      message: 'Low variability.',
+      showCvNumber: true,
+    );
+  }
+  if (cv <= bands.typicalMax) {
+    final msg = switch (category) {
+      AssessmentCategory.continuous =>
+        'Within typical range for yield/biomass data.',
+      AssessmentCategory.count =>
+        'Within typical range for count data.',
+      AssessmentCategory.percent =>
+        'Within typical range for visual % ratings.',
+      AssessmentCategory.unknown => 'Within typical range.',
+    };
+    return CvInterpretation(
+      signal: CvSignal.typical,
+      displayValue: display,
+      message: msg,
+      showCvNumber: true,
+    );
+  }
+
+  final msg = switch (category) {
+    AssessmentCategory.continuous =>
+      'Higher than typical for yield data. Review per-plot detail for field variability or outliers.',
+    AssessmentCategory.count =>
+      'Higher than typical for count data. Review per-plot detail for outliers.',
+    AssessmentCategory.percent =>
+      'Higher than typical. Visual ratings near 0% or 100% inherently produce high CVs — check per-plot detail.',
+    AssessmentCategory.unknown => 'Higher than typical. Review per-plot detail.',
+  };
+  return CvInterpretation(
+    signal: CvSignal.high,
+    displayValue: display,
+    message: msg,
+    showCvNumber: true,
+  );
 }
 
 /// Assembles complete [AssessmentStatistics] for [assessmentName].
@@ -289,8 +424,9 @@ AssessmentStatistics computeAssessmentStatistics(
   String unit,
   String resultDirectionString,
   int totalPlots,
-  Set<int> allReps,
-) {
+  Set<int> allReps, {
+  String? assessmentCode,
+}) {
   final progress = computeProgress(
     rows,
     assessmentName,
@@ -307,6 +443,16 @@ AssessmentStatistics computeAssessmentStatistics(
   final cv = computeTrialCV(means);
   final repIssues = computeRepConsistency(rows, assessmentName);
 
+  // Grand mean and total n for CV interpretation.
+  var totalN = 0;
+  var sumWeightedMean = 0.0;
+  for (final m in means) {
+    totalN += m.n;
+    sumWeightedMean += m.n * m.mean;
+  }
+  final grandMean = totalN > 0 ? sumWeightedMean / totalN : 0.0;
+  final category = classifyAssessmentCode(assessmentCode);
+
   // Compute ANOVA when data is complete (all plots rated).
   AnovaResult? anova;
   if (progress.completeness == AssessmentCompleteness.complete &&
@@ -320,7 +466,12 @@ AssessmentStatistics computeAssessmentStatistics(
     resultDirection: direction,
     treatmentMeans: means,
     trialCV: cv,
-    cvInterpretation: cv != null ? interpretCV(cv) : null,
+    cvInterpretation: interpretCV(
+      cv: cv,
+      mean: grandMean,
+      n: totalN,
+      category: category,
+    ),
     outliers: null, // v2
     repConsistencyIssues: repIssues,
     totalReps: allReps.length,
