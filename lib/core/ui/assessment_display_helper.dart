@@ -27,16 +27,17 @@ class AssessmentDisplayHelper {
     final d = _nonEmpty(ta.seDescription);
     final sn = _nonEmpty(ta.seName);
 
+    String raw;
     if (d != null && sn != null) {
-      return '$d ($sn)';
+      raw = '$d ($sn)';
+    } else if (d != null) {
+      raw = d;
+    } else if (sn != null) {
+      raw = sn;
+    } else {
+      raw = _nonShellFallback(ta, def);
     }
-    if (d != null) {
-      return d;
-    }
-    if (sn != null) {
-      return sn;
-    }
-    return _nonShellFallback(ta, def);
+    return _cleanEmptyParens(raw);
   }
 
   /// Protocol / detail line: SE code first, then description; [armRatingType] only as tertiary.
@@ -50,28 +51,25 @@ class AssessmentDisplayHelper {
     final rtRaw = _nonEmpty(ta.armRatingType);
     final rt = rtRaw != null ? _friendlyRatingType(rtRaw) : null;
 
+    String raw;
     if (d != null && sn != null && rt != null) {
-      return '$sn — $d · $rt';
+      raw = '$sn — $d · $rt';
+    } else if (d != null && sn != null) {
+      raw = '$sn — $d';
+    } else if (d != null && rt != null) {
+      raw = '$d · $rt';
+    } else if (sn != null && rt != null) {
+      raw = '$sn · $rt';
+    } else if (d != null) {
+      raw = d;
+    } else if (sn != null) {
+      raw = sn;
+    } else if (rt != null) {
+      raw = rt;
+    } else {
+      raw = _primary(ta, def);
     }
-    if (d != null && sn != null) {
-      return '$sn — $d';
-    }
-    if (d != null && rt != null) {
-      return '$d · $rt';
-    }
-    if (sn != null && rt != null) {
-      return '$sn · $rt';
-    }
-    if (d != null) {
-      return d;
-    }
-    if (sn != null) {
-      return sn;
-    }
-    if (rt != null) {
-      return rt;
-    }
-    return _primary(ta, def);
+    return _cleanEmptyParens(raw);
   }
 
   /// Tight spaces: SE code, else non-shell fallback (no [armRatingType] / description here).
@@ -141,6 +139,20 @@ class AssessmentDisplayHelper {
       default:
         return null;
     }
+  }
+
+  /// Formats an optional parenthetical suffix. Returns empty string
+  /// when value is null, empty, or whitespace-only.
+  static String formatParenthetical(String? value) {
+    final trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? '' : ' ($trimmed)';
+  }
+
+  /// Strips empty parentheticals like ` ()` or `()` from display strings.
+  static String _cleanEmptyParens(String s) {
+    return s
+        .replaceAll(RegExp(r'\s*\(\s*\)'), '')
+        .trim();
   }
 
   static String? _nonEmpty(String? s) {
