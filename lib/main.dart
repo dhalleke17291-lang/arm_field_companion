@@ -9,7 +9,10 @@ import 'splash_screen.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final diagnosticsStore = DiagnosticsStore(maxErrors: 50);
-  diagnosticsStore.loadFromDisk();
+  // Deferred — don't block startup or crash on cold launch.
+  Future.delayed(const Duration(seconds: 2), () {
+    diagnosticsStore.loadFromDisk();
+  });
 
   FlutterError.onError = (FlutterErrorDetails details) {
     diagnosticsStore.recordError(

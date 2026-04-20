@@ -14,9 +14,13 @@ import 'package:flutter/foundation.dart';
 /// Internet is an enhancement layer, never a requirement.
 class ConnectivityService {
   ConnectivityService() {
-    _subscription = Connectivity()
-        .onConnectivityChanged
-        .listen(_onConnectivityChanged);
+    try {
+      _subscription = Connectivity()
+          .onConnectivityChanged
+          .listen(_onConnectivityChanged);
+    } catch (_) {
+      // Platform channel may not be ready on cold start.
+    }
   }
 
   StreamSubscription<List<ConnectivityResult>>? _subscription;
