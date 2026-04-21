@@ -164,11 +164,11 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
         // User tapped outside the share sheet without saving.
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
+            const SnackBar(
+              content: Text(
                 'Backup file created but not saved. Tap Backup again to share it.',
               ),
-              duration: const Duration(seconds: 5),
+              duration: Duration(seconds: 5),
             ),
           );
         }

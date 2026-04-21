@@ -245,7 +245,7 @@ class ExportTrialJsonUseCase {
       // Build timing
       final allApps =
           await _applicationRepo.getApplicationsForTrial(trial.id);
-      final seeding = null; // Seeding lookup would require SeedingRepository
+      const seeding = null; // Seeding lookup would require SeedingRepository
       final timing = buildSessionTimingContext(
         sessionStartedAt: s.startedAt,
         cropStageBbch: s.cropStageBbch,

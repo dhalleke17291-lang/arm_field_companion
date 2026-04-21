@@ -493,7 +493,7 @@ class _TimelineEventRow extends ConsumerWidget {
                           ],
                           if (event.hasDeviation) ...[
                             const SizedBox(height: 4),
-                            Text(
+                            const Text(
                               'Rate deviation flagged',
                               style: TextStyle(
                                 fontSize: 12,

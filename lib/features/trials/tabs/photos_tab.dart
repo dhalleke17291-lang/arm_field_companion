@@ -388,7 +388,7 @@ class _PlotPhotoTimeline extends ConsumerWidget {
                         Container(
                           width: 10,
                           height: 10,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: AppDesignTokens.primary,
                           ),

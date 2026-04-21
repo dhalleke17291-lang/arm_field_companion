@@ -175,13 +175,13 @@ void main() {
 
   group('computeAudps (T2)', () {
     test('constant values across 14 days → value × duration', () {
-      final traj = TreatmentTrajectory(
+      const traj = TreatmentTrajectory(
         treatmentNumber: 1,
         treatmentLabel: 'T1',
         points: [
-          const TrajectoryPoint(daysAfterTreatment: 0, mean: 50, n: 4),
-          const TrajectoryPoint(daysAfterTreatment: 7, mean: 50, n: 4),
-          const TrajectoryPoint(daysAfterTreatment: 14, mean: 50, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 0, mean: 50, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 7, mean: 50, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 14, mean: 50, n: 4),
         ],
       );
       final audps = computeAudps(traj);
@@ -203,39 +203,39 @@ void main() {
     });
 
     test('all zeros → 0', () {
-      final traj = TreatmentTrajectory(
+      const traj = TreatmentTrajectory(
         treatmentNumber: 1,
         treatmentLabel: 'T1',
         points: [
-          const TrajectoryPoint(daysAfterTreatment: 0, mean: 0, n: 4),
-          const TrajectoryPoint(daysAfterTreatment: 7, mean: 0, n: 4),
-          const TrajectoryPoint(daysAfterTreatment: 14, mean: 0, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 0, mean: 0, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 7, mean: 0, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 14, mean: 0, n: 4),
         ],
       );
       expect(computeAudps(traj), closeTo(0, 0.01));
     });
 
     test('2-point trajectory → returns null', () {
-      final traj = TreatmentTrajectory(
+      const traj = TreatmentTrajectory(
         treatmentNumber: 1,
         treatmentLabel: 'T1',
         points: [
-          const TrajectoryPoint(daysAfterTreatment: 0, mean: 50, n: 4),
-          const TrajectoryPoint(daysAfterTreatment: 7, mean: 60, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 0, mean: 50, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 7, mean: 60, n: 4),
         ],
       );
       expect(computeAudps(traj), isNull);
     });
 
     test('monotonic increase → positive proportional to rise', () {
-      final traj = TreatmentTrajectory(
+      const traj = TreatmentTrajectory(
         treatmentNumber: 1,
         treatmentLabel: 'T1',
         points: [
-          const TrajectoryPoint(daysAfterTreatment: 0, mean: 10, n: 4),
-          const TrajectoryPoint(daysAfterTreatment: 7, mean: 30, n: 4),
-          const TrajectoryPoint(daysAfterTreatment: 14, mean: 50, n: 4),
-          const TrajectoryPoint(daysAfterTreatment: 21, mean: 70, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 0, mean: 10, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 7, mean: 30, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 14, mean: 50, n: 4),
+          TrajectoryPoint(daysAfterTreatment: 21, mean: 70, n: 4),
         ],
       );
       final audps = computeAudps(traj);

@@ -54,7 +54,7 @@ void main() {
   });
 
   test('produces valid JSON with all sections', () async {
-    final csv =
+    const csv =
         'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n'
         '101,1,1,40\n102,2,1,70\n103,1,2,45\n104,2,2,75\n';
     final r = await stressArmImportUseCase(db)
@@ -93,7 +93,7 @@ void main() {
   });
 
   test('treatments include components', () async {
-    final csv =
+    const csv =
         'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,40\n102,2,1,70\n';
     final r = await stressArmImportUseCase(db)
         .execute(csv, sourceFileName: 'json_trt.csv');
@@ -113,7 +113,7 @@ void main() {
   });
 
   test('sessions contain ratings grouped by plot', () async {
-    final csv =
+    const csv =
         'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,40\n102,2,1,70\n';
     final r = await stressArmImportUseCase(db)
         .execute(csv, sourceFileName: 'json_ratings.csv');
@@ -136,7 +136,7 @@ void main() {
   });
 
   test('completeness section has required fields', () async {
-    final csv =
+    const csv =
         'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,50\n';
     final r = await stressArmImportUseCase(db)
         .execute(csv, sourceFileName: 'json_comp.csv');

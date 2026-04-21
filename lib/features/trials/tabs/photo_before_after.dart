@@ -125,8 +125,8 @@ class _BeforeAfterContentState extends State<_BeforeAfterContent> {
     for (final s in widget.sessions) {
       if (s.startedAt.isBefore(appDate)) {
         preSess = s;
-      } else if (postSess == null) {
-        postSess = s;
+      } else {
+        postSess ??= s;
       }
     }
 

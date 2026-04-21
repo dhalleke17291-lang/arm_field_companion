@@ -148,7 +148,7 @@ void main() {
 
   group('edge cases', () {
     test('trial with 0 sessions produces 0 insights', () async {
-      final csv = 'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,50\n';
+      const csv = 'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,50\n';
       final r = await stressArmImportUseCase(db)
           .execute(csv, sourceFileName: 'edge0.csv');
       final trialId = r.trialId!;
@@ -235,7 +235,7 @@ void main() {
 
     test('session with all identical values: CV=0, no drift, no division error',
         () async {
-      final csv =
+      const csv =
           'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n'
           '101,1,1,50\n102,1,2,50\n103,1,3,50\n104,1,4,50\n'
           '105,2,1,50\n106,2,2,50\n107,2,3,50\n108,2,4,50\n';

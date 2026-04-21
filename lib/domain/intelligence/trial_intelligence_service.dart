@@ -340,7 +340,7 @@ class TrialIntelligenceService {
     return TrialInsight(
       type: InsightType.trialHealth,
       title: 'Trial health',
-      detail: detailParts.join('. ') + '.',
+      detail: '${detailParts.join('. ')}.',
       basis: InsightBasis(
         repCount: repCount,
         sessionCount: sessions.length,
@@ -599,7 +599,9 @@ class TrialIntelligenceService {
       }
     }
     if (testIds.length < kMinTestAndRefTreatments ||
-        refIds.length < kMinTestAndRefTreatments) return null;
+        refIds.length < kMinTestAndRefTreatments) {
+      return null;
+    }
 
     final chronological = sessions.reversed.toList();
     final gapHistory = <String>[];
@@ -1133,7 +1135,7 @@ class TrialIntelligenceService {
       severity: InsightSeverity.info,
       relatedSessionIds: [session.id],
       relatedPlotIds: slowPlots.toList(),
-      basis: InsightBasis(
+      basis: const InsightBasis(
         repCount: 0,
         sessionCount: 1,
         method: 'Per-plot rating timestamp interval analysis',

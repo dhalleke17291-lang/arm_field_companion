@@ -127,7 +127,7 @@ void main() {
 
   group('TrialIntelligenceService', () {
     test('returns empty for trial with no closed sessions', () async {
-      final csv = 'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,50\n';
+      const csv = 'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,50\n';
       final r = await stressArmImportUseCase(db)
           .execute(csv, sourceFileName: 'empty.csv');
       final trialId = r.trialId!;

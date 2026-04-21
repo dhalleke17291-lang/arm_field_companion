@@ -234,7 +234,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           ),
-          textStyle: TextStyle(
+          textStyle: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -248,7 +248,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
           ),
-          textStyle: TextStyle(
+          textStyle: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -272,7 +272,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
           fontSize: 20,
           color: onSurfaceWarm,
         ),
-        contentTextStyle: TextStyle(
+        contentTextStyle: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w400,
           color: subtleGrey,
@@ -297,7 +297,7 @@ class ArmFieldCompanionApp extends StatelessWidget {
         thickness: 0.5,
         space: 1,
       ),
-      textTheme: TextTheme(
+      textTheme: const TextTheme(
         headlineLarge: TextStyle(
           fontSize: 40,
           fontWeight: FontWeight.w900,

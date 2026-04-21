@@ -948,10 +948,10 @@ Widget _buildRatingsGridForAssessment({
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (!hasNumericHeat)
-                          Text(
+                          const Text(
                             'No recorded numeric values for this assessment.',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
                               fontStyle: FontStyle.italic,
@@ -1357,9 +1357,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     final allAssigned = excludedFromAnalysisCount == 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppDesignTokens.sectionHeaderBg,
-        border: const Border(
+        border: Border(
           bottom: BorderSide(color: AppDesignTokens.borderCrisp),
         ),
       ),
@@ -1378,7 +1378,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
                 const Icon(Icons.check_circle,
                     size: 14, color: AppDesignTokens.successFg)
               else
-                Icon(Icons.warning_amber_rounded,
+                const Icon(Icons.warning_amber_rounded,
                     size: 14, color: AppDesignTokens.warningFg),
               const SizedBox(width: 4),
               Text(

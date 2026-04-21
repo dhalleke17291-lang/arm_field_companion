@@ -204,7 +204,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Text(
                             AppInfo.appName.toUpperCase(),
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w300,
                               color: Colors.white,

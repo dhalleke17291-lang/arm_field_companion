@@ -23,7 +23,7 @@ void main() {
   });
 
   test('composes summary with all fields', () async {
-    final csv =
+    const csv =
         'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,40\n102,2,1,70\n103,1,2,45\n104,2,2,75\n';
     final r = await stressArmImportUseCase(db)
         .execute(csv, sourceFileName: 'share_test.csv');
@@ -65,7 +65,7 @@ void main() {
   });
 
   test('includes crop injury and weather when present', () async {
-    final csv = 'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,50\n';
+    const csv = 'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,50\n';
     final r = await stressArmImportUseCase(db)
         .execute(csv, sourceFileName: 'share_weather.csv');
     final trialId = r.trialId!;
