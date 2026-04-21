@@ -71,6 +71,27 @@ class ImportArmRatingShellUseCase {
   final TrialAssessmentRepository _trialAssessmentRepository;
   final AssignmentRepository _assignmentRepository;
 
+  /// After [trialId] is committed, if shell copy or final setup fails, remove the
+  /// trial so no half-imported draft remains.
+  Future<void> _rollbackFailedShellImport(int trialId) async {
+    try {
+      final treatments =
+          await _treatmentRepository.getTreatmentsForTrial(trialId);
+      for (final t in treatments) {
+        await _treatmentRepository.softDeleteTreatment(
+          t.id,
+          deletedBy: 'shell_import_rollback',
+        );
+      }
+      await _trialRepository.softDeleteTrial(
+        trialId,
+        deletedBy: 'shell_import_rollback',
+      );
+    } catch (_) {
+      // Best-effort after a primary failure.
+    }
+  }
+
   Future<ShellImportResult> execute(String shellPath) async {
     try {
       final parser = ArmShellParser(shellPath);
@@ -87,57 +108,48 @@ class ImportArmRatingShellUseCase {
       final trialName =
           shell.title.isNotEmpty ? shell.title : 'Imported Trial';
 
-      late int trialId;
-
-      await _db.transaction(() async {
-        // 1. Create trial in draft state, NOT yet ARM-linked.
-        //    The protocol guard allows structure edits on non-ARM draft trials.
-        trialId = await _trialRepository.createTrial(
+      // 1–4: DB transaction only — trial stays draft, isArmLinked false until
+      // structure + internal shell copy succeed.
+      final trialId = await _db.transaction<int>(() async {
+        final id = await _trialRepository.createTrial(
           name: trialName,
           workspaceType: 'efficacy',
           crop: shell.crop,
           location: shell.cooperator,
         );
 
-        // 2. Insert structure (treatments, plots, assessments).
-        //    Guard passes because isArmLinked is still false.
-
         // --- Treatments ---
-        // Derive unique treatments from plot rows.
         final trtNumbers = <int>{};
         for (final pr in shell.plotRows) {
           trtNumbers.add(pr.trtNumber);
         }
         final trtIdByNumber = <int, int>{};
         for (final trt in trtNumbers.toList()..sort()) {
-          final id = await _treatmentRepository.insertTreatment(
-            trialId: trialId,
+          final tid = await _treatmentRepository.insertTreatment(
+            trialId: id,
             code: '$trt',
             name: 'Treatment $trt',
           );
-          trtIdByNumber[trt] = id;
+          trtIdByNumber[trt] = tid;
         }
 
         // --- Plots + Assignments ---
         for (final pr in shell.plotRows) {
           final plotPk = await _plotRepository.insertPlot(
-            trialId: trialId,
+            trialId: id,
             plotId: '${pr.plotNumber}',
             rep: pr.blockNumber,
             treatmentId: trtIdByNumber[pr.trtNumber],
             plotSortIndex: pr.plotNumber,
           );
-          // Set armPlotNumber and armImportDataRowIndex.
-          await (_db.update(_db.plots)
-                ..where((p) => p.id.equals(plotPk)))
+          await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
               .write(PlotsCompanion(
             armPlotNumber: Value(pr.plotNumber),
             armImportDataRowIndex: Value(pr.rowIndex),
           ));
-          // Assignment record.
           if (trtIdByNumber.containsKey(pr.trtNumber)) {
             await _assignmentRepository.upsert(
-              trialId: trialId,
+              trialId: id,
               plotId: plotPk,
               treatmentId: trtIdByNumber[pr.trtNumber]!,
               assignmentSource: 'imported',
@@ -149,7 +161,6 @@ class ImportArmRatingShellUseCase {
         for (var i = 0; i < shell.assessmentColumns.length; i++) {
           final col = shell.assessmentColumns[i];
 
-          // Create or find an assessment definition.
           final code =
               'SHELL_${col.pestCode ?? col.ratingType ?? 'COL_$i'}'
                   .replaceAll(' ', '_')
@@ -158,29 +169,26 @@ class ImportArmRatingShellUseCase {
               col.seDescription ?? col.ratingType ?? col.seName ?? 'Assessment ${i + 1}';
           final unit = col.ratingUnit;
 
-          // Check if definition already exists by code.
           var defId = await _findDefinitionByCode(code);
-          if (defId == null) {
-            defId = await _db.into(_db.assessmentDefinitions).insert(
-                  AssessmentDefinitionsCompanion.insert(
-                    code: code,
-                    name: name,
-                    category: 'custom',
-                    unit: Value(unit),
-                    timingCode: Value(col.ratingDate),
-                    eppoCode: Value(col.pestCode),
-                    cropPart: Value(col.partRated),
-                    appTimingCode: Value(col.appTimingCode),
-                    trtEvalInterval: Value(col.trtEvalInterval),
-                    collectBasis: Value(col.collectBasis),
-                  ),
-                );
-          }
+          defId ??= await _db.into(_db.assessmentDefinitions).insert(
+                AssessmentDefinitionsCompanion.insert(
+                  code: code,
+                  name: name,
+                  category: 'custom',
+                  unit: Value(unit),
+                  timingCode: Value(col.ratingDate),
+                  eppoCode: Value(col.pestCode),
+                  cropPart: Value(col.partRated),
+                  appTimingCode: Value(col.appTimingCode),
+                  trtEvalInterval: Value(col.trtEvalInterval),
+                  collectBasis: Value(col.collectBasis),
+                ),
+              );
 
           final shellIdx = col.columnIndex;
 
           await _trialAssessmentRepository.addToTrial(
-            trialId: trialId,
+            trialId: id,
             assessmentDefinitionId: defId,
             displayNameOverride: name,
             selectedFromProtocol: true,
@@ -193,17 +201,10 @@ class ImportArmRatingShellUseCase {
           );
         }
 
-        // 3. Mark ARM-linked only after structure exists (protocol guard allows
-        //    inserts while isArmLinked is false).
-        await (_db.update(_db.trials)..where((t) => t.id.equals(trialId)))
-            .write(TrialsCompanion(
-          isArmLinked: const Value(true),
-          armImportedAt: Value(DateTime.now().toUtc()),
-          armSourceFile: Value(shell.shellFilePath),
-        ));
+        return id;
       });
 
-      // Store shell internally (outside transaction — file I/O).
+      // 5–6: File I/O + mark ARM-linked only when fully successful.
       try {
         final internalPath = await ShellStorageService.storeShell(
           sourcePath: shellPath,
@@ -214,10 +215,16 @@ class ImportArmRatingShellUseCase {
           TrialsCompanion(
             shellInternalPath: Value(internalPath),
             armLinkedShellPath: Value(shellPath),
+            isArmLinked: const Value(true),
+            armImportedAt: Value(DateTime.now().toUtc()),
+            armSourceFile: Value(shell.shellFilePath),
           ),
         );
-      } catch (_) {
-        // Storage unavailable — continue without internal copy.
+      } catch (e) {
+        await _rollbackFailedShellImport(trialId);
+        return ShellImportResult.failure(
+          'Shell import failed: could not store shell or finalize trial ($e)',
+        );
       }
 
       return ShellImportResult.ok(
