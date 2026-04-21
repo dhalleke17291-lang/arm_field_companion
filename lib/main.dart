@@ -45,18 +45,13 @@ void main() {
 class ArmFieldCompanionApp extends StatelessWidget {
   const ArmFieldCompanionApp({super.key});
 
-  /// Demo build expires after this date.
-  static final DateTime expiryDate = DateTime(2026, 5, 13);
-
-  static bool get isExpired => DateTime.now().isAfter(expiryDate);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Agnexis',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
-      home: isExpired ? const _ExpiredScreen() : const SplashScreen(),
+      home: const SplashScreen(),
       builder: (context, child) {
         return GestureDetector(
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -65,9 +60,6 @@ class ArmFieldCompanionApp extends StatelessWidget {
       },
     );
   }
-
-  static String get expiryLabel =>
-      '${expiryDate.year}-${expiryDate.month.toString().padLeft(2, '0')}-${expiryDate.day.toString().padLeft(2, '0')}';
 
   ThemeData _buildTheme() {
     const primaryGreen = Color(0xFF2D5A40);
@@ -338,38 +330,6 @@ class ArmFieldCompanionApp extends StatelessWidget {
           fontSize: 17,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
-
-class _ExpiredScreen extends StatelessWidget {
-  const _ExpiredScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.timer_off_rounded, size: 64, color: Color(0xFF8A8A8E)),
-              const SizedBox(height: 24),
-              Text(
-                'Demo Expired',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'This demo build expired on ${ArmFieldCompanionApp.expiryLabel}.\nPlease contact the developer for an updated build.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
         ),
       ),
     );
