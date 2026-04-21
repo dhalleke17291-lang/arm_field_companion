@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,22 +24,50 @@ class AboutScreen extends ConsumerStatefulWidget {
 
 class _AboutScreenState extends ConsumerState<AboutScreen> {
   PackageInfo? _packageInfo;
+  String? _deviceLabel;
+  String? _osLabel;
 
   @override
   void initState() {
     super.initState();
-    PackageInfo.fromPlatform().then((info) {
-      if (mounted) setState(() => _packageInfo = info);
-    });
+    _loadPackageInfo();
+    _loadDeviceInfo();
   }
 
-  String _deviceInfo() {
-    final parts = <String>[];
-    parts.add('${Platform.operatingSystem} ${Platform.operatingSystemVersion}');
-    if (Platform.isAndroid || Platform.isIOS) {
-      parts.add(Platform.localHostname);
+  Future<void> _loadPackageInfo() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) setState(() => _packageInfo = info);
+  }
+
+  Future<void> _loadDeviceInfo() async {
+    final plugin = DeviceInfoPlugin();
+    String? device;
+    String? os;
+    try {
+      if (Platform.isIOS) {
+        final ios = await plugin.iosInfo;
+        // utsname.machine → e.g. "iPhone16,2"; model/name are more readable.
+        device = ios.name.isNotEmpty ? ios.name : ios.model;
+        os = '${ios.systemName} ${ios.systemVersion}';
+      } else if (Platform.isAndroid) {
+        final a = await plugin.androidInfo;
+        device = '${a.manufacturer} ${a.model}';
+        os = 'Android ${a.version.release} (API ${a.version.sdkInt})';
+      } else if (Platform.isMacOS) {
+        final m = await plugin.macOsInfo;
+        device = m.model;
+        os = 'macOS ${m.osRelease}';
+      } else {
+        os = '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
+      }
+    } catch (_) {
+      os ??= '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
     }
-    return parts.join(' · ');
+    if (!mounted) return;
+    setState(() {
+      _deviceLabel = device;
+      _osLabel = os;
+    });
   }
 
   Future<void> _shareDeviceInfo() async {
@@ -54,13 +83,15 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     if (AppInfo.hasBuildMetadata) {
       text.writeln('Build: ${AppInfo.buildIdentity}');
     }
+    if (_deviceLabel != null) text.writeln('Device: $_deviceLabel');
+    if (_osLabel != null) text.writeln('OS: $_osLabel');
     text
       ..writeln('Schema: v$schema')
-      ..writeln('Platform: ${_deviceInfo()}')
       ..writeln('Dart: ${Platform.version.split(' ').first}');
     if (user != null) text.writeln('User: ${user.displayName}');
 
-    await Share.share(text.toString(), subject: '${AppInfo.appName} Device Info');
+    await Share.share(text.toString(),
+        subject: '${AppInfo.appName} Device Info');
   }
 
   @override
@@ -96,7 +127,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Version + build + schema
+            // Version + build + device/OS
             _InfoCard(children: [
               _InfoRow(
                 label: 'Version',
@@ -106,12 +137,10 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
               ),
               if (AppInfo.hasBuildMetadata)
                 _InfoRow(label: 'Build', value: AppInfo.buildIdentity),
+              if (_deviceLabel != null)
+                _InfoRow(label: 'Device', value: _deviceLabel!),
+              if (_osLabel != null) _InfoRow(label: 'OS', value: _osLabel!),
               _InfoRow(label: 'Schema', value: 'v$schema'),
-              _InfoRow(label: 'Platform', value: _deviceInfo()),
-              _InfoRow(
-                label: 'Dart',
-                value: Platform.version.split(' ').first,
-              ),
             ]),
             const SizedBox(height: 16),
 
@@ -172,12 +201,21 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
             ]),
             const SizedBox(height: 24),
 
-            // Developer credit
+            // Developer credit + copyright
             Text(
               'Developed by Parminder Singh',
               style: TextStyle(
                 fontSize: 12,
                 color: AppDesignTokens.secondaryText.withValues(alpha: 0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '© ${DateTime.now().year} Parminder Singh · All rights reserved',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppDesignTokens.secondaryText.withValues(alpha: 0.55),
               ),
               textAlign: TextAlign.center,
             ),
