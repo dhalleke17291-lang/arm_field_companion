@@ -68,7 +68,7 @@ class CompletenessDashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: GradientScreenHeader(
-        title: 'Export Readiness',
+        title: 'Trial Readiness',
         subtitle: trial.name,
         titleFontSize: 17,
       ),

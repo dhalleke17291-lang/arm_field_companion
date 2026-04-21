@@ -39,13 +39,11 @@ import 'tabs/seeding_tab.dart';
 import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
 import 'tabs/timeline_tab.dart';
-import 'widgets/trial_assessment_completion_widgets.dart';
 import 'trial_setup_screen.dart';
 import 'widgets/site_details_card.dart';
 import '../diagnostics/completeness_dashboard_screen.dart';
 import '../more/more_backup_actions.dart';
 import '../diagnostics/audit_log_screen.dart';
-import '../diagnostics/edited_items_screen.dart';
 import '../derived/derived_snapshot_provider.dart'
     show derivedSnapshotForSessionProvider;
 import '../derived/trial_attention_provider.dart';
@@ -147,53 +145,18 @@ String _sessionDisplayLabel(Session session) {
   }
 }
 
-/// Short line for collapsed Trial Readiness tile (field-style summary).
-String _readinessCollapsedSummary(TrialReadinessReport report) {
-  switch (report.status) {
-    case TrialReadinessStatus.ready:
-      return 'Ready';
-    case TrialReadinessStatus.notReady:
-      return 'Action blocked';
-    case TrialReadinessStatus.readyWithWarnings:
-      final warnings = report.checks
-          .where((c) => c.severity == TrialCheckSeverity.warning)
-          .toList();
-      if (warnings.isEmpty) {
-        // Defensive: status should not advertise warnings without checks.
-        return 'Ready';
-      }
-      if (warnings.length == 1) return warnings.single.label;
-      return '${warnings.length} advisories';
-  }
+/// Single entry point for the Trial Readiness dashboard. Both states of
+/// the Needs Attention card's CTA ("Review issues" / "View readiness")
+/// route here — kept in one helper so the navigation target can't drift
+/// between callers.
+void _openCompletenessDashboard(BuildContext context, Trial trial) {
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => CompletenessDashboardScreen(trial: trial),
+    ),
+  );
 }
-
-/// Second line when multiple readiness advisories exist (collapsed tile).
-String? _readinessCollapsedWarningsPreview(TrialReadinessReport report) {
-  if (report.status != TrialReadinessStatus.readyWithWarnings) return null;
-  final warnings = report.checks
-      .where((c) => c.severity == TrialCheckSeverity.warning)
-      .toList();
-  if (warnings.length <= 1) return null;
-  return warnings.map((c) => c.label).join(' · ');
-}
-
-Color _readinessCollapsedSummaryColor(
-  BuildContext context,
-  TrialReadinessReport report,
-) {
-  final scheme = Theme.of(context).colorScheme;
-  return switch (report.status) {
-    TrialReadinessStatus.ready => AppDesignTokens.successFg,
-    TrialReadinessStatus.readyWithWarnings => AppDesignTokens.warningFg,
-    TrialReadinessStatus.notReady => scheme.error,
-  };
-}
-
-const ListTileThemeData _overviewExpanderTileTheme = ListTileThemeData(
-  visualDensity: VisualDensity(horizontal: 0, vertical: -4),
-  minVerticalPadding: 0,
-  contentPadding: EdgeInsets.zero,
-);
 
 /// Shared title style for Overview dashboard cards (Trial Completion, Readiness, Session, Plots).
 TextStyle _overviewDashboardCardTitleStyle() => AppDesignTokens.headingStyle(
@@ -750,204 +713,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         },
         onClose: () => Navigator.pop(ctx),
       ),
-    );
-  }
-
-  /// Expanded body: detail lines and actions (summary stays on tile title; no duplicate status pill).
-  Widget _readinessReportDetailColumn(
-    BuildContext context,
-    WidgetRef ref,
-    Trial trial,
-    TrialReadinessReport report,
-  ) {
-    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
-    final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trial.id));
-    final correctionsAsync =
-        ref.watch(sessionIdsWithCorrectionsForTrialProvider(trial.id));
-
-    final plots = plotsAsync.valueOrNull;
-    final dataPlotCount = plots?.where((p) => !p.isGuardRow).length;
-    final analyzableCount = plots?.where(isAnalyzablePlot).length;
-    final excludedCount = dataPlotCount != null && analyzableCount != null
-        ? (dataPlotCount - analyzableCount).clamp(0, dataPlotCount)
-        : 0;
-    final rated = ratedAsync.valueOrNull;
-    final int? unrated =
-        analyzableCount != null && rated != null && analyzableCount > 0
-            ? (analyzableCount - rated).clamp(0, analyzableCount)
-            : null;
-
-    final corrections = correctionsAsync.valueOrNull?.length ?? 0;
-    final correctionsLoaded = correctionsAsync.hasValue;
-    final completionMap =
-        ref.watch(trialAssessmentCompletionProvider(trial.id)).valueOrNull;
-    final showPerAssessment = completionMap != null && completionMap.length > 1;
-    final hasPlotOrCorrectionLines = showPerAssessment ||
-        (!showPerAssessment && unrated != null && unrated > 0) ||
-        excludedCount > 0 ||
-        (correctionsLoaded && corrections > 0);
-
-    final readinessWarnings = report.checks
-        .where((c) => c.severity == TrialCheckSeverity.warning)
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (readinessWarnings.isNotEmpty) ...[
-          const Text(
-            'Advisories',
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-              color: AppDesignTokens.primaryText,
-            ),
-          ),
-          const SizedBox(height: 4),
-          for (final c in readinessWarnings)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
-                    size: 16,
-                    color: AppDesignTokens.warningFg,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          c.label,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            height: 1.35,
-                            color: AppDesignTokens.primaryText,
-                          ),
-                        ),
-                        if (c.detail != null &&
-                            c.detail!.trim().isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            c.detail!.trim(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              height: 1.35,
-                              color: AppDesignTokens.secondaryText
-                                  .withValues(alpha: 0.9),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (showPerAssessment ||
-              (!showPerAssessment && unrated != null && unrated > 0) ||
-              excludedCount > 0 ||
-              (correctionsLoaded && corrections > 0))
-            const SizedBox(height: 10),
-        ],
-        if (showPerAssessment) ...[
-          const Text(
-            'Per-assessment (data plots)',
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-              color: AppDesignTokens.primaryText,
-            ),
-          ),
-          const SizedBox(height: 4),
-          for (final e in ([
-            ...completionMap.entries
-          ]..sort((a, b) => a.key.compareTo(b.key))))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    e.value.isComplete
-                        ? Icons.check_circle_outline
-                        : Icons.warning_amber_rounded,
-                    size: 16,
-                    color: e.value.isComplete
-                        ? AppDesignTokens.successFg
-                        : AppDesignTokens.warningFg,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      '${e.value.assessmentName}: ${e.value.ratedPlotCount}/${e.value.analyzablePlotCount}'
-                      '${e.value.excludedFromAnalysisCount > 0 ? ' (${e.value.excludedFromAnalysisCount} excluded)' : ''}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: AppDesignTokens.primaryText,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ] else if (unrated != null && unrated > 0) ...[
-          Text(
-            '$unrated analyzable plot${unrated == 1 ? '' : 's'} without any rating in this trial (navigation)',
-            style: const TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              color: AppDesignTokens.primaryText,
-            ),
-          ),
-        ],
-        if (excludedCount > 0) ...[
-          if (unrated != null && unrated > 0) const SizedBox(height: 6),
-          Text(
-            '$excludedCount plot${excludedCount == 1 ? '' : 's'} excluded from analysis',
-            style: const TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              color: AppDesignTokens.secondaryText,
-            ),
-          ),
-        ],
-        if (correctionsLoaded && corrections > 0) ...[
-          if (unrated != null && unrated > 0) const SizedBox(height: 6),
-          Text(
-            '$corrections session${corrections == 1 ? '' : 's'} with corrections',
-            style: const TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              color: AppDesignTokens.primaryText,
-            ),
-          ),
-        ],
-        if (hasPlotOrCorrectionLines) const SizedBox(height: 10),
-        TextButton.icon(
-          onPressed: () {
-            Navigator.of(context).push<void>(
-              MaterialPageRoute<void>(
-                builder: (_) => EditedItemsScreen(trialId: trial.id),
-              ),
-            );
-          },
-          icon: const Icon(Icons.edit_note, size: 16),
-          label: const Text('View Edited Items'),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ),
-      ],
     );
   }
 
@@ -1513,8 +1278,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               _OverviewTabBody(
                 trial: currentTrial,
                 onAttentionTap: _handleAttentionTap,
-                readinessDetailColumn: (ctx, r, report) =>
-                    _readinessReportDetailColumn(ctx, r, currentTrial, report),
                 onOpenSessions: () => setState(() {
                   _previousTabIndex = _selectedTabIndex;
                   _selectedTabIndex = _sessionsIndex;
@@ -1583,7 +1346,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
             title: const Text('Cannot close trial'),
             content: Text(
               '${report.blockerCount} blocker(s) must be resolved '
-              'before closing.\n\nOpen Export Readiness to review.',
+              'before closing.\n\nOpen Trial Readiness to review.',
             ),
             actions: [
               TextButton(
@@ -1713,252 +1476,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         const SnackBar(content: Text('Could not update trial status')),
       );
     }
-  }
-}
-
-Widget _trialSessionsStripRow(
-  BuildContext context, {
-  required String statusLabel,
-  required String sessionLabel,
-  required String? progressText,
-  required String? dateText,
-  required String actionLabel,
-  required bool isActive,
-}) {
-  return IntrinsicHeight(
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? AppDesignTokens.openSessionBgLight
-                          : AppDesignTokens.emptyBadgeBg,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isActive
-                                ? AppDesignTokens.openSessionBg
-                                : AppDesignTokens.emptyBadgeFg,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          statusLabel,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isActive
-                                ? AppDesignTokens.openSessionBg
-                                : AppDesignTokens.emptyBadgeFg,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (dateText != null && dateText.isNotEmpty) ...[
-                    const SizedBox(width: 10),
-                    Text(
-                      dateText,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppDesignTokens.primaryText,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 3),
-              Row(
-                children: [
-                  if (progressText != null)
-                    Text(
-                      progressText,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppDesignTokens.secondaryText,
-                      ),
-                    ),
-                  if (progressText != null && sessionLabel != 'Sessions')
-                    Text(
-                      '   ·   ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: AppDesignTokens.secondaryText
-                            .withValues(alpha: 0.7),
-                      ),
-                    ),
-                  if (sessionLabel != 'Sessions')
-                    Expanded(
-                      child: Text(
-                        sessionLabel.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: AppDesignTokens.primaryText
-                              .withValues(alpha: 0.75),
-                          letterSpacing: 0.3,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )
-                  else
-                    Text(
-                      actionLabel,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: AppDesignTokens.secondaryText,
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 4),
-        const Icon(
-          Icons.chevron_right_rounded,
-          color: AppDesignTokens.iconSubtle,
-          size: 22,
-        ),
-      ],
-    ),
-  );
-}
-
-/// Sessions strip for trial detail (Overview); tap handled by parent.
-class _TrialSessionsBar extends ConsumerWidget {
-  const _TrialSessionsBar({
-    required this.trialId,
-    required this.onTap,
-  });
-
-  final int trialId;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sessionsAsync = ref.watch(sessionsForTrialProvider(trialId));
-    final plots = ref.watch(plotsForTrialProvider(trialId)).valueOrNull ?? [];
-    final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trialId));
-
-    return Material(
-      color: AppDesignTokens.cardSurface,
-      borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      child: Tooltip(
-        message: 'Tap to view sessions • Use ⋮ to delete or recover sessions',
-        child: InkWell(
-          key: const Key('trial_detail_sessions_bar'),
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppDesignTokens.radiusXSmall),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDesignTokens.spacing12,
-              vertical: AppDesignTokens.spacing8,
-            ),
-            child: sessionsAsync.when(
-              loading: () => _trialSessionsStripRow(
-                context,
-                statusLabel: '…',
-                sessionLabel: 'Sessions',
-                progressText: null,
-                dateText: null,
-                actionLabel: 'Start or continue',
-                isActive: false,
-              ),
-              error: (_, __) => _trialSessionsStripRow(
-                context,
-                statusLabel: '…',
-                sessionLabel: 'Sessions',
-                progressText: null,
-                dateText: null,
-                actionLabel: 'Start or continue',
-                isActive: false,
-              ),
-              data: (sessions) {
-                final active =
-                    sessions.where(isSessionOpenForFieldWork).toList();
-                final primary = active.isNotEmpty
-                    ? active.first
-                    : (sessions.isNotEmpty ? sessions.first : null);
-                final isActive =
-                    primary != null && isSessionOpenForFieldWork(primary);
-                String? progressText;
-                if (primary != null) {
-                  final layoutCount = plots.length;
-                  final dataPlotCount =
-                      plots.where((p) => !p.isGuardRow).length;
-                  if (dataPlotCount > 0 && ratedAsync.hasValue) {
-                    final ratedTrial = ratedAsync.value ?? 0;
-                    final excludedNav = plots
-                        .where((p) =>
-                            !p.isGuardRow && p.excludeFromAnalysis == true)
-                        .length;
-                    progressText = '$ratedTrial/$dataPlotCount data plots rated'
-                        '${excludedNav > 0 ? ' · $excludedNav excluded' : ''}';
-                    if (layoutCount != dataPlotCount) {
-                      progressText =
-                          '$progressText\n$layoutCount layout rows including guards';
-                    }
-                  }
-                }
-                final dateText = primary != null
-                    ? _formatSessionDateLocal(primary.sessionDateLocal)
-                    : null;
-                final actionLabel = sessions.isEmpty
-                    ? 'Start or continue'
-                    : active.isEmpty
-                        ? (sessions.length == 1
-                            ? 'Open'
-                            : '${sessions.length} sessions')
-                        : (active.length == 1
-                            ? 'Open'
-                            : '${active.length} active');
-                final statusLabel = sessions.isEmpty
-                    ? 'Not started'
-                    : active.isNotEmpty
-                        ? 'Active'
-                        : 'Closed';
-                return _trialSessionsStripRow(
-                  context,
-                  statusLabel: statusLabel,
-                  sessionLabel: primary != null
-                      ? _sessionDisplayLabel(primary)
-                      : 'Sessions',
-                  progressText: progressText,
-                  dateText: dateText,
-                  actionLabel: actionLabel,
-                  isActive: isActive,
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -2380,204 +1897,6 @@ class _SessionsStatusBarButton extends StatelessWidget {
   }
 }
 
-/// Workflow attention + trial readiness, stacked inside [Readiness and Attention] card.
-class _TrialWorkflowReadinessStack extends ConsumerWidget {
-  const _TrialWorkflowReadinessStack({
-    required this.trial,
-    required this.onAttentionTap,
-    required this.readinessDetailColumn,
-  });
-
-  final Trial trial;
-  final void Function(AttentionItem item) onAttentionTap;
-  final Widget Function(
-    BuildContext context,
-    WidgetRef ref,
-    TrialReadinessReport report,
-  ) readinessDetailColumn;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final attentionAsync = ref.watch(trialAttentionProvider(trial.id));
-    final readinessAsync = ref.watch(trialReadinessProvider(trial.id));
-
-    const captionStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.4,
-      color: AppDesignTokens.secondaryText,
-    );
-
-    return _OverviewDashboardCard(
-      title: 'Readiness and Attention',
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: Colors.transparent,
-          dividerColor: Colors.transparent,
-          listTileTheme: _overviewExpanderTileTheme,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            attentionAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                child: Text(
-                  'Updating workflow…',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-              ),
-              error: (_, __) => const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                child: Text(
-                  'Workflow unavailable — trial data could not be loaded. Try closing and reopening the trial.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-              ),
-              data: (items) {
-                final n = items.length;
-                final summary =
-                    n == 0 ? 'No items' : '$n ${n == 1 ? 'item' : 'items'}';
-                return ExpansionTile(
-                  tilePadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  collapsedShape: const RoundedRectangleBorder(),
-                  shape: const RoundedRectangleBorder(),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Blockers', style: captionStyle),
-                      const SizedBox(height: 3),
-                      Text(
-                        summary,
-                        style: AppDesignTokens.headingStyle(
-                          fontSize: 14,
-                          color: AppDesignTokens.primaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                  children: [
-                    if (items.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
-                        child: Text(
-                          'Nothing needs your attention for this trial right now.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            height: 1.35,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        ),
-                      )
-                    else
-                      ...items.map(
-                        (item) => _AttentionRow(
-                          item: item,
-                          onTap: () => onAttentionTap(item),
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: AppDesignTokens.divider,
-            ),
-            readinessAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                child: Text(
-                  'Updating trial readiness…',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-              ),
-              error: (_, __) => const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                child: Text(
-                  'Readiness check unavailable — try again or restart the app.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-              ),
-              data: (report) {
-                final summary = _readinessCollapsedSummary(report);
-                final summaryColor =
-                    _readinessCollapsedSummaryColor(context, report);
-                final preview = _readinessCollapsedWarningsPreview(report);
-                return ExpansionTile(
-                  tilePadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  collapsedShape: const RoundedRectangleBorder(),
-                  shape: const RoundedRectangleBorder(),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Advisories', style: captionStyle),
-                      const SizedBox(height: 3),
-                      Text(
-                        summary,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppDesignTokens.headingStyle(
-                          fontSize: 14,
-                          color: summaryColor,
-                        ),
-                      ),
-                      if (preview != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          preview,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            height: 1.3,
-                            color: AppDesignTokens.secondaryText
-                                .withValues(alpha: 0.95),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                      child: readinessDetailColumn(
-                        context,
-                        ref,
-                        report,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _OverviewPlotSummary extends ConsumerWidget {
   const _OverviewPlotSummary({required this.trial});
 
@@ -2588,6 +1907,8 @@ class _OverviewPlotSummary extends ConsumerWidget {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
     final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trial.id));
+    final completionAsync =
+        ref.watch(trialAssessmentCompletionProvider(trial.id));
 
     return _OverviewDashboardCard(
       title: 'Plots',
@@ -2628,12 +1949,38 @@ class _OverviewPlotSummary extends ConsumerWidget {
           }();
           final summaryLine =
               '$dataPlotCount data plots · ${treatments.length} treatments · $repCount reps';
-          final progress = analyzableCount <= 0
-              ? 0.0
-              : (rated / analyzableCount).clamp(0.0, 1.0);
+
+          // Whole-trial coverage: rated plot-assessments / (nAssessments ×
+          // analyzable plots). Labelled "coverage" because the metric is
+          // non-monotonic — it honestly drops when scope expands (new
+          // assessment or new plots). Denominator is surfaced in the
+          // secondary line so a drop caused by scope growth is visible.
+          final completionMap = completionAsync.valueOrNull;
+          final nAssess = completionMap?.length ?? 0;
+          double? trialCoverage;
+          String? coveragePrimaryLine;
+          String? coverageDetailLine;
+          if (completionMap != null && nAssess > 0) {
+            final completeAssess =
+                completionMap.values.where((c) => c.isComplete).length;
+            final sumPairs = completionMap.values
+                .fold<int>(0, (s, c) => s + c.ratedPlotCount);
+            final denomPairs = nAssess * analyzableCount;
+            trialCoverage = denomPairs <= 0
+                ? 0.0
+                : (sumPairs / denomPairs).clamp(0.0, 1.0);
+            final pct = (trialCoverage * 100).round();
+            coveragePrimaryLine = '$pct% coverage';
+            coverageDetailLine = nAssess == 1
+                ? '$sumPairs of $denomPairs plot-assessments rated'
+                : '$sumPairs of $denomPairs plot-assessments rated · $completeAssess of $nAssess assessments done';
+          }
+
+          final remaining =
+              (analyzableCount - rated).clamp(0, analyzableCount);
           final ratedLine = analyzableCount <= 0
-              ? 'Rated: $rated data plots (no analyzable plots)'
-              : 'Rated: $rated/$analyzableCount analyzable plots';
+              ? '$rated rated · no analyzable plots'
+              : '$rated rated · $remaining remaining · $analyzableCount analyzable';
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -2645,6 +1992,43 @@ class _OverviewPlotSummary extends ConsumerWidget {
                   color: AppDesignTokens.primaryText,
                 ),
               ),
+              if (trialCoverage != null) ...[
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: trialCoverage,
+                    backgroundColor: const Color(0xFFE8E5E0),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      trialCoverage >= 1.0
+                          ? AppDesignTokens.successFg
+                          : AppDesignTokens.primary,
+                    ),
+                    minHeight: 3,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  coveragePrimaryLine!,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  coverageDetailLine!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    height: 1.35,
+                    color:
+                        AppDesignTokens.secondaryText.withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
               const SizedBox(height: 6),
               Text(
                 ratedLine,
@@ -2667,18 +2051,6 @@ class _OverviewPlotSummary extends ConsumerWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: const Color(0xFFE8E5E0),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF2D5A40),
-                  ),
-                  minHeight: 6,
-                ),
-              ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () => PlotsTab.openPlotLayoutView(context, trial),
@@ -2871,138 +2243,15 @@ class _InsightRowState extends State<_InsightRow> {
   }
 }
 
-/// Overview stack slot ([_overviewTabIndex]): primary trial dashboard.
-/// Compact status strip: last application, readiness traffic light, days since
-/// last activity. Command-center view — researcher opens trial and sees
-/// what needs attention immediately.
-class _TrialStatusStrip extends ConsumerWidget {
-  const _TrialStatusStrip({required this.trialId});
-  final int trialId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final readiness = ref.watch(trialReadinessProvider(trialId));
-    final apps = ref.watch(trialApplicationsForTrialProvider(trialId));
-    final sessions = ref.watch(sessionsForTrialProvider(trialId));
-
-    return readiness.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (report) {
-        final appList = apps.valueOrNull ?? [];
-        final sessionList = sessions.valueOrNull ?? [];
-
-        // Last activity: most recent session or application.
-        DateTime? lastActivity;
-        if (sessionList.isNotEmpty) {
-          lastActivity = sessionList
-              .map((s) => s.startedAt)
-              .reduce((a, b) => a.isAfter(b) ? a : b);
-        }
-        final appliedApps =
-            appList.where((a) => a.status == 'applied').toList();
-        if (appliedApps.isNotEmpty) {
-          final lastAppDate = appliedApps
-              .map((a) => a.applicationDate)
-              .reduce((a, b) => a.isAfter(b) ? a : b);
-          if (lastActivity == null || lastAppDate.isAfter(lastActivity)) {
-            lastActivity = lastAppDate;
-          }
-        }
-
-        final daysSince = lastActivity != null
-            ? DateTime.now().difference(lastActivity).inDays
-            : null;
-
-        // Traffic light.
-        final Color statusColor;
-        final String statusLabel;
-        if (report.blockerCount > 0) {
-          statusColor = const Color(0xFFCC3333);
-          statusLabel =
-              '${report.blockerCount} blocker${report.blockerCount == 1 ? '' : 's'}';
-        } else if (report.warningCount > 0) {
-          statusColor = AppDesignTokens.warningFg;
-          statusLabel =
-              '${report.warningCount} advisor${report.warningCount == 1 ? 'y' : 'ies'}';
-        } else {
-          statusColor = AppDesignTokens.successFg;
-          statusLabel = 'Ready';
-        }
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppDesignTokens.spacing16,
-            0,
-            AppDesignTokens.spacing16,
-            AppDesignTokens.spacing8,
-          ),
-          child: Row(
-            children: [
-              // Traffic light dot + label.
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                statusLabel,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: statusColor,
-                ),
-              ),
-              const Spacer(),
-              if (appliedApps.isNotEmpty)
-                Text(
-                  '${appliedApps.length} app${appliedApps.length == 1 ? '' : 's'}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color:
-                        AppDesignTokens.secondaryText.withValues(alpha: 0.75),
-                  ),
-                ),
-              if (daysSince != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  daysSince == 0
-                      ? 'Active today'
-                      : '$daysSince day${daysSince == 1 ? '' : 's'} ago',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color:
-                        AppDesignTokens.secondaryText.withValues(alpha: 0.75),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
 class _OverviewTabBody extends ConsumerWidget {
   const _OverviewTabBody({
     required this.trial,
     required this.onAttentionTap,
-    required this.readinessDetailColumn,
     required this.onOpenSessions,
   });
 
   final Trial trial;
   final void Function(AttentionItem item) onAttentionTap;
-  final Widget Function(
-    BuildContext context,
-    WidgetRef ref,
-    TrialReadinessReport report,
-  ) readinessDetailColumn;
   final VoidCallback onOpenSessions;
 
   @override
@@ -3015,50 +2264,404 @@ class _OverviewTabBody extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TrialCompletionSummaryCard(trialId: trial.id),
-          _TrialStatusStrip(trialId: trial.id),
-          _TrialWorkflowReadinessStack(
+          // 1 — Hero: resume work right now.
+          _CurrentSessionHero(
+            trial: trial,
+            onOpenSessions: onOpenSessions,
+          ),
+          // 2 — What needs attention (single source of truth = attention
+          // provider; full readiness lives behind Review issues).
+          _NeedsAttentionCard(
             trial: trial,
             onAttentionTap: onAttentionTap,
-            readinessDetailColumn: readinessDetailColumn,
           ),
-          _OverviewDashboardCard(
-            title: 'Current Session',
-            child: _TrialSessionsBar(
-              trialId: trial.id,
-              onTap: onOpenSessions,
-            ),
-          ),
+          // 3 — Physical structure & progress (incl. whole-trial %).
           _OverviewPlotSummary(trial: trial),
-          _TrialInsightsCard(trialId: trial.id),
+          // 4 — Location / metadata.
           SiteDetailsCard(trial: trial),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppDesignTokens.spacing16,
-              AppDesignTokens.spacing4,
-              AppDesignTokens.spacing16,
-              AppDesignTokens.spacing16,
-            ),
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push<void>(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => CompletenessDashboardScreen(trial: trial),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.fact_check_outlined, size: 18),
-              label: const Text('Export Readiness'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-          // Auto-backup status
+          // 5 — Analytical insights (hidden when empty).
+          _TrialInsightsCard(trialId: trial.id),
+          // 6 — Minor status text.
           _AutoBackupStatusLine(),
         ],
       ),
+    );
+  }
+}
+
+/// Resume-work hero for Overview. Intentionally compact: one status chip,
+/// one progress line, and one primary CTA that routes straight to the most
+/// useful next action (Continue Rating / Start Session / Open Sessions).
+class _CurrentSessionHero extends ConsumerWidget {
+  const _CurrentSessionHero({
+    required this.trial,
+    required this.onOpenSessions,
+  });
+
+  final Trial trial;
+  final VoidCallback onOpenSessions;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
+    final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final ratedAsync = ref.watch(ratedPlotsCountForTrialProvider(trial.id));
+
+    return _OverviewDashboardCard(
+      title: 'Current Session',
+      child: sessionsAsync.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Loading session…',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+        ),
+        error: (_, __) => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Session data unavailable.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+        ),
+        data: (sessions) {
+          final open = sessions.where(isSessionOpenForFieldWork).toList();
+          final primary =
+              open.isNotEmpty ? open.first : (sessions.isNotEmpty ? sessions.first : null);
+          final isActive = primary != null && isSessionOpenForFieldWork(primary);
+
+          // Status pill label + coloring.
+          final String statusLabel;
+          final Color statusFg;
+          final Color statusBg;
+          if (sessions.isEmpty) {
+            statusLabel = 'Not started';
+            statusFg = AppDesignTokens.emptyBadgeFg;
+            statusBg = AppDesignTokens.emptyBadgeBg;
+          } else if (isActive) {
+            statusLabel = 'Active';
+            statusFg = AppDesignTokens.openSessionBg;
+            statusBg = AppDesignTokens.openSessionBgLight;
+          } else {
+            statusLabel = 'Closed';
+            statusFg = AppDesignTokens.secondaryText;
+            statusBg = AppDesignTokens.emptyBadgeBg;
+          }
+
+          // Plots rated progress (single line).
+          final plots = plotsAsync.valueOrNull ?? const <Plot>[];
+          final analyzable = plots.where(isAnalyzablePlot).length;
+          final rated = ratedAsync.valueOrNull ?? 0;
+          final progressValue =
+              analyzable > 0 ? (rated / analyzable).clamp(0.0, 1.0) : 0.0;
+          final progressLine = analyzable > 0
+              ? '$rated of $analyzable plots rated'
+              : 'No analyzable plots yet';
+
+          // Secondary meta line: date + session label.
+          final dateText = primary != null
+              ? _formatSessionDateLocal(primary.sessionDateLocal)
+              : null;
+          final sessionLabel =
+              primary != null ? _sessionDisplayLabel(primary) : null;
+
+          // Primary CTA: one action only.
+          final String ctaLabel;
+          final IconData ctaIcon;
+          final VoidCallback ctaAction;
+          if (isActive) {
+            ctaLabel = 'Continue Rating';
+            ctaIcon = Icons.play_arrow_rounded;
+            ctaAction = () {
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => PlotQueueScreen(
+                    trial: trial,
+                    session: primary,
+                  ),
+                ),
+              );
+            };
+          } else if (sessions.isEmpty) {
+            ctaLabel = 'Start Session';
+            ctaIcon = Icons.play_circle_outline_rounded;
+            ctaAction = () => tryOpenCreateSessionScreen(
+                  context: context,
+                  ref: ref,
+                  trial: trial,
+                );
+          } else {
+            ctaLabel = 'Open Sessions';
+            ctaIcon = Icons.folder_open_outlined;
+            ctaAction = onOpenSessions;
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: statusFg,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          statusLabel,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: statusFg,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (dateText != null) ...[
+                    const SizedBox(width: 10),
+                    Text(
+                      dateText,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                  ],
+                  if (sessionLabel != null) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        sessionLabel.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.3,
+                          color: AppDesignTokens.primaryText
+                              .withValues(alpha: 0.75),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                progressLine,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              if (analyzable > 0) ...[
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: progressValue,
+                    backgroundColor: const Color(0xFFE8E5E0),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppDesignTokens.primary,
+                    ),
+                    minHeight: 5,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: ctaAction,
+                icon: Icon(ctaIcon, size: 18),
+                label: Text(ctaLabel),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppDesignTokens.primary,
+                  foregroundColor: AppDesignTokens.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Compact Needs Attention card. Inline rows come from a single source
+/// (`trialAttentionProvider`) to avoid merge/dedup complexity; readiness
+/// detail lives behind Review issues → `CompletenessDashboardScreen`.
+/// The whole card is hidden when there is nothing pending.
+class _NeedsAttentionCard extends ConsumerWidget {
+  const _NeedsAttentionCard({
+    required this.trial,
+    required this.onAttentionTap,
+  });
+
+  final Trial trial;
+  final void Function(AttentionItem item) onAttentionTap;
+
+  static int _severityRank(AttentionSeverity s) => switch (s) {
+        AttentionSeverity.high => 0,
+        AttentionSeverity.medium => 1,
+        AttentionSeverity.low => 2,
+        AttentionSeverity.info => 3,
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final attentionAsync = ref.watch(trialAttentionProvider(trial.id));
+
+    return attentionAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (items) {
+        // All-clear state: title + subtle acknowledgement + the same
+        // adaptive CTA (labelled "View readiness") so Overview always
+        // has one entry point to the Trial Readiness dashboard.
+        if (items.isEmpty) {
+          return _OverviewDashboardCard(
+            title: 'Needs Attention',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'All clear — nothing needs attention right now.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: AppDesignTokens.secondaryText
+                        .withValues(alpha: 0.85),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        _openCompletenessDashboard(context, trial),
+                    icon: const Icon(Icons.fact_check_outlined, size: 16),
+                    label: const Text('View readiness'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppDesignTokens.primary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final sorted = [...items]
+          ..sort((a, b) => _severityRank(a.severity)
+              .compareTo(_severityRank(b.severity)));
+        final top = sorted.take(3).toList();
+        final remaining = items.length - top.length;
+
+        return _OverviewDashboardCard(
+          title: 'Needs Attention',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                items.length == 1
+                    ? '1 item needs attention'
+                    : '${items.length} items need attention',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final item in top)
+                _AttentionRow(
+                  item: item,
+                  onTap: () => onAttentionTap(item),
+                ),
+              if (remaining > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDesignTokens.spacing16,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    '+$remaining more',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      _openCompletenessDashboard(context, trial),
+                  icon: const Icon(Icons.fact_check_outlined, size: 16),
+                  label: const Text('Review issues'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppDesignTokens.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
