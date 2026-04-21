@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/app_info.dart';
-import '../../core/config/app_info.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/export_guard.dart';
 import '../../core/widgets/loading_error_widgets.dart';
@@ -26,6 +24,7 @@ import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
 import '../ratings/rating_scale_map.dart';
+import '../about/about_screen.dart';
 // Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
 /// Workspace filter for trial list. Client-side only; no repository changes.
@@ -52,8 +51,7 @@ List<Trial> _deriveDisplayedTrials({
   Iterable<Trial> afterSearch = list;
   if (q.isNotEmpty) {
     afterSearch = list.where((t) {
-      bool fieldContains(String? s) =>
-          s != null && s.toLowerCase().contains(q);
+      bool fieldContains(String? s) => s != null && s.toLowerCase().contains(q);
       return t.name.toLowerCase().contains(q) ||
           fieldContains(t.crop) ||
           fieldContains(t.location) ||
@@ -82,8 +80,7 @@ List<Trial> _deriveDisplayedTrials({
         if (t.status.trim().toLowerCase() != kTrialStatusDraft) return false;
         return !trialIsListedAsActive(
           trialStatus: t.status,
-          hasOpenFieldSession:
-              trialIdsWithOpenFieldSession.contains(t.id),
+          hasOpenFieldSession: trialIdsWithOpenFieldSession.contains(t.id),
         );
       }).toList();
       break;
@@ -142,8 +139,8 @@ Future<void> _quickRateFromList(
   if (legacy.isNotEmpty) {
     assessmentIds = legacy.map((a) => a.id).toList();
   } else {
-    final trialPairs = await ref.read(
-        trialAssessmentsWithDefinitionsForTrialProvider(trial.id).future);
+    final trialPairs = await ref
+        .read(trialAssessmentsWithDefinitionsForTrialProvider(trial.id).future);
     if (trialPairs.isEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -185,8 +182,7 @@ Future<void> _quickRateFromList(
   if (!createResult.success || createResult.session == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content:
-            Text(createResult.errorMessage ?? 'Could not create session.'),
+        content: Text(createResult.errorMessage ?? 'Could not create session.'),
         backgroundColor: Colors.red,
       ),
     );
@@ -210,37 +206,6 @@ String _sortModeLabel(_TrialListSortMode m) {
   }
 }
 
-void _showAppInfoDialog(BuildContext context) {
-  showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text(AppInfo.appName),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ignore: prefer_const_constructors - string is not constant (kAppVersion)
-          Text('Version $kAppVersion', style: const TextStyle(fontSize: 14)),
-          const SizedBox(height: 8),
-          Text(
-            'Developed by Parminder Singh',
-            style: TextStyle(
-                fontSize: 13,
-                color:
-                    Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.8)),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('OK'),
-        ),
-      ],
-    ),
-  );
-}
-
 /// Shared navigation to rating for a given open session (used by Continue Session and Continue Last Session card).
 Future<void> _navigateToRatingForSession(
   BuildContext context,
@@ -252,13 +217,14 @@ Future<void> _navigateToRatingForSession(
   final prefs = await SharedPreferences.getInstance();
   final store = SessionWalkOrderStore(prefs);
   final walkOrder = store.getMode(session.id);
-  final customIds = walkOrder == WalkOrderMode.custom ? store.getCustomOrder(session.id) : null;
-  final result = await useCase.execute(
-      StartOrContinueRatingInput(
-        sessionId: session.id,
-        walkOrderMode: walkOrder,
-        customPlotIds: customIds,
-      ));
+  final customIds = walkOrder == WalkOrderMode.custom
+      ? store.getCustomOrder(session.id)
+      : null;
+  final result = await useCase.execute(StartOrContinueRatingInput(
+    sessionId: session.id,
+    walkOrderMode: walkOrder,
+    customPlotIds: customIds,
+  ));
   if (!context.mounted) return;
   if (!result.success ||
       result.trial == null ||
@@ -298,9 +264,8 @@ Future<void> _navigateToRatingForSession(
             .read(trialAssessmentsForTrialProvider(resolvedTrial.id))
             .valueOrNull ??
         <TrialAssessment>[],
-    definitions:
-        ref.read(assessmentDefinitionsProvider).valueOrNull ??
-            <AssessmentDefinition>[],
+    definitions: ref.read(assessmentDefinitionsProvider).valueOrNull ??
+        <AssessmentDefinition>[],
     trialIdForLog: resolvedTrial.id,
   );
   Navigator.pushAndRemoveUntil(
@@ -340,59 +305,59 @@ Future<void> _exportAllTrials(BuildContext context, WidgetRef ref) async {
       const SnackBar(content: Text('Exporting all trials...')),
     );
     final files = <XFile>[];
-  int exportedCount = 0;
-  for (final trial in trials) {
-    if (!context.mounted) return;
-    final result = await useCase.execute(
-      trialId: trial.id,
-      trialName: trial.name,
-      exportedByDisplayName: user?.displayName,
-    );
-    if (result.success && result.filePath != null) {
-      files.add(XFile(result.filePath!));
-      exportedCount += result.sessionCount;
-    }
-  }
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).clearSnackBars();
-  if (files.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No closed sessions to export. Close sessions first.'),
-        backgroundColor: Colors.orange,
-      ),
-    );
-    return;
-  }
-  try {
-    final box = context.findRenderObject() as RenderBox?;
-    await Share.shareXFiles(
-      files,
-      text:
-          'Agnexis – ${files.length} trial export(s), $exportedCount session(s)',
-      sharePositionOrigin: box == null
-          ? const Rect.fromLTWH(0, 0, 100, 100)
-          : box.localToGlobal(Offset.zero) & box.size,
-    );
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Exported ${files.length} trial(s), $exportedCount session(s)')),
+    int exportedCount = 0;
+    for (final trial in trials) {
+      if (!context.mounted) return;
+      final result = await useCase.execute(
+        trialId: trial.id,
+        trialName: trial.name,
+        exportedByDisplayName: user?.displayName,
       );
+      if (result.success && result.filePath != null) {
+        files.add(XFile(result.filePath!));
+        exportedCount += result.sessionCount;
+      }
     }
-  } catch (e) {
-    if (context.mounted) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    if (files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
-          ),
-          backgroundColor: Colors.red,
+          content: Text('No closed sessions to export. Close sessions first.'),
+          backgroundColor: Colors.orange,
         ),
       );
+      return;
     }
-  }
+    try {
+      final box = context.findRenderObject() as RenderBox?;
+      await Share.shareXFiles(
+        files,
+        text:
+            'Agnexis – ${files.length} trial export(s), $exportedCount session(s)',
+        sharePositionOrigin: box == null
+            ? const Rect.fromLTWH(0, 0, 100, 100)
+            : box.localToGlobal(Offset.zero) & box.size,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Exported ${files.length} trial(s), $exportedCount session(s)')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   });
   if (!ran && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -458,11 +423,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppDesignTokens.spacing16,
-                    12,
-                    AppDesignTokens.spacing16,
-                    12),
+                padding: const EdgeInsets.fromLTRB(AppDesignTokens.spacing16,
+                    12, AppDesignTokens.spacing16, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -516,8 +478,13 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                                   );
                                 },
                           onExport: () => _exportAllTrials(context, ref),
-                          onOpenImportSheet: () => ImportTrialSheet.show(context),
-                          onAbout: () => _showAppInfoDialog(context),
+                          onOpenImportSheet: () =>
+                              ImportTrialSheet.show(context),
+                          onAbout: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const AboutScreen(),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -647,37 +614,37 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                 String? noResultsMessage;
                 if (displayed.isEmpty) {
                   if (_searchQuery.trim().isNotEmpty) {
-                    noResultsMessage =
-                        'No trials match "$_searchQuery"';
+                    noResultsMessage = 'No trials match "$_searchQuery"';
                   } else if (_statusFilter != _TrialListStatusFilter.all) {
                     noResultsMessage = 'No trials match this filter.';
                   } else {
-                    noResultsMessage = _emptyListMessage(widget.workspaceFilter);
+                    noResultsMessage =
+                        _emptyListMessage(widget.workspaceFilter);
                   }
                 }
                 return _buildTrialList(
-                    context,
-                    ref,
-                    displayed,
-                    sortMode: _sortMode,
-                    onSortChanged: (m) =>
-                        setState(() => _sortMode = m),
-                    noResultsMessage: noResultsMessage,
-                    filterChipsRow: _buildFilterChipsRow(),
-                  );
+                  context,
+                  ref,
+                  displayed,
+                  sortMode: _sortMode,
+                  onSortChanged: (m) => setState(() => _sortMode = m),
+                  noResultsMessage: noResultsMessage,
+                  filterChipsRow: _buildFilterChipsRow(),
+                );
               },
             ),
           ),
         ],
       ),
-      floatingActionButton: widget.workspaceFilter == TrialListFilter.protocolOnly
-          ? null
-          : FloatingActionButton(
-              heroTag: 'new_custom_trial',
-              onPressed: () => _openStandaloneTrialWizard(context),
-              backgroundColor: AppDesignTokens.primary,
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
+      floatingActionButton:
+          widget.workspaceFilter == TrialListFilter.protocolOnly
+              ? null
+              : FloatingActionButton(
+                  heroTag: 'new_custom_trial',
+                  onPressed: () => _openStandaloneTrialWizard(context),
+                  backgroundColor: AppDesignTokens.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
     );
   }
 
@@ -884,7 +851,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                         child: Icon(
                           Icons.sort,
                           size: 20,
-                          color: AppDesignTokens.primary.withValues(alpha: 0.85),
+                          color:
+                              AppDesignTokens.primary.withValues(alpha: 0.85),
                         ),
                       ),
                       itemBuilder: (context) => [
@@ -927,8 +895,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
               child: Text(
                 noResultsMessage,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ) ??
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ) ??
                     const TextStyle(fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -947,11 +915,11 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                         item.type != AttentionType.openSession,
                   )
                   .firstOrNull;
-              final attentionSummary = t.status == kTrialStatusActive
-                  ? topUrgent?.label
-                  : null;
+              final attentionSummary =
+                  t.status == kTrialStatusActive ? topUrgent?.label : null;
               return Padding(
-                padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+                padding:
+                    const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
                 child: TrialCard(
                   trial: t,
                   index: i + 1,
@@ -985,7 +953,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
     );
   }
 }
-
 
 /// Compact stat pill for header: value + label (e.g. "12" / "Trials").
 /// Grouped header actions: export, optional unified Import sheet, about.
@@ -1117,4 +1084,3 @@ class _CompactCountPill extends StatelessWidget {
     );
   }
 }
-
