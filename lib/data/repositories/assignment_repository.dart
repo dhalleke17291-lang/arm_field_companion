@@ -169,17 +169,15 @@ class AssignmentRepository {
   }) async {
     await _assertAssignmentsEditable(trialId);
     final at = assignedAt ?? DateTime.now().toUtc();
-    await _db.transaction(() async {
-      for (final entry in plotPkToTreatmentId.entries) {
-        await _persistAssignmentRow(
-          trialId: trialId,
-          plotId: entry.key,
-          treatmentId: entry.value,
-          assignmentSource: assignmentSource,
-          assignedAt: at,
-        );
-      }
-    });
+    for (final entry in plotPkToTreatmentId.entries) {
+      await _persistAssignmentRow(
+        trialId: trialId,
+        plotId: entry.key,
+        treatmentId: entry.value,
+        assignmentSource: assignmentSource,
+        assignedAt: at,
+      );
+    }
 
     // Summary audit event for bulk operation
     await _db.into(_db.auditEvents).insert(

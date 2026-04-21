@@ -126,11 +126,9 @@ class PlotRepository {
       throw StateError('insertPlotsBulk requires all plots for the same trial');
     }
     await assertCanEditProtocolForTrialId(_db, trialIds.single);
-    await _db.transaction(() async {
-      for (final plot in plots) {
-        await _db.into(_db.plots).insert(plot);
-      }
-    });
+    for (final plot in plots) {
+      await _db.into(_db.plots).insert(plot);
+    }
   }
 
   /// How many rep flank guard plots would be inserted (v1: G{rep}-L / G{rep}-R).

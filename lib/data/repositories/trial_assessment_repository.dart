@@ -214,11 +214,9 @@ class TrialAssessmentRepository {
       throw StateError('insertTrialAssessmentsBulk requires one trial');
     }
     await assertCanEditProtocolForTrialId(_db, trialIds.single);
-    await _db.transaction(() async {
-      for (final row in rows) {
-        await _db.into(_db.trialAssessments).insert(row);
-      }
-    });
+    for (final row in rows) {
+      await _db.into(_db.trialAssessments).insert(row);
+    }
   }
 
   /// Update trial-specific settings.

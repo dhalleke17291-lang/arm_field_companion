@@ -119,19 +119,17 @@ class TreatmentRepository {
     await assertCanEditProtocolForTrialId(_db, trialId);
     final now = DateTime.now();
     final result = <int, int>{};
-    await _db.transaction(() async {
-      for (final trt in sortedTrtNumbers) {
-        final tid = await _db.into(_db.treatments).insert(
-              TreatmentsCompanion.insert(
-                trialId: trialId,
-                code: '$trt',
-                name: 'Treatment $trt',
-                lastEditedAt: Value(now),
-              ),
-            );
-        result[trt] = tid;
-      }
-    });
+    for (final trt in sortedTrtNumbers) {
+      final tid = await _db.into(_db.treatments).insert(
+            TreatmentsCompanion.insert(
+              trialId: trialId,
+              code: '$trt',
+              name: 'Treatment $trt',
+              lastEditedAt: Value(now),
+            ),
+          );
+      result[trt] = tid;
+    }
     return result;
   }
 
