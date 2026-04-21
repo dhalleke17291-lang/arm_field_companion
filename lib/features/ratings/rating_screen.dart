@@ -1350,45 +1350,54 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    if (_gpsLatitude != null && _gpsLongitude != null)
-                      GestureDetector(
-                        onTap: _toggleGpsMode,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Row(
-                            children: [
-                              Icon(Icons.location_on,
-                                  size: 11,
-                                  color: AppDesignTokens.successFg
-                                      .withValues(alpha: 0.7)),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${_gpsLatitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3)}, ${_gpsLongitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3)}',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppDesignTokens.secondaryText
-                                      .withValues(alpha: 0.7),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                _gpsCaptureOnEachSave
-                                    ? Icons.gps_fixed
-                                    : Icons.gps_not_fixed,
-                                size: 10,
-                                color: AppDesignTokens.secondaryText
-                                    .withValues(alpha: 0.5),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (_gpsLatitude != null && _gpsLongitude != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: GestureDetector(
+                        onTap: _toggleGpsMode,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppDesignTokens.successFg
+                                .withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppDesignTokens.successFg
+                                  .withValues(alpha: 0.45),
+                              width: 0.75,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _gpsCaptureOnEachSave
+                                    ? Icons.gps_fixed
+                                    : Icons.gps_not_fixed,
+                                size: 12,
+                                color: AppDesignTokens.successFg,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${_gpsLatitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3)}, ${_gpsLongitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppDesignTokens.successFg,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   plotCtx.when(
                     loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),
