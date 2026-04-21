@@ -351,7 +351,7 @@ class SessionGridPdfExport {
         : null;
 
     return pw.Container(
-      padding: const pw.EdgeInsets.only(bottom: 8),
+      padding: const pw.EdgeInsets.only(bottom: 10),
       decoration: const pw.BoxDecoration(
         border: pw.Border(bottom: pw.BorderSide(color: _primaryColor)),
       ),
@@ -360,9 +360,21 @@ class SessionGridPdfExport {
         children: [
           if (logo != null)
             pw.Padding(
-              padding: const pw.EdgeInsets.only(right: 12),
-              child: pw.Image(logo, width: 28, height: 28,
-                  fit: pw.BoxFit.contain),
+              padding: const pw.EdgeInsets.only(right: 14),
+              child: pw.Column(
+                children: [
+                  pw.Image(logo, width: 44, fit: pw.BoxFit.contain),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    'Agnexis',
+                    style: pw.TextStyle(
+                      fontSize: 7,
+                      fontWeight: pw.FontWeight.bold,
+                      color: _primaryColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
           pw.Expanded(
             child: pw.Column(

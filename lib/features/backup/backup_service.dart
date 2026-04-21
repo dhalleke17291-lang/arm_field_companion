@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:drift/drift.dart' show Value;
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show compute, debugPrint;
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +14,26 @@ import '../../core/database/app_database.dart';
 import 'backup_encryption.dart';
 import 'backup_file_helpers.dart';
 import 'backup_models.dart';
+
+/// Top-level function for [compute] — runs ZIP + encryption off the main isolate
+/// so the UI spinner stays smooth.
+Future<String> _zipAndEncryptInIsolate(Map<String, String> args) async {
+  final backupTempPath = args['backupTempPath']!;
+  final zipPath = args['zipPath']!;
+  final password = args['password']!;
+  final outputPath = args['outputPath']!;
+
+  final encoder = ZipFileEncoder();
+  encoder.create(zipPath, level: ZipFileEncoder.GZIP);
+  await encoder.addDirectory(Directory(backupTempPath), includeDirName: false);
+  await encoder.close();
+
+  final zipBytes = await File(zipPath).readAsBytes();
+  final agnexisBytes = BackupEncryption.encrypt(zipBytes, password);
+  await File(outputPath).writeAsBytes(agnexisBytes);
+
+  return outputPath;
+}
 
 /// Creates encrypted `.agnexis` backups (WAL checkpoint, streaming ZIP, then encrypt).
 ///
@@ -130,20 +150,19 @@ class BackupService {
           .writeAsString(meta.toJsonString());
 
       onProgress?.call('Creating backup file...');
-      final encoder = ZipFileEncoder();
-      encoder.create(zipPath, level: ZipFileEncoder.GZIP);
-      await encoder.addDirectory(backupTemp, includeDirName: false);
-      await encoder.close();
-
-      onProgress?.call('Encrypting...');
-      final zipBytes = await File(zipPath).readAsBytes();
-      final agnexisBytes = BackupEncryption.encrypt(zipBytes, password);
-
       final dateStamp =
           DateFormat('yyyy-MM-dd_HHmm').format(DateTime.now());
-      final agnexisFile =
-          File(p.join(rootTemp.path, 'Agnexis_backup_$dateStamp.agnexis'));
-      await agnexisFile.writeAsBytes(agnexisBytes);
+      final outputPath =
+          p.join(rootTemp.path, 'Agnexis_backup_$dateStamp.agnexis');
+
+      // Run ZIP + encryption in a separate isolate so the UI stays responsive.
+      await compute(_zipAndEncryptInIsolate, {
+        'backupTempPath': backupTemp.path,
+        'zipPath': zipPath,
+        'password': password,
+        'outputPath': outputPath,
+      });
+      final agnexisFile = File(outputPath);
 
       await deleteDirectoryIfExists(workRoot);
 
