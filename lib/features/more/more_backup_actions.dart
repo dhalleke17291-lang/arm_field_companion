@@ -87,14 +87,39 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
         canPop: false,
         child: AlertDialog(
           backgroundColor: AppDesignTokens.cardSurface,
+          contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
           content: Row(
             children: [
-              const CircularProgressIndicator(color: AppDesignTokens.primary),
+              const SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(
+                  color: AppDesignTokens.primary,
+                  strokeWidth: 3,
+                ),
+              ),
               const SizedBox(width: 20),
               Expanded(
-                child: Text(
-                  message,
-                  style: const TextStyle(color: AppDesignTokens.primaryText),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: AppDesignTokens.primaryText,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Do not close the app',
+                      style: TextStyle(
+                        color: AppDesignTokens.secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -122,12 +147,24 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
     }
     if (context.mounted) {
       try {
+        final box = context.findRenderObject() as RenderBox?;
         await Share.shareXFiles(
           [XFile(file.path, mimeType: 'application/octet-stream')],
           text: 'Agnexis encrypted backup',
+          sharePositionOrigin: box != null
+              ? box.localToGlobal(Offset.zero) & box.size
+              : const Rect.fromLTWH(0, 0, 100, 100),
         );
-      } catch (_) {
-        // Share sheet dismissed or unavailable — backup file is still saved.
+      } catch (e) {
+        // Share sheet failed — offer direct file location instead.
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Backup saved to: ${file.path}'),
+              duration: const Duration(seconds: 8),
+            ),
+          );
+        }
       }
       await BackupReminderStore(prefs).recordBackupCompleted();
       if (context.mounted) {

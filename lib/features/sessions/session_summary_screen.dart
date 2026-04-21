@@ -727,10 +727,14 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       await file.writeAsBytes(bytes);
       if (!mounted) return;
       try {
+        final box = context.findRenderObject() as RenderBox?;
         await Share.shareXFiles(
           [XFile(file.path)],
           text:
               '${widget.trial.name} — ${widget.session.name} grid export',
+          sharePositionOrigin: box != null
+              ? box.localToGlobal(Offset.zero) & box.size
+              : const Rect.fromLTWH(0, 0, 100, 100),
         );
       } catch (_) {
         // Share sheet dismissed or unavailable — PDF file is still saved.
@@ -801,7 +805,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).valueOrNull ??
             [];
     final treatmentNames = <int, String>{
-      for (final t in treatments) t.id: '${t.code} — ${t.name}',
+      for (final t in treatments) t.id: '${t.code} ${t.name}',
     };
 
     // Build human-readable assessment names from TrialAssessment metadata

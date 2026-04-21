@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -89,6 +91,58 @@ class SessionGridPdfExport {
       }
     }
 
+    // Per-column CV (coefficient of variation)
+    final colCv = <int, double>{};
+    for (final a in assessments) {
+      final s = colStats[a.id];
+      if (s == null || s.n < 2 || s.mean == 0) continue;
+      final vals = <double>[];
+      for (final p in dataPlots) {
+        final r = ratingMap[(p.id, a.id)];
+        if (r != null &&
+            r.resultStatus == 'RECORDED' &&
+            r.numericValue != null) {
+          vals.add(r.numericValue!);
+        }
+      }
+      final sumSqDev = vals.fold<double>(
+          0, (sum, v) => sum + (v - s.mean) * (v - s.mean));
+      final sd = math.sqrt(sumSqDev / (vals.length - 1));
+      colCv[a.id] = (sd / s.mean * 100).abs();
+    }
+
+    // Per-treatment means
+    final trtMeans = <int, Map<int, double>>{};
+    for (final p in dataPlots) {
+      final tid = plotTreatmentMap?[p.id] ?? p.treatmentId;
+      if (tid == null) continue;
+      trtMeans.putIfAbsent(tid, () => {});
+      for (final a in assessments) {
+        final r = ratingMap[(p.id, a.id)];
+        if (r != null &&
+            r.resultStatus == 'RECORDED' &&
+            r.numericValue != null) {
+          trtMeans[tid]!.putIfAbsent(a.id, () => 0);
+          trtMeans[tid]![a.id] =
+              (trtMeans[tid]![a.id] ?? 0) + r.numericValue!;
+        }
+      }
+    }
+    // Count reps per treatment
+    final trtCounts = <int, int>{};
+    for (final p in dataPlots) {
+      final tid = plotTreatmentMap?[p.id] ?? p.treatmentId;
+      if (tid == null) continue;
+      trtCounts[tid] = (trtCounts[tid] ?? 0) + 1;
+    }
+    // Convert sums to means
+    for (final tid in trtMeans.keys) {
+      final n = trtCounts[tid] ?? 1;
+      for (final aid in trtMeans[tid]!.keys.toList()) {
+        trtMeans[tid]![aid] = trtMeans[tid]![aid]! / n;
+      }
+    }
+
     // Assessment display names
     String displayName(Assessment a) {
       if (assessmentDisplayNames != null &&
@@ -148,7 +202,9 @@ class SessionGridPdfExport {
       ...assessments.map((a) {
         final s = colStats[a.id];
         if (s == null) return '';
-        return 'x\u0304 ${_fmt(s.mean)}\n${_fmt(s.min)}-${_fmt(s.max)} n=${s.n}';
+        final cv = colCv[a.id];
+        final cvStr = cv != null ? '\nCV ${cv.toStringAsFixed(1)}%' : '';
+        return 'Mean ${_fmt(s.mean)}\n${_fmt(s.min)}-${_fmt(s.max)} n=${s.n}$cvStr';
       }),
     ];
 
@@ -231,6 +287,54 @@ class SessionGridPdfExport {
               },
             ),
           ],
+          // Treatment means section
+          if (hasTreatment && trtMeans.isNotEmpty) ...[
+            pw.SizedBox(height: 16),
+            pw.Text(
+              'Treatment Means',
+              style: pw.TextStyle(
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+                color: _primaryColor,
+              ),
+            ),
+            pw.SizedBox(height: 6),
+            pw.TableHelper.fromTextArray(
+              context: context,
+              headers: [
+                'Treatment',
+                ...assessments.map(displayName),
+              ],
+              data: (trtMeans.keys.toList()..sort()).map((tid) {
+                  final label = treatmentNames?[tid] ?? 'TRT $tid';
+                  return [
+                    label,
+                    ...assessments.map((a) {
+                      final mean = trtMeans[tid]?[a.id];
+                      return mean != null ? _fmt(mean) : '-';
+                    }),
+                  ];
+                }).toList(),
+              headerStyle: pw.TextStyle(
+                fontSize: 8,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              headerDecoration: const pw.BoxDecoration(color: _primaryColor),
+              headerAlignment: pw.Alignment.center,
+              cellStyle: const pw.TextStyle(fontSize: 7),
+              cellAlignment: pw.Alignment.center,
+              cellHeight: 18,
+              cellPadding:
+                  const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+              border: pw.TableBorder.all(color: _borderColor, width: 0.5),
+              columnWidths: {
+                0: const pw.FixedColumnWidth(80),
+                for (var i = 1; i <= assessments.length; i++)
+                  i: const pw.FlexColumnWidth(),
+              },
+            ),
+          ],
         ],
       ),
     );
@@ -257,7 +361,8 @@ class SessionGridPdfExport {
           if (logo != null)
             pw.Padding(
               padding: const pw.EdgeInsets.only(right: 12),
-              child: pw.Image(logo, width: 36, height: 36),
+              child: pw.Image(logo, width: 28, height: 28,
+                  fit: pw.BoxFit.contain),
             ),
           pw.Expanded(
             child: pw.Column(
