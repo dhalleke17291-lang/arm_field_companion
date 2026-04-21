@@ -1,11 +1,15 @@
 import 'dart:io';
 
 import 'package:excel/excel.dart';
+import 'package:flutter/foundation.dart' show compute;
 
 import '../../core/excel_column_letters.dart';
 import '../../domain/models/arm_column_map.dart';
 import '../../domain/models/arm_plot_row.dart';
 import '../../domain/models/arm_shell_import.dart';
+
+/// Top-level function for [compute] — decodes Excel bytes off the main thread.
+Excel _decodeExcelBytes(List<int> bytes) => Excel.decodeBytes(bytes);
 
 /// Reads an ARM Excel Rating Shell and extracts trial metadata, columns, and plot rows.
 ///
@@ -53,7 +57,7 @@ class ArmShellParser {
 
   Future<ArmShellImport> parse() async {
     final bytes = await File(shellFilePath).readAsBytes();
-    final excel = Excel.decodeBytes(bytes);
+    final excel = await compute(_decodeExcelBytes, bytes);
     final sheets = excel.sheets;
     final sheet = sheets['Plot Data'];
     if (sheet == null) {
