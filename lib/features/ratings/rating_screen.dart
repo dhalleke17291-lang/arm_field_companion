@@ -1268,7 +1268,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         AppDesignTokens.spacing16,
         0,
       ),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppDesignTokens.cardSurface,
         borderRadius: BorderRadius.circular(12),
@@ -1281,210 +1280,237 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Plot $plotLabel',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppDesignTokens.primaryText,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Plot $plotLabel',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppDesignTokens.primaryText,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              if (plotCtx.valueOrNull?.isUntreatedCheck ==
+                                  true) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppDesignTokens.warningBg,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'Check',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppDesignTokens.warningFg,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (secondaryLine.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              secondaryLine,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppDesignTokens.secondaryText,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ],
+                          const SizedBox(height: 2),
+                          Text(
+                            tertiaryLine,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppDesignTokens.secondaryText
+                                  .withValues(alpha: 0.9),
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
-                        ),
-                        if (plotCtx.valueOrNull?.isUntreatedCheck == true) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppDesignTokens.warningBg,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'Check',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppDesignTokens.warningFg,
-                              ),
-                            ),
-                          ),
                         ],
-                      ],
+                      ),
                     ),
-                    if (secondaryLine.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        secondaryLine,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppDesignTokens.secondaryText,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        plotCtx.when(
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                          data: (ctx) => (ctx.hasTreatment ||
+                                  ctx.hasRemovedTreatment)
+                              ? Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppDesignTokens.primary,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      ctx.hasRemovedTreatment
+                                          ? '(removed)'
+                                          : ctx.treatmentCode,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ],
-                    const SizedBox(height: 2),
-                    Text(
-                      tertiaryLine,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppDesignTokens.secondaryText
-                            .withValues(alpha: 0.9),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+                        Text(
+                          progressText,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppDesignTokens.secondaryText,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_gpsLatitude != null && _gpsLongitude != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: GestureDetector(
-                        onTap: _toggleGpsMode,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppDesignTokens.successFg
-                                .withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: AppDesignTokens.successFg
-                                  .withValues(alpha: 0.45),
-                              width: 0.75,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _gpsCaptureOnEachSave
-                                    ? Icons.gps_fixed
-                                    : Icons.gps_not_fixed,
-                                size: 12,
-                                color: AppDesignTokens.successFg,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${_gpsLatitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3)}, ${_gpsLongitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppDesignTokens.successFg,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                if (showFilteredChip) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.2),
                       ),
                     ),
-                  plotCtx.when(
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data: (ctx) => (ctx.hasTreatment || ctx.hasRemovedTreatment)
-                        ? Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppDesignTokens.primary,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                ctx.hasRemovedTreatment
-                                    ? '(removed)'
-                                    : ctx.treatmentCode,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                  Text(
-                    progressText,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppDesignTokens.secondaryText,
-                      fontWeight: FontWeight.w600,
+                    child: Text(
+                      filteredChipText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.15,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],
-              ),
-            ],
-          ),
-          if (showFilteredChip) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.2),
+                // Thin progress bar — last child inside card, zero external layout impact
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: walkPlotCount == 0
+                        ? 0
+                        : (widget.currentPlotIndex + 1) / walkPlotCount,
+                    minHeight: 2,
+                    backgroundColor: AppDesignTokens.borderCrisp,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      widget.currentPlotIndex >= walkPlotCount - 1
+                          ? AppDesignTokens.successFg
+                          : AppDesignTokens.primary,
+                    ),
+                  ),
                 ),
-              ),
-              child: Text(
-                filteredChipText,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.15,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-          // Thin progress bar — last child inside card, zero external layout impact
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: walkPlotCount == 0
-                  ? 0
-                  : (widget.currentPlotIndex + 1) / walkPlotCount,
-              minHeight: 2,
-              backgroundColor: AppDesignTokens.borderCrisp,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                widget.currentPlotIndex >= walkPlotCount - 1
-                    ? AppDesignTokens.successFg
-                    : AppDesignTokens.primary,
-              ),
+              ],
             ),
           ),
+          if (_gpsLatitude != null && _gpsLongitude != null)
+            Positioned(
+              bottom: 18,
+              right: 10,
+              child: _buildGpsPill(),
+            ),
         ],
+      ),
+    );
+  }
+
+  /// Compact GPS readout anchored to the bottom-right corner of the rating
+  /// plot card. Tap cycles between "capture once at session start" and
+  /// "capture on every save" modes.
+  Widget _buildGpsPill() {
+    final latStr = _gpsLatitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3);
+    final lngStr =
+        _gpsLongitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3);
+    return Tooltip(
+      message: _gpsCaptureOnEachSave
+          ? 'GPS captured on every save — tap to switch to session-only'
+          : 'GPS captured once at session start — tap to switch to per-save',
+      child: Material(
+        color: AppDesignTokens.successFg.withValues(alpha: 0.14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
+          side: BorderSide(
+            color: AppDesignTokens.successFg.withValues(alpha: 0.45),
+            width: 0.75,
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: _toggleGpsMode,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _gpsCaptureOnEachSave
+                      ? Icons.my_location
+                      : Icons.location_searching,
+                  size: 13,
+                  color: AppDesignTokens.successFg,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '$latStr, $lngStr',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppDesignTokens.successFg,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
