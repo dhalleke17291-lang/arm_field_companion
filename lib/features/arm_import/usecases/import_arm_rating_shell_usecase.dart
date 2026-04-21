@@ -105,8 +105,7 @@ class ImportArmRatingShellUseCase {
             'No assessment columns found in the shell.');
       }
 
-      final trialName =
-          shell.title.isNotEmpty ? shell.title : 'Imported Trial';
+      final trialName = shell.title.isNotEmpty ? shell.title : 'Imported Trial';
 
       // 1–4: DB transaction only — trial stays draft, isArmLinked false until
       // structure + internal shell copy succeed.
@@ -119,10 +118,11 @@ class ImportArmRatingShellUseCase {
         );
 
         // --- Treatments (one protocol check) ---
-        final trtNumbers = shell.plotRows.map((p) => p.trtNumber).toSet().toList()
-          ..sort();
-        final trtIdByNumber = await _treatmentRepository
-            .insertTreatmentsBulkForNumbers(trialId: id, sortedTrtNumbers: trtNumbers);
+        final trtNumbers =
+            shell.plotRows.map((p) => p.trtNumber).toSet().toList()..sort();
+        final trtIdByNumber =
+            await _treatmentRepository.insertTreatmentsBulkForNumbers(
+                trialId: id, sortedTrtNumbers: trtNumbers);
 
         // --- Plots (one protocol check) + assignments (one protocol check) ---
         final plotCompanions = shell.plotRows
@@ -161,12 +161,10 @@ class ImportArmRatingShellUseCase {
         for (var i = 0; i < shell.assessmentColumns.length; i++) {
           final col = shell.assessmentColumns[i];
 
-          final code =
-              'SHELL_${col.pestCode ?? col.ratingType ?? 'COL_$i'}'
-                  .replaceAll(' ', '_')
-                  .toUpperCase();
-          final rawName =
-              col.seDescription ?? col.ratingType ?? col.seName;
+          final code = 'SHELL_${col.pestCode ?? col.ratingType ?? 'COL_$i'}'
+              .replaceAll(' ', '_')
+              .toUpperCase();
+          final rawName = col.seDescription ?? col.ratingType ?? col.seName;
           final name = (rawName != null && rawName.trim().isNotEmpty)
               ? rawName.trim()
               : 'Assessment ${i + 1}';
@@ -205,7 +203,8 @@ class ImportArmRatingShellUseCase {
             ),
           );
         }
-        await _trialAssessmentRepository.insertTrialAssessmentsBulk(assessmentRows);
+        await _trialAssessmentRepository
+            .insertTrialAssessmentsBulk(assessmentRows);
 
         return id;
       });
@@ -236,11 +235,10 @@ class ImportArmRatingShellUseCase {
       return ShellImportResult.ok(
         trialId: trialId,
         plotCount: shell.plotRows.length,
-        treatmentCount:
-            shell.plotRows.map((p) => p.trtNumber).toSet().length,
+        treatmentCount: shell.plotRows.map((p) => p.trtNumber).toSet().length,
         assessmentCount: shell.assessmentColumns.length,
       );
-    } catch (e, st) {
+    } catch (e) {
       return ShellImportResult.failure('Shell import failed: $e');
     }
   }

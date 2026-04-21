@@ -449,9 +449,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         ? 'Day $dasDays after seeding · $ratedCount / $totalDataPlots plots with a rating'
         : '$ratedCount / $totalDataPlots plots with a rating';
 
-    final trialAssessments =
-        ref.watch(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
-            <TrialAssessment>[];
+    final trialAssessments = ref
+            .watch(trialAssessmentsForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <TrialAssessment>[];
     final taByLegacy = <int, TrialAssessment>{};
     final taById = <int, TrialAssessment>{};
     for (final ta in trialAssessments) {
@@ -460,15 +461,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       if (lid != null) taByLegacy[lid] = ta;
     }
 
-    final definitions =
-        ref.watch(assessmentDefinitionsProvider).valueOrNull ??
-            <AssessmentDefinition>[];
+    final definitions = ref.watch(assessmentDefinitionsProvider).valueOrNull ??
+        <AssessmentDefinition>[];
     final liveSession =
         ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull ??
             widget.session;
-    final sessionTiming = ref
-        .watch(sessionTimingContextProvider(widget.session.id))
-        .valueOrNull;
+    final sessionTiming =
+        ref.watch(sessionTimingContextProvider(widget.session.id)).valueOrNull;
     final sessionContextStrip = _ratingSessionContextStrip(
       liveSession,
       sessionTiming,
@@ -867,8 +866,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       }
 
       final userId = await ref.read(currentUserIdProvider.future);
-      final currentValue =
-          double.tryParse(_valueController.text.trim());
+      final currentValue = double.tryParse(_valueController.text.trim());
       final usecase = ref.read(savePhotoUseCaseProvider);
       final res = await usecase.execute(
         SavePhotoInput(
@@ -1112,8 +1110,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                   right: 4,
                   bottom: 4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppDesignTokens.primary.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(4),
@@ -1251,10 +1249,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final secondaryLine = secondaryParts.join(' · ');
     final tertiaryLine =
         widget.session.name.trim().isNotEmpty ? widget.session.name : 'Session';
-    final walkPlotCount =
-        widget.allPlots.where((p) => !p.isGuardRow).length;
-    final progressText =
-        '${widget.currentPlotIndex + 1} of $walkPlotCount';
+    final walkPlotCount = widget.allPlots.where((p) => !p.isGuardRow).length;
+    final progressText = '${widget.currentPlotIndex + 1} of $walkPlotCount';
     final showFilteredChip = widget.isFilteredMode &&
         widget.filteredPlotIds != null &&
         widget.filteredPlotIds!.isNotEmpty;
@@ -1581,8 +1577,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           if (hasNeighbors)
             Row(
               children: [
-                Icon(Icons.compare_arrows, size: 14,
-                    color: AppDesignTokens.secondaryText.withValues(alpha: 0.7)),
+                Icon(Icons.compare_arrows,
+                    size: 14,
+                    color:
+                        AppDesignTokens.secondaryText.withValues(alpha: 0.7)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -1603,7 +1601,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           if (treatmentAvgText != null)
             Row(
               children: [
-                Icon(Icons.analytics_outlined, size: 14,
+                Icon(Icons.analytics_outlined,
+                    size: 14,
                     color: AppDesignTokens.primary.withValues(alpha: 0.7)),
                 const SizedBox(width: 6),
                 Text(
@@ -1625,7 +1624,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   /// Runs after each save. Checks if the current plot's ratings violate
   /// known logical relationships (weed >= broadleaf, weed >= grass).
   /// Shows a non-blocking amber SnackBar if violated.
-  void _runAssessmentConsistencyCheck(BuildContext ctx) {
+  void _runAssessmentConsistencyCheck() {
     // Collect current ratings for this plot from the in-memory provider.
     final ratings =
         ref.read(sessionRatingsProvider(widget.session.id)).valueOrNull ?? [];
@@ -1678,8 +1677,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     }
 
     if (violations.isEmpty) return;
-    if (!ctx.mounted) return;
-    ScaffoldMessenger.of(ctx).showSnackBar(
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.showSnackBar(
       SnackBar(
         content: Text(
           '${violations.join('. ')}. Rule: weed control ≥ component control.',
@@ -1860,8 +1861,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   String? _shellDescriptionForCurrentAssessment(
-      Map<int, TrialAssessment> taByLegacy,
-      Map<int, TrialAssessment> taById) {
+      Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
     final ta = _resolveTrialAssessment(_currentAssessment, taByLegacy, taById);
     return ta != null ? AssessmentDisplayHelper.description(ta) : null;
   }
@@ -1888,30 +1888,25 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final stripped = _assessmentPillLabel(assessment).toLowerCase().trim();
     if (stripped.isNotEmpty) {
       for (final candidate in taById.values) {
-        final cName = (candidate.displayNameOverride ??
-                candidate.seDescription ??
-                '')
-            .toLowerCase()
-            .trim();
+        final cName =
+            (candidate.displayNameOverride ?? candidate.seDescription ?? '')
+                .toLowerCase()
+                .trim();
         if (cName.isNotEmpty && cName == stripped) return candidate;
       }
     }
     return null;
   }
 
-  String _ratingAssessmentDisplayLabel(
-      Assessment assessment,
-      Map<int, TrialAssessment> taByLegacy,
-      Map<int, TrialAssessment> taById) {
+  String _ratingAssessmentDisplayLabel(Assessment assessment,
+      Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
     final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
     if (ta != null) return AssessmentDisplayHelper.compactName(ta);
     return _assessmentPillLabel(assessment);
   }
 
-  String _ratingAssessmentChipLabel(
-      Assessment assessment,
-      Map<int, TrialAssessment> taByLegacy,
-      Map<int, TrialAssessment> taById) {
+  String _ratingAssessmentChipLabel(Assessment assessment,
+      Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
     final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
     if (ta != null) return AssessmentDisplayHelper.compactName(ta);
     return _assessmentPillLabel(assessment);
@@ -1941,7 +1936,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             ),
             const SizedBox(width: AppDesignTokens.spacing8),
             Text(
-              _ratingAssessmentDisplayLabel(_currentAssessment, taByLegacy, taById),
+              _ratingAssessmentDisplayLabel(
+                  _currentAssessment, taByLegacy, taById),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -2026,8 +2022,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final assessment = widget.assessments[index];
     final isSelected = assessment.id == _currentAssessment.id;
     final label = _ratingAssessmentChipLabel(assessment, taByLegacy, taById);
-    final showIssueIndicator =
-        nonRecordedAssessmentIds.contains(assessment.id);
+    final showIssueIndicator = nonRecordedAssessmentIds.contains(assessment.id);
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -2124,9 +2119,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     if (diff.abs() < 1e-9) return const SizedBox.shrink();
     final sign = diff > 0 ? '+' : '';
     final diffStr = '$sign${diff.toStringAsFixed(1)}';
-    final color = diff > 0
-        ? AppDesignTokens.successFg
-        : AppDesignTokens.missedColor;
+    final color =
+        diff > 0 ? AppDesignTokens.successFg : AppDesignTokens.missedColor;
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Text(
@@ -2291,9 +2285,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                   Text(s, style: const TextStyle(fontSize: 11)),
                               selected: newStatus == s,
                               onSelected: (_) => setDialogState(() {
-                                    newStatus = s;
-                                    valueError = null;
-                                  }),
+                                newStatus = s;
+                                valueError = null;
+                              }),
                             ))
                         .toList(),
                   ),
@@ -2355,16 +2349,16 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     );
                     return;
                   }
-                  final effectiveReason = reason.isEmpty
-                      ? 'Value updated'
-                      : reason;
+                  final effectiveReason =
+                      reason.isEmpty ? 'Value updated' : reason;
                   double? newNumeric;
                   if (newStatus == 'RECORDED') {
                     final assess = assessmentForRecord(existing);
                     if (assess != null && assess.dataType == 'numeric') {
                       final raw = newValueController.text.trim();
                       if (raw.isEmpty) {
-                        setDialogState(() => valueError = 'A value is required.');
+                        setDialogState(
+                            () => valueError = 'A value is required.');
                         return;
                       }
                       final parsed = double.tryParse(raw);
@@ -2663,7 +2657,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                   final plotCtx = ref
                                       .read(plotContextProvider(widget.plot.id))
                                       .valueOrNull;
-                                  if (plotCtx == null || !plotCtx.hasTreatment) {
+                                  if (plotCtx == null ||
+                                      !plotCtx.hasTreatment) {
                                     return const SizedBox.shrink();
                                   }
                                   final sessionRatings = ref
@@ -3982,6 +3977,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   Future<bool> _saveRating(BuildContext context,
       {bool navigateAfterSave = true,
       bool skipCarryForwardConfirm = false}) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
     if (!skipCarryForwardConfirm && _shouldConfirmUnchangedCarryForward()) {
       final proceed = await _showCarryForwardConfirmDialog(context);
       if (!context.mounted) return false;
@@ -4005,9 +4002,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         final v = double.tryParse(_valueController.text);
         if (v != null && v > 0 && mounted) {
           // Compute check average for context
-          final sessionRatings = ref
-              .read(sessionRatingsProvider(widget.session.id))
-              .valueOrNull ?? [];
+          final sessionRatings =
+              ref.read(sessionRatingsProvider(widget.session.id)).valueOrNull ??
+                  [];
           final checkPlotPks = <int>[];
           for (final p in widget.allPlots) {
             if (p.id == widget.plot.id) continue;
@@ -4068,7 +4065,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       } else {
         numericValue = double.tryParse(_valueController.text);
         if (numericValue == null && _valueController.text.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger?.showSnackBar(
             const SnackBar(
               content: Text('Please enter a valid number'),
               backgroundColor: Colors.red,
@@ -4079,7 +4076,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         if (numericValue == null &&
             _valueController.text.trim().isEmpty &&
             _isNumericAssessment) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger?.showSnackBar(
             const SnackBar(
               content: Text('Please enter a value before saving.'),
               backgroundColor: Colors.red,
@@ -4090,8 +4087,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         if (numericValue != null) {
           final original = numericValue;
           numericValue = numericValue.clamp(_effectiveMin, _effectiveMax);
-          if (numericValue != original && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+          if (numericValue != original) {
+            messenger?.showSnackBar(
               SnackBar(
                 content: Text(
                   'Value adjusted from $original to $numericValue '
@@ -4170,7 +4167,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
       // Assessment consistency check (non-blocking, SnackBar only).
-      _runAssessmentConsistencyCheck(context);
+      _runAssessmentConsistencyCheck();
       if (numericValue != null) {
         ref.read(lastValueMemoryProvider.notifier).set(
               widget.session.id,
@@ -4913,7 +4910,10 @@ class _PhotoViewerScreenState extends State<_PhotoViewerScreen> {
                     child: Center(
                       child: exists
                           ? InteractiveViewer(
-                              child: Image.file(file, fit: BoxFit.contain, semanticLabel: 'Plot photo full view', cacheWidth: 1200),
+                              child: Image.file(file,
+                                  fit: BoxFit.contain,
+                                  semanticLabel: 'Plot photo full view',
+                                  cacheWidth: 1200),
                             )
                           : Column(
                               mainAxisAlignment: MainAxisAlignment.center,

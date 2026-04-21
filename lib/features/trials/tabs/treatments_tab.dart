@@ -224,20 +224,21 @@ class TreatmentsTab extends ConsumerWidget {
     WidgetRef ref,
     bool hasSessionData,
   ) {
-    final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
+    final locked =
+        !canEditTrialStructure(trial, hasSessionData: hasSessionData);
     return Stack(
       children: [
         AppEmptyState(
-            icon: Icons.science_outlined,
-            title: 'No Treatments Yet',
-            subtitle: locked
-                ? structureEditBlockedMessage(
-                    trial,
-                    hasSessionData: hasSessionData,
-                  )
-                : 'Add the treatment groups for this trial.',
-            action: null,
-          ),
+          icon: Icons.science_outlined,
+          title: 'No Treatments Yet',
+          subtitle: locked
+              ? structureEditBlockedMessage(
+                  trial,
+                  hasSessionData: hasSessionData,
+                )
+              : 'Add the treatment groups for this trial.',
+          action: null,
+        ),
         if (!locked)
           Positioned(
             right: 16,
@@ -259,7 +260,8 @@ class TreatmentsTab extends ConsumerWidget {
     List<Treatment> treatments,
     bool hasSessionData,
   ) {
-    final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
+    final locked =
+        !canEditTrialStructure(trial, hasSessionData: hasSessionData);
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -399,8 +401,8 @@ class TreatmentsTab extends ConsumerWidget {
             children: [
               TextField(
                 controller: codeController,
-                decoration: FormStyles.inputDecoration(
-                    labelText: 'Code (e.g. T1, T2)'),
+                decoration:
+                    FormStyles.inputDecoration(labelText: 'Code (e.g. T1, T2)'),
               ),
               const SizedBox(height: 10),
               TextField(
@@ -418,8 +420,8 @@ class TreatmentsTab extends ConsumerWidget {
               DropdownButtonFormField<String?>(
                 key: ValueKey('edit_type_$treatmentType'),
                 initialValue: treatmentType,
-                decoration: FormStyles.inputDecoration(
-                    labelText: 'Treatment type'),
+                decoration:
+                    FormStyles.inputDecoration(labelText: 'Treatment type'),
                 items: [
                   const DropdownMenuItem<String?>(
                       value: null, child: Text('—')),
@@ -432,8 +434,8 @@ class TreatmentsTab extends ConsumerWidget {
               DropdownButtonFormField<String?>(
                 key: ValueKey('edit_timing_${timingCode ?? 'null'}'),
                 initialValue: timingCode,
-                decoration: FormStyles.inputDecoration(
-                    labelText: 'Timing code'),
+                decoration:
+                    FormStyles.inputDecoration(labelText: 'Timing code'),
                 items: [
                   const DropdownMenuItem<String?>(
                       value: null, child: Text('—')),
@@ -453,8 +455,8 @@ class TreatmentsTab extends ConsumerWidget {
                 children: [
                   TextField(
                     controller: eppoController,
-                    decoration: FormStyles.inputDecoration(
-                        labelText: 'EPPO code'),
+                    decoration:
+                        FormStyles.inputDecoration(labelText: 'EPPO code'),
                   ),
                 ],
               ),
@@ -579,7 +581,8 @@ class _TreatmentCompactCard extends ConsumerStatefulWidget {
   final bool locked;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final Future<void> Function(TreatmentComponent? existing) onOpenComponentSheet;
+  final Future<void> Function(TreatmentComponent? existing)
+      onOpenComponentSheet;
   final VoidCallback onOpenSheet;
 
   const _TreatmentCompactCard({
@@ -613,8 +616,7 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
         },
         itemBuilder: (context) => [
           const PopupMenuItem(value: 'edit', child: Text('Edit')),
-          const PopupMenuItem(
-              value: 'sheet', child: Text('View Components')),
+          const PopupMenuItem(value: 'sheet', child: Text('View Components')),
           const PopupMenuItem(value: 'delete', child: Text('Delete')),
         ],
       );
@@ -785,8 +787,7 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                           ),
                         );
                         if (ok == true && context.mounted) {
-                          await _deleteTreatmentComponent(
-                              ref, c.id);
+                          await _deleteTreatmentComponent(ref, c.id);
                           ref.invalidate(
                             treatmentComponentsForTreatmentProvider(
                                 widget.treatment.id),
@@ -919,9 +920,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
       _productController.text = e.productName;
       _rateController.text = e.rate != null ? '${e.rate}' : '';
       final u = e.rateUnit?.trim();
-      if (u != null &&
-          u.isNotEmpty &&
-          _componentRateUnits.contains(u)) {
+      if (u != null && u.isNotEmpty && _componentRateUnits.contains(u)) {
         _rateUnit = u;
       }
       _formulationController.text = e.applicationTiming ?? '';
@@ -937,9 +936,10 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
       _formulationType = e.formulationType;
       _aiNameController.text = e.activeIngredientName ?? '';
       if (e.aiConcentration != null) {
-        _aiConcentrationController.text = e.aiConcentration == e.aiConcentration!.roundToDouble()
-            ? '${e.aiConcentration!.round()}'
-            : '${e.aiConcentration}';
+        _aiConcentrationController.text =
+            e.aiConcentration == e.aiConcentration!.roundToDouble()
+                ? '${e.aiConcentration!.round()}'
+                : '${e.aiConcentration}';
       }
       if (e.aiConcentrationUnit != null && e.aiConcentrationUnit!.isNotEmpty) {
         _aiConcentrationUnit = e.aiConcentrationUnit!;
@@ -1035,8 +1035,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                       ],
-                      decoration: FormStyles.inputDecoration(
-                          labelText: 'Rate'),
+                      decoration: FormStyles.inputDecoration(labelText: 'Rate'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1046,14 +1045,13 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                       key: ValueKey('sheet_rate_unit_$_rateUnit'),
                       isExpanded: true,
                       initialValue: _rateUnit,
-                      decoration: FormStyles.inputDecoration(
-                          labelText: 'Unit'),
+                      decoration: FormStyles.inputDecoration(labelText: 'Unit'),
                       items: _componentRateUnits
                           .map(
                               (u) => DropdownMenuItem(value: u, child: Text(u)))
                           .toList(),
-                      onChanged: (v) =>
-                          setState(() => _rateUnit = v ?? _componentRateUnits.first),
+                      onChanged: (v) => setState(
+                          () => _rateUnit = v ?? _componentRateUnits.first),
                     ),
                   ),
                 ],
@@ -1116,15 +1114,16 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                           key: ValueKey('sheet_ai_unit_$_aiConcentrationUnit'),
                           isExpanded: true,
                           initialValue: _aiConcentrationUnit,
-                          decoration: FormStyles.inputDecoration(
-                              labelText: 'Unit'),
+                          decoration:
+                              FormStyles.inputDecoration(labelText: 'Unit'),
                           items: const [
                             DropdownMenuItem(value: 'g/L', child: Text('g/L')),
-                            DropdownMenuItem(value: 'g/kg', child: Text('g/kg')),
+                            DropdownMenuItem(
+                                value: 'g/kg', child: Text('g/kg')),
                             DropdownMenuItem(value: '%', child: Text('%')),
                           ],
-                          onChanged: (v) => setState(
-                              () => _aiConcentrationUnit = v ?? 'g/L'),
+                          onChanged: (v) =>
+                              setState(() => _aiConcentrationUnit = v ?? 'g/L'),
                         ),
                       ),
                     ],
@@ -1150,8 +1149,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                           key: ValueKey('sheet_label_unit_$_labelRateUnit'),
                           isExpanded: true,
                           initialValue: _labelRateUnit,
-                          decoration: FormStyles.inputDecoration(
-                              labelText: 'Unit'),
+                          decoration:
+                              FormStyles.inputDecoration(labelText: 'Unit'),
                           items: const [
                             DropdownMenuItem(
                                 value: 'g ai/ha', child: Text('g ai/ha')),
@@ -1162,8 +1161,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                             DropdownMenuItem(
                                 value: 'kg/ha', child: Text('kg/ha')),
                           ],
-                          onChanged: (v) => setState(
-                              () => _labelRateUnit = v ?? 'g ai/ha'),
+                          onChanged: (v) =>
+                              setState(() => _labelRateUnit = v ?? 'g ai/ha'),
                         ),
                       ),
                     ],
@@ -1174,7 +1173,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                     title: const Text('Test product',
                         style: TextStyle(fontSize: 14)),
                     subtitle: const Text('Mark as test product for comparison',
-                        style: TextStyle(fontSize: 12,
+                        style: TextStyle(
+                            fontSize: 12,
                             color: AppDesignTokens.secondaryText)),
                     value: _isTestProduct,
                     onChanged: (v) => setState(() => _isTestProduct = v),
@@ -1239,8 +1239,8 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                             try {
                               final userId = await widget.ref
                                   .read(currentUserIdProvider.future);
-                              final repo = widget.ref
-                                  .read(treatmentRepositoryProvider);
+                              final repo =
+                                  widget.ref.read(treatmentRepositoryProvider);
                               final existing = widget.existingComponent;
                               if (existing != null) {
                                 await _deleteTreatmentComponent(
@@ -1250,9 +1250,9 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                                 treatmentId: widget.treatment.id,
                                 trialId: widget.trial.id,
                                 productName: name,
-                                rate: double.tryParse(
-                                    _rateController.text.trim()
-                                        .replaceAll(',', '.')),
+                                rate: double.tryParse(_rateController.text
+                                    .trim()
+                                    .replaceAll(',', '.')),
                                 rateUnit: _rateUnit,
                                 applicationTiming:
                                     _formulationController.text.trim().isEmpty
@@ -1262,13 +1262,13 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                                     ? null
                                     : _notesController.text.trim(),
                                 sortOrder: existing?.sortOrder ?? 0,
-                                activeIngredientPct: _parseActiveIngredientPct(),
+                                activeIngredientPct:
+                                    _parseActiveIngredientPct(),
                                 formulationType: _formulationType,
-                                manufacturer: _manufacturerController.text
-                                        .trim()
-                                        .isEmpty
-                                    ? null
-                                    : _manufacturerController.text.trim(),
+                                manufacturer:
+                                    _manufacturerController.text.trim().isEmpty
+                                        ? null
+                                        : _manufacturerController.text.trim(),
                                 registrationNumber:
                                     _registrationNumberController.text
                                             .trim()
@@ -1285,12 +1285,12 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                                         : _aiNameController.text.trim(),
                                 aiConcentration: double.tryParse(
                                     _aiConcentrationController.text.trim()),
-                                aiConcentrationUnit:
-                                    _aiConcentrationController.text
-                                            .trim()
-                                            .isNotEmpty
-                                        ? _aiConcentrationUnit
-                                        : null,
+                                aiConcentrationUnit: _aiConcentrationController
+                                        .text
+                                        .trim()
+                                        .isNotEmpty
+                                    ? _aiConcentrationUnit
+                                    : null,
                                 labelRate: double.tryParse(
                                     _labelRateController.text.trim()),
                                 labelRateUnit:
@@ -1397,8 +1397,8 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
             controller: productController,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-decoration: FormStyles.inputDecoration(
-                labelText: 'Product Name *',
+            decoration: FormStyles.inputDecoration(
+              labelText: 'Product Name *',
             ),
           ),
           const SizedBox(height: 6),
@@ -1452,32 +1452,30 @@ decoration: FormStyles.inputDecoration(
           DropdownButtonFormField<String?>(
             key: ValueKey('dialog_form_$formulationType'),
             initialValue: formulationType,
-decoration: FormStyles.inputDecoration(
-                labelText: 'Formulation type',
+            decoration: FormStyles.inputDecoration(
+              labelText: 'Formulation type',
             ),
             items: [
-              const DropdownMenuItem<String?>(
-                  value: null, child: Text('—')),
-              ..._formulationTypes.map((s) =>
-                  DropdownMenuItem<String?>(value: s, child: Text(s))),
+              const DropdownMenuItem<String?>(value: null, child: Text('—')),
+              ..._formulationTypes.map(
+                  (s) => DropdownMenuItem<String?>(value: s, child: Text(s))),
             ],
             onChanged: (v) => setState(() => formulationType = v),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: activeIngredientPctController,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-decoration: FormStyles.inputDecoration(
-                labelText: 'Active ingredient %',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: FormStyles.inputDecoration(
+              labelText: 'Active ingredient %',
               suffixText: '%',
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: timingController,
-decoration: FormStyles.inputDecoration(
-                labelText: 'Application Timing (optional)',
+            decoration: FormStyles.inputDecoration(
+              labelText: 'Application Timing (optional)',
             ),
           ),
           const SizedBox(height: 12),
@@ -1508,8 +1506,8 @@ decoration: FormStyles.inputDecoration(
           TextField(
             controller: notesController,
             maxLines: 2,
-decoration: FormStyles.inputDecoration(
-                labelText: 'Notes (optional)',
+            decoration: FormStyles.inputDecoration(
+              labelText: 'Notes (optional)',
             ),
           ),
         ],
@@ -1534,8 +1532,7 @@ decoration: FormStyles.inputDecoration(
                       trialId: widget.trial.id,
                       productName: productController.text.trim(),
                       rate: double.tryParse(
-                          rateController.text.trim()
-                              .replaceAll(',', '.')),
+                          rateController.text.trim().replaceAll(',', '.')),
                       rateUnit: rateUnitController.text.trim().isEmpty
                           ? null
                           : rateUnitController.text.trim(),
@@ -1614,10 +1611,9 @@ class _TreatmentComponentsSheetState
 
   @override
   Widget build(BuildContext context) {
-    final hasSessionData = ref
-            .watch(trialHasSessionDataProvider(widget.trial.id))
-            .valueOrNull ??
-        false;
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
+            false;
     final locked =
         !canEditTrialStructure(widget.trial, hasSessionData: hasSessionData);
 
@@ -1773,10 +1769,9 @@ class _TreatmentComponentsSheetState
 
   Widget _buildComponentTile(BuildContext context, int i) {
     final c = _components[i];
-    final hasSessionData = ref
-            .watch(trialHasSessionDataProvider(widget.trial.id))
-            .valueOrNull ??
-        false;
+    final hasSessionData =
+        ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
+            false;
     final locked = !canEditTrialStructure(
       widget.trial,
       hasSessionData: hasSessionData,
@@ -1887,16 +1882,15 @@ class _TreatmentComponentsSheetState
 
   Future<void> _confirmDelete(
       BuildContext context, TreatmentComponent component) async {
-    final hasApps =
-        await _treatmentHasApplications(ref, widget.treatment.id);
+    final hasApps = await _treatmentHasApplications(ref, widget.treatment.id);
+    if (!context.mounted) return;
     if (hasApps) {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: AppDesignTokens.backgroundSurface,
           shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(AppDesignTokens.radiusLarge)),
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusLarge)),
           title: const Text('Remove Product',
               style: TextStyle(
                   fontWeight: FontWeight.w700,
