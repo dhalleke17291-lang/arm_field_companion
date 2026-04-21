@@ -84,7 +84,7 @@ class _ArmExportPreflightScreenState
           File(internalPath).existsSync()) {
         shellPath = internalPath;
       } else {
-        final pick = await FilePicker.platform.pickFiles(
+        final pick = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: const ['xlsx'],
           dialogTitle: 'Select Excel Rating Sheet for ${widget.trial.name}',

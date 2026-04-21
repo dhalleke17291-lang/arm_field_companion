@@ -25,7 +25,7 @@ class _ArmImportScreenState extends ConsumerState<ArmImportScreen> {
   ArmImportResult? _result;
 
   Future<void> _pickAndImport() async {
-    final pick = await FilePicker.platform.pickFiles(
+    final pick = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['csv'],
     );

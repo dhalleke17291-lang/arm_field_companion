@@ -221,7 +221,7 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> runRestoreFlow(BuildContext context, WidgetRef ref) async {
-  final pick = await FilePicker.platform.pickFiles(type: FileType.any);
+  final pick = await FilePicker.pickFiles(type: FileType.any);
   // Tested manually — cancel returns cleanly (no restore, no DB access).
   if (pick == null || pick.files.isEmpty) return;
   if (!context.mounted) return;

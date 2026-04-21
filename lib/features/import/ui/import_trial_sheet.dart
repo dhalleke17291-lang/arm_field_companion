@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' hide Column;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
@@ -67,14 +70,29 @@ class ImportTrialSheet extends ConsumerWidget {
                   'Import plots, treatments, and assessments from a Rating Shell file',
               onTap: () async {
                 Navigator.pop(context);
-                final pick = await FilePicker.platform.pickFiles(
+                final pick = await FilePicker.pickFiles(
                   type: FileType.custom,
                   allowedExtensions: const ['xlsx'],
                   dialogTitle: 'Select Rating Shell (.xlsx)',
+                  withData: true,
+                ).timeout(
+                  const Duration(seconds: 60),
+                  onTimeout: () => null,
                 );
                 if (pick == null || pick.files.isEmpty) return;
-                final path = pick.files.single.path;
-                if (path == null || path.isEmpty) return;
+                final pickedFile = pick.files.single;
+                // Write bytes to a temp file so the parser can read it.
+                final tempDir = await getTemporaryDirectory();
+                final tempPath =
+                    '${tempDir.path}/shell_import_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+                if (pickedFile.bytes != null) {
+                  await File(tempPath).writeAsBytes(pickedFile.bytes!);
+                } else if (pickedFile.path != null) {
+                  await File(pickedFile.path!).copy(tempPath);
+                } else {
+                  return;
+                }
+                final path = tempPath;
                 if (!parentContext.mounted) return;
 
                 // Show progress.
@@ -229,7 +247,7 @@ Future<void> _onLinkArmShellTap({
     }
   }
 
-  final pick = await FilePicker.platform.pickFiles(
+  final pick = await FilePicker.pickFiles(
     type: FileType.custom,
     allowedExtensions: const ['xlsx'],
     dialogTitle: 'Select Excel Rating Sheet',
