@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../core/database/app_database.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
@@ -95,11 +94,8 @@ class ImportArmRatingShellUseCase {
 
   Future<ShellImportResult> execute(String shellPath) async {
     try {
-      debugPrint('DIAG UC1: execute called, path=$shellPath');
       final parser = ArmShellParser(shellPath);
-      debugPrint('DIAG UC2: about to parse');
       final shell = await parser.parse();
-      debugPrint('DIAG UC3: parse done, plots=${shell.plotRows.length}, cols=${shell.assessmentColumns.length}');
 
       if (shell.plotRows.isEmpty) {
         return ShellImportResult.failure('No plot data found in the shell.');
@@ -169,8 +165,11 @@ class ImportArmRatingShellUseCase {
               'SHELL_${col.pestCode ?? col.ratingType ?? 'COL_$i'}'
                   .replaceAll(' ', '_')
                   .toUpperCase();
-          final name =
-              col.seDescription ?? col.ratingType ?? col.seName ?? 'Assessment ${i + 1}';
+          final rawName =
+              col.seDescription ?? col.ratingType ?? col.seName;
+          final name = (rawName != null && rawName.trim().isNotEmpty)
+              ? rawName.trim()
+              : 'Assessment ${i + 1}';
           final unit = col.ratingUnit;
 
           var defId = await _findDefinitionByCode(code);
@@ -241,7 +240,7 @@ class ImportArmRatingShellUseCase {
             shell.plotRows.map((p) => p.trtNumber).toSet().length,
         assessmentCount: shell.assessmentColumns.length,
       );
-    } catch (e) {
+    } catch (e, st) {
       return ShellImportResult.failure('Shell import failed: $e');
     }
   }
