@@ -161,13 +161,17 @@ class ImportArmRatingShellUseCase {
         for (var i = 0; i < shell.assessmentColumns.length; i++) {
           final col = shell.assessmentColumns[i];
 
-          final code = 'SHELL_${col.pestCode ?? col.ratingType ?? 'COL_$i'}'
-              .replaceAll(' ', '_')
-              .toUpperCase();
-          final rawName = col.seDescription ?? col.ratingType ?? col.seName;
-          final name = (rawName != null && rawName.trim().isNotEmpty)
-              ? rawName.trim()
-              : 'Assessment ${i + 1}';
+          final pestCode = _firstNonEmpty([col.pestCode, col.seName]);
+          final codeKey = _firstNonEmpty([pestCode, col.ratingType]) ?? 'COL_$i';
+          final code =
+              'SHELL_$codeKey'.replaceAll(' ', '_').toUpperCase();
+          final name = _firstNonEmpty([
+                col.seDescription,
+                col.ratingType,
+                col.seName,
+                pestCode,
+              ]) ??
+              'Assessment ${i + 1}';
           final unit = col.ratingUnit;
 
           var defId = await _findDefinitionByCode(code);
@@ -178,7 +182,7 @@ class ImportArmRatingShellUseCase {
                   category: 'custom',
                   unit: Value(unit),
                   timingCode: Value(col.ratingDate),
-                  eppoCode: Value(col.pestCode),
+                  eppoCode: Value(pestCode),
                   cropPart: Value(col.partRated),
                   appTimingCode: Value(col.appTimingCode),
                   trtEvalInterval: Value(col.trtEvalInterval),
@@ -197,9 +201,17 @@ class ImportArmRatingShellUseCase {
               selectedManually: const Value(false),
               defaultInSessions: const Value(true),
               sortOrder: Value(i),
-              pestCode: Value(col.pestCode ?? col.seName),
+              pestCode: Value(pestCode),
               armImportColumnIndex: Value(shellIdx),
               armColumnIdInteger: Value(col.armColumnIdInteger),
+              // Shell metadata drives AssessmentDisplayHelper.compactName /
+              // fullName so the rating screen can render rich labels
+              // (description + SE code) instead of "Assessment {id}".
+              seDescription: Value(_firstNonEmpty([col.seDescription])),
+              seName: Value(_firstNonEmpty([col.seName, col.pestCode])),
+              armRatingType: Value(_firstNonEmpty([col.ratingType])),
+              armShellColumnId: Value(_firstNonEmpty([col.armColumnId])),
+              armShellRatingDate: Value(_firstNonEmpty([col.ratingDate])),
             ),
           );
         }
@@ -250,4 +262,18 @@ class ImportArmRatingShellUseCase {
         .getSingleOrNull();
     return row?.id;
   }
+}
+
+/// Returns the first trimmed value in [values] that is non-null and non-empty.
+///
+/// `??` alone is unsafe for shell metadata because the XLSX parser can return
+/// an empty string (`<v></v>`) for a present-but-blank cell, which would
+/// short-circuit a `col.seDescription ?? col.ratingType ?? col.seName` chain
+/// at the blank before ever considering the next candidate.
+String? _firstNonEmpty(Iterable<String?> values) {
+  for (final v in values) {
+    final t = v?.trim();
+    if (t != null && t.isNotEmpty) return t;
+  }
+  return null;
 }
