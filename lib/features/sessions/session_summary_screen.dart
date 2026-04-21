@@ -626,40 +626,47 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     );
     if (share != true || !mounted) return;
 
-    final plots =
-        await ref.read(plotsForTrialProvider(widget.trial.id).future);
-    final assessments =
-        await ref.read(sessionAssessmentsProvider(widget.session.id).future);
-    final ratings =
-        await ref.read(sessionRatingsProvider(widget.session.id).future);
-    final treatments =
-        await ref.read(treatmentsForTrialProvider(widget.trial.id).future);
-    final assignments =
-        await ref.read(assignmentsForTrialProvider(widget.trial.id).future);
-    final timing = await ref
-        .read(sessionTimingContextProvider(widget.session.id).future);
-    final weatherRepo = ref.read(weatherSnapshotRepositoryProvider);
-    final weather = await weatherRepo.getWeatherSnapshotForParent(
-      kWeatherParentTypeRatingSession, widget.session.id);
-    final insights = await ref
-        .read(trialInsightsProvider(widget.trial.id).future)
-        .catchError((_) => <TrialInsight>[]);
+    try {
+      final plots =
+          await ref.read(plotsForTrialProvider(widget.trial.id).future);
+      final assessments =
+          await ref.read(sessionAssessmentsProvider(widget.session.id).future);
+      final ratings =
+          await ref.read(sessionRatingsProvider(widget.session.id).future);
+      final treatments =
+          await ref.read(treatmentsForTrialProvider(widget.trial.id).future);
+      final assignments =
+          await ref.read(assignmentsForTrialProvider(widget.trial.id).future);
+      final timing = await ref
+          .read(sessionTimingContextProvider(widget.session.id).future);
+      final weatherRepo = ref.read(weatherSnapshotRepositoryProvider);
+      final weather = await weatherRepo.getWeatherSnapshotForParent(
+        kWeatherParentTypeRatingSession, widget.session.id);
+      final insights = await ref
+          .read(trialInsightsProvider(widget.trial.id).future)
+          .catchError((_) => <TrialInsight>[]);
 
-    final text = composeSessionSummary(
-      trial: widget.trial,
-      session: widget.session,
-      plots: plots,
-      assessments: assessments,
-      ratings: ratings,
-      treatments: treatments,
-      assignments: assignments,
-      timing: timing,
-      weather: weather,
-      insights: insights,
-    );
+      final text = composeSessionSummary(
+        trial: widget.trial,
+        session: widget.session,
+        plots: plots,
+        assessments: assessments,
+        ratings: ratings,
+        treatments: treatments,
+        assignments: assignments,
+        timing: timing,
+        weather: weather,
+        insights: insights,
+      );
 
-    if (!mounted) return;
-    await Share.share(text, subject: '${widget.trial.name} — ${widget.session.name}');
+      if (!mounted) return;
+      await Share.share(text, subject: '${widget.trial.name} — ${widget.session.name}');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Share failed: $e')),
+      );
+    }
   }
 
   Future<void> _queueWeatherBackfillIfNeeded() async {
@@ -719,11 +726,15 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       final file = File('${dir.path}/grid_$sanitizedName.pdf');
       await file.writeAsBytes(bytes);
       if (!mounted) return;
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text:
-            '${widget.trial.name} — ${widget.session.name} grid export',
-      );
+      try {
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text:
+              '${widget.trial.name} — ${widget.session.name} grid export',
+        );
+      } catch (_) {
+        // Share sheet dismissed or unavailable — PDF file is still saved.
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

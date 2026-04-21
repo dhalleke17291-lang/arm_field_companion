@@ -121,10 +121,14 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
       await store.save(passphrase);
     }
     if (context.mounted) {
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/octet-stream')],
-        text: 'Agnexis encrypted backup',
-      );
+      try {
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/octet-stream')],
+          text: 'Agnexis encrypted backup',
+        );
+      } catch (_) {
+        // Share sheet dismissed or unavailable — backup file is still saved.
+      }
       await BackupReminderStore(prefs).recordBackupCompleted();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
