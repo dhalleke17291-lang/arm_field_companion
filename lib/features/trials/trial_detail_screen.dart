@@ -550,9 +550,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
-                style: TextStyle(color: scheme.onError),
-              ),
+              'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
+              style: TextStyle(color: scheme.onError),
+            ),
             backgroundColor: scheme.error,
           ),
         );
@@ -1464,6 +1464,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         _PinnedTrialStatusBar(
           trial: currentTrial,
           onTransitionStatus: _transitionTrialStatus,
+          onOpenSessions: () => setState(() {
+            _previousTabIndex = _selectedTabIndex;
+            _selectedTabIndex = _sessionsIndex;
+          }),
         ),
         SizedBox(
           height: 110,
@@ -1567,8 +1571,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       if (!context.mounted) return;
 
       // Run completeness check before closing.
-      final report = await ref
-          .read(trialReadinessProvider(widget.trial.id).future);
+      final report =
+          await ref.read(trialReadinessProvider(widget.trial.id).future);
       if (!context.mounted) return;
 
       // Blockers prevent close.
@@ -1592,8 +1596,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   Navigator.push<void>(
                     context,
                     MaterialPageRoute<void>(
-                      builder: (_) => CompletenessDashboardScreen(
-                          trial: widget.trial),
+                      builder: (_) =>
+                          CompletenessDashboardScreen(trial: widget.trial),
                     ),
                   );
                 },
@@ -1963,11 +1967,13 @@ class _PinnedTrialStatusBar extends ConsumerStatefulWidget {
   const _PinnedTrialStatusBar({
     required this.trial,
     required this.onTransitionStatus,
+    required this.onOpenSessions,
   });
 
   final Trial trial;
   final Future<void> Function(
       BuildContext context, WidgetRef ref, String newStatus) onTransitionStatus;
+  final VoidCallback onOpenSessions;
 
   @override
   ConsumerState<_PinnedTrialStatusBar> createState() =>
@@ -2070,14 +2076,14 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
             ),
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               padding: EdgeInsets.symmetric(
-                horizontal: isDisplayActive ? 10 : 12,
-                vertical: 4,
+                horizontal: isDisplayActive ? 8 : 10,
+                vertical: 3,
               ),
               decoration: BoxDecoration(
                 color: pill.bg,
@@ -2099,18 +2105,18 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: AppDesignTokens.openSessionBg,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 5),
                         Text(
                           labelForTrialStatus(statusForDisplay),
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: pill.fg,
                           ),
@@ -2120,14 +2126,16 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                   : Text(
                       labelForTrialStatus(statusForDisplay),
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: pill.fg,
                       ),
                     ),
             ),
             const Spacer(),
-            if (buttonLabel != null && nextStatus != null)
+            _SessionStatusBarPill(onTap: widget.onOpenSessions),
+            if (buttonLabel != null && nextStatus != null) ...[
+              const SizedBox(width: 8),
               FilledButton(
                 onPressed: () =>
                     widget.onTransitionStatus(context, ref, nextStatus),
@@ -2137,25 +2145,74 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                   elevation: 0,
                   shadowColor: Colors.transparent,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
-                  minimumSize: const Size(0, 32),
+                  minimumSize: const Size(0, 28),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
                 child: Text(
                   buttonLabel,
                   style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
               ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact "Session" pill inside [_PinnedTrialStatusBar]. Opens the trial's
+/// Sessions tab (same screen reachable via the module dock), styled to match
+/// the other pills in the status bar for a cohesive, elegant row.
+class _SessionStatusBarPill extends StatelessWidget {
+  const _SessionStatusBarPill({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppDesignTokens.openSessionBgLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+        side: BorderSide(
+          color: AppDesignTokens.primaryGreen.withValues(alpha: 0.35),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.playlist_play_rounded,
+                size: 15,
+                color: AppDesignTokens.primaryGreen,
+              ),
+              SizedBox(width: 4),
+              Text(
+                'Session',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesignTokens.primaryGreen,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2550,103 +2607,103 @@ class _InsightRowState extends State<_InsightRow> {
           padding: EdgeInsets.only(
               left: insight.severity != InsightSeverity.info ? 8 : 0),
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    insight.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppDesignTokens.primaryText,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: confidenceColor.withValues(alpha: 0.1),
-                    borderRadius:
-                        BorderRadius.circular(AppDesignTokens.radiusChip),
-                  ),
-                  child: Text(
-                    insight.basis.confidenceLabel,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: confidenceColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 3),
-            Text(
-              insight.detail,
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.35,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-            if (_expanded) ...[
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppDesignTokens.sectionHeaderBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      insight.basis.basisSummary,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      insight.title,
                       style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                         color: AppDesignTokens.primaryText,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Method: ${insight.basis.method}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppDesignTokens.secondaryText,
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: confidenceColor.withValues(alpha: 0.1),
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusChip),
+                    ),
+                    child: Text(
+                      insight.basis.confidenceLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: confidenceColor,
                       ),
                     ),
-                    if (insight.basis.threshold != null) ...[
-                      const SizedBox(height: 1),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Text(
+                insight.detail,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              if (_expanded) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.sectionHeaderBg,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        insight.basis.threshold!,
+                        insight.basis.basisSummary,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Method: ${insight.basis.method}',
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppDesignTokens.secondaryText,
                         ),
                       ),
+                      if (insight.basis.threshold != null) ...[
+                        const SizedBox(height: 1),
+                        Text(
+                          insight.basis.threshold!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ),
-            ] else
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  'Tap for method',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color:
-                        AppDesignTokens.secondaryText.withValues(alpha: 0.6),
                   ),
                 ),
-              ),
-          ],
-        ),
+              ] else
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    'Tap for method',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color:
+                          AppDesignTokens.secondaryText.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -2701,10 +2758,12 @@ class _TrialStatusStrip extends ConsumerWidget {
         final String statusLabel;
         if (report.blockerCount > 0) {
           statusColor = const Color(0xFFCC3333);
-          statusLabel = '${report.blockerCount} blocker${report.blockerCount == 1 ? '' : 's'}';
+          statusLabel =
+              '${report.blockerCount} blocker${report.blockerCount == 1 ? '' : 's'}';
         } else if (report.warningCount > 0) {
           statusColor = AppDesignTokens.warningFg;
-          statusLabel = '${report.warningCount} advisor${report.warningCount == 1 ? 'y' : 'ies'}';
+          statusLabel =
+              '${report.warningCount} advisor${report.warningCount == 1 ? 'y' : 'ies'}';
         } else {
           statusColor = AppDesignTokens.successFg;
           statusLabel = 'Ready';
@@ -2743,8 +2802,8 @@ class _TrialStatusStrip extends ConsumerWidget {
                   '${appliedApps.length} app${appliedApps.length == 1 ? '' : 's'}',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppDesignTokens.secondaryText
-                        .withValues(alpha: 0.75),
+                    color:
+                        AppDesignTokens.secondaryText.withValues(alpha: 0.75),
                   ),
                 ),
               if (daysSince != null) ...[
@@ -2755,8 +2814,8 @@ class _TrialStatusStrip extends ConsumerWidget {
                       : '$daysSince day${daysSince == 1 ? '' : 's'} ago',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppDesignTokens.secondaryText
-                        .withValues(alpha: 0.75),
+                    color:
+                        AppDesignTokens.secondaryText.withValues(alpha: 0.75),
                   ),
                 ),
               ],
@@ -2824,8 +2883,7 @@ class _OverviewTabBody extends ConsumerWidget {
                 Navigator.push<void>(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (_) =>
-                        CompletenessDashboardScreen(trial: trial),
+                    builder: (_) => CompletenessDashboardScreen(trial: trial),
                   ),
                 );
               },
@@ -2856,7 +2914,9 @@ class _AutoBackupStatusLine extends ConsumerWidget {
         child: Row(
           children: [
             Icon(
-              status.enabled ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+              status.enabled
+                  ? Icons.cloud_done_outlined
+                  : Icons.cloud_off_outlined,
               size: 14,
               color: status.enabled
                   ? AppDesignTokens.successFg
@@ -3461,8 +3521,8 @@ class SessionsView extends ConsumerWidget {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) =>
-                          SessionSummaryScreen(trial: trial, session: session)));
+                      builder: (_) => SessionSummaryScreen(
+                          trial: trial, session: session)));
             }
           },
           onLongPress:
