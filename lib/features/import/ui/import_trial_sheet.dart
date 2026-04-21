@@ -85,11 +85,15 @@ class ImportTrialSheet extends ConsumerWidget {
                 final tempDir = await getTemporaryDirectory();
                 final tempPath =
                     '${tempDir.path}/shell_import_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+                debugPrint('DIAG PICK: bytes=${pickedFile.bytes?.length}, path=${pickedFile.path}');
                 if (pickedFile.bytes != null) {
                   await File(tempPath).writeAsBytes(pickedFile.bytes!);
+                  debugPrint('DIAG PICK: wrote ${pickedFile.bytes!.length} bytes to $tempPath');
                 } else if (pickedFile.path != null) {
                   await File(pickedFile.path!).copy(tempPath);
+                  debugPrint('DIAG PICK: copied from ${pickedFile.path} to $tempPath');
                 } else {
+                  debugPrint('DIAG PICK: no bytes and no path, returning');
                   return;
                 }
                 final path = tempPath;
@@ -113,8 +117,10 @@ class ImportTrialSheet extends ConsumerWidget {
                   ),
                 );
 
+                debugPrint('DIAG UI: about to call execute, path=$path');
                 final uc = ref.read(importArmRatingShellUseCaseProvider);
                 final result = await uc.execute(path);
+                debugPrint('DIAG UI: execute returned, success=${result.success}');
 
                 if (!parentContext.mounted) return;
                 Navigator.of(parentContext, rootNavigator: true).pop();
