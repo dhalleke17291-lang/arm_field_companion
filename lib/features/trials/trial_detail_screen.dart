@@ -2132,8 +2132,6 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                       ),
                     ),
             ),
-            const Spacer(),
-            _SessionStatusBarPill(onTap: widget.onOpenSessions),
             if (buttonLabel != null && nextStatus != null) ...[
               const SizedBox(width: 8),
               FilledButton(
@@ -2164,6 +2162,8 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                 ),
               ),
             ],
+            const Spacer(),
+            _SessionStatusBarPill(onTap: widget.onOpenSessions),
           ],
         ),
       ),
