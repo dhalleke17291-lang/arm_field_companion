@@ -2058,10 +2058,13 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                         ? 'Archive'
                         : null;
     final isDisplayActive = statusForDisplay == kTrialStatusActive;
+    // Tone Active down: keep the green dot as the sole bright signal,
+    // but render the surrounding pill in a muted tint with neutral dark text
+    // so the whole status bar reads as calm chrome, not a banner.
     final pill = isDisplayActive
         ? (
-            bg: AppDesignTokens.openSessionBgLight,
-            fg: AppDesignTokens.primaryGreen,
+            bg: AppDesignTokens.openSessionBgLight.withValues(alpha: 0.55),
+            fg: AppDesignTokens.primaryText,
           )
         : _trialStatusChromePillColors(statusForDisplay);
     return Material(
@@ -2088,17 +2091,11 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
               decoration: BoxDecoration(
                 color: pill.bg,
                 borderRadius: BorderRadius.circular(999),
-                border: isDisplayActive
-                    ? Border.all(
-                        color: AppDesignTokens.primaryGreen
-                            .withValues(alpha: 0.35),
-                      )
-                    : (statusForDisplay == kTrialStatusDraft ||
-                            statusForDisplay == kTrialStatusReady)
-                        ? Border.all(
-                            color: AppDesignTokens.borderCrisp,
-                          )
-                        : null,
+                border: isDisplayActive ||
+                        statusForDisplay == kTrialStatusDraft ||
+                        statusForDisplay == kTrialStatusReady
+                    ? Border.all(color: AppDesignTokens.borderCrisp)
+                    : null,
               ),
               child: isDisplayActive
                   ? Row(
@@ -2133,15 +2130,16 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                     ),
             ),
             if (buttonLabel != null && nextStatus != null) ...[
-              const SizedBox(width: 8),
-              FilledButton(
+              const SizedBox(width: 6),
+              OutlinedButton(
                 onPressed: () =>
                     widget.onTransitionStatus(context, ref, nextStatus),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppDesignTokens.primaryGreen,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppDesignTokens.primaryText,
+                  backgroundColor: Colors.transparent,
+                  side: const BorderSide(
+                    color: AppDesignTokens.borderCrisp,
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 4,
@@ -2156,14 +2154,14 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                   buttonLabel,
                   style: const TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
                   ),
                 ),
               ),
             ],
             const Spacer(),
-            _SessionStatusBarPill(onTap: widget.onOpenSessions),
+            _SessionsStatusBarButton(onTap: widget.onOpenSessions),
           ],
         ),
       ),
@@ -2171,45 +2169,45 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
   }
 }
 
-/// Compact "Session" pill inside [_PinnedTrialStatusBar]. Opens the trial's
-/// Sessions tab (same screen reachable via the module dock), styled to match
-/// the other pills in the status bar for a cohesive, elegant row.
-class _SessionStatusBarPill extends StatelessWidget {
-  const _SessionStatusBarPill({required this.onTap});
+/// Compact, neutral "Sessions" shortcut inside [_PinnedTrialStatusBar].
+/// Opens the trial's Sessions tab (same screen reachable via the module
+/// dock). Deliberately different in shape and color from the status pill
+/// and lifecycle CTA so it reads as a separate navigation affordance:
+/// white card surface, rectangular 8pt corners, neutral border and text,
+/// trailing chevron.
+class _SessionsStatusBarButton extends StatelessWidget {
+  const _SessionsStatusBarButton({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppDesignTokens.openSessionBgLight,
+      color: AppDesignTokens.cardSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(999),
-        side: BorderSide(
-          color: AppDesignTokens.primaryGreen.withValues(alpha: 0.35),
-        ),
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: AppDesignTokens.borderCrisp),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: EdgeInsets.fromLTRB(10, 4, 6, 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.playlist_play_rounded,
-                size: 15,
-                color: AppDesignTokens.primaryGreen,
-              ),
-              SizedBox(width: 4),
               Text(
-                'Session',
+                'Sessions',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppDesignTokens.primaryGreen,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText,
                 ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: AppDesignTokens.secondaryText,
               ),
             ],
           ),
