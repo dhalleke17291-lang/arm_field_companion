@@ -9,6 +9,7 @@ import '../../core/connectivity/weather_api_service.dart';
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
+import '../../core/units/unit_switch_mixin.dart';
 import '../../data/repositories/weather_snapshot_repository.dart';
 import 'weather_capture_validation.dart';
 import 'weather_field_values.dart';
@@ -53,7 +54,8 @@ class WeatherCaptureForm extends ConsumerStatefulWidget {
   ConsumerState<WeatherCaptureForm> createState() => _WeatherCaptureFormState();
 }
 
-class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
+class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
+    with UnitSwitchMixin<WeatherCaptureForm> {
   late final TextEditingController _tempCtrl;
   late final TextEditingController _humidityCtrl;
   late final TextEditingController _windCtrl;
@@ -171,6 +173,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
       setState(() => _weatherSource = 'manual');
     }
   }
+
 
   @override
   void didChangeDependencies() {
@@ -497,13 +500,23 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
                       _unitChip(
                         label: '°C',
                         selected: _tempUnit == 'C',
-                        onTap: () => setState(() => _tempUnit = 'C'),
+                        onTap: () => switchUnit(
+                          controller: _tempCtrl,
+                          currentUnit: _tempUnit,
+                          newUnit: 'C',
+                          applyUnit: (u) => _tempUnit = u ?? 'C',
+                        ),
                       ),
                       const SizedBox(width: 6),
                       _unitChip(
                         label: '°F',
                         selected: _tempUnit == 'F',
-                        onTap: () => setState(() => _tempUnit = 'F'),
+                        onTap: () => switchUnit(
+                          controller: _tempCtrl,
+                          currentUnit: _tempUnit,
+                          newUnit: 'F',
+                          applyUnit: (u) => _tempUnit = u ?? 'F',
+                        ),
                       ),
                     ],
                   ),
@@ -564,13 +577,23 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm> {
                       _unitChip(
                         label: 'km/h',
                         selected: _windUnit == 'km/h',
-                        onTap: () => setState(() => _windUnit = 'km/h'),
+                        onTap: () => switchUnit(
+                          controller: _windCtrl,
+                          currentUnit: _windUnit,
+                          newUnit: 'km/h',
+                          applyUnit: (u) => _windUnit = u ?? 'km/h',
+                        ),
                       ),
                       const SizedBox(width: 6),
                       _unitChip(
                         label: 'mph',
                         selected: _windUnit == 'mph',
-                        onTap: () => setState(() => _windUnit = 'mph'),
+                        onTap: () => switchUnit(
+                          controller: _windCtrl,
+                          currentUnit: _windUnit,
+                          newUnit: 'mph',
+                          applyUnit: (u) => _windUnit = u ?? 'mph',
+                        ),
                       ),
                     ],
                   ),

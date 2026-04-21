@@ -13,6 +13,7 @@ import '../../../core/plot_display.dart';
 import '../../../core/application_event_numeric_rules.dart';
 import '../../../core/field_operation_date_rules.dart';
 import '../../../core/providers.dart';
+import '../../../core/units/unit_switch_mixin.dart';
 import '../../../data/repositories/application_product_repository.dart';
 
 /// Five-section add/edit application bottom sheet content.
@@ -56,7 +57,8 @@ class ApplicationSheetContent extends ConsumerStatefulWidget {
 }
 
 class _ApplicationSheetContentState
-    extends ConsumerState<ApplicationSheetContent> {
+    extends ConsumerState<ApplicationSheetContent>
+    with UnitSwitchMixin<ApplicationSheetContent> {
   late DateTime _date;
   late String? _timeStr;
   late int? _treatmentId;
@@ -118,6 +120,7 @@ class _ApplicationSheetContentState
     final t = s.trim();
     return t.isEmpty ? null : double.tryParse(t);
   }
+
 
   @override
   void initState() {
@@ -1161,14 +1164,16 @@ class _ApplicationSheetContentState
                                 ))
                             .toList(),
                         onChanged: (v) {
-                          if (v != null) {
-                            setState(() {
-                              while (_rateUnits.length <= i) {
-                                _rateUnits.add(widget.rateUnits.first);
-                              }
-                              _rateUnits[i] = v;
-                            });
+                          if (v == null) return;
+                          while (_rateUnits.length <= i) {
+                            _rateUnits.add(widget.rateUnits.first);
                           }
+                          switchUnit(
+                            controller: _rateControllers[i],
+                            currentUnit: _rateUnits[i],
+                            newUnit: v,
+                            applyUnit: (u) => _rateUnits[i] = u ?? v,
+                          );
                         },
                       ),
                     ),
@@ -1248,7 +1253,12 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => setState(() => _pressureUnit = v),
+                      onChanged: (v) => switchUnit(
+                        controller: _operatingPressureController,
+                        currentUnit: _pressureUnit,
+                        newUnit: v,
+                        applyUnit: (u) => _pressureUnit = u,
+                      ),
                     ),
                   ),
                 ),
@@ -1276,7 +1286,12 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => setState(() => _speedUnit = v),
+                      onChanged: (v) => switchUnit(
+                        controller: _groundSpeedController,
+                        currentUnit: _speedUnit,
+                        newUnit: v,
+                        applyUnit: (u) => _speedUnit = u,
+                      ),
                     ),
                   ),
                 ),
@@ -1339,7 +1354,12 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => setState(() => _waterVolumeUnit = v),
+                      onChanged: (v) => switchUnit(
+                        controller: _waterVolumeController,
+                        currentUnit: _waterVolumeUnit,
+                        newUnit: v,
+                        applyUnit: (u) => _waterVolumeUnit = u,
+                      ),
                     ),
                   ),
                 ),
@@ -1376,7 +1396,12 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => setState(() => _adjuvantRateUnit = v),
+                      onChanged: (v) => switchUnit(
+                        controller: _adjuvantRateController,
+                        currentUnit: _adjuvantRateUnit,
+                        newUnit: v,
+                        applyUnit: (u) => _adjuvantRateUnit = u,
+                      ),
                     ),
                   ),
                 ),
@@ -1415,7 +1440,12 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => setState(() => _treatedAreaUnit = v),
+                      onChanged: (v) => switchUnit(
+                        controller: _treatedAreaController,
+                        currentUnit: _treatedAreaUnit,
+                        newUnit: v,
+                        applyUnit: (u) => _treatedAreaUnit = u,
+                      ),
                     ),
                   ),
                 ),
@@ -1474,7 +1504,15 @@ class _ApplicationSheetContentState
                                 child: Text(u,
                                     style: const TextStyle(fontSize: 13))))
                             .toList(),
-                        onChanged: (v) => setState(() => _temperatureUnit = v!),
+                        onChanged: (v) {
+                          if (v == null) return;
+                          switchUnit(
+                            controller: _temperatureController,
+                            currentUnit: _temperatureUnit,
+                            newUnit: v,
+                            applyUnit: (u) => _temperatureUnit = u ?? v,
+                          );
+                        },
                         icon: const Icon(Icons.arrow_drop_down, size: 18),
                         padding: const EdgeInsets.only(right: 8),
                       ),
@@ -1600,8 +1638,15 @@ class _ApplicationSheetContentState
                                     child: Text(u,
                                         style: const TextStyle(fontSize: 13))))
                                 .toList(),
-                            onChanged: (v) =>
-                                setState(() => _soilTempUnit = v!),
+                            onChanged: (v) {
+                              if (v == null) return;
+                              switchUnit(
+                                controller: _soilTempController,
+                                currentUnit: _soilTempUnit,
+                                newUnit: v,
+                                applyUnit: (u) => _soilTempUnit = u ?? v,
+                              );
+                            },
                             icon: const Icon(Icons.arrow_drop_down, size: 18),
                             padding: const EdgeInsets.only(right: 8),
                           ),
@@ -1659,8 +1704,15 @@ class _ApplicationSheetContentState
                                     child: Text(u,
                                         style: const TextStyle(fontSize: 13))))
                                 .toList(),
-                            onChanged: (v) =>
-                                setState(() => _soilDepthUnit = v!),
+                            onChanged: (v) {
+                              if (v == null) return;
+                              switchUnit(
+                                controller: _soilDepthController,
+                                currentUnit: _soilDepthUnit,
+                                newUnit: v,
+                                applyUnit: (u) => _soilDepthUnit = u ?? v,
+                              );
+                            },
                             icon: const Icon(Icons.arrow_drop_down, size: 18),
                             padding: const EdgeInsets.only(right: 8),
                           ),

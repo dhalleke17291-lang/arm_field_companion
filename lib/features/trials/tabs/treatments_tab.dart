@@ -7,6 +7,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../core/trial_state.dart';
+import '../../../core/units/unit_switch_mixin.dart';
 import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
@@ -893,7 +894,8 @@ class _AddComponentBottomSheet extends StatefulWidget {
       _AddComponentBottomSheetState();
 }
 
-class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
+class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
+    with UnitSwitchMixin<_AddComponentBottomSheet> {
   bool _isSaving = false;
   final _productController = TextEditingController();
   final _rateController = TextEditingController();
@@ -1050,8 +1052,13 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                           .map(
                               (u) => DropdownMenuItem(value: u, child: Text(u)))
                           .toList(),
-                      onChanged: (v) => setState(
-                          () => _rateUnit = v ?? _componentRateUnits.first),
+                      onChanged: (v) => switchUnit(
+                        controller: _rateController,
+                        currentUnit: _rateUnit,
+                        newUnit: v ?? _componentRateUnits.first,
+                        applyUnit: (u) =>
+                            _rateUnit = u ?? _componentRateUnits.first,
+                      ),
                     ),
                   ),
                 ],
@@ -1122,8 +1129,13 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                                 value: 'g/kg', child: Text('g/kg')),
                             DropdownMenuItem(value: '%', child: Text('%')),
                           ],
-                          onChanged: (v) =>
-                              setState(() => _aiConcentrationUnit = v ?? 'g/L'),
+                          onChanged: (v) => switchUnit(
+                            controller: _aiConcentrationController,
+                            currentUnit: _aiConcentrationUnit,
+                            newUnit: v ?? 'g/L',
+                            applyUnit: (u) =>
+                                _aiConcentrationUnit = u ?? 'g/L',
+                          ),
                         ),
                       ),
                     ],
@@ -1161,8 +1173,13 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet> {
                             DropdownMenuItem(
                                 value: 'kg/ha', child: Text('kg/ha')),
                           ],
-                          onChanged: (v) =>
-                              setState(() => _labelRateUnit = v ?? 'g ai/ha'),
+                          onChanged: (v) => switchUnit(
+                            controller: _labelRateController,
+                            currentUnit: _labelRateUnit,
+                            newUnit: v ?? 'g ai/ha',
+                            applyUnit: (u) =>
+                                _labelRateUnit = u ?? 'g ai/ha',
+                          ),
                         ),
                       ),
                     ],
