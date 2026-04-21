@@ -90,6 +90,8 @@ class ImportArmRatingShellUseCase {
       late int trialId;
 
       await _db.transaction(() async {
+        // 1. Create trial in draft state, NOT yet ARM-linked.
+        //    The protocol guard allows structure edits on non-ARM draft trials.
         trialId = await _trialRepository.createTrial(
           name: trialName,
           workspaceType: 'efficacy',
@@ -97,14 +99,8 @@ class ImportArmRatingShellUseCase {
           location: shell.cooperator,
         );
 
-        // Mark as ARM-linked.
-        await (_db.update(_db.trials)
-              ..where((t) => t.id.equals(trialId)))
-            .write(TrialsCompanion(
-          isArmLinked: const Value(true),
-          armImportedAt: Value(DateTime.now().toUtc()),
-          armSourceFile: Value(shell.shellFilePath),
-        ));
+        // 2. Insert structure (treatments, plots, assessments).
+        //    Guard passes because isArmLinked is still false.
 
         // --- Treatments ---
         // Derive unique treatments from plot rows.
@@ -196,6 +192,15 @@ class ImportArmRatingShellUseCase {
             armColumnIdInteger: col.armColumnIdInteger,
           );
         }
+
+        // 3. Mark ARM-linked only after structure exists (protocol guard allows
+        //    inserts while isArmLinked is false).
+        await (_db.update(_db.trials)..where((t) => t.id.equals(trialId)))
+            .write(TrialsCompanion(
+          isArmLinked: const Value(true),
+          armImportedAt: Value(DateTime.now().toUtc()),
+          armSourceFile: Value(shell.shellFilePath),
+        ));
       });
 
       // Store shell internally (outside transaction — file I/O).
