@@ -2121,16 +2121,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final diffStr = '$sign${diff.toStringAsFixed(1)}';
     final color =
         diff > 0 ? AppDesignTokens.successFg : AppDesignTokens.missedColor;
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Text(
-        '$diffStr from previous plot',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
+    return Text(
+      '$diffStr from previous plot',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: color,
       ),
     );
   }
@@ -2156,23 +2153,51 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final lastStr = last == last.roundToDouble()
         ? last.toInt().toString()
         : last.toStringAsFixed(1);
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, top: 4),
-      child: ActionChip(
-        avatar: const Icon(Icons.content_copy, size: 14),
-        label: Text('= $lastStr', style: const TextStyle(fontSize: 12)),
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.zero,
-        labelPadding: const EdgeInsets.only(left: 2, right: 6),
-        onPressed: () {
-          setState(() {
-            _valueController.text = lastStr;
-            _selectedStatus = 'RECORDED';
-            _numericValueUserEditedThisVisit = true;
-            _carryForwardBaselineNumeric = last;
-            _userHasInteracted = true;
-          });
-        },
+    return Tooltip(
+      message: 'Use previous plot value ($lastStr)',
+      child: Material(
+        color: AppDesignTokens.primary.withValues(alpha: 0.12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
+          side: BorderSide(
+            color: AppDesignTokens.primary.withValues(alpha: 0.35),
+            width: 0.5,
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: () {
+            setState(() {
+              _valueController.text = lastStr;
+              _selectedStatus = 'RECORDED';
+              _numericValueUserEditedThisVisit = true;
+              _carryForwardBaselineNumeric = last;
+              _userHasInteracted = true;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.content_copy,
+                  size: 12,
+                  color: AppDesignTokens.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '= $lastStr',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2807,58 +2832,67 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     ),
                   ] else if (_hasScaleDefined) ...[
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: AppDesignTokens.primary.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: _numericEntryBorderColor(),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            _valueController.text.trim().isEmpty
-                                ? '${_effectiveMin.round()}'
-                                : _valueController.text,
-                            style: const TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.w800,
-                              color: AppDesignTokens.primaryText,
+                    Stack(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color:
+                                AppDesignTokens.primary.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: _numericEntryBorderColor(),
+                              width: 1,
                             ),
                           ),
-                          if (_currentAssessment.unit != null) ...[
-                            const SizedBox(width: 4),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: Text(
-                                _currentAssessment.unit!,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                _valueController.text.trim().isEmpty
+                                    ? '${_effectiveMin.round()}'
+                                    : _valueController.text,
+                                style: const TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppDesignTokens.primaryText,
                                 ),
                               ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(child: _buildCarryForwardDiff()),
-                        _buildSameAsLastChip(),
+                              if (_currentAssessment.unit != null) ...[
+                                const SizedBox(width: 4),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Text(
+                                    _currentAssessment.unit!,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: _buildSameAsLastChip(),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    // Reserved-height slot for the carry-forward delta so
+                    // toggling the hint doesn't shift the layout below.
+                    SizedBox(
+                      height: 20,
+                      child: Center(child: _buildCarryForwardDiff()),
+                    ),
+                    const SizedBox(height: 2),
                     _buildQuickButtons(),
                     if (_clampAdjustMessage != null)
                       Padding(
