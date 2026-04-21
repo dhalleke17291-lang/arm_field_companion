@@ -2183,49 +2183,151 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
   }
 }
 
-/// Compact `Active` ↔ `Close` toggle that replaces the status pill plus
-/// the lifecycle CTA when the trial is currently Active and the next
-/// allowed transition is Closed. The ON state reads as "Active"; flipping
-/// OFF hands off to the existing close-trial flow (which surfaces its own
-/// confirmation / blocker dialogs).
-class _ActiveCloseToggle extends StatelessWidget {
+/// Segmented slide toggle that collapses the `Active` status pill and
+/// the `Close Trial` CTA into one control. The highlighted thumb sits
+/// over `Active` while the trial is live; tapping the `Close Trial`
+/// side (or sliding the thumb across) hands off to the existing close
+/// flow, which surfaces its own confirmation / blocker dialogs.
+class _ActiveCloseToggle extends StatefulWidget {
   const _ActiveCloseToggle({required this.onClose});
 
   final VoidCallback onClose;
 
   @override
+  State<_ActiveCloseToggle> createState() => _ActiveCloseToggleState();
+}
+
+class _ActiveCloseToggleState extends State<_ActiveCloseToggle> {
+  static const double _segmentWidth = 74;
+  static const double _height = 26;
+  static const double _padding = 2;
+
+  double _dragDx = 0;
+  bool _dragging = false;
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _dragging = true;
+      _dragDx = (_dragDx + details.delta.dx).clamp(0, _segmentWidth);
+    });
+  }
+
+  void _handleDragEnd(DragEndDetails _) {
+    // Past the halfway point → commit the close flow.
+    if (_dragDx > _segmentWidth * 0.5) {
+      widget.onClose();
+    }
+    setState(() {
+      _dragDx = 0;
+      _dragging = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Transform.scale(
-          scale: 0.75,
-          alignment: Alignment.centerLeft,
-          child: Switch(
-            value: true,
-            onChanged: (v) {
-              if (!v) onClose();
-            },
-            activeThumbColor: Colors.white,
-            activeTrackColor: AppDesignTokens.openSessionBg,
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: AppDesignTokens.borderCrisp,
-            trackOutlineColor: WidgetStateProperty.resolveWith(
-              (_) => Colors.transparent,
+    // Thumb position: follows drag while dragging, otherwise parked left.
+    final thumbLeft = _padding + _dragDx;
+
+    return SizedBox(
+      height: _height,
+      child: Stack(
+        children: [
+          // Track
+          Container(
+            width: _segmentWidth * 2 + _padding * 2,
+            height: _height,
+            decoration: BoxDecoration(
+              color: AppDesignTokens.cardSurface,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AppDesignTokens.borderCrisp),
             ),
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-        ),
-        const SizedBox(width: 4),
-        const Text(
-          'Active',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppDesignTokens.primaryText,
+          // Sliding thumb under the "Active" label (transparent when dragged
+          // past halfway so the destructive red on the right becomes legible).
+          AnimatedPositioned(
+            duration:
+                _dragging ? Duration.zero : const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            left: thumbLeft,
+            top: _padding,
+            bottom: _padding,
+            width: _segmentWidth,
+            child: Container(
+              decoration: BoxDecoration(
+                color: _dragDx > _segmentWidth * 0.5
+                    ? AppDesignTokens.missedColor.withValues(alpha: 0.16)
+                    : AppDesignTokens.openSessionBgLight,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: _dragDx > _segmentWidth * 0.5
+                      ? AppDesignTokens.missedColor.withValues(alpha: 0.55)
+                      : AppDesignTokens.openSessionBg.withValues(alpha: 0.55),
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
+          // Drag layer sits above the thumb but below the labels/tap
+          // targets — horizontal drags are owned here, vertical gestures
+          // and taps fall through to the InkWell below.
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragUpdate: _handleDragUpdate,
+              onHorizontalDragEnd: _handleDragEnd,
+              onHorizontalDragCancel: () {
+                setState(() {
+                  _dragDx = 0;
+                  _dragging = false;
+                });
+              },
+            ),
+          ),
+          // Labels + tap targets. Tapping "Close Trial" runs the close
+          // flow directly; sliding the thumb does the same past halfway.
+          Row(
+            children: [
+              const SizedBox(
+                width: _segmentWidth + _padding,
+                height: _height,
+                child: IgnorePointer(
+                  child: Center(
+                    child: Text(
+                      'Active',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: _segmentWidth + _padding,
+                height: _height,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: widget.onClose,
+                    child: Center(
+                      child: Text(
+                        'Close Trial',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppDesignTokens.missedColor
+                              .withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
