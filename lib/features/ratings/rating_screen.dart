@@ -1935,16 +1935,21 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   String _ratingAssessmentDisplayLabel(Assessment assessment,
       Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
+    final bridgeName = _assessmentPillLabel(assessment);
     final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
-    if (ta != null) return AssessmentDisplayHelper.compactName(ta);
-    return _assessmentPillLabel(assessment);
+    if (ta == null) return bridgeName;
+    // Pass the legacy bridge name as the fallback so shell-less assessments
+    // show their definition name (e.g. "Weed Control") instead of the generic
+    // "Assessment {id}" default.
+    return AssessmentDisplayHelper.compactName(ta, fallback: bridgeName);
   }
 
   String _ratingAssessmentChipLabel(Assessment assessment,
       Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
+    final bridgeName = _assessmentPillLabel(assessment);
     final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
-    if (ta != null) return AssessmentDisplayHelper.compactName(ta);
-    return _assessmentPillLabel(assessment);
+    if (ta == null) return bridgeName;
+    return AssessmentDisplayHelper.compactName(ta, fallback: bridgeName);
   }
 
   Widget _buildAssessmentSelector(

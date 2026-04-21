@@ -19,11 +19,22 @@ class AssessmentDisplayHelper {
 
   /// Researcher-facing line for chips, pills, list tiles.
   ///
+  /// - User rename (`displayNameOverride`) always wins when present.
   /// - Description + SE code: `% weed control (W003)`
   /// - Description only: `% weed control`
   /// - SE code only: `W003`
-  /// - Else: [pestCode] → [def.name] → `"Assessment {id}"` ([armRatingType] is never used here).
-  static String compactName(TrialAssessment ta, {AssessmentDefinition? def}) {
+  /// - Else: [pestCode] → [def.name] → [fallback] → `"Assessment {id}"`
+  ///   ([armRatingType] is never used here.)
+  static String compactName(
+    TrialAssessment ta, {
+    AssessmentDefinition? def,
+    String? fallback,
+  }) {
+    final override = _nonEmpty(ta.displayNameOverride);
+    if (override != null) {
+      return _cleanEmptyParens(override);
+    }
+
     final d = _nonEmpty(ta.seDescription);
     final sn = _nonEmpty(ta.seName);
 
@@ -35,17 +46,27 @@ class AssessmentDisplayHelper {
     } else if (sn != null) {
       raw = sn;
     } else {
-      raw = _nonShellFallback(ta, def);
+      raw = _nonShellFallback(ta, def, fallback: fallback);
     }
     return _cleanEmptyParens(raw);
   }
 
   /// Protocol / detail line: SE code first, then description; [armRatingType] only as tertiary.
   ///
+  /// - User rename (`displayNameOverride`) always wins when present.
   /// - `W003 — % weed control · Continuous` when all three exist
   /// - `W003 — % weed control` when description + SE code
   /// - Simpler combinations use ` — ` or ` · ` without empty segments.
-  static String fullName(TrialAssessment ta, {AssessmentDefinition? def}) {
+  static String fullName(
+    TrialAssessment ta, {
+    AssessmentDefinition? def,
+    String? fallback,
+  }) {
+    final override = _nonEmpty(ta.displayNameOverride);
+    if (override != null) {
+      return _cleanEmptyParens(override);
+    }
+
     final d = _nonEmpty(ta.seDescription);
     final sn = _nonEmpty(ta.seName);
     final rtRaw = _nonEmpty(ta.armRatingType);
@@ -67,18 +88,26 @@ class AssessmentDisplayHelper {
     } else if (rt != null) {
       raw = rt;
     } else {
-      raw = _primary(ta, def);
+      raw = _primary(ta, def, fallback: fallback);
     }
     return _cleanEmptyParens(raw);
   }
 
   /// Tight spaces: SE code, else non-shell fallback (no [armRatingType] / description here).
-  static String minimalName(TrialAssessment ta, {AssessmentDefinition? def}) {
+  static String minimalName(
+    TrialAssessment ta, {
+    AssessmentDefinition? def,
+    String? fallback,
+  }) {
+    final override = _nonEmpty(ta.displayNameOverride);
+    if (override != null) {
+      return override;
+    }
     final sn = _nonEmpty(ta.seName);
     if (sn != null) {
       return sn;
     }
-    return _nonShellFallback(ta, def);
+    return _nonShellFallback(ta, def, fallback: fallback);
   }
 
   /// Rating date: "Apr 2" format, or null
@@ -96,8 +125,12 @@ class AssessmentDisplayHelper {
     return (d != null && d.isNotEmpty) ? d : null;
   }
 
-  /// Single-string priority: seDescription → seName → armRatingType → pestCode → def.name → id.
-  static String _primary(TrialAssessment ta, AssessmentDefinition? def) {
+  /// Single-string priority: seDescription → seName → armRatingType → pestCode → def.name → fallback → id.
+  static String _primary(
+    TrialAssessment ta,
+    AssessmentDefinition? def, {
+    String? fallback,
+  }) {
     final d = _nonEmpty(ta.seDescription);
     if (d != null) {
       return d;
@@ -111,17 +144,25 @@ class AssessmentDisplayHelper {
     if (rt != null) {
       return rt;
     }
-    return _nonShellFallback(ta, def);
+    return _nonShellFallback(ta, def, fallback: fallback);
   }
 
-  /// [pestCode] → [AssessmentDefinition.name] → `"Assessment {id}"`.
-  static String _nonShellFallback(TrialAssessment ta, AssessmentDefinition? def) {
+  /// [pestCode] → [AssessmentDefinition.name] → [fallback] → `"Assessment {id}"`.
+  static String _nonShellFallback(
+    TrialAssessment ta,
+    AssessmentDefinition? def, {
+    String? fallback,
+  }) {
     final pc = _nonEmpty(ta.pestCode);
     if (pc != null) {
       return pc;
     }
     if (def != null && def.name.trim().isNotEmpty) {
       return def.name.trim();
+    }
+    final fb = _nonEmpty(fallback);
+    if (fb != null) {
+      return fb;
     }
     return 'Assessment ${ta.id}';
   }
@@ -150,9 +191,7 @@ class AssessmentDisplayHelper {
 
   /// Strips empty parentheticals like ` ()` or `()` from display strings.
   static String _cleanEmptyParens(String s) {
-    return s
-        .replaceAll(RegExp(r'\s*\(\s*\)'), '')
-        .trim();
+    return s.replaceAll(RegExp(r'\s*\(\s*\)'), '').trim();
   }
 
   static String? _nonEmpty(String? s) {
