@@ -2083,88 +2083,149 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isDisplayActive ? 8 : 10,
-                vertical: 3,
-              ),
-              decoration: BoxDecoration(
-                color: pill.bg,
-                borderRadius: BorderRadius.circular(999),
-                border: isDisplayActive ||
-                        statusForDisplay == kTrialStatusDraft ||
-                        statusForDisplay == kTrialStatusReady
-                    ? Border.all(color: AppDesignTokens.borderCrisp)
-                    : null,
-              ),
-              child: isDisplayActive
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppDesignTokens.openSessionBg,
+            if (isDisplayActive && nextStatus == kTrialStatusClosed)
+              // Active ↔ Closed is a binary transition, so the status and
+              // its action collapse into a single toggle switch: ON = Active,
+              // flipping OFF runs the Close-Trial flow (which still guards
+              // against open sessions and readiness blockers via dialogs).
+              _ActiveCloseToggle(
+                onClose: () => widget.onTransitionStatus(
+                  context,
+                  ref,
+                  kTrialStatusClosed,
+                ),
+              )
+            else ...[
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDisplayActive ? 8 : 10,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: pill.bg,
+                  borderRadius: BorderRadius.circular(999),
+                  border: isDisplayActive ||
+                          statusForDisplay == kTrialStatusDraft ||
+                          statusForDisplay == kTrialStatusReady
+                      ? Border.all(color: AppDesignTokens.borderCrisp)
+                      : null,
+                ),
+                child: isDisplayActive
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppDesignTokens.openSessionBg,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          labelForTrialStatus(statusForDisplay),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: pill.fg,
+                          const SizedBox(width: 5),
+                          Text(
+                            labelForTrialStatus(statusForDisplay),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: pill.fg,
+                            ),
                           ),
+                        ],
+                      )
+                    : Text(
+                        labelForTrialStatus(statusForDisplay),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: pill.fg,
                         ),
-                      ],
-                    )
-                  : Text(
-                      labelForTrialStatus(statusForDisplay),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: pill.fg,
                       ),
-                    ),
-            ),
-            if (buttonLabel != null && nextStatus != null) ...[
-              const SizedBox(width: 6),
-              OutlinedButton(
-                onPressed: () =>
-                    widget.onTransitionStatus(context, ref, nextStatus),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppDesignTokens.primaryText,
-                  backgroundColor: Colors.transparent,
-                  side: const BorderSide(
-                    color: AppDesignTokens.borderCrisp,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  minimumSize: const Size(0, 28),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  buttonLabel,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppDesignTokens.primaryText,
-                  ),
-                ),
               ),
+              if (buttonLabel != null && nextStatus != null) ...[
+                const SizedBox(width: 6),
+                OutlinedButton(
+                  onPressed: () =>
+                      widget.onTransitionStatus(context, ref, nextStatus),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppDesignTokens.primaryText,
+                    backgroundColor: Colors.transparent,
+                    side: const BorderSide(
+                      color: AppDesignTokens.borderCrisp,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    minimumSize: const Size(0, 28),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Text(
+                    buttonLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                ),
+              ],
             ],
             const Spacer(),
             _SessionsStatusBarButton(onTap: widget.onOpenSessions),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Compact `Active` ↔ `Close` toggle that replaces the status pill plus
+/// the lifecycle CTA when the trial is currently Active and the next
+/// allowed transition is Closed. The ON state reads as "Active"; flipping
+/// OFF hands off to the existing close-trial flow (which surfaces its own
+/// confirmation / blocker dialogs).
+class _ActiveCloseToggle extends StatelessWidget {
+  const _ActiveCloseToggle({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Transform.scale(
+          scale: 0.75,
+          alignment: Alignment.centerLeft,
+          child: Switch(
+            value: true,
+            onChanged: (v) {
+              if (!v) onClose();
+            },
+            activeThumbColor: Colors.white,
+            activeTrackColor: AppDesignTokens.openSessionBg,
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: AppDesignTokens.borderCrisp,
+            trackOutlineColor: WidgetStateProperty.resolveWith(
+              (_) => Colors.transparent,
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+        const SizedBox(width: 4),
+        const Text(
+          'Active',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+      ],
     );
   }
 }
