@@ -198,6 +198,29 @@ class TrialAssessmentRepository {
         );
   }
 
+  /// One protocol check, then many trial-assessment rows (e.g. shell import).
+  Future<void> insertTrialAssessmentsBulk(
+    List<TrialAssessmentsCompanion> rows,
+  ) async {
+    if (rows.isEmpty) return;
+    final trialIds = <int>{};
+    for (final r in rows) {
+      if (!r.trialId.present) {
+        throw StateError('Each companion must include trialId');
+      }
+      trialIds.add(r.trialId.value);
+    }
+    if (trialIds.length != 1) {
+      throw StateError('insertTrialAssessmentsBulk requires one trial');
+    }
+    await assertCanEditProtocolForTrialId(_db, trialIds.single);
+    await _db.transaction(() async {
+      for (final row in rows) {
+        await _db.into(_db.trialAssessments).insert(row);
+      }
+    });
+  }
+
   /// Update trial-specific settings.
   Future<void> update(
     int id, {

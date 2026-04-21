@@ -286,6 +286,13 @@ class MockTreatmentRepository implements TreatmentRepository {
       throw UnimplementedError();
 
   @override
+  Future<Map<int, int>> insertTreatmentsBulkForNumbers({
+    required int trialId,
+    required List<int> sortedTrtNumbers,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<void> softDeleteComponent(int componentId,
           {String? deletedBy, int? deletedByUserId}) async =>
       throw UnimplementedError();

@@ -118,46 +118,46 @@ class ImportArmRatingShellUseCase {
           location: shell.cooperator,
         );
 
-        // --- Treatments ---
-        final trtNumbers = <int>{};
-        for (final pr in shell.plotRows) {
-          trtNumbers.add(pr.trtNumber);
-        }
-        final trtIdByNumber = <int, int>{};
-        for (final trt in trtNumbers.toList()..sort()) {
-          final tid = await _treatmentRepository.insertTreatment(
-            trialId: id,
-            code: '$trt',
-            name: 'Treatment $trt',
-          );
-          trtIdByNumber[trt] = tid;
-        }
+        // --- Treatments (one protocol check) ---
+        final trtNumbers = shell.plotRows.map((p) => p.trtNumber).toSet().toList()
+          ..sort();
+        final trtIdByNumber = await _treatmentRepository
+            .insertTreatmentsBulkForNumbers(trialId: id, sortedTrtNumbers: trtNumbers);
 
-        // --- Plots + Assignments ---
-        for (final pr in shell.plotRows) {
-          final plotPk = await _plotRepository.insertPlot(
-            trialId: id,
-            plotId: '${pr.plotNumber}',
-            rep: pr.blockNumber,
-            treatmentId: trtIdByNumber[pr.trtNumber],
-            plotSortIndex: pr.plotNumber,
-          );
-          await (_db.update(_db.plots)..where((p) => p.id.equals(plotPk)))
-              .write(PlotsCompanion(
-            armPlotNumber: Value(pr.plotNumber),
-            armImportDataRowIndex: Value(pr.rowIndex),
-          ));
-          if (trtIdByNumber.containsKey(pr.trtNumber)) {
-            await _assignmentRepository.upsert(
-              trialId: id,
-              plotId: plotPk,
-              treatmentId: trtIdByNumber[pr.trtNumber]!,
-              assignmentSource: 'imported',
-            );
-          }
-        }
+        // --- Plots (one protocol check) + assignments (one protocol check) ---
+        final plotCompanions = shell.plotRows
+            .map(
+              (pr) => PlotsCompanion.insert(
+                trialId: id,
+                plotId: '${pr.plotNumber}',
+                plotSortIndex: Value(pr.plotNumber),
+                rep: Value(pr.blockNumber),
+                treatmentId: Value(trtIdByNumber[pr.trtNumber]),
+                armPlotNumber: Value(pr.plotNumber),
+                armImportDataRowIndex: Value(pr.rowIndex),
+              ),
+            )
+            .toList();
+        await _plotRepository.insertPlotsBulk(plotCompanions);
 
-        // --- Assessment definitions + TrialAssessments ---
+        final plotsForTrial = await _plotRepository.getPlotsForTrial(id);
+        final plotPkByPlotId = <String, int>{
+          for (final p in plotsForTrial) p.plotId: p.id,
+        };
+        final assignmentMap = <int, int?>{};
+        for (final pr in shell.plotRows) {
+          final pk = plotPkByPlotId['${pr.plotNumber}'];
+          if (pk == null) continue;
+          assignmentMap[pk] = trtIdByNumber[pr.trtNumber];
+        }
+        await _assignmentRepository.upsertBulk(
+          trialId: id,
+          plotPkToTreatmentId: assignmentMap,
+          assignmentSource: 'imported',
+        );
+
+        // --- Assessment definitions + TrialAssessments (one protocol check) ---
+        final assessmentRows = <TrialAssessmentsCompanion>[];
         for (var i = 0; i < shell.assessmentColumns.length; i++) {
           final col = shell.assessmentColumns[i];
 
@@ -187,19 +187,22 @@ class ImportArmRatingShellUseCase {
 
           final shellIdx = col.columnIndex;
 
-          await _trialAssessmentRepository.addToTrial(
-            trialId: id,
-            assessmentDefinitionId: defId,
-            displayNameOverride: name,
-            selectedFromProtocol: true,
-            selectedManually: false,
-            defaultInSessions: true,
-            sortOrder: i,
-            pestCode: col.pestCode ?? col.seName,
-            armImportColumnIndex: shellIdx,
-            armColumnIdInteger: col.armColumnIdInteger,
+          assessmentRows.add(
+            TrialAssessmentsCompanion.insert(
+              trialId: id,
+              assessmentDefinitionId: defId,
+              displayNameOverride: Value(name),
+              selectedFromProtocol: const Value(true),
+              selectedManually: const Value(false),
+              defaultInSessions: const Value(true),
+              sortOrder: Value(i),
+              pestCode: Value(col.pestCode ?? col.seName),
+              armImportColumnIndex: Value(shellIdx),
+              armColumnIdInteger: Value(col.armColumnIdInteger),
+            ),
           );
         }
+        await _trialAssessmentRepository.insertTrialAssessmentsBulk(assessmentRows);
 
         return id;
       });

@@ -111,6 +111,30 @@ class TreatmentRepository {
         );
   }
 
+  /// One protocol check, then many inserts in a single transaction (e.g. shell import).
+  Future<Map<int, int>> insertTreatmentsBulkForNumbers({
+    required int trialId,
+    required List<int> sortedTrtNumbers,
+  }) async {
+    await assertCanEditProtocolForTrialId(_db, trialId);
+    final now = DateTime.now();
+    final result = <int, int>{};
+    await _db.transaction(() async {
+      for (final trt in sortedTrtNumbers) {
+        final tid = await _db.into(_db.treatments).insert(
+              TreatmentsCompanion.insert(
+                trialId: trialId,
+                code: '$trt',
+                name: 'Treatment $trt',
+                lastEditedAt: Value(now),
+              ),
+            );
+        result[trt] = tid;
+      }
+    });
+    return result;
+  }
+
   Future<void> updateTreatment(
     int id, {
     String? code,
