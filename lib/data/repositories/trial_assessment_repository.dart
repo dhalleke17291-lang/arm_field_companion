@@ -174,6 +174,7 @@ class TrialAssessmentRepository {
     /// ARM assessment code (e.g. CONTRO, AVEFA); stored in [TrialAssessments.pestCode].
     String? pestCode,
     int? armImportColumnIndex,
+    int? armColumnIdInteger,
     /// Optional machine tag (e.g. curated library source id); not shown in rating UI.
     String? instructionOverride,
   }) async {
@@ -191,6 +192,7 @@ class TrialAssessmentRepository {
             isActive: Value(isActive),
             pestCode: Value(pestCode),
             armImportColumnIndex: Value(armImportColumnIndex),
+            armColumnIdInteger: Value(armColumnIdInteger),
             instructionOverride: Value(instructionOverride),
           ),
         );

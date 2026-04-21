@@ -6,14 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
-import '../../arm_import/arm_import_screen.dart';
 import '../../export/domain/shell_link_preview.dart';
 import '../../protocol_import/protocol_import_screen.dart';
+import '../../trials/trial_detail_screen.dart';
 
-/// Bottom sheet: ARM Rating Shell, protocol CSV, or link rating sheet to a trial.
+/// Bottom sheet: Rating Shell, protocol CSV, or link rating sheet to a trial.
 ///
 /// Open from the trials hub toolbar only — not duplicated inside [TrialDetailScreen].
-class ImportTrialSheet extends StatelessWidget {
+class ImportTrialSheet extends ConsumerWidget {
   const ImportTrialSheet({
     super.key,
     required this.parentContext,
@@ -38,7 +38,7 @@ class ImportTrialSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -65,14 +65,73 @@ class ImportTrialSheet extends StatelessWidget {
               title: 'Import Rating Shell',
               subtitle:
                   'Import plots, treatments, and assessments from a Rating Shell file',
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                Navigator.push<void>(
-                  parentContext,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ArmImportScreen(),
+                final pick = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: const ['xlsx'],
+                  dialogTitle: 'Select Rating Shell (.xlsx)',
+                );
+                if (pick == null || pick.files.isEmpty) return;
+                final path = pick.files.single.path;
+                if (path == null || path.isEmpty) return;
+                if (!parentContext.mounted) return;
+
+                // Show progress.
+                showDialog<void>(
+                  context: parentContext,
+                  barrierDismissible: false,
+                  builder: (_) => const PopScope(
+                    canPop: false,
+                    child: AlertDialog(
+                      content: Row(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(width: 20),
+                          Text('Importing...'),
+                        ],
+                      ),
+                    ),
                   ),
                 );
+
+                final uc = ref.read(importArmRatingShellUseCaseProvider);
+                final result = await uc.execute(path);
+
+                if (!parentContext.mounted) return;
+                Navigator.of(parentContext, rootNavigator: true).pop();
+
+                if (result.success && result.trialId != null) {
+                  ref.invalidate(trialsStreamProvider);
+                  final trial = await ref
+                      .read(trialRepositoryProvider)
+                      .getTrialById(result.trialId!);
+                  if (trial != null && parentContext.mounted) {
+                    ScaffoldMessenger.of(parentContext).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Imported: ${result.plotCount} plots, '
+                          '${result.treatmentCount} treatments, '
+                          '${result.assessmentCount} assessments',
+                        ),
+                      ),
+                    );
+                    Navigator.push<void>(
+                      parentContext,
+                      MaterialPageRoute<void>(
+                        builder: (_) => TrialDetailScreen(trial: trial),
+                      ),
+                    );
+                  }
+                } else if (parentContext.mounted) {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          result.errorMessage ?? 'Import failed'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
             ),
             const SizedBox(height: AppDesignTokens.spacing8),

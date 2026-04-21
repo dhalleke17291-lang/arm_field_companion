@@ -85,6 +85,7 @@ import '../features/arm_import/data/arm_import_snapshot_service.dart';
 import '../features/arm_import/data/arm_plot_insert_service.dart';
 import '../features/arm_import/data/compatibility_profile_builder.dart';
 import '../features/arm_import/usecases/arm_import_usecase.dart';
+import '../features/arm_import/usecases/import_arm_rating_shell_usecase.dart';
 import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
@@ -214,6 +215,18 @@ final armImportUseCaseProvider = Provider<ArmImportUseCase>((ref) {
     ref.watch(compatibilityProfileBuilderProvider),
     ref.watch(armImportPersistenceRepositoryProvider),
     ref.watch(armImportReportBuilderProvider),
+  );
+});
+
+final importArmRatingShellUseCaseProvider =
+    Provider<ImportArmRatingShellUseCase>((ref) {
+  return ImportArmRatingShellUseCase(
+    db: ref.watch(databaseProvider),
+    trialRepository: ref.watch(trialRepositoryProvider),
+    plotRepository: ref.watch(plotRepositoryProvider),
+    treatmentRepository: ref.watch(treatmentRepositoryProvider),
+    trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
   );
 });
 
