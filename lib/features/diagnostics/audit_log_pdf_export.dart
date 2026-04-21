@@ -5,8 +5,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/app_info.dart';
-import '../../core/config/app_info.dart';
 import '../../core/database/app_database.dart';
+import '../../core/pdf_branding.dart';
 
 /// Read-only PDF export of [AuditEvent] rows (suitable for sharing/archival;
 /// harder to casually edit than CSV).
@@ -39,14 +39,14 @@ class AuditLogPdfExport {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text(
-              AppInfo.appName,
-              style: pw.TextStyle(
-                fontSize: 9,
-                color: _primary,
-                fontWeight: pw.FontWeight.bold,
+              'AGNEXIS',
+              style: const pw.TextStyle(
+                fontSize: 8,
+                color: PdfBranding.primaryColor,
+                letterSpacing: 3,
               ),
             ),
-            pw.SizedBox(height: 2),
+            pw.SizedBox(height: 4),
             pw.Text(
               'Audit log export',
               style: pw.TextStyle(

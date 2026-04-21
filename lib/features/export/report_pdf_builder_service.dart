@@ -4,6 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/assessment_result_direction.dart';
+import '../../core/pdf_branding.dart';
 import '../../core/trial_state.dart';
 import '../derived/domain/anova.dart';
 import 'standalone_report_data.dart';
@@ -35,10 +36,7 @@ const String _emDashPlaceholder = '-';
 class ReportPdfBuilderService {
   ReportPdfBuilderService();
 
-  /// Swap this path in one line to change the report header logo asset.
-  static const _kLogoAssetPath = 'assets/Branding/splash_logo.png';
-
-  static const _kPrimaryColor = PdfColor.fromInt(0xFF0E3D2F);
+  static const _kPrimaryColor = PdfBranding.primaryColor;
   static const _kAccentColor = PdfColor.fromInt(0xFF2E7D52);
   static const _kHeaderBg = PdfColor.fromInt(0xFFF4F1EB);
   static const _kBorderColor = PdfColor.fromInt(0xFFCCCCCC);
@@ -63,13 +61,7 @@ class ReportPdfBuilderService {
   }) async {
     final pdf = pw.Document();
     final dateFormat = DateFormat('yyyy-MM-dd');
-    pw.ImageProvider? logo;
-    try {
-      final logoBytes = await rootBundle.load(_kLogoAssetPath);
-      logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
-    } catch (_) {
-      logo = null;
-    }
+    final logo = await PdfBranding.loadLogo();
 
     switch (profile) {
       case ReportProfile.research:
@@ -162,27 +154,33 @@ class ReportPdfBuilderService {
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
-          if (logo != null) pw.Image(logo, width: 60),
-          if (logo != null)
-            pw.Container(
-              margin: const pw.EdgeInsets.symmetric(horizontal: 12),
-              width: 1,
-              height: 48,
-              color: PdfColors.white,
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(right: 12),
+            child: pw.Column(
+              children: [
+                if (logo != null) pw.Image(logo, width: 54, fit: pw.BoxFit.contain),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  'AGNEXIS',
+                  style: const pw.TextStyle(
+                    fontSize: 5.5,
+                    color: PdfColors.white,
+                    letterSpacing: 2.5,
+                  ),
+                ),
+              ],
             ),
+          ),
+          pw.Container(
+            margin: const pw.EdgeInsets.only(right: 12),
+            width: 1,
+            height: 48,
+            color: PdfColors.white,
+          ),
           pw.Expanded(
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                if (logo == null)
-                  pw.Text(
-                    'Agnexis',
-                    style: const pw.TextStyle(
-                      fontSize: _kFontSizeCaption,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                if (logo == null) pw.SizedBox(height: _kSpaceXS),
                 pw.Text(
                   t.name,
                   style: pw.TextStyle(
@@ -629,17 +627,22 @@ class ReportPdfBuilderService {
     final t = data.trial;
     final generated = dateFormat.format(DateTime.now());
     return [
-      if (logo != null)
-        pw.Image(logo, width: 120)
-      else
-        pw.Text(
-          'Agnexis',
-          style: pw.TextStyle(
-            fontSize: _kFontSizeBody,
-            fontWeight: pw.FontWeight.bold,
-            color: _kPrimaryColor,
+      pw.Column(
+        children: [
+          if (logo != null)
+            pw.Image(logo, width: 100, fit: pw.BoxFit.contain),
+          pw.SizedBox(height: 6),
+          pw.Text(
+            'AGNEXIS',
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.normal,
+              color: _kPrimaryColor,
+              letterSpacing: 6,
+            ),
           ),
-        ),
+        ],
+      ),
       pw.SizedBox(height: _kSpaceMD),
       pw.Text(
         'FIELD TRIAL REPORT',
@@ -1236,10 +1239,11 @@ class ReportPdfBuilderService {
               ),
             ),
             pw.Text(
-              'Agnexis',
+              'AGNEXIS',
               style: const pw.TextStyle(
                 fontSize: _kFontSizeCaption,
                 color: _kTextSecondary,
+                letterSpacing: 2,
               ),
             ),
           ],

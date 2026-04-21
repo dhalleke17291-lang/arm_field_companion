@@ -4,6 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/database/app_database.dart';
+import '../../core/pdf_branding.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/plot_display.dart';
 import '../../core/ui/assessment_display_helper.dart';
@@ -19,7 +20,6 @@ class TrialReportPdfBuilder {
   static const _textSecondary = PdfColor.fromInt(0xFF555555);
   static const _headerBg = PdfColor.fromInt(0xFFF4F1EB);
   static const _rowAlt = PdfColor.fromInt(0xFFF8F8F8);
-  static const _kLogoAssetPath = 'assets/Branding/splash_logo.png';
 
   Future<Uint8List> build({
     required Trial trial,
@@ -38,11 +38,7 @@ class TrialReportPdfBuilder {
     final dateFmt = DateFormat('yyyy-MM-dd');
     final dateTimeFmt = DateFormat('yyyy-MM-dd HH:mm');
 
-    pw.ImageProvider? logo;
-    try {
-      final logoBytes = await rootBundle.load(_kLogoAssetPath);
-      logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
-    } catch (_) {}
+    final logo = await PdfBranding.loadLogo();
 
     final dataPlots = plots.where(isAnalyzablePlot).toList();
     // Key includes sessionId so multi-session data renders correctly.
@@ -368,11 +364,10 @@ class TrialReportPdfBuilder {
       ),
       child: pw.Row(
         children: [
-          if (logo != null)
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(right: 8),
-              child: pw.Image(logo, width: 24, height: 24),
-            ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(right: 10),
+            child: PdfBranding.brandBlockCompact(logo),
+          ),
           pw.Expanded(
             child: pw.Text(
               '${trial.name} — Trial Report',

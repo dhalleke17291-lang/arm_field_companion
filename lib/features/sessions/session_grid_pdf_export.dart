@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/database/app_database.dart';
+import '../../core/pdf_branding.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/plot_display.dart';
 import '../../core/ui/assessment_display_helper.dart';
@@ -39,24 +40,16 @@ class SessionGridPdfExport {
   final int? completedPlots;
   final int? expectedPlots;
 
-  static const _kLogoAssetPath = 'assets/Branding/splash_logo.png';
-
-  static const _primaryColor = PdfColor.fromInt(0xFF0E3D2F);
+  static const _primaryColor = PdfBranding.primaryColor;
   static const _borderColor = PdfColor.fromInt(0xFFCCCCCC);
-  static const _textSecondary = PdfColor.fromInt(0xFF555555);
-  static const _statsBg = PdfColor.fromInt(0xFFEEEEEE);
+  static const _textSecondary = PdfBranding.textSecondary;
+  static const _statsBg = PdfColor.fromInt(0xFFF5F5F5);
 
   Future<Uint8List> build() async {
     final pdf = pw.Document();
     final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
 
-    pw.ImageProvider? logo;
-    try {
-      final logoBytes = await rootBundle.load(_kLogoAssetPath);
-      logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
-    } catch (_) {
-      logo = null;
-    }
+    final logo = await PdfBranding.loadLogo();
 
     final dataPlots = plots.where(isAnalyzablePlot).toList();
 
@@ -266,12 +259,12 @@ class SessionGridPdfExport {
               context: context,
               headers: null,
               data: [statsRow],
-              cellStyle: pw.TextStyle(
-                fontSize: 7,
-                fontWeight: pw.FontWeight.bold,
+              cellStyle: const pw.TextStyle(
+                fontSize: 6.5,
+                color: _textSecondary,
               ),
               cellAlignment: pw.Alignment.center,
-              cellHeight: 24,
+              cellHeight: 28,
               cellPadding:
                   const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 2),
               border: pw.TableBorder.all(color: _borderColor, width: 0.5),
@@ -358,24 +351,10 @@ class SessionGridPdfExport {
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          if (logo != null)
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(right: 14),
-              child: pw.Column(
-                children: [
-                  pw.Image(logo, width: 44, fit: pw.BoxFit.contain),
-                  pw.SizedBox(height: 2),
-                  pw.Text(
-                    'Agnexis',
-                    style: pw.TextStyle(
-                      fontSize: 7,
-                      fontWeight: pw.FontWeight.bold,
-                      color: _primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(right: 14),
+            child: PdfBranding.brandBlock(logo),
+          ),
           pw.Expanded(
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,

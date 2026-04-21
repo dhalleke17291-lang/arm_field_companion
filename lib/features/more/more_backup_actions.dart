@@ -146,26 +146,35 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
       await store.save(passphrase);
     }
     if (context.mounted) {
+      ShareResult? shareResult;
       try {
         final box = context.findRenderObject() as RenderBox?;
-        await Share.shareXFiles(
+        shareResult = await Share.shareXFiles(
           [XFile(file.path, mimeType: 'application/octet-stream')],
           text: 'Agnexis encrypted backup',
           sharePositionOrigin: box != null
               ? box.localToGlobal(Offset.zero) & box.size
               : const Rect.fromLTWH(0, 0, 100, 100),
         );
-      } catch (e) {
-        // Share sheet failed — offer direct file location instead.
+      } catch (_) {
+        // Share sheet unavailable.
+      }
+
+      if (shareResult?.status == ShareResultStatus.dismissed) {
+        // User tapped outside the share sheet without saving.
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Backup saved to: ${file.path}'),
-              duration: const Duration(seconds: 8),
+              content: const Text(
+                'Backup file created but not saved. Tap Backup again to share it.',
+              ),
+              duration: const Duration(seconds: 5),
             ),
           );
         }
+        return;
       }
+
       await BackupReminderStore(prefs).recordBackupCompleted();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

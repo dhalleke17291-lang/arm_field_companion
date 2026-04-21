@@ -3,13 +3,12 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../core/pdf_branding.dart';
 import 'evidence_report_data.dart';
 
 /// Renders the Field Evidence Report PDF from assembled [EvidenceReportData].
 class EvidenceReportPdfBuilder {
-  static const _kLogoAssetPath = 'assets/Branding/splash_logo.png';
-
-  static const _primary = PdfColor.fromInt(0xFF0E3D2F);
+  static const _primary = PdfBranding.primaryColor;
   static const _accent = PdfColor.fromInt(0xFF2E7D52);
   static const _headerBg = PdfColor.fromInt(0xFFF4F1EB);
   static const _borderColor = PdfColor.fromInt(0xFFCCCCCC);
@@ -24,11 +23,7 @@ class EvidenceReportPdfBuilder {
     final dateFmt = DateFormat('yyyy-MM-dd');
     final dateTimeFmt = DateFormat('yyyy-MM-dd HH:mm');
 
-    pw.ImageProvider? logo;
-    try {
-      final logoBytes = await rootBundle.load(_kLogoAssetPath);
-      logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
-    } catch (_) {}
+    final logo = await PdfBranding.loadLogo();
 
     const pageFormat = PdfPageFormat.a4;
 
@@ -162,11 +157,10 @@ class EvidenceReportPdfBuilder {
       ),
       child: pw.Row(
         children: [
-          if (logo != null)
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(right: 8),
-              child: pw.Image(logo, width: 28, height: 28),
-            ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(right: 10),
+            child: PdfBranding.brandBlockCompact(logo),
+          ),
           pw.Expanded(
             child: pw.Text(
               '${data.identity.name} — Field Evidence Report',
