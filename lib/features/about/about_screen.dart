@@ -49,7 +49,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
     final text = StringBuffer()
       ..writeln('${AppInfo.appName} Device Report')
-      ..writeln('Version: ${pkg?.version ?? '?'} (${pkg?.buildNumber ?? '?'})')
+      ..writeln(
+          'Version: ${pkg?.version ?? '?'} (build ${pkg?.buildNumber ?? '?'})');
+    if (AppInfo.hasBuildMetadata) {
+      text.writeln('Build: ${AppInfo.buildIdentity}');
+    }
+    text
       ..writeln('Schema: v$schema')
       ..writeln('Platform: ${_deviceInfo()}')
       ..writeln('Dart: ${Platform.version.split(' ').first}');
@@ -96,9 +101,11 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
               _InfoRow(
                 label: 'Version',
                 value: pkg != null
-                    ? '${pkg.version} (${pkg.buildNumber})'
+                    ? '${pkg.version} (build ${pkg.buildNumber})'
                     : AppInfo.appVersion,
               ),
+              if (AppInfo.hasBuildMetadata)
+                _InfoRow(label: 'Build', value: AppInfo.buildIdentity),
               _InfoRow(label: 'Schema', value: 'v$schema'),
               _InfoRow(label: 'Platform', value: _deviceInfo()),
               _InfoRow(

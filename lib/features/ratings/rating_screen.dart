@@ -2804,7 +2804,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                         filled: true,
                         fillColor: AppDesignTokens.cardSurface,
                       ),
-                      autofocus: true,
                     ),
                   ] else if (_hasScaleDefined) ...[
                     const SizedBox(height: 4),
@@ -2925,7 +2924,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                                 horizontal: 16,
                               ),
                             ),
-                            autofocus: true,
                             onChanged: (_) {
                               _markNumericValueUserEdited();
                               setState(() {});
