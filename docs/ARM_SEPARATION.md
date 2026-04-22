@@ -85,7 +85,29 @@ Pre-existing ARM fields on core tables (not to be extended):
 - `Trials`: `isArmLinked`, `armLinkedShellPath`, `shellInternalPath`, `armSourceFile`, `armImportedAt`
 - `TrialAssessments`: `armColumnIdInteger`, `armImportColumnIndex`, `armShellColumnId`, `armShellRatingDate`, `seName`, `seDescription`, `armRatingType`, `displayNameOverride`, `pestCode`
 
-**New ARM-specific fields must not be added to these tables.** They belong in new `arm_*_metadata` extension tables (Phase 0b).
+**New ARM-specific fields must not be added to these tables.** They belong in the `arm_*_metadata` extension tables introduced in Phase 1a.
+
+## ARM extension tables (Phase 1a)
+
+Three additive tables carry ARM-specific metadata and the bridge between ARM's `(measurement × date)` column model and this app's `(assessment × session)` model. They live in `lib/core/database/app_database.dart` for Drift codegen reasons, but all reads and writes against them must originate from `lib/data/arm/` or `lib/features/arm_*`. Standalone trials have zero rows in any of them.
+
+| Table | Row per | Purpose |
+|---|---|---|
+| `arm_column_mappings` | ARM shell column | Bridge table: ties every ARM Column ID to the app-side (trial_assessment, session) pair it represents. Preserves ARM's per-date column identity without forcing the core schema to replicate it. Orphan columns (blank metadata) hold `trial_assessment_id = null`, `session_id = null` and exist only so export emits them back as empty columns. |
+| `arm_assessment_metadata` | deduplicated trial_assessment | Verbatim ARM assessment-column header fields (SE Name, SE Description, Part Rated, Rating Type, Collect Basis, Num Subsamples, Pest Codes, Rating Min/Max, Rating Unit). Deduplication identity is `(SE Name, Part Rated, Rating Type)`. |
+| `arm_session_metadata` | app session | ARM per-date context for a session: ARM Rating Date, Timing code (A1/A3/A6/AA), Crop Stage Maj/Min/Scale, Trt-Eval Interval, Plant-Eval Interval, Rater Initials. Lets round-trip export reproduce the shell's date/timing/stage header. |
+
+### Why the bridge pattern, not a richer TrialAssessments
+
+ARM treats `Weed Control on 2026-04-02` and `Weed Control on 2026-04-23` as two columns with distinct Column IDs. The app treats "Weed Control" as one assessment rated twice — once in the 04-02 session, once in the 04-23 session. If the importer created one `trial_assessment` per ARM column, the same measurement would appear several times in the app's assessment list (one per date), breaking the app's native session-based workflow.
+
+`arm_column_mappings` resolves this: the importer dedups assessment columns on `(SE Name, Part Rated, Rating Type)`, creates one session per unique ARM Rating Date, and stores the ARM-Column-ID → `(trial_assessment, session)` mapping. Core UI sees the deduplicated, session-based shape. Export walks the mapping to rebuild the per-column shell ARM expects. Identity is preserved; workflow stays native.
+
+### Not introduced in Phase 1a
+
+- Core table changes: none. The pre-existing ARM fields on `Trials` and `TrialAssessments` remain as-is; Phase 0b will migrate them into the new extension tables.
+- Importer/exporter rewrites: deferred to Phase 1b. Phase 1a is schema foundation only.
+- New UI surfaces: none. The ARM Protocol tab lands later; Phase 1a adds no user-visible changes.
 
 ## What standalone users see
 

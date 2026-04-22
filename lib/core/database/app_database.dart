@@ -923,6 +923,138 @@ class TrialExportDiagnostics extends Table {
   Set<Column> get primaryKey => {trialId};
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ARM extension tables
+// ─────────────────────────────────────────────────────────────────────────────
+// These tables hold ARM-specific metadata and the bridge between ARM's
+// (measurement, date) column model and this app's (assessment, session) model.
+// They only carry rows for ARM-linked trials; standalone trials never touch
+// them. Schema lives here for Drift codegen reasons; all read/write access
+// is restricted to code under lib/data/arm/ and lib/features/arm_*.
+// See docs/ARM_SEPARATION.md.
+
+/// Bridge table tying every ARM Column ID on the shell to the app-side
+/// (trial_assessment, session) pair it represents. One row per ARM column.
+///
+/// Why this exists: ARM models an assessment column as
+/// `(measurement_type × rating_date × timing)` — three "Weed Control" columns
+/// on three dates are three separate ARM columns with distinct Column IDs.
+/// This app models rating = plot × assessment × session, so the same three
+/// rating events are one assessment rated in three sessions. This table
+/// preserves ARM's semantic identity for round-trip export without forcing
+/// the core schema to replicate ARM's column-per-date shape.
+///
+/// [trialAssessmentId] and [sessionId] may both be null for *orphan* ARM
+/// columns (metadata fully blank in the shell). Orphans are preserved only
+/// so export can emit them back as empty columns and the shell round-trips
+/// structurally. They are never surfaced in the UI.
+class ArmColumnMappings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+
+  /// ARM Column ID exactly as it appears in the shell (typically numeric
+  /// but kept as text to preserve leading zeros or future non-numeric IDs).
+  TextColumn get armColumnId => text()();
+
+  /// Integer form of [armColumnId] when parseable; null otherwise. Used as
+  /// the canonical round-trip matching key where the shell offers it.
+  IntColumn get armColumnIdInteger => integer().nullable()();
+
+  /// 0-based position of the column within the shell's assessment-column
+  /// area. Stable across import/export as long as the shell is not reshaped.
+  IntColumn get armColumnIndex => integer()();
+
+  /// The deduplicated app-side assessment this column belongs to.
+  /// Null = orphan column (preserved for round-trip, hidden from UI).
+  IntColumn get trialAssessmentId =>
+      integer().references(TrialAssessments, #id).nullable()();
+
+  /// The app-side session this column's rating date maps to.
+  /// Null = orphan column (see above).
+  IntColumn get sessionId =>
+      integer().references(Sessions, #id).nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Per-assessment ARM metadata. One row per distinct (measurement-identity)
+/// trial_assessment created by the ARM importer. Fields are the verbatim
+/// values from the ARM Plot Data header rows; keep them raw so round-trip
+/// export can emit exactly what ARM gave us.
+class ArmAssessmentMetadata extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialAssessmentId =>
+      integer().references(TrialAssessments, #id)();
+
+  /// ARM "SE Name" code (e.g. "W003", "CF013"). Part of the dedup identity.
+  TextColumn get seName => text().nullable()();
+
+  /// Verbatim "SE Description" from the shell (e.g. "Weed Control").
+  TextColumn get seDescription => text().nullable()();
+
+  /// ARM "Part Rated" (e.g. "PLANT", "LEAF3"). Part of the dedup identity.
+  TextColumn get partRated => text().nullable()();
+
+  /// ARM "Rating Type" (e.g. "CONTRO", "LODGIN", "PESINC").
+  /// Part of the dedup identity.
+  TextColumn get ratingType => text().nullable()();
+
+  TextColumn get ratingUnit => text().nullable()();
+  RealColumn get ratingMin => real().nullable()();
+  RealColumn get ratingMax => real().nullable()();
+
+  /// "P" = per plot, "S" = per subsample.
+  TextColumn get collectBasis => text().nullable()();
+
+  /// Number of subsamples per plot when [collectBasis] = "S".
+  IntColumn get numSubsamples => integer().nullable()();
+
+  /// Primary pest / weed / disease target code (EPPO or ARM code).
+  TextColumn get pestCode => text().nullable()();
+
+  /// Optional secondary target code when the assessment covers two.
+  TextColumn get pestCodeSecondary => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Per-session ARM metadata. One row per session created by the ARM
+/// importer (one per unique ARM Rating Date). Captures the protocol timing
+/// context so round-trip export can reproduce the shell's date/timing/stage
+/// header accurately.
+class ArmSessionMetadata extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get sessionId => integer().references(Sessions, #id)();
+
+  /// Rating Date from the ARM shell, stored as a YYYY-MM-DD string to match
+  /// the shell's own representation and the app's [Sessions.sessionDateLocal].
+  TextColumn get armRatingDate => text()();
+
+  /// ARM timing code (e.g. "A1", "A3", "A6", "AA") identifying the
+  /// pre/post-application slot this rating belongs to.
+  TextColumn get timingCode => text().nullable()();
+
+  /// Major crop stage (ARM "Crop Stage Maj", e.g. "V5", "R1", "BBCH 30").
+  TextColumn get cropStageMaj => text().nullable()();
+
+  /// Minor crop stage (ARM "Crop Stage Min").
+  TextColumn get cropStageMin => text().nullable()();
+
+  /// Scale used for the crop stage (e.g. "BBCH", "Feekes").
+  TextColumn get cropStageScale => text().nullable()();
+
+  /// Days-after-treatment interval string (e.g. "21 DA-A").
+  TextColumn get trtEvalInterval => text().nullable()();
+
+  /// Days-after-planting interval string (e.g. "14 DA-P").
+  TextColumn get plantEvalInterval => text().nullable()();
+
+  /// Rater initials from the Plot Data header; may differ per rating date.
+  TextColumn get raterInitials => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -961,6 +1093,10 @@ class TrialExportDiagnostics extends Table {
   TrialExportDiagnostics,
   WeatherSnapshots,
   Sites,
+  // ARM extension tables (see ARM extension tables section above).
+  ArmColumnMappings,
+  ArmAssessmentMetadata,
+  ArmSessionMetadata,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -969,7 +1105,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 56;
+  int get schemaVersion => 57;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1708,6 +1844,28 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
               await customStatement(
                   'ALTER TABLE trials '
                   'ADD COLUMN shell_internal_path TEXT');
+            }
+          }
+
+          if (from < 57) {
+            // ── Phase 1a: ARM extension tables ──
+            // Additive schema only: new tables, no core-table changes.
+            // Created defensively so the migration is safe to rerun.
+            // These tables are empty for standalone trials by construction
+            // and are only written by code under lib/data/arm/ and
+            // lib/features/arm_*. See docs/ARM_SEPARATION.md.
+            final existingTables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+            if (!existingTables.contains('arm_column_mappings')) {
+              await m.createTable(armColumnMappings);
+            }
+            if (!existingTables.contains('arm_assessment_metadata')) {
+              await m.createTable(armAssessmentMetadata);
+            }
+            if (!existingTables.contains('arm_session_metadata')) {
+              await m.createTable(armSessionMetadata);
             }
           }
 

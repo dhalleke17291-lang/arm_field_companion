@@ -29990,6 +29990,1810 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
   }
 }
 
+class $ArmColumnMappingsTable extends ArmColumnMappings
+    with TableInfo<$ArmColumnMappingsTable, ArmColumnMapping> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArmColumnMappingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _armColumnIdMeta =
+      const VerificationMeta('armColumnId');
+  @override
+  late final GeneratedColumn<String> armColumnId = GeneratedColumn<String>(
+      'arm_column_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _armColumnIdIntegerMeta =
+      const VerificationMeta('armColumnIdInteger');
+  @override
+  late final GeneratedColumn<int> armColumnIdInteger = GeneratedColumn<int>(
+      'arm_column_id_integer', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _armColumnIndexMeta =
+      const VerificationMeta('armColumnIndex');
+  @override
+  late final GeneratedColumn<int> armColumnIndex = GeneratedColumn<int>(
+      'arm_column_index', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _trialAssessmentIdMeta =
+      const VerificationMeta('trialAssessmentId');
+  @override
+  late final GeneratedColumn<int> trialAssessmentId = GeneratedColumn<int>(
+      'trial_assessment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trial_assessments (id)'));
+  static const VerificationMeta _sessionIdMeta =
+      const VerificationMeta('sessionId');
+  @override
+  late final GeneratedColumn<int> sessionId = GeneratedColumn<int>(
+      'session_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES sessions (id)'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        armColumnId,
+        armColumnIdInteger,
+        armColumnIndex,
+        trialAssessmentId,
+        sessionId,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'arm_column_mappings';
+  @override
+  VerificationContext validateIntegrity(Insertable<ArmColumnMapping> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('arm_column_id')) {
+      context.handle(
+          _armColumnIdMeta,
+          armColumnId.isAcceptableOrUnknown(
+              data['arm_column_id']!, _armColumnIdMeta));
+    } else if (isInserting) {
+      context.missing(_armColumnIdMeta);
+    }
+    if (data.containsKey('arm_column_id_integer')) {
+      context.handle(
+          _armColumnIdIntegerMeta,
+          armColumnIdInteger.isAcceptableOrUnknown(
+              data['arm_column_id_integer']!, _armColumnIdIntegerMeta));
+    }
+    if (data.containsKey('arm_column_index')) {
+      context.handle(
+          _armColumnIndexMeta,
+          armColumnIndex.isAcceptableOrUnknown(
+              data['arm_column_index']!, _armColumnIndexMeta));
+    } else if (isInserting) {
+      context.missing(_armColumnIndexMeta);
+    }
+    if (data.containsKey('trial_assessment_id')) {
+      context.handle(
+          _trialAssessmentIdMeta,
+          trialAssessmentId.isAcceptableOrUnknown(
+              data['trial_assessment_id']!, _trialAssessmentIdMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(_sessionIdMeta,
+          sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ArmColumnMapping map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArmColumnMapping(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      armColumnId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}arm_column_id'])!,
+      armColumnIdInteger: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}arm_column_id_integer']),
+      armColumnIndex: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}arm_column_index'])!,
+      trialAssessmentId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}trial_assessment_id']),
+      sessionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}session_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $ArmColumnMappingsTable createAlias(String alias) {
+    return $ArmColumnMappingsTable(attachedDatabase, alias);
+  }
+}
+
+class ArmColumnMapping extends DataClass
+    implements Insertable<ArmColumnMapping> {
+  final int id;
+  final int trialId;
+
+  /// ARM Column ID exactly as it appears in the shell (typically numeric
+  /// but kept as text to preserve leading zeros or future non-numeric IDs).
+  final String armColumnId;
+
+  /// Integer form of [armColumnId] when parseable; null otherwise. Used as
+  /// the canonical round-trip matching key where the shell offers it.
+  final int? armColumnIdInteger;
+
+  /// 0-based position of the column within the shell's assessment-column
+  /// area. Stable across import/export as long as the shell is not reshaped.
+  final int armColumnIndex;
+
+  /// The deduplicated app-side assessment this column belongs to.
+  /// Null = orphan column (preserved for round-trip, hidden from UI).
+  final int? trialAssessmentId;
+
+  /// The app-side session this column's rating date maps to.
+  /// Null = orphan column (see above).
+  final int? sessionId;
+  final DateTime createdAt;
+  const ArmColumnMapping(
+      {required this.id,
+      required this.trialId,
+      required this.armColumnId,
+      this.armColumnIdInteger,
+      required this.armColumnIndex,
+      this.trialAssessmentId,
+      this.sessionId,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['arm_column_id'] = Variable<String>(armColumnId);
+    if (!nullToAbsent || armColumnIdInteger != null) {
+      map['arm_column_id_integer'] = Variable<int>(armColumnIdInteger);
+    }
+    map['arm_column_index'] = Variable<int>(armColumnIndex);
+    if (!nullToAbsent || trialAssessmentId != null) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId);
+    }
+    if (!nullToAbsent || sessionId != null) {
+      map['session_id'] = Variable<int>(sessionId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ArmColumnMappingsCompanion toCompanion(bool nullToAbsent) {
+    return ArmColumnMappingsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      armColumnId: Value(armColumnId),
+      armColumnIdInteger: armColumnIdInteger == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armColumnIdInteger),
+      armColumnIndex: Value(armColumnIndex),
+      trialAssessmentId: trialAssessmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trialAssessmentId),
+      sessionId: sessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ArmColumnMapping.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArmColumnMapping(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      armColumnId: serializer.fromJson<String>(json['armColumnId']),
+      armColumnIdInteger: serializer.fromJson<int?>(json['armColumnIdInteger']),
+      armColumnIndex: serializer.fromJson<int>(json['armColumnIndex']),
+      trialAssessmentId: serializer.fromJson<int?>(json['trialAssessmentId']),
+      sessionId: serializer.fromJson<int?>(json['sessionId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'armColumnId': serializer.toJson<String>(armColumnId),
+      'armColumnIdInteger': serializer.toJson<int?>(armColumnIdInteger),
+      'armColumnIndex': serializer.toJson<int>(armColumnIndex),
+      'trialAssessmentId': serializer.toJson<int?>(trialAssessmentId),
+      'sessionId': serializer.toJson<int?>(sessionId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ArmColumnMapping copyWith(
+          {int? id,
+          int? trialId,
+          String? armColumnId,
+          Value<int?> armColumnIdInteger = const Value.absent(),
+          int? armColumnIndex,
+          Value<int?> trialAssessmentId = const Value.absent(),
+          Value<int?> sessionId = const Value.absent(),
+          DateTime? createdAt}) =>
+      ArmColumnMapping(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        armColumnId: armColumnId ?? this.armColumnId,
+        armColumnIdInteger: armColumnIdInteger.present
+            ? armColumnIdInteger.value
+            : this.armColumnIdInteger,
+        armColumnIndex: armColumnIndex ?? this.armColumnIndex,
+        trialAssessmentId: trialAssessmentId.present
+            ? trialAssessmentId.value
+            : this.trialAssessmentId,
+        sessionId: sessionId.present ? sessionId.value : this.sessionId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ArmColumnMapping copyWithCompanion(ArmColumnMappingsCompanion data) {
+    return ArmColumnMapping(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      armColumnId:
+          data.armColumnId.present ? data.armColumnId.value : this.armColumnId,
+      armColumnIdInteger: data.armColumnIdInteger.present
+          ? data.armColumnIdInteger.value
+          : this.armColumnIdInteger,
+      armColumnIndex: data.armColumnIndex.present
+          ? data.armColumnIndex.value
+          : this.armColumnIndex,
+      trialAssessmentId: data.trialAssessmentId.present
+          ? data.trialAssessmentId.value
+          : this.trialAssessmentId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmColumnMapping(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('armColumnId: $armColumnId, ')
+          ..write('armColumnIdInteger: $armColumnIdInteger, ')
+          ..write('armColumnIndex: $armColumnIndex, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, trialId, armColumnId, armColumnIdInteger,
+      armColumnIndex, trialAssessmentId, sessionId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArmColumnMapping &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.armColumnId == this.armColumnId &&
+          other.armColumnIdInteger == this.armColumnIdInteger &&
+          other.armColumnIndex == this.armColumnIndex &&
+          other.trialAssessmentId == this.trialAssessmentId &&
+          other.sessionId == this.sessionId &&
+          other.createdAt == this.createdAt);
+}
+
+class ArmColumnMappingsCompanion extends UpdateCompanion<ArmColumnMapping> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<String> armColumnId;
+  final Value<int?> armColumnIdInteger;
+  final Value<int> armColumnIndex;
+  final Value<int?> trialAssessmentId;
+  final Value<int?> sessionId;
+  final Value<DateTime> createdAt;
+  const ArmColumnMappingsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.armColumnId = const Value.absent(),
+    this.armColumnIdInteger = const Value.absent(),
+    this.armColumnIndex = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ArmColumnMappingsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required String armColumnId,
+    this.armColumnIdInteger = const Value.absent(),
+    required int armColumnIndex,
+    this.trialAssessmentId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : trialId = Value(trialId),
+        armColumnId = Value(armColumnId),
+        armColumnIndex = Value(armColumnIndex);
+  static Insertable<ArmColumnMapping> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<String>? armColumnId,
+    Expression<int>? armColumnIdInteger,
+    Expression<int>? armColumnIndex,
+    Expression<int>? trialAssessmentId,
+    Expression<int>? sessionId,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (armColumnId != null) 'arm_column_id': armColumnId,
+      if (armColumnIdInteger != null)
+        'arm_column_id_integer': armColumnIdInteger,
+      if (armColumnIndex != null) 'arm_column_index': armColumnIndex,
+      if (trialAssessmentId != null) 'trial_assessment_id': trialAssessmentId,
+      if (sessionId != null) 'session_id': sessionId,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ArmColumnMappingsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<String>? armColumnId,
+      Value<int?>? armColumnIdInteger,
+      Value<int>? armColumnIndex,
+      Value<int?>? trialAssessmentId,
+      Value<int?>? sessionId,
+      Value<DateTime>? createdAt}) {
+    return ArmColumnMappingsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      armColumnId: armColumnId ?? this.armColumnId,
+      armColumnIdInteger: armColumnIdInteger ?? this.armColumnIdInteger,
+      armColumnIndex: armColumnIndex ?? this.armColumnIndex,
+      trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
+      sessionId: sessionId ?? this.sessionId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (armColumnId.present) {
+      map['arm_column_id'] = Variable<String>(armColumnId.value);
+    }
+    if (armColumnIdInteger.present) {
+      map['arm_column_id_integer'] = Variable<int>(armColumnIdInteger.value);
+    }
+    if (armColumnIndex.present) {
+      map['arm_column_index'] = Variable<int>(armColumnIndex.value);
+    }
+    if (trialAssessmentId.present) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<int>(sessionId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmColumnMappingsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('armColumnId: $armColumnId, ')
+          ..write('armColumnIdInteger: $armColumnIdInteger, ')
+          ..write('armColumnIndex: $armColumnIndex, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
+    with TableInfo<$ArmAssessmentMetadataTable, ArmAssessmentMetadataData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArmAssessmentMetadataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialAssessmentIdMeta =
+      const VerificationMeta('trialAssessmentId');
+  @override
+  late final GeneratedColumn<int> trialAssessmentId = GeneratedColumn<int>(
+      'trial_assessment_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trial_assessments (id)'));
+  static const VerificationMeta _seNameMeta = const VerificationMeta('seName');
+  @override
+  late final GeneratedColumn<String> seName = GeneratedColumn<String>(
+      'se_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _seDescriptionMeta =
+      const VerificationMeta('seDescription');
+  @override
+  late final GeneratedColumn<String> seDescription = GeneratedColumn<String>(
+      'se_description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _partRatedMeta =
+      const VerificationMeta('partRated');
+  @override
+  late final GeneratedColumn<String> partRated = GeneratedColumn<String>(
+      'part_rated', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _ratingTypeMeta =
+      const VerificationMeta('ratingType');
+  @override
+  late final GeneratedColumn<String> ratingType = GeneratedColumn<String>(
+      'rating_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _ratingUnitMeta =
+      const VerificationMeta('ratingUnit');
+  @override
+  late final GeneratedColumn<String> ratingUnit = GeneratedColumn<String>(
+      'rating_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _ratingMinMeta =
+      const VerificationMeta('ratingMin');
+  @override
+  late final GeneratedColumn<double> ratingMin = GeneratedColumn<double>(
+      'rating_min', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _ratingMaxMeta =
+      const VerificationMeta('ratingMax');
+  @override
+  late final GeneratedColumn<double> ratingMax = GeneratedColumn<double>(
+      'rating_max', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _collectBasisMeta =
+      const VerificationMeta('collectBasis');
+  @override
+  late final GeneratedColumn<String> collectBasis = GeneratedColumn<String>(
+      'collect_basis', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _numSubsamplesMeta =
+      const VerificationMeta('numSubsamples');
+  @override
+  late final GeneratedColumn<int> numSubsamples = GeneratedColumn<int>(
+      'num_subsamples', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _pestCodeMeta =
+      const VerificationMeta('pestCode');
+  @override
+  late final GeneratedColumn<String> pestCode = GeneratedColumn<String>(
+      'pest_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pestCodeSecondaryMeta =
+      const VerificationMeta('pestCodeSecondary');
+  @override
+  late final GeneratedColumn<String> pestCodeSecondary =
+      GeneratedColumn<String>('pest_code_secondary', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialAssessmentId,
+        seName,
+        seDescription,
+        partRated,
+        ratingType,
+        ratingUnit,
+        ratingMin,
+        ratingMax,
+        collectBasis,
+        numSubsamples,
+        pestCode,
+        pestCodeSecondary,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'arm_assessment_metadata';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ArmAssessmentMetadataData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_assessment_id')) {
+      context.handle(
+          _trialAssessmentIdMeta,
+          trialAssessmentId.isAcceptableOrUnknown(
+              data['trial_assessment_id']!, _trialAssessmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialAssessmentIdMeta);
+    }
+    if (data.containsKey('se_name')) {
+      context.handle(_seNameMeta,
+          seName.isAcceptableOrUnknown(data['se_name']!, _seNameMeta));
+    }
+    if (data.containsKey('se_description')) {
+      context.handle(
+          _seDescriptionMeta,
+          seDescription.isAcceptableOrUnknown(
+              data['se_description']!, _seDescriptionMeta));
+    }
+    if (data.containsKey('part_rated')) {
+      context.handle(_partRatedMeta,
+          partRated.isAcceptableOrUnknown(data['part_rated']!, _partRatedMeta));
+    }
+    if (data.containsKey('rating_type')) {
+      context.handle(
+          _ratingTypeMeta,
+          ratingType.isAcceptableOrUnknown(
+              data['rating_type']!, _ratingTypeMeta));
+    }
+    if (data.containsKey('rating_unit')) {
+      context.handle(
+          _ratingUnitMeta,
+          ratingUnit.isAcceptableOrUnknown(
+              data['rating_unit']!, _ratingUnitMeta));
+    }
+    if (data.containsKey('rating_min')) {
+      context.handle(_ratingMinMeta,
+          ratingMin.isAcceptableOrUnknown(data['rating_min']!, _ratingMinMeta));
+    }
+    if (data.containsKey('rating_max')) {
+      context.handle(_ratingMaxMeta,
+          ratingMax.isAcceptableOrUnknown(data['rating_max']!, _ratingMaxMeta));
+    }
+    if (data.containsKey('collect_basis')) {
+      context.handle(
+          _collectBasisMeta,
+          collectBasis.isAcceptableOrUnknown(
+              data['collect_basis']!, _collectBasisMeta));
+    }
+    if (data.containsKey('num_subsamples')) {
+      context.handle(
+          _numSubsamplesMeta,
+          numSubsamples.isAcceptableOrUnknown(
+              data['num_subsamples']!, _numSubsamplesMeta));
+    }
+    if (data.containsKey('pest_code')) {
+      context.handle(_pestCodeMeta,
+          pestCode.isAcceptableOrUnknown(data['pest_code']!, _pestCodeMeta));
+    }
+    if (data.containsKey('pest_code_secondary')) {
+      context.handle(
+          _pestCodeSecondaryMeta,
+          pestCodeSecondary.isAcceptableOrUnknown(
+              data['pest_code_secondary']!, _pestCodeSecondaryMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ArmAssessmentMetadataData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArmAssessmentMetadataData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialAssessmentId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}trial_assessment_id'])!,
+      seName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}se_name']),
+      seDescription: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}se_description']),
+      partRated: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}part_rated']),
+      ratingType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rating_type']),
+      ratingUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rating_unit']),
+      ratingMin: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}rating_min']),
+      ratingMax: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}rating_max']),
+      collectBasis: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}collect_basis']),
+      numSubsamples: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}num_subsamples']),
+      pestCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pest_code']),
+      pestCodeSecondary: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}pest_code_secondary']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $ArmAssessmentMetadataTable createAlias(String alias) {
+    return $ArmAssessmentMetadataTable(attachedDatabase, alias);
+  }
+}
+
+class ArmAssessmentMetadataData extends DataClass
+    implements Insertable<ArmAssessmentMetadataData> {
+  final int id;
+  final int trialAssessmentId;
+
+  /// ARM "SE Name" code (e.g. "W003", "CF013"). Part of the dedup identity.
+  final String? seName;
+
+  /// Verbatim "SE Description" from the shell (e.g. "Weed Control").
+  final String? seDescription;
+
+  /// ARM "Part Rated" (e.g. "PLANT", "LEAF3"). Part of the dedup identity.
+  final String? partRated;
+
+  /// ARM "Rating Type" (e.g. "CONTRO", "LODGIN", "PESINC").
+  /// Part of the dedup identity.
+  final String? ratingType;
+  final String? ratingUnit;
+  final double? ratingMin;
+  final double? ratingMax;
+
+  /// "P" = per plot, "S" = per subsample.
+  final String? collectBasis;
+
+  /// Number of subsamples per plot when [collectBasis] = "S".
+  final int? numSubsamples;
+
+  /// Primary pest / weed / disease target code (EPPO or ARM code).
+  final String? pestCode;
+
+  /// Optional secondary target code when the assessment covers two.
+  final String? pestCodeSecondary;
+  final DateTime createdAt;
+  const ArmAssessmentMetadataData(
+      {required this.id,
+      required this.trialAssessmentId,
+      this.seName,
+      this.seDescription,
+      this.partRated,
+      this.ratingType,
+      this.ratingUnit,
+      this.ratingMin,
+      this.ratingMax,
+      this.collectBasis,
+      this.numSubsamples,
+      this.pestCode,
+      this.pestCodeSecondary,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_assessment_id'] = Variable<int>(trialAssessmentId);
+    if (!nullToAbsent || seName != null) {
+      map['se_name'] = Variable<String>(seName);
+    }
+    if (!nullToAbsent || seDescription != null) {
+      map['se_description'] = Variable<String>(seDescription);
+    }
+    if (!nullToAbsent || partRated != null) {
+      map['part_rated'] = Variable<String>(partRated);
+    }
+    if (!nullToAbsent || ratingType != null) {
+      map['rating_type'] = Variable<String>(ratingType);
+    }
+    if (!nullToAbsent || ratingUnit != null) {
+      map['rating_unit'] = Variable<String>(ratingUnit);
+    }
+    if (!nullToAbsent || ratingMin != null) {
+      map['rating_min'] = Variable<double>(ratingMin);
+    }
+    if (!nullToAbsent || ratingMax != null) {
+      map['rating_max'] = Variable<double>(ratingMax);
+    }
+    if (!nullToAbsent || collectBasis != null) {
+      map['collect_basis'] = Variable<String>(collectBasis);
+    }
+    if (!nullToAbsent || numSubsamples != null) {
+      map['num_subsamples'] = Variable<int>(numSubsamples);
+    }
+    if (!nullToAbsent || pestCode != null) {
+      map['pest_code'] = Variable<String>(pestCode);
+    }
+    if (!nullToAbsent || pestCodeSecondary != null) {
+      map['pest_code_secondary'] = Variable<String>(pestCodeSecondary);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ArmAssessmentMetadataCompanion toCompanion(bool nullToAbsent) {
+    return ArmAssessmentMetadataCompanion(
+      id: Value(id),
+      trialAssessmentId: Value(trialAssessmentId),
+      seName:
+          seName == null && nullToAbsent ? const Value.absent() : Value(seName),
+      seDescription: seDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seDescription),
+      partRated: partRated == null && nullToAbsent
+          ? const Value.absent()
+          : Value(partRated),
+      ratingType: ratingType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ratingType),
+      ratingUnit: ratingUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ratingUnit),
+      ratingMin: ratingMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ratingMin),
+      ratingMax: ratingMax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ratingMax),
+      collectBasis: collectBasis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(collectBasis),
+      numSubsamples: numSubsamples == null && nullToAbsent
+          ? const Value.absent()
+          : Value(numSubsamples),
+      pestCode: pestCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pestCode),
+      pestCodeSecondary: pestCodeSecondary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pestCodeSecondary),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ArmAssessmentMetadataData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArmAssessmentMetadataData(
+      id: serializer.fromJson<int>(json['id']),
+      trialAssessmentId: serializer.fromJson<int>(json['trialAssessmentId']),
+      seName: serializer.fromJson<String?>(json['seName']),
+      seDescription: serializer.fromJson<String?>(json['seDescription']),
+      partRated: serializer.fromJson<String?>(json['partRated']),
+      ratingType: serializer.fromJson<String?>(json['ratingType']),
+      ratingUnit: serializer.fromJson<String?>(json['ratingUnit']),
+      ratingMin: serializer.fromJson<double?>(json['ratingMin']),
+      ratingMax: serializer.fromJson<double?>(json['ratingMax']),
+      collectBasis: serializer.fromJson<String?>(json['collectBasis']),
+      numSubsamples: serializer.fromJson<int?>(json['numSubsamples']),
+      pestCode: serializer.fromJson<String?>(json['pestCode']),
+      pestCodeSecondary:
+          serializer.fromJson<String?>(json['pestCodeSecondary']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialAssessmentId': serializer.toJson<int>(trialAssessmentId),
+      'seName': serializer.toJson<String?>(seName),
+      'seDescription': serializer.toJson<String?>(seDescription),
+      'partRated': serializer.toJson<String?>(partRated),
+      'ratingType': serializer.toJson<String?>(ratingType),
+      'ratingUnit': serializer.toJson<String?>(ratingUnit),
+      'ratingMin': serializer.toJson<double?>(ratingMin),
+      'ratingMax': serializer.toJson<double?>(ratingMax),
+      'collectBasis': serializer.toJson<String?>(collectBasis),
+      'numSubsamples': serializer.toJson<int?>(numSubsamples),
+      'pestCode': serializer.toJson<String?>(pestCode),
+      'pestCodeSecondary': serializer.toJson<String?>(pestCodeSecondary),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ArmAssessmentMetadataData copyWith(
+          {int? id,
+          int? trialAssessmentId,
+          Value<String?> seName = const Value.absent(),
+          Value<String?> seDescription = const Value.absent(),
+          Value<String?> partRated = const Value.absent(),
+          Value<String?> ratingType = const Value.absent(),
+          Value<String?> ratingUnit = const Value.absent(),
+          Value<double?> ratingMin = const Value.absent(),
+          Value<double?> ratingMax = const Value.absent(),
+          Value<String?> collectBasis = const Value.absent(),
+          Value<int?> numSubsamples = const Value.absent(),
+          Value<String?> pestCode = const Value.absent(),
+          Value<String?> pestCodeSecondary = const Value.absent(),
+          DateTime? createdAt}) =>
+      ArmAssessmentMetadataData(
+        id: id ?? this.id,
+        trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
+        seName: seName.present ? seName.value : this.seName,
+        seDescription:
+            seDescription.present ? seDescription.value : this.seDescription,
+        partRated: partRated.present ? partRated.value : this.partRated,
+        ratingType: ratingType.present ? ratingType.value : this.ratingType,
+        ratingUnit: ratingUnit.present ? ratingUnit.value : this.ratingUnit,
+        ratingMin: ratingMin.present ? ratingMin.value : this.ratingMin,
+        ratingMax: ratingMax.present ? ratingMax.value : this.ratingMax,
+        collectBasis:
+            collectBasis.present ? collectBasis.value : this.collectBasis,
+        numSubsamples:
+            numSubsamples.present ? numSubsamples.value : this.numSubsamples,
+        pestCode: pestCode.present ? pestCode.value : this.pestCode,
+        pestCodeSecondary: pestCodeSecondary.present
+            ? pestCodeSecondary.value
+            : this.pestCodeSecondary,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ArmAssessmentMetadataData copyWithCompanion(
+      ArmAssessmentMetadataCompanion data) {
+    return ArmAssessmentMetadataData(
+      id: data.id.present ? data.id.value : this.id,
+      trialAssessmentId: data.trialAssessmentId.present
+          ? data.trialAssessmentId.value
+          : this.trialAssessmentId,
+      seName: data.seName.present ? data.seName.value : this.seName,
+      seDescription: data.seDescription.present
+          ? data.seDescription.value
+          : this.seDescription,
+      partRated: data.partRated.present ? data.partRated.value : this.partRated,
+      ratingType:
+          data.ratingType.present ? data.ratingType.value : this.ratingType,
+      ratingUnit:
+          data.ratingUnit.present ? data.ratingUnit.value : this.ratingUnit,
+      ratingMin: data.ratingMin.present ? data.ratingMin.value : this.ratingMin,
+      ratingMax: data.ratingMax.present ? data.ratingMax.value : this.ratingMax,
+      collectBasis: data.collectBasis.present
+          ? data.collectBasis.value
+          : this.collectBasis,
+      numSubsamples: data.numSubsamples.present
+          ? data.numSubsamples.value
+          : this.numSubsamples,
+      pestCode: data.pestCode.present ? data.pestCode.value : this.pestCode,
+      pestCodeSecondary: data.pestCodeSecondary.present
+          ? data.pestCodeSecondary.value
+          : this.pestCodeSecondary,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmAssessmentMetadataData(')
+          ..write('id: $id, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('seName: $seName, ')
+          ..write('seDescription: $seDescription, ')
+          ..write('partRated: $partRated, ')
+          ..write('ratingType: $ratingType, ')
+          ..write('ratingUnit: $ratingUnit, ')
+          ..write('ratingMin: $ratingMin, ')
+          ..write('ratingMax: $ratingMax, ')
+          ..write('collectBasis: $collectBasis, ')
+          ..write('numSubsamples: $numSubsamples, ')
+          ..write('pestCode: $pestCode, ')
+          ..write('pestCodeSecondary: $pestCodeSecondary, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialAssessmentId,
+      seName,
+      seDescription,
+      partRated,
+      ratingType,
+      ratingUnit,
+      ratingMin,
+      ratingMax,
+      collectBasis,
+      numSubsamples,
+      pestCode,
+      pestCodeSecondary,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArmAssessmentMetadataData &&
+          other.id == this.id &&
+          other.trialAssessmentId == this.trialAssessmentId &&
+          other.seName == this.seName &&
+          other.seDescription == this.seDescription &&
+          other.partRated == this.partRated &&
+          other.ratingType == this.ratingType &&
+          other.ratingUnit == this.ratingUnit &&
+          other.ratingMin == this.ratingMin &&
+          other.ratingMax == this.ratingMax &&
+          other.collectBasis == this.collectBasis &&
+          other.numSubsamples == this.numSubsamples &&
+          other.pestCode == this.pestCode &&
+          other.pestCodeSecondary == this.pestCodeSecondary &&
+          other.createdAt == this.createdAt);
+}
+
+class ArmAssessmentMetadataCompanion
+    extends UpdateCompanion<ArmAssessmentMetadataData> {
+  final Value<int> id;
+  final Value<int> trialAssessmentId;
+  final Value<String?> seName;
+  final Value<String?> seDescription;
+  final Value<String?> partRated;
+  final Value<String?> ratingType;
+  final Value<String?> ratingUnit;
+  final Value<double?> ratingMin;
+  final Value<double?> ratingMax;
+  final Value<String?> collectBasis;
+  final Value<int?> numSubsamples;
+  final Value<String?> pestCode;
+  final Value<String?> pestCodeSecondary;
+  final Value<DateTime> createdAt;
+  const ArmAssessmentMetadataCompanion({
+    this.id = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
+    this.seName = const Value.absent(),
+    this.seDescription = const Value.absent(),
+    this.partRated = const Value.absent(),
+    this.ratingType = const Value.absent(),
+    this.ratingUnit = const Value.absent(),
+    this.ratingMin = const Value.absent(),
+    this.ratingMax = const Value.absent(),
+    this.collectBasis = const Value.absent(),
+    this.numSubsamples = const Value.absent(),
+    this.pestCode = const Value.absent(),
+    this.pestCodeSecondary = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ArmAssessmentMetadataCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialAssessmentId,
+    this.seName = const Value.absent(),
+    this.seDescription = const Value.absent(),
+    this.partRated = const Value.absent(),
+    this.ratingType = const Value.absent(),
+    this.ratingUnit = const Value.absent(),
+    this.ratingMin = const Value.absent(),
+    this.ratingMax = const Value.absent(),
+    this.collectBasis = const Value.absent(),
+    this.numSubsamples = const Value.absent(),
+    this.pestCode = const Value.absent(),
+    this.pestCodeSecondary = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : trialAssessmentId = Value(trialAssessmentId);
+  static Insertable<ArmAssessmentMetadataData> custom({
+    Expression<int>? id,
+    Expression<int>? trialAssessmentId,
+    Expression<String>? seName,
+    Expression<String>? seDescription,
+    Expression<String>? partRated,
+    Expression<String>? ratingType,
+    Expression<String>? ratingUnit,
+    Expression<double>? ratingMin,
+    Expression<double>? ratingMax,
+    Expression<String>? collectBasis,
+    Expression<int>? numSubsamples,
+    Expression<String>? pestCode,
+    Expression<String>? pestCodeSecondary,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialAssessmentId != null) 'trial_assessment_id': trialAssessmentId,
+      if (seName != null) 'se_name': seName,
+      if (seDescription != null) 'se_description': seDescription,
+      if (partRated != null) 'part_rated': partRated,
+      if (ratingType != null) 'rating_type': ratingType,
+      if (ratingUnit != null) 'rating_unit': ratingUnit,
+      if (ratingMin != null) 'rating_min': ratingMin,
+      if (ratingMax != null) 'rating_max': ratingMax,
+      if (collectBasis != null) 'collect_basis': collectBasis,
+      if (numSubsamples != null) 'num_subsamples': numSubsamples,
+      if (pestCode != null) 'pest_code': pestCode,
+      if (pestCodeSecondary != null) 'pest_code_secondary': pestCodeSecondary,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ArmAssessmentMetadataCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialAssessmentId,
+      Value<String?>? seName,
+      Value<String?>? seDescription,
+      Value<String?>? partRated,
+      Value<String?>? ratingType,
+      Value<String?>? ratingUnit,
+      Value<double?>? ratingMin,
+      Value<double?>? ratingMax,
+      Value<String?>? collectBasis,
+      Value<int?>? numSubsamples,
+      Value<String?>? pestCode,
+      Value<String?>? pestCodeSecondary,
+      Value<DateTime>? createdAt}) {
+    return ArmAssessmentMetadataCompanion(
+      id: id ?? this.id,
+      trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
+      seName: seName ?? this.seName,
+      seDescription: seDescription ?? this.seDescription,
+      partRated: partRated ?? this.partRated,
+      ratingType: ratingType ?? this.ratingType,
+      ratingUnit: ratingUnit ?? this.ratingUnit,
+      ratingMin: ratingMin ?? this.ratingMin,
+      ratingMax: ratingMax ?? this.ratingMax,
+      collectBasis: collectBasis ?? this.collectBasis,
+      numSubsamples: numSubsamples ?? this.numSubsamples,
+      pestCode: pestCode ?? this.pestCode,
+      pestCodeSecondary: pestCodeSecondary ?? this.pestCodeSecondary,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialAssessmentId.present) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId.value);
+    }
+    if (seName.present) {
+      map['se_name'] = Variable<String>(seName.value);
+    }
+    if (seDescription.present) {
+      map['se_description'] = Variable<String>(seDescription.value);
+    }
+    if (partRated.present) {
+      map['part_rated'] = Variable<String>(partRated.value);
+    }
+    if (ratingType.present) {
+      map['rating_type'] = Variable<String>(ratingType.value);
+    }
+    if (ratingUnit.present) {
+      map['rating_unit'] = Variable<String>(ratingUnit.value);
+    }
+    if (ratingMin.present) {
+      map['rating_min'] = Variable<double>(ratingMin.value);
+    }
+    if (ratingMax.present) {
+      map['rating_max'] = Variable<double>(ratingMax.value);
+    }
+    if (collectBasis.present) {
+      map['collect_basis'] = Variable<String>(collectBasis.value);
+    }
+    if (numSubsamples.present) {
+      map['num_subsamples'] = Variable<int>(numSubsamples.value);
+    }
+    if (pestCode.present) {
+      map['pest_code'] = Variable<String>(pestCode.value);
+    }
+    if (pestCodeSecondary.present) {
+      map['pest_code_secondary'] = Variable<String>(pestCodeSecondary.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmAssessmentMetadataCompanion(')
+          ..write('id: $id, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('seName: $seName, ')
+          ..write('seDescription: $seDescription, ')
+          ..write('partRated: $partRated, ')
+          ..write('ratingType: $ratingType, ')
+          ..write('ratingUnit: $ratingUnit, ')
+          ..write('ratingMin: $ratingMin, ')
+          ..write('ratingMax: $ratingMax, ')
+          ..write('collectBasis: $collectBasis, ')
+          ..write('numSubsamples: $numSubsamples, ')
+          ..write('pestCode: $pestCode, ')
+          ..write('pestCodeSecondary: $pestCodeSecondary, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ArmSessionMetadataTable extends ArmSessionMetadata
+    with TableInfo<$ArmSessionMetadataTable, ArmSessionMetadataData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArmSessionMetadataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _sessionIdMeta =
+      const VerificationMeta('sessionId');
+  @override
+  late final GeneratedColumn<int> sessionId = GeneratedColumn<int>(
+      'session_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES sessions (id)'));
+  static const VerificationMeta _armRatingDateMeta =
+      const VerificationMeta('armRatingDate');
+  @override
+  late final GeneratedColumn<String> armRatingDate = GeneratedColumn<String>(
+      'arm_rating_date', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _timingCodeMeta =
+      const VerificationMeta('timingCode');
+  @override
+  late final GeneratedColumn<String> timingCode = GeneratedColumn<String>(
+      'timing_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cropStageMajMeta =
+      const VerificationMeta('cropStageMaj');
+  @override
+  late final GeneratedColumn<String> cropStageMaj = GeneratedColumn<String>(
+      'crop_stage_maj', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cropStageMinMeta =
+      const VerificationMeta('cropStageMin');
+  @override
+  late final GeneratedColumn<String> cropStageMin = GeneratedColumn<String>(
+      'crop_stage_min', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cropStageScaleMeta =
+      const VerificationMeta('cropStageScale');
+  @override
+  late final GeneratedColumn<String> cropStageScale = GeneratedColumn<String>(
+      'crop_stage_scale', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _trtEvalIntervalMeta =
+      const VerificationMeta('trtEvalInterval');
+  @override
+  late final GeneratedColumn<String> trtEvalInterval = GeneratedColumn<String>(
+      'trt_eval_interval', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _plantEvalIntervalMeta =
+      const VerificationMeta('plantEvalInterval');
+  @override
+  late final GeneratedColumn<String> plantEvalInterval =
+      GeneratedColumn<String>('plant_eval_interval', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _raterInitialsMeta =
+      const VerificationMeta('raterInitials');
+  @override
+  late final GeneratedColumn<String> raterInitials = GeneratedColumn<String>(
+      'rater_initials', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        sessionId,
+        armRatingDate,
+        timingCode,
+        cropStageMaj,
+        cropStageMin,
+        cropStageScale,
+        trtEvalInterval,
+        plantEvalInterval,
+        raterInitials,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'arm_session_metadata';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ArmSessionMetadataData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(_sessionIdMeta,
+          sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta));
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('arm_rating_date')) {
+      context.handle(
+          _armRatingDateMeta,
+          armRatingDate.isAcceptableOrUnknown(
+              data['arm_rating_date']!, _armRatingDateMeta));
+    } else if (isInserting) {
+      context.missing(_armRatingDateMeta);
+    }
+    if (data.containsKey('timing_code')) {
+      context.handle(
+          _timingCodeMeta,
+          timingCode.isAcceptableOrUnknown(
+              data['timing_code']!, _timingCodeMeta));
+    }
+    if (data.containsKey('crop_stage_maj')) {
+      context.handle(
+          _cropStageMajMeta,
+          cropStageMaj.isAcceptableOrUnknown(
+              data['crop_stage_maj']!, _cropStageMajMeta));
+    }
+    if (data.containsKey('crop_stage_min')) {
+      context.handle(
+          _cropStageMinMeta,
+          cropStageMin.isAcceptableOrUnknown(
+              data['crop_stage_min']!, _cropStageMinMeta));
+    }
+    if (data.containsKey('crop_stage_scale')) {
+      context.handle(
+          _cropStageScaleMeta,
+          cropStageScale.isAcceptableOrUnknown(
+              data['crop_stage_scale']!, _cropStageScaleMeta));
+    }
+    if (data.containsKey('trt_eval_interval')) {
+      context.handle(
+          _trtEvalIntervalMeta,
+          trtEvalInterval.isAcceptableOrUnknown(
+              data['trt_eval_interval']!, _trtEvalIntervalMeta));
+    }
+    if (data.containsKey('plant_eval_interval')) {
+      context.handle(
+          _plantEvalIntervalMeta,
+          plantEvalInterval.isAcceptableOrUnknown(
+              data['plant_eval_interval']!, _plantEvalIntervalMeta));
+    }
+    if (data.containsKey('rater_initials')) {
+      context.handle(
+          _raterInitialsMeta,
+          raterInitials.isAcceptableOrUnknown(
+              data['rater_initials']!, _raterInitialsMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ArmSessionMetadataData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArmSessionMetadataData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      sessionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}session_id'])!,
+      armRatingDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}arm_rating_date'])!,
+      timingCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}timing_code']),
+      cropStageMaj: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}crop_stage_maj']),
+      cropStageMin: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}crop_stage_min']),
+      cropStageScale: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}crop_stage_scale']),
+      trtEvalInterval: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}trt_eval_interval']),
+      plantEvalInterval: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}plant_eval_interval']),
+      raterInitials: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}rater_initials']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $ArmSessionMetadataTable createAlias(String alias) {
+    return $ArmSessionMetadataTable(attachedDatabase, alias);
+  }
+}
+
+class ArmSessionMetadataData extends DataClass
+    implements Insertable<ArmSessionMetadataData> {
+  final int id;
+  final int sessionId;
+
+  /// Rating Date from the ARM shell, stored as a YYYY-MM-DD string to match
+  /// the shell's own representation and the app's [Sessions.sessionDateLocal].
+  final String armRatingDate;
+
+  /// ARM timing code (e.g. "A1", "A3", "A6", "AA") identifying the
+  /// pre/post-application slot this rating belongs to.
+  final String? timingCode;
+
+  /// Major crop stage (ARM "Crop Stage Maj", e.g. "V5", "R1", "BBCH 30").
+  final String? cropStageMaj;
+
+  /// Minor crop stage (ARM "Crop Stage Min").
+  final String? cropStageMin;
+
+  /// Scale used for the crop stage (e.g. "BBCH", "Feekes").
+  final String? cropStageScale;
+
+  /// Days-after-treatment interval string (e.g. "21 DA-A").
+  final String? trtEvalInterval;
+
+  /// Days-after-planting interval string (e.g. "14 DA-P").
+  final String? plantEvalInterval;
+
+  /// Rater initials from the Plot Data header; may differ per rating date.
+  final String? raterInitials;
+  final DateTime createdAt;
+  const ArmSessionMetadataData(
+      {required this.id,
+      required this.sessionId,
+      required this.armRatingDate,
+      this.timingCode,
+      this.cropStageMaj,
+      this.cropStageMin,
+      this.cropStageScale,
+      this.trtEvalInterval,
+      this.plantEvalInterval,
+      this.raterInitials,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['session_id'] = Variable<int>(sessionId);
+    map['arm_rating_date'] = Variable<String>(armRatingDate);
+    if (!nullToAbsent || timingCode != null) {
+      map['timing_code'] = Variable<String>(timingCode);
+    }
+    if (!nullToAbsent || cropStageMaj != null) {
+      map['crop_stage_maj'] = Variable<String>(cropStageMaj);
+    }
+    if (!nullToAbsent || cropStageMin != null) {
+      map['crop_stage_min'] = Variable<String>(cropStageMin);
+    }
+    if (!nullToAbsent || cropStageScale != null) {
+      map['crop_stage_scale'] = Variable<String>(cropStageScale);
+    }
+    if (!nullToAbsent || trtEvalInterval != null) {
+      map['trt_eval_interval'] = Variable<String>(trtEvalInterval);
+    }
+    if (!nullToAbsent || plantEvalInterval != null) {
+      map['plant_eval_interval'] = Variable<String>(plantEvalInterval);
+    }
+    if (!nullToAbsent || raterInitials != null) {
+      map['rater_initials'] = Variable<String>(raterInitials);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ArmSessionMetadataCompanion toCompanion(bool nullToAbsent) {
+    return ArmSessionMetadataCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      armRatingDate: Value(armRatingDate),
+      timingCode: timingCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timingCode),
+      cropStageMaj: cropStageMaj == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropStageMaj),
+      cropStageMin: cropStageMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropStageMin),
+      cropStageScale: cropStageScale == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropStageScale),
+      trtEvalInterval: trtEvalInterval == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trtEvalInterval),
+      plantEvalInterval: plantEvalInterval == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plantEvalInterval),
+      raterInitials: raterInitials == null && nullToAbsent
+          ? const Value.absent()
+          : Value(raterInitials),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ArmSessionMetadataData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArmSessionMetadataData(
+      id: serializer.fromJson<int>(json['id']),
+      sessionId: serializer.fromJson<int>(json['sessionId']),
+      armRatingDate: serializer.fromJson<String>(json['armRatingDate']),
+      timingCode: serializer.fromJson<String?>(json['timingCode']),
+      cropStageMaj: serializer.fromJson<String?>(json['cropStageMaj']),
+      cropStageMin: serializer.fromJson<String?>(json['cropStageMin']),
+      cropStageScale: serializer.fromJson<String?>(json['cropStageScale']),
+      trtEvalInterval: serializer.fromJson<String?>(json['trtEvalInterval']),
+      plantEvalInterval:
+          serializer.fromJson<String?>(json['plantEvalInterval']),
+      raterInitials: serializer.fromJson<String?>(json['raterInitials']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sessionId': serializer.toJson<int>(sessionId),
+      'armRatingDate': serializer.toJson<String>(armRatingDate),
+      'timingCode': serializer.toJson<String?>(timingCode),
+      'cropStageMaj': serializer.toJson<String?>(cropStageMaj),
+      'cropStageMin': serializer.toJson<String?>(cropStageMin),
+      'cropStageScale': serializer.toJson<String?>(cropStageScale),
+      'trtEvalInterval': serializer.toJson<String?>(trtEvalInterval),
+      'plantEvalInterval': serializer.toJson<String?>(plantEvalInterval),
+      'raterInitials': serializer.toJson<String?>(raterInitials),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ArmSessionMetadataData copyWith(
+          {int? id,
+          int? sessionId,
+          String? armRatingDate,
+          Value<String?> timingCode = const Value.absent(),
+          Value<String?> cropStageMaj = const Value.absent(),
+          Value<String?> cropStageMin = const Value.absent(),
+          Value<String?> cropStageScale = const Value.absent(),
+          Value<String?> trtEvalInterval = const Value.absent(),
+          Value<String?> plantEvalInterval = const Value.absent(),
+          Value<String?> raterInitials = const Value.absent(),
+          DateTime? createdAt}) =>
+      ArmSessionMetadataData(
+        id: id ?? this.id,
+        sessionId: sessionId ?? this.sessionId,
+        armRatingDate: armRatingDate ?? this.armRatingDate,
+        timingCode: timingCode.present ? timingCode.value : this.timingCode,
+        cropStageMaj:
+            cropStageMaj.present ? cropStageMaj.value : this.cropStageMaj,
+        cropStageMin:
+            cropStageMin.present ? cropStageMin.value : this.cropStageMin,
+        cropStageScale:
+            cropStageScale.present ? cropStageScale.value : this.cropStageScale,
+        trtEvalInterval: trtEvalInterval.present
+            ? trtEvalInterval.value
+            : this.trtEvalInterval,
+        plantEvalInterval: plantEvalInterval.present
+            ? plantEvalInterval.value
+            : this.plantEvalInterval,
+        raterInitials:
+            raterInitials.present ? raterInitials.value : this.raterInitials,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ArmSessionMetadataData copyWithCompanion(ArmSessionMetadataCompanion data) {
+    return ArmSessionMetadataData(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      armRatingDate: data.armRatingDate.present
+          ? data.armRatingDate.value
+          : this.armRatingDate,
+      timingCode:
+          data.timingCode.present ? data.timingCode.value : this.timingCode,
+      cropStageMaj: data.cropStageMaj.present
+          ? data.cropStageMaj.value
+          : this.cropStageMaj,
+      cropStageMin: data.cropStageMin.present
+          ? data.cropStageMin.value
+          : this.cropStageMin,
+      cropStageScale: data.cropStageScale.present
+          ? data.cropStageScale.value
+          : this.cropStageScale,
+      trtEvalInterval: data.trtEvalInterval.present
+          ? data.trtEvalInterval.value
+          : this.trtEvalInterval,
+      plantEvalInterval: data.plantEvalInterval.present
+          ? data.plantEvalInterval.value
+          : this.plantEvalInterval,
+      raterInitials: data.raterInitials.present
+          ? data.raterInitials.value
+          : this.raterInitials,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmSessionMetadataData(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('armRatingDate: $armRatingDate, ')
+          ..write('timingCode: $timingCode, ')
+          ..write('cropStageMaj: $cropStageMaj, ')
+          ..write('cropStageMin: $cropStageMin, ')
+          ..write('cropStageScale: $cropStageScale, ')
+          ..write('trtEvalInterval: $trtEvalInterval, ')
+          ..write('plantEvalInterval: $plantEvalInterval, ')
+          ..write('raterInitials: $raterInitials, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      sessionId,
+      armRatingDate,
+      timingCode,
+      cropStageMaj,
+      cropStageMin,
+      cropStageScale,
+      trtEvalInterval,
+      plantEvalInterval,
+      raterInitials,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArmSessionMetadataData &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.armRatingDate == this.armRatingDate &&
+          other.timingCode == this.timingCode &&
+          other.cropStageMaj == this.cropStageMaj &&
+          other.cropStageMin == this.cropStageMin &&
+          other.cropStageScale == this.cropStageScale &&
+          other.trtEvalInterval == this.trtEvalInterval &&
+          other.plantEvalInterval == this.plantEvalInterval &&
+          other.raterInitials == this.raterInitials &&
+          other.createdAt == this.createdAt);
+}
+
+class ArmSessionMetadataCompanion
+    extends UpdateCompanion<ArmSessionMetadataData> {
+  final Value<int> id;
+  final Value<int> sessionId;
+  final Value<String> armRatingDate;
+  final Value<String?> timingCode;
+  final Value<String?> cropStageMaj;
+  final Value<String?> cropStageMin;
+  final Value<String?> cropStageScale;
+  final Value<String?> trtEvalInterval;
+  final Value<String?> plantEvalInterval;
+  final Value<String?> raterInitials;
+  final Value<DateTime> createdAt;
+  const ArmSessionMetadataCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.armRatingDate = const Value.absent(),
+    this.timingCode = const Value.absent(),
+    this.cropStageMaj = const Value.absent(),
+    this.cropStageMin = const Value.absent(),
+    this.cropStageScale = const Value.absent(),
+    this.trtEvalInterval = const Value.absent(),
+    this.plantEvalInterval = const Value.absent(),
+    this.raterInitials = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ArmSessionMetadataCompanion.insert({
+    this.id = const Value.absent(),
+    required int sessionId,
+    required String armRatingDate,
+    this.timingCode = const Value.absent(),
+    this.cropStageMaj = const Value.absent(),
+    this.cropStageMin = const Value.absent(),
+    this.cropStageScale = const Value.absent(),
+    this.trtEvalInterval = const Value.absent(),
+    this.plantEvalInterval = const Value.absent(),
+    this.raterInitials = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : sessionId = Value(sessionId),
+        armRatingDate = Value(armRatingDate);
+  static Insertable<ArmSessionMetadataData> custom({
+    Expression<int>? id,
+    Expression<int>? sessionId,
+    Expression<String>? armRatingDate,
+    Expression<String>? timingCode,
+    Expression<String>? cropStageMaj,
+    Expression<String>? cropStageMin,
+    Expression<String>? cropStageScale,
+    Expression<String>? trtEvalInterval,
+    Expression<String>? plantEvalInterval,
+    Expression<String>? raterInitials,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (armRatingDate != null) 'arm_rating_date': armRatingDate,
+      if (timingCode != null) 'timing_code': timingCode,
+      if (cropStageMaj != null) 'crop_stage_maj': cropStageMaj,
+      if (cropStageMin != null) 'crop_stage_min': cropStageMin,
+      if (cropStageScale != null) 'crop_stage_scale': cropStageScale,
+      if (trtEvalInterval != null) 'trt_eval_interval': trtEvalInterval,
+      if (plantEvalInterval != null) 'plant_eval_interval': plantEvalInterval,
+      if (raterInitials != null) 'rater_initials': raterInitials,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ArmSessionMetadataCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? sessionId,
+      Value<String>? armRatingDate,
+      Value<String?>? timingCode,
+      Value<String?>? cropStageMaj,
+      Value<String?>? cropStageMin,
+      Value<String?>? cropStageScale,
+      Value<String?>? trtEvalInterval,
+      Value<String?>? plantEvalInterval,
+      Value<String?>? raterInitials,
+      Value<DateTime>? createdAt}) {
+    return ArmSessionMetadataCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      armRatingDate: armRatingDate ?? this.armRatingDate,
+      timingCode: timingCode ?? this.timingCode,
+      cropStageMaj: cropStageMaj ?? this.cropStageMaj,
+      cropStageMin: cropStageMin ?? this.cropStageMin,
+      cropStageScale: cropStageScale ?? this.cropStageScale,
+      trtEvalInterval: trtEvalInterval ?? this.trtEvalInterval,
+      plantEvalInterval: plantEvalInterval ?? this.plantEvalInterval,
+      raterInitials: raterInitials ?? this.raterInitials,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<int>(sessionId.value);
+    }
+    if (armRatingDate.present) {
+      map['arm_rating_date'] = Variable<String>(armRatingDate.value);
+    }
+    if (timingCode.present) {
+      map['timing_code'] = Variable<String>(timingCode.value);
+    }
+    if (cropStageMaj.present) {
+      map['crop_stage_maj'] = Variable<String>(cropStageMaj.value);
+    }
+    if (cropStageMin.present) {
+      map['crop_stage_min'] = Variable<String>(cropStageMin.value);
+    }
+    if (cropStageScale.present) {
+      map['crop_stage_scale'] = Variable<String>(cropStageScale.value);
+    }
+    if (trtEvalInterval.present) {
+      map['trt_eval_interval'] = Variable<String>(trtEvalInterval.value);
+    }
+    if (plantEvalInterval.present) {
+      map['plant_eval_interval'] = Variable<String>(plantEvalInterval.value);
+    }
+    if (raterInitials.present) {
+      map['rater_initials'] = Variable<String>(raterInitials.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmSessionMetadataCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('armRatingDate: $armRatingDate, ')
+          ..write('timingCode: $timingCode, ')
+          ..write('cropStageMaj: $cropStageMaj, ')
+          ..write('cropStageMin: $cropStageMin, ')
+          ..write('cropStageScale: $cropStageScale, ')
+          ..write('trtEvalInterval: $trtEvalInterval, ')
+          ..write('plantEvalInterval: $plantEvalInterval, ')
+          ..write('raterInitials: $raterInitials, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -30048,6 +31852,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TrialExportDiagnosticsTable(this);
   late final $WeatherSnapshotsTable weatherSnapshots =
       $WeatherSnapshotsTable(this);
+  late final $ArmColumnMappingsTable armColumnMappings =
+      $ArmColumnMappingsTable(this);
+  late final $ArmAssessmentMetadataTable armAssessmentMetadata =
+      $ArmAssessmentMetadataTable(this);
+  late final $ArmSessionMetadataTable armSessionMetadata =
+      $ArmSessionMetadataTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -30089,7 +31899,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         trialContacts,
         yieldDetails,
         trialExportDiagnostics,
-        weatherSnapshots
+        weatherSnapshots,
+        armColumnMappings,
+        armAssessmentMetadata,
+        armSessionMetadata
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -31775,6 +33588,23 @@ class $$TrialsTableFilterComposer
             builder: (joinBuilder, parentComposers) =>
                 $$WeatherSnapshotsTableFilterComposer(ComposerState($state.db,
                     $state.db.weatherSnapshots, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter armColumnMappingsRefs(
+      ComposableFilter Function($$ArmColumnMappingsTableFilterComposer f) f) {
+    final $$ArmColumnMappingsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.armColumnMappings,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ArmColumnMappingsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.armColumnMappings,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 }
@@ -34069,6 +35899,41 @@ class $$TrialAssessmentsTableFilterComposer
                 $state.db.yieldDetails, joinBuilder, parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter armColumnMappingsRefs(
+      ComposableFilter Function($$ArmColumnMappingsTableFilterComposer f) f) {
+    final $$ArmColumnMappingsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.armColumnMappings,
+            getReferencedColumn: (t) => t.trialAssessmentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ArmColumnMappingsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.armColumnMappings,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter armAssessmentMetadataRefs(
+      ComposableFilter Function($$ArmAssessmentMetadataTableFilterComposer f)
+          f) {
+    final $$ArmAssessmentMetadataTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.armAssessmentMetadata,
+            getReferencedColumn: (t) => t.trialAssessmentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ArmAssessmentMetadataTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.armAssessmentMetadata,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialAssessmentsTableOrderingComposer
@@ -35722,6 +37587,40 @@ class $$SessionsTableFilterComposer
             builder: (joinBuilder, parentComposers) =>
                 $$WeatherSnapshotsTableFilterComposer(ComposerState($state.db,
                     $state.db.weatherSnapshots, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter armColumnMappingsRefs(
+      ComposableFilter Function($$ArmColumnMappingsTableFilterComposer f) f) {
+    final $$ArmColumnMappingsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.armColumnMappings,
+            getReferencedColumn: (t) => t.sessionId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ArmColumnMappingsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.armColumnMappings,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter armSessionMetadataRefs(
+      ComposableFilter Function($$ArmSessionMetadataTableFilterComposer f) f) {
+    final $$ArmSessionMetadataTableFilterComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.armSessionMetadata,
+            getReferencedColumn: (t) => t.sessionId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ArmSessionMetadataTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.armSessionMetadata,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 }
@@ -43805,6 +45704,737 @@ class $$WeatherSnapshotsTableOrderingComposer
   }
 }
 
+typedef $$ArmColumnMappingsTableCreateCompanionBuilder
+    = ArmColumnMappingsCompanion Function({
+  Value<int> id,
+  required int trialId,
+  required String armColumnId,
+  Value<int?> armColumnIdInteger,
+  required int armColumnIndex,
+  Value<int?> trialAssessmentId,
+  Value<int?> sessionId,
+  Value<DateTime> createdAt,
+});
+typedef $$ArmColumnMappingsTableUpdateCompanionBuilder
+    = ArmColumnMappingsCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<String> armColumnId,
+  Value<int?> armColumnIdInteger,
+  Value<int> armColumnIndex,
+  Value<int?> trialAssessmentId,
+  Value<int?> sessionId,
+  Value<DateTime> createdAt,
+});
+
+class $$ArmColumnMappingsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ArmColumnMappingsTable,
+    ArmColumnMapping,
+    $$ArmColumnMappingsTableFilterComposer,
+    $$ArmColumnMappingsTableOrderingComposer,
+    $$ArmColumnMappingsTableCreateCompanionBuilder,
+    $$ArmColumnMappingsTableUpdateCompanionBuilder> {
+  $$ArmColumnMappingsTableTableManager(
+      _$AppDatabase db, $ArmColumnMappingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$ArmColumnMappingsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer: $$ArmColumnMappingsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<String> armColumnId = const Value.absent(),
+            Value<int?> armColumnIdInteger = const Value.absent(),
+            Value<int> armColumnIndex = const Value.absent(),
+            Value<int?> trialAssessmentId = const Value.absent(),
+            Value<int?> sessionId = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmColumnMappingsCompanion(
+            id: id,
+            trialId: trialId,
+            armColumnId: armColumnId,
+            armColumnIdInteger: armColumnIdInteger,
+            armColumnIndex: armColumnIndex,
+            trialAssessmentId: trialAssessmentId,
+            sessionId: sessionId,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required String armColumnId,
+            Value<int?> armColumnIdInteger = const Value.absent(),
+            required int armColumnIndex,
+            Value<int?> trialAssessmentId = const Value.absent(),
+            Value<int?> sessionId = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmColumnMappingsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            armColumnId: armColumnId,
+            armColumnIdInteger: armColumnIdInteger,
+            armColumnIndex: armColumnIndex,
+            trialAssessmentId: trialAssessmentId,
+            sessionId: sessionId,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$ArmColumnMappingsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ArmColumnMappingsTable> {
+  $$ArmColumnMappingsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armColumnId => $state.composableBuilder(
+      column: $state.table.armColumnId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armColumnIdInteger => $state.composableBuilder(
+      column: $state.table.armColumnIdInteger,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armColumnIndex => $state.composableBuilder(
+      column: $state.table.armColumnIndex,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableFilterComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableFilterComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$ArmColumnMappingsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ArmColumnMappingsTable> {
+  $$ArmColumnMappingsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armColumnId => $state.composableBuilder(
+      column: $state.table.armColumnId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armColumnIdInteger => $state.composableBuilder(
+      column: $state.table.armColumnIdInteger,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armColumnIndex => $state.composableBuilder(
+      column: $state.table.armColumnIndex,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableOrderingComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$ArmAssessmentMetadataTableCreateCompanionBuilder
+    = ArmAssessmentMetadataCompanion Function({
+  Value<int> id,
+  required int trialAssessmentId,
+  Value<String?> seName,
+  Value<String?> seDescription,
+  Value<String?> partRated,
+  Value<String?> ratingType,
+  Value<String?> ratingUnit,
+  Value<double?> ratingMin,
+  Value<double?> ratingMax,
+  Value<String?> collectBasis,
+  Value<int?> numSubsamples,
+  Value<String?> pestCode,
+  Value<String?> pestCodeSecondary,
+  Value<DateTime> createdAt,
+});
+typedef $$ArmAssessmentMetadataTableUpdateCompanionBuilder
+    = ArmAssessmentMetadataCompanion Function({
+  Value<int> id,
+  Value<int> trialAssessmentId,
+  Value<String?> seName,
+  Value<String?> seDescription,
+  Value<String?> partRated,
+  Value<String?> ratingType,
+  Value<String?> ratingUnit,
+  Value<double?> ratingMin,
+  Value<double?> ratingMax,
+  Value<String?> collectBasis,
+  Value<int?> numSubsamples,
+  Value<String?> pestCode,
+  Value<String?> pestCodeSecondary,
+  Value<DateTime> createdAt,
+});
+
+class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ArmAssessmentMetadataTable,
+    ArmAssessmentMetadataData,
+    $$ArmAssessmentMetadataTableFilterComposer,
+    $$ArmAssessmentMetadataTableOrderingComposer,
+    $$ArmAssessmentMetadataTableCreateCompanionBuilder,
+    $$ArmAssessmentMetadataTableUpdateCompanionBuilder> {
+  $$ArmAssessmentMetadataTableTableManager(
+      _$AppDatabase db, $ArmAssessmentMetadataTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$ArmAssessmentMetadataTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$ArmAssessmentMetadataTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialAssessmentId = const Value.absent(),
+            Value<String?> seName = const Value.absent(),
+            Value<String?> seDescription = const Value.absent(),
+            Value<String?> partRated = const Value.absent(),
+            Value<String?> ratingType = const Value.absent(),
+            Value<String?> ratingUnit = const Value.absent(),
+            Value<double?> ratingMin = const Value.absent(),
+            Value<double?> ratingMax = const Value.absent(),
+            Value<String?> collectBasis = const Value.absent(),
+            Value<int?> numSubsamples = const Value.absent(),
+            Value<String?> pestCode = const Value.absent(),
+            Value<String?> pestCodeSecondary = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmAssessmentMetadataCompanion(
+            id: id,
+            trialAssessmentId: trialAssessmentId,
+            seName: seName,
+            seDescription: seDescription,
+            partRated: partRated,
+            ratingType: ratingType,
+            ratingUnit: ratingUnit,
+            ratingMin: ratingMin,
+            ratingMax: ratingMax,
+            collectBasis: collectBasis,
+            numSubsamples: numSubsamples,
+            pestCode: pestCode,
+            pestCodeSecondary: pestCodeSecondary,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialAssessmentId,
+            Value<String?> seName = const Value.absent(),
+            Value<String?> seDescription = const Value.absent(),
+            Value<String?> partRated = const Value.absent(),
+            Value<String?> ratingType = const Value.absent(),
+            Value<String?> ratingUnit = const Value.absent(),
+            Value<double?> ratingMin = const Value.absent(),
+            Value<double?> ratingMax = const Value.absent(),
+            Value<String?> collectBasis = const Value.absent(),
+            Value<int?> numSubsamples = const Value.absent(),
+            Value<String?> pestCode = const Value.absent(),
+            Value<String?> pestCodeSecondary = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmAssessmentMetadataCompanion.insert(
+            id: id,
+            trialAssessmentId: trialAssessmentId,
+            seName: seName,
+            seDescription: seDescription,
+            partRated: partRated,
+            ratingType: ratingType,
+            ratingUnit: ratingUnit,
+            ratingMin: ratingMin,
+            ratingMax: ratingMax,
+            collectBasis: collectBasis,
+            numSubsamples: numSubsamples,
+            pestCode: pestCode,
+            pestCodeSecondary: pestCodeSecondary,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$ArmAssessmentMetadataTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ArmAssessmentMetadataTable> {
+  $$ArmAssessmentMetadataTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get seName => $state.composableBuilder(
+      column: $state.table.seName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get seDescription => $state.composableBuilder(
+      column: $state.table.seDescription,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get partRated => $state.composableBuilder(
+      column: $state.table.partRated,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get ratingType => $state.composableBuilder(
+      column: $state.table.ratingType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get ratingUnit => $state.composableBuilder(
+      column: $state.table.ratingUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get ratingMin => $state.composableBuilder(
+      column: $state.table.ratingMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get ratingMax => $state.composableBuilder(
+      column: $state.table.ratingMax,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get collectBasis => $state.composableBuilder(
+      column: $state.table.collectBasis,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get numSubsamples => $state.composableBuilder(
+      column: $state.table.numSubsamples,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get pestCode => $state.composableBuilder(
+      column: $state.table.pestCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get pestCodeSecondary => $state.composableBuilder(
+      column: $state.table.pestCodeSecondary,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialAssessmentsTableFilterComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$ArmAssessmentMetadataTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ArmAssessmentMetadataTable> {
+  $$ArmAssessmentMetadataTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get seName => $state.composableBuilder(
+      column: $state.table.seName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get seDescription => $state.composableBuilder(
+      column: $state.table.seDescription,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get partRated => $state.composableBuilder(
+      column: $state.table.partRated,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get ratingType => $state.composableBuilder(
+      column: $state.table.ratingType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get ratingUnit => $state.composableBuilder(
+      column: $state.table.ratingUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get ratingMin => $state.composableBuilder(
+      column: $state.table.ratingMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get ratingMax => $state.composableBuilder(
+      column: $state.table.ratingMax,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get collectBasis => $state.composableBuilder(
+      column: $state.table.collectBasis,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get numSubsamples => $state.composableBuilder(
+      column: $state.table.numSubsamples,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get pestCode => $state.composableBuilder(
+      column: $state.table.pestCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get pestCodeSecondary => $state.composableBuilder(
+      column: $state.table.pestCodeSecondary,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialAssessmentsTableOrderingComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$ArmSessionMetadataTableCreateCompanionBuilder
+    = ArmSessionMetadataCompanion Function({
+  Value<int> id,
+  required int sessionId,
+  required String armRatingDate,
+  Value<String?> timingCode,
+  Value<String?> cropStageMaj,
+  Value<String?> cropStageMin,
+  Value<String?> cropStageScale,
+  Value<String?> trtEvalInterval,
+  Value<String?> plantEvalInterval,
+  Value<String?> raterInitials,
+  Value<DateTime> createdAt,
+});
+typedef $$ArmSessionMetadataTableUpdateCompanionBuilder
+    = ArmSessionMetadataCompanion Function({
+  Value<int> id,
+  Value<int> sessionId,
+  Value<String> armRatingDate,
+  Value<String?> timingCode,
+  Value<String?> cropStageMaj,
+  Value<String?> cropStageMin,
+  Value<String?> cropStageScale,
+  Value<String?> trtEvalInterval,
+  Value<String?> plantEvalInterval,
+  Value<String?> raterInitials,
+  Value<DateTime> createdAt,
+});
+
+class $$ArmSessionMetadataTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ArmSessionMetadataTable,
+    ArmSessionMetadataData,
+    $$ArmSessionMetadataTableFilterComposer,
+    $$ArmSessionMetadataTableOrderingComposer,
+    $$ArmSessionMetadataTableCreateCompanionBuilder,
+    $$ArmSessionMetadataTableUpdateCompanionBuilder> {
+  $$ArmSessionMetadataTableTableManager(
+      _$AppDatabase db, $ArmSessionMetadataTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$ArmSessionMetadataTableFilterComposer(ComposerState(db, table)),
+          orderingComposer: $$ArmSessionMetadataTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> sessionId = const Value.absent(),
+            Value<String> armRatingDate = const Value.absent(),
+            Value<String?> timingCode = const Value.absent(),
+            Value<String?> cropStageMaj = const Value.absent(),
+            Value<String?> cropStageMin = const Value.absent(),
+            Value<String?> cropStageScale = const Value.absent(),
+            Value<String?> trtEvalInterval = const Value.absent(),
+            Value<String?> plantEvalInterval = const Value.absent(),
+            Value<String?> raterInitials = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmSessionMetadataCompanion(
+            id: id,
+            sessionId: sessionId,
+            armRatingDate: armRatingDate,
+            timingCode: timingCode,
+            cropStageMaj: cropStageMaj,
+            cropStageMin: cropStageMin,
+            cropStageScale: cropStageScale,
+            trtEvalInterval: trtEvalInterval,
+            plantEvalInterval: plantEvalInterval,
+            raterInitials: raterInitials,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int sessionId,
+            required String armRatingDate,
+            Value<String?> timingCode = const Value.absent(),
+            Value<String?> cropStageMaj = const Value.absent(),
+            Value<String?> cropStageMin = const Value.absent(),
+            Value<String?> cropStageScale = const Value.absent(),
+            Value<String?> trtEvalInterval = const Value.absent(),
+            Value<String?> plantEvalInterval = const Value.absent(),
+            Value<String?> raterInitials = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmSessionMetadataCompanion.insert(
+            id: id,
+            sessionId: sessionId,
+            armRatingDate: armRatingDate,
+            timingCode: timingCode,
+            cropStageMaj: cropStageMaj,
+            cropStageMin: cropStageMin,
+            cropStageScale: cropStageScale,
+            trtEvalInterval: trtEvalInterval,
+            plantEvalInterval: plantEvalInterval,
+            raterInitials: raterInitials,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$ArmSessionMetadataTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ArmSessionMetadataTable> {
+  $$ArmSessionMetadataTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armRatingDate => $state.composableBuilder(
+      column: $state.table.armRatingDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get timingCode => $state.composableBuilder(
+      column: $state.table.timingCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cropStageMaj => $state.composableBuilder(
+      column: $state.table.cropStageMaj,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cropStageMin => $state.composableBuilder(
+      column: $state.table.cropStageMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get cropStageScale => $state.composableBuilder(
+      column: $state.table.cropStageScale,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get trtEvalInterval => $state.composableBuilder(
+      column: $state.table.trtEvalInterval,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plantEvalInterval => $state.composableBuilder(
+      column: $state.table.plantEvalInterval,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get raterInitials => $state.composableBuilder(
+      column: $state.table.raterInitials,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableFilterComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$ArmSessionMetadataTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ArmSessionMetadataTable> {
+  $$ArmSessionMetadataTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armRatingDate => $state.composableBuilder(
+      column: $state.table.armRatingDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get timingCode => $state.composableBuilder(
+      column: $state.table.timingCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cropStageMaj => $state.composableBuilder(
+      column: $state.table.cropStageMaj,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cropStageMin => $state.composableBuilder(
+      column: $state.table.cropStageMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get cropStageScale => $state.composableBuilder(
+      column: $state.table.cropStageScale,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get trtEvalInterval => $state.composableBuilder(
+      column: $state.table.trtEvalInterval,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plantEvalInterval => $state.composableBuilder(
+      column: $state.table.plantEvalInterval,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get raterInitials => $state.composableBuilder(
+      column: $state.table.raterInitials,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -43888,4 +46518,10 @@ class $AppDatabaseManager {
           _db, _db.trialExportDiagnostics);
   $$WeatherSnapshotsTableTableManager get weatherSnapshots =>
       $$WeatherSnapshotsTableTableManager(_db, _db.weatherSnapshots);
+  $$ArmColumnMappingsTableTableManager get armColumnMappings =>
+      $$ArmColumnMappingsTableTableManager(_db, _db.armColumnMappings);
+  $$ArmAssessmentMetadataTableTableManager get armAssessmentMetadata =>
+      $$ArmAssessmentMetadataTableTableManager(_db, _db.armAssessmentMetadata);
+  $$ArmSessionMetadataTableTableManager get armSessionMetadata =>
+      $$ArmSessionMetadataTableTableManager(_db, _db.armSessionMetadata);
 }
