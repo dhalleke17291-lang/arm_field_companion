@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' show sqrt;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -749,6 +750,65 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     }
   }
 
+  /// Trial-wide CSV share: long-format ratings across every session.
+  Future<void> _exportTrialRatingsCsv() async {
+    setState(() => _isExporting = true);
+    try {
+      final usecase = ref.read(exportTrialRatingsShareUsecaseProvider);
+      final csv = await usecase.buildCsv(widget.trial);
+      final dir = await getTemporaryDirectory();
+      final sanitizedTrial =
+          widget.trial.name.replaceAll(RegExp(r'[^\w\-]'), '_');
+      final file = File('${dir.path}/${sanitizedTrial}_ratings.csv');
+      await file.writeAsString(csv);
+      if (!mounted) return;
+      try {
+        final box = context.findRenderObject() as RenderBox?;
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: '${widget.trial.name} — ratings (CSV)',
+          sharePositionOrigin: box != null
+              ? box.localToGlobal(Offset.zero) & box.size
+              : const Rect.fromLTWH(0, 0, 100, 100),
+        );
+      } catch (_) {
+        // Share sheet dismissed — file is still saved.
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('CSV export failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  /// Trial-wide TSV copy: same data as CSV, tab-delimited, placed on the
+  /// clipboard. Researchers can paste directly into Excel/Sheets/Numbers.
+  Future<void> _copyTrialRatingsTsv() async {
+    setState(() => _isExporting = true);
+    try {
+      final usecase = ref.read(exportTrialRatingsShareUsecaseProvider);
+      final tsv = await usecase.buildTsv(widget.trial);
+      await Clipboard.setData(ClipboardData(text: tsv));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ratings copied — paste into Excel or Sheets.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Copy failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   void _openRatingForPlot(Plot plot, List<Plot> allPlots,
       List<Assessment> assessments) {
     _openRatingForPlotAtAssessment(plot, allPlots, assessments, null);
@@ -1026,41 +1086,94 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                                       fontWeight: FontWeight.w600),
                                 ),
                               ),
-                              // Share PDF button
+                              // Share menu: session PDF (existing) or
+                              // trial-wide ratings (CSV / TSV-to-clipboard).
                               SizedBox(
                                 width: 32,
                                 height: 28,
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  iconSize: 18,
-                                  icon: _isExporting
-                                      ? const SizedBox(
+                                child: _isExporting
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(7),
+                                        child: SizedBox(
                                           width: 14,
                                           height: 14,
-                                          child:
-                                              CircularProgressIndicator(
-                                                  strokeWidth: 2),
-                                        )
-                                      : const Icon(Icons.share_outlined),
-                                  tooltip: 'Export grid as PDF',
-                                  onPressed: _isExporting
-                                      ? null
-                                      : () => _exportGridPdf(
-                                            plots: plots,
-                                            assessments: assessments,
-                                            ratings: ratings,
-                                            assessmentDisplayNames:
-                                                assessmentDisplayNames,
-                                            plotTreatmentMap:
-                                                plotTreatmentMap,
-                                            treatmentNames:
-                                                treatmentNames,
-                                            completedPlots:
-                                                report?.completedPlots,
-                                            expectedPlots:
-                                                report?.expectedPlots,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        ),
+                                      )
+                                    : PopupMenuButton<String>(
+                                        padding: EdgeInsets.zero,
+                                        iconSize: 18,
+                                        tooltip: 'Share',
+                                        icon: const Icon(Icons.share_outlined),
+                                        onSelected: (value) {
+                                          switch (value) {
+                                            case 'pdf':
+                                              _exportGridPdf(
+                                                plots: plots,
+                                                assessments: assessments,
+                                                ratings: ratings,
+                                                assessmentDisplayNames:
+                                                    assessmentDisplayNames,
+                                                plotTreatmentMap:
+                                                    plotTreatmentMap,
+                                                treatmentNames:
+                                                    treatmentNames,
+                                                completedPlots:
+                                                    report?.completedPlots,
+                                                expectedPlots:
+                                                    report?.expectedPlots,
+                                              );
+                                              break;
+                                            case 'csv':
+                                              _exportTrialRatingsCsv();
+                                              break;
+                                            case 'tsv':
+                                              _copyTrialRatingsTsv();
+                                              break;
+                                          }
+                                        },
+                                        itemBuilder: (ctx) => const [
+                                          PopupMenuItem<String>(
+                                            value: 'pdf',
+                                            child: ListTile(
+                                              dense: true,
+                                              contentPadding: EdgeInsets.zero,
+                                              leading: Icon(
+                                                  Icons.picture_as_pdf_outlined,
+                                                  size: 20),
+                                              title: Text('Share session grid (PDF)'),
+                                              subtitle: Text('This session only'),
+                                            ),
                                           ),
-                                ),
+                                          PopupMenuItem<String>(
+                                            value: 'csv',
+                                            child: ListTile(
+                                              dense: true,
+                                              contentPadding: EdgeInsets.zero,
+                                              leading: Icon(
+                                                  Icons.table_chart_outlined,
+                                                  size: 20),
+                                              title: Text('Share ratings (CSV)'),
+                                              subtitle:
+                                                  Text('Whole trial · opens in Excel'),
+                                            ),
+                                          ),
+                                          PopupMenuItem<String>(
+                                            value: 'tsv',
+                                            child: ListTile(
+                                              dense: true,
+                                              contentPadding: EdgeInsets.zero,
+                                              leading:
+                                                  Icon(Icons.content_copy_outlined,
+                                                      size: 20),
+                                              title: Text('Copy ratings to clipboard'),
+                                              subtitle: Text(
+                                                  'Whole trial · paste into a sheet'),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
                               const SizedBox(width: 4),
                               if (isOpen && canClose)

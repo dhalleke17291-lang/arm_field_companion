@@ -64,6 +64,7 @@ import '../features/export/domain/export_trial_closed_sessions_usecase.dart';
 import '../features/export/domain/export_trial_closed_sessions_arm_xml_usecase.dart';
 import '../features/export/domain/export_deleted_session_recovery_zip_usecase.dart';
 import '../features/export/domain/export_deleted_trial_recovery_zip_usecase.dart';
+import '../features/export/export_trial_ratings_share_usecase.dart';
 import '../features/export/export_trial_usecase.dart';
 import '../features/export/evidence_report_assembly_service.dart';
 import '../features/export/evidence_report_pdf_builder.dart';
@@ -1087,6 +1088,17 @@ final exportRepositoryProvider = Provider<ExportRepository>((ref) {
 final exportSessionCsvUsecaseProvider =
     Provider<ExportSessionCsvUsecase>((ref) {
   return ExportSessionCsvUsecase(ref.watch(exportRepositoryProvider));
+});
+
+final exportTrialRatingsShareUsecaseProvider =
+    Provider<ExportTrialRatingsShareUsecase>((ref) {
+  return ExportTrialRatingsShareUsecase(
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+    plotRepository: ref.watch(plotRepositoryProvider),
+    treatmentRepository: ref.watch(treatmentRepositoryProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+  );
 });
 
 final exportSessionArmXmlUsecaseProvider =
