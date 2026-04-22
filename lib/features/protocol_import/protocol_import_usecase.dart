@@ -288,9 +288,18 @@ class ProtocolImportUseCase {
         return ProtocolImportExecuteResult.failure('Trial not found.');
       }
       final hasData = await trialHasAnySessionData(_db, existingTrialId);
-      if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+      final trialIsArmLinked = await loadTrialIsArmLinked(_db, existingTrialId);
+      if (!canEditTrialStructure(
+        trial,
+        hasSessionData: hasData,
+        trialIsArmLinked: trialIsArmLinked,
+      )) {
         return ProtocolImportExecuteResult.failure(
-          structureEditBlockedMessage(trial, hasSessionData: hasData),
+          structureEditBlockedMessage(
+            trial,
+            hasSessionData: hasData,
+            trialIsArmLinked: trialIsArmLinked,
+          ),
         );
       }
     } else if (isProtocolLocked) {

@@ -227,8 +227,12 @@ void main() {
       final trialRow =
           await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
               .getSingle();
-      expect(trialRow.isArmLinked, true);
-      expect(trialRow.armImportSessionId, isNotNull);
+      final armMeta = await (db.select(db.armTrialMetadata)
+            ..where((m) => m.trialId.equals(trialId)))
+          .getSingleOrNull();
+      expect(armMeta, isNotNull);
+      expect(armMeta!.isArmLinked, true);
+      expect(armMeta.armImportSessionId, isNotNull);
 
       final plotRows = await (db.select(db.plots)
             ..where((p) => p.trialId.equals(trialId)))
@@ -247,7 +251,7 @@ void main() {
       );
       expect(tas.single.legacyAssessmentId, isNotNull);
 
-      final sessionId = trialRow.armImportSessionId!;
+      final sessionId = armMeta.armImportSessionId!;
       final plotPk = plotRows.single.id;
       final legacyAsmId = tas.single.legacyAssessmentId!;
 
@@ -376,13 +380,14 @@ void main() {
       );
 
       final rtReport = await ComputeArmRoundTripDiagnosticsUseCase(
+        db: db,
         plotRepository: PlotRepository(db),
         trialAssessmentRepository: TrialAssessmentRepository(db),
         sessionRepository: SessionRepository(db),
         ratingRepository: ratingRepo,
       ).execute(trial: trialRow);
 
-      expect(rtReport.resolvedShellSessionId, trialRow.armImportSessionId);
+      expect(rtReport.resolvedShellSessionId, armMeta.armImportSessionId);
 
       final outPath = exportResult.filePath;
       expect(outPath, isNotNull);
@@ -392,10 +397,10 @@ void main() {
       expect(plotSheet, isNotNull);
       expect(_cellString(plotSheet!, 48, 2), '88.5');
 
-      final freshTrial =
-          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
-              .getSingle();
-      expect(freshTrial.armImportSessionId, sessionId);
+      final freshArm = await (db.select(db.armTrialMetadata)
+            ..where((m) => m.trialId.equals(trialId)))
+          .getSingleOrNull();
+      expect(freshArm?.armImportSessionId, sessionId);
     },
   );
 }

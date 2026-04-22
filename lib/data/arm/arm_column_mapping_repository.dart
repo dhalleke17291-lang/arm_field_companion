@@ -101,4 +101,21 @@ class ArmColumnMappingRepository {
       b.insertAll(_db.armSessionMetadata, rows);
     });
   }
+
+  /// ARM assessment header rows for [trialId] (deduplicated per trial assessment).
+  Future<List<ArmAssessmentMetadataData>> getAssessmentMetadatasForTrial(
+    int trialId,
+  ) async {
+    final q = _db.select(_db.armAssessmentMetadata).join([
+      innerJoin(
+        _db.trialAssessments,
+        _db.trialAssessments.id
+            .equalsExp(_db.armAssessmentMetadata.trialAssessmentId),
+      ),
+    ])
+      ..where(_db.trialAssessments.trialId.equals(trialId))
+      ..orderBy([OrderingTerm.asc(_db.armAssessmentMetadata.id)]);
+    final rows = await q.get();
+    return rows.map((r) => r.readTable(_db.armAssessmentMetadata)).toList();
+  }
 }

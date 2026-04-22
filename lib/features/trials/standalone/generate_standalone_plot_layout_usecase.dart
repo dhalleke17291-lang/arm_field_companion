@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/trial_state.dart';
 import '../../../data/repositories/assignment_repository.dart';
 import '../../plots/plot_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
@@ -76,7 +77,7 @@ class GenerateStandalonePlotLayoutUseCase {
     if (trial == null) {
       return GenerateStandalonePlotLayoutResult.failure('Trial not found');
     }
-    if (trial.isArmLinked == true) {
+    if (await loadTrialIsArmLinked(_db, input.trialId)) {
       return GenerateStandalonePlotLayoutResult.failure('Only custom trials support this action');
     }
 

@@ -400,14 +400,20 @@ class ImportArmRatingShellUseCase {
           sourcePath: shellPath,
           trialId: plan.trialId,
         );
+        await _db.into(_db.armTrialMetadata).insertOnConflictUpdate(
+              ArmTrialMetadataCompanion(
+                trialId: Value(plan.trialId),
+                isArmLinked: const Value(true),
+                armImportedAt: Value(DateTime.now().toUtc()),
+                armSourceFile: Value(shell.shellFilePath),
+                shellInternalPath: Value(internalPath),
+                armLinkedShellPath: Value(shellPath),
+              ),
+            );
         await _trialRepository.updateTrialSetup(
           plan.trialId,
           TrialsCompanion(
-            shellInternalPath: Value(internalPath),
-            armLinkedShellPath: Value(shellPath),
-            isArmLinked: const Value(true),
-            armImportedAt: Value(DateTime.now().toUtc()),
-            armSourceFile: Value(shell.shellFilePath),
+            updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
       } catch (e) {

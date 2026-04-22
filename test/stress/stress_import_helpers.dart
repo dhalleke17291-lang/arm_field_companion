@@ -54,6 +54,7 @@ ArmImportUseCase stressArmImportUseCase(AppDatabase db) {
 /// [ExportTrialUseCase] with the same repository wiring as export_trial_usecase_test.
 ExportTrialUseCase exportStressTrialUseCase(AppDatabase db) {
   return ExportTrialUseCase(
+    db: db,
     trialRepository: TrialRepository(db),
     plotRepository: PlotRepository(db),
     treatmentRepository: TreatmentRepository(db),

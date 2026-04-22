@@ -12,11 +12,13 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/arm_trial_metadata_test_utils.dart';
+
 Future<Trial> _armTrialRow(AppDatabase db, int trialId) async {
-  await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-    const TrialsCompanion(
-      isArmLinked: Value(true),
-    ),
+  await upsertArmTrialMetadataForTest(
+    db,
+    trialId: trialId,
+    isArmLinked: true,
   );
   return (db.select(db.trials)..where((t) => t.id.equals(trialId)))
       .getSingle();
@@ -35,6 +37,7 @@ void main() {
 
   ComputeArmRoundTripDiagnosticsUseCase makeUc() =>
       ComputeArmRoundTripDiagnosticsUseCase(
+        db: db,
         plotRepository: PlotRepository(db),
         trialAssessmentRepository: TrialAssessmentRepository(db),
         sessionRepository: SessionRepository(db),
@@ -263,11 +266,11 @@ void main() {
               isCurrent: const Value(true),
             ),
           );
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-        TrialsCompanion(
-          isArmLinked: const Value(true),
-          armImportSessionId: Value(sessId),
-        ),
+      await upsertArmTrialMetadataForTest(
+        db,
+        trialId: trialId,
+        isArmLinked: true,
+        armImportSessionId: sessId,
       );
       final trial =
           await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
@@ -362,8 +365,11 @@ void main() {
       );
 
       const badPin = 999999;
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-        const TrialsCompanion(armImportSessionId: Value(badPin)),
+      await upsertArmTrialMetadataForTest(
+        db,
+        trialId: trialId,
+        isArmLinked: true,
+        armImportSessionId: badPin,
       );
       trial =
           await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
@@ -383,8 +389,11 @@ void main() {
               sessionDateLocal: '2026-01-03',
             ),
           );
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-        TrialsCompanion(armImportSessionId: Value(sessId)),
+      await upsertArmTrialMetadataForTest(
+        db,
+        trialId: trialId,
+        isArmLinked: true,
+        armImportSessionId: sessId,
       );
       trial =
           await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
@@ -459,11 +468,11 @@ void main() {
               isCurrent: const Value(true),
             ),
           );
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-        TrialsCompanion(
-          isArmLinked: const Value(true),
-          armImportSessionId: Value(sessId),
-        ),
+      await upsertArmTrialMetadataForTest(
+        db,
+        trialId: trialId,
+        isArmLinked: true,
+        armImportSessionId: sessId,
       );
       final trial =
           await (db.select(db.trials)..where((t) => t.id.equals(trialId)))

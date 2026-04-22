@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/config/app_info.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
+import '../../core/trial_state.dart';
 import '../../core/diagnostics/diagnostic_finding.dart';
 import '../diagnostics/trial_readiness.dart';
 import '../../core/diagnostics/trial_export_diagnostics.dart'
@@ -66,6 +67,7 @@ class ExportBlockedByReadinessException implements Exception {
 /// Exports a trial to six CSV files using existing repositories only.
 class ExportTrialUseCase {
   ExportTrialUseCase({
+    required AppDatabase db,
     required TrialRepository trialRepository,
     required PlotRepository plotRepository,
     required TreatmentRepository treatmentRepository,
@@ -80,7 +82,8 @@ class ExportTrialUseCase {
     required NotesRepository notesRepository,
     required ArmImportPersistenceRepository armImportPersistenceRepository,
     PublishTrialExportDiagnostics? publishExportDiagnostics,
-  })  : _trialRepository = trialRepository,
+  })  : _db = db,
+        _trialRepository = trialRepository,
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
         _applicationRepository = applicationRepository,
@@ -96,6 +99,8 @@ class ExportTrialUseCase {
         _publishExportDiagnostics = publishExportDiagnostics;
 
   final PublishTrialExportDiagnostics? _publishExportDiagnostics;
+
+  final AppDatabase _db;
 
   // Kept for API consistency; trial is passed into execute().
   // ignore: unused_field
@@ -273,6 +278,7 @@ class ExportTrialUseCase {
     TrialReadinessReport? trialReadinessPrecheck,
   }) async {
     final trialPk = trial.id;
+    final trialIsArmLinked = await loadTrialIsArmLinked(_db, trialPk);
     final exportDiagnosticsBuffer = <DiagnosticFinding>[];
 
     void publishExportDiagnostics() {
@@ -482,6 +488,7 @@ class ExportTrialUseCase {
 
     final statisticsCsv = await _buildStatisticsCsv(
       trial: trial,
+      trialIsArmLinked: trialIsArmLinked,
       plots: plots,
       treatmentMap: treatmentMap,
       assignmentByPlot: assignmentByPlot,
@@ -519,6 +526,7 @@ class ExportTrialUseCase {
         trial,
         validation,
         photos,
+        trialIsArmLinked: trialIsArmLinked,
         plotMap: plotMap,
         assignmentByPlot: assignmentByPlot,
         treatmentMap: treatmentMap,
@@ -538,13 +546,14 @@ class ExportTrialUseCase {
   /// per assessment. Standalone trials only.
   Future<String?> _buildStatisticsCsv({
     required Trial trial,
+    required bool trialIsArmLinked,
     required List<Plot> plots,
     required Map<int, Treatment> treatmentMap,
     required Map<int, Assignment> assignmentByPlot,
     required List<Session> sessions,
     bool utf8BomForExcel = false,
   }) async {
-    if (trial.isArmLinked) return null;
+    if (trialIsArmLinked) return null;
     final analyzable = plots.where(isAnalyzablePlot).toList();
     if (analyzable.length < 2) return null;
 
@@ -1745,6 +1754,7 @@ class ExportTrialUseCase {
     Trial trial,
     export_validation.ExportValidationReport validation,
     List<Photo> photos, {
+    required bool trialIsArmLinked,
     required Map<int, Plot> plotMap,
     required Map<int, Assignment> assignmentByPlot,
     required Map<int, Treatment> treatmentMap,
@@ -1762,7 +1772,7 @@ class ExportTrialUseCase {
       trialName: trial.name,
       exportedAtLabel: exportedReadable,
       includesStatisticsCsv:
-          bundle.statisticsCsv != null && !trial.isArmLinked,
+          bundle.statisticsCsv != null && !trialIsArmLinked,
       includesWeatherCsv: trialZipShouldIncludeWeatherCsv(weatherSnapshots),
     );
     final readmeBytes = utf8.encode(readmeText);
@@ -1780,8 +1790,7 @@ class ExportTrialUseCase {
       'data_dictionary.csv': bundle.dataDictionaryCsv,
     };
     // statistics.csv: standalone trials only (not ARM handoff).
-    if (bundle.statisticsCsv != null &&
-        !trial.isArmLinked) {
+    if (bundle.statisticsCsv != null && !trialIsArmLinked) {
       csvFiles['statistics.csv'] = bundle.statisticsCsv!;
     }
     for (final entry in csvFiles.entries) {

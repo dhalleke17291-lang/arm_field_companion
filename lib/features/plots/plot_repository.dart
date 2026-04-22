@@ -395,9 +395,18 @@ class PlotRepository {
         );
       }
       final hasData = await trialHasAnySessionData(_db, plot.trialId);
-      if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+      final armLinked = await loadTrialIsArmLinked(_db, plot.trialId);
+      if (!canEditTrialStructure(
+        trial,
+        hasSessionData: hasData,
+        trialIsArmLinked: armLinked,
+      )) {
         return PlotRestoreResult.failure(
-          structureEditBlockedMessage(trial, hasSessionData: hasData),
+          structureEditBlockedMessage(
+            trial,
+            hasSessionData: hasData,
+            trialIsArmLinked: armLinked,
+          ),
         );
       }
 

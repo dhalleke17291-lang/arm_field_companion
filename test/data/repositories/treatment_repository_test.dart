@@ -9,6 +9,8 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/arm_trial_metadata_test_utils.dart';
+
 void main() {
   late AppDatabase db;
   late TreatmentRepository repo;
@@ -133,9 +135,8 @@ void main() {
 
     test('blocks insert on ARM-linked trial', () async {
       final trialId = await createTrial();
-      // Mark trial as ARM-linked
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId)))
-          .write(const TrialsCompanion(isArmLinked: Value(true)));
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
       expect(
         () => repo.insertTreatment(
             trialId: trialId, code: '1', name: 'T1'),
@@ -248,8 +249,8 @@ void main() {
       final trialId = await createTrial();
       final trtId = await repo.insertTreatment(
           trialId: trialId, code: '1', name: 'T1');
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId)))
-          .write(const TrialsCompanion(isArmLinked: Value(true)));
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
       expect(
         () => repo.insertComponent(
           treatmentId: trtId,

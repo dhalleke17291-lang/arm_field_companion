@@ -226,12 +226,12 @@ class ArmImportUseCase {
         );
 
         if (importSessionId != null) {
-          await _trialRepository.updateTrialSetup(
-            trialId,
-            TrialsCompanion(
-              armImportSessionId: Value(importSessionId),
-            ),
-          );
+          await _db.into(_db.armTrialMetadata).insertOnConflictUpdate(
+                ArmTrialMetadataCompanion(
+                  trialId: Value(trialId),
+                  armImportSessionId: Value(importSessionId),
+                ),
+              );
         }
 
         if (importSessionId != null) {

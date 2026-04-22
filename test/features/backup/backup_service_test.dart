@@ -7,9 +7,10 @@ import 'package:arm_field_companion/features/backup/backup_encryption.dart';
 import 'package:arm_field_companion/features/backup/backup_models.dart';
 import 'package:arm_field_companion/features/backup/backup_service.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/arm_trial_metadata_test_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
@@ -116,11 +117,12 @@ void main() {
     addTearDown(db.close);
     final tid =
         await TrialRepository(db).createTrial(name: 'T', workspaceType: 'efficacy');
-    await (db.update(db.trials)..where((t) => t.id.equals(tid))).write(
-          const TrialsCompanion(
-            armLinkedShellPath: Value('/no/such/shell/file.xlsx'),
-          ),
-        );
+    await upsertArmTrialMetadataForTest(
+      db,
+      trialId: tid,
+      isArmLinked: true,
+      armLinkedShellPath: '/no/such/shell/file.xlsx',
+    );
 
     final svc = BackupService(db);
     final out = await svc.createBackup('secret12');

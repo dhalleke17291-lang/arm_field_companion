@@ -260,9 +260,13 @@ void main() {
 
     final t = await trialRepo.getTrialById(trialId);
     expect(t, isNotNull);
-    expect(t!.isArmLinked, isTrue);
-    expect(t.armSourceFile, '/path/file.csv');
-    expect(t.armVersion, '2.1');
-    expect(t.armImportedAt, isNotNull);
+    final arm = await (db.select(db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(trialId)))
+        .getSingleOrNull();
+    expect(arm, isNotNull);
+    expect(arm!.isArmLinked, isTrue);
+    expect(arm.armSourceFile, '/path/file.csv');
+    expect(arm.armVersion, '2.1');
+    expect(arm.armImportedAt, isNotNull);
   });
 }

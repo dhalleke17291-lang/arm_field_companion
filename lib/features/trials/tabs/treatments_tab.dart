@@ -184,6 +184,11 @@ class TreatmentsTab extends ConsumerWidget {
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
     final hasSessionData =
         ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
+    final trialIsArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -198,7 +203,12 @@ class TreatmentsTab extends ConsumerWidget {
                     ref.invalidate(treatmentsForTrialProvider(trial.id))),
             data: (treatments) {
               if (treatments.isEmpty) {
-                return _buildEmpty(context, ref, hasSessionData);
+                return _buildEmpty(
+                  context,
+                  ref,
+                  hasSessionData,
+                  trialIsArmLinked,
+                );
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -209,7 +219,13 @@ class TreatmentsTab extends ConsumerWidget {
                     count: treatments.length,
                   ),
                   Expanded(
-                    child: _buildList(context, ref, treatments, hasSessionData),
+                    child: _buildList(
+                      context,
+                      ref,
+                      treatments,
+                      hasSessionData,
+                      trialIsArmLinked,
+                    ),
                   ),
                 ],
               );
@@ -224,9 +240,13 @@ class TreatmentsTab extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     bool hasSessionData,
+    bool trialIsArmLinked,
   ) {
-    final locked =
-        !canEditTrialStructure(trial, hasSessionData: hasSessionData);
+    final locked = !canEditTrialStructure(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
+    );
     return Stack(
       children: [
         AppEmptyState(
@@ -236,6 +256,7 @@ class TreatmentsTab extends ConsumerWidget {
               ? structureEditBlockedMessage(
                   trial,
                   hasSessionData: hasSessionData,
+                  trialIsArmLinked: trialIsArmLinked,
                 )
               : 'Add the treatment groups for this trial.',
           action: null,
@@ -260,9 +281,13 @@ class TreatmentsTab extends ConsumerWidget {
     WidgetRef ref,
     List<Treatment> treatments,
     bool hasSessionData,
+    bool trialIsArmLinked,
   ) {
-    final locked =
-        !canEditTrialStructure(trial, hasSessionData: hasSessionData);
+    final locked = !canEditTrialStructure(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
+    );
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -283,12 +308,14 @@ class TreatmentsTab extends ConsumerWidget {
                         isLocked: true,
                         trial: trial,
                         hasSessionData: hasSessionData,
+                        trialIsArmLinked: trialIsArmLinked,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         structureEditBlockedMessage(
                           trial,
                           hasSessionData: hasSessionData,
+                          trialIsArmLinked: trialIsArmLinked,
                         ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context)
@@ -306,6 +333,7 @@ class TreatmentsTab extends ConsumerWidget {
                 trial: trial,
                 treatment: t,
                 locked: locked,
+                trialIsArmLinked: trialIsArmLinked,
                 onEdit: () => _showEditTreatmentDialog(context, ref, trial, t),
                 onDelete: () =>
                     _showDeleteTreatmentDialog(context, ref, trial, t),
@@ -580,6 +608,7 @@ class _TreatmentCompactCard extends ConsumerStatefulWidget {
   final Trial trial;
   final Treatment treatment;
   final bool locked;
+  final bool trialIsArmLinked;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final Future<void> Function(TreatmentComponent? existing)
@@ -590,6 +619,7 @@ class _TreatmentCompactCard extends ConsumerStatefulWidget {
     required this.trial,
     required this.treatment,
     required this.locked,
+    required this.trialIsArmLinked,
     required this.onEdit,
     required this.onDelete,
     required this.onOpenComponentSheet,
@@ -622,7 +652,7 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
         ],
       );
     }
-    if (widget.trial.isArmLinked) {
+    if (widget.trialIsArmLinked) {
       return PopupMenuButton<String>(
         icon: const Icon(Icons.more_vert,
             size: 20, color: AppDesignTokens.iconSubtle),
@@ -1631,8 +1661,16 @@ class _TreatmentComponentsSheetState
     final hasSessionData =
         ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
             false;
-    final locked =
-        !canEditTrialStructure(widget.trial, hasSessionData: hasSessionData);
+    final trialIsArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(widget.trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
+    final locked = !canEditTrialStructure(
+      widget.trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
+    );
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -1789,9 +1827,15 @@ class _TreatmentComponentsSheetState
     final hasSessionData =
         ref.watch(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
             false;
+    final trialIsArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(widget.trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
     final locked = !canEditTrialStructure(
       widget.trial,
       hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
     );
     final ratePart = (c.rate != null && c.rateUnit != null)
         ? '${c.rate} ${c.rateUnit}'

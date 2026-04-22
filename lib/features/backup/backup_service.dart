@@ -101,20 +101,21 @@ class BackupService {
       await shellsDir.create(recursive: true);
       final missingRefs = <MissingReference>[];
       final trialRows = await _db.select(_db.trials).get();
+      final armRows = await _db.select(_db.armTrialMetadata).get();
       var hasShellFile = false;
-      for (final trial in trialRows) {
-        final shellPath = trial.armLinkedShellPath;
+      for (final arm in armRows) {
+        final shellPath = arm.armLinkedShellPath;
         if (shellPath == null || shellPath.isEmpty) continue;
         final f = File(shellPath);
         if (await f.exists()) {
           hasShellFile = true;
           final ext = p.extension(shellPath);
           final safeExt = ext.isEmpty ? '.xlsx' : ext;
-          final destName = 'trial_${trial.id}_shell$safeExt';
+          final destName = 'trial_${arm.trialId}_shell$safeExt';
           await f.copy(p.join(shellsDir.path, destName));
         } else {
           missingRefs.add(MissingReference(
-            trialId: trial.id,
+            trialId: arm.trialId,
             field: 'armLinkedShellPath',
             path: shellPath,
           ));

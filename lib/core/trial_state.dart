@@ -185,8 +185,8 @@ String getProtocolLockExplanation(String? status) {
 /// True when trial structure (treatments, plots, assessments, assignments) may be edited.
 /// ARM-linked trials are never structurally editable here. Otherwise, lifecycle must not be locked.
 /// Structure mutations must use [assertCanEditProtocolForTrialId] (or this predicate) at repository/use-case layer.
-bool canEditProtocol(Trial trial) {
-  if (trial.isArmLinked == true) return false;
+bool canEditProtocol(Trial trial, {required bool trialIsArmLinked}) {
+  if (trialIsArmLinked) return false;
   return !isProtocolLocked(trial.status);
 }
 
@@ -203,8 +203,12 @@ const String kTrialStructureLockedBecauseDataCollectionStarted =
 ///
 /// Standalone Active: editable until first rating / photo / plot flag.
 /// Non-standalone: same as [canEditProtocol] (Draft/Ready editable; Active+ locked).
-bool canEditTrialStructure(Trial trial, {required bool hasSessionData}) {
-  if (trial.isArmLinked == true) return false;
+bool canEditTrialStructure(
+  Trial trial, {
+  required bool hasSessionData,
+  required bool trialIsArmLinked,
+}) {
+  if (trialIsArmLinked) return false;
   if (trial.status == kTrialStatusClosed ||
       trial.status == kTrialStatusArchived) {
     return false;
@@ -219,8 +223,12 @@ bool canEditTrialStructure(Trial trial, {required bool hasSessionData}) {
 /// Whether plot treatment assignments can be edited.
 /// Standalone Active: same window as [canEditTrialStructure] (until first session data).
 /// Non-standalone: not lifecycle-locked and no session data.
-bool canEditAssignmentsForTrial(Trial trial, {required bool hasSessionData}) {
-  if (trial.isArmLinked == true) return false;
+bool canEditAssignmentsForTrial(
+  Trial trial, {
+  required bool hasSessionData,
+  required bool trialIsArmLinked,
+}) {
+  if (trialIsArmLinked) return false;
   if (trial.status == kTrialStatusClosed ||
       trial.status == kTrialStatusArchived) {
     return false;
@@ -236,59 +244,102 @@ bool canEditAssignmentsForTrial(Trial trial, {required bool hasSessionData}) {
 String structureEditBlockedMessage(
   Trial trial, {
   required bool hasSessionData,
+  required bool trialIsArmLinked,
 }) {
-  if (trial.isArmLinked) return getArmProtocolLockMessage();
-  if (!canEditTrialStructure(trial, hasSessionData: hasSessionData)) {
+  if (trialIsArmLinked) return getArmProtocolLockMessage();
+  if (!canEditTrialStructure(
+    trial,
+    hasSessionData: hasSessionData,
+    trialIsArmLinked: trialIsArmLinked,
+  )) {
     if (trialWorkspaceIsStandalone(trial.workspaceType) &&
         trial.status == kTrialStatusActive &&
         hasSessionData) {
       return kStructureLockedDataCollectionStartedUserMessage;
     }
-    return protocolEditBlockedMessage(trial);
+    return protocolEditBlockedMessage(trial, trialIsArmLinked: trialIsArmLinked);
   }
   return '';
 }
 
 /// Trial type from ARM linkage only (not [Trial.workspaceType]).
-String trialTypeLabel(Trial trial) {
-  return trial.isArmLinked ? 'Imported trial' : 'Custom trial';
+String trialTypeLabel(Trial trial, {required bool trialIsArmLinked}) {
+  return trialIsArmLinked ? 'Imported trial' : 'Custom trial';
 }
 
 /// Structure layer: whether treatments/plots/assessments may be edited (ARM or lifecycle).
 /// When [hasSessionData] is null, uses legacy [canEditProtocol] (pessimistic for standalone Active).
-String trialStructureStateLabel(Trial trial, {bool? hasSessionData}) {
+String trialStructureStateLabel(
+  Trial trial, {
+  bool? hasSessionData,
+  required bool trialIsArmLinked,
+}) {
   final editable = hasSessionData == null
-      ? canEditProtocol(trial)
-      : canEditTrialStructure(trial, hasSessionData: hasSessionData);
+      ? canEditProtocol(trial, trialIsArmLinked: trialIsArmLinked)
+      : canEditTrialStructure(
+          trial,
+          hasSessionData: hasSessionData,
+          trialIsArmLinked: trialIsArmLinked,
+        );
   return editable ? 'Structure editable' : 'Structure locked';
 }
 
 /// Compact type + structure state (e.g. chips, subtitles).
 /// When [hasSessionData] is null, uses legacy [canEditProtocol] for the structure line.
-String trialTypeAndStructureCompactLine(Trial trial, {bool? hasSessionData}) {
-  return '${trialTypeLabel(trial)} • ${trialStructureStateLabel(trial, hasSessionData: hasSessionData)}';
+String trialTypeAndStructureCompactLine(
+  Trial trial, {
+  bool? hasSessionData,
+  required bool trialIsArmLinked,
+}) {
+  return '${trialTypeLabel(trial, trialIsArmLinked: trialIsArmLinked)} • ${trialStructureStateLabel(trial, hasSessionData: hasSessionData, trialIsArmLinked: trialIsArmLinked)}';
 }
 
 /// True when structure or assignment UI should block treatment/plot/assignment edits.
-bool plotAssignmentsEditLocked(Trial trial, bool hasSessionData) {
-  return !canEditTrialStructure(trial, hasSessionData: hasSessionData) ||
-      !canEditAssignmentsForTrial(trial, hasSessionData: hasSessionData);
+bool plotAssignmentsEditLocked(
+  Trial trial,
+  bool hasSessionData, {
+  required bool trialIsArmLinked,
+}) {
+  return !canEditTrialStructure(
+        trial,
+        hasSessionData: hasSessionData,
+        trialIsArmLinked: trialIsArmLinked,
+      ) ||
+      !canEditAssignmentsForTrial(
+        trial,
+        hasSessionData: hasSessionData,
+        trialIsArmLinked: trialIsArmLinked,
+      );
 }
 
 /// Short label for the plots-tab assignment/structure chip.
-String plotAssignmentsLockChipLabel(Trial trial, bool hasSessionData) {
-  if (!canEditTrialStructure(trial, hasSessionData: hasSessionData)) {
+String plotAssignmentsLockChipLabel(
+  Trial trial,
+  bool hasSessionData, {
+  required bool trialIsArmLinked,
+}) {
+  if (!canEditTrialStructure(
+    trial,
+    hasSessionData: hasSessionData,
+    trialIsArmLinked: trialIsArmLinked,
+  )) {
     return trialTypeAndStructureCompactLine(
       trial,
       hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
     );
   }
-  if (!canEditAssignmentsForTrial(trial, hasSessionData: hasSessionData)) {
-    return '${trialTypeLabel(trial)} • ${getAssignmentsLockLabel(trial.status, hasSessionData)}';
+  if (!canEditAssignmentsForTrial(
+    trial,
+    hasSessionData: hasSessionData,
+    trialIsArmLinked: trialIsArmLinked,
+  )) {
+    return '${trialTypeLabel(trial, trialIsArmLinked: trialIsArmLinked)} • ${getAssignmentsLockLabel(trial.status, hasSessionData)}';
   }
   return trialTypeAndStructureCompactLine(
     trial,
     hasSessionData: hasSessionData,
+    trialIsArmLinked: trialIsArmLinked,
   );
 }
 
@@ -304,14 +355,17 @@ Future<void> assertPlotNotesEditableForTrialId(AppDatabase db, int trialId) asyn
   if (trial == null) {
     throw StateError('Trial not found');
   }
-  if (trial.isArmLinked == true) {
+  if (await loadTrialIsArmLinked(db, trialId)) {
     throw ProtocolEditBlockedException(getArmProtocolLockMessage());
   }
 }
 
 /// User-facing message when [canEditProtocol] is false (ARM-linked or lifecycle-locked).
-String protocolEditBlockedMessage(Trial trial) {
-  if (trial.isArmLinked) return getArmProtocolLockMessage();
+String protocolEditBlockedMessage(
+  Trial trial, {
+  required bool trialIsArmLinked,
+}) {
+  if (trialIsArmLinked) return getArmProtocolLockMessage();
   return getProtocolLockMessage(trial.status);
 }
 
@@ -344,18 +398,30 @@ Future<Trial?> loadTrialForProtocolCheck(AppDatabase db, int trialId) {
       .getSingleOrNull();
 }
 
+Future<bool> loadTrialIsArmLinked(AppDatabase db, int trialId) async {
+  final m = await (db.select(db.armTrialMetadata)
+        ..where((t) => t.trialId.equals(trialId)))
+      .getSingleOrNull();
+  return m?.isArmLinked ?? false;
+}
+
 /// Throws [ProtocolEditBlockedException] when structure edits are not allowed.
 Future<void> assertCanEditProtocolForTrialId(AppDatabase db, int trialId) async {
   final trial = await loadTrialForProtocolCheck(db, trialId);
   if (trial == null) {
     throw StateError('Trial $trialId not found');
   }
-  if (trial.isArmLinked == true) {
-    throw ProtocolEditBlockedException(protocolEditBlockedMessage(trial));
+  final trialIsArmLinked = await loadTrialIsArmLinked(db, trialId);
+  if (trialIsArmLinked) {
+    throw ProtocolEditBlockedException(
+      protocolEditBlockedMessage(trial, trialIsArmLinked: true),
+    );
   }
   if (trial.status == kTrialStatusClosed ||
       trial.status == kTrialStatusArchived) {
-    throw ProtocolEditBlockedException(protocolEditBlockedMessage(trial));
+    throw ProtocolEditBlockedException(
+      protocolEditBlockedMessage(trial, trialIsArmLinked: false),
+    );
   }
   if (trialWorkspaceIsStandalone(trial.workspaceType) &&
       trial.status == kTrialStatusActive) {
@@ -368,7 +434,9 @@ Future<void> assertCanEditProtocolForTrialId(AppDatabase db, int trialId) async 
     return;
   }
   if (isProtocolLocked(trial.status)) {
-    throw ProtocolEditBlockedException(protocolEditBlockedMessage(trial));
+    throw ProtocolEditBlockedException(
+      protocolEditBlockedMessage(trial, trialIsArmLinked: false),
+    );
   }
 }
 

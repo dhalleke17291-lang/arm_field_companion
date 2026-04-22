@@ -78,6 +78,7 @@ Future<void> _seedPlotForExportTrial(AppDatabase db, int trialId) async {
 
 ExportTrialUseCase _makeUseCase(AppDatabase db) {
   return ExportTrialUseCase(
+    db: db,
     trialRepository: TrialRepository(db),
     plotRepository: PlotRepository(db),
     treatmentRepository: TreatmentRepository(db),
@@ -102,7 +103,6 @@ Trial _trialFromId(int id) => Trial(
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isDeleted: false,
-      isArmLinked: false,
     );
 
 void main() {
@@ -233,7 +233,6 @@ void main() {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         isDeleted: false,
-        isArmLinked: false,
       );
       final bundle =
           await uc.execute(trial: trial, format: ExportFormat.flatCsv);

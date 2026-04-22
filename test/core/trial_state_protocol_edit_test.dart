@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 Trial _trial({
   required int id,
   required String status,
-  bool isArmLinked = false,
   String workspaceType = 'efficacy',
 }) {
   final now = DateTime.utc(2020, 1, 1);
@@ -17,27 +16,33 @@ Trial _trial({
     createdAt: now,
     updatedAt: now,
     isDeleted: false,
-    isArmLinked: isArmLinked,
   );
 }
 
 void main() {
   group('canEditProtocol', () {
     test('draft non-ARM trial is editable', () {
-      expect(canEditProtocol(_trial(id: 1, status: kTrialStatusDraft)), true);
+      expect(
+        canEditProtocol(_trial(id: 1, status: kTrialStatusDraft),
+            trialIsArmLinked: false),
+        true,
+      );
     });
 
     test('active non-ARM trial is not editable', () {
-      expect(canEditProtocol(_trial(id: 1, status: kTrialStatusActive)), false);
+      expect(
+        canEditProtocol(_trial(id: 1, status: kTrialStatusActive),
+            trialIsArmLinked: false),
+        false,
+      );
     });
 
     test('ARM-linked draft trial is not editable', () {
       expect(
-        canEditProtocol(_trial(
-          id: 1,
-          status: kTrialStatusDraft,
-          isArmLinked: true,
-        )),
+        canEditProtocol(
+          _trial(id: 1, status: kTrialStatusDraft),
+          trialIsArmLinked: true,
+        ),
         false,
       );
     });
@@ -45,11 +50,10 @@ void main() {
 
   group('protocolEditBlockedMessage', () {
     test('ARM-linked uses fixed ARM message', () {
-      final m = protocolEditBlockedMessage(_trial(
-        id: 1,
-        status: kTrialStatusDraft,
-        isArmLinked: true,
-      ));
+      final m = protocolEditBlockedMessage(
+        _trial(id: 1, status: kTrialStatusDraft),
+        trialIsArmLinked: true,
+      );
       expect(m, getArmProtocolLockMessage());
       expect(m, kArmProtocolStructureLockMessage);
     });
@@ -62,7 +66,14 @@ void main() {
         status: kTrialStatusActive,
         workspaceType: 'standalone',
       );
-      expect(canEditTrialStructure(t, hasSessionData: false), true);
+      expect(
+        canEditTrialStructure(
+          t,
+          hasSessionData: false,
+          trialIsArmLinked: false,
+        ),
+        true,
+      );
     });
 
     test('standalone Active with session data is not editable', () {
@@ -71,7 +82,14 @@ void main() {
         status: kTrialStatusActive,
         workspaceType: 'standalone',
       );
-      expect(canEditTrialStructure(t, hasSessionData: true), false);
+      expect(
+        canEditTrialStructure(
+          t,
+          hasSessionData: true,
+          trialIsArmLinked: false,
+        ),
+        false,
+      );
     });
 
     test('standalone Closed is not editable', () {
@@ -80,12 +98,26 @@ void main() {
         status: kTrialStatusClosed,
         workspaceType: 'standalone',
       );
-      expect(canEditTrialStructure(t, hasSessionData: false), false);
+      expect(
+        canEditTrialStructure(
+          t,
+          hasSessionData: false,
+          trialIsArmLinked: false,
+        ),
+        false,
+      );
     });
 
     test('non-standalone Active is not editable', () {
       final t = _trial(id: 1, status: kTrialStatusActive);
-      expect(canEditTrialStructure(t, hasSessionData: false), false);
+      expect(
+        canEditTrialStructure(
+          t,
+          hasSessionData: false,
+          trialIsArmLinked: false,
+        ),
+        false,
+      );
     });
 
     test('ARM Active is not editable', () {
@@ -93,9 +125,15 @@ void main() {
         id: 1,
         status: kTrialStatusActive,
         workspaceType: 'standalone',
-        isArmLinked: true,
       );
-      expect(canEditTrialStructure(t, hasSessionData: false), false);
+      expect(
+        canEditTrialStructure(
+          t,
+          hasSessionData: false,
+          trialIsArmLinked: true,
+        ),
+        false,
+      );
     });
   });
 
@@ -106,12 +144,26 @@ void main() {
         status: kTrialStatusActive,
         workspaceType: 'standalone',
       );
-      expect(canEditAssignmentsForTrial(t, hasSessionData: false), true);
+      expect(
+        canEditAssignmentsForTrial(
+          t,
+          hasSessionData: false,
+          trialIsArmLinked: false,
+        ),
+        true,
+      );
     });
 
     test('efficacy draft with session data blocks assignments', () {
       final t = _trial(id: 1, status: kTrialStatusDraft);
-      expect(canEditAssignmentsForTrial(t, hasSessionData: true), false);
+      expect(
+        canEditAssignmentsForTrial(
+          t,
+          hasSessionData: true,
+          trialIsArmLinked: false,
+        ),
+        false,
+      );
     });
   });
 
@@ -123,7 +175,11 @@ void main() {
         workspaceType: 'standalone',
       );
       expect(
-        structureEditBlockedMessage(t, hasSessionData: true),
+        structureEditBlockedMessage(
+          t,
+          hasSessionData: true,
+          trialIsArmLinked: false,
+        ),
         kStructureLockedDataCollectionStartedUserMessage,
       );
     });
@@ -131,13 +187,15 @@ void main() {
 
   group('allowedNextTrialStatusesForTrial', () {
     test('standalone draft skips Ready', () {
-      final t = _trial(id: 1, status: kTrialStatusDraft, workspaceType: 'standalone');
+      final t =
+          _trial(id: 1, status: kTrialStatusDraft, workspaceType: 'standalone');
       expect(allowedNextTrialStatusesForTrial(kTrialStatusDraft, t),
           [kTrialStatusActive]);
     });
 
     test('standalone active goes to Closed', () {
-      final t = _trial(id: 1, status: kTrialStatusActive, workspaceType: 'standalone');
+      final t = _trial(
+          id: 1, status: kTrialStatusActive, workspaceType: 'standalone');
       expect(allowedNextTrialStatusesForTrial(kTrialStatusActive, t),
           [kTrialStatusClosed]);
     });

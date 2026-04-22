@@ -71,10 +71,19 @@ class AssessmentsTab extends ConsumerWidget {
     final stats = statsAsync.valueOrNull ?? {};
     final hasSessionData =
         ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
+    final trialIsArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
     final config = safeConfigFromString(trial.workspaceType);
     final isStandalone = config.isStandalone;
     final isGlp = config.studyType == StudyType.glp;
-    final locked = !canEditTrialStructure(trial, hasSessionData: hasSessionData);
+    final locked = !canEditTrialStructure(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
+    );
     final treatments =
         ref.watch(treatmentsForTrialProvider(trial.id)).valueOrNull ?? [];
     final checkCode = treatments
@@ -94,8 +103,9 @@ class AssessmentsTab extends ConsumerWidget {
                 ? structureEditBlockedMessage(
                     trial,
                     hasSessionData: hasSessionData,
+                    trialIsArmLinked: trialIsArmLinked,
                   )
-                : '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData)}. Add from library or create a custom assessment.',
+                : '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData, trialIsArmLinked: trialIsArmLinked)}. Add from library or create a custom assessment.',
             action: null,
           ),
           if (!locked)
@@ -167,6 +177,7 @@ class AssessmentsTab extends ConsumerWidget {
             message: structureEditBlockedMessage(
               trial,
               hasSessionData: hasSessionData,
+              trialIsArmLinked: trialIsArmLinked,
             ),
           ),
         Expanded(

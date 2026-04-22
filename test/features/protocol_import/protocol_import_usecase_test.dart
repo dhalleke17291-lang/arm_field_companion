@@ -4,9 +4,10 @@ import 'package:arm_field_companion/data/repositories/treatment_repository.dart'
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/protocol_import/protocol_import_usecase.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/arm_trial_metadata_test_utils.dart';
 
 /// Builds protocol CSV rows as List<Map<String, dynamic>>.
 List<Map<String, dynamic>> buildProtocolRows({
@@ -362,8 +363,8 @@ void main() {
 
     test('rejects import to ARM-linked trial', () async {
       final trialId = await trialRepo.createTrial(name: 'ARM Trial');
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId)))
-          .write(const TrialsCompanion(isArmLinked: Value(true)));
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
 
       final review = useCase.analyzeProtocolFile(buildProtocolRows(
         treatments: [

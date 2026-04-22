@@ -22,11 +22,15 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../plot_layout_model.dart';
 import '../../plots/plot_detail_screen.dart';
 
-void _plotsTabLockDebugPrint(Trial trial, bool hasSessionData) {
+void _plotsTabLockDebugPrint(
+  Trial trial,
+  bool hasSessionData,
+  bool trialIsArmLinked,
+) {
   debugPrint(
-    'PLOTS_LOCK_DEBUG: canEdit=${canEditTrialStructure(trial, hasSessionData: hasSessionData)}, '
+    'PLOTS_LOCK_DEBUG: canEdit=${canEditTrialStructure(trial, hasSessionData: hasSessionData, trialIsArmLinked: trialIsArmLinked)}, '
     'hasSessionData=$hasSessionData, status=${trial.status}, workspace=${trial.workspaceType}, '
-    'isArmLinked=${trial.isArmLinked}',
+    'isArmLinked=$trialIsArmLinked',
   );
 }
 
@@ -147,7 +151,14 @@ Widget _buildAddRepGuardsRow(
 }) {
   final hasData =
       ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
-  final enabled = canEditTrialStructure(trial, hasSessionData: hasData);
+  final trialIsArmLinked =
+      ref.watch(armTrialMetadataStreamProvider(trial.id)).valueOrNull?.isArmLinked ==
+          true;
+  final enabled = canEditTrialStructure(
+    trial,
+    hasSessionData: hasData,
+    trialIsArmLinked: trialIsArmLinked,
+  );
   return Padding(
     padding: padding,
     child: Align(
@@ -1249,7 +1260,16 @@ Widget? _standalonePlotsEmptyExtra(
 ) {
   final hasData =
       ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
-  if (!canEditTrialStructure(trial, hasSessionData: hasData)) return null;
+  final trialIsArmLinked =
+      ref.watch(armTrialMetadataStreamProvider(trial.id)).valueOrNull?.isArmLinked ==
+          true;
+  if (!canEditTrialStructure(
+    trial,
+    hasSessionData: hasData,
+    trialIsArmLinked: trialIsArmLinked,
+  )) {
+    return null;
+  }
   if (!isStandalone(trial.workspaceType)) return null;
   if (treatmentCount >= 2) {
     return Column(
@@ -1778,6 +1798,10 @@ class _TrialPlotsWorkingSurface extends ConsumerStatefulWidget {
 
 class _TrialPlotsWorkingSurfaceState
     extends ConsumerState<_TrialPlotsWorkingSurface> {
+  bool _armTrialIsLinked(WidgetRef ref) =>
+      ref.watch(armTrialMetadataStreamProvider(widget.trial.id)).valueOrNull?.isArmLinked ==
+          true;
+
   late bool _showLayoutView;
 
   @override
@@ -1952,9 +1976,11 @@ class _TrialPlotsWorkingSurfaceState
     required List<Assignment> assignmentsList,
     required List<TrialApplicationEvent> applicationsList,
   }) {
+    final trialIsArmLinked = _armTrialIsLinked(ref);
     final displayPlots = _plotsVisibleInPlotsTab(plots);
     final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+        plotAssignmentsEditLocked(widget.trial, hasSessionData,
+            trialIsArmLinked: trialIsArmLinked);
     const double maxTopSectionHeight = 380;
     final colorScheme = Theme.of(context).colorScheme;
     final toolbarChildren = <Widget>[
@@ -2360,8 +2386,13 @@ class _TrialPlotsWorkingSurfaceState
     bool hasSessionData,
   ) {
     final trial = widget.trial;
+    final trialIsArmLinked = _armTrialIsLinked(ref);
     final structureLocked =
-        !canEditTrialStructure(trial, hasSessionData: hasSessionData);
+        !canEditTrialStructure(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
+    );
     final assignmentsList =
         ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
     final assignmentByPlotId = {for (var a in assignmentsList) a.plotId: a};
@@ -2379,16 +2410,22 @@ class _TrialPlotsWorkingSurfaceState
             : '$assignedCount assigned · $unassignedCount unassigned';
 
     if (structureLocked) {
-      _plotsTabLockDebugPrint(trial, hasSessionData);
+      _plotsTabLockDebugPrint(trial, hasSessionData, trialIsArmLinked);
       return structureEditBlockedMessage(
         trial,
         hasSessionData: hasSessionData,
+        trialIsArmLinked: trialIsArmLinked,
       );
     }
-    if (!canEditAssignmentsForTrial(trial, hasSessionData: hasSessionData)) {
+    if (!canEditAssignmentsForTrial(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
+    )) {
       return structureEditBlockedMessage(
         trial,
         hasSessionData: hasSessionData,
+        trialIsArmLinked: trialIsArmLinked,
       );
     }
     return summaryLine;
@@ -2451,8 +2488,10 @@ class _TrialPlotsWorkingSurfaceState
     required List<Plot> allTrialPlots,
   }) {
     final cs = Theme.of(context).colorScheme;
+    final trialIsArmLinked = _armTrialIsLinked(ref);
     final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+        plotAssignmentsEditLocked(widget.trial, hasSessionData,
+            trialIsArmLinked: trialIsArmLinked);
     final guardCount = allTrialPlots.where((p) => p.isGuardRow).length;
 
     return Row(
@@ -2596,6 +2635,7 @@ class _TrialPlotsWorkingSurfaceState
               enabled: canEditTrialStructure(
                 widget.trial,
                 hasSessionData: hasSessionData,
+                trialIsArmLinked: trialIsArmLinked,
               ),
               child: const Row(
                 children: [
@@ -2679,21 +2719,26 @@ class _TrialPlotsWorkingSurfaceState
 
   Widget _buildPlotsListBodyForDetails(BuildContext context, WidgetRef ref,
       List<Plot> visiblePlots, List<Plot> allPlots, bool hasSessionData) {
+    final trialIsArmLinked = _armTrialIsLinked(ref);
     if (!canEditTrialStructure(
       widget.trial,
       hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
     )) {
-      _plotsTabLockDebugPrint(widget.trial, hasSessionData);
+      _plotsTabLockDebugPrint(widget.trial, hasSessionData, trialIsArmLinked);
     }
     final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+        plotAssignmentsEditLocked(widget.trial, hasSessionData,
+            trialIsArmLinked: trialIsArmLinked);
     final longPressBlockMessage = !canEditTrialStructure(
       widget.trial,
       hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
     )
         ? structureEditBlockedMessage(
             widget.trial,
             hasSessionData: hasSessionData,
+            trialIsArmLinked: trialIsArmLinked,
           )
         : getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final treatments =
@@ -2846,6 +2891,7 @@ class _TrialPlotsWorkingSurfaceState
                           : structureEditBlockedMessage(
                               widget.trial,
                               hasSessionData: hasSessionData,
+                              trialIsArmLinked: trialIsArmLinked,
                             ),
                     ),
                   ),
@@ -3281,23 +3327,31 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasSessionData =
         ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
+    final trialIsArmLinked =
+        ref.watch(armTrialMetadataStreamProvider(trial.id)).valueOrNull?.isArmLinked ==
+            true;
     final canEditStructure =
-        canEditTrialStructure(trial, hasSessionData: hasSessionData);
+        canEditTrialStructure(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
+    );
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
     final treatmentCount = treatmentsAsync.value?.length ?? 0;
     final String subtitle;
     if (!canEditStructure) {
-      _plotsTabLockDebugPrint(trial, hasSessionData);
+      _plotsTabLockDebugPrint(trial, hasSessionData, trialIsArmLinked);
       subtitle = structureEditBlockedMessage(
         trial,
         hasSessionData: hasSessionData,
+        trialIsArmLinked: trialIsArmLinked,
       );
     } else if (isStandalone(trial.workspaceType)) {
       subtitle =
-          '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData)}. Open Trial Setup to configure site details, or use the actions below to build your plot layout.';
+          '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData, trialIsArmLinked: trialIsArmLinked)}. Open Trial Setup to configure site details, or use the actions below to build your plot layout.';
     } else {
       subtitle =
-          '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData)}. Import plots via CSV.';
+          '${trialTypeAndStructureCompactLine(trial, hasSessionData: hasSessionData, trialIsArmLinked: trialIsArmLinked)}. Import plots via CSV.';
     }
     final extra = canEditStructure
         ? _standalonePlotsEmptyExtra(
@@ -3842,6 +3896,10 @@ class _PlotsFullScreenPage extends ConsumerStatefulWidget {
 }
 
 class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
+  bool _armTrialIsLinked(WidgetRef ref) =>
+      ref.watch(armTrialMetadataStreamProvider(widget.trial.id)).valueOrNull?.isArmLinked ==
+          true;
+
   late _LayoutLayer _layoutLayer;
   ApplicationEvent? _selectedAppEvent;
   Session? _selectedRatingSession;
@@ -3956,8 +4014,10 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                 return _PlotDetailsEmptyContent(trial: widget.trial);
               }
               final hasSessionData = hasSessionDataAsync.valueOrNull ?? false;
+              final trialIsArmLinked = _armTrialIsLinked(ref);
               final plotAssignmentsLocked =
-                  plotAssignmentsEditLocked(widget.trial, hasSessionData);
+                  plotAssignmentsEditLocked(widget.trial, hasSessionData,
+                      trialIsArmLinked: trialIsArmLinked);
               final sessions = sessionsAsync.value ?? [];
               final guardCount = plots.where((p) => p.isGuardRow).length;
               final displayPlots = _plotsVisibleInPlotsTab(plots);
@@ -4288,21 +4348,26 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     required List<Treatment> treatments,
     required List<Assignment> assignmentsList,
   }) {
+    final trialIsArmLinked = _armTrialIsLinked(ref);
     if (!canEditTrialStructure(
       widget.trial,
       hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
     )) {
-      _plotsTabLockDebugPrint(widget.trial, hasSessionData);
+      _plotsTabLockDebugPrint(widget.trial, hasSessionData, trialIsArmLinked);
     }
     final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData);
+        plotAssignmentsEditLocked(widget.trial, hasSessionData,
+            trialIsArmLinked: trialIsArmLinked);
     final longPressBlockMessage = !canEditTrialStructure(
       widget.trial,
       hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
     )
         ? structureEditBlockedMessage(
             widget.trial,
             hasSessionData: hasSessionData,
+            trialIsArmLinked: trialIsArmLinked,
           )
         : getAssignmentsLockMessage(widget.trial.status, hasSessionData);
     final treatmentMap = {for (final t in treatments) t.id: t};
@@ -4420,6 +4485,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                           : structureEditBlockedMessage(
                               widget.trial,
                               hasSessionData: hasSessionData,
+                              trialIsArmLinked: trialIsArmLinked,
                             ),
                     ),
                   ),

@@ -168,14 +168,19 @@ class ArmShellLinkUseCase {
         // Storage unavailable (e.g. test environment) — continue without.
       }
 
+      await _db.into(_db.armTrialMetadata).insertOnConflictUpdate(
+            ArmTrialMetadataCompanion(
+              trialId: Value(trialId),
+              armLinkedShellPath: Value(shellPath),
+              armLinkedShellAt: Value(DateTime.now().toUtc()),
+              shellInternalPath: internalPath != null
+                  ? Value(internalPath)
+                  : const Value.absent(),
+            ),
+          );
       await _trialRepository.updateTrialSetup(
         trialId,
         TrialsCompanion(
-          armLinkedShellPath: Value(shellPath),
-          armLinkedShellAt: Value(DateTime.now().toUtc()),
-          shellInternalPath: internalPath != null
-              ? Value(internalPath)
-              : const Value.absent(),
           updatedAt: Value(DateTime.now().toUtc()),
         ),
       );
@@ -243,6 +248,10 @@ class ArmShellLinkUseCase {
       );
     }
 
+    final armRow = await (_db.select(_db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(trialId)))
+        .getSingleOrNull();
+
     late final ArmShellImport shell;
     try {
       shell = await ArmShellParser(shellPath).parse();
@@ -287,8 +296,8 @@ class ArmShellLinkUseCase {
       );
     }
 
-    if (trial.armLinkedShellPath != null &&
-        trial.armLinkedShellPath!.trim().isNotEmpty) {
+    final linkedPath = armRow?.armLinkedShellPath;
+    if (linkedPath != null && linkedPath.trim().isNotEmpty) {
       issues.add(
         const ShellLinkIssue(
           severity: ShellLinkIssueSeverity.warn,

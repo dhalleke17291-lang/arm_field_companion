@@ -104,9 +104,13 @@ void main() {
 
     final trial = await trialRepo.getTrialById(result.trialId!);
     expect(trial, isNotNull);
-    expect(trial!.isArmLinked, isTrue);
-    expect(trial.armImportedAt, isNotNull);
-    expect(trial.armSourceFile, path);
-    expect(trial.shellInternalPath, isNotNull);
+    final arm = await (db.select(db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(result.trialId!)))
+        .getSingleOrNull();
+    expect(arm, isNotNull);
+    expect(arm!.isArmLinked, isTrue);
+    expect(arm.armImportedAt, isNotNull);
+    expect(arm.armSourceFile, path);
+    expect(arm.shellInternalPath, isNotNull);
   });
 }

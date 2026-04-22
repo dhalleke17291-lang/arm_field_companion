@@ -18,9 +18,18 @@ class DeleteTreatmentUseCase {
     int? deletedByUserId,
   }) async {
     final hasData = await trialHasAnySessionData(_db, trial.id);
-    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+    final trialIsArmLinked = await loadTrialIsArmLinked(_db, trial.id);
+    if (!canEditTrialStructure(
+      trial,
+      hasSessionData: hasData,
+      trialIsArmLinked: trialIsArmLinked,
+    )) {
       return DeleteTreatmentResult.failure(
-        structureEditBlockedMessage(trial, hasSessionData: hasData),
+        structureEditBlockedMessage(
+          trial,
+          hasSessionData: hasData,
+          trialIsArmLinked: trialIsArmLinked,
+        ),
       );
     }
     try {

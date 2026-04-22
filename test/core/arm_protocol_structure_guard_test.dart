@@ -8,14 +8,13 @@ import 'package:arm_field_companion/data/repositories/trial_assessment_repositor
 import 'package:arm_field_companion/features/arm_import/data/arm_plot_insert_service.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
-import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/arm_trial_metadata_test_utils.dart';
+
 Future<void> _markArmLinked(AppDatabase db, int trialId) async {
-  await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-    const TrialsCompanion(isArmLinked: Value(true)),
-  );
+  await upsertArmTrialMetadataForTest(db, trialId: trialId, isArmLinked: true);
 }
 
 void main() {
@@ -47,7 +46,7 @@ void main() {
           await trialRepo.createTrial(name: 'Draft', workspaceType: 'efficacy');
       final t = await trialRepo.getTrialById(trialId);
       expect(t, isNotNull);
-      expect(canEditProtocol(t!), true);
+      expect(canEditProtocol(t!, trialIsArmLinked: false), true);
     });
 
     test('ARM-linked draft trial is not editable', () async {
@@ -56,7 +55,7 @@ void main() {
       await _markArmLinked(db, trialId);
       final t = await trialRepo.getTrialById(trialId);
       expect(t, isNotNull);
-      expect(canEditProtocol(t!), false);
+      expect(canEditProtocol(t!, trialIsArmLinked: true), false);
     });
 
     test('non-ARM closed trial is not editable', () {
@@ -69,9 +68,8 @@ void main() {
         createdAt: now,
         updatedAt: now,
         isDeleted: false,
-        isArmLinked: false,
       );
-      expect(canEditProtocol(t), false);
+      expect(canEditProtocol(t, trialIsArmLinked: false), false);
     });
 
     test('getArmProtocolLockMessage matches kArmProtocolStructureLockMessage',

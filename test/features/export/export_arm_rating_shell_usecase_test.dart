@@ -22,6 +22,8 @@ import 'package:excel/excel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
+import '../../support/arm_trial_metadata_test_utils.dart';
+
 Future<void> _insertCompatibilityProfile({
   required AppDatabase db,
   required int trialId,
@@ -83,6 +85,7 @@ Future<void> _pinArmExportAnchors(
   required int trialAssessmentId,
   int armImportColumnIndex = 2,
   required int sessionId,
+  DateTime? armImportedAt,
 }) async {
   await (db.update(db.plots)..where((p) => p.id.equals(plotPk))).write(
     PlotsCompanion(armPlotNumber: Value(armPlotNumber)),
@@ -94,19 +97,18 @@ Future<void> _pinArmExportAnchors(
       armImportColumnIndex: Value(armImportColumnIndex),
     ),
   );
-  await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-    TrialsCompanion(
-      isArmLinked: const Value(true),
-      armImportSessionId: Value(sessionId),
-    ),
+  await upsertArmTrialMetadataForTest(
+    db,
+    trialId: trialId,
+    isArmLinked: true,
+    armImportSessionId: sessionId,
+    armImportedAt: armImportedAt,
   );
 }
 
 Trial _trial({
   required int id,
   String name = 'Test Trial',
-  bool isArmLinked = true,
-  DateTime? armImportedAt,
 }) =>
     Trial(
       id: id,
@@ -116,8 +118,6 @@ Trial _trial({
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isDeleted: false,
-      isArmLinked: isArmLinked,
-      armImportedAt: armImportedAt,
     );
 
 CellValue? _cell(Sheet sheet, int row, int col) {
@@ -283,7 +283,7 @@ void main() {
       );
       final uc = makeUc();
       expect(
-        () => uc.execute(trial: _trial(id: trialId, isArmLinked: false)),
+        () => uc.execute(trial: _trial(id: trialId)),
         throwsStateError,
       );
     });
@@ -298,6 +298,8 @@ void main() {
         exportConfidence: ImportConfidence.blocked,
         exportBlockReason: 'bad',
       );
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
       final uc = makeUc();
       final r = await uc.execute(trial: _trial(id: trialId));
       expect(r.success, false);
@@ -313,6 +315,8 @@ void main() {
         trialId: trialId,
         exportConfidence: ImportConfidence.high,
       );
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
       final uc = makeUc();
       final r = await uc.execute(trial: _trial(id: trialId));
       expect(r.success, false);
@@ -1498,13 +1502,7 @@ void main() {
         armPlotNumber: 101,
         trialAssessmentId: taId,
         sessionId: armSessionId,
-      );
-
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-        TrialsCompanion(
-          isArmLinked: const Value(true),
-          armImportedAt: Value(DateTime.utc(2026, 3, 1, 12)),
-        ),
+        armImportedAt: armT,
       );
       final trialRow =
           await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
@@ -1607,11 +1605,11 @@ void main() {
               sessionDateLocal: '2026-01-01',
             ),
           );
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-        TrialsCompanion(
-          isArmLinked: const Value(true),
-          armImportSessionId: Value(sessionId),
-        ),
+      await upsertArmTrialMetadataForTest(
+        db,
+        trialId: trialId,
+        isArmLinked: true,
+        armImportSessionId: sessionId,
       );
       await _insertCompatibilityProfile(
         db: db,

@@ -14,8 +14,6 @@ void main() {
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
       isDeleted: false,
-      isArmLinked: true,
-      armLinkedShellPath: '/tmp/shell.xlsx',
     );
     const preview = ShellLinkPreview(
       issues: [],
@@ -41,6 +39,7 @@ void main() {
     expect(
       shouldOfferShellMetadataEnrichmentBeforeExport(
         trial: trial,
+        existingLinkedShellPath: '/tmp/shell.xlsx',
         selectedShellPath: '/tmp/shell.xlsx',
         preview: preview,
       ),
@@ -57,8 +56,6 @@ void main() {
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
       isDeleted: false,
-      isArmLinked: true,
-      armLinkedShellPath: '/tmp/old.xlsx',
     );
     const preview = ShellLinkPreview(
       issues: [],
@@ -84,6 +81,7 @@ void main() {
     expect(
       shouldOfferShellMetadataEnrichmentBeforeExport(
         trial: trial,
+        existingLinkedShellPath: '/tmp/old.xlsx',
         selectedShellPath: '/tmp/new.xlsx',
         preview: preview,
       ),

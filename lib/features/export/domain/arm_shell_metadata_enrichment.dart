@@ -15,6 +15,7 @@ bool shellMetadataExportPathsAreSame(String a, String b) {
 /// re-application when metadata was applied earlier for this file).
 bool shouldOfferShellMetadataEnrichmentBeforeExport({
   required Trial trial,
+  required String? existingLinkedShellPath,
   required String selectedShellPath,
   required ShellLinkPreview preview,
 }) {
@@ -22,7 +23,7 @@ bool shouldOfferShellMetadataEnrichmentBeforeExport({
   final hasChanges = preview.trialFieldChanges.isNotEmpty ||
       preview.assessmentFieldChanges.isNotEmpty;
   if (!hasChanges) return false;
-  final linked = trial.armLinkedShellPath?.trim() ?? '';
+  final linked = existingLinkedShellPath?.trim() ?? '';
   if (linked.isNotEmpty &&
       shellMetadataExportPathsAreSame(linked, selectedShellPath)) {
     return false;

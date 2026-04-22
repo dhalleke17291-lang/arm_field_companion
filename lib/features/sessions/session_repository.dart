@@ -476,9 +476,9 @@ class SessionRepository {
     });
   }
 
-  /// Prefer [Trial.armImportSessionId] when set; else [ArmImportUseCase] session
+  /// Prefer [ArmTrialMetadata.armImportSessionId] when set; else [ArmImportUseCase] session
   /// (name contains Import session marker); else closest [Session.startedAt] to
-  /// [Trial.armImportedAt]; else most recent non-deleted session.
+  /// [ArmTrialMetadata.armImportedAt]; else most recent non-deleted session.
   Future<int?> resolveSessionIdForRatingShell(Trial trial) async {
     final sessions = await (_db.select(_db.sessions)
           ..where((s) => s.trialId.equals(trial.id) & s.isDeleted.equals(false))
@@ -486,29 +486,33 @@ class SessionRepository {
         .get();
     if (sessions.isEmpty) return null;
 
-    final pinned = trial.armImportSessionId;
+    final arm = await (_db.select(_db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(trial.id)))
+        .getSingleOrNull();
+
+    final pinned = arm?.armImportSessionId;
     if (pinned != null) {
       final match = sessions.where((s) => s.id == pinned).toList();
       if (match.length == 1) {
         return match.single.id;
       }
       debugPrint(
-        'resolveSessionIdForRatingShell: trials.armImportSessionId=$pinned '
+        'resolveSessionIdForRatingShell: arm_trial_metadata.arm_import_session_id=$pinned '
         'not found for trial ${trial.id} or not in session list; using fallback.',
       );
     }
 
-    if (trial.isArmLinked) {
+    if (arm?.isArmLinked == true) {
       for (final s in sessions) {
         if (s.name.contains('Import Session') ||
             s.name.contains('ARM Import')) {
           return s.id;
         }
       }
-      final anchor = trial.armImportedAt;
+      final anchor = arm?.armImportedAt;
       if (anchor != null) {
         Session? best;
-        var bestDelta = 9223372036854775807;
+        var bestDelta = 1 << 62;
         for (final s in sessions) {
           final d = (s.startedAt.millisecondsSinceEpoch -
                   anchor.millisecondsSinceEpoch)

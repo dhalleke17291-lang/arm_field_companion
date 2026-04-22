@@ -164,7 +164,7 @@ class RestoreService {
         await copyDirectory(backedShells, outShells);
       }
 
-      // Rewrite trials.armLinkedShellPath so restored shells are findable on
+      // Rewrite arm_trial_metadata.arm_linked_shell_path so restored shells are findable on
       // this device. Both absolute (from the source device) and relative
       // paths are replaced with the new absolute path under
       // docsDir/restored_shells/. Wrapped in a transaction — partial failure
@@ -179,7 +179,7 @@ class RestoreService {
   }
 
   /// Opens the restored DB directly (Drift _db is already closed at this
-  /// point), scans trials with a non-null armLinkedShellPath, and rewrites
+  /// point), scans arm_trial_metadata with a non-null arm_linked_shell_path, and rewrites
   /// each to the matching file in [shellsDir] if present.
   Future<void> _rewriteShellPaths({
     required String dbPath,
@@ -204,7 +204,7 @@ class RestoreService {
     try {
       db.execute('BEGIN TRANSACTION');
       final stmt = db.prepare(
-        'UPDATE trials SET arm_linked_shell_path = ? WHERE id = ?',
+        'UPDATE arm_trial_metadata SET arm_linked_shell_path = ? WHERE trial_id = ?',
       );
       try {
         for (final entry in shellByTrial.entries) {

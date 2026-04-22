@@ -74,25 +74,6 @@ class Trials extends Table {
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
 
-  BoolColumn get isArmLinked => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get armImportedAt => dateTime().nullable()();
-  TextColumn get armSourceFile => text().nullable()();
-  TextColumn get armVersion => text().nullable()();
-
-  /// Session used for ARM import ratings; preferred for Rating Shell export.
-  /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
-  IntColumn get armImportSessionId => integer().nullable()();
-
-  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
-  TextColumn get armLinkedShellPath => text().nullable()();
-
-  /// When [armLinkedShellPath] was last applied.
-  DateTimeColumn get armLinkedShellAt => dateTime().nullable()();
-
-  /// Internal app path where the shell file is stored (copied at import/link).
-  /// Null for existing trials or trials imported before shell storage was added.
-  TextColumn get shellInternalPath => text().nullable()();
-
   /// FK to shared site record. Nullable — trials without a linked site
   /// still store location/soil fields directly (denormalized copies).
   IntColumn get siteRefId =>
@@ -109,6 +90,35 @@ class Trials extends Table {
 
   /// Whether the trial follows Good Experimental Practice guidelines.
   BoolColumn get gepComplianceFlag => boolean().nullable()();
+}
+
+/// Per-trial ARM shell linkage and import metadata (Phase 0b).
+///
+/// Standalone trials have **no row** here. ARM-linked or imported trials have
+/// exactly one row keyed by [trialId]. See `docs/ARM_SEPARATION.md`.
+class ArmTrialMetadata extends Table {
+  IntColumn get trialId => integer().references(Trials, #id)();
+
+  BoolColumn get isArmLinked => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get armImportedAt => dateTime().nullable()();
+  TextColumn get armSourceFile => text().nullable()();
+  TextColumn get armVersion => text().nullable()();
+
+  /// Session used for ARM import ratings; preferred for Rating Shell export.
+  /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
+  IntColumn get armImportSessionId => integer().nullable()();
+
+  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
+  TextColumn get armLinkedShellPath => text().nullable()();
+
+  /// When [armLinkedShellPath] was last applied.
+  DateTimeColumn get armLinkedShellAt => dateTime().nullable()();
+
+  /// Internal app path where the shell file is stored (copied at import/link).
+  TextColumn get shellInternalPath => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {trialId};
 }
 
 /// Shared site record. Contains location, soil, and management fields
@@ -1097,6 +1107,7 @@ class ArmSessionMetadata extends Table {
   ArmColumnMappings,
   ArmAssessmentMetadata,
   ArmSessionMetadata,
+  ArmTrialMetadata,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1105,7 +1116,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 57;
+  int get schemaVersion => 58;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1406,10 +1417,29 @@ SET status = 'completed',
           if (from < 35) {
             await m.createTable(importSnapshots);
             await m.createTable(compatibilityProfiles);
-            await m.addColumn(trials, trials.isArmLinked);
-            await m.addColumn(trials, trials.armImportedAt);
-            await m.addColumn(trials, trials.armSourceFile);
-            await m.addColumn(trials, trials.armVersion);
+            final tc35 = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!tc35.contains('is_arm_linked')) {
+              await customStatement(
+                'ALTER TABLE trials ADD COLUMN is_arm_linked INTEGER NOT NULL DEFAULT 0',
+              );
+            }
+            if (!tc35.contains('arm_imported_at')) {
+              await customStatement(
+                'ALTER TABLE trials ADD COLUMN arm_imported_at INTEGER',
+              );
+            }
+            if (!tc35.contains('arm_source_file')) {
+              await customStatement(
+                'ALTER TABLE trials ADD COLUMN arm_source_file TEXT',
+              );
+            }
+            if (!tc35.contains('arm_version')) {
+              await customStatement(
+                'ALTER TABLE trials ADD COLUMN arm_version TEXT',
+              );
+            }
           }
           if (from < 36) {
             await m.addColumn(plots, plots.excludeFromAnalysis);
@@ -1464,11 +1494,29 @@ SET status = 'completed',
             await m.addColumn(plots, plots.armImportDataRowIndex);
             await m.addColumn(
                 trialAssessments, trialAssessments.armImportColumnIndex);
-            await m.addColumn(trials, trials.armImportSessionId);
+            final tc41 = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!tc41.contains('arm_import_session_id')) {
+              await customStatement(
+                'ALTER TABLE trials ADD COLUMN arm_import_session_id INTEGER',
+              );
+            }
           }
           if (from < 42) {
-            await m.addColumn(trials, trials.armLinkedShellPath);
-            await m.addColumn(trials, trials.armLinkedShellAt);
+            final tc42 = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!tc42.contains('arm_linked_shell_path')) {
+              await customStatement(
+                'ALTER TABLE trials ADD COLUMN arm_linked_shell_path TEXT',
+              );
+            }
+            if (!tc42.contains('arm_linked_shell_at')) {
+              await customStatement(
+                'ALTER TABLE trials ADD COLUMN arm_linked_shell_at INTEGER',
+              );
+            }
           }
           if (from < 43) {
             await m.addColumn(
@@ -1866,6 +1914,66 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             }
             if (!existingTables.contains('arm_session_metadata')) {
               await m.createTable(armSessionMetadata);
+            }
+          }
+
+          if (from < 58) {
+            // ── Phase 0b: trial-level ARM metadata → arm_trial_metadata ──
+            final tables58 = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!tables58.contains('arm_trial_metadata')) {
+              await m.createTable(armTrialMetadata);
+            }
+
+            final trialCols58 = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+            if (trialCols58.contains('is_arm_linked')) {
+              await customStatement('''
+INSERT OR REPLACE INTO arm_trial_metadata (
+  trial_id, is_arm_linked, arm_imported_at, arm_source_file, arm_version,
+  arm_import_session_id, arm_linked_shell_path, arm_linked_shell_at, shell_internal_path
+)
+SELECT
+  id,
+  is_arm_linked,
+  arm_imported_at,
+  arm_source_file,
+  arm_version,
+  arm_import_session_id,
+  arm_linked_shell_path,
+  arm_linked_shell_at,
+  shell_internal_path
+FROM trials
+WHERE COALESCE(is_arm_linked, 0) != 0
+   OR arm_imported_at IS NOT NULL
+   OR (arm_source_file IS NOT NULL AND TRIM(arm_source_file) != '')
+   OR (arm_version IS NOT NULL AND TRIM(arm_version) != '')
+   OR arm_import_session_id IS NOT NULL
+   OR (arm_linked_shell_path IS NOT NULL AND TRIM(arm_linked_shell_path) != '')
+   OR arm_linked_shell_at IS NOT NULL
+   OR (shell_internal_path IS NOT NULL AND TRIM(shell_internal_path) != '')
+''');
+              const armTrialColsOnTrials = <String>[
+                'is_arm_linked',
+                'arm_imported_at',
+                'arm_source_file',
+                'arm_version',
+                'arm_import_session_id',
+                'arm_linked_shell_path',
+                'arm_linked_shell_at',
+                'shell_internal_path',
+              ];
+              for (final col in armTrialColsOnTrials) {
+                final fresh = await customSelect(
+                  "SELECT name FROM pragma_table_info('trials')",
+                ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+                if (fresh.contains(col)) {
+                  await customStatement('ALTER TABLE trials DROP COLUMN $col');
+                }
+              }
             }
           }
 

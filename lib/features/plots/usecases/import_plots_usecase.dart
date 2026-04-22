@@ -152,9 +152,18 @@ class ImportPlotsUseCase {
       return ImportPlotsResult.failure('Trial not found.');
     }
     final hasData = await trialHasAnySessionData(_db, input.trialId);
-    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+    final armLinked = await loadTrialIsArmLinked(_db, input.trialId);
+    if (!canEditTrialStructure(
+      trial,
+      hasSessionData: hasData,
+      trialIsArmLinked: armLinked,
+    )) {
       return ImportPlotsResult.failure(
-        structureEditBlockedMessage(trial, hasSessionData: hasData),
+        structureEditBlockedMessage(
+          trial,
+          hasSessionData: hasData,
+          trialIsArmLinked: armLinked,
+        ),
       );
     }
 

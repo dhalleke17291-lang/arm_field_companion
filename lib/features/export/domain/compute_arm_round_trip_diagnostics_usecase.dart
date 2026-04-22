@@ -13,15 +13,18 @@ import '../../sessions/session_repository.dart';
 /// Non-blocking: findings map to [DiagnosticFinding] with [blocksExport] false.
 class ComputeArmRoundTripDiagnosticsUseCase {
   ComputeArmRoundTripDiagnosticsUseCase({
+    required AppDatabase db,
     required PlotRepository plotRepository,
     required TrialAssessmentRepository trialAssessmentRepository,
     required SessionRepository sessionRepository,
     required RatingRepository ratingRepository,
-  })  : _plotRepository = plotRepository,
+  })  : _db = db,
+        _plotRepository = plotRepository,
         _trialAssessmentRepository = trialAssessmentRepository,
         _sessionRepository = sessionRepository,
         _ratingRepository = ratingRepository;
 
+  final AppDatabase _db;
   final PlotRepository _plotRepository;
   final TrialAssessmentRepository _trialAssessmentRepository;
   final SessionRepository _sessionRepository;
@@ -33,7 +36,10 @@ class ComputeArmRoundTripDiagnosticsUseCase {
     List<Plot>? plots,
     List<TrialAssessment>? assessments,
   }) async {
-    if (!trial.isArmLinked) {
+    final arm = await (_db.select(_db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(trial.id)))
+        .getSingleOrNull();
+    if (arm?.isArmLinked != true) {
       return ArmRoundTripDiagnosticReport(
         trialId: trial.id,
         resolvedShellSessionId: null,
@@ -52,7 +58,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
 
     _applyPlotRules(plotList, trial.id, out);
     _applyAssessmentColumnRules(assessmentList, trial.id, out);
-    await _applySessionAndRatingRules(trial, resolved, plotList, out);
+    await _applySessionAndRatingRules(trial, arm, resolved, plotList, out);
 
     return ArmRoundTripDiagnosticReport(
       trialId: trial.id,
@@ -165,12 +171,13 @@ class ComputeArmRoundTripDiagnosticsUseCase {
 
   Future<void> _applySessionAndRatingRules(
     Trial trial,
+    ArmTrialMetadataData? arm,
     int? resolved,
     List<Plot> plots,
     List<ArmRoundTripDiagnostic> out,
   ) async {
     final dataPlotPks = armShellDataPlots(plots).map((p) => p.id).toSet();
-    final pinned = trial.armImportSessionId;
+    final pinned = arm?.armImportSessionId;
 
     if (pinned == null) {
       out.add(
@@ -178,7 +185,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
           code: ArmRoundTripDiagnosticCode.armImportSessionIdMissing,
           severity: ArmRoundTripDiagnosticSeverity.warning,
           message:
-              'trials.armImportSessionId is not set; shell export session is inferred.',
+              'arm_trial_metadata.arm_import_session_id is not set; shell export session is inferred.',
           detail: resolved != null ? 'Resolved session id: $resolved' : null,
           trialId: trial.id,
           sessionId: resolved,
@@ -192,7 +199,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
           code: ArmRoundTripDiagnosticCode.armImportSessionIdInvalid,
           severity: ArmRoundTripDiagnosticSeverity.warning,
           message:
-              'trials.armImportSessionId ($pinned) does not match a non-deleted session used for export.',
+              'arm_trial_metadata.arm_import_session_id ($pinned) does not match a non-deleted session used for export.',
           detail: resolved != null
               ? 'Resolved session id: $resolved'
               : 'No session could be resolved for this trial.',

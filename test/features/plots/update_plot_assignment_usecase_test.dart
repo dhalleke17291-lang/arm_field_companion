@@ -6,6 +6,9 @@ import 'package:arm_field_companion/domain/ratings/rating_integrity_exception.da
 import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
 import 'package:arm_field_companion/features/plots/usecases/update_plot_assignment_usecase.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
+import 'package:drift/native.dart';
+
+import '../../support/arm_trial_metadata_test_utils.dart';
 
 class MockAssignmentRepository implements AssignmentRepository {
   final List<Map<String, dynamic>> _upserted = [];
@@ -201,36 +204,28 @@ Trial _trial({String status = kTrialStatusDraft, String? workspaceType}) =>
       location: null,
       season: null,
       isDeleted: false,
-      isArmLinked: false,
-    );
-
-Trial _trialArmLinkedDraft() => Trial(
-      id: 1,
-      name: 'Test Trial',
-      status: kTrialStatusDraft,
-      workspaceType: 'efficacy',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      crop: null,
-      location: null,
-      season: null,
-      isDeleted: false,
-      isArmLinked: true,
     );
 
 void main() {
+  late AppDatabase testDb;
   late UpdatePlotAssignmentUseCase useCase;
   late MockAssignmentRepository mockRepo;
   late MockSessionRepository mockSessionRepo;
 
   setUp(() {
+    testDb = AppDatabase.forTesting(NativeDatabase.memory());
     mockRepo = MockAssignmentRepository();
     mockSessionRepo = MockSessionRepository();
     useCase = UpdatePlotAssignmentUseCase(
+      testDb,
       mockRepo,
       mockSessionRepo,
       MockAssignmentIntegrity(),
     );
+  });
+
+  tearDown(() async {
+    await testDb.close();
   });
 
   group('UpdatePlotAssignmentUseCase — updateOne', () {
@@ -304,8 +299,10 @@ void main() {
     });
 
     test('LOCK: ARM-linked draft returns ARM protocol message', () async {
+      await upsertArmTrialMetadataForTest(testDb,
+          trialId: 1, isArmLinked: true);
       final result = await useCase.updateOne(
-        trial: _trialArmLinkedDraft(),
+        trial: _trial(),
         plotPk: 10,
         treatmentId: 5,
       );
@@ -332,6 +329,7 @@ void main() {
         plotCode: 'plot_wrong_trial',
       );
       final uc = UpdatePlotAssignmentUseCase(
+        testDb,
         mockRepo,
         mockSessionRepo,
         integrity,
@@ -353,6 +351,7 @@ void main() {
         treatmentCode: 'treatment_not_found_wrong_trial_or_deleted',
       );
       final uc = UpdatePlotAssignmentUseCase(
+        testDb,
         mockRepo,
         mockSessionRepo,
         integrity,
@@ -410,8 +409,10 @@ void main() {
     });
 
     test('LOCK: ARM-linked draft bulk returns ARM protocol message', () async {
+      await upsertArmTrialMetadataForTest(testDb,
+          trialId: 1, isArmLinked: true);
       final result = await useCase.updateBulk(
-        trial: _trialArmLinkedDraft(),
+        trial: _trial(),
         plotPkToTreatmentId: {1: 10, 2: 20},
       );
       expect(result.success, false);
@@ -437,6 +438,7 @@ void main() {
         trialId: 1,
       );
       final uc = UpdatePlotAssignmentUseCase(
+        testDb,
         mockRepo,
         mockSessionRepo,
         integrity,
@@ -459,6 +461,7 @@ void main() {
         trialId: 1,
       );
       final uc = UpdatePlotAssignmentUseCase(
+        testDb,
         mockRepo,
         mockSessionRepo,
         integrity,

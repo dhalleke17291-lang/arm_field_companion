@@ -74,6 +74,7 @@ class ExportArmRatingShellUseCase {
         _publishExportDiagnostics = publishExportDiagnostics,
         _computeArmRoundTripDiagnostics =
             ComputeArmRoundTripDiagnosticsUseCase(
+          db: db,
           plotRepository: plotRepository,
           trialAssessmentRepository: trialAssessmentRepository,
           sessionRepository: sessionRepository,
@@ -93,7 +94,10 @@ class ExportArmRatingShellUseCase {
     /// Used by "Export Anyway" after the user explicitly acknowledges risk.
     bool allowPositionalFallback = false,
   }) async {
-    if (!trial.isArmLinked) {
+    final armLink = await (_db.select(_db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(trial.id)))
+        .getSingleOrNull();
+    if (armLink?.isArmLinked != true) {
       throw StateError(
         'ExportArmRatingShellUseCase must only be called for imported trials. '
         'Use ExportTrialUseCase for standalone trials.',
@@ -154,7 +158,7 @@ class ExportArmRatingShellUseCase {
     );
     exportDiagnosticsBuffer.addAll(roundTripReport.toDiagnosticFindings());
 
-    if (trial.isArmLinked &&
+    if (armLink?.isArmLinked == true &&
         shellDataPlots.isNotEmpty &&
         shellDataPlots.any((p) => p.armPlotNumber == null)) {
       debugPrint(

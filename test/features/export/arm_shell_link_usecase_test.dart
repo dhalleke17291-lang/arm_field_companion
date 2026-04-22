@@ -6,7 +6,7 @@ import 'package:arm_field_companion/data/repositories/trial_assessment_repositor
 import 'package:arm_field_companion/features/export/domain/arm_shell_link_usecase.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -142,8 +142,12 @@ void main() {
     final trial = await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
         .getSingle();
     expect(trial.name, 'T');
-    expect(trial.armLinkedShellPath, shellPath);
-    expect(trial.armLinkedShellAt != null, isTrue);
+    final arm = await (db.select(db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(trialId)))
+        .getSingleOrNull();
+    expect(arm, isNotNull);
+    expect(arm!.armLinkedShellPath, shellPath);
+    expect(arm.armLinkedShellAt != null, isTrue);
 
     final ta = await (db.select(db.trialAssessments)
           ..where((t) => t.id.equals(taId)))

@@ -9,11 +9,13 @@ import '../../sessions/session_repository.dart';
 /// Updates plot treatment assignment(s) via Assignments table.
 /// Respects protocol lock and assignments lock (trial has session data).
 class UpdatePlotAssignmentUseCase {
+  final AppDatabase _db;
   final AssignmentRepository _assignmentRepository;
   final SessionRepository _sessionRepository;
   final AssignmentIntegrityChecks _assignmentIntegrity;
 
   UpdatePlotAssignmentUseCase(
+    this._db,
     this._assignmentRepository,
     this._sessionRepository,
     this._assignmentIntegrity,
@@ -29,12 +31,25 @@ class UpdatePlotAssignmentUseCase {
   }) async {
     final hasSessionData =
         await _sessionRepository.watchTrialHasSessionData(trial.id).first;
-    if (!canEditTrialStructure(trial, hasSessionData: hasSessionData)) {
+    final armLinked = await loadTrialIsArmLinked(_db, trial.id);
+    if (!canEditTrialStructure(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: armLinked,
+    )) {
       return UpdateAssignmentResult.failure(
-        structureEditBlockedMessage(trial, hasSessionData: hasSessionData),
+        structureEditBlockedMessage(
+          trial,
+          hasSessionData: hasSessionData,
+          trialIsArmLinked: armLinked,
+        ),
       );
     }
-    if (!canEditAssignmentsForTrial(trial, hasSessionData: hasSessionData)) {
+    if (!canEditAssignmentsForTrial(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: armLinked,
+    )) {
       return UpdateAssignmentResult.failure(
         getAssignmentsLockMessage(trial.status, hasSessionData),
       );
@@ -75,12 +90,25 @@ class UpdatePlotAssignmentUseCase {
   }) async {
     final hasSessionData =
         await _sessionRepository.watchTrialHasSessionData(trial.id).first;
-    if (!canEditTrialStructure(trial, hasSessionData: hasSessionData)) {
+    final armLinked = await loadTrialIsArmLinked(_db, trial.id);
+    if (!canEditTrialStructure(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: armLinked,
+    )) {
       return UpdateAssignmentResult.failure(
-        structureEditBlockedMessage(trial, hasSessionData: hasSessionData),
+        structureEditBlockedMessage(
+          trial,
+          hasSessionData: hasSessionData,
+          trialIsArmLinked: armLinked,
+        ),
       );
     }
-    if (!canEditAssignmentsForTrial(trial, hasSessionData: hasSessionData)) {
+    if (!canEditAssignmentsForTrial(
+      trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: armLinked,
+    )) {
       return UpdateAssignmentResult.failure(
         getAssignmentsLockMessage(trial.status, hasSessionData),
       );

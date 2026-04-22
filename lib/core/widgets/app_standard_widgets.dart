@@ -430,12 +430,14 @@ class ProtocolLockChip extends StatelessWidget {
   final bool isLocked;
   final Trial? trial;
   final bool? hasSessionData;
+  final bool trialIsArmLinked;
 
   const ProtocolLockChip({
     super.key,
     required this.isLocked,
     this.trial,
     this.hasSessionData,
+    required this.trialIsArmLinked,
   });
 
   @override
@@ -445,6 +447,7 @@ class ProtocolLockChip extends StatelessWidget {
         ? trialTypeAndStructureCompactLine(
             trial!,
             hasSessionData: hasSessionData,
+            trialIsArmLinked: trialIsArmLinked,
           )
         : 'Custom trial • Structure editable';
     final tooltip = isLocked && trial != null
@@ -452,8 +455,12 @@ class ProtocolLockChip extends StatelessWidget {
             ? structureEditBlockedMessage(
                 trial!,
                 hasSessionData: hasSessionData!,
+                trialIsArmLinked: trialIsArmLinked,
               )
-            : protocolEditBlockedMessage(trial!))
+            : protocolEditBlockedMessage(
+                trial!,
+                trialIsArmLinked: trialIsArmLinked,
+              ))
         : null;
     final tooltipOrNull =
         tooltip != null && tooltip.isNotEmpty ? tooltip : null;

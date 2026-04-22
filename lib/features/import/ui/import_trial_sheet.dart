@@ -224,9 +224,16 @@ Future<void> _onLinkArmShellTap({
   var resolvedId = trialId;
   if (resolvedId == null) {
     final db = container.read(databaseProvider);
-    final armLinked = await (db.select(db.trials)
-          ..where((t) => t.isDeleted.equals(false) & t.isArmLinked.equals(true))
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+    final armLinked = await (db.select(db.trials).join([
+          innerJoin(
+            db.armTrialMetadata,
+            db.armTrialMetadata.trialId.equalsExp(db.trials.id),
+          ),
+        ])
+          ..where(db.trials.isDeleted.equals(false) &
+              db.armTrialMetadata.isArmLinked.equals(true))
+          ..orderBy([OrderingTerm.desc(db.trials.createdAt)]))
+        .map((row) => row.readTable(db.trials))
         .get();
     if (!parentContext.mounted) return;
     if (armLinked.isEmpty) {

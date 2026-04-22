@@ -4,9 +4,10 @@ import 'package:arm_field_companion/data/repositories/assignment_repository.dart
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/arm_trial_metadata_test_utils.dart';
 
 void main() {
   late AppDatabase db;
@@ -83,8 +84,8 @@ void main() {
       final trialId = await createTrial();
       final plotPk = await plotRepo.insertPlot(
           trialId: trialId, plotId: '101');
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId)))
-          .write(const TrialsCompanion(isArmLinked: Value(true)));
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
 
       expect(
         () => repo.upsert(trialId: trialId, plotId: plotPk, treatmentId: 1),

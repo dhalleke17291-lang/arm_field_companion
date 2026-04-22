@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/plot_analysis_eligibility.dart';
+import '../../../core/trial_state.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../diagnostics/trial_readiness.dart';
@@ -71,6 +72,7 @@ class ArmExportPreflight {
 /// Gathers trial/session summary and merged quality findings before ARM shell export.
 class ArmExportPreflightUseCase {
   ArmExportPreflightUseCase({
+    required AppDatabase db,
     required TrialRepository trialRepository,
     required PlotRepository plotRepository,
     required SessionRepository sessionRepository,
@@ -82,7 +84,8 @@ class ArmExportPreflightUseCase {
     required ExportRepository exportRepository,
     required ComputeArmRoundTripDiagnosticsUseCase
         computeArmRoundTripDiagnostics,
-  })  : _trialRepository = trialRepository,
+  })  : _db = db,
+        _trialRepository = trialRepository,
         _plotRepository = plotRepository,
         _sessionRepository = sessionRepository,
         _ratingRepository = ratingRepository,
@@ -93,6 +96,7 @@ class ArmExportPreflightUseCase {
         _exportRepository = exportRepository,
         _computeArmRoundTripDiagnostics = computeArmRoundTripDiagnostics;
 
+  final AppDatabase _db;
   final TrialRepository _trialRepository;
   final PlotRepository _plotRepository;
   final SessionRepository _sessionRepository;
@@ -118,7 +122,7 @@ class ArmExportPreflightUseCase {
         message: 'Trial not found.',
       );
     }
-    if (!trial.isArmLinked) {
+    if (!await loadTrialIsArmLinked(_db, trialId)) {
       return _failurePreflight(
         trialId: trialId,
         message: 'Excel Rating Sheet export is only for imported trials.',

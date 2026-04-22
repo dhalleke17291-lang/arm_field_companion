@@ -68,6 +68,7 @@ Future<void> _insertHighConfidenceProfile(
 
 ExportTrialUseCase _exportUseCase(AppDatabase db) {
   return ExportTrialUseCase(
+    db: db,
     trialRepository: TrialRepository(db),
     plotRepository: PlotRepository(db),
     treatmentRepository: TreatmentRepository(db),
@@ -115,7 +116,6 @@ void main() {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         isDeleted: false,
-        isArmLinked: false,
       ),
       format: ExportFormat.flatCsv,
     );

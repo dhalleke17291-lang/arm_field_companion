@@ -20,9 +20,18 @@ class GenerateRepGuardPlotsUseCase {
     final trial = await _trialRepository.getTrialById(trialId);
     if (trial == null) return 0;
     final hasData = await trialHasAnySessionData(_db, trialId);
-    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+    final armLinked = await loadTrialIsArmLinked(_db, trialId);
+    if (!canEditTrialStructure(
+      trial,
+      hasSessionData: hasData,
+      trialIsArmLinked: armLinked,
+    )) {
       throw ProtocolEditBlockedException(
-        structureEditBlockedMessage(trial, hasSessionData: hasData),
+        structureEditBlockedMessage(
+          trial,
+          hasSessionData: hasData,
+          trialIsArmLinked: armLinked,
+        ),
       );
     }
     return _plotRepository.countRepGuardPlotsToInsert(trialId);
@@ -32,9 +41,18 @@ class GenerateRepGuardPlotsUseCase {
     final trial = await _trialRepository.getTrialById(trialId);
     if (trial == null) return 0;
     final hasData = await trialHasAnySessionData(_db, trialId);
-    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+    final armLinked = await loadTrialIsArmLinked(_db, trialId);
+    if (!canEditTrialStructure(
+      trial,
+      hasSessionData: hasData,
+      trialIsArmLinked: armLinked,
+    )) {
       throw ProtocolEditBlockedException(
-        structureEditBlockedMessage(trial, hasSessionData: hasData),
+        structureEditBlockedMessage(
+          trial,
+          hasSessionData: hasData,
+          trialIsArmLinked: armLinked,
+        ),
       );
     }
     return _plotRepository.insertRepGuardPlotsIfNeeded(trialId);

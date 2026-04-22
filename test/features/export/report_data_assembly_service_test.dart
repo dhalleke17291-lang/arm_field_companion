@@ -30,7 +30,6 @@ Trial _trial({
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       isDeleted: false,
-      isArmLinked: false,
     );
 
 class MockPlotRepository implements PlotRepository {

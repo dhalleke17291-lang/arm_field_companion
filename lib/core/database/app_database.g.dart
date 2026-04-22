@@ -1493,58 +1493,6 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
   late final GeneratedColumn<String> deletedBy = GeneratedColumn<String>(
       'deleted_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _isArmLinkedMeta =
-      const VerificationMeta('isArmLinked');
-  @override
-  late final GeneratedColumn<bool> isArmLinked = GeneratedColumn<bool>(
-      'is_arm_linked', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("is_arm_linked" IN (0, 1))'),
-      defaultValue: const Constant(false));
-  static const VerificationMeta _armImportedAtMeta =
-      const VerificationMeta('armImportedAt');
-  @override
-  late final GeneratedColumn<DateTime> armImportedAt =
-      GeneratedColumn<DateTime>('arm_imported_at', aliasedName, true,
-          type: DriftSqlType.dateTime, requiredDuringInsert: false);
-  static const VerificationMeta _armSourceFileMeta =
-      const VerificationMeta('armSourceFile');
-  @override
-  late final GeneratedColumn<String> armSourceFile = GeneratedColumn<String>(
-      'arm_source_file', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _armVersionMeta =
-      const VerificationMeta('armVersion');
-  @override
-  late final GeneratedColumn<String> armVersion = GeneratedColumn<String>(
-      'arm_version', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _armImportSessionIdMeta =
-      const VerificationMeta('armImportSessionId');
-  @override
-  late final GeneratedColumn<int> armImportSessionId = GeneratedColumn<int>(
-      'arm_import_session_id', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _armLinkedShellPathMeta =
-      const VerificationMeta('armLinkedShellPath');
-  @override
-  late final GeneratedColumn<String> armLinkedShellPath =
-      GeneratedColumn<String>('arm_linked_shell_path', aliasedName, true,
-          type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _armLinkedShellAtMeta =
-      const VerificationMeta('armLinkedShellAt');
-  @override
-  late final GeneratedColumn<DateTime> armLinkedShellAt =
-      GeneratedColumn<DateTime>('arm_linked_shell_at', aliasedName, true,
-          type: DriftSqlType.dateTime, requiredDuringInsert: false);
-  static const VerificationMeta _shellInternalPathMeta =
-      const VerificationMeta('shellInternalPath');
-  @override
-  late final GeneratedColumn<String> shellInternalPath =
-      GeneratedColumn<String>('shell_internal_path', aliasedName, true,
-          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _siteRefIdMeta =
       const VerificationMeta('siteRefId');
   @override
@@ -1623,14 +1571,6 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         isDeleted,
         deletedAt,
         deletedBy,
-        isArmLinked,
-        armImportedAt,
-        armSourceFile,
-        armVersion,
-        armImportSessionId,
-        armLinkedShellPath,
-        armLinkedShellAt,
-        shellInternalPath,
         siteRefId,
         cultivar,
         rowSpacingCm,
@@ -1842,54 +1782,6 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       context.handle(_deletedByMeta,
           deletedBy.isAcceptableOrUnknown(data['deleted_by']!, _deletedByMeta));
     }
-    if (data.containsKey('is_arm_linked')) {
-      context.handle(
-          _isArmLinkedMeta,
-          isArmLinked.isAcceptableOrUnknown(
-              data['is_arm_linked']!, _isArmLinkedMeta));
-    }
-    if (data.containsKey('arm_imported_at')) {
-      context.handle(
-          _armImportedAtMeta,
-          armImportedAt.isAcceptableOrUnknown(
-              data['arm_imported_at']!, _armImportedAtMeta));
-    }
-    if (data.containsKey('arm_source_file')) {
-      context.handle(
-          _armSourceFileMeta,
-          armSourceFile.isAcceptableOrUnknown(
-              data['arm_source_file']!, _armSourceFileMeta));
-    }
-    if (data.containsKey('arm_version')) {
-      context.handle(
-          _armVersionMeta,
-          armVersion.isAcceptableOrUnknown(
-              data['arm_version']!, _armVersionMeta));
-    }
-    if (data.containsKey('arm_import_session_id')) {
-      context.handle(
-          _armImportSessionIdMeta,
-          armImportSessionId.isAcceptableOrUnknown(
-              data['arm_import_session_id']!, _armImportSessionIdMeta));
-    }
-    if (data.containsKey('arm_linked_shell_path')) {
-      context.handle(
-          _armLinkedShellPathMeta,
-          armLinkedShellPath.isAcceptableOrUnknown(
-              data['arm_linked_shell_path']!, _armLinkedShellPathMeta));
-    }
-    if (data.containsKey('arm_linked_shell_at')) {
-      context.handle(
-          _armLinkedShellAtMeta,
-          armLinkedShellAt.isAcceptableOrUnknown(
-              data['arm_linked_shell_at']!, _armLinkedShellAtMeta));
-    }
-    if (data.containsKey('shell_internal_path')) {
-      context.handle(
-          _shellInternalPathMeta,
-          shellInternalPath.isAcceptableOrUnknown(
-              data['shell_internal_path']!, _shellInternalPathMeta));
-    }
     if (data.containsKey('site_ref_id')) {
       context.handle(
           _siteRefIdMeta,
@@ -2007,22 +1899,6 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
       deletedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}deleted_by']),
-      isArmLinked: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}is_arm_linked'])!,
-      armImportedAt: attachedDatabase.typeMapping.read(
-          DriftSqlType.dateTime, data['${effectivePrefix}arm_imported_at']),
-      armSourceFile: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}arm_source_file']),
-      armVersion: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}arm_version']),
-      armImportSessionId: attachedDatabase.typeMapping.read(
-          DriftSqlType.int, data['${effectivePrefix}arm_import_session_id']),
-      armLinkedShellPath: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}arm_linked_shell_path']),
-      armLinkedShellAt: attachedDatabase.typeMapping.read(
-          DriftSqlType.dateTime, data['${effectivePrefix}arm_linked_shell_at']),
-      shellInternalPath: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}shell_internal_path']),
       siteRefId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}site_ref_id']),
       cultivar: attachedDatabase.typeMapping
@@ -2091,24 +1967,6 @@ class Trial extends DataClass implements Insertable<Trial> {
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
-  final bool isArmLinked;
-  final DateTime? armImportedAt;
-  final String? armSourceFile;
-  final String? armVersion;
-
-  /// Session used for ARM import ratings; preferred for Rating Shell export.
-  /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
-  final int? armImportSessionId;
-
-  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
-  final String? armLinkedShellPath;
-
-  /// When [armLinkedShellPath] was last applied.
-  final DateTime? armLinkedShellAt;
-
-  /// Internal app path where the shell file is stored (copied at import/link).
-  /// Null for existing trials or trials imported before shell storage was added.
-  final String? shellInternalPath;
 
   /// FK to shared site record. Nullable — trials without a linked site
   /// still store location/soil fields directly (denormalized copies).
@@ -2166,14 +2024,6 @@ class Trial extends DataClass implements Insertable<Trial> {
       required this.isDeleted,
       this.deletedAt,
       this.deletedBy,
-      required this.isArmLinked,
-      this.armImportedAt,
-      this.armSourceFile,
-      this.armVersion,
-      this.armImportSessionId,
-      this.armLinkedShellPath,
-      this.armLinkedShellAt,
-      this.shellInternalPath,
       this.siteRefId,
       this.cultivar,
       this.rowSpacingCm,
@@ -2287,28 +2137,6 @@ class Trial extends DataClass implements Insertable<Trial> {
     }
     if (!nullToAbsent || deletedBy != null) {
       map['deleted_by'] = Variable<String>(deletedBy);
-    }
-    map['is_arm_linked'] = Variable<bool>(isArmLinked);
-    if (!nullToAbsent || armImportedAt != null) {
-      map['arm_imported_at'] = Variable<DateTime>(armImportedAt);
-    }
-    if (!nullToAbsent || armSourceFile != null) {
-      map['arm_source_file'] = Variable<String>(armSourceFile);
-    }
-    if (!nullToAbsent || armVersion != null) {
-      map['arm_version'] = Variable<String>(armVersion);
-    }
-    if (!nullToAbsent || armImportSessionId != null) {
-      map['arm_import_session_id'] = Variable<int>(armImportSessionId);
-    }
-    if (!nullToAbsent || armLinkedShellPath != null) {
-      map['arm_linked_shell_path'] = Variable<String>(armLinkedShellPath);
-    }
-    if (!nullToAbsent || armLinkedShellAt != null) {
-      map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt);
-    }
-    if (!nullToAbsent || shellInternalPath != null) {
-      map['shell_internal_path'] = Variable<String>(shellInternalPath);
     }
     if (!nullToAbsent || siteRefId != null) {
       map['site_ref_id'] = Variable<int>(siteRefId);
@@ -2430,28 +2258,6 @@ class Trial extends DataClass implements Insertable<Trial> {
       deletedBy: deletedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedBy),
-      isArmLinked: Value(isArmLinked),
-      armImportedAt: armImportedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armImportedAt),
-      armSourceFile: armSourceFile == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armSourceFile),
-      armVersion: armVersion == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armVersion),
-      armImportSessionId: armImportSessionId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armImportSessionId),
-      armLinkedShellPath: armLinkedShellPath == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armLinkedShellPath),
-      armLinkedShellAt: armLinkedShellAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armLinkedShellAt),
-      shellInternalPath: shellInternalPath == null && nullToAbsent
-          ? const Value.absent()
-          : Value(shellInternalPath),
       siteRefId: siteRefId == null && nullToAbsent
           ? const Value.absent()
           : Value(siteRefId),
@@ -2515,17 +2321,6 @@ class Trial extends DataClass implements Insertable<Trial> {
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
-      isArmLinked: serializer.fromJson<bool>(json['isArmLinked']),
-      armImportedAt: serializer.fromJson<DateTime?>(json['armImportedAt']),
-      armSourceFile: serializer.fromJson<String?>(json['armSourceFile']),
-      armVersion: serializer.fromJson<String?>(json['armVersion']),
-      armImportSessionId: serializer.fromJson<int?>(json['armImportSessionId']),
-      armLinkedShellPath:
-          serializer.fromJson<String?>(json['armLinkedShellPath']),
-      armLinkedShellAt:
-          serializer.fromJson<DateTime?>(json['armLinkedShellAt']),
-      shellInternalPath:
-          serializer.fromJson<String?>(json['shellInternalPath']),
       siteRefId: serializer.fromJson<int?>(json['siteRefId']),
       cultivar: serializer.fromJson<String?>(json['cultivar']),
       rowSpacingCm: serializer.fromJson<double?>(json['rowSpacingCm']),
@@ -2577,14 +2372,6 @@ class Trial extends DataClass implements Insertable<Trial> {
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
-      'isArmLinked': serializer.toJson<bool>(isArmLinked),
-      'armImportedAt': serializer.toJson<DateTime?>(armImportedAt),
-      'armSourceFile': serializer.toJson<String?>(armSourceFile),
-      'armVersion': serializer.toJson<String?>(armVersion),
-      'armImportSessionId': serializer.toJson<int?>(armImportSessionId),
-      'armLinkedShellPath': serializer.toJson<String?>(armLinkedShellPath),
-      'armLinkedShellAt': serializer.toJson<DateTime?>(armLinkedShellAt),
-      'shellInternalPath': serializer.toJson<String?>(shellInternalPath),
       'siteRefId': serializer.toJson<int?>(siteRefId),
       'cultivar': serializer.toJson<String?>(cultivar),
       'rowSpacingCm': serializer.toJson<double?>(rowSpacingCm),
@@ -2634,14 +2421,6 @@ class Trial extends DataClass implements Insertable<Trial> {
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
           Value<String?> deletedBy = const Value.absent(),
-          bool? isArmLinked,
-          Value<DateTime?> armImportedAt = const Value.absent(),
-          Value<String?> armSourceFile = const Value.absent(),
-          Value<String?> armVersion = const Value.absent(),
-          Value<int?> armImportSessionId = const Value.absent(),
-          Value<String?> armLinkedShellPath = const Value.absent(),
-          Value<DateTime?> armLinkedShellAt = const Value.absent(),
-          Value<String?> shellInternalPath = const Value.absent(),
           Value<int?> siteRefId = const Value.absent(),
           Value<String?> cultivar = const Value.absent(),
           Value<double?> rowSpacingCm = const Value.absent(),
@@ -2700,24 +2479,6 @@ class Trial extends DataClass implements Insertable<Trial> {
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
-        isArmLinked: isArmLinked ?? this.isArmLinked,
-        armImportedAt:
-            armImportedAt.present ? armImportedAt.value : this.armImportedAt,
-        armSourceFile:
-            armSourceFile.present ? armSourceFile.value : this.armSourceFile,
-        armVersion: armVersion.present ? armVersion.value : this.armVersion,
-        armImportSessionId: armImportSessionId.present
-            ? armImportSessionId.value
-            : this.armImportSessionId,
-        armLinkedShellPath: armLinkedShellPath.present
-            ? armLinkedShellPath.value
-            : this.armLinkedShellPath,
-        armLinkedShellAt: armLinkedShellAt.present
-            ? armLinkedShellAt.value
-            : this.armLinkedShellAt,
-        shellInternalPath: shellInternalPath.present
-            ? shellInternalPath.value
-            : this.shellInternalPath,
         siteRefId: siteRefId.present ? siteRefId.value : this.siteRefId,
         cultivar: cultivar.present ? cultivar.value : this.cultivar,
         rowSpacingCm:
@@ -2797,28 +2558,6 @@ class Trial extends DataClass implements Insertable<Trial> {
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
-      isArmLinked:
-          data.isArmLinked.present ? data.isArmLinked.value : this.isArmLinked,
-      armImportedAt: data.armImportedAt.present
-          ? data.armImportedAt.value
-          : this.armImportedAt,
-      armSourceFile: data.armSourceFile.present
-          ? data.armSourceFile.value
-          : this.armSourceFile,
-      armVersion:
-          data.armVersion.present ? data.armVersion.value : this.armVersion,
-      armImportSessionId: data.armImportSessionId.present
-          ? data.armImportSessionId.value
-          : this.armImportSessionId,
-      armLinkedShellPath: data.armLinkedShellPath.present
-          ? data.armLinkedShellPath.value
-          : this.armLinkedShellPath,
-      armLinkedShellAt: data.armLinkedShellAt.present
-          ? data.armLinkedShellAt.value
-          : this.armLinkedShellAt,
-      shellInternalPath: data.shellInternalPath.present
-          ? data.shellInternalPath.value
-          : this.shellInternalPath,
       siteRefId: data.siteRefId.present ? data.siteRefId.value : this.siteRefId,
       cultivar: data.cultivar.present ? data.cultivar.value : this.cultivar,
       rowSpacingCm: data.rowSpacingCm.present
@@ -2876,14 +2615,6 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy, ')
-          ..write('isArmLinked: $isArmLinked, ')
-          ..write('armImportedAt: $armImportedAt, ')
-          ..write('armSourceFile: $armSourceFile, ')
-          ..write('armVersion: $armVersion, ')
-          ..write('armImportSessionId: $armImportSessionId, ')
-          ..write('armLinkedShellPath: $armLinkedShellPath, ')
-          ..write('armLinkedShellAt: $armLinkedShellAt, ')
-          ..write('shellInternalPath: $shellInternalPath, ')
           ..write('siteRefId: $siteRefId, ')
           ..write('cultivar: $cultivar, ')
           ..write('rowSpacingCm: $rowSpacingCm, ')
@@ -2935,14 +2666,6 @@ class Trial extends DataClass implements Insertable<Trial> {
         isDeleted,
         deletedAt,
         deletedBy,
-        isArmLinked,
-        armImportedAt,
-        armSourceFile,
-        armVersion,
-        armImportSessionId,
-        armLinkedShellPath,
-        armLinkedShellAt,
-        shellInternalPath,
         siteRefId,
         cultivar,
         rowSpacingCm,
@@ -2993,14 +2716,6 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
           other.deletedBy == this.deletedBy &&
-          other.isArmLinked == this.isArmLinked &&
-          other.armImportedAt == this.armImportedAt &&
-          other.armSourceFile == this.armSourceFile &&
-          other.armVersion == this.armVersion &&
-          other.armImportSessionId == this.armImportSessionId &&
-          other.armLinkedShellPath == this.armLinkedShellPath &&
-          other.armLinkedShellAt == this.armLinkedShellAt &&
-          other.shellInternalPath == this.shellInternalPath &&
           other.siteRefId == this.siteRefId &&
           other.cultivar == this.cultivar &&
           other.rowSpacingCm == this.rowSpacingCm &&
@@ -3049,14 +2764,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
-  final Value<bool> isArmLinked;
-  final Value<DateTime?> armImportedAt;
-  final Value<String?> armSourceFile;
-  final Value<String?> armVersion;
-  final Value<int?> armImportSessionId;
-  final Value<String?> armLinkedShellPath;
-  final Value<DateTime?> armLinkedShellAt;
-  final Value<String?> shellInternalPath;
   final Value<int?> siteRefId;
   final Value<String?> cultivar;
   final Value<double?> rowSpacingCm;
@@ -3103,14 +2810,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
-    this.isArmLinked = const Value.absent(),
-    this.armImportedAt = const Value.absent(),
-    this.armSourceFile = const Value.absent(),
-    this.armVersion = const Value.absent(),
-    this.armImportSessionId = const Value.absent(),
-    this.armLinkedShellPath = const Value.absent(),
-    this.armLinkedShellAt = const Value.absent(),
-    this.shellInternalPath = const Value.absent(),
     this.siteRefId = const Value.absent(),
     this.cultivar = const Value.absent(),
     this.rowSpacingCm = const Value.absent(),
@@ -3158,14 +2857,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
-    this.isArmLinked = const Value.absent(),
-    this.armImportedAt = const Value.absent(),
-    this.armSourceFile = const Value.absent(),
-    this.armVersion = const Value.absent(),
-    this.armImportSessionId = const Value.absent(),
-    this.armLinkedShellPath = const Value.absent(),
-    this.armLinkedShellAt = const Value.absent(),
-    this.shellInternalPath = const Value.absent(),
     this.siteRefId = const Value.absent(),
     this.cultivar = const Value.absent(),
     this.rowSpacingCm = const Value.absent(),
@@ -3213,14 +2904,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
-    Expression<bool>? isArmLinked,
-    Expression<DateTime>? armImportedAt,
-    Expression<String>? armSourceFile,
-    Expression<String>? armVersion,
-    Expression<int>? armImportSessionId,
-    Expression<String>? armLinkedShellPath,
-    Expression<DateTime>? armLinkedShellAt,
-    Expression<String>? shellInternalPath,
     Expression<int>? siteRefId,
     Expression<String>? cultivar,
     Expression<double>? rowSpacingCm,
@@ -3268,16 +2951,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
-      if (isArmLinked != null) 'is_arm_linked': isArmLinked,
-      if (armImportedAt != null) 'arm_imported_at': armImportedAt,
-      if (armSourceFile != null) 'arm_source_file': armSourceFile,
-      if (armVersion != null) 'arm_version': armVersion,
-      if (armImportSessionId != null)
-        'arm_import_session_id': armImportSessionId,
-      if (armLinkedShellPath != null)
-        'arm_linked_shell_path': armLinkedShellPath,
-      if (armLinkedShellAt != null) 'arm_linked_shell_at': armLinkedShellAt,
-      if (shellInternalPath != null) 'shell_internal_path': shellInternalPath,
       if (siteRefId != null) 'site_ref_id': siteRefId,
       if (cultivar != null) 'cultivar': cultivar,
       if (rowSpacingCm != null) 'row_spacing_cm': rowSpacingCm,
@@ -3327,14 +3000,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
       Value<String?>? deletedBy,
-      Value<bool>? isArmLinked,
-      Value<DateTime?>? armImportedAt,
-      Value<String?>? armSourceFile,
-      Value<String?>? armVersion,
-      Value<int?>? armImportSessionId,
-      Value<String?>? armLinkedShellPath,
-      Value<DateTime?>? armLinkedShellAt,
-      Value<String?>? shellInternalPath,
       Value<int?>? siteRefId,
       Value<String?>? cultivar,
       Value<double?>? rowSpacingCm,
@@ -3381,14 +3046,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
-      isArmLinked: isArmLinked ?? this.isArmLinked,
-      armImportedAt: armImportedAt ?? this.armImportedAt,
-      armSourceFile: armSourceFile ?? this.armSourceFile,
-      armVersion: armVersion ?? this.armVersion,
-      armImportSessionId: armImportSessionId ?? this.armImportSessionId,
-      armLinkedShellPath: armLinkedShellPath ?? this.armLinkedShellPath,
-      armLinkedShellAt: armLinkedShellAt ?? this.armLinkedShellAt,
-      shellInternalPath: shellInternalPath ?? this.shellInternalPath,
       siteRefId: siteRefId ?? this.siteRefId,
       cultivar: cultivar ?? this.cultivar,
       rowSpacingCm: rowSpacingCm ?? this.rowSpacingCm,
@@ -3520,30 +3177,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (deletedBy.present) {
       map['deleted_by'] = Variable<String>(deletedBy.value);
     }
-    if (isArmLinked.present) {
-      map['is_arm_linked'] = Variable<bool>(isArmLinked.value);
-    }
-    if (armImportedAt.present) {
-      map['arm_imported_at'] = Variable<DateTime>(armImportedAt.value);
-    }
-    if (armSourceFile.present) {
-      map['arm_source_file'] = Variable<String>(armSourceFile.value);
-    }
-    if (armVersion.present) {
-      map['arm_version'] = Variable<String>(armVersion.value);
-    }
-    if (armImportSessionId.present) {
-      map['arm_import_session_id'] = Variable<int>(armImportSessionId.value);
-    }
-    if (armLinkedShellPath.present) {
-      map['arm_linked_shell_path'] = Variable<String>(armLinkedShellPath.value);
-    }
-    if (armLinkedShellAt.present) {
-      map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt.value);
-    }
-    if (shellInternalPath.present) {
-      map['shell_internal_path'] = Variable<String>(shellInternalPath.value);
-    }
     if (siteRefId.present) {
       map['site_ref_id'] = Variable<int>(siteRefId.value);
     }
@@ -3605,14 +3238,6 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy, ')
-          ..write('isArmLinked: $isArmLinked, ')
-          ..write('armImportedAt: $armImportedAt, ')
-          ..write('armSourceFile: $armSourceFile, ')
-          ..write('armVersion: $armVersion, ')
-          ..write('armImportSessionId: $armImportSessionId, ')
-          ..write('armLinkedShellPath: $armLinkedShellPath, ')
-          ..write('armLinkedShellAt: $armLinkedShellAt, ')
-          ..write('shellInternalPath: $shellInternalPath, ')
           ..write('siteRefId: $siteRefId, ')
           ..write('cultivar: $cultivar, ')
           ..write('rowSpacingCm: $rowSpacingCm, ')
@@ -31794,6 +31419,537 @@ class ArmSessionMetadataCompanion
   }
 }
 
+class $ArmTrialMetadataTable extends ArmTrialMetadata
+    with TableInfo<$ArmTrialMetadataTable, ArmTrialMetadataData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArmTrialMetadataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _isArmLinkedMeta =
+      const VerificationMeta('isArmLinked');
+  @override
+  late final GeneratedColumn<bool> isArmLinked = GeneratedColumn<bool>(
+      'is_arm_linked', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_arm_linked" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _armImportedAtMeta =
+      const VerificationMeta('armImportedAt');
+  @override
+  late final GeneratedColumn<DateTime> armImportedAt =
+      GeneratedColumn<DateTime>('arm_imported_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _armSourceFileMeta =
+      const VerificationMeta('armSourceFile');
+  @override
+  late final GeneratedColumn<String> armSourceFile = GeneratedColumn<String>(
+      'arm_source_file', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armVersionMeta =
+      const VerificationMeta('armVersion');
+  @override
+  late final GeneratedColumn<String> armVersion = GeneratedColumn<String>(
+      'arm_version', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armImportSessionIdMeta =
+      const VerificationMeta('armImportSessionId');
+  @override
+  late final GeneratedColumn<int> armImportSessionId = GeneratedColumn<int>(
+      'arm_import_session_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _armLinkedShellPathMeta =
+      const VerificationMeta('armLinkedShellPath');
+  @override
+  late final GeneratedColumn<String> armLinkedShellPath =
+      GeneratedColumn<String>('arm_linked_shell_path', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armLinkedShellAtMeta =
+      const VerificationMeta('armLinkedShellAt');
+  @override
+  late final GeneratedColumn<DateTime> armLinkedShellAt =
+      GeneratedColumn<DateTime>('arm_linked_shell_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _shellInternalPathMeta =
+      const VerificationMeta('shellInternalPath');
+  @override
+  late final GeneratedColumn<String> shellInternalPath =
+      GeneratedColumn<String>('shell_internal_path', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        trialId,
+        isArmLinked,
+        armImportedAt,
+        armSourceFile,
+        armVersion,
+        armImportSessionId,
+        armLinkedShellPath,
+        armLinkedShellAt,
+        shellInternalPath
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'arm_trial_metadata';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ArmTrialMetadataData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    }
+    if (data.containsKey('is_arm_linked')) {
+      context.handle(
+          _isArmLinkedMeta,
+          isArmLinked.isAcceptableOrUnknown(
+              data['is_arm_linked']!, _isArmLinkedMeta));
+    }
+    if (data.containsKey('arm_imported_at')) {
+      context.handle(
+          _armImportedAtMeta,
+          armImportedAt.isAcceptableOrUnknown(
+              data['arm_imported_at']!, _armImportedAtMeta));
+    }
+    if (data.containsKey('arm_source_file')) {
+      context.handle(
+          _armSourceFileMeta,
+          armSourceFile.isAcceptableOrUnknown(
+              data['arm_source_file']!, _armSourceFileMeta));
+    }
+    if (data.containsKey('arm_version')) {
+      context.handle(
+          _armVersionMeta,
+          armVersion.isAcceptableOrUnknown(
+              data['arm_version']!, _armVersionMeta));
+    }
+    if (data.containsKey('arm_import_session_id')) {
+      context.handle(
+          _armImportSessionIdMeta,
+          armImportSessionId.isAcceptableOrUnknown(
+              data['arm_import_session_id']!, _armImportSessionIdMeta));
+    }
+    if (data.containsKey('arm_linked_shell_path')) {
+      context.handle(
+          _armLinkedShellPathMeta,
+          armLinkedShellPath.isAcceptableOrUnknown(
+              data['arm_linked_shell_path']!, _armLinkedShellPathMeta));
+    }
+    if (data.containsKey('arm_linked_shell_at')) {
+      context.handle(
+          _armLinkedShellAtMeta,
+          armLinkedShellAt.isAcceptableOrUnknown(
+              data['arm_linked_shell_at']!, _armLinkedShellAtMeta));
+    }
+    if (data.containsKey('shell_internal_path')) {
+      context.handle(
+          _shellInternalPathMeta,
+          shellInternalPath.isAcceptableOrUnknown(
+              data['shell_internal_path']!, _shellInternalPathMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {trialId};
+  @override
+  ArmTrialMetadataData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArmTrialMetadataData(
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      isArmLinked: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_arm_linked'])!,
+      armImportedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}arm_imported_at']),
+      armSourceFile: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}arm_source_file']),
+      armVersion: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}arm_version']),
+      armImportSessionId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}arm_import_session_id']),
+      armLinkedShellPath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}arm_linked_shell_path']),
+      armLinkedShellAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}arm_linked_shell_at']),
+      shellInternalPath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_internal_path']),
+    );
+  }
+
+  @override
+  $ArmTrialMetadataTable createAlias(String alias) {
+    return $ArmTrialMetadataTable(attachedDatabase, alias);
+  }
+}
+
+class ArmTrialMetadataData extends DataClass
+    implements Insertable<ArmTrialMetadataData> {
+  final int trialId;
+  final bool isArmLinked;
+  final DateTime? armImportedAt;
+  final String? armSourceFile;
+  final String? armVersion;
+
+  /// Session used for ARM import ratings; preferred for Rating Shell export.
+  /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
+  final int? armImportSessionId;
+
+  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
+  final String? armLinkedShellPath;
+
+  /// When [armLinkedShellPath] was last applied.
+  final DateTime? armLinkedShellAt;
+
+  /// Internal app path where the shell file is stored (copied at import/link).
+  final String? shellInternalPath;
+  const ArmTrialMetadataData(
+      {required this.trialId,
+      required this.isArmLinked,
+      this.armImportedAt,
+      this.armSourceFile,
+      this.armVersion,
+      this.armImportSessionId,
+      this.armLinkedShellPath,
+      this.armLinkedShellAt,
+      this.shellInternalPath});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['trial_id'] = Variable<int>(trialId);
+    map['is_arm_linked'] = Variable<bool>(isArmLinked);
+    if (!nullToAbsent || armImportedAt != null) {
+      map['arm_imported_at'] = Variable<DateTime>(armImportedAt);
+    }
+    if (!nullToAbsent || armSourceFile != null) {
+      map['arm_source_file'] = Variable<String>(armSourceFile);
+    }
+    if (!nullToAbsent || armVersion != null) {
+      map['arm_version'] = Variable<String>(armVersion);
+    }
+    if (!nullToAbsent || armImportSessionId != null) {
+      map['arm_import_session_id'] = Variable<int>(armImportSessionId);
+    }
+    if (!nullToAbsent || armLinkedShellPath != null) {
+      map['arm_linked_shell_path'] = Variable<String>(armLinkedShellPath);
+    }
+    if (!nullToAbsent || armLinkedShellAt != null) {
+      map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt);
+    }
+    if (!nullToAbsent || shellInternalPath != null) {
+      map['shell_internal_path'] = Variable<String>(shellInternalPath);
+    }
+    return map;
+  }
+
+  ArmTrialMetadataCompanion toCompanion(bool nullToAbsent) {
+    return ArmTrialMetadataCompanion(
+      trialId: Value(trialId),
+      isArmLinked: Value(isArmLinked),
+      armImportedAt: armImportedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armImportedAt),
+      armSourceFile: armSourceFile == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armSourceFile),
+      armVersion: armVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armVersion),
+      armImportSessionId: armImportSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armImportSessionId),
+      armLinkedShellPath: armLinkedShellPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armLinkedShellPath),
+      armLinkedShellAt: armLinkedShellAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armLinkedShellAt),
+      shellInternalPath: shellInternalPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellInternalPath),
+    );
+  }
+
+  factory ArmTrialMetadataData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArmTrialMetadataData(
+      trialId: serializer.fromJson<int>(json['trialId']),
+      isArmLinked: serializer.fromJson<bool>(json['isArmLinked']),
+      armImportedAt: serializer.fromJson<DateTime?>(json['armImportedAt']),
+      armSourceFile: serializer.fromJson<String?>(json['armSourceFile']),
+      armVersion: serializer.fromJson<String?>(json['armVersion']),
+      armImportSessionId: serializer.fromJson<int?>(json['armImportSessionId']),
+      armLinkedShellPath:
+          serializer.fromJson<String?>(json['armLinkedShellPath']),
+      armLinkedShellAt:
+          serializer.fromJson<DateTime?>(json['armLinkedShellAt']),
+      shellInternalPath:
+          serializer.fromJson<String?>(json['shellInternalPath']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'trialId': serializer.toJson<int>(trialId),
+      'isArmLinked': serializer.toJson<bool>(isArmLinked),
+      'armImportedAt': serializer.toJson<DateTime?>(armImportedAt),
+      'armSourceFile': serializer.toJson<String?>(armSourceFile),
+      'armVersion': serializer.toJson<String?>(armVersion),
+      'armImportSessionId': serializer.toJson<int?>(armImportSessionId),
+      'armLinkedShellPath': serializer.toJson<String?>(armLinkedShellPath),
+      'armLinkedShellAt': serializer.toJson<DateTime?>(armLinkedShellAt),
+      'shellInternalPath': serializer.toJson<String?>(shellInternalPath),
+    };
+  }
+
+  ArmTrialMetadataData copyWith(
+          {int? trialId,
+          bool? isArmLinked,
+          Value<DateTime?> armImportedAt = const Value.absent(),
+          Value<String?> armSourceFile = const Value.absent(),
+          Value<String?> armVersion = const Value.absent(),
+          Value<int?> armImportSessionId = const Value.absent(),
+          Value<String?> armLinkedShellPath = const Value.absent(),
+          Value<DateTime?> armLinkedShellAt = const Value.absent(),
+          Value<String?> shellInternalPath = const Value.absent()}) =>
+      ArmTrialMetadataData(
+        trialId: trialId ?? this.trialId,
+        isArmLinked: isArmLinked ?? this.isArmLinked,
+        armImportedAt:
+            armImportedAt.present ? armImportedAt.value : this.armImportedAt,
+        armSourceFile:
+            armSourceFile.present ? armSourceFile.value : this.armSourceFile,
+        armVersion: armVersion.present ? armVersion.value : this.armVersion,
+        armImportSessionId: armImportSessionId.present
+            ? armImportSessionId.value
+            : this.armImportSessionId,
+        armLinkedShellPath: armLinkedShellPath.present
+            ? armLinkedShellPath.value
+            : this.armLinkedShellPath,
+        armLinkedShellAt: armLinkedShellAt.present
+            ? armLinkedShellAt.value
+            : this.armLinkedShellAt,
+        shellInternalPath: shellInternalPath.present
+            ? shellInternalPath.value
+            : this.shellInternalPath,
+      );
+  ArmTrialMetadataData copyWithCompanion(ArmTrialMetadataCompanion data) {
+    return ArmTrialMetadataData(
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      isArmLinked:
+          data.isArmLinked.present ? data.isArmLinked.value : this.isArmLinked,
+      armImportedAt: data.armImportedAt.present
+          ? data.armImportedAt.value
+          : this.armImportedAt,
+      armSourceFile: data.armSourceFile.present
+          ? data.armSourceFile.value
+          : this.armSourceFile,
+      armVersion:
+          data.armVersion.present ? data.armVersion.value : this.armVersion,
+      armImportSessionId: data.armImportSessionId.present
+          ? data.armImportSessionId.value
+          : this.armImportSessionId,
+      armLinkedShellPath: data.armLinkedShellPath.present
+          ? data.armLinkedShellPath.value
+          : this.armLinkedShellPath,
+      armLinkedShellAt: data.armLinkedShellAt.present
+          ? data.armLinkedShellAt.value
+          : this.armLinkedShellAt,
+      shellInternalPath: data.shellInternalPath.present
+          ? data.shellInternalPath.value
+          : this.shellInternalPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmTrialMetadataData(')
+          ..write('trialId: $trialId, ')
+          ..write('isArmLinked: $isArmLinked, ')
+          ..write('armImportedAt: $armImportedAt, ')
+          ..write('armSourceFile: $armSourceFile, ')
+          ..write('armVersion: $armVersion, ')
+          ..write('armImportSessionId: $armImportSessionId, ')
+          ..write('armLinkedShellPath: $armLinkedShellPath, ')
+          ..write('armLinkedShellAt: $armLinkedShellAt, ')
+          ..write('shellInternalPath: $shellInternalPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      trialId,
+      isArmLinked,
+      armImportedAt,
+      armSourceFile,
+      armVersion,
+      armImportSessionId,
+      armLinkedShellPath,
+      armLinkedShellAt,
+      shellInternalPath);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArmTrialMetadataData &&
+          other.trialId == this.trialId &&
+          other.isArmLinked == this.isArmLinked &&
+          other.armImportedAt == this.armImportedAt &&
+          other.armSourceFile == this.armSourceFile &&
+          other.armVersion == this.armVersion &&
+          other.armImportSessionId == this.armImportSessionId &&
+          other.armLinkedShellPath == this.armLinkedShellPath &&
+          other.armLinkedShellAt == this.armLinkedShellAt &&
+          other.shellInternalPath == this.shellInternalPath);
+}
+
+class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
+  final Value<int> trialId;
+  final Value<bool> isArmLinked;
+  final Value<DateTime?> armImportedAt;
+  final Value<String?> armSourceFile;
+  final Value<String?> armVersion;
+  final Value<int?> armImportSessionId;
+  final Value<String?> armLinkedShellPath;
+  final Value<DateTime?> armLinkedShellAt;
+  final Value<String?> shellInternalPath;
+  const ArmTrialMetadataCompanion({
+    this.trialId = const Value.absent(),
+    this.isArmLinked = const Value.absent(),
+    this.armImportedAt = const Value.absent(),
+    this.armSourceFile = const Value.absent(),
+    this.armVersion = const Value.absent(),
+    this.armImportSessionId = const Value.absent(),
+    this.armLinkedShellPath = const Value.absent(),
+    this.armLinkedShellAt = const Value.absent(),
+    this.shellInternalPath = const Value.absent(),
+  });
+  ArmTrialMetadataCompanion.insert({
+    this.trialId = const Value.absent(),
+    this.isArmLinked = const Value.absent(),
+    this.armImportedAt = const Value.absent(),
+    this.armSourceFile = const Value.absent(),
+    this.armVersion = const Value.absent(),
+    this.armImportSessionId = const Value.absent(),
+    this.armLinkedShellPath = const Value.absent(),
+    this.armLinkedShellAt = const Value.absent(),
+    this.shellInternalPath = const Value.absent(),
+  });
+  static Insertable<ArmTrialMetadataData> custom({
+    Expression<int>? trialId,
+    Expression<bool>? isArmLinked,
+    Expression<DateTime>? armImportedAt,
+    Expression<String>? armSourceFile,
+    Expression<String>? armVersion,
+    Expression<int>? armImportSessionId,
+    Expression<String>? armLinkedShellPath,
+    Expression<DateTime>? armLinkedShellAt,
+    Expression<String>? shellInternalPath,
+  }) {
+    return RawValuesInsertable({
+      if (trialId != null) 'trial_id': trialId,
+      if (isArmLinked != null) 'is_arm_linked': isArmLinked,
+      if (armImportedAt != null) 'arm_imported_at': armImportedAt,
+      if (armSourceFile != null) 'arm_source_file': armSourceFile,
+      if (armVersion != null) 'arm_version': armVersion,
+      if (armImportSessionId != null)
+        'arm_import_session_id': armImportSessionId,
+      if (armLinkedShellPath != null)
+        'arm_linked_shell_path': armLinkedShellPath,
+      if (armLinkedShellAt != null) 'arm_linked_shell_at': armLinkedShellAt,
+      if (shellInternalPath != null) 'shell_internal_path': shellInternalPath,
+    });
+  }
+
+  ArmTrialMetadataCompanion copyWith(
+      {Value<int>? trialId,
+      Value<bool>? isArmLinked,
+      Value<DateTime?>? armImportedAt,
+      Value<String?>? armSourceFile,
+      Value<String?>? armVersion,
+      Value<int?>? armImportSessionId,
+      Value<String?>? armLinkedShellPath,
+      Value<DateTime?>? armLinkedShellAt,
+      Value<String?>? shellInternalPath}) {
+    return ArmTrialMetadataCompanion(
+      trialId: trialId ?? this.trialId,
+      isArmLinked: isArmLinked ?? this.isArmLinked,
+      armImportedAt: armImportedAt ?? this.armImportedAt,
+      armSourceFile: armSourceFile ?? this.armSourceFile,
+      armVersion: armVersion ?? this.armVersion,
+      armImportSessionId: armImportSessionId ?? this.armImportSessionId,
+      armLinkedShellPath: armLinkedShellPath ?? this.armLinkedShellPath,
+      armLinkedShellAt: armLinkedShellAt ?? this.armLinkedShellAt,
+      shellInternalPath: shellInternalPath ?? this.shellInternalPath,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (isArmLinked.present) {
+      map['is_arm_linked'] = Variable<bool>(isArmLinked.value);
+    }
+    if (armImportedAt.present) {
+      map['arm_imported_at'] = Variable<DateTime>(armImportedAt.value);
+    }
+    if (armSourceFile.present) {
+      map['arm_source_file'] = Variable<String>(armSourceFile.value);
+    }
+    if (armVersion.present) {
+      map['arm_version'] = Variable<String>(armVersion.value);
+    }
+    if (armImportSessionId.present) {
+      map['arm_import_session_id'] = Variable<int>(armImportSessionId.value);
+    }
+    if (armLinkedShellPath.present) {
+      map['arm_linked_shell_path'] = Variable<String>(armLinkedShellPath.value);
+    }
+    if (armLinkedShellAt.present) {
+      map['arm_linked_shell_at'] = Variable<DateTime>(armLinkedShellAt.value);
+    }
+    if (shellInternalPath.present) {
+      map['shell_internal_path'] = Variable<String>(shellInternalPath.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmTrialMetadataCompanion(')
+          ..write('trialId: $trialId, ')
+          ..write('isArmLinked: $isArmLinked, ')
+          ..write('armImportedAt: $armImportedAt, ')
+          ..write('armSourceFile: $armSourceFile, ')
+          ..write('armVersion: $armVersion, ')
+          ..write('armImportSessionId: $armImportSessionId, ')
+          ..write('armLinkedShellPath: $armLinkedShellPath, ')
+          ..write('armLinkedShellAt: $armLinkedShellAt, ')
+          ..write('shellInternalPath: $shellInternalPath')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -31858,6 +32014,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ArmAssessmentMetadataTable(this);
   late final $ArmSessionMetadataTable armSessionMetadata =
       $ArmSessionMetadataTable(this);
+  late final $ArmTrialMetadataTable armTrialMetadata =
+      $ArmTrialMetadataTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -31902,7 +32060,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         weatherSnapshots,
         armColumnMappings,
         armAssessmentMetadata,
-        armSessionMetadata
+        armSessionMetadata,
+        armTrialMetadata
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -32605,14 +32764,6 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
-  Value<bool> isArmLinked,
-  Value<DateTime?> armImportedAt,
-  Value<String?> armSourceFile,
-  Value<String?> armVersion,
-  Value<int?> armImportSessionId,
-  Value<String?> armLinkedShellPath,
-  Value<DateTime?> armLinkedShellAt,
-  Value<String?> shellInternalPath,
   Value<int?> siteRefId,
   Value<String?> cultivar,
   Value<double?> rowSpacingCm,
@@ -32660,14 +32811,6 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
-  Value<bool> isArmLinked,
-  Value<DateTime?> armImportedAt,
-  Value<String?> armSourceFile,
-  Value<String?> armVersion,
-  Value<int?> armImportSessionId,
-  Value<String?> armLinkedShellPath,
-  Value<DateTime?> armLinkedShellAt,
-  Value<String?> shellInternalPath,
   Value<int?> siteRefId,
   Value<String?> cultivar,
   Value<double?> rowSpacingCm,
@@ -32732,14 +32875,6 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
-            Value<bool> isArmLinked = const Value.absent(),
-            Value<DateTime?> armImportedAt = const Value.absent(),
-            Value<String?> armSourceFile = const Value.absent(),
-            Value<String?> armVersion = const Value.absent(),
-            Value<int?> armImportSessionId = const Value.absent(),
-            Value<String?> armLinkedShellPath = const Value.absent(),
-            Value<DateTime?> armLinkedShellAt = const Value.absent(),
-            Value<String?> shellInternalPath = const Value.absent(),
             Value<int?> siteRefId = const Value.absent(),
             Value<String?> cultivar = const Value.absent(),
             Value<double?> rowSpacingCm = const Value.absent(),
@@ -32787,14 +32922,6 @@ class $$TrialsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
-            isArmLinked: isArmLinked,
-            armImportedAt: armImportedAt,
-            armSourceFile: armSourceFile,
-            armVersion: armVersion,
-            armImportSessionId: armImportSessionId,
-            armLinkedShellPath: armLinkedShellPath,
-            armLinkedShellAt: armLinkedShellAt,
-            shellInternalPath: shellInternalPath,
             siteRefId: siteRefId,
             cultivar: cultivar,
             rowSpacingCm: rowSpacingCm,
@@ -32842,14 +32969,6 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
-            Value<bool> isArmLinked = const Value.absent(),
-            Value<DateTime?> armImportedAt = const Value.absent(),
-            Value<String?> armSourceFile = const Value.absent(),
-            Value<String?> armVersion = const Value.absent(),
-            Value<int?> armImportSessionId = const Value.absent(),
-            Value<String?> armLinkedShellPath = const Value.absent(),
-            Value<DateTime?> armLinkedShellAt = const Value.absent(),
-            Value<String?> shellInternalPath = const Value.absent(),
             Value<int?> siteRefId = const Value.absent(),
             Value<String?> cultivar = const Value.absent(),
             Value<double?> rowSpacingCm = const Value.absent(),
@@ -32897,14 +33016,6 @@ class $$TrialsTableTableManager extends RootTableManager<
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
-            isArmLinked: isArmLinked,
-            armImportedAt: armImportedAt,
-            armSourceFile: armSourceFile,
-            armVersion: armVersion,
-            armImportSessionId: armImportSessionId,
-            armLinkedShellPath: armLinkedShellPath,
-            armLinkedShellAt: armLinkedShellAt,
-            shellInternalPath: shellInternalPath,
             siteRefId: siteRefId,
             cultivar: cultivar,
             rowSpacingCm: rowSpacingCm,
@@ -33114,46 +33225,6 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<String> get deletedBy => $state.composableBuilder(
       column: $state.table.deletedBy,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get isArmLinked => $state.composableBuilder(
-      column: $state.table.isArmLinked,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get armImportedAt => $state.composableBuilder(
-      column: $state.table.armImportedAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get armSourceFile => $state.composableBuilder(
-      column: $state.table.armSourceFile,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get armVersion => $state.composableBuilder(
-      column: $state.table.armVersion,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get armImportSessionId => $state.composableBuilder(
-      column: $state.table.armImportSessionId,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get armLinkedShellPath => $state.composableBuilder(
-      column: $state.table.armLinkedShellPath,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<DateTime> get armLinkedShellAt => $state.composableBuilder(
-      column: $state.table.armLinkedShellAt,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get shellInternalPath => $state.composableBuilder(
-      column: $state.table.shellInternalPath,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -33607,6 +33678,20 @@ class $$TrialsTableFilterComposer
                     parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter armTrialMetadataRefs(
+      ComposableFilter Function($$ArmTrialMetadataTableFilterComposer f) f) {
+    final $$ArmTrialMetadataTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.armTrialMetadata,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ArmTrialMetadataTableFilterComposer(ComposerState($state.db,
+                    $state.db.armTrialMetadata, joinBuilder, parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialsTableOrderingComposer
@@ -33809,46 +33894,6 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<String> get deletedBy => $state.composableBuilder(
       column: $state.table.deletedBy,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get isArmLinked => $state.composableBuilder(
-      column: $state.table.isArmLinked,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get armImportedAt => $state.composableBuilder(
-      column: $state.table.armImportedAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get armSourceFile => $state.composableBuilder(
-      column: $state.table.armSourceFile,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get armVersion => $state.composableBuilder(
-      column: $state.table.armVersion,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get armImportSessionId => $state.composableBuilder(
-      column: $state.table.armImportSessionId,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get armLinkedShellPath => $state.composableBuilder(
-      column: $state.table.armLinkedShellPath,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<DateTime> get armLinkedShellAt => $state.composableBuilder(
-      column: $state.table.armLinkedShellAt,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get shellInternalPath => $state.composableBuilder(
-      column: $state.table.shellInternalPath,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -46435,6 +46480,207 @@ class $$ArmSessionMetadataTableOrderingComposer
   }
 }
 
+typedef $$ArmTrialMetadataTableCreateCompanionBuilder
+    = ArmTrialMetadataCompanion Function({
+  Value<int> trialId,
+  Value<bool> isArmLinked,
+  Value<DateTime?> armImportedAt,
+  Value<String?> armSourceFile,
+  Value<String?> armVersion,
+  Value<int?> armImportSessionId,
+  Value<String?> armLinkedShellPath,
+  Value<DateTime?> armLinkedShellAt,
+  Value<String?> shellInternalPath,
+});
+typedef $$ArmTrialMetadataTableUpdateCompanionBuilder
+    = ArmTrialMetadataCompanion Function({
+  Value<int> trialId,
+  Value<bool> isArmLinked,
+  Value<DateTime?> armImportedAt,
+  Value<String?> armSourceFile,
+  Value<String?> armVersion,
+  Value<int?> armImportSessionId,
+  Value<String?> armLinkedShellPath,
+  Value<DateTime?> armLinkedShellAt,
+  Value<String?> shellInternalPath,
+});
+
+class $$ArmTrialMetadataTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ArmTrialMetadataTable,
+    ArmTrialMetadataData,
+    $$ArmTrialMetadataTableFilterComposer,
+    $$ArmTrialMetadataTableOrderingComposer,
+    $$ArmTrialMetadataTableCreateCompanionBuilder,
+    $$ArmTrialMetadataTableUpdateCompanionBuilder> {
+  $$ArmTrialMetadataTableTableManager(
+      _$AppDatabase db, $ArmTrialMetadataTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$ArmTrialMetadataTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$ArmTrialMetadataTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> trialId = const Value.absent(),
+            Value<bool> isArmLinked = const Value.absent(),
+            Value<DateTime?> armImportedAt = const Value.absent(),
+            Value<String?> armSourceFile = const Value.absent(),
+            Value<String?> armVersion = const Value.absent(),
+            Value<int?> armImportSessionId = const Value.absent(),
+            Value<String?> armLinkedShellPath = const Value.absent(),
+            Value<DateTime?> armLinkedShellAt = const Value.absent(),
+            Value<String?> shellInternalPath = const Value.absent(),
+          }) =>
+              ArmTrialMetadataCompanion(
+            trialId: trialId,
+            isArmLinked: isArmLinked,
+            armImportedAt: armImportedAt,
+            armSourceFile: armSourceFile,
+            armVersion: armVersion,
+            armImportSessionId: armImportSessionId,
+            armLinkedShellPath: armLinkedShellPath,
+            armLinkedShellAt: armLinkedShellAt,
+            shellInternalPath: shellInternalPath,
+          ),
+          createCompanionCallback: ({
+            Value<int> trialId = const Value.absent(),
+            Value<bool> isArmLinked = const Value.absent(),
+            Value<DateTime?> armImportedAt = const Value.absent(),
+            Value<String?> armSourceFile = const Value.absent(),
+            Value<String?> armVersion = const Value.absent(),
+            Value<int?> armImportSessionId = const Value.absent(),
+            Value<String?> armLinkedShellPath = const Value.absent(),
+            Value<DateTime?> armLinkedShellAt = const Value.absent(),
+            Value<String?> shellInternalPath = const Value.absent(),
+          }) =>
+              ArmTrialMetadataCompanion.insert(
+            trialId: trialId,
+            isArmLinked: isArmLinked,
+            armImportedAt: armImportedAt,
+            armSourceFile: armSourceFile,
+            armVersion: armVersion,
+            armImportSessionId: armImportSessionId,
+            armLinkedShellPath: armLinkedShellPath,
+            armLinkedShellAt: armLinkedShellAt,
+            shellInternalPath: shellInternalPath,
+          ),
+        ));
+}
+
+class $$ArmTrialMetadataTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ArmTrialMetadataTable> {
+  $$ArmTrialMetadataTableFilterComposer(super.$state);
+  ColumnFilters<bool> get isArmLinked => $state.composableBuilder(
+      column: $state.table.isArmLinked,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get armImportedAt => $state.composableBuilder(
+      column: $state.table.armImportedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armSourceFile => $state.composableBuilder(
+      column: $state.table.armSourceFile,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armVersion => $state.composableBuilder(
+      column: $state.table.armVersion,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armImportSessionId => $state.composableBuilder(
+      column: $state.table.armImportSessionId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armLinkedShellPath => $state.composableBuilder(
+      column: $state.table.armLinkedShellPath,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get armLinkedShellAt => $state.composableBuilder(
+      column: $state.table.armLinkedShellAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellInternalPath => $state.composableBuilder(
+      column: $state.table.shellInternalPath,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$ArmTrialMetadataTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ArmTrialMetadataTable> {
+  $$ArmTrialMetadataTableOrderingComposer(super.$state);
+  ColumnOrderings<bool> get isArmLinked => $state.composableBuilder(
+      column: $state.table.isArmLinked,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get armImportedAt => $state.composableBuilder(
+      column: $state.table.armImportedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armSourceFile => $state.composableBuilder(
+      column: $state.table.armSourceFile,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armVersion => $state.composableBuilder(
+      column: $state.table.armVersion,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armImportSessionId => $state.composableBuilder(
+      column: $state.table.armImportSessionId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armLinkedShellPath => $state.composableBuilder(
+      column: $state.table.armLinkedShellPath,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get armLinkedShellAt => $state.composableBuilder(
+      column: $state.table.armLinkedShellAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellInternalPath => $state.composableBuilder(
+      column: $state.table.shellInternalPath,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -46524,4 +46770,6 @@ class $AppDatabaseManager {
       $$ArmAssessmentMetadataTableTableManager(_db, _db.armAssessmentMetadata);
   $$ArmSessionMetadataTableTableManager get armSessionMetadata =>
       $$ArmSessionMetadataTableTableManager(_db, _db.armSessionMetadata);
+  $$ArmTrialMetadataTableTableManager get armTrialMetadata =>
+      $$ArmTrialMetadataTableTableManager(_db, _db.armTrialMetadata);
 }

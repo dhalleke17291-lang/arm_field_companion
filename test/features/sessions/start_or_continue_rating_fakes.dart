@@ -7,6 +7,16 @@ import 'package:arm_field_companion/features/sessions/usecases/start_or_continue
 
 /// Shared fakes for StartOrContinueRating use case (unit + widget tests).
 
+class FakeArmTrialLinkMeta {
+  final bool isArmLinked;
+  final DateTime? armImportedAt;
+
+  const FakeArmTrialLinkMeta({
+    this.isArmLinked = false,
+    this.armImportedAt,
+  });
+}
+
 class FakeSessionRepository implements SessionRepository {
   final List<Session> sessions;
   final Map<int, List<Assessment>> sessionAssessments;
@@ -14,10 +24,14 @@ class FakeSessionRepository implements SessionRepository {
   /// When set, createSession returns this instead of throwing.
   final Session? sessionToReturnFromCreate;
 
+  /// Simulates [arm_trial_metadata] for shell session resolution (Phase 0b).
+  final Map<int, FakeArmTrialLinkMeta> armLinkMetaByTrialId;
+
   FakeSessionRepository({
     this.sessions = const [],
     this.sessionAssessments = const {},
     this.sessionToReturnFromCreate,
+    this.armLinkMetaByTrialId = const {},
   });
 
   @override
@@ -134,16 +148,18 @@ class FakeSessionRepository implements SessionRepository {
         .toList()
       ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
     if (list.isEmpty) return null;
-    if (trial.isArmLinked) {
+    final link =
+        armLinkMetaByTrialId[trial.id] ?? const FakeArmTrialLinkMeta();
+    if (link.isArmLinked) {
       for (final s in list) {
         if (s.name.contains('Import Session') || s.name.contains('ARM Import')) {
           return s.id;
         }
       }
-      final anchor = trial.armImportedAt;
+      final anchor = link.armImportedAt;
       if (anchor != null) {
         Session? best;
-        var bestDelta = 9223372036854775807;
+        var bestDelta = 1 << 62;
         for (final s in list) {
           final d = (s.startedAt.millisecondsSinceEpoch -
                   anchor.millisecondsSinceEpoch)

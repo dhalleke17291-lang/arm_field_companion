@@ -10,7 +10,6 @@ Trial _trial({required int id, required String name}) => Trial(
       createdAt: DateTime(2026),
       updatedAt: DateTime(2026),
       isDeleted: false,
-      isArmLinked: false,
     );
 
 Plot _plot({

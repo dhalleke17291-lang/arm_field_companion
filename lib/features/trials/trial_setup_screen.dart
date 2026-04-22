@@ -256,6 +256,11 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final armMeta =
+        ref.watch(armTrialMetadataStreamProvider(widget.trial.id)).valueOrNull;
+    final linkedShellPath = armMeta?.armLinkedShellPath;
+    final linkedShellAt = armMeta?.armLinkedShellAt;
+
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: const GradientScreenHeader(title: 'Trial Setup'),
@@ -266,8 +271,8 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppDesignTokens.spacing16),
           children: [
-            if (widget.trial.armLinkedShellPath != null &&
-                widget.trial.armLinkedShellPath!.trim().isNotEmpty) ...[
+            if (linkedShellPath != null &&
+                linkedShellPath.trim().isNotEmpty) ...[
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -312,8 +317,7 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            p.basename(
-                                widget.trial.armLinkedShellPath!.trim()),
+                            p.basename(linkedShellPath.trim()),
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -323,12 +327,12 @@ class _TrialSetupScreenState extends ConsumerState<TrialSetupScreen> {
                                       .onSurfaceVariant,
                                 ),
                           ),
-                          if (widget.trial.armLinkedShellAt != null) ...[
+                          if (linkedShellAt != null) ...[
                             const SizedBox(height: 2),
                             Text(
-                              DateFormat.yMMMd().add_jm().format(widget
-                                  .trial.armLinkedShellAt!
-                                  .toLocal()),
+                              DateFormat.yMMMd()
+                                  .add_jm()
+                                  .format(linkedShellAt.toLocal()),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall

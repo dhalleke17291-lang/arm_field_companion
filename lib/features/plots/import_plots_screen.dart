@@ -409,13 +409,22 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
     final hasSessionData =
         ref.read(trialHasSessionDataProvider(widget.trial.id)).valueOrNull ??
             false;
-    if (!canEditTrialStructure(widget.trial,
-        hasSessionData: hasSessionData)) {
+    final trialIsArmLinked = ref
+            .read(armTrialMetadataStreamProvider(widget.trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
+    if (!canEditTrialStructure(
+      widget.trial,
+      hasSessionData: hasSessionData,
+      trialIsArmLinked: trialIsArmLinked,
+    )) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(structureEditBlockedMessage(
             widget.trial,
             hasSessionData: hasSessionData,
+            trialIsArmLinked: trialIsArmLinked,
           )),
         ),
       );

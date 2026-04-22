@@ -1,12 +1,13 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/protocol_edit_blocked_exception.dart';
 import 'package:arm_field_companion/core/trial_state.dart';
-import 'package:drift/drift.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_plot_insert_service.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../../support/arm_trial_metadata_test_utils.dart';
 
 class _SpyPlotRepository extends PlotRepository {
   _SpyPlotRepository(super.db);
@@ -93,9 +94,8 @@ void main() {
     final trialRepo = TrialRepository(db);
     final trialId =
         await trialRepo.createTrial(name: 'ArmDraft', workspaceType: 'efficacy');
-    await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-      const TrialsCompanion(isArmLinked: Value(true)),
-    );
+    await upsertArmTrialMetadataForTest(db,
+        trialId: trialId, isArmLinked: true);
 
     final spy = _SpyPlotRepository(db);
     final service = ArmPlotInsertService(db, spy, trialRepo);

@@ -1,9 +1,12 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/trial_state.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
+import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:arm_field_companion/features/trials/usecases/update_treatment_usecase.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/arm_trial_metadata_test_utils.dart';
 
 class _NoopTreatmentRepository extends TreatmentRepository {
   _NoopTreatmentRepository(super.db);
@@ -25,20 +28,6 @@ class _NoopTreatmentRepository extends TreatmentRepository {
   }
 }
 
-Trial _armDraft() {
-  final now = DateTime.utc(2020, 1, 1);
-  return Trial(
-    id: 1,
-    name: 'ARM',
-    status: kTrialStatusDraft,
-    workspaceType: 'efficacy',
-    createdAt: now,
-    updatedAt: now,
-    isDeleted: false,
-    isArmLinked: true,
-  );
-}
-
 void main() {
   late AppDatabase db;
 
@@ -51,10 +40,14 @@ void main() {
   });
 
   test('ARM-linked trial blocks treatment update before repository', () async {
+    final trialId =
+        await TrialRepository(db).createTrial(name: 'ARM', workspaceType: 'efficacy');
+    await upsertArmTrialMetadataForTest(db, trialId: trialId, isArmLinked: true);
+    final trial = await TrialRepository(db).getTrialById(trialId);
     final repo = _NoopTreatmentRepository(db);
     final uc = UpdateTreatmentUseCase(db, repo);
     final r = await uc.execute(
-      trial: _armDraft(),
+      trial: trial!,
       treatmentId: 99,
       code: 'C1',
       name: 'N1',

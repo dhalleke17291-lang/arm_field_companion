@@ -401,8 +401,17 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
         ? (ref.read(trialHasSessionDataProvider(trial.id)).valueOrNull ??
             false)
         : false;
+    final trialIsArmLinked = trial != null
+        ? (ref.read(armTrialMetadataStreamProvider(trial.id)).valueOrNull
+                ?.isArmLinked ??
+            false)
+        : false;
     final locked = trial != null &&
-        !canEditTrialStructure(trial, hasSessionData: hasSessionData);
+        !canEditTrialStructure(
+          trial,
+          hasSessionData: hasSessionData,
+          trialIsArmLinked: trialIsArmLinked,
+        );
 
     setState(() => _isLoading = true);
     final result = await useCase.execute(
@@ -413,6 +422,7 @@ class _ProtocolImportScreenState extends ConsumerState<ProtocolImportScreen> {
           ? structureEditBlockedMessage(
               trial,
               hasSessionData: hasSessionData,
+              trialIsArmLinked: trialIsArmLinked,
             )
           : null,
     );

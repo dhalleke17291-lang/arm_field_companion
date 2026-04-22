@@ -116,14 +116,17 @@ class ArmImportPersistenceRepository {
     required String? armVersion,
   }) async {
     final now = DateTime.now().toUtc();
-    await (_db.update(_db.trials)..where((t) => t.id.equals(trialId))).write(
-          TrialsCompanion(
+    await _db.into(_db.armTrialMetadata).insertOnConflictUpdate(
+          ArmTrialMetadataCompanion(
+            trialId: Value(trialId),
             isArmLinked: const Value(true),
             armImportedAt: Value(now),
             armSourceFile: Value(sourceFile),
             armVersion: Value(armVersion),
-            updatedAt: Value(now),
           ),
+        );
+    await (_db.update(_db.trials)..where((t) => t.id.equals(trialId))).write(
+          TrialsCompanion(updatedAt: Value(now)),
         );
   }
 }

@@ -85,9 +85,11 @@ void main() {
     expect(r.trialId, isNotNull);
     final tid = r.trialId!;
 
-    final trial = await (db.select(db.trials)..where((t) => t.id.equals(tid)))
-        .getSingle();
-    expect(trial.isArmLinked, true);
+    final arm = await (db.select(db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(tid)))
+        .getSingleOrNull();
+    expect(arm, isNotNull);
+    expect(arm!.isArmLinked, true);
 
     final snaps = await (db.select(db.importSnapshots)
           ..where((s) => s.trialId.equals(tid)))
@@ -135,9 +137,11 @@ void main() {
     }
 
     final tid = r.trialId!;
-    final trial = await (db.select(db.trials)..where((t) => t.id.equals(tid)))
-        .getSingle();
-    expect(trial.isArmLinked, true);
+    final armRow = await (db.select(db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(tid)))
+        .getSingleOrNull();
+    expect(armRow, isNotNull);
+    expect(armRow!.isArmLinked, true);
 
     final snaps = await (db.select(db.importSnapshots)
           ..where((s) => s.trialId.equals(tid)))
@@ -168,14 +172,16 @@ void main() {
     expect(r.success, true);
     final tid = r.trialId!;
 
-    final trial = await (db.select(db.trials)..where((t) => t.id.equals(tid)))
-        .getSingle();
-    expect(trial.armImportSessionId, isNotNull);
+    final armMeta = await (db.select(db.armTrialMetadata)
+          ..where((m) => m.trialId.equals(tid)))
+        .getSingleOrNull();
+    expect(armMeta, isNotNull);
+    expect(armMeta!.armImportSessionId, isNotNull);
     final sessions = await (db.select(db.sessions)
           ..where((s) => s.trialId.equals(tid)))
         .get();
     expect(
-      sessions.map((s) => s.id).contains(trial.armImportSessionId),
+      sessions.map((s) => s.id).contains(armMeta.armImportSessionId),
       isTrue,
     );
 
@@ -703,8 +709,8 @@ void main() {
     final trialsAfter = await db.select(db.trials).get();
     expect(trialsAfter.length, trialsBefore.length);
 
-    final linked = await (db.select(db.trials)
-          ..where((t) => t.isArmLinked.equals(true)))
+    final linked = await (db.select(db.armTrialMetadata)
+          ..where((m) => m.isArmLinked.equals(true)))
         .get();
     expect(linked, isEmpty);
   });

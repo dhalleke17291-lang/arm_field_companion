@@ -343,7 +343,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   }
 
   Future<void> _runExport(ExportFormat format) async {
-    if (format == ExportFormat.armRatingShell && !widget.trial.isArmLinked) {
+    final armLinked = ref
+            .read(armTrialMetadataStreamProvider(widget.trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
+    if (format == ExportFormat.armRatingShell && !armLinked) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -533,9 +538,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
   Future<void> _onExportTapped(
       BuildContext context, WidgetRef ref, Trial trial) async {
+    final trialArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
     final sheetFormats = exportFormatsForTrialSheet(
       trial.workspaceType,
-      isArmLinked: trial.isArmLinked,
+      isArmLinked: trialArmLinked,
     );
     if (sheetFormats.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -683,9 +693,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     TrialReadinessReport report, {
     required bool showExportAnyway,
   }) {
+    final trialArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
     final sheetFormats = exportFormatsForTrialSheet(
       trial.workspaceType,
-      isArmLinked: trial.isArmLinked,
+      isArmLinked: trialArmLinked,
     );
     showModalBottomSheet<void>(
       context: context,
@@ -736,9 +751,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
   /// Export control for the white toolbar under the green header (primary colors + badge).
   Widget _buildExportToolbarControl(
       BuildContext context, WidgetRef ref, Trial trial) {
+    final trialArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
     final sheetFormats = exportFormatsForTrialSheet(
       trial.workspaceType,
-      isArmLinked: trial.isArmLinked,
+      isArmLinked: trialArmLinked,
     );
     if (sheetFormats.isEmpty) return const SizedBox.shrink();
 
@@ -752,7 +772,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     return Tooltip(
       message: exportEntryTooltipMessage(
         trial.workspaceType,
-        isArmLinked: trial.isArmLinked,
+        isArmLinked: trialArmLinked,
       ),
       child: InkWell(
         onTap: _isExporting ? null : () => _onExportTapped(context, ref, trial),
@@ -803,9 +823,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     WidgetRef ref,
     Trial trial,
   ) {
+    final trialArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(trial.id))
+            .valueOrNull
+            ?.isArmLinked ??
+        false;
     final showExport = exportFormatsForTrialSheet(
       trial.workspaceType,
-      isArmLinked: trial.isArmLinked,
+      isArmLinked: trialArmLinked,
     ).isNotEmpty;
     return Material(
       color: AppDesignTokens.cardSurface,

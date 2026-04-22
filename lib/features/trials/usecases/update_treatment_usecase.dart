@@ -22,9 +22,18 @@ class UpdateTreatmentUseCase {
     int? performedByUserId,
   }) async {
     final hasData = await trialHasAnySessionData(_db, trial.id);
-    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+    final trialIsArmLinked = await loadTrialIsArmLinked(_db, trial.id);
+    if (!canEditTrialStructure(
+      trial,
+      hasSessionData: hasData,
+      trialIsArmLinked: trialIsArmLinked,
+    )) {
       return UpdateTreatmentResult.failure(
-        structureEditBlockedMessage(trial, hasSessionData: hasData),
+        structureEditBlockedMessage(
+          trial,
+          hasSessionData: hasData,
+          trialIsArmLinked: trialIsArmLinked,
+        ),
       );
     }
     final trimmedCode = code.trim();

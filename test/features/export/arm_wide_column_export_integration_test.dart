@@ -23,6 +23,8 @@ import 'package:excel/excel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
+import '../../support/arm_trial_metadata_test_utils.dart';
+
 /// 26 assessment columns at sheet column indices 2..27 → … Z, AA, AB at 25–27.
 const int kWideAssessmentCount = 26;
 
@@ -249,11 +251,11 @@ void main() {
             );
       }
 
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId))).write(
-        TrialsCompanion(
-          isArmLinked: const Value(true),
-          armImportSessionId: Value(sessionId),
-        ),
+      await upsertArmTrialMetadataForTest(
+        db,
+        trialId: trialId,
+        isArmLinked: true,
+        armImportSessionId: sessionId,
       );
 
       Future<void> insertRating(int legacyIdx, double value) async {

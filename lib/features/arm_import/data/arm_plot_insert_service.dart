@@ -21,9 +21,18 @@ class ArmPlotInsertService {
       throw StateError('Trial not found');
     }
     final hasData = await trialHasAnySessionData(_db, trialId);
-    if (!canEditTrialStructure(trial, hasSessionData: hasData)) {
+    final armLinked = await loadTrialIsArmLinked(_db, trialId);
+    if (!canEditTrialStructure(
+      trial,
+      hasSessionData: hasData,
+      trialIsArmLinked: armLinked,
+    )) {
       throw ProtocolEditBlockedException(
-        structureEditBlockedMessage(trial, hasSessionData: hasData),
+        structureEditBlockedMessage(
+          trial,
+          hasSessionData: hasData,
+          trialIsArmLinked: armLinked,
+        ),
       );
     }
     await _plotRepository.insertPlotsBulk(plots);

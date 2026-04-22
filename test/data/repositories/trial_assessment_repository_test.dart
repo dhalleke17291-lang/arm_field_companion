@@ -3,9 +3,10 @@ import 'package:arm_field_companion/core/protocol_edit_blocked_exception.dart';
 import 'package:arm_field_companion/data/repositories/assessment_definition_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/arm_trial_metadata_test_utils.dart';
 
 void main() {
   late AppDatabase db;
@@ -55,8 +56,8 @@ void main() {
     test('blocks add on ARM-linked trial', () async {
       final trialId = await createTrial();
       final defId = await getSystemDefId();
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId)))
-          .write(const TrialsCompanion(isArmLinked: Value(true)));
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
 
       expect(
         () => repo.addToTrial(
@@ -160,8 +161,8 @@ void main() {
         trialId: trialId,
         assessmentDefinitionId: defId,
       );
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId)))
-          .write(const TrialsCompanion(isArmLinked: Value(true)));
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
 
       expect(
         () => repo.update(taId, displayNameOverride: 'X'),
@@ -192,8 +193,8 @@ void main() {
         trialId: trialId,
         assessmentDefinitionId: defId,
       );
-      await (db.update(db.trials)..where((t) => t.id.equals(trialId)))
-          .write(const TrialsCompanion(isArmLinked: Value(true)));
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
 
       expect(
         () => repo.delete(taId),

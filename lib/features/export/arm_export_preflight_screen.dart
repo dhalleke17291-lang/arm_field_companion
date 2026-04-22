@@ -76,9 +76,12 @@ class _ArmExportPreflightScreenState
       _exportError = null;
     });
     try {
+      final armMeta = await ref
+          .read(armTrialMetadataRepositoryProvider)
+          .getForTrial(widget.trial.id);
       // Use internally stored shell if available; fall back to file picker.
       String? shellPath;
-      final internalPath = widget.trial.shellInternalPath;
+      final internalPath = armMeta?.shellInternalPath;
       if (internalPath != null &&
           internalPath.isNotEmpty &&
           File(internalPath).existsSync()) {
@@ -118,6 +121,7 @@ class _ArmExportPreflightScreenState
 
       if (shouldOfferShellMetadataEnrichmentBeforeExport(
         trial: trial,
+        existingLinkedShellPath: armMeta?.armLinkedShellPath,
         selectedShellPath: shellPath,
         preview: shellPreview,
       )) {

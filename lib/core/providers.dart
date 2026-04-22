@@ -87,6 +87,7 @@ import '../features/arm_import/data/arm_plot_insert_service.dart';
 import '../features/arm_import/data/compatibility_profile_builder.dart';
 import '../features/arm_import/usecases/arm_import_usecase.dart';
 import '../data/arm/arm_column_mapping_repository.dart';
+import '../data/arm/arm_trial_metadata_repository.dart';
 import '../features/arm_import/usecases/import_arm_rating_shell_usecase.dart';
 import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
@@ -223,6 +224,19 @@ final armImportUseCaseProvider = Provider<ArmImportUseCase>((ref) {
 final armColumnMappingRepositoryProvider =
     Provider<ArmColumnMappingRepository>((ref) {
   return ArmColumnMappingRepository(ref.watch(databaseProvider));
+});
+
+final armTrialMetadataRepositoryProvider =
+    Provider<ArmTrialMetadataRepository>((ref) {
+  return ArmTrialMetadataRepository(ref.watch(databaseProvider));
+});
+
+/// ARM shell-link row for [trialId]; null when the trial is standalone (no row).
+final armTrialMetadataStreamProvider =
+    StreamProvider.family<ArmTrialMetadataData?, int>((ref, trialId) {
+  return ref
+      .watch(armTrialMetadataRepositoryProvider)
+      .watchForTrial(trialId);
 });
 
 /// Nullable ARM session metadata for a given session id.
@@ -466,6 +480,7 @@ final trialRatingRowsProvider = StreamProvider.autoDispose
 final updatePlotAssignmentUseCaseProvider =
     Provider<UpdatePlotAssignmentUseCase>((ref) {
   return UpdatePlotAssignmentUseCase(
+    ref.watch(databaseProvider),
     ref.watch(assignmentRepositoryProvider),
     ref.watch(sessionRepositoryProvider),
     ref.watch(ratingIntegrityGuardProvider),
@@ -1225,6 +1240,7 @@ final exportTrialReportUseCaseProvider =
 
 final exportTrialUseCaseProvider = Provider<ExportTrialUseCase>((ref) {
   return ExportTrialUseCase(
+    db: ref.watch(databaseProvider),
     trialRepository: ref.watch(trialRepositoryProvider),
     plotRepository: ref.watch(plotRepositoryProvider),
     treatmentRepository: ref.watch(treatmentRepositoryProvider),
@@ -1279,6 +1295,7 @@ final armShellLinkUseCaseProvider = Provider<ArmShellLinkUseCase>((ref) {
 final computeArmRoundTripDiagnosticsUseCaseProvider =
     Provider<ComputeArmRoundTripDiagnosticsUseCase>((ref) {
   return ComputeArmRoundTripDiagnosticsUseCase(
+    db: ref.watch(databaseProvider),
     plotRepository: ref.watch(plotRepositoryProvider),
     trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
     sessionRepository: ref.watch(sessionRepositoryProvider),
@@ -1289,6 +1306,7 @@ final computeArmRoundTripDiagnosticsUseCaseProvider =
 final armExportPreflightUseCaseProvider =
     Provider<ArmExportPreflightUseCase>((ref) {
   return ArmExportPreflightUseCase(
+    db: ref.watch(databaseProvider),
     trialRepository: ref.watch(trialRepositoryProvider),
     plotRepository: ref.watch(plotRepositoryProvider),
     sessionRepository: ref.watch(sessionRepositoryProvider),
