@@ -86,6 +86,7 @@ import '../features/arm_import/data/arm_import_snapshot_service.dart';
 import '../features/arm_import/data/arm_plot_insert_service.dart';
 import '../features/arm_import/data/compatibility_profile_builder.dart';
 import '../features/arm_import/usecases/arm_import_usecase.dart';
+import '../data/arm/arm_column_mapping_repository.dart';
 import '../features/arm_import/usecases/import_arm_rating_shell_usecase.dart';
 import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
@@ -219,6 +220,11 @@ final armImportUseCaseProvider = Provider<ArmImportUseCase>((ref) {
   );
 });
 
+final armColumnMappingRepositoryProvider =
+    Provider<ArmColumnMappingRepository>((ref) {
+  return ArmColumnMappingRepository(ref.watch(databaseProvider));
+});
+
 final importArmRatingShellUseCaseProvider =
     Provider<ImportArmRatingShellUseCase>((ref) {
   return ImportArmRatingShellUseCase(
@@ -228,6 +234,7 @@ final importArmRatingShellUseCaseProvider =
     treatmentRepository: ref.watch(treatmentRepositoryProvider),
     trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
+    armColumnMappingRepository: ref.watch(armColumnMappingRepositoryProvider),
   );
 });
 
@@ -1237,6 +1244,7 @@ final exportArmRatingShellUseCaseProvider =
     ratingRepository: ref.watch(ratingRepositoryProvider),
     sessionRepository: ref.watch(sessionRepositoryProvider),
     persistence: ref.watch(armImportPersistenceRepositoryProvider),
+    armColumnMappingRepository: ref.watch(armColumnMappingRepositoryProvider),
     publishExportDiagnostics: (trialId, findings, attemptLabel) {
       ref
           .read(trialExportDiagnosticsMapProvider.notifier)

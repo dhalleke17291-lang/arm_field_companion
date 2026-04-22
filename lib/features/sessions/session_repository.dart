@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/field_operation_date_rules.dart';
+import '../../core/session_state.dart';
 
 class SessionRepository {
   final AppDatabase _db;
@@ -12,11 +13,14 @@ class SessionRepository {
   SessionRepository(this._db);
 
   /// Open sessions for [trialId] (not unique in DB); returns most recently started.
+  /// Excludes [kSessionStatusPlanned] — those are pre-scheduled slots that have
+  /// not been started yet and must not be treated as active field work.
   Future<Session?> getOpenSession(int trialId) async {
     final rows = await (_db.select(_db.sessions)
           ..where((s) =>
               s.trialId.equals(trialId) &
               s.endedAt.isNull() &
+              s.status.equals(kSessionStatusPlanned).not() &
               s.isDeleted.equals(false))
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
         .get();
@@ -29,6 +33,7 @@ class SessionRepository {
           ..where((s) =>
               s.trialId.equals(trialId) &
               s.endedAt.isNull() &
+              s.status.equals(kSessionStatusPlanned).not() &
               s.isDeleted.equals(false))
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
         .watch()

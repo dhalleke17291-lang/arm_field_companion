@@ -11,6 +11,7 @@ import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
 import 'package:arm_field_companion/domain/ratings/result_status.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_assessment_definition_resolver.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_csv_parser.dart';
+import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_report_builder.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_snapshot_service.dart';
@@ -340,6 +341,7 @@ void main() {
         ratingRepository: ratingRepo,
         sessionRepository: SessionRepository(db),
         persistence: ArmImportPersistenceRepository(db),
+        armColumnMappingRepository: ArmColumnMappingRepository(db),
         shareOverride: (_) async {},
         pickShellPathOverride: () async => shellPath,
         publishExportDiagnostics: (tid, findings, label) {

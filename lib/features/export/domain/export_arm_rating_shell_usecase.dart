@@ -10,6 +10,7 @@ import '../../../core/excel_column_letters.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
 import '../../../core/diagnostics/trial_export_diagnostics.dart'
     show kArmRatingShellExportAttemptLabel;
+import '../../../data/arm/arm_column_mapping_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
@@ -45,6 +46,7 @@ class ExportArmRatingShellUseCase {
   final TrialAssessmentRepository _trialAssessmentRepository;
   final RatingRepository _ratingRepository;
   final ArmImportPersistenceRepository _persistence;
+  final ArmColumnMappingRepository _armColumnMappingRepository;
   final ArmRatingShellShareOverride? shareOverride;
 
   /// Test-only: bypass [FilePicker] and return a shell `.xlsx` path (or null to cancel).
@@ -58,6 +60,7 @@ class ExportArmRatingShellUseCase {
     required RatingRepository ratingRepository,
     required SessionRepository sessionRepository,
     required ArmImportPersistenceRepository persistence,
+    required ArmColumnMappingRepository armColumnMappingRepository,
     this.shareOverride,
     this.pickShellPathOverride,
     PublishTrialExportDiagnostics? publishExportDiagnostics,
@@ -67,6 +70,7 @@ class ExportArmRatingShellUseCase {
         _trialAssessmentRepository = trialAssessmentRepository,
         _ratingRepository = ratingRepository,
         _persistence = persistence,
+        _armColumnMappingRepository = armColumnMappingRepository,
         _publishExportDiagnostics = publishExportDiagnostics,
         _computeArmRoundTripDiagnostics =
             ComputeArmRoundTripDiagnosticsUseCase(
@@ -371,50 +375,115 @@ class ExportArmRatingShellUseCase {
 
     final positionalFallbackTrialAssessmentIds = <int>{};
     final ratingValues = <ArmRatingValue>[];
-    for (final pr in shellImport.plotRows) {
-      final plot = _plotForShellPlotNumber(shellDataPlots, pr.plotNumber);
-      if (plot == null) {
-        debugPrint(
-          'ExportArmRatingShell: no app plot for shell '
-          'plotNumber ${pr.plotNumber}',
-        );
-        continue;
-      }
-      for (var i = 0; i < sortedAssessments.length; i++) {
-        final ta = sortedAssessments[i];
-        final def = defById[ta.assessmentDefinitionId];
-        final identity = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
-        final match = _armAssessmentMatcher.findMatchingColumn(
-          assessment: identity,
-          columns: effectiveColumns,
-          armImportColumnIndex: ta.armImportColumnIndex,
-          armColumnIdInteger: ta.armColumnIdInteger,
-          positionalIndex: i,
-          logDebug: debugPrint,
-        );
-        if (match.wasPositionalFallback) {
-          positionalFallbackTrialAssessmentIds.add(ta.id);
+
+    // Phase 1b mapping-based path.
+    //
+    // If the importer populated arm_column_mappings for this trial, each ARM
+    // column already has an authoritative `(trial_assessment, session)` pair
+    // attached to it. We walk mappings directly instead of guessing via the
+    // assessment matcher / positional fallback — the mapping is the bridge
+    // the new importer creates precisely so export does not need any of that
+    // heuristic machinery. Orphan mappings (null trial_assessment_id or null
+    // session_id) keep the shell column structurally present and export as
+    // an empty cell, matching ARM's own "column present, no data yet" state.
+    //
+    // Legacy trials (no mapping rows) fall through to the original
+    // identity/positional loop below, unchanged. Existing export tests
+    // continue to exercise that path untouched.
+    final columnMappings =
+        await _armColumnMappingRepository.getForTrial(trial.id);
+
+    if (columnMappings.isNotEmpty) {
+      final taById = {for (final a in assessments) a.id: a};
+      for (final pr in shellImport.plotRows) {
+        final plot = _plotForShellPlotNumber(shellDataPlots, pr.plotNumber);
+        if (plot == null) {
+          debugPrint(
+            'ExportArmRatingShell: no app plot for shell '
+            'plotNumber ${pr.plotNumber}',
+          );
+          continue;
         }
-        final col = match.column;
-        if (col == null) continue;
+        for (final mapping in columnMappings) {
+          final taId = mapping.trialAssessmentId;
+          final mSessionId = mapping.sessionId;
+          if (taId == null || mSessionId == null) {
+            // Orphan ARM column — emit nothing; injector leaves cell blank.
+            continue;
+          }
+          final ta = taById[taId];
+          if (ta == null) {
+            debugPrint(
+              'ExportArmRatingShell: mapping references missing '
+              'trial_assessment_id=$taId (trial ${trial.id}); skipping.',
+            );
+            continue;
+          }
+          final legacyId = ta.legacyAssessmentId;
+          if (legacyId == null) continue;
 
-        final legacyId = ta.legacyAssessmentId;
-        if (legacyId == null) continue;
+          final rating = await _ratingRepository.getCurrentRating(
+            trialId: trial.id,
+            plotPk: plot.id,
+            assessmentId: legacyId,
+            sessionId: mSessionId,
+          );
+          final valueStr = armRatingShellCellValueFromRating(rating);
+          ratingValues.add(
+            ArmRatingValue(
+              plotNumber: pr.plotNumber,
+              armColumnId: mapping.armColumnId,
+              value: valueStr,
+            ),
+          );
+        }
+      }
+    } else {
+      for (final pr in shellImport.plotRows) {
+        final plot = _plotForShellPlotNumber(shellDataPlots, pr.plotNumber);
+        if (plot == null) {
+          debugPrint(
+            'ExportArmRatingShell: no app plot for shell '
+            'plotNumber ${pr.plotNumber}',
+          );
+          continue;
+        }
+        for (var i = 0; i < sortedAssessments.length; i++) {
+          final ta = sortedAssessments[i];
+          final def = defById[ta.assessmentDefinitionId];
+          final identity = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
+          final match = _armAssessmentMatcher.findMatchingColumn(
+            assessment: identity,
+            columns: effectiveColumns,
+            armImportColumnIndex: ta.armImportColumnIndex,
+            armColumnIdInteger: ta.armColumnIdInteger,
+            positionalIndex: i,
+            logDebug: debugPrint,
+          );
+          if (match.wasPositionalFallback) {
+            positionalFallbackTrialAssessmentIds.add(ta.id);
+          }
+          final col = match.column;
+          if (col == null) continue;
 
-        final rating = await _ratingRepository.getCurrentRating(
-          trialId: trial.id,
-          plotPk: plot.id,
-          assessmentId: legacyId,
-          sessionId: sessionId,
-        );
-        final valueStr = armRatingShellCellValueFromRating(rating);
-        ratingValues.add(
-          ArmRatingValue(
-            plotNumber: pr.plotNumber,
-            armColumnId: col.armColumnId,
-            value: valueStr,
-          ),
-        );
+          final legacyId = ta.legacyAssessmentId;
+          if (legacyId == null) continue;
+
+          final rating = await _ratingRepository.getCurrentRating(
+            trialId: trial.id,
+            plotPk: plot.id,
+            assessmentId: legacyId,
+            sessionId: sessionId,
+          );
+          final valueStr = armRatingShellCellValueFromRating(rating);
+          ratingValues.add(
+            ArmRatingValue(
+              plotNumber: pr.plotNumber,
+              armColumnId: col.armColumnId,
+              value: valueStr,
+            ),
+          );
+        }
       }
     }
 

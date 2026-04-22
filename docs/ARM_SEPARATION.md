@@ -109,6 +109,37 @@ ARM treats `Weed Control on 2026-04-02` and `Weed Control on 2026-04-23` as two 
 - Importer/exporter rewrites: deferred to Phase 1b. Phase 1a is schema foundation only.
 - New UI surfaces: none. The ARM Protocol tab lands later; Phase 1a adds no user-visible changes.
 
+## Importer + exporter using the bridge (Phase 1b)
+
+Phase 1b turns the Phase 1a tables into active infrastructure: the importer writes them and the exporter reads them.
+
+### Importer (`ImportArmRatingShellUseCase`)
+
+1. **Deduplicates ARM columns** by `(SE Name, Part Rated, Rating Type, Rating Unit)` into one `trial_assessment` per unique measurement. The app's core "list of assessments" is now the deduplicated set — no more three "Weed Control" rows.
+2. **Plans one session per unique ARM Rating Date** with `status = 'planned'`. Planned sessions do not surface as open field-work sessions (see "Planned session status" below); a user transitions a planned session to `open` by starting it normally, at which point rating flow is identical to standalone trials.
+3. **Writes `arm_column_mappings`** — one row per ARM column in the shell. Each row carries the ARM Column ID, column index, and references the deduplicated trial_assessment and planned session for that column. Orphan columns (blank measurement metadata) keep `trial_assessment_id` and `session_id` null so export can re-emit them as structurally present but empty.
+4. **Writes `arm_assessment_metadata`** (one row per deduplicated trial_assessment, verbatim ARM identity fields) and **`arm_session_metadata`** (one row per planned session, with Rating Date, timing code, crop stage, DA-A/DP intervals).
+
+Legacy per-column fields on `trial_assessments` (`armImportColumnIndex`, `armColumnIdInteger`, `seName`, `seDescription`, `armRatingType`, `armShellColumnId`, `armShellRatingDate`, `pestCode`) are still populated but with the **first** ARM column of each dedup group. `arm_column_mappings` + `arm_assessment_metadata` are the authoritative sources from Phase 1b forward; the core-table fields are advisory shadows until Phase 0b removes them.
+
+### Exporter (`ExportArmRatingShellUseCase`)
+
+The exporter checks `arm_column_mappings` up front and runs one of two paths:
+
+- **Mapping path (Phase 1b)** — taken when the trial has mapping rows. The exporter iterates mappings in column-index order and, for each mapping, fetches the rating at `(plot, mapping.trial_assessment_id → legacyAssessmentId, mapping.session_id)` and writes it to `mapping.armColumnId`. Orphan mappings skip silently; the shell column stays structurally present but empty. No identity matcher, no positional fallback, no "resolved shell session" — identity is deterministic by construction.
+- **Legacy path** — taken when no mappings exist (trials that predate Phase 1b, or tests that construct trials manually). The original matcher + positional-fallback + strict-block logic runs unchanged.
+
+The branch is a pure append; every existing export test exercises the legacy path, new Phase 1b tests exercise the mapping path.
+
+### Planned session status
+
+`kSessionStatusPlanned` is a new value of the core `sessions.status` enum. The concept is protocol-agnostic — any trial can in principle schedule a session ahead of time — so the enum value lives on the core session lifecycle. `SessionRepository.getOpenSession` / `watchOpenSession` and `isSessionOpenForFieldWork` explicitly exclude planned sessions, so they do not show up as "active field work" and do not block a user from starting a new session. Standalone trials continue to run without ever creating a planned session; only the ARM importer writes them today.
+
+### Not introduced in Phase 1b
+
+- Core-table cleanup (dropping the grandfathered ARM columns from `Trials` / `TrialAssessments`): stays deferred to Phase 0b. Phase 1b keeps them populated so the legacy exporter path and token/positional heuristics still have an anchor, and so a rollback to the Phase 1a boundary is a single commit.
+- ARM Protocol tab: still deferred. Phase 1b has no user-visible UI surface beyond the dedup itself (which is what the user wanted).
+
 ## What standalone users see
 
 Standalone trials (`WorkspaceType.standalone`, `isArmLinked = false`):
