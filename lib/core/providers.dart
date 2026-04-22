@@ -13,6 +13,7 @@ import '../data/repositories/weather_snapshot_repository.dart';
 import "../domain/models/plot_context.dart";
 import "../domain/ratings/rating_integrity_guard.dart";
 import "../domain/usecases/resolve_plot_treatment.dart";
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
@@ -89,6 +90,7 @@ import '../features/arm_import/usecases/arm_import_usecase.dart';
 import '../data/arm/arm_column_mapping_repository.dart';
 import '../data/arm/arm_trial_metadata_repository.dart';
 import '../features/arm_import/usecases/import_arm_rating_shell_usecase.dart';
+import '../features/arm_protocol/arm_protocol_tab.dart';
 import '../features/derived/domain/trial_statistics.dart';
 import '../features/photos/usecases/save_photo_usecase.dart';
 import '../features/users/user_repository.dart';
@@ -237,6 +239,17 @@ final armTrialMetadataStreamProvider =
   return ref
       .watch(armTrialMetadataRepositoryProvider)
       .watchForTrial(trialId);
+});
+
+/// Factory for building the ARM Protocol tab widget.
+///
+/// Lives in providers.dart (the DI composition root) so that
+/// [trial_detail_screen.dart] can add the tab to its IndexedStack without
+/// importing from the ARM subtree directly. The function signature is plain
+/// Dart — no ARM types leak into the caller.
+final armProtocolTabBuilderProvider =
+    Provider<Widget Function(int trialId)>((ref) {
+  return (trialId) => ArmProtocolTab(trialId: trialId);
 });
 
 /// Nullable ARM session metadata for a given session id.

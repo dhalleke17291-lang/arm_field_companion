@@ -74,21 +74,27 @@ List<int> _visibleFixedIndices(WorkspaceConfig config) {
 /// Fixed stack index for the Overview tab (Phase A scaffold).
 const int _overviewTabIndex = 8;
 
+/// Fixed stack index for the ARM Protocol tab (ARM-linked trials only).
+const int _armProtocolTabIndex = 9;
+
 /// Computes effective selected index: prefers candidate if visible, else first visible, else Overview.
 /// [candidate] == [_overviewTabIndex] always passes through (Overview is not in [visibleIndices]).
+/// [candidate] == [_armProtocolTabIndex] always passes through (ARM Protocol is not in [visibleIndices]).
 int _effectiveSelectedIndex({
   required int candidate,
   required List<int> visibleIndices,
 }) {
   if (candidate == _overviewTabIndex) return _overviewTabIndex;
+  if (candidate == _armProtocolTabIndex) return _armProtocolTabIndex;
   if (visibleIndices.isEmpty) return _overviewTabIndex;
   if (visibleIndices.contains(candidate)) return candidate;
   return visibleIndices.first;
 }
 
-/// Sanitizes a tab index for the given trial: visible module tab or Overview (8).
+/// Sanitizes a tab index for the given trial: visible module tab, Overview (8), or ARM Protocol (9).
 int _sanitizeTabIndexForTrial(int index, Trial trial) {
   if (index == _overviewTabIndex) return _overviewTabIndex;
+  if (index == _armProtocolTabIndex) return _armProtocolTabIndex;
   final config = safeConfigFromString(trial.workspaceType);
   final visible = _visibleFixedIndices(config);
   if (visible.isEmpty) return _overviewTabIndex;
@@ -1152,6 +1158,12 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           : _selectedTabIndex,
       visibleIndices: visibleIndices,
     );
+    final isArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(currentTrial.id))
+            .valueOrNull
+            ?.isArmLinked ==
+        true;
+    final armTabBuilder = ref.watch(armProtocolTabBuilderProvider);
     return Column(
       children: [
         Column(
@@ -1265,6 +1277,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           child: _TrialModuleHub(
             scrollController: _hubScrollController,
             workspaceConfig: workspaceConfig,
+            isArmLinked: isArmLinked,
             selectedIndex: effectiveSelectedIndex,
             onSelected: (index) {
               setState(() => _selectedTabIndex = index);
@@ -1309,6 +1322,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   _selectedTabIndex = _sessionsIndex;
                 }),
               ),
+              // ARM Protocol tab at index 9 — only reachable when ARM-linked.
+              armTabBuilder(currentTrial.id),
             ],
           ),
         ),
@@ -2737,6 +2752,7 @@ class _AutoBackupStatusLine extends ConsumerWidget {
 class _TrialModuleHub extends StatelessWidget {
   final ScrollController scrollController;
   final WorkspaceConfig workspaceConfig;
+  final bool isArmLinked;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final VoidCallback? onUserScroll;
@@ -2744,6 +2760,7 @@ class _TrialModuleHub extends StatelessWidget {
   const _TrialModuleHub({
     required this.scrollController,
     required this.workspaceConfig,
+    required this.isArmLinked,
     required this.selectedIndex,
     required this.onSelected,
     this.onUserScroll,
@@ -2753,6 +2770,7 @@ class _TrialModuleHub extends StatelessWidget {
   Widget build(BuildContext context) {
     // All possible hub items mapped to their fixed IndexedStack index.
     // Overview (8) is always shown; module tabs use TrialTab for visibility.
+    // ARM Protocol (9) is shown only for ARM-linked trials.
     const allItems = <(int, IconData, String, TrialTab?)>[
       (_overviewTabIndex, Icons.dashboard_outlined, 'Overview', null),
       (6, Icons.timeline, 'Timeline', TrialTab.timeline),
@@ -2764,10 +2782,13 @@ class _TrialModuleHub extends StatelessWidget {
       (5, Icons.photo_library, 'Photos', TrialTab.photos),
     ];
 
-    final items = allItems
-        .where((item) =>
-            item.$4 == null || workspaceConfig.visibleTabs.contains(item.$4!))
-        .toList();
+    final items = [
+      ...allItems.where((item) =>
+          item.$4 == null || workspaceConfig.visibleTabs.contains(item.$4!)),
+      if (isArmLinked)
+        (_armProtocolTabIndex, Icons.biotech_outlined, 'ARM Protocol',
+            null as TrialTab?),
+    ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
