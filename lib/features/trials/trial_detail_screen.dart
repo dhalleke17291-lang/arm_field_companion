@@ -2142,32 +2142,20 @@ class _InsightRowState extends State<_InsightRow> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // When a verdict is present, the verdict is the bold first line
-              // and the category title becomes a tiny eyebrow label above it.
-              // Otherwise the title is the bold first line (pre-verdict style).
-              if (insight.verdict != null) ...[
-                Text(
-                  insight.title.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.6,
-                    color:
-                        AppDesignTokens.secondaryText.withValues(alpha: 0.75),
-                  ),
-                ),
-                const SizedBox(height: 2),
-              ],
+              // Verdict strings are computed by InsightVoice and stored on
+              // insight.verdict, but intentionally NOT rendered here. Verdict
+              // calibration can only be validated by extended real-trial use;
+              // until that evidence exists, the UI continues to show raw
+              // title + detail. See docs/INSIGHT_VOICE_SPEC.md.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Text(
-                      insight.verdict ?? insight.title,
+                      insight.title,
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        height: 1.35,
                         color: AppDesignTokens.primaryText,
                       ),
                     ),
@@ -2191,20 +2179,15 @@ class _InsightRowState extends State<_InsightRow> {
                   ),
                 ],
               ),
-              // Show the raw-number detail on the collapsed row only when
-              // there is no verdict — when a verdict is present, numbers live
-              // in the expanded block (spec §4 and §10).
-              if (insight.verdict == null) ...[
-                const SizedBox(height: 3),
-                Text(
-                  insight.detail,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: AppDesignTokens.secondaryText,
-                  ),
+              const SizedBox(height: 3),
+              Text(
+                insight.detail,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: AppDesignTokens.secondaryText,
                 ),
-              ],
+              ),
               if (_expanded) ...[
                 const SizedBox(height: 6),
                 Container(
@@ -2216,20 +2199,6 @@ class _InsightRowState extends State<_InsightRow> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Raw-number detail belongs in the evidence block when a
-                      // verdict is present.
-                      if (insight.verdict != null) ...[
-                        Text(
-                          insight.detail,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            height: 1.35,
-                            color: AppDesignTokens.primaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                      ],
                       Text(
                         insight.basis.basisSummary,
                         style: const TextStyle(
@@ -2263,7 +2232,7 @@ class _InsightRowState extends State<_InsightRow> {
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
-                    insight.verdict != null ? 'Tap for evidence' : 'Tap for method',
+                    'Tap for method',
                     style: TextStyle(
                       fontSize: 10,
                       color:

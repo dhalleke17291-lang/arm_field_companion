@@ -136,16 +136,16 @@ String composeSessionSummary({
     }
   }
 
-  // Top insight (if available). Prefer the verdict line; fall back to the
-  // raw detail when no verdict is produced (spec §12).
+  // Top insight (if available).
+  //
+  // Verdict strings are computed on insight.verdict but intentionally NOT
+  // used in shared text. A shared summary lives forever in someone else's
+  // inbox; verdict calibration has not yet been validated against real
+  // field use. Keep the factual title + detail format until it has.
   if (insights != null && insights.isNotEmpty) {
     final top = insights.first;
     buf.writeln();
-    if (top.verdict != null) {
-      buf.writeln('${top.verdict} (${top.detail} ${top.basis.confidenceLabel}.)');
-    } else {
-      buf.writeln('${top.title}: ${top.detail}');
-    }
+    buf.writeln('${top.title}: ${top.detail}');
   }
 
   return buf.toString().trimRight();
