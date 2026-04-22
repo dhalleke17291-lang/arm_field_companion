@@ -13,6 +13,7 @@ class TrialInsight {
     this.relatedPlotIds = const [],
     this.relatedTreatmentIds = const [],
     this.timingLabel,
+    this.verdict,
   });
 
   final InsightType type;
@@ -31,6 +32,13 @@ class TrialInsight {
 
   /// e.g. "14 DAA" — timing context for timeline placement.
   final String? timingLabel;
+
+  /// One-sentence human verdict. Must pass `docs/INSIGHT_VOICE_SPEC.md`.
+  ///
+  /// Null when the service cannot stand behind a clean call for the given
+  /// confidence tier and situation. Null means the UI falls back to showing
+  /// only [title] and [detail] — silence beats noise.
+  final String? verdict;
 }
 
 enum InsightType {

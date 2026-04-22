@@ -136,11 +136,16 @@ String composeSessionSummary({
     }
   }
 
-  // Top insight (if available)
+  // Top insight (if available). Prefer the verdict line; fall back to the
+  // raw detail when no verdict is produced (spec §12).
   if (insights != null && insights.isNotEmpty) {
     final top = insights.first;
     buf.writeln();
-    buf.writeln('${top.title}: ${top.detail}');
+    if (top.verdict != null) {
+      buf.writeln('${top.verdict} (${top.detail} ${top.basis.confidenceLabel}.)');
+    } else {
+      buf.writeln('${top.title}: ${top.detail}');
+    }
   }
 
   return buf.toString().trimRight();

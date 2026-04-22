@@ -9,6 +9,7 @@ import '../../features/plots/plot_repository.dart';
 import '../../features/ratings/rating_repository.dart';
 import '../../features/sessions/session_repository.dart';
 import '../models/trial_insight.dart';
+import 'insight_voice.dart';
 
 /// Minimum data thresholds — refuse to compute below these.
 const kMinSessionsForHealth = 3;
@@ -341,6 +342,11 @@ class TrialIntelligenceService {
       type: InsightType.trialHealth,
       title: 'Trial health',
       detail: '${detailParts.join('. ')}.',
+      verdict: InsightVoice.separationVerdict(
+        effectSize: effectSize,
+        separationTrend: separationTrend,
+        tier: confidence,
+      ),
       basis: InsightBasis(
         repCount: repCount,
         sessionCount: sessions.length,
@@ -407,6 +413,11 @@ class TrialIntelligenceService {
         type: InsightType.treatmentTrend,
         title: 'Treatment trend — $tCode',
         detail: detail,
+        verdict: InsightVoice.trendVerdict(
+          treatmentCode: tCode,
+          delta: delta,
+          tier: confidence,
+        ),
         basis: InsightBasis(
           repCount: repCount,
           sessionCount: sessionMeans.length,
@@ -564,6 +575,10 @@ class TrialIntelligenceService {
       type: InsightType.repVariability,
       title: 'Rep variability',
       detail: detail.toString(),
+      verdict: InsightVoice.driftVerdict(
+        outlierReps: outlierReps,
+        tier: confidence,
+      ),
       basis: InsightBasis(
         repCount: repCount,
         sessionCount: sessions.length,
