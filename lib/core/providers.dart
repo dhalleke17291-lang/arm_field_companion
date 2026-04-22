@@ -225,6 +225,20 @@ final armColumnMappingRepositoryProvider =
   return ArmColumnMappingRepository(ref.watch(databaseProvider));
 });
 
+/// Nullable ARM session metadata for a given session id.
+///
+/// Returns null for sessions that were not created by the ARM importer
+/// (standalone trials, ARM trials imported before Phase 1b, or non-planned
+/// sessions created manually). Core UI code consults this provider so it
+/// can show ARM-expected timing/stage/interval lines without importing
+/// anything ARM-specific.
+final armSessionMetadataProvider =
+    FutureProvider.family<ArmSessionMetadataData?, int>((ref, sessionId) {
+  return ref
+      .watch(armColumnMappingRepositoryProvider)
+      .getSessionMetadata(sessionId);
+});
+
 final importArmRatingShellUseCaseProvider =
     Provider<ImportArmRatingShellUseCase>((ref) {
   return ImportArmRatingShellUseCase(

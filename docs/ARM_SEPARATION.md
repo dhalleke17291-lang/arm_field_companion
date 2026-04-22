@@ -140,6 +140,46 @@ The branch is a pure append; every existing export test exercises the legacy pat
 - Core-table cleanup (dropping the grandfathered ARM columns from `Trials` / `TrialAssessments`): stays deferred to Phase 0b. Phase 1b keeps them populated so the legacy exporter path and token/positional heuristics still have an anchor, and so a rollback to the Phase 1a boundary is a single commit.
 - ARM Protocol tab: still deferred. Phase 1b has no user-visible UI surface beyond the dedup itself (which is what the user wanted).
 
+## Planned-session surface (Phase 1c)
+
+Phase 1b makes the importer create `kSessionStatusPlanned` rows, but they were invisible to users: no open-session query returned them and no UI branched on the status. Phase 1c is the minimum surface needed so the researcher sees what ARM expects and can start rating from the Sessions tab.
+
+### Nullable ARM metadata provider
+
+`armSessionMetadataProvider(sessionId)` (in `lib/core/providers.dart`) is a `FutureProvider.family` that returns `ArmSessionMetadataData?`. It resolves through `ArmColumnMappingRepository.getSessionMetadata` (also new in 1c) and is null for any session that was not created by the ARM importer. Core UI code consumes this nullable type directly, so the same tile renders cleanly for an ARM planned session (metadata present), a future non-ARM planned session (metadata absent), or a standalone session that is never planned (code path does not branch on status).
+
+The provider lives in `core/providers.dart` — the composition root is already allow-listed in `arm_separation_boundary_test.dart` to read from `lib/data/arm/`. No ARM feature folder is imported by the session tile; it consumes a core-typed provider that returns a core-typed drift row.
+
+### Planned-session tile
+
+The tile in `lib/features/trials/trial_detail_screen.dart` branches on `session.status == kSessionStatusPlanned` and delegates to `_buildPlannedSessionTile`. That builder:
+
+- shows the planned rating date (`session.sessionDateLocal`) as the tile title (the regular tile's "Started HH:mm" subtitle is meaningless for a row whose `startedAt` was stamped at import time);
+- composes a compact metadata line from `armSessionMetadataProvider` when non-null: `Timing · Stage · DA-A · DA-P`, with each segment elided when its field is blank;
+- renders a `Planned` pill + a `Start` tonal button. The tile itself is also the tap target — both lead to a confirmation dialog → `SessionRepository.startPlannedSession` → route into `PlotQueueScreen` with the now-open session;
+- disables starting (greyed button + warning line) when another session on the same trial is already open, so the user is never left wondering why the rating screen refuses to load.
+
+The legacy tile builder is unchanged — every pre-1c session (open, closed, needs-attention) takes the original path.
+
+### `SessionRepository.startPlannedSession`
+
+One method in the core repository does all state transitions:
+
+1. asserts the session exists and is not soft-deleted (`SessionNotFoundException` otherwise);
+2. asserts `status == kSessionStatusPlanned` (`PlannedSessionStartException` otherwise);
+3. asserts no other session on the trial is `open` (`OpenSessionExistsException` otherwise, same class `createSession` throws, so UI callers have one "trial already has an open session" snackbar to wire);
+4. writes `status = open`, `startedAt = now()`;
+5. emits a `SESSION_STARTED` audit event with description `Planned session "<name>" started`.
+
+Because the method lives on `SessionRepository` and does not know about ARM, it is equally usable by any future non-ARM planned-session flow.
+
+### Not introduced in Phase 1c
+
+- Pre-filling `CreateSessionScreen` with ARM-expected crop stage / rater / BBCH: deferred. The user enters real field values through the normal open-session flow after starting.
+- Editable ARM metadata: that is the ARM Protocol tab (Phase 2). Phase 1c is read-only consumption of the existing metadata rows.
+- Overview / timeline / calendar surfaces for planned sessions: deliberately out of scope — one view at a time keeps the visual and navigation contract small.
+- Reordering `sessionsForTrialProvider` to put planned sessions ahead of historical closed ones: the existing `startedAt desc` ordering groups imported-same-batch planned rows together, which is fine for now.
+
 ## What standalone users see
 
 Standalone trials (`WorkspaceType.standalone`, `isArmLinked = false`):

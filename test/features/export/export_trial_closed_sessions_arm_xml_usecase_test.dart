@@ -86,6 +86,14 @@ class _MockSessionRepository implements SessionRepository {
       throw UnimplementedError();
 
   @override
+  Future<Session> startPlannedSession(
+    int sessionId, {
+    String? raterName,
+    int? startedByUserId,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<List<Assessment>> getSessionAssessments(int sessionId) async =>
       throw UnimplementedError();
 

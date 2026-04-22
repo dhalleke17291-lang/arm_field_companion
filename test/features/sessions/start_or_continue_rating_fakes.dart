@@ -92,6 +92,14 @@ class FakeSessionRepository implements SessionRepository {
   }) async {}
 
   @override
+  Future<Session> startPlannedSession(
+    int sessionId, {
+    String? raterName,
+    int? startedByUserId,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<void> updateSessionAssessmentOrder(
     int sessionId,
     List<int> assessmentIdsInOrder,

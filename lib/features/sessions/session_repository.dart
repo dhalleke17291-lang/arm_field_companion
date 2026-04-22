@@ -142,6 +142,61 @@ class SessionRepository {
     });
   }
 
+  /// Transitions an existing [kSessionStatusPlanned] session to
+  /// [kSessionStatusOpen] and stamps [Sessions.startedAt] with "now".
+  ///
+  /// Planned sessions are created by the ARM importer (one per unique ARM
+  /// Rating Date) as placeholders on the Sessions tab. Starting one gives the
+  /// user the standard "open" session they then rate into.
+  ///
+  /// Throws [SessionNotFoundException] if the session does not exist (or is
+  /// soft-deleted), [PlannedSessionStartException] if the session is not in
+  /// the planned state, and [OpenSessionExistsException] if another session
+  /// on the same trial is already open.
+  Future<Session> startPlannedSession(
+    int sessionId, {
+    String? raterName,
+    int? startedByUserId,
+  }) async {
+    return _db.transaction(() async {
+      final session = await (_db.select(_db.sessions)
+            ..where((s) => s.id.equals(sessionId) & s.isDeleted.equals(false)))
+          .getSingleOrNull();
+      if (session == null) {
+        throw SessionNotFoundException(sessionId);
+      }
+      if (session.status != kSessionStatusPlanned) {
+        throw PlannedSessionStartException(sessionId, session.status);
+      }
+
+      final existingOpen = await getOpenSession(session.trialId);
+      if (existingOpen != null && existingOpen.id != sessionId) {
+        throw OpenSessionExistsException(session.trialId);
+      }
+
+      final now = DateTime.now();
+      await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
+          .write(SessionsCompanion(
+        status: const Value(kSessionStatusOpen),
+        startedAt: Value(now),
+      ));
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(session.trialId),
+              sessionId: Value(sessionId),
+              eventType: 'SESSION_STARTED',
+              description: 'Planned session "${session.name}" started',
+              performedBy: Value(raterName),
+              performedByUserId: Value(startedByUserId),
+            ),
+          );
+
+      return (_db.select(_db.sessions)..where((s) => s.id.equals(sessionId)))
+          .getSingle();
+    });
+  }
+
   Future<void> closeSession(
     int sessionId, {
     String? raterName,
@@ -546,4 +601,17 @@ class SessionNotFoundException implements Exception {
 
   @override
   String toString() => 'Session with id $sessionId not found.';
+}
+
+/// Thrown by [SessionRepository.startPlannedSession] when the session exists
+/// but is not in the planned state (e.g. already open, already closed).
+class PlannedSessionStartException implements Exception {
+  final int sessionId;
+  final String currentStatus;
+  PlannedSessionStartException(this.sessionId, this.currentStatus);
+
+  @override
+  String toString() =>
+      'Session $sessionId is not planned (current status: $currentStatus) '
+      'and cannot be started through the planned-session flow.';
 }

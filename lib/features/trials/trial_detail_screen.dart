@@ -16,6 +16,7 @@ import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
 import '../../core/workspace/workspace_config.dart';
 import '../sessions/create_session_screen.dart';
+import '../sessions/session_repository.dart';
 import '../sessions/domain/session_close_attention_summary.dart';
 import '../sessions/domain/session_close_policy_result.dart';
 import '../sessions/domain/session_completeness_report.dart';
@@ -3239,6 +3240,9 @@ class SessionsView extends ConsumerWidget {
 
   Widget _buildSessionListTile(
       BuildContext context, WidgetRef ref, Session session) {
+    if (session.status == kSessionStatusPlanned) {
+      return _buildPlannedSessionTile(context, ref, session);
+    }
     final isOpen = isSessionOpenForFieldWork(session);
     final ratings =
         ref.watch(sessionRatingsProvider(session.id)).valueOrNull ?? [];
@@ -3421,6 +3425,261 @@ class SessionsView extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Specialized tile for a [kSessionStatusPlanned] session.
+  ///
+  /// Planned sessions carry no ratings or timings; what matters is the ARM
+  /// schedule they represent and a clear "Start" affordance. The tile reads
+  /// optional ARM metadata through [armSessionMetadataProvider]; when the
+  /// provider returns null (non-ARM planned session, or ARM trial imported
+  /// before Phase 1b) only the planned date renders.
+  Widget _buildPlannedSessionTile(
+      BuildContext context, WidgetRef ref, Session session) {
+    final armMeta =
+        ref.watch(armSessionMetadataProvider(session.id)).valueOrNull;
+    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        );
+    final metadataLine = _formatPlannedMetadataLine(armMeta);
+    final hasOpenSessionElsewhere =
+        ref.watch(openSessionProvider(trial.id)).valueOrNull != null;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: hasOpenSessionElsewhere
+              ? null
+              : () => _startPlannedSession(context, ref, session),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.sectionHeaderBg,
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                  ),
+                  child: const Icon(
+                    Icons.event_outlined,
+                    color: AppDesignTokens.secondaryText,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatDateHeader(session.sessionDateLocal),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (metadataLine.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          metadataLine,
+                          style: subtitleStyle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const _SessionPill(
+                            label: 'Planned',
+                            backgroundColor: AppDesignTokens.sectionHeaderBg,
+                            foregroundColor: AppDesignTokens.secondaryText,
+                            icon: Icons.schedule,
+                          ),
+                          const Spacer(),
+                          FilledButton.tonalIcon(
+                            onPressed: hasOpenSessionElsewhere
+                                ? null
+                                : () =>
+                                    _startPlannedSession(context, ref, session),
+                            icon: const Icon(Icons.play_arrow, size: 18),
+                            label: const Text('Start'),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (hasOpenSessionElsewhere) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Close the open session on this trial before starting a planned one.',
+                          style: subtitleStyle?.copyWith(
+                              color: AppDesignTokens.warningFg),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    size: 20,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                  tooltip: 'More actions',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  onSelected: (value) {
+                    if (value == 'delete_session') {
+                      _confirmAndSoftDeleteSession(context, ref, session);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem<String>(
+                      value: 'delete_session',
+                      child: Text('Move to Recovery'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Composes "Timing · Stage · Interval" from ARM session metadata.
+  /// Each segment is included only when present; returns empty when nothing
+  /// ARM-specific is available.
+  String _formatPlannedMetadataLine(ArmSessionMetadataData? m) {
+    if (m == null) return '';
+    final parts = <String>[];
+    final timing = m.timingCode?.trim();
+    if (timing != null && timing.isNotEmpty) {
+      parts.add(timing);
+    }
+    final stage = _composeCropStage(
+        m.cropStageScale, m.cropStageMaj, m.cropStageMin);
+    if (stage.isNotEmpty) {
+      parts.add(stage);
+    }
+    final trt = m.trtEvalInterval?.trim();
+    if (trt != null && trt.isNotEmpty) {
+      parts.add(trt);
+    }
+    final plant = m.plantEvalInterval?.trim();
+    if (plant != null && plant.isNotEmpty) {
+      parts.add(plant);
+    }
+    return parts.join(' · ');
+  }
+
+  String _composeCropStage(String? scale, String? major, String? minor) {
+    final maj = major?.trim() ?? '';
+    final min = minor?.trim() ?? '';
+    final sc = scale?.trim() ?? '';
+    if (maj.isEmpty && min.isEmpty) return '';
+    final stage = min.isEmpty ? maj : (maj.isEmpty ? min : '$maj–$min');
+    return sc.isEmpty ? stage : '$sc $stage';
+  }
+
+  Future<void> _startPlannedSession(
+    BuildContext context,
+    WidgetRef ref,
+    Session session,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Start planned session?'),
+        content: Text(
+          'This starts the session for ${_formatDateHeader(session.sessionDateLocal)} '
+          'so you can rate plots for it. You can close it later from the Sessions tab.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Start session'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      final userId = await ref.read(currentUserIdProvider.future);
+      final started =
+          await ref.read(sessionRepositoryProvider).startPlannedSession(
+                session.id,
+                raterName: user?.displayName,
+                startedByUserId: userId,
+              );
+      if (!context.mounted) return;
+      ref.invalidate(sessionsForTrialProvider(trial.id));
+      ref.invalidate(openSessionProvider(trial.id));
+      ref.invalidate(armSessionMetadataProvider(session.id));
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PlotQueueScreen(trial: trial, session: started),
+        ),
+      );
+    } on OpenSessionExistsException catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Another session is already open on this trial. Close it first.'),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Could not start session'),
+          content: SelectableText('$e'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   List<Widget> _sessionStatusChips(bool isOpen, bool needsAttention) {

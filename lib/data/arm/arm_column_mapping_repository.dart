@@ -28,6 +28,35 @@ class ArmColumnMappingRepository {
         .get();
   }
 
+  /// ARM session metadata for [sessionId], or null when the session was not
+  /// created by the ARM importer. Phase 1c consumers treat null as "no ARM
+  /// expectations for this session" and render the session without the ARM
+  /// metadata line.
+  Future<ArmSessionMetadataData?> getSessionMetadata(int sessionId) {
+    return (_db.select(_db.armSessionMetadata)
+          ..where((m) => m.sessionId.equals(sessionId))
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// All ARM session metadata rows for [trialId], joined through
+  /// `sessions.trial_id`. Ordered by ARM Rating Date ascending so callers can
+  /// render the protocol schedule in chronological order.
+  Future<List<ArmSessionMetadataData>> getSessionMetadatasForTrial(
+    int trialId,
+  ) async {
+    final query = _db.select(_db.armSessionMetadata).join([
+      innerJoin(
+        _db.sessions,
+        _db.sessions.id.equalsExp(_db.armSessionMetadata.sessionId),
+      ),
+    ])
+      ..where(_db.sessions.trialId.equals(trialId))
+      ..orderBy([OrderingTerm.asc(_db.armSessionMetadata.armRatingDate)]);
+    final rows = await query.get();
+    return rows.map((r) => r.readTable(_db.armSessionMetadata)).toList();
+  }
+
   /// True if any mapping row exists for [trialId]. Callers use this as the
   /// "is this trial importable through the new Phase 1b path?" gate; when
   /// the mapping is empty, legacy per-column matching still applies.
