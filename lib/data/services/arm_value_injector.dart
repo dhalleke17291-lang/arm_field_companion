@@ -9,6 +9,7 @@ import '../../core/excel_column_letters.dart';
 import '../../domain/models/arm_application_sheet_column.dart';
 import '../../domain/models/arm_rating_value.dart';
 import '../../domain/models/arm_shell_import.dart';
+import '../../domain/models/arm_treatment_sheet_row.dart';
 
 /// One Applications-sheet column to write on export ([row01To79] = R1…R79).
 class ArmApplicationsSheetExportColumn {
@@ -43,8 +44,8 @@ class ArmInjectionResult {
 /// Uses sheet **Plot Data** (ARM-native shells).
 ///
 /// Updates the Plot Data worksheet XML inside the xlsx zip (and optionally
-/// **Applications**). All other parts are copied byte-for-byte to avoid
-/// [excel] decode/encode corruption on other sheets.
+/// **Applications** / **Treatments**). All other parts are copied byte-for-byte
+/// to avoid [excel] decode/encode corruption on other sheets.
 class ArmValueInjector {
   ArmValueInjector(this.shellImport);
 
@@ -54,6 +55,7 @@ class ArmValueInjector {
     List<ArmRatingValue> values,
     String outputPath, {
     List<ArmApplicationsSheetExportColumn>? applicationColumns,
+    List<ArmTreatmentSheetRow>? treatmentRows,
   }) async {
     if (outputPath == shellImport.shellFilePath) {
       throw StateError(
@@ -190,6 +192,65 @@ class ArmValueInjector {
       }
     }
 
+    List<int>? updatedTreatmentsBytes;
+    String? treatmentsPath;
+    if (treatmentRows != null && treatmentRows.isNotEmpty) {
+      treatmentsPath = _resolveWorksheetPath(archive, 'Treatments');
+      if (treatmentsPath == null) {
+        skippedReasons.add(
+          'Treatments sheet missing from shell — treatment data not written',
+        );
+      } else {
+        final trEntry = archive.findFile(treatmentsPath);
+        if (trEntry == null) {
+          skippedReasons.add(
+            'Treatments worksheet entry missing: $treatmentsPath',
+          );
+        } else {
+          final trDoc =
+              XmlDocument.parse(utf8.decode(trEntry.content as List<int>));
+          const treatmentsDataStartRow = 2;
+          for (final tr in treatmentRows) {
+            final sheetRowIdx = treatmentsDataStartRow + tr.rowIndex;
+            _writeCell(
+              trDoc,
+              sheetRowIdx,
+              0,
+              '${tr.trtNumber}',
+              false,
+              ensureRow: true,
+            );
+            cellsWritten++;
+            void wText(int col, String? s) {
+              if (s == null) return;
+              final t = s.trim();
+              if (t.isEmpty) return;
+              _writeCell(trDoc, sheetRowIdx, col, t, false, ensureRow: true);
+              cellsWritten++;
+            }
+
+            wText(1, tr.typeCode);
+            wText(2, tr.treatmentName);
+            final fc = _armTreatmentNumericCellText(tr.formConc);
+            if (fc != null) {
+              _writeCell(trDoc, sheetRowIdx, 3, fc, false, ensureRow: true);
+              cellsWritten++;
+            }
+            wText(4, tr.formConcUnit);
+            wText(5, tr.formType);
+            final rt = _armTreatmentNumericCellText(tr.rate);
+            if (rt != null) {
+              _writeCell(trDoc, sheetRowIdx, 6, rt, false, ensureRow: true);
+              cellsWritten++;
+            }
+            wText(7, tr.rateUnit);
+          }
+          updatedTreatmentsBytes =
+              utf8.encode(trDoc.toXmlString(pretty: false));
+        }
+      }
+    }
+
     final newArchive = Archive();
     for (final file in archive.files) {
       if (!file.isFile) continue;
@@ -205,6 +266,16 @@ class ArmValueInjector {
             file.name,
             updatedApplicationsBytes.length,
             updatedApplicationsBytes,
+          ),
+        );
+      } else if (treatmentsPath != null &&
+          updatedTreatmentsBytes != null &&
+          file.name == treatmentsPath) {
+        newArchive.addFile(
+          ArchiveFile(
+            file.name,
+            updatedTreatmentsBytes.length,
+            updatedTreatmentsBytes,
           ),
         );
       } else {
@@ -426,6 +497,12 @@ class ArmValueInjector {
   // Build Excel cell reference e.g. C49
   String _cellRef(int colIdx, int rowIdx) =>
       '${columnIndexToLettersZeroBased(colIdx)}${rowIdx + 1}';
+}
+
+String? _armTreatmentNumericCellText(double? d) {
+  if (d == null) return null;
+  if (d == d.roundToDouble()) return '${d.toInt()}';
+  return d.toString();
 }
 
 /// 0-based column index from an Excel cell reference (e.g. `C49` → 2).

@@ -13,6 +13,8 @@ import '../../../core/diagnostics/trial_export_diagnostics.dart'
 import '../../../data/arm/arm_application_row_values.dart';
 import '../../../data/arm/arm_applications_repository.dart';
 import '../../../data/arm/arm_column_mapping_repository.dart';
+import '../../../data/arm/arm_treatment_metadata_repository.dart';
+import '../../../data/arm/arm_treatment_sheet_export_rows.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
@@ -50,6 +52,7 @@ class ExportArmRatingShellUseCase {
   final ArmImportPersistenceRepository _persistence;
   final ArmColumnMappingRepository _armColumnMappingRepository;
   final ArmApplicationsRepository _armApplicationsRepository;
+  final ArmTreatmentMetadataRepository _armTreatmentMetadataRepository;
   final ArmRatingShellShareOverride? shareOverride;
 
   /// Test-only: bypass [FilePicker] and return a shell `.xlsx` path (or null to cancel).
@@ -65,6 +68,7 @@ class ExportArmRatingShellUseCase {
     required ArmImportPersistenceRepository persistence,
     required ArmColumnMappingRepository armColumnMappingRepository,
     required ArmApplicationsRepository armApplicationsRepository,
+    required ArmTreatmentMetadataRepository armTreatmentMetadataRepository,
     this.shareOverride,
     this.pickShellPathOverride,
     PublishTrialExportDiagnostics? publishExportDiagnostics,
@@ -76,6 +80,7 @@ class ExportArmRatingShellUseCase {
         _persistence = persistence,
         _armColumnMappingRepository = armColumnMappingRepository,
         _armApplicationsRepository = armApplicationsRepository,
+        _armTreatmentMetadataRepository = armTreatmentMetadataRepository,
         _publishExportDiagnostics = publishExportDiagnostics,
         _computeArmRoundTripDiagnostics =
             ComputeArmRoundTripDiagnosticsUseCase(
@@ -154,7 +159,6 @@ class ExportArmRatingShellUseCase {
     final plots = loaded[0] as List<Plot>;
     final shellDataPlots = armShellDataPlots(plots);
     final assessments = loaded[1] as List<TrialAssessment>;
-    // ignore: unused_local_variable
     final treatments = loaded[2] as List<Treatment>;
 
     final roundTripReport = await _computeArmRoundTripDiagnostics.execute(
@@ -595,6 +599,13 @@ class ExportArmRatingShellUseCase {
           ),
     ];
 
+    final treatmentRows = await armTreatmentSheetRowsForExport(
+      trialId: trial.id,
+      treatments: treatments,
+      armTreatmentMetadataRepository: _armTreatmentMetadataRepository,
+      treatmentRepository: _treatmentRepository,
+    );
+
     final injector = ArmValueInjector(shellImport);
     final safeBase = trial.name
         .replaceAll(RegExp(r'[^\w\s-]'), '')
@@ -608,6 +619,7 @@ class ExportArmRatingShellUseCase {
       filePath,
       applicationColumns:
           applicationColumns.isEmpty ? null : applicationColumns,
+      treatmentRows: treatmentRows.isEmpty ? null : treatmentRows,
     );
 
     if (injectionResult.hasSkips) {

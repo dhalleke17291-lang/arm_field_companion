@@ -13,6 +13,7 @@ import 'package:arm_field_companion/features/arm_import/data/arm_assessment_defi
 import 'package:arm_field_companion/features/arm_import/data/arm_csv_parser.dart';
 import 'package:arm_field_companion/data/arm/arm_applications_repository.dart';
 import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
+import 'package:arm_field_companion/data/arm/arm_treatment_metadata_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_report_builder.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_snapshot_service.dart';
@@ -352,6 +353,7 @@ void main() {
         persistence: ArmImportPersistenceRepository(db),
         armColumnMappingRepository: ArmColumnMappingRepository(db),
         armApplicationsRepository: ArmApplicationsRepository(db),
+        armTreatmentMetadataRepository: ArmTreatmentMetadataRepository(db),
         shareOverride: (_) async {},
         pickShellPathOverride: () async => shellPath,
         publishExportDiagnostics: (tid, findings, label) {

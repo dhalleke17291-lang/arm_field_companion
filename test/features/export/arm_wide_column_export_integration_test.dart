@@ -8,6 +8,7 @@ import 'package:arm_field_companion/data/repositories/treatment_repository.dart'
 import 'package:arm_field_companion/domain/ratings/result_status.dart';
 import 'package:arm_field_companion/data/arm/arm_applications_repository.dart';
 import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
+import 'package:arm_field_companion/data/arm/arm_treatment_metadata_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/domain/enums/import_confidence.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
@@ -339,6 +340,7 @@ void main() {
         persistence: ArmImportPersistenceRepository(db),
         armColumnMappingRepository: ArmColumnMappingRepository(db),
         armApplicationsRepository: ArmApplicationsRepository(db),
+        armTreatmentMetadataRepository: ArmTreatmentMetadataRepository(db),
         shareOverride: (_) async {},
         pickShellPathOverride: () async => shellPath,
         publishExportDiagnostics: (tid, findings, label) {

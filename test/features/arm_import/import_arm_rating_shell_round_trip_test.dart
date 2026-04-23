@@ -29,10 +29,12 @@ import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/session_state.dart';
 import 'package:arm_field_companion/data/arm/arm_applications_repository.dart';
 import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
+import 'package:arm_field_companion/data/arm/arm_treatment_metadata_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/data/services/arm_shell_parser.dart';
+import 'package:arm_field_companion/domain/models/arm_treatment_sheet_row.dart';
 import 'package:arm_field_companion/domain/ratings/result_status.dart'
     show ResultStatusDb;
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
@@ -51,6 +53,40 @@ import '../export/export_arm_rating_shell_usecase_test.dart'
     show writeArmShellFixture;
 
 const _fixturePath = 'test/fixtures/arm_shells/AgQuest_RatingShell.xlsx';
+
+bool _treatmentExportDoubleEq(double? a, double? b) {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return (a - b).abs() < 1e-9;
+}
+
+void _expectTreatmentSheetRowsEqual(
+  List<ArmTreatmentSheetRow> actual,
+  List<ArmTreatmentSheetRow> expected,
+) {
+  expect(actual.length, expected.length, reason: 'treatment row count');
+  for (var i = 0; i < actual.length; i++) {
+    final a = actual[i];
+    final e = expected[i];
+    expect(a.trtNumber, e.trtNumber, reason: 'row $i trt');
+    expect(a.rowIndex, e.rowIndex, reason: 'row $i index');
+    expect(a.typeCode, e.typeCode, reason: 'row $i type');
+    expect(a.treatmentName, e.treatmentName, reason: 'row $i name');
+    expect(
+      _treatmentExportDoubleEq(a.formConc, e.formConc),
+      isTrue,
+      reason: 'row $i formConc',
+    );
+    expect(a.formConcUnit, e.formConcUnit, reason: 'row $i formConcUnit');
+    expect(a.formType, e.formType, reason: 'row $i formType');
+    expect(
+      _treatmentExportDoubleEq(a.rate, e.rate),
+      isTrue,
+      reason: 'row $i rate',
+    );
+    expect(a.rateUnit, e.rateUnit, reason: 'row $i rateUnit');
+  }
+}
 
 class _FakePathProvider extends PathProviderPlatform {
   _FakePathProvider(this.path);
@@ -650,6 +686,73 @@ void main() {
         reason: 'Every component must FK to a treatment in this trial',
       );
     });
+
+    test('export injects Treatments sheet from arm_treatment_metadata',
+        () async {
+      final result = await useCase.execute(_fixturePath);
+      expect(result.success, isTrue, reason: result.errorMessage);
+      final trialId = result.trialId!;
+
+      final sessions = await (db.select(db.sessions)
+            ..where((s) => s.trialId.equals(trialId))
+            ..orderBy([(s) => OrderingTerm.asc(s.sessionDateLocal)]))
+          .get();
+      final session = sessions.first;
+      await (db.update(db.sessions)..where((s) => s.id.equals(session.id)))
+          .write(const SessionsCompanion(
+        status: Value(kSessionStatusOpen),
+      ));
+
+      final tas = await (db.select(db.trialAssessments)
+            ..where((t) => t.trialId.equals(trialId)))
+          .get();
+      final ta = tas.first;
+      final legacyIds = await TrialAssessmentRepository(db)
+          .getOrCreateLegacyAssessmentIdsForTrialAssessments(trialId, [ta.id]);
+
+      final plots = await PlotRepository(db).getPlotsForTrial(trialId);
+      final plot = plots.first;
+
+      await RatingRepository(db).saveRating(
+        trialId: trialId,
+        plotPk: plot.id,
+        assessmentId: legacyIds.single,
+        sessionId: session.id,
+        resultStatus: ResultStatusDb.recorded,
+        numericValue: 7.0,
+        isSessionClosed: false,
+      );
+
+      final exporter = ExportArmRatingShellUseCase(
+        db: db,
+        plotRepository: PlotRepository(db),
+        treatmentRepository: TreatmentRepository(db),
+        trialAssessmentRepository: TrialAssessmentRepository(db),
+        ratingRepository: RatingRepository(db),
+        sessionRepository: SessionRepository(db),
+        persistence: ArmImportPersistenceRepository(db),
+        armColumnMappingRepository: ArmColumnMappingRepository(db),
+        armApplicationsRepository: ArmApplicationsRepository(db),
+        armTreatmentMetadataRepository: ArmTreatmentMetadataRepository(db),
+        shareOverride: (_) async {},
+        pickShellPathOverride: () async => _fixturePath,
+      );
+
+      final trialRow = await (db.select(db.trials)
+            ..where((t) => t.id.equals(trialId)))
+          .getSingle();
+      final out = await exporter.execute(trial: trialRow);
+      expect(out.success, isTrue, reason: out.errorMessage);
+      final outPath = out.filePath;
+      expect(outPath, isNotNull);
+
+      final original = await ArmShellParser(_fixturePath).parse();
+      final parsed = await ArmShellParser(outPath!).parse();
+      _expectTreatmentSheetRowsEqual(
+        parsed.treatmentSheetRows,
+        original.treatmentSheetRows,
+      );
+    });
   });
 
   group('Applications sheet round-trip trust anchor', () {
@@ -804,6 +907,7 @@ void main() {
         persistence: ArmImportPersistenceRepository(db),
         armColumnMappingRepository: ArmColumnMappingRepository(db),
         armApplicationsRepository: ArmApplicationsRepository(db),
+        armTreatmentMetadataRepository: ArmTreatmentMetadataRepository(db),
         shareOverride: (_) async {},
         pickShellPathOverride: () async => path,
       );

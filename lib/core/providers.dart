@@ -1360,6 +1360,8 @@ final exportArmRatingShellUseCaseProvider =
     persistence: ref.watch(armImportPersistenceRepositoryProvider),
     armColumnMappingRepository: ref.watch(armColumnMappingRepositoryProvider),
     armApplicationsRepository: ref.watch(armApplicationsRepositoryProvider),
+    armTreatmentMetadataRepository:
+        ref.watch(armTreatmentMetadataRepositoryProvider),
     publishExportDiagnostics: (trialId, findings, attemptLabel) {
       ref
           .read(trialExportDiagnosticsMapProvider.notifier)

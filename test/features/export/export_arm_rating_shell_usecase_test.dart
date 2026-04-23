@@ -4,6 +4,7 @@ import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
 import 'package:arm_field_companion/data/arm/arm_applications_repository.dart';
 import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
+import 'package:arm_field_companion/data/arm/arm_treatment_metadata_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
@@ -345,6 +346,7 @@ void main() {
         persistence: ArmImportPersistenceRepository(db),
         armColumnMappingRepository: ArmColumnMappingRepository(db),
         armApplicationsRepository: ArmApplicationsRepository(db),
+        armTreatmentMetadataRepository: ArmTreatmentMetadataRepository(db),
         shareOverride: (_) async {},
         pickShellPathOverride: pickShellPathOverride,
         publishExportDiagnostics: publishExportDiagnostics,
